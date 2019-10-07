@@ -1,0 +1,5 @@
+{
+  "allowDirectMerges": false,
+  "allowBotCommands": false,
+  "internalRepository": "fbsource"
+}
