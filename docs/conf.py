@@ -43,6 +43,7 @@ except ImportError:
         "torchvision",
         "torch.nn",
         "torch.distributed",
+        "torch.multiprocessing",
         "torch.autograd",
         "torch.autograd.function",
         "torch.nn.modules",

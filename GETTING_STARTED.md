@@ -35,7 +35,10 @@ We provide a script in "tools/train_net.py", that is made to train
 all the configs provided in detectron2.
 You may want to use it as a reference to write your own training script for a new research.
 
-To train a model with "train_net.py", do:
+To train a model with "train_net.py", first
+setup the corresponding datasets following
+[datasets/README.md](https://github.com/facebookresearch/detectron2/blob/master/datasets/README.md),
+then run:
 ```
 python tools/train_net.py --num-gpus 8 \
 	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
@@ -47,6 +50,8 @@ python tools/train_net.py \
 	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
 	SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 ```
+
+For most models, CPU training is not supported.
 
 (Note that we applied the [linear learning rate scaling rule](https://arxiv.org/abs/1706.02677)
 when changing the batch size.)
