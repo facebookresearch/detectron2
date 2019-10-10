@@ -1,0 +1,7 @@
+_BASE_: "../COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_3x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_3x/137849551/model_final_84107b.pkl"
+DATASETS:
+  TEST: ("coco_2017_val_100",)
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 47.44, 0.02], ["segm", "AP", 42.94, 0.02]]

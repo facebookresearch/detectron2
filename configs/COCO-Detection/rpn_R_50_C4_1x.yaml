@@ -1,0 +1,10 @@
+_BASE_: "../Base-RCNN-C4.yaml"
+MODEL:
+  META_ARCHITECTURE: "ProposalNetwork"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+  RPN:
+    PRE_NMS_TOPK_TEST: 12000
+    POST_NMS_TOPK_TEST: 2000

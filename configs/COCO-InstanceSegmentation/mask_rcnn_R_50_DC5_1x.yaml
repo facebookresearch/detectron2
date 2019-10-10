@@ -1,0 +1,6 @@
+_BASE_: "../Base-RCNN-DilatedC5.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50

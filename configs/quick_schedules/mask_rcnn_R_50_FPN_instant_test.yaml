@@ -1,0 +1,14 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+DATASETS:
+  TRAIN: ("coco_2017_val_100",)
+  TEST: ("coco_2017_val_100",)
+SOLVER:
+  BASE_LR: 0.005
+  STEPS: (30,)
+  MAX_ITER: 40
+  IMS_PER_BATCH: 4
+DATALOADER:
+  NUM_WORKERS: 2

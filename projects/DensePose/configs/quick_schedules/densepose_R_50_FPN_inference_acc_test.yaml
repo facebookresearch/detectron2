@@ -1,0 +1,8 @@
+_BASE_: "../densepose_R_50_FPN_s1x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://e2e_densepose_R_50_FPN_s1x/124238535/model_final_5f3d7f9875229310fdfe6649459c0157.pkl"
+DATASETS:
+  TRAIN: ()
+  TEST: ("densepose_coco_2014_minival_100",)
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 56.05, 0.025], ["densepose", "AP",  46.54, 0.02]]

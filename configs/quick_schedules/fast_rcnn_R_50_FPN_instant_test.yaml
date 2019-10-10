@@ -1,0 +1,15 @@
+_BASE_: "../COCO-Detection/fast_rcnn_R_50_FPN_1x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+DATASETS:
+  TRAIN: ("coco_2017_val_100",)
+  PROPOSAL_FILES_TRAIN: ("detectron2://COCO-Detection/rpn_R_50_FPN_1x/137258492/coco_2017_val_box_proposals_ee0dad.pkl", )
+  TEST: ("coco_2017_val_100",)
+  PROPOSAL_FILES_TEST: ("detectron2://COCO-Detection/rpn_R_50_FPN_1x/137258492/coco_2017_val_box_proposals_ee0dad.pkl", )
+SOLVER:
+  BASE_LR: 0.005
+  STEPS: (30,)
+  MAX_ITER: 40
+  IMS_PER_BATCH: 4
+DATALOADER:
+  NUM_WORKERS: 2

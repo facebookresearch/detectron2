@@ -1,0 +1,14 @@
+_BASE_: "../Base-DensePose-RCNN.yaml"
+MODEL:
+  WEIGHTS: "catalog://ImageNetPretrained/MSRA/R-50"
+  DENSEPOSE_ON: True
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseV1ConvXHead"
+DATASETS:
+  TRAIN: ("densepose_coco_2014_minival_100",)
+  TEST: ("densepose_coco_2014_minival_100",)
+SOLVER:
+  MAX_ITER: 40
+  STEPS: (30,)
+  BASE_LR: 0.002
+  IMS_PER_BATCH: 24

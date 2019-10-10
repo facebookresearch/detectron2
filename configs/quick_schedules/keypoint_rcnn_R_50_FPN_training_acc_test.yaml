@@ -1,0 +1,28 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  KEYPOINT_ON: True
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    BATCH_SIZE_PER_IMAGE: 256
+    NUM_CLASSES: 1
+  ROI_KEYPOINT_HEAD:
+    POOLER_RESOLUTION: 14
+    POOLER_SAMPLING_RATIO: 2
+  ROI_BOX_HEAD:
+    SMOOTH_L1_BETA: 1.0  # Keypoint AP degrades when using plain L1 loss
+  RPN:
+    SMOOTH_L1_BETA: 0.2  # Keypoint AP degrades when using plain L1 loss
+DATASETS:
+  TRAIN: ("keypoints_coco_2017_val",)
+  TEST: ("keypoints_coco_2017_val",)
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+SOLVER:
+  WARMUP_FACTOR: 0.33333333
+  WARMUP_ITERS: 100
+  STEPS: (5500, 5800)
+  MAX_ITER: 6000
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 53.5, 1.0], ["keypoints", "AP", 72.4, 1.0]]

@@ -1,0 +1,11 @@
+_BASE_: "../COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl"
+DATASETS:
+  TEST: ("coco_2017_val_100",)
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 47.34, 0.02], ["segm", "AP",  42.67, 0.02]]
+  # expected results do not use test-time augmentation. TTA results are not verified.
+  AUG:
+    ENABLED: True
+    MIN_SIZES: (400, 500)  # to save some time

@@ -1,0 +1,15 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  KEYPOINT_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  ROI_BOX_HEAD:
+    SMOOTH_L1_BETA: 0.5  # Keypoint AP degrades (though box AP improves) when using plain L1 loss
+  RPN:
+    # Detectron1 uses 2000 proposals per-batch, but this option is per-image in detectron2.
+    # 1000 proposals per-image is found to hurt box AP.
+    # Therefore we increase it to 1500 per-image.
+    POST_NMS_TOPK_TRAIN: 1500
+DATASETS:
+  TRAIN: ("keypoints_coco_2017_train",)
+  TEST: ("keypoints_coco_2017_val",)

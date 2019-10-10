@@ -1,0 +1,25 @@
+_BASE_: "../Base-DensePose-RCNN.yaml"
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+MODEL:
+  WEIGHTS: "catalog://ImageNetPretrained/MSRA/R-50"
+  DENSEPOSE_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  ROI_BOX_HEAD:
+    POOLER_RESOLUTION: 7
+    POOLER_SAMPLING_RATIO: 2
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseV1ConvXHead"
+DATASETS:
+  TRAIN: ("densepose_coco_2014_minival",)
+  TEST: ("densepose_coco_2014_minival",)
+SOLVER:
+  MAX_ITER: 6000
+  STEPS: (5500, 5800)
+  BASE_LR: 0.002
+  IMS_PER_BATCH: 24
+  WARMUP_FACTOR: 0.1
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 58.27, 1.0], ["densepose", "AP", 42.47, 1.5]]
+

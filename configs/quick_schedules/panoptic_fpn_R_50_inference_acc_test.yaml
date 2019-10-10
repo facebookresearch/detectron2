@@ -1,0 +1,7 @@
+_BASE_: "../COCO-PanopticSegmentation/panoptic_fpn_R_50_3x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://COCO-PanopticSegmentation/panoptic_fpn_R_50_3x/139514569/model_final_c10459.pkl"
+DATASETS:
+  TEST: ("coco_2017_val_100_panoptic_separated",)
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 46.47, 0.02], ["segm", "AP", 43.39, 0.02], ["sem_seg", "mIoU", 42.55, 0.02], ["panoptic_seg", "PQ", 38.99, 0.02]]

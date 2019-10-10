@@ -1,0 +1,10 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  META_ARCHITECTURE: "SemanticSegmentor"
+  WEIGHTS: "detectron2://semantic_R_50_FPN_1x/111802073/model_final_c18079783c55a94968edc28b7101c5f0.pkl"
+  RESNETS:
+    DEPTH: 50
+DATASETS:
+  TEST: ("coco_2017_val_100_panoptic_stuffonly",)
+TEST:
+  EXPECTED_RESULTS: [["sem_seg", "mIoU", 39.53, 0.02], ["sem_seg", "mACC", 51.50, 0.02]]

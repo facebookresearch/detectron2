@@ -1,0 +1,20 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  META_ARCHITECTURE: "SemanticSegmentor"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+DATASETS:
+  TRAIN: ("coco_2017_val_panoptic_stuffonly",)
+  TEST: ("coco_2017_val_panoptic_stuffonly",)
+SOLVER:
+  BASE_LR: 0.01
+  WARMUP_FACTOR: 0.001
+  WARMUP_ITERS: 300
+  STEPS: (5500,)
+  MAX_ITER: 7000
+TEST:
+  EXPECTED_RESULTS: [["sem_seg", "mIoU", 76.51, 1.0], ["sem_seg", "mACC", 83.25, 1.0]]
+INPUT:
+  # no scale augmentation
+  MIN_SIZE_TRAIN: (800, )

@@ -1,0 +1,20 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  META_ARCHITECTURE: "PanopticFPN"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  SEM_SEG_HEAD:
+    LOSS_WEIGHT: 0.5
+DATASETS:
+  TRAIN: ("coco_2017_val_panoptic_separated",)
+  TEST: ("coco_2017_val_panoptic_separated",)
+SOLVER:
+  BASE_LR: 0.01
+  WARMUP_FACTOR: 0.001
+  WARMUP_ITERS: 500
+  STEPS: (5500,)
+  MAX_ITER: 7000
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 46.80, 1.1], ["segm", "AP", 38.93, 0.7], ["sem_seg", "mIoU", 63.99, 0.9], ["panoptic_seg", "PQ", 48.23, 0.8]]

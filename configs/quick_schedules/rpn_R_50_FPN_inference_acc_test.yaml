@@ -1,0 +1,7 @@
+_BASE_: "../COCO-Detection/rpn_R_50_FPN_1x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://COCO-Detection/rpn_R_50_FPN_1x/137258492/model_final_02ce48.pkl"
+DATASETS:
+  TEST: ("coco_2017_val_100",)
+TEST:
+  EXPECTED_RESULTS: [["box_proposals", "AR@1000", 58.16, 0.02]]

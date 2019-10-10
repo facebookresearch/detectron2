@@ -1,0 +1,7 @@
+_BASE_: "../COCO-Detection/retinanet_R_50_FPN_3x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://COCO-Detection/retinanet_R_50_FPN_3x/137849486/model_final_4cafe0.pkl"
+DATASETS:
+  TEST: ("coco_2017_val_100",)
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 44.36, 0.02]]

@@ -1,0 +1,22 @@
+_BASE_: "../Base-RCNN-C4.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  ROI_HEADS:
+    BATCH_SIZE_PER_IMAGE: 256
+  MASK_ON: True
+DATASETS:
+  TRAIN: ("coco_2017_val",)
+  TEST: ("coco_2017_val",)
+INPUT:
+  MIN_SIZE_TRAIN: (600,)
+  MAX_SIZE_TRAIN: 1000
+  MIN_SIZE_TEST: 800
+  MAX_SIZE_TEST: 1000
+SOLVER:
+  IMS_PER_BATCH: 8  # base uses 16
+  WARMUP_FACTOR: 0.33333
+  WARMUP_ITERS: 100
+  STEPS: (11000, 11600)
+  MAX_ITER: 12000
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 41.88, 0.7], ["segm", "AP", 33.79, 0.5]]

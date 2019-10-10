@@ -1,0 +1,26 @@
+# A large PanopticFPN for demo purposes.
+# Use GN on backbone to support semantic seg.
+# Use Cascade + Deform Conv to improve localization.
+_BASE_: "../COCO-PanopticSegmentation/Base-Panoptic-FPN.yaml"
+MODEL:
+  WEIGHTS: "catalog://ImageNetPretrained/FAIR/R-101-GN"
+  RESNETS:
+    DEPTH: 101
+    NORM: "GN"
+    DEFORM_ON_PER_STAGE: [False, True, True, True]
+    STRIDE_IN_1X1: False
+  FPN:
+    NORM: "GN"
+  ROI_HEADS:
+    NAME: CascadeROIHeads
+  ROI_BOX_HEAD:
+    CLS_AGNOSTIC_BBOX_REG: True
+  ROI_MASK_HEAD:
+    NORM: "GN"
+  RPN:
+    POST_NMS_TOPK_TRAIN: 2000
+SOLVER:
+  STEPS: (105000, 125000)
+  MAX_ITER: 135000
+  IMS_PER_BATCH: 32
+  BASE_LR: 0.04

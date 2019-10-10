@@ -1,0 +1,20 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  # Detectron1 uses smooth L1 loss with some magic beta values.
+  # The defaults are changed to L1 loss in Detectron2.
+  RPN:
+    SMOOTH_L1_BETA: 0.1111
+  ROI_BOX_HEAD:
+    SMOOTH_L1_BETA: 1.0
+    POOLER_SAMPLING_RATIO: 2
+    POOLER_TYPE: "ROIAlign"
+  ROI_MASK_HEAD:
+    POOLER_SAMPLING_RATIO: 2
+    POOLER_TYPE: "ROIAlign"
+INPUT:
+  # no scale augmentation
+  MIN_SIZE_TRAIN: (800, )

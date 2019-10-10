@@ -1,0 +1,1 @@
+../../GETTING_STARTED.md

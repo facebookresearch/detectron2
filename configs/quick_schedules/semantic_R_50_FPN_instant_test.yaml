@@ -1,0 +1,18 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  META_ARCHITECTURE: "SemanticSegmentor"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+DATASETS:
+  TRAIN: ("coco_2017_val_100_panoptic_stuffonly",)
+  TEST: ("coco_2017_val_100_panoptic_stuffonly",)
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+SOLVER:
+  BASE_LR: 0.005
+  STEPS: (30,)
+  MAX_ITER: 40
+  IMS_PER_BATCH: 4
+DATALOADER:
+  NUM_WORKERS: 2
