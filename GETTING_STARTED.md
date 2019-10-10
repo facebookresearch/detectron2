@@ -4,7 +4,8 @@
 This document provides a brief intro of the usage of builtin command-line tools in detectron2.
 
 For a tutorial that involves actual coding with the API,
-see our [Colab Notebook](TODO) which covers how to run inference with an
+see our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
+which covers how to run inference with an
 existing model, and how to train a builtin model on a custom dataset.
 
 For more advanced tutorials, refer to our [documentation](https://detectron2.readthedocs.io/tutorials/extend.html).
@@ -54,7 +55,8 @@ For more options, see `python tools/train_net.py -h`.
 
 ### Use Detectron2 in Your Code
 
-See our [Colab Notebook](TODO) to how to use detectron2 APIs to:
+See our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
+to learn how to use detectron2 APIs to:
 1. run inference with an existing model
 2. train a builtin model on a custom dataset
 

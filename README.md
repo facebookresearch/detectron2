@@ -12,6 +12,8 @@ learning framework.
   <img src="https://user-images.githubusercontent.com/1381301/66535560-d3422200-eace-11e9-9123-5535d469db19.png"/>
 </div>
 
+See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
+to see more demos and learn what's new in detectron2.
 
 ## Installation
 
@@ -19,8 +21,9 @@ See [INSTALL.md](INSTALL.md).
 
 ## Quick Start
 
-See [GETTING_STARTED.md](GETTING_STARTED.md), or our [Colab Notebook](TODO).
-
+See [GETTING_STARTED.md](GETTING_STARTED.md),
+or the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5).
+Learn more at our [documentation](https://detectron2.readthedocs.org).
 
 ## Model Zoo and Baselines
 

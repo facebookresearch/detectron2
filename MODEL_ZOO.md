@@ -16,8 +16,9 @@ Unless otherwise noted, the following settings are used for all runs:
 	For configs that are closer to Detectron's settings, see
 	[Detectron1-Comparisons](configs/Detectron1-Comparisons/).
 * No test-time augmentation is used for inference.
-* Inference time is measured with batch size 1. It contains the time taken to postprocess results for evaluation. Therefore it does not accurately
-	reflect time-to-results.
+* Inference time is measured with batch size 1. It contains the time taken to postprocess results for evaluation, as well as some input latency.
+	Therefore it does not accurately reflect time-to-results.
+	We'll provide better metrics for inference speed in the future.
 * The *model id* column is provided for ease of reference.
 * To check downloaded file integrity: any model on this page contains its md5 prefix in its file name.
 * All COCO models were trained on `train2017` and evaluated on `val2017`.

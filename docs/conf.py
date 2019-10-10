@@ -28,8 +28,6 @@ import sphinx_rtd_theme
 # to support markdown
 from recommonmark.parser import CommonMarkParser
 
-import detectron2
-
 sys.path.insert(0, os.path.abspath("../"))
 
 DEPLOY = False
@@ -52,9 +50,11 @@ except ImportError:
     ]:
         sys.modules[m] = mock.Mock(name=m)
 
-for m in ["cv2", "scipy", "portalocker"]:
+for m in ["cv2", "scipy", "portalocker", "detectron2._C", "pycocotools", "pycocotools.mask"]:
     sys.modules[m] = mock.Mock(name=m)
 sys.modules["cv2"].__version__ = "3.4"
+
+import detectron2  # isort: skip
 
 
 project = "detectron2"
