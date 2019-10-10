@@ -6,8 +6,6 @@
 Welcome to detectron2's documentation!
 ======================================
 
-Some nice intro.
-
 .. toctree::
    :maxdepth: 2
 
