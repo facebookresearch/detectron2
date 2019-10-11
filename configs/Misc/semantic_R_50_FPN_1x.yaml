@@ -1,4 +1,4 @@
-_BASE_: "Base-RCNN-FPN.yaml"
+_BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   META_ARCHITECTURE: "SemanticSegmentor"
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
