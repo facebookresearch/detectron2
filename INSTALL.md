@@ -27,6 +27,7 @@ python setup.py build develop
 # or, as an alternative to `setup.py`, do
 # pip install .
 ```
+Note: you may need to rebuild detectron2 after reinstalling a different build of PyTorch.
 
 ### Common Installation Issues
 

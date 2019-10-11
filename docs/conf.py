@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+# flake8: noqa
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file does only contain a selection of the most common options. For a
@@ -48,6 +50,8 @@ except ImportError:
         "torch.autograd.function",
         "torch.nn.modules",
         "torch.nn.modules.utils",
+        "torchvision",
+        "torchvision.ops",
     ]:
         sys.modules[m] = mock.Mock(name=m)
 
