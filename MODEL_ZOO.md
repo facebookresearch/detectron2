@@ -599,7 +599,7 @@ They are roughly 24 epochs of LVISv0.5 data.
 ### Cityscapes & Pascal VOC Baselines
 
 Simple baselines for
-* Mask R-CNN on Cityscapes instance segmentation (trained on fine annotations only)
+* Mask R-CNN on Cityscapes instance segmentation (initialized from COCO pre-training, then trained on Cityscapes fine annotations only)
 * Faster R-CNN on PASCAL VOC object detection (trained on VOC 2007 train+val + VOC 2012 train+val, tested on VOC 2007 using 11-point interpolated AP)
 
 <!--
