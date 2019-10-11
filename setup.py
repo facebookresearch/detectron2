@@ -62,7 +62,7 @@ setup(
     author="FAIR",
     url="https://github.com/facebookresearch/detectron2",
     description="Detectron2 is FAIR's next-generation research "
-        "platform for object detection and segmentation.",
+    "platform for object detection and segmentation.",
     packages=find_packages(exclude=("configs", "tests")),
     install_requires=[
         "termcolor>=1.1",

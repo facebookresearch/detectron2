@@ -10,17 +10,17 @@ Unless otherwise noted, the following settings are used for all runs:
 #### Common Settings
 * All models were trained on [Big Basin](https://engineering.fb.com/data-center-engineering/introducing-big-basin-our-next-generation-ai-hardware/)
   servers with 8 NVIDIA V100 GPUs, with data-parallel sync SGD and a total minibatch size of 16 images.
-* All models were trained with CUDA 9.2, cuDNN 7.4.2 or 7.6.3 (the difference on performance is found to be negligible).
+* All models were trained with CUDA 9.2, cuDNN 7.4.2 or 7.6.3 (the difference in speed is found to be negligible).
 * The default settings are not directly comparable with Detectron.
 	For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
+
 	For configs that are closer to Detectron's settings, see
-	[Detectron1-Comparisons](configs/Detectron1-Comparisons/).
-* No test-time augmentation is used for inference.
+	[Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
+	and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
+	for speed comparison.
 * Inference time is measured with batch size 1. It contains the time taken to postprocess results for evaluation, as well as some input latency.
 	Therefore it does not accurately reflect time-to-results.
 	We'll provide better metrics for inference speed in the future.
-* The *model id* column is provided for ease of reference.
-* To check downloaded file integrity: any model on this page contains its md5 prefix in its file name.
 * All COCO models were trained on `train2017` and evaluated on `val2017`.
 * For Faster/Mask R-CNN, we provide baselines based on __3 different backbone combinations__:
 	* __FPN__: Use a ResNet+FPN backbone with standard conv and FC heads for mask and box prediction,
@@ -33,6 +33,8 @@ Unless otherwise noted, the following settings are used for all runs:
 * Most models are trained with the 3x schedule (~37 COCO epochs).
   Although 1x models are heavily under-trained, we provide some ResNet-50 models with the 1x (~12 COCO epochs)
 	training schedule for comparison when doing quick research iteration.
+* The *model id* column is provided for ease of reference.
+  To check downloaded file integrity: any model on this page contains its md5 prefix in its file name.
 
 #### ImageNet Pretrained Models
 

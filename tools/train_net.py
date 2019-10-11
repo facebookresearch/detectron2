@@ -2,7 +2,7 @@
 """
 Detection Training Script.
 
-This scripts reads a given config file and runs the training.
+This scripts reads a given config file and runs the training or evaluation.
 It is an entry point that is made to train standard models in detectron2.
 
 In order to let one script support training of many models,
@@ -39,6 +39,13 @@ from detectron2.modeling import GeneralizedRCNNWithTTA
 
 
 class Trainer(DefaultTrainer):
+    """
+    We use the "DefaultTrainer" which contains a number pre-defined logic for
+    standard training workflow. They may not work for you, especially if you
+    are working on a new research project. In that case you can use the cleaner
+    "SimpleTrainer", or write your own training loop.
+    """
+
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         """

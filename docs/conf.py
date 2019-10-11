@@ -55,7 +55,15 @@ except ImportError:
     ]:
         sys.modules[m] = mock.Mock(name=m)
 
-for m in ["cv2", "scipy", "portalocker", "detectron2._C", "pycocotools", "pycocotools.mask"]:
+for m in [
+    "cv2",
+    "scipy",
+    "portalocker",
+    "detectron2._C",
+    "pycocotools",
+    "pycocotools.mask",
+    "pycocotools.coco",
+]:
     sys.modules[m] = mock.Mock(name=m)
 sys.modules["cv2"].__version__ = "3.4"
 

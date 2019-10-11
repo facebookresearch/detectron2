@@ -73,3 +73,11 @@ As mentioned above, despite the incompatibilities with Detectron, the relevant
 ops have been implemented in Caffe2, in [PR1](https://github.com/pytorch/pytorch/pull/20550)
 and [PR2](https://github.com/pytorch/pytorch/pull/23706).
 Therefore, models trained with detectron2 can be used in Caffe2.
+
+
+## Compatibility with TensorFlow
+
+Most ops are available in TensorFlow, although some tiny differences in
+the implementation of resize / ROIAlign / padding need to be addressed.
+A working conversion script is provided by [tensorpack FasterRCNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
+to run a standard Detectron2 model in TensorFlow.

@@ -24,9 +24,9 @@ python demo/demo.py --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_
 ```
 It will run the inference and show visualizations in an OpenCV window.
 
-To run on webcam, replace `--input files` with `--webcam`.
-To run on a video, replace `--input files` with `--video-input video.mp4`.
-To save outputs to a directory (for images) or a file (for webcam or video), use `--output`.
+* To run __on your webcam__, replace `--input files` with `--webcam`.
+* To run __on a video__, replace `--input files` with `--video-input video.mp4`.
+* To save outputs to a directory (for images) or a file (for webcam or video), use `--output`.
 
 
 ### Train a Standard Model
@@ -56,6 +56,7 @@ For most models, CPU training is not supported.
 (Note that we applied the [linear learning rate scaling rule](https://arxiv.org/abs/1706.02677)
 when changing the batch size.)
 
+To evaluate a model's performance, use `train_net.py --eval-only`.
 For more options, see `python tools/train_net.py -h`.
 
 ### Use Detectron2 in Your Code

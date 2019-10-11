@@ -108,7 +108,7 @@ class ROIPooler(nn.Module):
             canonical_level (int): The feature map level index on which a canonically-sized box
                 should be placed. The default is defined as level 4 in the FPN paper.
         """
-        super(ROIPooler, self).__init__()
+        super().__init__()
 
         if isinstance(output_size, int):
             output_size = (output_size, output_size)

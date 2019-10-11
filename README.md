@@ -5,15 +5,20 @@ that implements state-of-the-art object detection algorithms.
 It is a ground-up rewrite of the previous version,
 [Detectron](https://github.com/facebookresearch/Detectron/),
 and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/).
-It is written in Python and powered by the [PyTorch](https://pytorch.org) deep
-learning framework.
 
 <div align="center">
   <img src="https://user-images.githubusercontent.com/1381301/66535560-d3422200-eace-11e9-9123-5535d469db19.png"/>
 </div>
 
-Check our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
-to see more demos and learn what's new in detectron2.
+### What's New
+* It is powered by the [PyTorch](https://pytorch.org) deep learning framework.
+* Includes more features such as panoptic segmentation, densepose, Cascade R-CNN, rotated bounding boxes, etc.
+* Can be used as a library to support [different projects](projects/) on top of it.
+  We'll open source more research projects in this way.
+* It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
+
+See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
+to see more demos and learn about detectron2.
 
 ## Installation
 
@@ -23,7 +28,9 @@ See [INSTALL.md](INSTALL.md).
 
 See [GETTING_STARTED.md](GETTING_STARTED.md),
 or the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5).
+
 Learn more at our [documentation](https://detectron2.readthedocs.org).
+And see [projects/](projects/) for some projects that are built on top of detectron2.
 
 ## Model Zoo and Baselines
 
