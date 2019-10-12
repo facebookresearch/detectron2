@@ -27,7 +27,7 @@ from .catalog import MetadataCatalog
 
 class SizeMismatchError(ValueError):
     """
-    When loaded image has difference width/height compared with annoation.
+    When loaded image has difference width/height compared with annotation.
     """
 
 

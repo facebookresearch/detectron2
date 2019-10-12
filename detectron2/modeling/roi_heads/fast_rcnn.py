@@ -58,7 +58,7 @@ def fast_rcnn_losses(
             logits for the K+1-way classification problem. Each row corresponds to a predicted
             object instance.
         pred_proposal_deltas (Tensor): shape depends on whether we are doing
-            cls-agnoistic or cls-specific regression, and the box dimensions.
+            cls-agnostic or cls-specific regression, and the box dimensions.
             When box_dim is 4:
             1. cls-specific: Shape (R, 4 * K), each row stores a list of class-specific
             predicted box2box transform [dx_0, dy_0, dw_0, dh_0, ..., dx_k, dy_k, dw_k, dh_k, ...]
@@ -217,13 +217,13 @@ class FastRCNNOutputs(object):
         """
         Args:
             box2box_transform (Box2BoxTransform/Box2BoxTransformRotated):
-                box2box transform instance for proposal-to-detection tranformations.
+                box2box transform instance for proposal-to-detection transformations.
             pred_class_logits (Tensor): A tensor of shape (R, K + 1) storing the predicted class
                 logits for all R predicted object instances.
             pred_proposal_deltas (Tensor): A tensor of shape (R, K * B) or (R, B) for
                 class-specific or class-agnostic storing the predicted deltas that
                 transform proposals into final box detections, where B is the box dimension (4 or 5)
-            proposals (list[Instances]): A list of N Instancess, where Instances i stores the
+            proposals (list[Instances]): A list of N Instances, where Instances i stores the
                 proposals for image i, in the field "proposal_boxes".
                 When training, each Instances must have ground-truth labels
                 stored in the field "gt_classes" and "gt_boxes".

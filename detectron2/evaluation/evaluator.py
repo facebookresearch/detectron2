@@ -75,7 +75,7 @@ class DatasetEvaluators(DatasetEvaluator):
                 for k, v in result.items():
                     assert (
                         k not in results
-                    ), "Different evalutors produce results with the same key {}".format(k)
+                    ), "Different evaluators produce results with the same key {}".format(k)
                     results[k] = v
         return results
 

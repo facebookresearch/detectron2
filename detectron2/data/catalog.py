@@ -19,7 +19,7 @@ class DatasetCatalog(object):
     format of `list[dict]`.
 
     The returned dicts should be in Detectron2 Dataset format (See DATASETS.md for details)
-    if used with the data loader functionatilities in `data/build.py,data/detection_transform.py`.
+    if used with the data loader functionalities in `data/build.py,data/detection_transform.py`.
 
     The purpose of having this catalog is to make it easy to choose
     different datasets, by just using the strings in the config.

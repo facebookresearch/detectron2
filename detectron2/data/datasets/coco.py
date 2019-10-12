@@ -193,7 +193,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 # TODO this function is not specific to COCO, except for the "image_id" logic.
 def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
     """
-    Load semantic segmenation datasets. All files under "gt_root" with "gt_ext" extension are
+    Load semantic segmentation datasets. All files under "gt_root" with "gt_ext" extension are
     treated as ground truth annotations and all files under "image_root" with "image_ext" extension
     as input images. Ground truth and input images are matched using file paths relative to
     "gt_root" and "image_root" respectively without taking into account file extensions.
@@ -216,7 +216,7 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
            The results do not have the "image" and "sem_seg" fields.
     """
 
-    # We match input images with ground truth based on their raltive filepaths (without file
+    # We match input images with ground truth based on their relative filepaths (without file
     # extensions) starting from 'image_root' and 'gt_root' respectively. COCO API works with integer
     # IDs, hence, we try to convert these paths to int if possible.
     def file2id(folder_path, file_path):

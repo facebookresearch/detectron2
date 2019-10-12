@@ -126,7 +126,7 @@ def Resize_rotated_box(transform, rotated_boxes):
     s = np.sin(theta)
 
     # In image space, y is top->down and x is left->right
-    # Consider the local coordintate system for the rotated box,
+    # Consider the local coordinate system for the rotated box,
     # where the box center is located at (0, 0), and the four vertices ABCD are
     # A(-w / 2, -h / 2), B(w / 2, -h / 2), C(w / 2, h / 2), D(-w / 2, h / 2)
     # the midpoint of the left edge AD of the rotated box E is:
@@ -141,7 +141,7 @@ def Resize_rotated_box(transform, rotated_boxes):
     # After applying the scaling factor (sfx, sfy):
     # E(new) = (-sfx * c * w / 2, sfy * s * w / 2)
     # F(new) = (-sfx * s * h / 2, -sfy * c * h / 2)
-    # The new width after scaling tranformation becomes:
+    # The new width after scaling transformation becomes:
 
     # w(new) = |E(new) - O| * 2
     #        = sqrt[(sfx * c * w / 2)^2 + (sfy * s * w / 2)^2] * 2

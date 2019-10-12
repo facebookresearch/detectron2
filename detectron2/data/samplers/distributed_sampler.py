@@ -17,7 +17,7 @@ class TrainingSampler(Sampler):
 
     The samplers in each worker effectively produces `indices[worker_id::num_workers]`
     where `indices` is an infinite stream of indices consisting of
-    `shuffle(range(size)) + suhffle(range(size)) + ...` (if shuffle is True)
+    `shuffle(range(size)) + shuffle(range(size)) + ...` (if shuffle is True)
     or `range(size) + range(size) + ...` (if shuffle is False)
     """
 
@@ -137,7 +137,7 @@ class RepeatFactorTrainingSampler(Sampler):
                 stochastic rounding.
 
         Returns:
-            torch.Tensor: list of dataset indicies to use in one epoch. Each index
+            torch.Tensor: list of dataset indices to use in one epoch. Each index
                 is repeated based on its calculated repeat factor.
         """
         # Since repeat factors are fractional, we use stochastic rounding so

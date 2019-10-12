@@ -107,7 +107,7 @@ class TrainerBase:
         for h in hooks:
             assert isinstance(h, HookBase)
             # To avoid circular reference, hooks and trainer cannot own each other.
-            # This noramlly does not matter, but will cause memory leak if the
+            # This normally does not matter, but will cause memory leak if the
             # involved objects contain __del__:
             # See http://engineering.hearsaysocial.com/2013/06/16/circular-references-in-python/
             h.trainer = weakref.proxy(self)

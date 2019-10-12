@@ -136,7 +136,7 @@ class DefaultAnchorGenerator(nn.Module):
 
         Args:
             sizes (tuple[float]): Absolute size of the anchors in the units of the input
-                image (the input received by the network, after ungoing necessary scaling).
+                image (the input received by the network, after undergoing necessary scaling).
                 The absolute size is given as the side length of a box.
             aspect_ratios (tuple[float]]): Aspect ratios of the boxes computed as box
                 height / width.
@@ -295,7 +295,7 @@ class RotatedAnchorGenerator(nn.Module):
 
         Args:
             sizes (tuple[float]): Absolute size of the anchors in the units of the input
-                image (the input received by the network, after ungoing necessary scaling).
+                image (the input received by the network, after undergoing necessary scaling).
                 The absolute size is given as the side length of a box.
             aspect_ratios (tuple[float]]): Aspect ratios of the boxes computed as box
                 height / width.
