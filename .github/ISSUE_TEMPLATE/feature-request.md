@@ -14,3 +14,4 @@ about: Submit a proposal/request for a new detectron2 feature
 ## Pitch
 
 <!-- A clear and concise description of what you want to happen. -->
+learning git
