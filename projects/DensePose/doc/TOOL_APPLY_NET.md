@@ -14,7 +14,7 @@ python apply_net.py dump [-h] [-v] [--output <dump_file>] <config> <model> <inpu
 
 There are three mandatory arguments:
  - `<config>`, configuration file for a given model;
- - `<model>`, model file with trained parameters 
+ - `<model>`, model file with trained parameters
  - `<input>`, input image file name, pattern or folder
 
 One can additionally provide `--output` argument to define the output file name,
@@ -45,7 +45,7 @@ python apply_net.py show [-h] [-v] [--min_score <score>] [--nms_thresh <threshol
 
 There are four mandatory arguments:
  - `<config>`, configuration file for a given model;
- - `<model>`, model file with trained parameters 
+ - `<model>`, model file with trained parameters
  - `<input>`, input image file name, pattern or folder
  - `<visualizations>`, visualizations specifier; currently available visualizations are:
    * `bbox` - bounding boxes of detected persons;
@@ -72,22 +72,22 @@ with ResNet-50 FPN backbone using different visualizations for image `image.jpg`
 ```bash
 python apply_net.py show configs/densepose_R_50_FPN_s1x.yaml DensePose_ResNet50_FPN_s1x-e2e.pkl image.jpg bbox,dp_segm -v
 ```
-![Bounding Box + Segmentation Visualization](images/res_bbox_dp_segm.png)
+![Bounding Box + Segmentation Visualization](images/res_bbox_dp_segm.jpg)
 
 2. Show bounding box and estimated U coordinates for body parts:
 ```bash
 python apply_net.py show configs/densepose_R_50_FPN_s1x.yaml DensePose_ResNet50_FPN_s1x-e2e.pkl image.jpg bbox,dp_u -v
 ```
-![Bounding Box + U Coordinate Visualization](images/res_bbox_dp_u.png)
+![Bounding Box + U Coordinate Visualization](images/res_bbox_dp_u.jpg)
 
 3. Show bounding box and estimated V coordinates for body parts:
 ```bash
 python apply_net.py show configs/densepose_R_50_FPN_s1x.yaml DensePose_ResNet50_FPN_s1x-e2e.pkl image.jpg bbox,dp_v -v
 ```
-![Bounding Box + V Coordinate Visualization](images/res_bbox_dp_v.png)
+![Bounding Box + V Coordinate Visualization](images/res_bbox_dp_v.jpg)
 
 4. Show bounding box and estimated U and V coordinates via contour plots:
 ```bash
 python apply_net.py show configs/densepose_R_50_FPN_s1x.yaml DensePose_ResNet50_FPN_s1x-e2e.pkl image.jpg dp_contour,bbox -v
 ```
-![Bounding Box + Contour Visualization](images/res_bbox_dp_contour.png)
+![Bounding Box + Contour Visualization](images/res_bbox_dp_contour.jpg)
