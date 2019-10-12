@@ -63,6 +63,7 @@ for m in [
     "pycocotools",
     "pycocotools.mask",
     "pycocotools.coco",
+    "pycocotools.cocoeval",
 ]:
     sys.modules[m] = mock.Mock(name=m)
 sys.modules["cv2"].__version__ = "3.4"
