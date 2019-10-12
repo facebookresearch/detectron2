@@ -8,7 +8,7 @@ with some other popular open source Mask R-CNN implementations.
 ### Settings
 
 * Hardware: 8 NVIDIA V100s.
-* Software: CUDA 10.0, cuDNN 7.6.4, PyTorch 1.3.0.dev20190920 (nightly build), TensorFlow 1.5.0rc2, Keras 2.2.5.
+* Software: CUDA 10.0, cuDNN 7.6.4, PyTorch 1.3.0.dev20190920 (nightly build), TensorFlow 1.5.0rc2, Keras 2.2.5, MxNet 1.6.0b20190820.
 * Model: an end-to-end R-50-FPN Mask-RCNN model, using the same hyperparameter as the
 	[Detectron baseline config](https://github.com/facebookresearch/Detectron/blob/master/configs/12_2017_baselines/e2e_mask_rcnn_R-50-FPN_1x.yaml).
 * Metrics: We use the average throughput in iterations 100-500 to skip GPU warmup time.
@@ -31,6 +31,8 @@ with some other popular open source Mask R-CNN implementations.
 +-----------------------------+--------------------+
 | mmdetection_                | 41                 |
 +-----------------------------+--------------------+
+| simpledet_                  | 39                 |
++-----------------------------+--------------------+
 | Detectron_                  | 19                 |
 +-----------------------------+--------------------+
 | `matterport/Mask_RCNN`__    | 14                 |
@@ -39,6 +41,7 @@ with some other popular open source Mask R-CNN implementations.
 .. _maskrcnn-benchmark: https://github.com/facebookresearch/maskrcnn-benchmark/
 .. _tensorpack: https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN
 .. _mmdetection: https://github.com/open-mmlab/mmdetection/
+.. _simpledet: https://github.com/TuSimple/simpledet/
 .. _Detectron: https://github.com/facebookresearch/Detectron
 __ https://github.com/matterport/Mask_RCNN/
 ```
@@ -109,15 +112,23 @@ Details for each implementation:
 	```
 	</details>
 
+* __SimpleDet__: at commit `9187a1`, run
+	```
+	python detection_train.py --config config/mask_r50v1_fpn_1x.py
+	```
+
 * __Detectron__: run
   ```
   python tools/train_net.py --cfg configs/12_2017_baselines/e2e_mask_rcnn_R-50-FPN_1x.yaml
   ```
+  Note that many of its ops run on CPUs, therefore the performance is limited.
 
 * __matterport/Mask_RCNN__: at commit `3deaec`, apply the following diff, `export TF_CUDNN_USE_AUTOTUNE=0`, then run
 	```
 	python coco.py train --dataset=/data/coco/ --model=imagenet
 	```
+  Note that many small details in this implementation might be different
+  from Detectron's standards.
 
 	<details>
 	<summary>

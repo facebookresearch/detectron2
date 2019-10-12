@@ -44,12 +44,15 @@ except ImportError:
         "torch",
         "torchvision",
         "torch.nn",
+        "torch.nn.parallel",
         "torch.distributed",
         "torch.multiprocessing",
         "torch.autograd",
         "torch.autograd.function",
         "torch.nn.modules",
         "torch.nn.modules.utils",
+        "torch.utils",
+        "torch.utils.data",
         "torchvision",
         "torchvision.ops",
     ]:
@@ -235,9 +238,23 @@ texinfo_documents = [
 todo_include_todos = True
 
 
+_DEPRECATED_NAMES = set(["out_feature_channels", "out_feature_strides", "out_features"])
+
+
+def autodoc_skip_member(app, what, name, obj, skip, options):
+    # we hide something deliberately
+    if getattr(obj, "__HIDE_SPHINX_DOC__", False):
+        return True
+    # Hide some names that are deprecated or not intended to be used
+    if name in _DEPRECATED_NAMES:
+        return True
+    return None
+
+
 def setup(app):
     from recommonmark.transform import AutoStructify
 
+    app.connect("autodoc-skip-member", autodoc_skip_member)
     # app.connect('autodoc-skip-member', autodoc_skip_member)
     app.add_config_value(
         "recommonmark_config",

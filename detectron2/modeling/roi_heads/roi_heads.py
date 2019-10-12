@@ -22,10 +22,13 @@ from .keypoint_head import build_keypoint_head, keypoint_rcnn_inference, keypoin
 from .mask_head import build_mask_head, mask_rcnn_inference, mask_rcnn_loss
 
 ROI_HEADS_REGISTRY = Registry("ROI_HEADS")
-"""
+ROI_HEADS_REGISTRY.__doc__ = """
 Registry for ROI heads in a generalized R-CNN model.
 ROIHeads take feature maps and region proposals, and
 perform per-region computation.
+
+The registered object will be called with `obj(cfg, input_shape)`.
+The call is expected to return an :class:`ROIHeads`.
 """
 
 logger = logging.getLogger(__name__)

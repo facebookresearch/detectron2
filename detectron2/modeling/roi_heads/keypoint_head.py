@@ -11,8 +11,10 @@ from detectron2.utils.registry import Registry
 _TOTAL_SKIPPED = 0
 
 ROI_KEYPOINT_HEAD_REGISTRY = Registry("ROI_KEYPOINT_HEAD")
-"""
+ROI_KEYPOINT_HEAD_REGISTRY.__doc__ = """
 Registry for keypoint heads, which make keypoint predictions from per-region features.
+
+The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 
