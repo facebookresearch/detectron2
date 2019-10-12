@@ -274,7 +274,7 @@ class PolygonMasks:
         1. An integer. It will return an object with only one instance.
         2. A slice. It will return an object with the selected instances.
         3. A list[int]. It will return an object with the selected instances,
-            correpsonding to the indices in the list.
+            corresponding to the indices in the list.
         4. A vector mask of type BoolTensor, whose length is num_instances.
             It will return an object with the instances whose mask is nonzero.
         """

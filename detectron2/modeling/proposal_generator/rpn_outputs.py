@@ -207,7 +207,7 @@ class RPNOutputs(object):
         """
         Args:
             box2box_transform (Box2BoxTransform): :class:`Box2BoxTransform` instance for
-                anchor-proposal tranformations.
+                anchor-proposal transformations.
             anchor_matcher (Matcher): :class:`Matcher` instance for matching anchors to
                 ground-truth boxes; used to determine training labels.
             batch_size_per_image (int): number of proposals to sample when training
@@ -300,7 +300,7 @@ class RPNOutputs(object):
 
         def resample(label):
             """
-            Randomly sample a subset of positive and negative examples by overwritting
+            Randomly sample a subset of positive and negative examples by overwriting
             the label vector to the ignore value (-1) for all elements that are not
             included in the sample.
             """

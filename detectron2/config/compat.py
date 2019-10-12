@@ -62,7 +62,7 @@ def downgrade_config(cfg: CN, to_version: int) -> CN:
 
     Note:
         A general downgrade of arbitrary configs is not always possible due to the
-        different functionailities in different versions.
+        different functionalities in different versions.
         The purpose of downgrade is only to recover the defaults in old versions,
         allowing it to load an old partial yaml config.
         Therefore, the implementation only needs to fill in the default values

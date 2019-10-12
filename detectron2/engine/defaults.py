@@ -3,7 +3,7 @@
 
 """
 This file contains components with some default boilerplate logic user may need
-in training / testing. They will not work for everyeone, but many users may find them useful.
+in training / testing. They will not work for everyone, but many users may find them useful.
 
 The behavior of functions/classes in this file is subject to change,
 since they are meant to represent the "common default behavior" people need in their projects.
@@ -227,7 +227,7 @@ class DefaultTrainer(SimpleTrainer):
         # Assume no other objects need to be checkpointed.
         # We can later make it checkpoint the stateful hooks
         self.checkpointer = DetectionCheckpointer(
-            # Assume you want to save checkpoits together with logs/statistics
+            # Assume you want to save checkpoints together with logs/statistics
             model,
             cfg.OUTPUT_DIR,
             optimizer=optimizer,

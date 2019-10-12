@@ -155,8 +155,8 @@ class ROIHeads(torch.nn.Module):
     def label_and_sample_proposals(self, proposals, targets):
         """
         Prepare some proposals to be used to train the ROI heads.
-        It performs box matching between `proposals` and `targets`, and assign
-        training labels to the lproposals.
+        It performs box matching between `proposals` and `targets`, and assigns
+        training labels to the proposals.
         It returns `self.batch_size_per_image` random samples from proposals and groundtruth boxes,
         with a fraction of positives that is no larger than `self.positive_sample_fraction.
 
@@ -734,8 +734,8 @@ class RROIHeads(StandardROIHeads):
     def label_and_sample_proposals(self, proposals, targets):
         """
         Prepare some proposals to be used to train the RROI heads.
-        It performs box matching between `proposals` and `targets`, and assign
-        training labels to the lproposals.
+        It performs box matching between `proposals` and `targets`, and assigns
+        training labels to the proposals.
         It returns `self.batch_size_per_image` random samples from proposals and groundtruth boxes,
         with a fraction of positives that is no larger than `self.positive_sample_fraction.
 

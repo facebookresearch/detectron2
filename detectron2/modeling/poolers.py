@@ -54,13 +54,13 @@ def convert_boxes_to_pooler_format(box_lists):
             A tensor of shape (M, 5), where M is the total number of boxes aggregated over all
             N batch images.
             The 5 columns are (batch index, x0, y0, x1, y1), where batch index
-            is the index in [0, N) indentifying which batch image the box with corners at
+            is the index in [0, N) identifying which batch image the box with corners at
             (x0, y0, x1, y1) comes from.
         When input is list[RotatedBoxes]:
             A tensor of shape (M, 6), where M is the total number of boxes aggregated over all
             N batch images.
             The 6 columns are (batch index, x_ctr, y_ctr, width, height, angle_degrees),
-            where batch index is the index in [0, N) indentifying which batch image the
+            where batch index is the index in [0, N) identifying which batch image the
             rotated box (x_ctr, y_ctr, width, height, angle_degrees) comes from.
     """
 
@@ -158,7 +158,7 @@ class ROIPooler(nn.Module):
     def forward(self, x, box_lists):
         """
         Args:
-            x (list[Tensor]): A list of feature maps with scales matching thosed used to
+            x (list[Tensor]): A list of feature maps with scales matching those used to
                 construct this module.
             box_lists (list[Boxes] | list[RotatedBoxes]):
                 A list of N Boxes or N RotatedBoxes, where N is the number of images in the batch.

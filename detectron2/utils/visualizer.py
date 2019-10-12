@@ -104,7 +104,7 @@ class GenericMask:
         # cv2.RETR_CCOMP flag retrieves all the contours and arranges them to a 2-level
         # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
         # Internal contours (holes) are placed in hierarchy-2.
-        # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from countours.
+        # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
         res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
         hierarchy = res[-1]
         has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
@@ -576,7 +576,7 @@ class Visualizer:
                     horiz_align = "center"
                 else:
                     continue  # drawing the box confidence for keypoints isn't very useful.
-                # for small objects, draw text at the side to avoid occulusion
+                # for small objects, draw text at the side to avoid occlusion
                 instance_area = (y1 - y0) * (x1 - x0)
                 if (
                     instance_area < _SMALL_OBJECT_AREA_THRESH * self.output.scale
@@ -912,7 +912,7 @@ class Visualizer:
                 formats that are accepted.
             brightness_factor (float): a value in [-1.0, 1.0] range. A lightness factor of
                 0 will correspond to no change, a factor in [-1.0, 0) range will result in
-                a darker color and a factor in (0, 1.0] range will result in a ligher color.
+                a darker color and a factor in (0, 1.0] range will result in a lighter color.
 
         Returns:
             modified_color (tuple[double]): a tuple containing the RGB values of the

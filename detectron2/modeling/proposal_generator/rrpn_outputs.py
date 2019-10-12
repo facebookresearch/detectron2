@@ -158,7 +158,7 @@ class RRPNOutputs(RPNOutputs):
         """
         Args:
             box2box_transform (Box2BoxTransformRotated): :class:`Box2BoxTransformRotated`
-                instance for anchor-proposal tranformations.
+                instance for anchor-proposal transformations.
             anchor_matcher (Matcher): :class:`Matcher` instance for matching anchors to
                 ground-truth boxes; used to determine training labels.
             batch_size_per_image (int): number of proposals to sample when training

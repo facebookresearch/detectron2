@@ -23,7 +23,7 @@ class PicklableWrapper(object):
         return self._obj(*args, **kwargs)
 
     def __getattr__(self, attr):
-        # Ensure that the wrapped object can be used seemlessly as the previous object.
+        # Ensure that the wrapped object can be used seamlessly as the previous object.
         if attr not in ["_obj"]:
             return getattr(self._obj, attr)
         return getattr(self, attr)

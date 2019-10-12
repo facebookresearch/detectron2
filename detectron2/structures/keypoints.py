@@ -172,11 +172,11 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
         # softmax over the spatial region
         max_score, _ = roi_map.view(num_keypoints, -1).max(1)
         max_score = max_score.view(num_keypoints, 1, 1)
-        tmp_full_resoltuion = (roi_map - max_score).exp_()
-        tmp_pool_resoltuion = (maps[i] - max_score).exp_()
+        tmp_full_resolution = (roi_map - max_score).exp_()
+        tmp_pool_resolution = (maps[i] - max_score).exp_()
         # Produce scores over the region H x W, but normalize with POOL_H x POOL_W
         # So that the scores of objects of different absolute sizes will be more comparable
-        roi_map_probs = tmp_full_resoltuion / tmp_pool_resoltuion.sum((1, 2), keepdim=True)
+        roi_map_probs = tmp_full_resolution / tmp_pool_resolution.sum((1, 2), keepdim=True)
 
         w = roi_map.shape[2]
         pos = roi_map.view(num_keypoints, -1).argmax(1)
