@@ -23,15 +23,14 @@ python /path/to/detectron2/projects/TridentNet/train_net.py --config-file <confi
 For example, to launch end-to-end TridentNet training with ResNet-50 backbone on 8 GPUs,
 one should execute:
 ```bash
-python /path/to/detectron2/projects/TridentNet/train_net.py --config-file /path/to/detectron2/projects/TridentNet/configs/tridentnet_fast_R_50_C4_1x.yaml --num_gpus 8
+python /path/to/detectron2/projects/TridentNet/train_net.py --config-file configs/tridentnet_fast_R_50_C4_1x.yaml --num_gpus 8
 ```
 
-## Testing
+## Evaluation
 
-Model testing can be done in the same way as training, except for an additional flag `--eval-only` and
-model location specification through `MODEL.WEIGHT model.pth` in the command line
+Model evaluationcan be done similarly:
 ```bash
-python /path/to/detectron2/projects/TridentNet/train_net.py --config-file /path/to/detectron2/projects/TridentNet/configs/tridentnet_fast_R_50_C4_1x.yaml --eval-only MODEL.WEIGHT model.pth
+python /path/to/detectron2/projects/TridentNet/train_net.py --config-file configs/tridentnet_fast_R_50_C4_1x.yaml --eval-only MODEL.WEIGHTS model.pth
 ```
 
 ## Results on MS-COCO in Detectron2
