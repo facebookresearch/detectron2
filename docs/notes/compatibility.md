@@ -74,6 +74,8 @@ ops have been implemented in Caffe2, in [PR1](https://github.com/pytorch/pytorch
 and [PR2](https://github.com/pytorch/pytorch/pull/23706).
 Therefore, models trained with detectron2 can be used in Caffe2.
 
+A conversion script will be available later, for easier deployment.
+
 
 ## Compatibility with TensorFlow
 
