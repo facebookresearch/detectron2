@@ -549,53 +549,7 @@ They are roughly 24 epochs of LVISv0.5 data.
 ./gen_html_table.py --config 'LVIS-InstanceSegmentation/mask*50*' 'LVIS-InstanceSegmentation/mask*101*' --name R50-FPN R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 -->
 
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom">Name</th>
-<th valign="bottom">lr<br/>sched</th>
-<th valign="bottom">train<br/>time<br/>(s/iter)</th>
-<th valign="bottom">inference<br/>time<br/>(s/im)</th>
-<th valign="bottom">train<br/>mem<br/>(GB)</th>
-<th valign="bottom">box<br/>AP</th>
-<th valign="bottom">mask<br/>AP</th>
-<th valign="bottom">model id</th>
-<th valign="bottom">download</th>
-<!-- TABLE BODY -->
-<!-- ROW: mask_rcnn_R_50_FPN_1x -->
- <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
-<td align="center">1x</td>
-<td align="center">0.319</td>
-<td align="center">0.369</td>
-<td align="center">6.6</td>
-<td align="center">24.0</td>
-<td align="center">24.4</td>
-<td align="center">134714017</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/134714017/model_final_1d8313.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/134714017/metrics.json">metrics</a></td>
-</tr>
-<!-- ROW: mask_rcnn_R_101_FPN_1x -->
- <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x.yaml">R101-FPN</a></td>
-<td align="center">1x</td>
-<td align="center">0.395</td>
-<td align="center">0.385</td>
-<td align="center">7.6</td>
-<td align="center">25.8</td>
-<td align="center">26.1</td>
-<td align="center">134807205</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/134807205/model_final_5ce494.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/134807205/metrics.json">metrics</a></td>
-</tr>
-<!-- ROW: mask_rcnn_X_101_32x8d_FPN_1x -->
- <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x.yaml">X101-FPN</a></td>
-<td align="center">1x</td>
-<td align="center">1.330</td>
-<td align="center">0.461</td>
-<td align="center">10.0</td>
-<td align="center">27.3</td>
-<td align="center">27.9</td>
-<td align="center">135397361</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/135397361/model_final_016c14.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/135397361/metrics.json">metrics</a></td>
-</tr>
-</tbody></table>
+Models will be available in a few days.
 
 
 ### Cityscapes & Pascal VOC Baselines
