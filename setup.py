@@ -7,6 +7,9 @@ from setuptools import find_packages, setup
 import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
+torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
+assert torch_ver >= [1, 3], "Requires PyTorch >= 1.3"
+
 
 def get_extensions():
     this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -64,6 +67,7 @@ setup(
     description="Detectron2 is FAIR's next-generation research "
     "platform for object detection and segmentation.",
     packages=find_packages(exclude=("configs", "tests")),
+    python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
         "Pillow",

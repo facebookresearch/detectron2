@@ -15,18 +15,26 @@ behavior of certain internal components of standard models.
 
 For example, to add a new backbone, import this code:
 ```python
-from detectron2.modeling import BACKBONE_REGISTRY, Backbone
+from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec
+
 @BACKBONE_REGISTRY.register()
-class NewBackBone(Backbone):
+class ToyBackBone(Backbone):
   def __init__(self, cfg, input_shape):
     # create your own backbone
+    self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=16, padding=3)
+
+  def forward(self, image):
+    return {"conv1": self.conv1(image)}
+
+  def output_shape(self):
+    return {"conv1": ShapeSpec(channels=64, stride=16)}
 ```
-which will allow you to use `cfg.MODEL.BACKBONE.NAME = 'NewBackBone'` in your config file.
+Then, you can use `cfg.MODEL.BACKBONE.NAME = 'ToyBackBone'` in your config file.
 
 As another example, to add new abilities to the ROI heads in the Generalized R-CNN meta-architecture,
 you can implement a new
 [ROIHeads](../modules/modeling.html#detectron2.modeling.ROIHeads) subclass and put it in the `ROI_HEADS_REGISTRY`.
 See [densepose in detectron2](https://github.com/facebookresearch/detectron2/tree/master/projects/DensePose)
-for an example.
+for an example that implements new ROIHeads.
 
-Other registries can be found in [API documentation](../modules/modeling.html).
+Other registries can be found in [API documentation](../modules/modeling.html#model-registries).

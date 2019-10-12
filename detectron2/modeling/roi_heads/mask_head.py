@@ -9,9 +9,11 @@ from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
 ROI_MASK_HEAD_REGISTRY = Registry("ROI_MASK_HEAD")
-"""
+ROI_MASK_HEAD_REGISTRY.__doc__ = """
 Registry for mask heads, which predicts instance masks given
 per-region features.
+
+The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 

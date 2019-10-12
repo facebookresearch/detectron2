@@ -9,8 +9,10 @@ from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.utils.registry import Registry
 
 ROI_BOX_HEAD_REGISTRY = Registry("ROI_BOX_HEAD")
-"""
+ROI_BOX_HEAD_REGISTRY.__doc__ = """
 Registry for box heads, which make box predictions from per-region features.
+
+The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 

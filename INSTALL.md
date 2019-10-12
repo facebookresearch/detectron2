@@ -1,6 +1,9 @@
 ## Installation
 
-Our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5) also has step-by-step instructions that install detectron2.
+Our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
+has step-by-step instructions that install detectron2.
+The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/Dockerfile)
+also installs detectron2 with a few simple commands.
 
 ### Requirements
 - Python >= 3.6

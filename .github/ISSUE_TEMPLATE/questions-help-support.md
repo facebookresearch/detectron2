@@ -1,6 +1,6 @@
 ---
-name: "❓Questions/Help/Support"
-about: Do you need support?
+name: "❓Usage Questions / General Inquiries"
+about: How to do X ?
 
 ---
 
@@ -10,5 +10,5 @@ General questions about detectron2.
 
 NOTE:
 
-If you met an unexpected error when using detectron2,
-please use the "Unexpected Problems / Bugs" issue category instead.
+If you met any unexpected issue when using detectron2 and wish to know why,
+please use the "Unexpected Problems / Bugs" issue template.

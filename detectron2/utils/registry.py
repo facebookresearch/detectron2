@@ -19,7 +19,9 @@ class Registry(object):
 
     Or:
 
-        BACKBONE_REGISTRY.register(obj=MyBackbone)
+    .. code-block:: python
+
+        BACKBONE_REGISTRY.register(MyBackbone)
     """
 
     def __init__(self, name):
