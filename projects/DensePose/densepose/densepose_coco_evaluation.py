@@ -308,7 +308,7 @@ class DensePoseCocoEval(object):
 
     def computeOks(self, imgId, catId):
         p = self.params
-        # dimention here should be Nxm
+        # dimension here should be Nxm
         gts = self._gts[imgId, catId]
         dts = self._dts[imgId, catId]
         inds = np.argsort([-d["score"] for d in dts], kind="mergesort")
@@ -379,7 +379,7 @@ class DensePoseCocoEval(object):
 
     def computeOgps(self, imgId, catId):
         p = self.params
-        # dimention here should be Nxm
+        # dimension here should be Nxm
         g = self._gts[imgId, catId]
         d = self._dts[imgId, catId]
         inds = np.argsort([-d_["score"] for d_ in d], kind="mergesort")
