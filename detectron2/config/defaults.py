@@ -358,7 +358,7 @@ _C.MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT = 1.0
 _C.MODEL.ROI_KEYPOINT_HEAD.POOLER_TYPE = "ROIAlignV2"
 
 # ---------------------------------------------------------------------------- #
-# Semantic Segmenation Head
+# Semantic Segmentation Head
 # ---------------------------------------------------------------------------- #
 _C.MODEL.SEM_SEG_HEAD = CN()
 _C.MODEL.SEM_SEG_HEAD.NAME = "SemSegFPNHead"
