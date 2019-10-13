@@ -92,7 +92,7 @@ def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len,
     "proposal_boxes" and "objectness_logits".
     """
     if "proposal_boxes" in dataset_dict:
-        # Tranform proposal boxes
+        # Transform proposal boxes
         boxes = transforms.apply_box(
             BoxMode.convert(
                 dataset_dict.pop("proposal_boxes"),
