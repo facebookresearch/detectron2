@@ -12,7 +12,7 @@ class Keypoints:
     containing the x,y location and visibility flag of each keypoint. This tensor has shape
     (N, K, 3) where N is the number of instances and K is the number of keypoints per instance.
 
-    The visiblity flag follows the COCO format and must be one of three integers:
+    The visibility flag follows the COCO format and must be one of three integers:
     * v=0: not labeled (in which case x=y=0)
     * v=1: labeled but not visible
     * v=2: labeled and visible

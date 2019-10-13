@@ -31,7 +31,7 @@ class TridentBottleneckBlock(ResNetBlockBase):
         """
         Args:
             num_branch (int): the number of branches in TridentNet.
-            dilations (tuple): the dilations of multple branches in TridentNet.
+            dilations (tuple): the dilations of multiple branches in TridentNet.
             concat_output (bool): if concatenate outputs of multiple branches in TridentNet.
                 Use 'True' for the last trident block.
         """

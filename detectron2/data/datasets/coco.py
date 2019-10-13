@@ -222,7 +222,7 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
     # IDs, hence, we try to convert these paths to int if possible.
     def file2id(folder_path, file_path):
         # TODO id is not used.
-        # extract realtive path starting from `folder_path`
+        # extract relative path starting from `folder_path`
         image_id = os.path.normpath(os.path.relpath(file_path, start=folder_path))
         # remove file extension
         image_id = os.path.splitext(image_id)[0]

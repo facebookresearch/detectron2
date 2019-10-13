@@ -14,13 +14,13 @@ def add_tridentnet_config(cfg):
 
     # Number of branches for TridentNet.
     _C.MODEL.TRIDENT.NUM_BRANCH = 3
-    # Specfiy the dilations for each branch.
+    # Specify the dilations for each branch.
     _C.MODEL.TRIDENT.BRANCH_DILATIONS = [1, 2, 3]
     # Specify the stage for applying trident blocks. Default stage is Res4 according to the
     # TridentNet paper.
     _C.MODEL.TRIDENT.TRIDENT_STAGE = "res4"
     # Specify the test branch index TridentNet Fast inference:
-    #   - use -1 to aggreate results of all branches during inference.
+    #   - use -1 to aggregate results of all branches during inference.
     #   - otherwise, only using specified branch for fast inference. Recommended setting is
     #     to use the middle branch.
     _C.MODEL.TRIDENT.TEST_BRANCH_IDX = 1

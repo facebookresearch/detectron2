@@ -303,7 +303,7 @@ HOST_DEVICE_INLINE T rotated_boxes_intersection(
   }
 
   // Convex Hull to order the intersection points in clockwise order and find
-  // the countour area.
+  // the contour area.
   int num_convex = convex_hull_graham<T>(intersectPts, num, orderedPts, true);
   return polygon_area<T>(orderedPts, num_convex);
 }

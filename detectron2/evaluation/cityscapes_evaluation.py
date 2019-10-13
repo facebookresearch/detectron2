@@ -86,7 +86,7 @@ class CityscapesEvaluator(DatasetEvaluator):
 
         self._logger.info("Evaluating results under {} ...".format(self._temp_dir))
 
-        # set some global states in cityscapes evaluation API, before evaluting
+        # set some global states in cityscapes evaluation API, before evaluating
         cityscapes_eval.args.predictionPath = os.path.abspath(self._temp_dir)
         cityscapes_eval.args.predictionWalk = None
         cityscapes_eval.args.JSONOutput = False

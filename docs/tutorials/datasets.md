@@ -77,7 +77,7 @@ can load an image from "file_name" if the "image" field is not available.
 	+ `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd region".
 + `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
-        logits of proposals in 'propopsal_boxes'.
+        logits of proposals in 'proposal_boxes'.
 + `proposal_bbox_mode` (int): the format of the precomputed proposal bbox.
         It must be a member of 
         [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
@@ -86,7 +86,7 @@ can load an image from "file_name" if the "image" field is not available.
 
 If your dataset is already in the COCO format, you can simply register it by
 ```python
-from detectron2.data.datasts import register_coco_instances
+from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
 ```
 which will take care of everything (including metadata) for you.
