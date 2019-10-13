@@ -29,7 +29,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
     def __init__(self, dataset_name):
         """
         Args:
-            dataste_name (str): name of the dataset, e.g., "voc_2007_test"
+            dataset_name (str): name of the dataset, e.g., "voc_2007_test"
         """
         self._dataset_name = dataset_name
         meta = MetadataCatalog.get(dataset_name)
