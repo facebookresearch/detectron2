@@ -109,7 +109,7 @@ void pre_calc_for_bilinear_interpolate(
           T hy = 1. - ly, hx = 1. - lx;
           T w1 = hy * hx, w2 = hy * lx, w3 = ly * hx, w4 = ly * lx;
 
-          // save weights and indeces
+          // save weights and indices
           PreCalc<T> pc;
           pc.pos1 = y_low * width + x_low;
           pc.pos2 = y_low * width + x_high;
