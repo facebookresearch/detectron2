@@ -82,8 +82,8 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
 
     Returns:
         img_masks (Tensor): A tensor of shape (Bimg, Himage, Wimage), where Bimg is the
-            number of detected object instances and Himage, Wimage are the image width
-            and height. img_masks[i] is a binary mask for object instance i.
+        number of detected object instances and Himage, Wimage are the image width
+        and height. img_masks[i] is a binary mask for object instance i.
     """
     assert masks.shape[-1] == masks.shape[-2], "Only square mask predictions are supported"
     N = len(masks)

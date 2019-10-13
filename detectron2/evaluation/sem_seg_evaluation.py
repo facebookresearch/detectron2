@@ -86,10 +86,11 @@ class SemSegEvaluator(DatasetEvaluator):
     def evaluate(self):
         """
         Evaluates standard semantic segmentation metrics (http://cocodataset.org/#stuff-eval):
-            Mean intersection-over-union averaged across classes (mIoU)
-            Frequency Weighted IoU (fwIoU)
-            Mean pixel accuracy averaged across classes (mACC)
-            Pixel Accuracy (pACC)
+
+        * Mean intersection-over-union averaged across classes (mIoU)
+        * Frequency Weighted IoU (fwIoU)
+        * Mean pixel accuracy averaged across classes (mACC)
+        * Pixel Accuracy (pACC)
         """
         if self._distributed:
             synchronize()

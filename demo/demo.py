@@ -53,7 +53,7 @@ def get_parser():
     parser.add_argument(
         "--opts",
         help="Modify model config options using the command-line",
-        default=None,
+        default=[],
         nargs=argparse.REMAINDER,
     )
     return parser

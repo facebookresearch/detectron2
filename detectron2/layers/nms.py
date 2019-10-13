@@ -87,7 +87,7 @@ def nms_rotated(boxes, scores, iou_threshold):
 
     Returns:
         keep (Tensor): int64 tensor with the indices of the elements that have been kept
-           by Rotated NMS, sorted in decreasing order of scores
+        by Rotated NMS, sorted in decreasing order of scores
     """
     from detectron2 import _C
 

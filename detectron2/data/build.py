@@ -375,7 +375,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
 
     Returns:
         DataLoader: a torch DataLoader, that loads the given detection
-            dataset, with test-time transformation and batching.
+        dataset, with test-time transformation and batching.
     """
     dataset_dicts = get_detection_dataset_dicts(
         [dataset_name],

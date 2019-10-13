@@ -32,7 +32,8 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
             (COCO's format) instead of masks (cityscapes's format).
 
     Returns:
-        list[dict]: a list of dicts in "Detectron2 Dataset" format. (See DATASETS.md)
+        list[dict]: a list of dicts in Detectron2 standard format. (See
+        `Using Custom Datasets </tutorials/datasets.html>`_ )
     """
     if from_json:
         assert to_polygons, (

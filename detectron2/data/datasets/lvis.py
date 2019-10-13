@@ -47,7 +47,8 @@ def load_lvis_json(json_file, image_root, dataset_name=None):
             associated with this dataset.
 
     Returns:
-        list[dict]: a list of dicts in "Detectron2 Dataset" format. (See DATASETS.md)
+        list[dict]: a list of dicts in Detectron2 standard format. (See
+        `Using Custom Datasets </tutorials/datasets.html>`_ )
 
     Notes:
         1. This function does not read the image files.

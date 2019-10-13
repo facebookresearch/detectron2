@@ -11,6 +11,7 @@ The differences in default config includes:
 * Use `ROIAlignV2`.
 
 In this directory, we provide a few configs that mimic Detectron's behavior as close as possible.
+This provides a fair comparison of accuracy and speed against Detectron.
 
 <!--
 ./gen_html_table.py --config 'Detectron1-Comparisons/*.yaml' --name "Faster R-CNN" "Keypoint R-CNN" "Mask R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP keypoint_AP

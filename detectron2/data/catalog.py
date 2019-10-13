@@ -183,7 +183,7 @@ class MetadataCatalog:
 
         Returns:
             Metadata: The :class:`Metadata` instance associated with this name,
-                or create an empty one if none is available.
+            or create an empty one if none is available.
         """
         assert len(name)
         if name in MetadataCatalog._NAME_TO_META:

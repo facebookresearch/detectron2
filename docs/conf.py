@@ -32,7 +32,7 @@ from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("../"))
 
-DEPLOY = False
+DEPLOY = os.environ.get("READTHEDOCS") == "True"
 
 
 # -- Project information -----------------------------------------------------
@@ -110,6 +110,8 @@ napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
 napoleon_numpy_docstring = False
 napoleon_use_rtype = False
+autodoc_inherit_docstrings = False
+autodoc_member_order = "bysource"
 
 if DEPLOY:
     intersphinx_timeout = 10
@@ -119,6 +121,7 @@ else:
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.6", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "torch": ("https://pytorch.org/docs/master/", None),
 }
 # -------------------------
 
@@ -251,6 +254,17 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     return None
 
 
+def url_resolver(url):
+    if '.html' not in url:
+        url = url.replace('../', '')
+        return "https://github.com/facebookresearch/detectron2/blob/master/" + url
+    else:
+        if DEPLOY:
+            return "http://detectron2.readthedocs.io/" + url
+        else:
+            return '/' + url
+
+
 def setup(app):
     from recommonmark.transform import AutoStructify
 
@@ -258,7 +272,7 @@ def setup(app):
     # app.connect('autodoc-skip-member', autodoc_skip_member)
     app.add_config_value(
         "recommonmark_config",
-        {  # 'url_resolver': url_resolver,
+        {   "url_resolver": url_resolver,
             "auto_toc_tree_section": "Contents",
             "enable_math": True,
             "enable_inline_math": True,

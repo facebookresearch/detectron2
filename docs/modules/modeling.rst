@@ -7,6 +7,33 @@ detectron2.modeling package
     :show-inheritance:
 
 
+detectron2.modeilng.poolers module
+---------------------------------------
+
+.. automodule:: detectron2.modeling.poolers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+detectron2.modeilng.sampling module
+------------------------------------
+
+.. automodule:: detectron2.modeling.sampling
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+detectron2.modeilng.box_regression module
+------------------------------------------
+
+.. automodule:: detectron2.modeling.box_regression
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 Model Registries
 -----------------
 
