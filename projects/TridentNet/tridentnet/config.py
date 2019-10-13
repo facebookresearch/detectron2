@@ -20,7 +20,7 @@ def add_tridentnet_config(cfg):
     # TridentNet paper.
     _C.MODEL.TRIDENT.TRIDENT_STAGE = "res4"
     # Specify the test branch index TridentNet Fast inference:
-    #   - use -1 to aggreate results of all branches during inference.
+    #   - use -1 to aggregate results of all branches during inference.
     #   - otherwise, only using specified branch for fast inference. Recommended setting is
     #     to use the middle branch.
     _C.MODEL.TRIDENT.TEST_BRANCH_IDX = 1
