@@ -95,7 +95,7 @@ def inference_on_dataset(model, data_loader, evaluator):
         evaluator (DatasetEvaluator): the evaluator to run
 
     Returns:
-        The return value of `evaluator.evalute()`
+        The return value of `evaluator.evaluate()`
     """
     num_devices = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
     logger = logging.getLogger(__name__)
