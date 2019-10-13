@@ -141,7 +141,7 @@ class SemSegEvaluator(DatasetEvaluator):
 
     def encode_json_sem_seg(self, sem_seg, image_id):
         """
-        Convert semenatic segmentation to COCO stuff format with segments encoded as RLEs.
+        Convert semantic segmentation to COCO stuff format with segments encoded as RLEs.
         See http://cocodataset.org/#format-results
         """
         json_list = []
