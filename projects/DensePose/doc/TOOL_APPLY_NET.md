@@ -51,9 +51,9 @@ There are four mandatory arguments:
    * `bbox` - bounding boxes of detected persons;
    * `dp_segm` - segmentation masks for detected persons;
    * `dp_u` - each body part is colored according to the estimated values of the
-     U coordinate in part parametrization;
+     U coordinate in part parameterization;
    * `dp_v` - each body part is colored according to the estimated values of the
-     V coordinate in part parametrization;
+     V coordinate in part parameterization;
    * `dp_contour` - plots contours with color-coded U and V coordinates
 
 

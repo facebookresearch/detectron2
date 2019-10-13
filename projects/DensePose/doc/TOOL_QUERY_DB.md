@@ -59,8 +59,8 @@ There are three mandatory arguments:
    * `dp_i` - annotated points colored according to the containing part;
    * `dp_pts` - annotated points in green color;
    * `dp_segm` - segmentation masks for annotated persons;
-   * `dp_u` - annotated points colored according to their U coordinate in part parametrization;
-   * `dp_v` - annotated points colored according to their V coordinate in part parametrization;
+   * `dp_u` - annotated points colored according to their U coordinate in part parameterization;
+   * `dp_v` - annotated points colored according to their V coordinate in part parameterization;
 
 One can additionally provide one of the two optional arguments:
  - `--max_entries` to limit the maximum number of entries to visualize
@@ -90,13 +90,13 @@ python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_segm 
 ```
 ![Bounding Box + Point Visualization](images/vis_bbox_dp_pts.png)
 
-4. Show bounding box and annotated points colored according to their U coordinate in part parametrization:
+4. Show bounding box and annotated points colored according to their U coordinate in part parameterization:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_u -v
 ```
 ![Bounding Box + Point U Visualization](images/vis_bbox_dp_u.png)
 
-5. Show bounding box and annotated points colored according to their V coordinate in part parametrization:
+5. Show bounding box and annotated points colored according to their V coordinate in part parameterization:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_v -v
 ```
