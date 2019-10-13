@@ -14,7 +14,7 @@ Unless otherwise noted, the following settings are used for all runs:
 * The default settings are not directly comparable with Detectron.
 	For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 
-	For configs that are closer to Detectron's settings, see
+	For configs that are comparable to Detectron's settings, see
 	[Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
 	and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
 	for speed comparison.

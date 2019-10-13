@@ -35,7 +35,7 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 ### Common Installation Issues
 
 + Undefined torch/aten symbols, or segmentation fault immediately when running the library.
-  This may mean one of the two:
+  This may be caused by the following reasons:
 
 	* detectron2 or torchvision is not compiled with the version of PyTorch you're running.
 

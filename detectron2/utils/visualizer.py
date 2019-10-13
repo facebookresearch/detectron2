@@ -627,8 +627,7 @@ class Visualizer:
             # draw keypoint
             x, y, prob = keypoint
             if prob > _KEYPOINT_THRESHOLD:
-                color = tuple(x / 255 for x in _BLACK)
-                self.draw_circle((x, y), color=color)
+                self.draw_circle((x, y), color=_RED)
                 keypoint_name = self.metadata.keypoint_names[idx]
                 visible[keypoint_name] = (x, y)
 
@@ -741,7 +740,7 @@ class Visualizer:
         )
         return self.output
 
-    def draw_circle(self, circle_coord, color, radius=5):
+    def draw_circle(self, circle_coord, color, radius=3):
         """
         Args:
             circle_coord (list(int) or tuple(int)): contains the x and y coordinates
@@ -754,7 +753,9 @@ class Visualizer:
             output (VisImage): image object with box drawn.
         """
         x, y = circle_coord
-        self.output.ax.add_patch(mpl.patches.Circle(circle_coord, radius=radius, color=color))
+        self.output.ax.add_patch(
+            mpl.patches.Circle(circle_coord, radius=radius, fill=True, color=color)
+        )
         return self.output
 
     def draw_line(self, x_data, y_data, color):

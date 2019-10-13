@@ -1,4 +1,4 @@
-# Using Custom Datasets
+# Use Custom Datasets
 
 If you want to use a custom dataset while also reusing detectron2's data loaders,
 you will need to
@@ -8,8 +8,11 @@ you will need to
 
 Next, we explain the above two concepts in details.
 
+The [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
+has a working example of how to register and train on a dataset of custom formats.
 
-### Registering a Dataset
+
+### Register a Dataset
 
 To let detectron2 know how to obtain a dataset named "my_dataset", you will implement
 a function that returns the items in your dataset and then tell detectron2 about this
@@ -51,7 +54,8 @@ can load an image from "file_name" if the "image" field is not available.
 		instance in this image. Each annotation dict may contain:
 	+ `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
 	+ `bbox_mode` (int): the format of bbox.
-			It must be a member of [detectron2.structures.BoxMode](detectron2/structures/boxes.py).
+			It must be a member of 
+      [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
 		  Currently supports: `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS`.
 	+ `category_id` (int): an integer in the range [0, num_categories) representing the category label.
       The value num_categories is reserved to represent the "background" category, if applicable.
@@ -75,7 +79,8 @@ can load an image from "file_name" if the "image" field is not available.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
         logits of proposals in 'propopsal_boxes'.
 + `proposal_bbox_mode` (int): the format of the precomputed proposal bbox.
-        It must be a member of [detectron2.structures.BoxMode](detectron2/structures/boxes.py).
+        It must be a member of 
+        [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
         Default format is `BoxMode.XYXY_ABS`.
 
 

@@ -146,13 +146,12 @@ class AllReduce(Function):
 class NaiveSyncBatchNorm(BatchNorm2d):
     """
     `torch.nn.SyncBatchNorm` has known unknown bugs.
-
     It produces significantly worse AP (and sometimes goes NaN)
     when the batch size on each worker is quite different
     (e.g., when scale augmentation is used, or when it is applied to mask head).
 
-    Use this implementation before it is fixed.
-    It is slower than `torch.nn.SyncBatchNorm`.
+    Use this implementation before `nn.SyncBatchNorm` is fixed.
+    It is slower than `nn.SyncBatchNorm`.
     """
 
     def forward(self, input):

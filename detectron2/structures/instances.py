@@ -18,9 +18,9 @@ class Instances:
     Some basic usage:
 
     1. Set/Get a field:
-        instances.gt_boxes = Boxes(...)
-        print(instances.pred_masks)
-        print('gt_masks' in instances)
+       instances.gt_boxes = Boxes(...)
+       print(instances.pred_masks)
+       print('gt_masks' in instances)
     2. `len(instances)` returns the number of instances
     3. Indexing: `instances[indices]` will apply the indexing on all the fields
        and returns a new `Instances`.
@@ -103,8 +103,7 @@ class Instances:
     def to(self, device: str) -> "Instances":
         """
         Returns:
-            Instances: all fields are called with a `to(device)`, if
-                the field has this method.
+            Instances: all fields are called with a `to(device)`, if the field has this method.
         """
         ret = Instances(self._image_size)
         for k, v in self._fields.items():

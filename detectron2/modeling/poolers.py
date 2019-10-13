@@ -7,6 +7,8 @@ from torchvision.ops import RoIPool
 
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat
 
+__all__ = ["ROIPooler"]
+
 
 def assign_boxes_to_levels(box_lists, min_level, max_level, canonical_box_size, canonical_level):
     """
@@ -164,7 +166,8 @@ class ROIPooler(nn.Module):
                 A list of N Boxes or N RotatedBoxes, where N is the number of images in the batch.
 
         Returns:
-            A tensor of shape (M, C, output_size, output_size) where M is the total number of
+            Tensor:
+                A tensor of shape (M, C, output_size, output_size) where M is the total number of
                 boxes aggregated over all N batch images and C is the number of channels in `x`.
         """
         num_level_assignments = len(self.level_poolers)

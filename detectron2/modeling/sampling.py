@@ -1,6 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import torch
 
+__all__ = ["subsample_labels"]
+
 
 def subsample_labels(labels, num_samples, positive_fraction, bg_label):
     """
@@ -9,9 +11,9 @@ def subsample_labels(labels, num_samples, positive_fraction, bg_label):
 
     Args:
         labels (Tensor): (N, ) label vector with values:
-                     -1: ignore
-               bg_label: background ("negative") class
-              otherwise: one or more foreground ("positive") classes
+            * -1: ignore
+            * bg_label: background ("negative") class
+            * otherwise: one or more foreground ("positive") classes
         num_samples (int): The total number of labels with value >= 0 to return.
             Values that are not sampled will be filled with -1 (ignore).
         positive_fraction (float): The number of subsampled labels with values > 0
@@ -23,8 +25,9 @@ def subsample_labels(labels, num_samples, positive_fraction, bg_label):
         bg_label (int): label index of background ("negative") class.
 
     Returns:
-        pos_idx, neg_idx (Tensor): 1D indices. The total number of indices is `num_samples`
-            if possible. The fraction of positive indices is `positive_fraction` if possible.
+        pos_idx, neg_idx (Tensor):
+            1D indices. The total number of indices is `num_samples` if possible.
+            The fraction of positive indices is `positive_fraction` if possible.
     """
     positive = torch.nonzero((labels != -1) & (labels != bg_label)).squeeze(1)
     negative = torch.nonzero(labels == bg_label).squeeze(1)

@@ -323,9 +323,9 @@ class DeformConv(nn.Module):
         """
         Deformable convolution.
 
-        Args:
-            similar to `Conv2D`.
+        Arguments are similar to :class:`Conv2D`. Extra arguments:
 
+        Args:
             deformable_groups (int): number of groups used in deformable convolution.
             norm (nn.Module, optional): a normalization layer
             activation (callable(Tensor) -> Tensor): a callable activation function
@@ -420,9 +420,9 @@ class ModulatedDeformConv(nn.Module):
         """
         Modulated deformable convolution.
 
-        Args:
-            similar to `Conv2D`.
+        Arguments are similar to :class:`Conv2D`. Extra arguments:
 
+        Args:
             deformable_groups (int): number of groups used in deformable convolution.
             norm (nn.Module, optional): a normalization layer
             activation (callable(Tensor) -> Tensor): a callable activation function

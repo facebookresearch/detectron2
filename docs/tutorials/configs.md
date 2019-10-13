@@ -1,4 +1,4 @@
-# Using Configs
+# Use Configs
 
 Detectron2's config system uses yaml and [yacs](https://github.com/rbgirshick/yacs).
 In addition to the basic operations that access and update a config, we provide
@@ -9,7 +9,7 @@ the following extra functionalities:
    We provided several base configs for standard model architectures.
 2. We provide config versioning, for backward compatibility.
    If your config file is versioned with a config line like `VERSION: 2`,
-   detectron2 will still recognize it even if we make rename to some keys in the future.
+   detectron2 will still recognize it even if we rename some keys in the future.
 
 ### Best Practice with Configs
 
@@ -20,6 +20,8 @@ the following extra functionalities:
 
 3. Keep a version number in your configs (or the base config), e.g., `VERSION: 2`,
    for backward compatibility.
+   The builtin configs do not include version number because they are meant to
+   be always up-to-date.
 
 4. Save a full config together with a trained model, and use it to run inference.
    This is more robust to changes that may happen to the config definition
