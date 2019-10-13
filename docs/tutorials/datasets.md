@@ -81,7 +81,7 @@ can load an image from "file_name" if the "image" field is not available.
 
 If your dataset is already in the COCO format, you can simply register it by
 ```python
-from detectron2.data.datasts import register_coco_instances
+from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
 ```
 which will take care of everything (including metadata) for you.
