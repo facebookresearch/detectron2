@@ -542,14 +542,62 @@ All models available for download through this document are licensed under the
 Mask R-CNN baselines on the [LVIS dataset](https://lvisdataset.org), v0.5.
 These baselines are described in Table 3(c) of the [LVIS paper](https://arxiv.org/abs/1908.03195).
 
-NOTE: the 1x schedule here has the same amount of __iterations__ as the COCO baselines.
+NOTE: the 1x schedule here has the same amount of __iterations__ as the COCO 1x baselines.
 They are roughly 24 epochs of LVISv0.5 data.
+The final results of these configs has large variance across different runs.
 
 <!--
 ./gen_html_table.py --config 'LVIS-InstanceSegmentation/mask*50*' 'LVIS-InstanceSegmentation/mask*101*' --name R50-FPN R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 -->
 
-Models will be available in a few days.
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom">lr<br/>sched</th>
+<th valign="bottom">train<br/>time<br/>(s/iter)</th>
+<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">train<br/>mem<br/>(GB)</th>
+<th valign="bottom">box<br/>AP</th>
+<th valign="bottom">mask<br/>AP</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+<!-- ROW: mask_rcnn_R_50_FPN_1x -->
+ <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
+<td align="center">1x</td>
+<td align="center">0.292</td>
+<td align="center">0.305</td>
+<td align="center">7.1</td>
+<td align="center">23.6</td>
+<td align="center">24.4</td>
+<td align="center">144219072</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/model_final_571f7c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_101_FPN_1x -->
+ <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x.yaml">R101-FPN</a></td>
+<td align="center">1x</td>
+<td align="center">0.371</td>
+<td align="center">0.309</td>
+<td align="center">7.8</td>
+<td align="center">25.6</td>
+<td align="center">25.9</td>
+<td align="center">144219035</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/model_final_824ab5.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_X_101_32x8d_FPN_1x -->
+ <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x.yaml">X101-FPN</a></td>
+<td align="center">1x</td>
+<td align="center">0.712</td>
+<td align="center">0.361</td>
+<td align="center">10.2</td>
+<td align="center">26.7</td>
+<td align="center">27.1</td>
+<td align="center">144219108</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/model_final_5e3439.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
 
 
 ### Cityscapes & Pascal VOC Baselines
@@ -658,10 +706,13 @@ Ablations for Deformable Conv and Cascade R-CNN:
 </tbody></table>
 
 
-Ablations for GroupNorm:
+Ablations for normalization methods:
+(Note: The baseline uses `2fc` head while the others use `4conv1fc` head. According to the
+[GroupNorm paper](https://arxiv.org/abs/1803.08494), the change in head does not improve the baseline by much)
 <!--
-./gen_html_table.py --config 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml' 'Misc/mask*50_FPN_3x_gn.yaml' 'Misc/scratch*' --name "Baseline R50-FPN" "GroupNorm" "GroupNorm (scratch)" --fields lr_sched train_speed inference_speed mem box_AP mask_AP
+./gen_html_table.py --config 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml' 'Misc/mask*50_FPN_3x_syncbn.yaml' 'Misc/mask*50_FPN_3x_gn.yaml' 'Misc/scratch*' --name "Baseline R50-FPN" "SyncBN" "GN" "GN (scratch)" --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 	 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -687,8 +738,19 @@ Ablations for GroupNorm:
 <td align="center">137849600</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/metrics.json">metrics</a></td>
 </tr>
+<!-- ROW: mask_rcnn_R_50_FPN_3x_syncbn -->
+ <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_syncbn.yaml">SyncBN</a></td>
+<td align="center">3x</td>
+<td align="center">0.464</td>
+<td align="center">0.092</td>
+<td align="center">5.6</td>
+<td align="center">42.0</td>
+<td align="center">37.8</td>
+<td align="center">143915318</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_syncbn/143915318/model_final_220cfb.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_syncbn/143915318/metrics.json">metrics</a></td>
+</tr>
 <!-- ROW: mask_rcnn_R_50_FPN_3x_gn -->
- <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_gn.yaml">GroupNorm</a></td>
+ <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_gn.yaml">GN</a></td>
 <td align="center">3x</td>
 <td align="center">0.356</td>
 <td align="center">0.102</td>
@@ -699,7 +761,7 @@ Ablations for GroupNorm:
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_gn/138602888/model_final_dc5d9e.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_gn/138602888/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: scratch_mask_rcnn_R_50_FPN_3x_gn -->
- <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml">GroupNorm (scratch)</a></td>
+ <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml">GN (scratch)</a></td>
 <td align="center">3x</td>
 <td align="center">0.400</td>
 <td align="center">0.106</td>
@@ -711,7 +773,8 @@ Ablations for GroupNorm:
 </tr>
 </tbody></table>
 
-A few very large models trained for a long time, for demo purposes.
+
+A few very large models trained for a long time, for demo purposes:
 
 <!--
 ./gen_html_table.py --config 'Misc/panoptic_*dconv*' 'Misc/cascade_*152*' --name "Panoptic FPN R101" "Mask R-CNN X152" --fields inference_speed mem box_AP mask_AP PQ
