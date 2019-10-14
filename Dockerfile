@@ -23,6 +23,7 @@ RUN pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=Pyt
 # install detectron2
 RUN git clone https://github.com/facebookresearch/detectron2 /detectron2_repo
 ENV FORCE_CUDA="1"
+ENV TORCH_CUDA_ARCH_LIST="Maxwell;Maxwell+Tegra;Pascal;Volta;Turing"
 RUN pip install -e /detectron2_repo
 
 WORKDIR /detectron2_repo
