@@ -970,6 +970,6 @@ class Visualizer:
         """
         Returns:
             output (VisImage): the image output containing the visualizations added
-                to the image.
+            to the image.
         """
         return self.output

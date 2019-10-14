@@ -14,13 +14,27 @@ detectron2.data.detection\_utils module
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
+detectron2.data.datasets module
+---------------------------------------
 
-.. toctree::
+.. automodule:: detectron2.data.datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-    data.datasets
-    data.samplers
-    data.transforms
+detectron2.data.samplers module
+---------------------------------------
+
+.. automodule:: detectron2.data.samplers
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 
+detectron2.data.transforms module
+---------------------------------------
+
+.. automodule:: detectron2.data.transforms
+    :members:
+    :undoc-members:
+    :show-inheritance:
