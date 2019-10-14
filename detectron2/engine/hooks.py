@@ -388,13 +388,14 @@ class PreciseBN(HookBase):
 
         def data_loader():
             nonlocal num_iter
-            num_iter += 1
-            if num_iter % 100 == 0:
-                self._logger.info(
-                    "Running precise-BN ... {}/{} iterations.".format(num_iter, self._num_iter)
-                )
-            # This way we can reuse the same iterator
-            yield next(self._data_iter)
+            while True:
+                num_iter += 1
+                if num_iter % 100 == 0:
+                    self._logger.info(
+                        "Running precise-BN ... {}/{} iterations.".format(num_iter, self._num_iter)
+                    )
+                # This way we can reuse the same iterator
+                yield next(self._data_iter)
 
         with EventStorage():  # capture events in a new storage to discard them
             self._logger.info(

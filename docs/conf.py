@@ -255,14 +255,14 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 
 
 def url_resolver(url):
-    if '.html' not in url:
-        url = url.replace('../', '')
+    if ".html" not in url:
+        url = url.replace("../", "")
         return "https://github.com/facebookresearch/detectron2/blob/master/" + url
     else:
         if DEPLOY:
             return "http://detectron2.readthedocs.io/" + url
         else:
-            return '/' + url
+            return "/" + url
 
 
 def setup(app):
@@ -272,7 +272,8 @@ def setup(app):
     # app.connect('autodoc-skip-member', autodoc_skip_member)
     app.add_config_value(
         "recommonmark_config",
-        {   "url_resolver": url_resolver,
+        {
+            "url_resolver": url_resolver,
             "auto_toc_tree_section": "Contents",
             "enable_math": True,
             "enable_inline_math": True,
