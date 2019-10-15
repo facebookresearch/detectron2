@@ -68,6 +68,18 @@ class TestVisualizer(unittest.TestCase):
         v = Visualizer(img, self.metadata)
         v.draw_instance_predictions(inst)
 
+    def test_draw_empty_mask_predictions(self):
+        img, boxes, _, _, masks = self._random_data()
+        num_inst = len(boxes)
+        inst = Instances((img.shape[0], img.shape[1]))
+        inst.pred_classes = torch.randint(0, 80, size=(num_inst,))
+        inst.scores = torch.rand(num_inst)
+        inst.pred_boxes = torch.from_numpy(boxes)
+        inst.pred_masks = torch.from_numpy(np.zeros_like(np.asarray(masks)))
+
+        v = Visualizer(img, self.metadata)
+        v.draw_instance_predictions(inst)
+
     def test_correct_output_shape(self):
         img = np.random.rand(928, 928, 3) * 255
         v = Visualizer(img, self.metadata)
