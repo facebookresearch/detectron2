@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["load_coco_json", "load_sem_seg"]
 
 
-def load_coco_json(json_file, image_root, dataset_name=None):
+def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None):
     """
     Load a json file with COCO's instances annotation format.
     Currently supports instance detection, instance segmentation,
@@ -33,6 +33,9 @@ def load_coco_json(json_file, image_root, dataset_name=None):
         dataset_name (str): the name of the dataset (e.g., coco_2017_train).
             If provided, this function will also put "thing_classes" into
             the metadata associated with this dataset.
+        extra_annotation_keys (list[str]): list of per-annotation keys that should also be
+            loaded into the dataset dict (besides "iscrowd", "bbox", "keypoints",
+            "category_id", "segmentation"). The values for these keys will be returned as-is.
 
     Returns:
         list[dict]: a list of dicts in Detectron2 standard format. (See
@@ -125,6 +128,11 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
     # every time new data type is added
     DENSEPOSE_KEYS = ["dp_x", "dp_y", "dp_I", "dp_U", "dp_V", "dp_masks"]
 
+    ann_fields = ["iscrowd", "bbox", "keypoints", "category_id"] + DENSEPOSE_KEYS
+
+    if extra_annotation_keys is not None:
+        ann_fields += extra_annotation_keys
+
     num_instances_without_valid_segmentation = 0
 
     for (img_dict, anno_dict_list) in imgs_anns:
@@ -149,7 +157,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             obj = {
                 field: anno[field]
-                for field in ["iscrowd", "bbox", "keypoints", "category_id"] + DENSEPOSE_KEYS
+                for field in ann_fields
                 if field in anno
             }
 
