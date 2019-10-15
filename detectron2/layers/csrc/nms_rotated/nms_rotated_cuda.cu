@@ -5,9 +5,11 @@
 #include <ATen/cuda/CUDAApplyUtils.cuh>
 #include "../box_iou_rotated/box_iou_rotated_utils.h"
 
-namespace detectron2 {
+using namespace detectron2;
 
+namespace {
 int const threadsPerBlock = sizeof(unsigned long long) * 8;
+}
 
 template <typename T>
 __global__ void nms_rotated_cuda_kernel(
@@ -66,6 +68,8 @@ __global__ void nms_rotated_cuda_kernel(
     dev_mask[cur_box_idx * col_blocks + col_start] = t;
   }
 }
+
+namespace detectron2 {
 
 at::Tensor nms_rotated_cuda(
     const at::Tensor& dets,

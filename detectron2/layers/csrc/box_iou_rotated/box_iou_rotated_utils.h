@@ -308,6 +308,8 @@ HOST_DEVICE_INLINE T rotated_boxes_intersection(
   return polygon_area<T>(orderedPts, num_convex);
 }
 
+} // namespace
+
 template <typename T>
 HOST_DEVICE_INLINE T
 single_box_iou_rotated(T const* const box1_raw, T const* const box2_raw) {
@@ -336,7 +338,5 @@ single_box_iou_rotated(T const* const box1_raw, T const* const box2_raw) {
   const T iou = intersection / (area1 + area2 - intersection);
   return iou;
 }
-
-} // namespace
 
 } // namespace detectron2

@@ -2,6 +2,8 @@
 #include <ATen/TensorUtils.h>
 #include "ROIAlign.h"
 
+namespace {
+
 // implementation taken from Caffe2
 template <typename T>
 struct PreCalc {
@@ -391,6 +393,10 @@ void ROIAlignBackward(
   } // for
 } // ROIAlignBackward
 
+} // namespace
+
+namespace detectron2 {
+
 at::Tensor ROIAlign_forward_cpu(
     const at::Tensor& input,
     const at::Tensor& rois,
@@ -493,3 +499,5 @@ at::Tensor ROIAlign_backward_cpu(
   });
   return grad_input;
 }
+
+} // namespace detectron2

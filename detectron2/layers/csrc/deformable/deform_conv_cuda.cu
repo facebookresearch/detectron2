@@ -15,6 +15,8 @@
 #include <cmath>
 #include <vector>
 
+namespace detectron2 {
+
 void deformable_im2col(
     const at::Tensor data_im,
     const at::Tensor data_offset,
@@ -1124,3 +1126,5 @@ void modulated_deform_conv_cuda_backward(
                                   grad_output.size(3),
                                   grad_output.size(4)});
 }
+
+} // namespace detectron2

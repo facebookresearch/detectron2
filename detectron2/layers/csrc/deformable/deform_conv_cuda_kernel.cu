@@ -81,11 +81,16 @@ using namespace at;
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); \
        i += blockDim.x * gridDim.x)
 
+
+namespace {
+
 const int CUDA_NUM_THREADS = 1024;
 const int kMaxGridNum = 65535;
 
 inline int GET_BLOCKS(const int N) {
   return std::min(kMaxGridNum, (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS);
+}
+
 }
 
 template <typename scalar_t>
@@ -282,73 +287,6 @@ __global__ void deformable_im2col_gpu_kernel(
   }
 }
 
-void deformable_im2col(
-    const at::Tensor data_im,
-    const at::Tensor data_offset,
-    const int channels,
-    const int height,
-    const int width,
-    const int ksize_h,
-    const int ksize_w,
-    const int pad_h,
-    const int pad_w,
-    const int stride_h,
-    const int stride_w,
-    const int dilation_h,
-    const int dilation_w,
-    const int parallel_imgs,
-    const int deformable_group,
-    at::Tensor data_col) {
-  // num_axes should be smaller than block size
-  // todo: check parallel_imgs is correctly passed in
-  int height_col =
-      (height + 2 * pad_h - (dilation_h * (ksize_h - 1) + 1)) / stride_h + 1;
-  int width_col =
-      (width + 2 * pad_w - (dilation_w * (ksize_w - 1) + 1)) / stride_w + 1;
-  int num_kernels = channels * height_col * width_col * parallel_imgs;
-  int channel_per_deformable_group = channels / deformable_group;
-
-  at::cuda::CUDAGuard device_guard(data_im.device());
-  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
-
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_im.type(), "deformable_im2col_gpu", ([&] {
-        const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
-        const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
-        scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
-
-        deformable_im2col_gpu_kernel<<<
-            GET_BLOCKS(num_kernels),
-            CUDA_NUM_THREADS,
-            0,
-            stream>>>(
-            num_kernels,
-            data_im_,
-            data_offset_,
-            height,
-            width,
-            ksize_h,
-            ksize_w,
-            pad_h,
-            pad_w,
-            stride_h,
-            stride_w,
-            dilation_h,
-            dilation_w,
-            channel_per_deformable_group,
-            parallel_imgs,
-            channels,
-            deformable_group,
-            height_col,
-            width_col,
-            data_col_);
-      }));
-
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("error in deformable_im2col: %s\n", cudaGetErrorString(err));
-  }
-}
 
 template <typename scalar_t>
 __global__ void deformable_col2im_gpu_kernel(
@@ -424,73 +362,6 @@ __global__ void deformable_col2im_gpu_kernel(
   }
 }
 
-void deformable_col2im(
-    const at::Tensor data_col,
-    const at::Tensor data_offset,
-    const int channels,
-    const int height,
-    const int width,
-    const int ksize_h,
-    const int ksize_w,
-    const int pad_h,
-    const int pad_w,
-    const int stride_h,
-    const int stride_w,
-    const int dilation_h,
-    const int dilation_w,
-    const int parallel_imgs,
-    const int deformable_group,
-    at::Tensor grad_im) {
-  // todo: make sure parallel_imgs is passed in correctly
-  int height_col =
-      (height + 2 * pad_h - (dilation_h * (ksize_h - 1) + 1)) / stride_h + 1;
-  int width_col =
-      (width + 2 * pad_w - (dilation_w * (ksize_w - 1) + 1)) / stride_w + 1;
-  int num_kernels =
-      channels * ksize_h * ksize_w * height_col * width_col * parallel_imgs;
-  int channel_per_deformable_group = channels / deformable_group;
-
-  at::cuda::CUDAGuard device_guard(data_col.device());
-  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
-
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_col.type(), "deformable_col2im_gpu", ([&] {
-        const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
-        const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
-        scalar_t* grad_im_ = grad_im.data_ptr<scalar_t>();
-
-        deformable_col2im_gpu_kernel<<<
-            GET_BLOCKS(num_kernels),
-            CUDA_NUM_THREADS,
-            0,
-            stream>>>(
-            num_kernels,
-            data_col_,
-            data_offset_,
-            channels,
-            height,
-            width,
-            ksize_h,
-            ksize_w,
-            pad_h,
-            pad_w,
-            stride_h,
-            stride_w,
-            dilation_h,
-            dilation_w,
-            channel_per_deformable_group,
-            parallel_imgs,
-            deformable_group,
-            height_col,
-            width_col,
-            grad_im_);
-      }));
-
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("error in deformable_col2im: %s\n", cudaGetErrorString(err));
-  }
-}
 
 template <typename scalar_t>
 __global__ void deformable_col2im_coord_gpu_kernel(
@@ -580,6 +451,147 @@ __global__ void deformable_col2im_coord_gpu_kernel(
   }
 }
 
+
+namespace detectron2 {
+
+void deformable_im2col(
+    const at::Tensor data_im,
+    const at::Tensor data_offset,
+    const int channels,
+    const int height,
+    const int width,
+    const int ksize_h,
+    const int ksize_w,
+    const int pad_h,
+    const int pad_w,
+    const int stride_h,
+    const int stride_w,
+    const int dilation_h,
+    const int dilation_w,
+    const int parallel_imgs,
+    const int deformable_group,
+    at::Tensor data_col) {
+  // num_axes should be smaller than block size
+  // todo: check parallel_imgs is correctly passed in
+  int height_col =
+      (height + 2 * pad_h - (dilation_h * (ksize_h - 1) + 1)) / stride_h + 1;
+  int width_col =
+      (width + 2 * pad_w - (dilation_w * (ksize_w - 1) + 1)) / stride_w + 1;
+  int num_kernels = channels * height_col * width_col * parallel_imgs;
+  int channel_per_deformable_group = channels / deformable_group;
+
+  at::cuda::CUDAGuard device_guard(data_im.device());
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
+      data_im.type(), "deformable_im2col_gpu", ([&] {
+        const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
+        const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
+        scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
+
+        deformable_im2col_gpu_kernel<<<
+            GET_BLOCKS(num_kernels),
+            CUDA_NUM_THREADS,
+            0,
+            stream>>>(
+            num_kernels,
+            data_im_,
+            data_offset_,
+            height,
+            width,
+            ksize_h,
+            ksize_w,
+            pad_h,
+            pad_w,
+            stride_h,
+            stride_w,
+            dilation_h,
+            dilation_w,
+            channel_per_deformable_group,
+            parallel_imgs,
+            channels,
+            deformable_group,
+            height_col,
+            width_col,
+            data_col_);
+      }));
+
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("error in deformable_im2col: %s\n", cudaGetErrorString(err));
+  }
+}
+
+
+void deformable_col2im(
+    const at::Tensor data_col,
+    const at::Tensor data_offset,
+    const int channels,
+    const int height,
+    const int width,
+    const int ksize_h,
+    const int ksize_w,
+    const int pad_h,
+    const int pad_w,
+    const int stride_h,
+    const int stride_w,
+    const int dilation_h,
+    const int dilation_w,
+    const int parallel_imgs,
+    const int deformable_group,
+    at::Tensor grad_im) {
+  // todo: make sure parallel_imgs is passed in correctly
+  int height_col =
+      (height + 2 * pad_h - (dilation_h * (ksize_h - 1) + 1)) / stride_h + 1;
+  int width_col =
+      (width + 2 * pad_w - (dilation_w * (ksize_w - 1) + 1)) / stride_w + 1;
+  int num_kernels =
+      channels * ksize_h * ksize_w * height_col * width_col * parallel_imgs;
+  int channel_per_deformable_group = channels / deformable_group;
+
+  at::cuda::CUDAGuard device_guard(data_col.device());
+  cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
+      data_col.type(), "deformable_col2im_gpu", ([&] {
+        const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
+        const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
+        scalar_t* grad_im_ = grad_im.data_ptr<scalar_t>();
+
+        deformable_col2im_gpu_kernel<<<
+            GET_BLOCKS(num_kernels),
+            CUDA_NUM_THREADS,
+            0,
+            stream>>>(
+            num_kernels,
+            data_col_,
+            data_offset_,
+            channels,
+            height,
+            width,
+            ksize_h,
+            ksize_w,
+            pad_h,
+            pad_w,
+            stride_h,
+            stride_w,
+            dilation_h,
+            dilation_w,
+            channel_per_deformable_group,
+            parallel_imgs,
+            deformable_group,
+            height_col,
+            width_col,
+            grad_im_);
+      }));
+
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("error in deformable_col2im: %s\n", cudaGetErrorString(err));
+  }
+}
+
+
 void deformable_col2im_coord(
     const at::Tensor data_col,
     const at::Tensor data_im,
@@ -646,6 +658,9 @@ void deformable_col2im_coord(
             grad_offset_);
       }));
 }
+
+} // namespace detectron2
+
 
 template <typename scalar_t>
 __device__ scalar_t dmcn_im2col_bilinear(
@@ -1050,6 +1065,9 @@ __global__ void modulated_deformable_col2im_coord_gpu_kernel(
   }
 }
 
+
+namespace detectron2 {
+
 void modulated_deformable_im2col_cuda(
     const at::Tensor data_im,
     const at::Tensor data_offset,
@@ -1266,3 +1284,5 @@ void modulated_deformable_col2im_coord_cuda(
         cudaGetErrorString(err));
   }
 }
+
+} // namespace detectron2
