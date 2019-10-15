@@ -447,7 +447,7 @@ class Visualizer:
             colors = [random_color(rgb=True, maximum=1) for k in category_ids]
         except AttributeError:
             colors = None
-        self.overlay_instances(masks=masks, labels=labels, assigned_colors=colors)
+        self.overlay_instances(masks=masks, labels=labels, assigned_colors=colors, alpha=alpha)
 
         return self.output
 
