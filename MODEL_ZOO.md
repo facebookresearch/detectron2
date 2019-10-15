@@ -11,7 +11,7 @@ Unless otherwise noted, the following settings are used for all runs:
 * All models were trained on [Big Basin](https://engineering.fb.com/data-center-engineering/introducing-big-basin-our-next-generation-ai-hardware/)
   servers with 8 NVIDIA V100 GPUs, with data-parallel sync SGD and a total minibatch size of 16 images.
 * All models were trained with CUDA 9.2, cuDNN 7.4.2 or 7.6.3 (the difference in speed is found to be negligible).
-* The default settings are not directly comparable with Detectron.
+* The default settings are __not directly comparable__ with Detectron.
 	For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 
 	For configs that are comparable to Detectron's settings, see

@@ -7,7 +7,6 @@ from detectron2.modeling import build_model
 model = build_model(cfg)  # returns a torch.nn.Module
 ```
 
-
 Next, we explain the input/output format used by the builtin models in detectron2.
 
 
@@ -15,7 +14,7 @@ Next, we explain the input/output format used by the builtin models in detectron
 
 The output of the default [DatasetMapper]( ../modules/data.html#detectron2.data.DatasetMapper) is a dict.
 After the data loader performs batching, it becomes `list[dict]`, with one dict per image.
-This will be the input format of all the builtin models.
+The `list[dict]` will be the input format of all the builtin models.
 
 The dict may contain the following keys:
 
@@ -35,6 +34,14 @@ The dict may contain the following keys:
 	If provided, the model will produce output in this resolution,
 	rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
 * "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth.
+
+Also, all the builtin models are required to be used under an `EventStorage`, when in training mode.
+The training statistics will be put into the storage:
+```python
+from detectron2.utils.events import EventStorage
+with EventStorage() as storage:
+  outputs = model(inputs)
+```
 
 
 ### Model Output Format
