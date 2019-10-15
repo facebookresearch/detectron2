@@ -27,3 +27,5 @@ If you expect the model to work better, only in one of the two conditions we wil
 ## Environment
 
 Please paste the output of `python -m detectron2.utils.collect_env`.
+If detectron2 hasn't been successfully installed,
+use `python detectron2/utils/collect_env.py`.
