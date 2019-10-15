@@ -22,7 +22,8 @@ python demo/demo.py --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_
   --input input1.jpg input2.jpg \
   --opts MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl
 ```
-It will run the inference and show visualizations in an OpenCV window.
+The configs are made for training, therefore we need to specify `MODEL.WEIGHTS` to a model from model zoo for evaluation.
+This command will run the inference and show visualizations in an OpenCV window.
 
 * To run __on your webcam__, replace `--input files` with `--webcam`.
 * To run __on a video__, replace `--input files` with `--video-input video.mp4`.

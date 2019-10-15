@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import os
-import sys
 import numpy as np
+import os
+import subprocess
+import sys
 from collections import defaultdict
 import PIL
 import torch
 import torchvision
-import subprocess
 from tabulate import tabulate
 
 __all__ = ["collect_env_info"]
@@ -58,12 +58,18 @@ def collect_env_info():
         for name, devids in devices.items():
             data.append(("GPU " + ",".join(devids), name))
 
-        try:
-            nvcc = subprocess.check_output("nvcc -V | tail -n1", shell=True)
-            nvcc = nvcc.decode('utf-8').strip()
-        except subprocess.SubprocessError:
-            nvcc = "Not Available"
-        data.append(("NVCC", nvcc))
+        from torch.utils.cpp_extension import CUDA_HOME
+
+        data.append(("CUDA_HOME", str(CUDA_HOME)))
+
+        if CUDA_HOME is not None and os.path.isdir(CUDA_HOME):
+            try:
+                nvcc = os.path.join(CUDA_HOME, "bin", "nvcc")
+                nvcc = subprocess.check_output("'{}' -V | tail -n1".format(nvcc), shell=True)
+                nvcc = nvcc.decode("utf-8").strip()
+            except subprocess.SubprocessError:
+                nvcc = "Not Available"
+            data.append(("NVCC", nvcc))
 
         cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
         if cuda_arch_list:
