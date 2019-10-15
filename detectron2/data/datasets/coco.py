@@ -25,7 +25,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
     """
     Load a json file with COCO's instances annotation format.
     Currently supports instance detection, instance segmentation,
-    person keypoints and densepose annotations.
+    and person keypoints annotations.
 
     Args:
         json_file (str): full path to the json file in COCO instances annotation format.
@@ -36,6 +36,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
         extra_annotation_keys (list[str]): list of per-annotation keys that should also be
             loaded into the dataset dict (besides "iscrowd", "bbox", "keypoints",
             "category_id", "segmentation"). The values for these keys will be returned as-is.
+            For example, the densepose annotations are loaded in this way.
 
     Returns:
         list[dict]: a list of dicts in Detectron2 standard format. (See
@@ -124,14 +125,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
     dataset_dicts = []
 
-    # TODO: refactoring candidate, one should not have to alter DB reader
-    # every time new data type is added
-    DENSEPOSE_KEYS = ["dp_x", "dp_y", "dp_I", "dp_U", "dp_V", "dp_masks"]
-
-    ann_fields = ["iscrowd", "bbox", "keypoints", "category_id"] + DENSEPOSE_KEYS
-
-    if extra_annotation_keys is not None:
-        ann_fields += extra_annotation_keys
+    ann_keys = ["iscrowd", "bbox", "keypoints", "category_id"] + (extra_annotation_keys or [])
 
     num_instances_without_valid_segmentation = 0
 
@@ -155,11 +149,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             assert anno.get("ignore", 0) == 0
 
-            obj = {
-                field: anno[field]
-                for field in ann_fields
-                if field in anno
-            }
+            obj = {key: anno[key] for key in ann_keys if key in anno}
 
             segm = anno.get("segmentation", None)
             if segm:  # either list[list[float]] or dict(RLE)

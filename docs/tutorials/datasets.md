@@ -54,7 +54,7 @@ can load an image from "file_name" if the "image" field is not available.
 		instance in this image. Each annotation dict may contain:
 	+ `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
 	+ `bbox_mode` (int): the format of bbox.
-			It must be a member of 
+			It must be a member of
       [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
 		  Currently supports: `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS`.
 	+ `category_id` (int): an integer in the range [0, num_categories) representing the category label.
@@ -79,7 +79,7 @@ can load an image from "file_name" if the "image" field is not available.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
         logits of proposals in 'proposal_boxes'.
 + `proposal_bbox_mode` (int): the format of the precomputed proposal bbox.
-        It must be a member of 
+        It must be a member of
         [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
         Default format is `BoxMode.XYXY_ABS`.
 
@@ -90,6 +90,9 @@ from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
 ```
 which will take care of everything (including metadata) for you.
+
+If your dataset is in COCO format with custom per-instance annotations,
+the [load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_json) function can be used.
 
 
 ### "Metadata" for Datasets

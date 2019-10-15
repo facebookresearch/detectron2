@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import os
 
-from detectron2.data.datasets import register_coco_instances
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.data.datasets import load_coco_json
 
 
 def get_densepose_metadata():
@@ -27,11 +28,20 @@ SPLITS = {
     ),
 }
 
+DENSEPOSE_KEYS = ["dp_x", "dp_y", "dp_I", "dp_U", "dp_V", "dp_masks"]
+
 for key, (image_root, json_file) in SPLITS.items():
     # Assume pre-defined datasets live in `./datasets`.
-    register_coco_instances(
+    json_file = os.path.join("datasets", json_file)
+    image_root = os.path.join("datasets", image_root)
+
+    DatasetCatalog.register(
         key,
-        get_densepose_metadata(),
-        os.path.join("datasets", json_file),
-        os.path.join("datasets", image_root),
+        lambda key=key, json_file=json_file, image_root=image_root: load_coco_json(
+            json_file, image_root, key, extra_annotation_keys=DENSEPOSE_KEYS
+        ),
+    )
+
+    MetadataCatalog.get(key).set(
+        json_file=json_file, image_root=image_root, **get_densepose_metadata()
     )
