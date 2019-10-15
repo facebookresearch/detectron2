@@ -107,12 +107,17 @@ def inference_on_dataset(model, data_loader, evaluator):
     logging_interval = 50
     num_warmup = min(5, logging_interval - 1, total - 1)
     start_time = time.time()
+    total_compute_time = 0
     with inference_context(model), torch.no_grad():
         for idx, inputs in enumerate(data_loader):
             if idx == num_warmup:
                 start_time = time.time()
+                total_compute_time = 0
 
+            start_compute_time = time.time()
             outputs = model(inputs)
+            torch.cuda.synchronize()
+            total_compute_time += time.time() - start_compute_time
             evaluator.process(inputs, outputs)
 
             if (idx + 1) % logging_interval == 0:
@@ -134,6 +139,12 @@ def inference_on_dataset(model, data_loader, evaluator):
     logger.info(
         "Total inference time: {} ({:.6f} s / img per device, on {} devices)".format(
             total_time_str, total_time / (total - num_warmup), num_devices
+        )
+    )
+    total_compute_time_str = str(datetime.timedelta(seconds=int(total_compute_time)))
+    logger.info(
+        "Total inference pure compute time: {} ({:.6f} s / img per device, on {} devices)".format(
+            total_compute_time_str, total_compute_time / (total - num_warmup), num_devices
         )
     )
 
