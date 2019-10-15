@@ -5,3 +5,12 @@ detectron2.config package
     :members:
     :undoc-members:
     :show-inheritance:
+
+
+Config References
+-----------------
+
+.. literalinclude:: ../../detectron2/config/defaults.py
+  :language: python
+  :linenos:
+  :lines: 4-
