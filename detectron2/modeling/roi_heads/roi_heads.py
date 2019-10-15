@@ -66,8 +66,8 @@ def select_foreground_proposals(proposals, bg_label):
     for proposals_per_image in proposals:
         gt_classes = proposals_per_image.gt_classes
         fg_selection_mask = (gt_classes != -1) & (gt_classes != bg_label)
-        fg_inds = fg_selection_mask.nonzero().squeeze(1)
-        fg_proposals.append(proposals_per_image[fg_inds])
+        fg_idxs = fg_selection_mask.nonzero().squeeze(1)
+        fg_proposals.append(proposals_per_image[fg_idxs])
         fg_selection_masks.append(fg_selection_mask)
     return fg_proposals, fg_selection_masks
 
@@ -151,6 +151,42 @@ class ROIHeads(torch.nn.Module):
         # Box2BoxTransform for bounding box regression
         self.box2box_transform = Box2BoxTransform(weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)
 
+    def _sample_proposals(self, matched_idxs, matched_labels, gt_classes):
+        """
+        Based on the matching between N proposals and M groundtruth,
+        sample the proposals and set their classification labels.
+
+        Args:
+            matched_idxs (Tensor): a vector of length N, each is the best-matched
+                gt index in [0, M) for each proposal.
+            matched_labels (Tensor): a vector of length N, the matcher's label
+                (one of cfg.MODEL.ROI_HEADS.IOU_LABELS) for each proposal.
+            gt_classes (Tensor): a vector of length M.
+
+        Returns:
+            Tensor: a vector of indices of sampled proposals. Each is in [0, N).
+            Tensor: a vector of the same length, the classification label for
+                each sampled proposal. Each sample is labeled as either a category in
+                [0, num_classes) or the background (num_classes).
+        """
+        has_gt = gt_classes.numel() > 0
+        # Get the corresponding GT for each proposal
+        if has_gt:
+            gt_classes = gt_classes[matched_idxs]
+            # Label unmatched proposals (0 label from matcher) as background (label=num_classes)
+            gt_classes[matched_labels == 0] = self.num_classes
+            # Label ignore proposals (-1 label)
+            gt_classes[matched_labels == -1] = -1
+        else:
+            gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
+
+        sampled_fg_idxs, sampled_bg_idxs = subsample_labels(
+            gt_classes, self.batch_size_per_image, self.positive_sample_fraction, self.num_classes
+        )
+
+        sampled_idxs = torch.cat([sampled_fg_idxs, sampled_bg_idxs], dim=0)
+        return sampled_idxs, gt_classes[sampled_idxs]
+
     @torch.no_grad()
     def label_and_sample_proposals(self, proposals, targets):
         """
@@ -197,34 +233,19 @@ class ROIHeads(torch.nn.Module):
             match_quality_matrix = pairwise_iou(
                 targets_per_image.gt_boxes, proposals_per_image.proposal_boxes
             )
-            matched_idxs, proposals_labels = self.proposal_matcher(match_quality_matrix)
-
-            # Get the corresponding GT for each proposal
-            if has_gt:
-                gt_classes = targets_per_image.gt_classes[matched_idxs]
-                # Label unmatched proposals (0 label from matcher) as background (label=num_classes)
-                gt_classes[proposals_labels == 0] = self.num_classes
-                # Label ignore proposals (-1 label)
-                gt_classes[proposals_labels == -1] = -1
-            else:
-                gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
-
-            sampled_fg_inds, sampled_bg_inds = subsample_labels(
-                gt_classes,
-                self.batch_size_per_image,
-                self.positive_sample_fraction,
-                self.num_classes,
+            matched_idxs, matched_labels = self.proposal_matcher(match_quality_matrix)
+            sampled_idxs, gt_classes = self._sample_proposals(
+                matched_idxs, matched_labels, targets_per_image.gt_classes
             )
 
-            sampled_inds = torch.cat([sampled_fg_inds, sampled_bg_inds], dim=0)
-
-            proposals_per_image = proposals_per_image[sampled_inds]
-            proposals_per_image.gt_classes = gt_classes[sampled_inds]
+            # Set target attributes of the sampled proposals:
+            proposals_per_image = proposals_per_image[sampled_idxs]
+            proposals_per_image.gt_classes = gt_classes
 
             # We index all the attributes of targets that start with "gt_"
             # and have not been added to proposals yet (="gt_classes").
             if has_gt:
-                sampled_targets = matched_idxs[sampled_inds]
+                sampled_targets = matched_idxs[sampled_idxs]
                 # NOTE: here the indexing waste some compute, because heads
                 # like masks, keypoints, etc, will filter the proposals again,
                 # (by foreground/background, or number of keypoints in the image, etc)
@@ -234,12 +255,12 @@ class ROIHeads(torch.nn.Module):
                         proposals_per_image.set(trg_name, trg_value[sampled_targets])
             else:
                 gt_boxes = Boxes(
-                    targets_per_image.gt_boxes.tensor.new_zeros((len(sampled_inds), 4))
+                    targets_per_image.gt_boxes.tensor.new_zeros((len(sampled_idxs), 4))
                 )
                 proposals_per_image.gt_boxes = gt_boxes
 
-            num_fg_samples.append(sampled_fg_inds.numel())
-            num_bg_samples.append(sampled_bg_inds.numel())
+            num_bg_samples.append((gt_classes == self.num_classes).sum().item())
+            num_fg_samples.append(gt_classes.numel() - num_bg_samples[-1])
             proposals_with_gt.append(proposals_per_image)
 
         # Log the number of fg/bg samples that are selected for training ROI heads
@@ -266,7 +287,8 @@ class ROIHeads(torch.nn.Module):
                 It may have the following fields:
                 - gt_boxes: the bounding box of each instance.
                 - gt_classes: the label for each instance with a category ranging in [0, #class].
-                - gt_masks: the ground-truth mask of the instance.
+                - gt_masks: PolygonMasks or BitMasks, the ground-truth masks of each instance.
+                - gt_keypoints: NxKx3, the groud-truth keypoints for each instance.
 
         Returns:
             results (list[Instances]): length `N` list of `Instances`s containing the
@@ -293,7 +315,7 @@ class Res5ROIHeads(ROIHeads):
 
         # fmt: off
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_type   = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         pooler_scales     = (1.0 / self.feature_strides[self.in_features[0]], )
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         self.mask_on      = cfg.MODEL.MASK_ON
@@ -689,14 +711,17 @@ class StandardROIHeads(ROIHeads):
 class RROIHeads(StandardROIHeads):
     """
     This class is used by Rotated RPN (RRPN).
-    For now, it just supports box_head but not mask or keypoints.
+    For now, it just supports box head but not mask or keypoints.
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
-        super(RROIHeads, self).__init__(cfg, input_shape)
+        super().__init__(cfg, input_shape)
         self.box2box_transform = Box2BoxTransformRotated(
             weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS
         )
+        assert (
+            not self.mask_on and not self.keypoint_on
+        ), "Mask/Keypoints not supported in Rotated ROIHeads."
 
     def _init_box_head(self, cfg):
         # fmt: off
@@ -749,21 +774,11 @@ class RROIHeads(StandardROIHeads):
                 - gt_boxes: the ground-truth rotated boxes that the proposal is assigned to
                   (this is only meaningful if the proposal has a label > 0; if label = 0
                    then the ground-truth box is random)
-                - other fields such as "gt_classes" and "gt_masks" that are included in `targets`.
+                - gt_classes: the ground-truth classification lable for each proposal
         """
         gt_boxes = [x.gt_boxes for x in targets]
-        # Augment proposals with ground-truth boxes.
-        # In the case of learned proposals (e.g., RPN), in the beginning of training
-        # the proposals are of low quality due to random initialization.
-        # It's possible that none of these initial
-        # proposals have high enough overlap with the gt objects to be used
-        # as positive examples for the second stage components (box head,
-        # cls head, mask head). Adding the gt boxes to the set of proposals
-        # ensures that the second stage components will have some positive
-        # examples from the start of training. For RPN, this augmentation improves
-        # convergence and empirically improves box AP on COCO by about 0.5
-        # points (under one tested configuration).
-        proposals = add_ground_truth_to_proposals(gt_boxes, proposals)
+        if self.proposal_append_gt:
+            proposals = add_ground_truth_to_proposals(gt_boxes, proposals)
 
         proposals_with_gt = []
 
@@ -774,41 +789,25 @@ class RROIHeads(StandardROIHeads):
             match_quality_matrix = pairwise_iou_rotated(
                 targets_per_image.gt_boxes, proposals_per_image.proposal_boxes
             )
-            matched_idxs, proposals_labels = self.proposal_matcher(match_quality_matrix)
-
-            # Get the corresponding GT for each proposal
-            if has_gt:
-                gt_classes = targets_per_image.gt_classes[matched_idxs]
-                # Label unmatched proposals (0 label from matcher) as background (label=num_classes)
-                gt_classes[proposals_labels == 0] = self.num_classes
-                # Label ignore proposals (-1 label)
-                gt_classes[proposals_labels == -1] = -1
-            else:
-                gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
-
-            sampled_fg_inds, sampled_bg_inds = subsample_labels(
-                gt_classes,
-                self.batch_size_per_image,
-                self.positive_sample_fraction,
-                self.num_classes,
+            matched_idxs, matched_labels = self.proposal_matcher(match_quality_matrix)
+            sampled_idxs, gt_classes = self._sample_proposals(
+                matched_idxs, matched_labels, targets_per_image.gt_classes
             )
 
-            sampled_inds = torch.cat([sampled_fg_inds, sampled_bg_inds], dim=0)
-
-            proposals_per_image = proposals_per_image[sampled_inds]
-            proposals_per_image.gt_classes = gt_classes[sampled_inds]
+            proposals_per_image = proposals_per_image[sampled_idxs]
+            proposals_per_image.gt_classes = gt_classes
 
             if has_gt:
-                sampled_targets = matched_idxs[sampled_inds]
+                sampled_targets = matched_idxs[sampled_idxs]
                 proposals_per_image.gt_boxes = targets_per_image.gt_boxes[sampled_targets]
             else:
                 gt_boxes = RotatedBoxes(
-                    targets_per_image.gt_boxes.tensor.new_zeros((len(sampled_inds), 5))
+                    targets_per_image.gt_boxes.tensor.new_zeros((len(sampled_idxs), 5))
                 )
                 proposals_per_image.gt_boxes = gt_boxes
 
-            num_fg_samples.append(sampled_fg_inds.numel())
-            num_bg_samples.append(sampled_bg_inds.numel())
+            num_bg_samples.append((gt_classes == self.num_classes).sum().item())
+            num_fg_samples.append(gt_classes.numel() - num_bg_samples[-1])
             proposals_with_gt.append(proposals_per_image)
 
         # Log the number of fg/bg samples that are selected for training ROI heads
