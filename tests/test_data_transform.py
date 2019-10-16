@@ -17,15 +17,6 @@ class TestTransforms(unittest.TestCase):
     def setUp(self):
         setup_logger()
 
-    def test_crop_polygons(self):
-        # Ensure that shapely produce an extra vertex at the end
-        import shapely.geometry as geometry
-
-        polygon = np.asarray([3, 3.5, 11, 10.0, 38, 98, 15.0, 100.0]).reshape(-1, 2)
-        g = geometry.Polygon(polygon)
-        coords = np.asarray(g.exterior.coords)
-        self.assertEqual(coords[0].tolist(), coords[-1].tolist())
-
     def test_apply_rotated_boxes(self):
         np.random.seed(125)
         cfg = get_cfg()
@@ -77,3 +68,13 @@ class TestTransforms(unittest.TestCase):
         )
         err_msg = "transformed_boxes = {}, expected {}".format(transformed_boxes, expected_bboxes)
         assert np.allclose(transformed_boxes, expected_bboxes), err_msg
+
+    def test_print_transform_gen(self):
+        t = T.RandomCrop("relative", (100, 100))
+        self.assertTrue(str(t) == "RandomCrop(crop_type='relative', crop_size=(100, 100))")
+
+        t = T.RandomFlip(prob=0.5)
+        self.assertTrue(str(t) == "RandomFlip(prob=0.5)")
+
+        t = T.RandomFlip()
+        self.assertTrue(str(t) == "RandomFlip()")

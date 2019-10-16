@@ -88,26 +88,22 @@ class TransformGen(metaclass=ABCMeta):
         "MyTransformGen(field1={self.field1}, field2={self.field2})"
         """
         try:
-            argspec = inspect.getargspec(self.__init__)
-            assert argspec.varargs is None, "The default __repr__ doesn't work for varargs!"
-            assert argspec.keywords is None, "The default __repr__ doesn't work for kwargs!"
-            fields = argspec.args[1:]
-            index_field_has_default = len(fields) - (
-                0 if argspec.defaults is None else len(argspec.defaults)
-            )
-
+            sig = inspect.signature(self.__init__)
             classname = type(self).__name__
             argstr = []
-            for idx, f in enumerate(fields):
-                assert hasattr(self, f), (
+            for name, param in sig.parameters.items():
+                assert (
+                    param.kind != param.VAR_POSITIONAL and param.kind != param.VAR_KEYWORD
+                ), "The default __repr__ doesn't support *args or **kwargs"
+                assert hasattr(self, name), (
                     "Attribute {} not found! "
-                    "Default __repr__ only works if attributes match the constructor.".format(f)
+                    "Default __repr__ only works if attributes match the constructor.".format(name)
                 )
-                attr = getattr(self, f)
-                if idx >= index_field_has_default:
-                    if attr is argspec.defaults[idx - index_field_has_default]:
-                        continue
-                argstr.append("{}={}".format(f, pprint.pformat(attr)))
+                attr = getattr(self, name)
+                default = param.default
+                if default is attr:
+                    continue
+                argstr.append("{}={}".format(name, pprint.pformat(attr)))
             return "{}({})".format(classname, ", ".join(argstr))
         except AssertionError:
             return super().__repr__()
