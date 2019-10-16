@@ -36,7 +36,7 @@ def read_image(file_name, format=None):
     Read an image into the given format.
 
     Args:
-        dataset_dict (dict): Metadata of one image, in Detectron2 Dataset format.
+        file_name (str): image file path
         format (str): one of the supported image modes in PIL, or "BGR"
 
     Returns:
