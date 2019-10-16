@@ -40,6 +40,7 @@ def collect_env_info():
         data.append(("detectron2._C", "failed to import"))
     else:
         data.append(("Detectron2 Compiler", _C.get_compiler_version()))
+        data.append(("Detectron2 CUDA", _C.get_cuda_version()))
 
     data.append(get_env_module())
     data.append(("PyTorch", torch.__version__))
