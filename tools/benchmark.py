@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser = default_argument_parser()
     parser.add_argument("--task", choices=["train", "eval", "data"], required=True)
     args = parser.parse_args()
-    assert not args.eval_only and not args.resume
+    assert not args.eval_only
 
     if args.task == "data":
         f = benchmark_data
