@@ -1,10 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 A script to benchmark builtin models.
+
+Note: this script has an extra dependency of psutil.
 """
 
 import itertools
 import logging
+import psutil
 import torch
 import tqdm
 from fvcore.common.timer import Timer
@@ -42,9 +45,12 @@ def benchmark_data(args):
 
     dataloader = build_detection_train_loader(cfg)
 
+    timer = Timer()
     itr = iter(dataloader)
-    for _ in range(10):  # warmup
+    for i in range(10):  # warmup
         next(itr)
+        if i == 0:
+            startup_time = timer.seconds()
     timer = Timer()
     max_iter = 1000
     for _ in tqdm.trange(max_iter):
@@ -52,6 +58,13 @@ def benchmark_data(args):
     logger.info(
         "{} iters ({} images) in {} seconds.".format(
             max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
+        )
+    )
+    logger.info("Startup time: {} seconds".format(startup_time))
+    vram = psutil.virtual_memory()
+    logger.info(
+        "RAM Usage: {:.2f}/{:.2f} GB".format(
+            (vram.total - vram.available) / 1024 ** 3, vram.total / 1024 ** 3
         )
     )
 
