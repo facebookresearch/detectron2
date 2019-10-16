@@ -37,7 +37,7 @@ def read_image(file_name, format=None):
 
     Args:
         dataset_dict (dict): Metadata of one image, in Detectron2 Dataset format.
-        format (dict): one of the supported image modes in PIL, or "BGR"
+        format (str): one of the supported image modes in PIL, or "BGR"
 
     Returns:
         image (np.ndarray): an HWC image
