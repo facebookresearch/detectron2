@@ -549,7 +549,7 @@ These baselines are described in Table 3(c) of the [LVIS paper](https://arxiv.or
 
 NOTE: the 1x schedule here has the same amount of __iterations__ as the COCO 1x baselines.
 They are roughly 24 epochs of LVISv0.5 data.
-The final results of these configs has large variance across different runs.
+The final results of these configs have large variance across different runs.
 
 <!--
 ./gen_html_table.py --config 'LVIS-InstanceSegmentation/mask*50*' 'LVIS-InstanceSegmentation/mask*101*' --name R50-FPN R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP

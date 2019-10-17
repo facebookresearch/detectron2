@@ -46,42 +46,42 @@ can load an image from "file_name" if the "image" field is not available.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 + `image`: the image as a numpy array.
 + `sem_seg`: semantic segmentation ground truth in a 2D numpy array. Values in the array represent
- 		category labels.
+   category labels.
 + `height`, `width`: integer. The shape of image.
 + `image_id` (str): a string to identify this image. Mainly used during evaluation to identify the
-		image. Each dataset may use it for different purposes.
+  image. Each dataset may use it for different purposes.
 + `annotations` (list[dict]): the per-instance annotations of every
-		instance in this image. Each annotation dict may contain:
-	+ `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
-	+ `bbox_mode` (int): the format of bbox.
-			It must be a member of
-      [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
-		  Currently supports: `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS`.
-	+ `category_id` (int): an integer in the range [0, num_categories) representing the category label.
-      The value num_categories is reserved to represent the "background" category, if applicable.
-	+ `segmentation` (list[list[float]] or dict):
-		+ If `list[list[float]]`, it represents a list of polygons, one for each connected component
-     	of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]`.
-			The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
-			depend on whether "bbox_mode" is relative.
-		+ If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format.
-	+ `keypoint`s (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
-		v[i] means the visibility of this keypoint.
-		`n` must be equal to the number of keypoint categories.
-		The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
-		depend on whether "bbox_mode" is relative.
+  instance in this image. Each annotation dict may contain:
+  + `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
+  + `bbox_mode` (int): the format of bbox.
+    It must be a member of
+    [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
+    Currently supports: `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS`.
+  + `category_id` (int): an integer in the range [0, num_categories) representing the category label.
+    The value num_categories is reserved to represent the "background" category, if applicable.
+  + `segmentation` (list[list[float]] or dict):
+    + If `list[list[float]]`, it represents a list of polygons, one for each connected component
+      of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]`.
+      The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
+      depend on whether "bbox_mode" is relative.
+    + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format.
+  + `keypoint`s (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
+    v[i] means the visibility of this keypoint.
+    `n` must be equal to the number of keypoint categories.
+    The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
+    depend on whether "bbox_mode" is relative.
 
-		Note that the coordinate annotations in COCO format are integers in range [0, H-1 or W-1].
-		By default, detectron2 adds 0.5 to absolute keypoint coordinates to convert them from discrete
+    Note that the coordinate annotations in COCO format are integers in range [0, H-1 or W-1].
+    By default, detectron2 adds 0.5 to absolute keypoint coordinates to convert them from discrete
     pixel indices to floating point coordinates.
-	+ `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd region".
+  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd region".
 + `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
-        logits of proposals in 'proposal_boxes'.
+  logits of proposals in 'proposal_boxes'.
 + `proposal_bbox_mode` (int): the format of the precomputed proposal bbox.
-        It must be a member of
-        [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
-        Default format is `BoxMode.XYXY_ABS`.
+  It must be a member of
+  [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
+  Default format is `BoxMode.XYXY_ABS`.
 
 
 If your dataset is already in the COCO format, you can simply register it by
@@ -146,12 +146,14 @@ Some additional metadata that are specific to the evaluation of certain datasets
 * `stuff_dataset_id_to_contiguous_id` (dict[int->int]): Used when generating prediction json files for
   semantic/panoptic segmentation.
   A mapping from semantic segmentation class ids in the dataset
-	to contiguous ids in [0, num_categories). It is useful for evaluation only.
+  to contiguous ids in [0, num_categories). It is useful for evaluation only.
 
 * `json_file`: The COCO annotation json file. Used by COCO evaluation for COCO-format datasets.
 * `panoptic_root`, `panoptic_json`: Used by panoptic evaluation.
 * `evaluator_type`: Used by the builtin main training script to select
    evaluator. No need to use it if you write your own main script.
+   You can just provide the [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator)
+   for your dataset directly in your main script.
 
 NOTE: For background on the difference between "thing" and "stuff" categories, see
 [On Seeing Stuff: The Perception of Materials by Humans and Machines](http://persci.mit.edu/pub_pdfs/adelson_spie_01.pdf).
