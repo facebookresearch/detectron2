@@ -17,6 +17,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
 ./gen_html_table.py --config 'Detectron1-Comparisons/*.yaml' --name "Faster R-CNN" "Keypoint R-CNN" "Mask R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP keypoint_AP
 -->
 
+
 <table><tbody>
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
@@ -35,7 +36,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
  <tr><td align="left"><a href="configs/Detectron1-Comparisons/faster_rcnn_R_50_FPN_noaug_1x.yaml">Faster R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.219</td>
-<td align="center">0.058</td>
+<td align="center">0.048</td>
 <td align="center">3.1</td>
 <td align="center">36.9</td>
 <td align="center"></td>
@@ -47,7 +48,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
  <tr><td align="left"><a href="configs/Detectron1-Comparisons/keypoint_rcnn_R_50_FPN_1x.yaml">Keypoint R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.313</td>
-<td align="center">0.103</td>
+<td align="center">0.082</td>
 <td align="center">5.0</td>
 <td align="center">53.1</td>
 <td align="center"></td>
@@ -59,7 +60,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
  <tr><td align="left"><a href="configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml">Mask R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.273</td>
-<td align="center">0.084</td>
+<td align="center">0.052</td>
 <td align="center">3.4</td>
 <td align="center">37.8</td>
 <td align="center">34.9</td>

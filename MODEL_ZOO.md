@@ -12,27 +12,27 @@ Unless otherwise noted, the following settings are used for all runs:
   servers with 8 NVIDIA V100 GPUs, with data-parallel sync SGD and a total minibatch size of 16 images.
 * All models were trained with CUDA 9.2, cuDNN 7.4.2 or 7.6.3 (the difference in speed is found to be negligible).
 * The default settings are __not directly comparable__ with Detectron.
-	For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
+  For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 
-	For configs that are comparable to Detectron's settings, see
-	[Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
-	and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
-	for speed comparison.
-* Inference time is measured with batch size 1. It contains the time taken to postprocess results for evaluation, as well as some input latency.
-	Therefore it does not accurately reflect time-to-results.
-	We'll provide better metrics for inference speed in the future.
+  For configs that are comparable to Detectron's settings, see
+  [Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
+  and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
+  for speed comparison.
+* Inference time is measured with batch size 1 in detectron2 directly.
+  The actual deployment should in general be faster than the given inference
+  time due to more optimizations.
 * All COCO models were trained on `train2017` and evaluated on `val2017`.
 * For Faster/Mask R-CNN, we provide baselines based on __3 different backbone combinations__:
-	* __FPN__: Use a ResNet+FPN backbone with standard conv and FC heads for mask and box prediction,
-		respectively. It obtains the best
-		speed/accuracy tradeoff, but the other two are still useful for research.
-	* __C4__: Use a ResNet conv4 backbone with conv5 head. The original baseline in the Faster R-CNN paper.
-	* __DC5__ (Dilated-C5): Use a ResNet conv5 backbone with dilations in conv5, and standard conv and FC heads
-	  for mask and box prediction, respectively.
-		This is used by the Deformable ConvNet paper.
+  * __FPN__: Use a ResNet+FPN backbone with standard conv and FC heads for mask and box prediction,
+    respectively. It obtains the best
+    speed/accuracy tradeoff, but the other two are still useful for research.
+  * __C4__: Use a ResNet conv4 backbone with conv5 head. The original baseline in the Faster R-CNN paper.
+  * __DC5__ (Dilated-C5): Use a ResNet conv5 backbone with dilations in conv5, and standard conv and FC heads
+    for mask and box prediction, respectively.
+    This is used by the Deformable ConvNet paper.
 * Most models are trained with the 3x schedule (~37 COCO epochs).
   Although 1x models are heavily under-trained, we provide some ResNet-50 models with the 1x (~12 COCO epochs)
-	training schedule for comparison when doing quick research iteration.
+  training schedule for comparison when doing quick research iteration.
 * The *model id* column is provided for ease of reference.
   To check downloaded file integrity: any model on this page contains its md5 prefix in its file name.
 
@@ -46,11 +46,11 @@ These models are __different__ from those provided in Detectron: we do not fuse 
 
 Pretrained models in Detectron's format can still be used. For example:
 * [X-152-32x8d-IN5k.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/25093814/X-152-32x8d-IN5k.pkl):
-	ResNeXt-152-32x8d model trained on ImageNet-5k with Caffe2 at FB (see ResNeXt paper for details on ImageNet-5k).
+  ResNeXt-152-32x8d model trained on ImageNet-5k with Caffe2 at FB (see ResNeXt paper for details on ImageNet-5k).
 * [R-50-GN.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/47261647/R-50-GN.pkl):
-	ResNet-50 with Group Normalization.
+  ResNet-50 with Group Normalization.
 * [R-101-GN.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/47592356/R-101-GN.pkl):
-	ResNet-101 with Group Normalization.
+  ResNet-101 with Group Normalization.
 
 #### License
 
@@ -68,6 +68,7 @@ All models available for download through this document are licensed under the
 
 ./gen_html_table.py --config 'COCO-Detection/faster*50*'{1x,3x}'*' 'COCO-Detection/faster*101*' --name R50-C4 R50-DC5 R50-FPN R50-C4 R50-DC5 R50-FPN R101-C4 R101-DC5 R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP
 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -95,7 +96,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_DC5_1x.yaml">R50-DC5</a></td>
 <td align="center">1x</td>
 <td align="center">0.380</td>
-<td align="center">0.089</td>
+<td align="center">0.068</td>
 <td align="center">5.0</td>
 <td align="center">37.3</td>
 <td align="center">137847829</td>
@@ -105,7 +106,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.210</td>
-<td align="center">0.060</td>
+<td align="center">0.055</td>
 <td align="center">3.0</td>
 <td align="center">37.9</td>
 <td align="center">137257794</td>
@@ -115,7 +116,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_C4_3x.yaml">R50-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.589</td>
-<td align="center">0.108</td>
+<td align="center">0.110</td>
 <td align="center">4.8</td>
 <td align="center">38.4</td>
 <td align="center">137849393</td>
@@ -125,7 +126,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_DC5_3x.yaml">R50-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.378</td>
-<td align="center">0.095</td>
+<td align="center">0.073</td>
 <td align="center">5.0</td>
 <td align="center">39.0</td>
 <td align="center">137849425</td>
@@ -135,7 +136,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.209</td>
-<td align="center">0.058</td>
+<td align="center">0.047</td>
 <td align="center">3.0</td>
 <td align="center">40.2</td>
 <td align="center">137849458</td>
@@ -145,7 +146,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_C4_3x.yaml">R101-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.656</td>
-<td align="center">0.137</td>
+<td align="center">0.149</td>
 <td align="center">5.9</td>
 <td align="center">41.1</td>
 <td align="center">138204752</td>
@@ -155,7 +156,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_DC5_3x.yaml">R101-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.452</td>
-<td align="center">0.103</td>
+<td align="center">0.082</td>
 <td align="center">6.1</td>
 <td align="center">40.6</td>
 <td align="center">138204841</td>
@@ -165,7 +166,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.286</td>
-<td align="center">0.071</td>
+<td align="center">0.063</td>
 <td align="center">4.1</td>
 <td align="center">42.0</td>
 <td align="center">137851257</td>
@@ -175,7 +176,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml">X101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.638</td>
-<td align="center">0.139</td>
+<td align="center">0.120</td>
 <td align="center">6.7</td>
 <td align="center">43.0</td>
 <td align="center">139173657</td>
@@ -187,6 +188,7 @@ All models available for download through this document are licensed under the
 <!--
 ./gen_html_table.py --config 'COCO-Detection/retina*50*' 'COCO-Detection/retina*101*' --name R50 R50 R101 --fields lr_sched train_speed inference_speed mem box_AP
 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -204,7 +206,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml">R50</a></td>
 <td align="center">1x</td>
 <td align="center">0.200</td>
-<td align="center">0.082</td>
+<td align="center">0.062</td>
 <td align="center">3.9</td>
 <td align="center">36.5</td>
 <td align="center">137593951</td>
@@ -214,7 +216,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_3x.yaml">R50</a></td>
 <td align="center">3x</td>
 <td align="center">0.201</td>
-<td align="center">0.081</td>
+<td align="center">0.063</td>
 <td align="center">3.9</td>
 <td align="center">37.9</td>
 <td align="center">137849486</td>
@@ -224,7 +226,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml">R101</a></td>
 <td align="center">3x</td>
 <td align="center">0.280</td>
-<td align="center">0.087</td>
+<td align="center">0.080</td>
 <td align="center">5.1</td>
 <td align="center">39.9</td>
 <td align="center">138363263</td>
@@ -254,7 +256,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/rpn_R_50_C4_1x.yaml">RPN R50-C4</a></td>
 <td align="center">1x</td>
 <td align="center">0.130</td>
-<td align="center">0.056</td>
+<td align="center">0.051</td>
 <td align="center">1.5</td>
 <td align="center"></td>
 <td align="center">51.6</td>
@@ -265,7 +267,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/rpn_R_50_FPN_1x.yaml">RPN R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.186</td>
-<td align="center">0.053</td>
+<td align="center">0.045</td>
 <td align="center">2.7</td>
 <td align="center"></td>
 <td align="center">58.0</td>
@@ -276,7 +278,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/fast_rcnn_R_50_FPN_1x.yaml">Fast R-CNN R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.140</td>
-<td align="center">0.056</td>
+<td align="center">0.035</td>
 <td align="center">2.6</td>
 <td align="center">37.8</td>
 <td align="center"></td>
@@ -289,6 +291,7 @@ All models available for download through this document are licensed under the
 <!--
 ./gen_html_table.py --config 'COCO-InstanceSegmentation/mask*50*'{1x,3x}'*' 'COCO-InstanceSegmentation/mask*101*' --name R50-C4 R50-DC5 R50-FPN R50-C4 R50-DC5 R50-FPN R101-C4 R101-DC5 R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -307,7 +310,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_1x.yaml">R50-C4</a></td>
 <td align="center">1x</td>
 <td align="center">0.621</td>
-<td align="center">0.140</td>
+<td align="center">0.117</td>
 <td align="center">5.2</td>
 <td align="center">36.8</td>
 <td align="center">32.2</td>
@@ -318,7 +321,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_1x.yaml">R50-DC5</a></td>
 <td align="center">1x</td>
 <td align="center">0.471</td>
-<td align="center">0.126</td>
+<td align="center">0.074</td>
 <td align="center">6.5</td>
 <td align="center">38.3</td>
 <td align="center">34.2</td>
@@ -329,7 +332,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.261</td>
-<td align="center">0.087</td>
+<td align="center">0.053</td>
 <td align="center">3.4</td>
 <td align="center">38.6</td>
 <td align="center">35.2</td>
@@ -340,7 +343,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml">R50-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.622</td>
-<td align="center">0.137</td>
+<td align="center">0.118</td>
 <td align="center">5.2</td>
 <td align="center">39.8</td>
 <td align="center">34.4</td>
@@ -351,7 +354,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_3x.yaml">R50-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.470</td>
-<td align="center">0.111</td>
+<td align="center">0.075</td>
 <td align="center">6.5</td>
 <td align="center">40.0</td>
 <td align="center">35.9</td>
@@ -362,7 +365,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.261</td>
-<td align="center">0.079</td>
+<td align="center">0.055</td>
 <td align="center">3.4</td>
 <td align="center">41.0</td>
 <td align="center">37.2</td>
@@ -373,7 +376,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_C4_3x.yaml">R101-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.691</td>
-<td align="center">0.163</td>
+<td align="center">0.155</td>
 <td align="center">6.3</td>
 <td align="center">42.6</td>
 <td align="center">36.7</td>
@@ -384,7 +387,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_DC5_3x.yaml">R101-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.545</td>
-<td align="center">0.129</td>
+<td align="center">0.155</td>
 <td align="center">7.6</td>
 <td align="center">41.9</td>
 <td align="center">37.3</td>
@@ -395,7 +398,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.340</td>
-<td align="center">0.092</td>
+<td align="center">0.070</td>
 <td align="center">4.6</td>
 <td align="center">42.9</td>
 <td align="center">38.6</td>
@@ -406,7 +409,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml">X101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.690</td>
-<td align="center">0.155</td>
+<td align="center">0.129</td>
 <td align="center">7.2</td>
 <td align="center">44.3</td>
 <td align="center">39.5</td>
@@ -419,6 +422,7 @@ All models available for download through this document are licensed under the
 <!--
 ./gen_html_table.py --config 'COCO-Keypoints/*50*' 'COCO-Keypoints/*101*'  --name R50-FPN R50-FPN R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP keypoint_AP
 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -437,7 +441,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.315</td>
-<td align="center">0.102</td>
+<td align="center">0.083</td>
 <td align="center">5.0</td>
 <td align="center">53.6</td>
 <td align="center">64.0</td>
@@ -448,7 +452,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.316</td>
-<td align="center">0.095</td>
+<td align="center">0.076</td>
 <td align="center">5.0</td>
 <td align="center">55.4</td>
 <td align="center">65.5</td>
@@ -459,7 +463,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.390</td>
-<td align="center">0.106</td>
+<td align="center">0.090</td>
 <td align="center">6.1</td>
 <td align="center">56.4</td>
 <td align="center">66.1</td>
@@ -470,7 +474,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_X_101_32x8d_FPN_3x.yaml">X101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.738</td>
-<td align="center">0.168</td>
+<td align="center">0.142</td>
 <td align="center">8.7</td>
 <td align="center">57.3</td>
 <td align="center">66.0</td>
@@ -483,6 +487,7 @@ All models available for download through this document are licensed under the
 <!--
 ./gen_html_table.py --config 'COCO-PanopticSegmentation/*50*' 'COCO-PanopticSegmentation/*101*'  --name R50-FPN R50-FPN R101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP PQ
 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -502,7 +507,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_fpn_R_50_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.304</td>
-<td align="center">0.129</td>
+<td align="center">0.063</td>
 <td align="center">4.8</td>
 <td align="center">37.6</td>
 <td align="center">34.7</td>
@@ -514,7 +519,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_fpn_R_50_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.302</td>
-<td align="center">0.127</td>
+<td align="center">0.063</td>
 <td align="center">4.8</td>
 <td align="center">40.0</td>
 <td align="center">36.5</td>
@@ -526,7 +531,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.392</td>
-<td align="center">0.137</td>
+<td align="center">0.078</td>
 <td align="center">6.0</td>
 <td align="center">42.4</td>
 <td align="center">38.5</td>
@@ -568,7 +573,7 @@ The final results of these configs has large variance across different runs.
  <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.292</td>
-<td align="center">0.305</td>
+<td align="center">0.127</td>
 <td align="center">7.1</td>
 <td align="center">23.6</td>
 <td align="center">24.4</td>
@@ -579,7 +584,7 @@ The final results of these configs has large variance across different runs.
  <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x.yaml">R101-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.371</td>
-<td align="center">0.309</td>
+<td align="center">0.124</td>
 <td align="center">7.8</td>
 <td align="center">25.6</td>
 <td align="center">25.9</td>
@@ -590,7 +595,7 @@ The final results of these configs has large variance across different runs.
  <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x.yaml">X101-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.712</td>
-<td align="center">0.361</td>
+<td align="center">0.166</td>
 <td align="center">10.2</td>
 <td align="center">26.7</td>
 <td align="center">27.1</td>
@@ -598,6 +603,7 @@ The final results of these configs has large variance across different runs.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/model_final_5e3439.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
+
 
 
 ### Cityscapes & Pascal VOC Baselines
@@ -627,7 +633,7 @@ Simple baselines for
 <!-- ROW: mask_rcnn_R_50_FPN -->
  <tr><td align="left"><a href="configs/Cityscapes/mask_rcnn_R_50_FPN.yaml">R50-FPN, Cityscapes</a></td>
 <td align="center">0.240</td>
-<td align="center">0.397</td>
+<td align="center">0.092</td>
 <td align="center">4.4</td>
 <td align="center"></td>
 <td align="center"></td>
@@ -638,7 +644,7 @@ Simple baselines for
 <!-- ROW: faster_rcnn_R_50_C4 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/faster_rcnn_R_50_C4.yaml">R50-C4, VOC</a></td>
 <td align="center">0.537</td>
-<td align="center">0.096</td>
+<td align="center">0.086</td>
 <td align="center">4.8</td>
 <td align="center">51.9</td>
 <td align="center">80.3</td>
@@ -649,6 +655,7 @@ Simple baselines for
 </tbody></table>
 
 
+
 ### Other Settings
 
 Ablations for Deformable Conv and Cascade R-CNN:
@@ -656,6 +663,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
 <!--
 ./gen_html_table.py --config 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml' 'Misc/*R_50_FPN_1x_dconv*' 'Misc/cascade*50*' --name "Baseline R50-FPN" "Deformable Conv" "Cascade R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 -->
+
 
 <table><tbody>
 <!-- START TABLE -->
@@ -674,7 +682,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">Baseline R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.261</td>
-<td align="center">0.087</td>
+<td align="center">0.053</td>
 <td align="center">3.4</td>
 <td align="center">38.6</td>
 <td align="center">35.2</td>
@@ -685,7 +693,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_1x_dconv_c3-c5.yaml">Deformable Conv</a></td>
 <td align="center">1x</td>
 <td align="center">0.342</td>
-<td align="center">0.084</td>
+<td align="center">0.061</td>
 <td align="center">3.5</td>
 <td align="center">41.5</td>
 <td align="center">37.5</td>
@@ -696,7 +704,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_R_50_FPN_1x.yaml">Cascade R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.317</td>
-<td align="center">0.090</td>
+<td align="center">0.066</td>
 <td align="center">4.0</td>
 <td align="center">42.1</td>
 <td align="center">36.4</td>
@@ -711,7 +719,7 @@ Ablations for normalization methods:
 [GroupNorm paper](https://arxiv.org/abs/1803.08494), the change in head does not improve the baseline by much)
 <!--
 ./gen_html_table.py --config 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml' 'Misc/mask*50_FPN_3x_syncbn.yaml' 'Misc/mask*50_FPN_3x_gn.yaml' 'Misc/scratch*' --name "Baseline R50-FPN" "SyncBN" "GN" "GN (scratch)" --fields lr_sched train_speed inference_speed mem box_AP mask_AP
-	 -->
+   -->
 
 
 <table><tbody>
@@ -731,7 +739,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml">Baseline R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.261</td>
-<td align="center">0.079</td>
+<td align="center">0.055</td>
 <td align="center">3.4</td>
 <td align="center">41.0</td>
 <td align="center">37.2</td>
@@ -742,7 +750,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_syncbn.yaml">SyncBN</a></td>
 <td align="center">3x</td>
 <td align="center">0.464</td>
-<td align="center">0.092</td>
+<td align="center">0.063</td>
 <td align="center">5.6</td>
 <td align="center">42.0</td>
 <td align="center">37.8</td>
@@ -753,7 +761,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_gn.yaml">GN</a></td>
 <td align="center">3x</td>
 <td align="center">0.356</td>
-<td align="center">0.102</td>
+<td align="center">0.077</td>
 <td align="center">7.3</td>
 <td align="center">42.6</td>
 <td align="center">38.6</td>
@@ -764,7 +772,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml">GN (scratch)</a></td>
 <td align="center">3x</td>
 <td align="center">0.400</td>
-<td align="center">0.106</td>
+<td align="center">0.077</td>
 <td align="center">9.8</td>
 <td align="center">39.9</td>
 <td align="center">36.6</td>
@@ -772,6 +780,7 @@ Ablations for normalization methods:
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn/138602908/model_final_01ca85.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn/138602908/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
+
 
 
 A few very large models trained for a long time, for demo purposes:
@@ -796,7 +805,7 @@ A few very large models trained for a long time, for demo purposes:
 <!-- TABLE BODY -->
 <!-- ROW: panoptic_fpn_R_101_dconv_cascade_gn_3x -->
  <tr><td align="left"><a href="configs/Misc/panoptic_fpn_R_101_dconv_cascade_gn_3x.yaml">Panoptic FPN R101</a></td>
-<td align="center">0.172</td>
+<td align="center">0.123</td>
 <td align="center">11.4</td>
 <td align="center">47.4</td>
 <td align="center">41.3</td>
@@ -806,7 +815,7 @@ A few very large models trained for a long time, for demo purposes:
 </tr>
 <!-- ROW: cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv -->
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml">Mask R-CNN X152</a></td>
-<td align="center">0.278</td>
+<td align="center">0.281</td>
 <td align="center">15.1</td>
 <td align="center">49.3</td>
 <td align="center">43.2</td>
