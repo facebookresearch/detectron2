@@ -6,6 +6,7 @@ import torch
 from detectron2.config import get_cfg
 from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransformRotated
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
+from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputs
 from detectron2.structures import Boxes, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
 
@@ -80,7 +81,7 @@ class FastRCNNTest(unittest.TestCase):
         proposals.append(result)
         smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
 
-        outputs = FastRCNNOutputs(
+        outputs = RotatedFastRCNNOutputs(
             box2box_transform, pred_class_logits, pred_proposal_deltas, proposals, smooth_l1_beta
         )
         with EventStorage():  # capture events in a new storage to discard them

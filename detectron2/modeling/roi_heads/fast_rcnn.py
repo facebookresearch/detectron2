@@ -274,10 +274,14 @@ class FastRCNNOutputs(object):
                 for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
                 the number of predicted objects for image i and B is the box dimension (4 or 5)
         """
+        num_pred = len(self.proposals)
+        B = self.proposals.tensor.shape[1]
+        K = self.pred_proposal_deltas.shape[1] // B
         boxes = self.box2box_transform.apply_deltas(
-            self.pred_proposal_deltas, self.proposals.tensor
+            self.pred_proposal_deltas.view(num_pred * K, B),
+            self.proposals.tensor.unsqueeze(1).expand(num_pred, K, B).reshape(-1, B),
         )
-        return boxes.split(self.num_preds_per_image, dim=0)
+        return boxes.view(num_pred, K * B).split(self.num_preds_per_image, dim=0)
 
     def predict_probs(self):
         """

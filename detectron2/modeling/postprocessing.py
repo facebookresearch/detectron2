@@ -32,8 +32,7 @@ def detector_postprocess(results, output_height, output_width, mask_threshold=0.
     elif results.has("proposal_boxes"):
         output_boxes = results.proposal_boxes
 
-    output_boxes.tensor[:, 0::2] *= scale_x
-    output_boxes.tensor[:, 1::2] *= scale_y
+    output_boxes.scale(scale_x, scale_y)
     output_boxes.clip(results.image_size)
 
     results = results[output_boxes.nonempty()]

@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import colorsys
+import logging
+import math
 import numpy as np
 from enum import Enum, unique
 import cv2
@@ -10,9 +12,11 @@ import pycocotools.mask as mask_util
 import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks
+from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 
 from .colormap import random_color
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["ColorMode", "VisImage", "Visualizer"]
 
@@ -498,8 +502,11 @@ class Visualizer:
     ):
         """
         Args:
-            boxes (Boxes or ndarray): either a :class:`Boxes` or a Nx4 numpy array
-                of XYXY_ABS format for the N objects in a single image.
+            boxes (Boxes, RotatedBoxes or ndarray): either a :class:`Boxes`,
+                or an Nx4 numpy array of XYXY_ABS format for the N objects in a single image,
+                or a :class:`RotatedBoxes`,
+                or an Nx5 numpy array of (x_center, y_center, width, height, angle_degrees) format
+                for the N objects in a single image,
             labels (list[str]): the text to be displayed for each instance.
             masks (masks-like object): Supported types are:
 
@@ -543,6 +550,10 @@ class Visualizer:
             assigned_colors = [random_color(rgb=True, maximum=1) for _ in range(num_instances)]
         if num_instances == 0:
             return self.output
+        if boxes is not None and boxes.shape[1] == 5:
+            return self.overlay_rotated_instances(
+                boxes=boxes, labels=labels, assigned_colors=assigned_colors
+            )
 
         # Display in largest to smallest order to reduce occlusion.
         areas = None
@@ -617,6 +628,45 @@ class Visualizer:
 
         return self.output
 
+    def overlay_rotated_instances(self, boxes=None, labels=None, assigned_colors=None):
+        """
+        Args:
+            boxes (ndarray): an Nx5 numpy array of
+                (x_center, y_center, width, height, angle_degrees) format
+                for the N objects in a single image.
+            labels (list[str]): the text to be displayed for each instance.
+            assigned_colors (list[matplotlib.colors]): a list of colors, where each color
+                corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
+                for full list of formats that the colors are accepted in.
+
+        Returns:
+            output (VisImage): image object with visualizations.
+        """
+
+        num_instances = len(boxes)
+
+        if assigned_colors is None:
+            assigned_colors = [random_color(rgb=True, maximum=1) for _ in range(num_instances)]
+        if num_instances == 0:
+            return self.output
+
+        # Display in largest to smallest order to reduce occlusion.
+        if boxes is not None:
+            areas = boxes[:, 2] * boxes[:, 3]
+
+        sorted_idxs = np.argsort(-areas).tolist()
+        # Re-order overlapped instances in descending order.
+        boxes = boxes[sorted_idxs]
+        labels = [labels[k] for k in sorted_idxs] if labels is not None else None
+        colors = [assigned_colors[idx] for idx in sorted_idxs]
+
+        for i in range(num_instances):
+            self.draw_rotated_box_with_label(
+                boxes[i], edge_color=colors[i], label=labels[i] if labels is not None else None
+            )
+
+        return self.output
+
     def draw_and_connect_keypoints(self, keypoints):
         """
         Draws keypoints of an instance and follows the rules for keypoint connections
@@ -677,7 +727,14 @@ class Visualizer:
     """
 
     def draw_text(
-        self, text, position, *, font_size=None, color="g", horizontal_alignment="center"
+        self,
+        text,
+        position,
+        *,
+        font_size=None,
+        color="g",
+        horizontal_alignment="center",
+        rotation=0
     ):
         """
         Args:
@@ -688,6 +745,7 @@ class Visualizer:
             color: color of the text. Refer to `matplotlib.colors` for full list
                 of formats that are accepted.
             horizontal_alignment (str): see `matplotlib.text.Text`
+            rotation: rotation angle in degrees CCW
 
         Returns:
             output (VisImage): image object with text drawn.
@@ -711,6 +769,7 @@ class Visualizer:
             horizontalalignment=horizontal_alignment,
             color=color,
             zorder=10,
+            rotation=rotation,
         )
         return self.output
 
@@ -748,6 +807,59 @@ class Visualizer:
         )
         return self.output
 
+    def draw_rotated_box_with_label(
+        self, rotated_box, alpha=0.5, edge_color="g", line_style="-", label=None
+    ):
+        """
+        Args:
+            rotated_box (tuple): a tuple containing (cnt_x, cnt_y, w, h, angle),
+                where cnt_x and cnt_y are the center coordinates of the box.
+                w and h are the width and height of the box. angle represents how
+                many degrees the box is rotated CCW with regard to the 0-degree box.
+            alpha (float): blending efficient. Smaller values lead to more transparent masks.
+            edge_color: color of the outline of the box. Refer to `matplotlib.colors`
+                for full list of formats that are accepted.
+            line_style (string): the string to use to create the outline of the boxes.
+            label (string): label for rotated box. It will not be rendered when set to None.
+
+        Returns:
+            output (VisImage): image object with box drawn.
+        """
+        cnt_x, cnt_y, w, h, angle = rotated_box
+        area = w * h
+        # use thinner lines when the box is small
+        linewidth = self._default_font_size / (
+            6 if area < _SMALL_OBJECT_AREA_THRESH * self.output.scale else 3
+        )
+
+        theta = angle * math.pi / 180.0
+        c = math.cos(theta)
+        s = math.sin(theta)
+        rect = [(-w / 2, h / 2), (-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2)]
+        # x: left->right ; y: top->down
+        rotated_rect = [(s * yy + c * xx + cnt_x, c * yy - s * xx + cnt_y) for (xx, yy) in rect]
+        for k in range(4):
+            j = (k + 1) % 4
+            self.draw_line(
+                [rotated_rect[k][0], rotated_rect[j][0]],
+                [rotated_rect[k][1], rotated_rect[j][1]],
+                color=edge_color,
+                linestyle="--" if k == 1 else line_style,
+                linewidth=linewidth,
+            )
+
+        if label is not None:
+            text_pos = rotated_rect[1]  # topleft corner
+
+            height_ratio = h / np.sqrt(self.output.height * self.output.width)
+            label_color = self._change_color_brightness(edge_color, brightness_factor=0.7)
+            font_size = (
+                np.clip((height_ratio - 0.02) / 0.08 + 1, 1.2, 2) * 0.5 * self._default_font_size
+            )
+            self.draw_text(label, text_pos, color=label_color, font_size=font_size, rotation=angle)
+
+        return self.output
+
     def draw_circle(self, circle_coord, color, radius=3):
         """
         Args:
@@ -766,7 +878,7 @@ class Visualizer:
         )
         return self.output
 
-    def draw_line(self, x_data, y_data, color):
+    def draw_line(self, x_data, y_data, color, linestyle="-", linewidth=None):
         """
         Args:
             x_data (list[int]): a list containing x values of all the points being drawn.
@@ -775,13 +887,25 @@ class Visualizer:
                 Length of list should match the length of x_data.
             color: color of the line. Refer to `matplotlib.colors` for a full list of
                 formats that are accepted.
+            linestyle: style of the line. Refer to `matplotlib.lines.Line2D`
+                for a full list of formats that are accepted.
+            linewidth (float or None): width of the line. When it's None,
+                a default value will be computed and used.
 
         Returns:
             output (VisImage): image object with line drawn.
         """
-        linewidth = max(self._default_font_size / 3, 1)
+        if linewidth is None:
+            linewidth = self._default_font_size / 3
+        linewidth = max(linewidth, 1)
         self.output.ax.add_line(
-            mpl.lines.Line2D(x_data, y_data, linewidth=linewidth * self.output.scale, color=color)
+            mpl.lines.Line2D(
+                x_data,
+                y_data,
+                linewidth=linewidth * self.output.scale,
+                color=color,
+                linestyle=linestyle,
+            )
         )
         return self.output
 
@@ -938,9 +1062,9 @@ class Visualizer:
 
     def _convert_boxes(self, boxes):
         """
-        Convert different format of boxes to a Nx4 array.
+        Convert different format of boxes to an NxB array, where B = 4 or 5 is the box dimension.
         """
-        if isinstance(boxes, Boxes):
+        if isinstance(boxes, Boxes) or isinstance(boxes, RotatedBoxes):
             return boxes.tensor.numpy()
         else:
             return np.asarray(boxes)

@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import math
 from typing import Iterator, List, Union
 import torch
 
@@ -364,8 +365,8 @@ class RotatedBoxes(Boxes):
         half_w = self.tensor[..., 2] / 2.0
         half_h = self.tensor[..., 3] / 2.0
         a = self.tensor[..., 4]
-        c = torch.abs(torch.cos(a * torch.pi / 180.0))
-        s = torch.abs(torch.sin(a * torch.pi / 180.0))
+        c = torch.abs(torch.cos(a * math.pi / 180.0))
+        s = torch.abs(torch.sin(a * math.pi / 180.0))
         # This basically computes the horizontal bounding rectangle of the rotated box
         max_rect_dx = c * half_w + s * half_h
         max_rect_dy = c * half_h + s * half_w
@@ -385,6 +386,71 @@ class RotatedBoxes(Boxes):
             The box centers in a Nx2 array of (x, y).
         """
         return self.tensor[:, :2]
+
+    def scale(self, scale_x: float, scale_y: float) -> None:
+        """
+        Scale the rotated box with horizontal and vertical scaling factors
+        Note: when scale_factor_x != scale_factor_y,
+        the rotated box does not preserve the rectangular shape when the angle
+        is not a multiple of 90 degrees under resize transformation.
+        Instead, the shape is a parallelogram (that has skew)
+        Here we make an approximation by fitting a rotated rectangle to the parallelogram.
+        """
+        self.tensor[:, 0] *= scale_x
+        self.tensor[:, 1] *= scale_y
+        theta = self.tensor[:, 4] * math.pi / 180.0
+        c = torch.cos(theta)
+        s = torch.sin(theta)
+
+        # In image space, y is top->down and x is left->right
+        # Consider the local coordintate system for the rotated box,
+        # where the box center is located at (0, 0), and the four vertices ABCD are
+        # A(-w / 2, -h / 2), B(w / 2, -h / 2), C(w / 2, h / 2), D(-w / 2, h / 2)
+        # the midpoint of the left edge AD of the rotated box E is:
+        # E = (A+D)/2 = (-w / 2, 0)
+        # the midpoint of the top edge AB of the rotated box F is:
+        # F(0, -h / 2)
+        # To get the old coordinates in the global system, apply the rotation transformation
+        # (Note: the right-handed coordinate system for image space is yOx):
+        # (old_x, old_y) = (s * y + c * x, c * y - s * x)
+        # E(old) = (s * 0 + c * (-w/2), c * 0 - s * (-w/2)) = (-c * w / 2, s * w / 2)
+        # F(old) = (s * (-h / 2) + c * 0, c * (-h / 2) - s * 0) = (-s * h / 2, -c * h / 2)
+        # After applying the scaling factor (sfx, sfy):
+        # E(new) = (-sfx * c * w / 2, sfy * s * w / 2)
+        # F(new) = (-sfx * s * h / 2, -sfy * c * h / 2)
+        # The new width after scaling tranformation becomes:
+
+        # w(new) = |E(new) - O| * 2
+        #        = sqrt[(sfx * c * w / 2)^2 + (sfy * s * w / 2)^2] * 2
+        #        = sqrt[(sfx * c)^2 + (sfy * s)^2] * w
+        # i.e., scale_factor_w = sqrt[(sfx * c)^2 + (sfy * s)^2]
+        #
+        # For example,
+        # when angle = 0 or 180, |c| = 1, s = 0, scale_factor_w == scale_factor_x;
+        # when |angle| = 90, c = 0, |s| = 1, scale_factor_w == scale_factor_y
+        self.tensor[:, 2] *= torch.sqrt((scale_x * c) ** 2 + (scale_y * s) ** 2)
+
+        # h(new) = |F(new) - O| * 2
+        #        = sqrt[(sfx * s * h / 2)^2 + (sfy * c * h / 2)^2] * 2
+        #        = sqrt[(sfx * s)^2 + (sfy * c)^2] * h
+        # i.e., scale_factor_h = sqrt[(sfx * s)^2 + (sfy * c)^2]
+        #
+        # For example,
+        # when angle = 0 or 180, |c| = 1, s = 0, scale_factor_h == scale_factor_y;
+        # when |angle| = 90, c = 0, |s| = 1, scale_factor_h == scale_factor_x
+        self.tensor[:, 3] *= torch.sqrt((scale_x * s) ** 2 + (scale_y * c) ** 2)
+
+        # The angle is the rotation angle from y-axis in image space to the height
+        # vector (top->down in the box's local coordinate system) of the box in CCW.
+        #
+        # angle(new) = angle_yOx(O - F(new))
+        #            = angle_yOx( (sfx * s * h / 2, sfy * c * h / 2) )
+        #            = atan2(sfx * s * h / 2, sfy * c * h / 2)
+        #            = atan2(sfx * s, sfy * c)
+        #
+        # For example,
+        # when sfx == sfy, angle(new) == atan2(s, c) == angle(old)
+        self.tensor[:, 4] = torch.atan2(scale_x * s, scale_y * c) * 180 / math.pi
 
     @staticmethod
     def cat(boxes_list: List["RotatedBoxes"]) -> "RotatedBoxes":  # type: ignore
