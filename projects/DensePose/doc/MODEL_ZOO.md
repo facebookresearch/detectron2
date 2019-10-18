@@ -29,7 +29,7 @@ All models available for download through this document are licensed under the
 <th valign="bottom">download</th>
 <!-- TABLE BODY --> 
 <!-- ROW: densepose_rcnn_R_50_FPN_s1x --> 
- <tr><td align="left"><a href="configs/densepose_rcnn_R_50_FPN_s1x.yaml">R_50_FPN_s1x</a></td>
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_s1x.yaml">R_50_FPN_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.281</td>
 <td align="center">0.064</td>
@@ -37,10 +37,10 @@ All models available for download through this document are licensed under the
 <td align="center">57.8</td>
 <td align="center">49.8</td>
 <td align="center">143908701</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/DensePose//densepose_rcnn_R_50_FPN_s1x/143908701/model_final_dd99d2.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/DensePose//densepose_rcnn_R_50_FPN_s1x/143908701/metrics.json">metrics</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_s1x/143908701/model_final_dd99d2.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_s1x/143908701/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: densepose_rcnn_R_101_FPN_s1x --> 
- <tr><td align="left"><a href="configs/densepose_rcnn_R_101_FPN_s1x.yaml">R_101_FPN_s1x</a></td>
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_s1x.yaml">R_101_FPN_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.365</td>
 <td align="center">0.076</td>
@@ -48,7 +48,7 @@ All models available for download through this document are licensed under the
 <td align="center">59.5</td>
 <td align="center">51.1</td>
 <td align="center">143908726</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/DensePose//densepose_rcnn_R_101_FPN_s1x/143908726/model_final_ad63b5.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/DensePose//densepose_rcnn_R_101_FPN_s1x/143908726/metrics.json">metrics</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_s1x/143908726/model_final_ad63b5.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_s1x/143908726/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 
