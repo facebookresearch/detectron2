@@ -40,6 +40,7 @@ class ColorMode(Enum):
         SEGMENTATION: Let instances of the same category have similar colors, and overlay them with
             high opacity. This provides more attention on the quality of segmentation.
         IMAGE_BW: same as IMAGE, but convert all areas without masks to gray-scale.
+            Only available for drawing per-instance mask predictions.
     """
 
     IMAGE = 0
@@ -351,6 +352,7 @@ class Visualizer:
             alpha = 0.5
 
         if self._instance_mode == ColorMode.IMAGE_BW:
+            assert predictions.has("pred_masks"), "ColorMode.IMAGE_BW requires segmentations"
             self.output.img = self._create_grayscale_image(
                 (predictions.pred_masks.any(dim=0) > 0).numpy()
             )

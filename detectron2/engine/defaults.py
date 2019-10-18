@@ -132,7 +132,8 @@ def default_setup(cfg, args):
 class DefaultPredictor:
     """
     Create a simple end-to-end predictor with the given config.
-    The predictor takes an BGR image and produce a dict of predictions.
+    The predictor takes an BGR image, resizes it to the specified resolution,
+    runs the model and produces a dict of predictions.
 
     Attributes:
         metadata (Metadata): the metadata of the underlying dataset, obtained from

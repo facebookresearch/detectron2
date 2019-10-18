@@ -11,6 +11,19 @@ the following extra functionalities:
    If your config file is versioned with a config line like `VERSION: 2`,
    detectron2 will still recognize it even if we rename some keys in the future.
 
+### Use Configs
+
+Some basic usage of the `CfgNode` object is shown below:
+```python
+from detectron2.config import get_cfg
+cfg = get_cfg()    # obtain detectron2's default config
+cfg.xxx = yyy      # add new configs for your own custom components
+cfg.merge_from_file("my_cfg.yaml")   # load values from a file
+
+cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values from a list of str
+```
+
+
 ### Best Practice with Configs
 
 1. Treat the configs you write as "code": avoid copying them or duplicating them; use "_BASE_"
