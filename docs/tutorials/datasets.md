@@ -65,7 +65,7 @@ can load an image from "file_name" if the "image" field is not available.
       The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
       depend on whether "bbox_mode" is relative.
     + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format.
-  + `keypoint`s (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
+  + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
     v[i] means the visibility of this keypoint.
     `n` must be equal to the number of keypoint categories.
     The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
