@@ -661,7 +661,7 @@ Simple baselines for
 Ablations for Deformable Conv and Cascade R-CNN:
 
 <!--
-./gen_html_table.py --config 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml' 'Misc/*R_50_FPN_1x_dconv*' 'Misc/cascade*50*' --name "Baseline R50-FPN" "Deformable Conv" "Cascade R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP
+./gen_html_table.py --config 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml' 'Misc/*R_50_FPN_1x_dconv*' 'Misc/cascade*1x.yaml' 'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml' 'Misc/*R_50_FPN_3x_dconv*' 'Misc/cascade*3x.yaml' --name "Baseline R50-FPN" "Deformable Conv" "Cascade R-CNN" "Baseline R50-FPN" "Deformable Conv" "Cascade R-CNN"  --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 -->
 
 
@@ -710,6 +710,39 @@ Ablations for Deformable Conv and Cascade R-CNN:
 <td align="center">36.4</td>
 <td align="center">138602847</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_R_50_FPN_1x/138602847/model_final_e9d89b.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_R_50_FPN_1x/138602847/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_50_FPN_3x -->
+ <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml">Baseline R50-FPN</a></td>
+<td align="center">3x</td>
+<td align="center">0.261</td>
+<td align="center">0.055</td>
+<td align="center">3.4</td>
+<td align="center">41.0</td>
+<td align="center">37.2</td>
+<td align="center">137849600</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_50_FPN_3x_dconv_c3-c5 -->
+ <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_dconv_c3-c5.yaml">Deformable Conv</a></td>
+<td align="center">3x</td>
+<td align="center">0.349</td>
+<td align="center">0.066</td>
+<td align="center">3.5</td>
+<td align="center">42.7</td>
+<td align="center">38.5</td>
+<td align="center">144998336</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_dconv_c3-c5/144998336/model_final_821d0b.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_dconv_c3-c5/144998336/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: cascade_mask_rcnn_R_50_FPN_3x -->
+ <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml">Cascade R-CNN</a></td>
+<td align="center">3x</td>
+<td align="center">0.328</td>
+<td align="center">0.075</td>
+<td align="center">4.0</td>
+<td align="center">44.3</td>
+<td align="center">38.5</td>
+<td align="center">144998488</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_R_50_FPN_3x/144998488/model_final_480dd8.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_R_50_FPN_3x/144998488/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 
