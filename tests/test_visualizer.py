@@ -102,3 +102,15 @@ class TestVisualizer(unittest.TestCase):
         v = Visualizer(img, self.metadata)
         output = v.overlay_instances(boxes=rotated_boxes, labels=labels).get_image()
         self.assertEqual(output.shape, img.shape)
+
+    def test_draw_no_metadata(self):
+        img, boxes, _, _, masks = self._random_data()
+        num_inst = len(boxes)
+        inst = Instances((img.shape[0], img.shape[1]))
+        inst.pred_classes = torch.randint(0, 80, size=(num_inst,))
+        inst.scores = torch.rand(num_inst)
+        inst.pred_boxes = torch.from_numpy(boxes)
+        inst.pred_masks = torch.from_numpy(np.asarray(masks))
+
+        v = Visualizer(img, MetadataCatalog.get("asdfasdf"))
+        v.draw_instance_predictions(inst)

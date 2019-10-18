@@ -686,20 +686,23 @@ class Visualizer:
             output (VisImage): image object with visualizations.
         """
         visible = {}
+        keypoint_names = self.metadata.get("keypoint_names")
         for idx, keypoint in enumerate(keypoints):
             # draw keypoint
             x, y, prob = keypoint
             if prob > _KEYPOINT_THRESHOLD:
                 self.draw_circle((x, y), color=_RED)
-                keypoint_name = self.metadata.keypoint_names[idx]
-                visible[keypoint_name] = (x, y)
+                if keypoint_names:
+                    keypoint_name = keypoint_names[idx]
+                    visible[keypoint_name] = (x, y)
 
-        for kp0, kp1, color in self.metadata.keypoint_connection_rules:
-            if kp0 in visible and kp1 in visible:
-                x0, y0 = visible[kp0]
-                x1, y1 = visible[kp1]
-                color = tuple(x / 255.0 for x in color)
-                self.draw_line([x0, x1], [y0, y1], color=color)
+        if self.metadata.get("keypoint_connection_rules"):
+            for kp0, kp1, color in self.metadata.keypoint_connection_rules:
+                if kp0 in visible and kp1 in visible:
+                    x0, y0 = visible[kp0]
+                    x1, y1 = visible[kp1]
+                    color = tuple(x / 255.0 for x in color)
+                    self.draw_line([x0, x1], [y0, y1], color=color)
 
         # draw lines from nose to mid-shoulder and mid-shoulder to mid-hip
         # Note that this strategy is specific to person keypoints.
