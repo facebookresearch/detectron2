@@ -115,7 +115,12 @@ class TensorboardXWriter:
 
     def __del__(self):
         if hasattr(self, "_writer"):  # doesn't exist when the code fails at import
-            self._writer.close()
+            try:
+                # when the program is exiting, the resource it needs may have been freed and
+                # the call can throw arbitrary exception.
+                self._writer.close()
+            except Exception:
+                pass
 
 
 class CommonMetricPrinter:
