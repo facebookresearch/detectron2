@@ -15,7 +15,7 @@ from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
-from detectron2.utils.events import EventStorage
+from detectron2.utils.events import EventStorage, EventWriter
 
 from .train_loop import HookBase
 
@@ -150,10 +150,12 @@ class PeriodicWriter(HookBase):
     def __init__(self, writers, period=20):
         """
         Args:
-            writers (list): a list of objects with a "write" method.
+            writers (list[EventWriter]): a list of EventWriter objects
             period (int):
         """
         self._writers = writers
+        for w in writers:
+            assert isinstance(w, EventWriter), w
         self._period = period
 
     def after_step(self):
@@ -162,6 +164,10 @@ class PeriodicWriter(HookBase):
         ):
             for writer in self._writers:
                 writer.write()
+
+    def after_train(self):
+        for writer in self._writers:
+            writer.close()
 
 
 class PeriodicCheckpointer(_PeriodicCheckpointer, HookBase):
