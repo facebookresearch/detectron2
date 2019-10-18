@@ -482,7 +482,10 @@ class Visualizer:
             names = self.metadata.get("thing_classes", None)
             if names:
                 labels = [names[i] for i in labels]
-            labels = [i + ("|crowd" if a.get("iscrowd", 0) else "") for i, a in zip(labels, annos)]
+            labels = [
+                "{}".format(i) + ("|crowd" if a.get("iscrowd", 0) else "")
+                for i, a in zip(labels, annos)
+            ]
             self.overlay_instances(labels=labels, boxes=boxes, masks=masks, keypoints=keypts)
 
         sem_seg = dic.get("sem_seg", None)
