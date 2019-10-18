@@ -1,6 +1,6 @@
-_BASE_: "../densepose_R_50_FPN_s1x.yaml"
+_BASE_: "../densepose_rcnn_R_50_FPN_s1x.yaml"
 MODEL:
-  WEIGHTS: "detectron2://e2e_densepose_R_50_FPN_s1x/124238535/model_final_5f3d7f9875229310fdfe6649459c0157.pkl"
+  WEIGHTS: "detectron2://e2e_densepose_R_50_FPN_s1x/124238535/model_final_5f3d7f.pkl"
 DATASETS:
   TRAIN: ()
   TEST: ("densepose_coco_2014_minival_100",)
