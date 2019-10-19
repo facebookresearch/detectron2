@@ -11,6 +11,7 @@ Unless otherwise noted, the following settings are used for all runs:
 * All models were trained on [Big Basin](https://engineering.fb.com/data-center-engineering/introducing-big-basin-our-next-generation-ai-hardware/)
   servers with 8 NVIDIA V100 GPUs, with data-parallel sync SGD and a total minibatch size of 16 images.
 * All models were trained with CUDA 9.2, cuDNN 7.4.2 or 7.6.3 (the difference in speed is found to be negligible).
+* Training curves and other statistics can be found in `metrics` for each model.
 * The default settings are __not directly comparable__ with Detectron.
   For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 
@@ -18,9 +19,12 @@ Unless otherwise noted, the following settings are used for all runs:
   [Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
   and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
   for speed comparison.
-* Inference time is measured with batch size 1 in detectron2 directly.
+* Inference speed is measured with batch size 1 in detectron2 directly.
   The actual deployment should in general be faster than the given inference
-  time due to more optimizations.
+  speed due to more optimizations.
+* Training speed is averaged across the entire training.
+	We keep updating the speed with latest version of detectron2/pytorch/etc.,
+	so they might be different from the `metrics` file.
 * All COCO models were trained on `train2017` and evaluated on `val2017`.
 * For Faster/Mask R-CNN, we provide baselines based on __3 different backbone combinations__:
   * __FPN__: Use a ResNet+FPN backbone with standard conv and FC heads for mask and box prediction,
@@ -85,7 +89,7 @@ All models available for download through this document are licensed under the
 <!-- ROW: faster_rcnn_R_50_C4_1x -->
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_C4_1x.yaml">R50-C4</a></td>
 <td align="center">1x</td>
-<td align="center">0.593</td>
+<td align="center">0.551</td>
 <td align="center">0.110</td>
 <td align="center">4.8</td>
 <td align="center">35.7</td>
@@ -115,7 +119,7 @@ All models available for download through this document are licensed under the
 <!-- ROW: faster_rcnn_R_50_C4_3x -->
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_C4_3x.yaml">R50-C4</a></td>
 <td align="center">3x</td>
-<td align="center">0.589</td>
+<td align="center">0.543</td>
 <td align="center">0.110</td>
 <td align="center">4.8</td>
 <td align="center">38.4</td>
@@ -145,7 +149,7 @@ All models available for download through this document are licensed under the
 <!-- ROW: faster_rcnn_R_101_C4_3x -->
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_C4_3x.yaml">R101-C4</a></td>
 <td align="center">3x</td>
-<td align="center">0.656</td>
+<td align="center">0.619</td>
 <td align="center">0.149</td>
 <td align="center">5.9</td>
 <td align="center">41.1</td>
@@ -183,6 +187,7 @@ All models available for download through this document are licensed under the
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x/139173657/model_final_68b088.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x/139173657/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
+
 
 #### RetinaNet:
 <!--
@@ -293,6 +298,7 @@ All models available for download through this document are licensed under the
 -->
 
 
+
 <table><tbody>
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
@@ -309,7 +315,7 @@ All models available for download through this document are licensed under the
 <!-- ROW: mask_rcnn_R_50_C4_1x -->
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_1x.yaml">R50-C4</a></td>
 <td align="center">1x</td>
-<td align="center">0.621</td>
+<td align="center">0.584</td>
 <td align="center">0.117</td>
 <td align="center">5.2</td>
 <td align="center">36.8</td>
@@ -342,7 +348,7 @@ All models available for download through this document are licensed under the
 <!-- ROW: mask_rcnn_R_50_C4_3x -->
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml">R50-C4</a></td>
 <td align="center">3x</td>
-<td align="center">0.622</td>
+<td align="center">0.575</td>
 <td align="center">0.118</td>
 <td align="center">5.2</td>
 <td align="center">39.8</td>
@@ -375,7 +381,7 @@ All models available for download through this document are licensed under the
 <!-- ROW: mask_rcnn_R_101_C4_3x -->
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_C4_3x.yaml">R101-C4</a></td>
 <td align="center">3x</td>
-<td align="center">0.691</td>
+<td align="center">0.652</td>
 <td align="center">0.155</td>
 <td align="center">6.3</td>
 <td align="center">42.6</td>
