@@ -318,7 +318,7 @@ def build_detection_train_loader(cfg, mapper=None):
 
     dataset_dicts = get_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
-        filter_empty=True,
+        filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
         min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
         if cfg.MODEL.KEYPOINT_ON
         else 0,
