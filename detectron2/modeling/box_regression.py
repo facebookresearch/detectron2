@@ -76,7 +76,7 @@ class Box2BoxTransform(object):
                 box transformations for the single box boxes[i].
             boxes (Tensor): boxes to transform, of shape (N, 4)
         """
-        assert torch.isfinite(deltas).all().item()
+        assert torch.isfinite(deltas).all().item(), "Box regression deltas become infinite or NaN!"
         boxes = boxes.to(deltas.dtype)
 
         widths = boxes[:, 2] - boxes[:, 0]
@@ -179,7 +179,7 @@ class Box2BoxTransformRotated(object):
             boxes (Tensor): boxes to transform, of shape (N, 5)
         """
         assert deltas.shape[1] == 5 and boxes.shape[1] == 5
-        assert torch.isfinite(deltas).all().item()
+        assert torch.isfinite(deltas).all().item(), "Box regression deltas become infinite or NaN!"
 
         boxes = boxes.to(deltas.dtype)
 
