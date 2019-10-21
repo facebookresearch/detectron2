@@ -38,7 +38,8 @@ Unless otherwise noted, the following settings are used for all runs:
   Although 1x models are heavily under-trained, we provide some ResNet-50 models with the 1x (~12 COCO epochs)
   training schedule for comparison when doing quick research iteration.
 * The *model id* column is provided for ease of reference.
-  To check downloaded file integrity: any model on this page contains its md5 prefix in its file name.
+  To check downloaded file integrity, any model on this page contains its md5 prefix in its file name.
+	Each model also comes with a metrics file with all the training statistics and evaluation curves.
 
 #### ImageNet Pretrained Models
 
