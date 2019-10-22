@@ -16,7 +16,7 @@ This script was used to train all DensePose models in [Model Zoo](MODEL_ZOO.md).
 For example, to launch end-to-end DensePose-RCNN training with ResNet-50 FPN backbone
 on 8 GPUs following the s1x schedule, one can run
 ```bash
-python train_net.py --config-file configs/densepose_rcnn_R_50_FPN_s1x.yaml --num_gpus 8
+python train_net.py --config-file configs/densepose_rcnn_R_50_FPN_s1x.yaml --num-gpus 8
 ```
 The configs are made for 8-GPU training. To train on 1 GPU, one can apply the
 [linear learning rate scaling rule](https://arxiv.org/abs/1706.02677):
