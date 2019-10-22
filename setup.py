@@ -78,9 +78,9 @@ setup(
         "cloudpickle",
         "matplotlib",
         "tqdm>4.29.0",
-        "shapely",
         "tensorboard",
     ],
+    extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
 )
