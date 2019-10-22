@@ -194,7 +194,8 @@ class DefaultTrainer(SimpleTrainer):
     :class:`SimpleTrainer` are too much for research.
 
     The code of this class has been annotated about restrictive assumptions it mades.
-    When they do not work for you, you're encouraged to write your own training logic.
+    When they do not work for you, you're encouraged to either
+    overwrite its methods, or write your own training logic.
 
     Also note that the behavior of this class, like other functions/classes in
     this file, is not stable, since it is meant to represent the "common default behavior".
@@ -260,7 +261,8 @@ class DefaultTrainer(SimpleTrainer):
 
     def build_hooks(self):
         """
-        Build a list of default hooks.
+        Build a list of default hooks, including timing, evaluation,
+        checkpointing, lr scheduling, precise BN, writing events.
 
         Returns:
             list[HookBase]:
@@ -306,11 +308,25 @@ class DefaultTrainer(SimpleTrainer):
 
     def build_writers(self):
         """
-        Build a list of default writers, that write metrics to the screen,
+        Build a list of writers to be used. By default it contains
+        writers that write metrics to the screen,
         a json file, and a tensorboard event file respectively.
+        If you'd like a different list of writers, you can overwrite it in
+        your trainer.
 
         Returns:
-            list[Writer]: a list of objects that have a ``.write`` method.
+            list[EventWriter]: a list of :class:`EventWriter` objects.
+
+        It is now implemented by:
+
+        .. code-block:: python
+
+            return [
+                CommonMetricPrinter(self.max_iter),
+                JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),
+                TensorboardXWriter(self.cfg.OUTPUT_DIR),
+            ]
+
         """
         # Assume the default print/log frequency.
         return [
@@ -337,6 +353,9 @@ class DefaultTrainer(SimpleTrainer):
         """
         Returns:
             torch.nn.Module:
+
+        It now calls :func:`detectron2.modeling.build_model`.
+        Overwrite it if you'd like a different model.
         """
         model = build_model(cfg)
         logger = logging.getLogger(__name__)
@@ -348,11 +367,18 @@ class DefaultTrainer(SimpleTrainer):
         """
         Returns:
             torch.optim.Optimizer:
+
+        It now calls :func:`detectron2.solver.build_optimizer`.
+        Overwrite it if you'd like a different optimizer.
         """
         return build_optimizer(cfg, model)
 
     @classmethod
     def build_lr_scheduler(cls, cfg, optimizer):
+        """
+        It now calls :func:`detectron2.solver.build_lr_scheduler`.
+        Overwrite it if you'd like a different scheduler.
+        """
         return build_lr_scheduler(cfg, optimizer)
 
     @classmethod
@@ -360,6 +386,9 @@ class DefaultTrainer(SimpleTrainer):
         """
         Returns:
             iterable
+
+        It now calls :func:`detectron2.data.build_detection_train_loader`.
+        Overwrite it if you'd like a different data loader.
         """
         return build_detection_train_loader(cfg)
 
@@ -368,6 +397,9 @@ class DefaultTrainer(SimpleTrainer):
         """
         Returns:
             iterable
+
+        It now calls :func:`detectron2.data.build_detection_test_loader`.
+        Overwrite it if you'd like a different data loader.
         """
         return build_detection_test_loader(cfg, dataset_name)
 
@@ -376,6 +408,8 @@ class DefaultTrainer(SimpleTrainer):
         """
         Returns:
             DatasetEvaluator
+
+        It is not implemented by default.
         """
         raise NotImplementedError
 
