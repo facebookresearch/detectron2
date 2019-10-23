@@ -12,6 +12,7 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.engine.defaults import DefaultPredictor
 from detectron2.structures.instances import Instances
+from detectron2.structures.boxes import BoxMode
 from detectron2.utils.logger import setup_logger
 
 from densepose import add_densepose_config
@@ -141,8 +142,17 @@ class DumpAction(InferenceAction):
     ):
         image_fpath = entry["file_name"]
         logger.info(f"Processing {image_fpath}")
-        entry["instances"] = outputs
-        context["results"].append(entry)
+        result = {"file_name": image_fpath}
+        if outputs.has("scores"):
+            result["scores"] = outputs.get("scores").cpu()
+        if outputs.has("pred_boxes"):
+            result["pred_boxes_XYXY"] = outputs.get("pred_boxes").tensor.cpu()
+            if outputs.has("pred_densepose"):
+                boxes_XYWH = BoxMode.convert(
+                    result["pred_boxes_XYXY"], BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+                result["pred_densepose"] = outputs.get("pred_densepose").to_result(
+                    boxes_XYWH)
+        context["results"].append(result)
 
     @classmethod
     def create_context(cls: type, args: argparse.Namespace):
