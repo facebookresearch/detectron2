@@ -27,6 +27,7 @@ This command will run the inference and show visualizations in an OpenCV window.
 
 * To run __on your webcam__, replace `--input files` with `--webcam`.
 * To run __on a video__, replace `--input files` with `--video-input video.mp4`.
+* To run __on cpu__, add `MODEL.DEVICE cpu` after `--opts`.
 * To save outputs to a directory (for images) or a file (for webcam or video), use `--output`.
 
 
