@@ -194,8 +194,12 @@ class DefaultTrainer(SimpleTrainer):
     :class:`SimpleTrainer` are too much for research.
 
     The code of this class has been annotated about restrictive assumptions it mades.
-    When they do not work for you, you're encouraged to either
-    overwrite its methods, or write your own training logic.
+    When they do not work for you, you're encouraged to:
+
+    1. Overwrite methods of this class, OR:
+    2. Use :class:`SimpleTrainer`, which only does minimal SGD training and
+       nothing else. You can then add your own hooks if needed. OR:
+    3. Write your own training loop similar to `tools/plain_train_net.py`.
 
     Also note that the behavior of this class, like other functions/classes in
     this file, is not stable, since it is meant to represent the "common default behavior".
