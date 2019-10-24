@@ -92,6 +92,10 @@ def select_proposals_with_visible_keypoints(proposals):
     ret = []
     all_num_fg = []
     for proposals_per_image in proposals:
+        # If empty/unannotated image (hard negatives), skip filtering for train
+        if len(proposals_per_image) == 0:
+            ret.append(proposals_per_image)
+            continue
         gt_keypoints = proposals_per_image.gt_keypoints.tensor
         # #fg x K x 3
         vis_mask = gt_keypoints[:, :, 2] >= 1
