@@ -31,7 +31,7 @@ In detectron2, there are two types of interfaces that address this tension toget
    included in detectron2, these well-defined components can be reused.
 
 
-If you only need the standard behavior, the [Beginner's Tutorial](getting_started)
+If you only need the standard behavior, the [Beginner's Tutorial](getting_started.html)
 should suffice. If you need to extend detectron2 to your own needs,
 see the following tutorials for more details:
 
