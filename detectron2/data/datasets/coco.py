@@ -3,11 +3,18 @@ import io
 import logging
 import contextlib
 import os
+import datetime
+import json
+import numpy as np
+
 from PIL import Image
+from copy import deepcopy
+from collections import Counter
 
 from fvcore.common.timer import Timer
-from detectron2.structures import BoxMode
+from detectron2.structures import BoxMode, PolygonMasks, Boxes
 from fvcore.common.file_io import PathManager
+
 
 from .. import MetadataCatalog, DatasetCatalog
 
@@ -278,6 +285,115 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
         dataset_dicts.append(record)
 
     return dataset_dicts
+
+
+def convert_to_coco_dict(dataset_name):
+    """
+    Convert a generic dataset into COCO json format
+
+    Generic dataset description can be found here:
+    https://github.com/facebookresearch/detectron2/blob/master/docs/tutorials/datasets.md#register-a-dataset
+
+    COCO data format description can be found here:
+    http://cocodataset.org/#format-data
+
+    Args:
+        dataset_name: name of the source dataset
+    Returns:
+        coco_dict: serializable dict in COCO json format
+    """
+
+    dataset_dicts = DatasetCatalog.get(dataset_name)
+    categories = [
+        {"id": id, "name": name}
+        for id, name in enumerate(MetadataCatalog.get(dataset_name).thing_classes)
+    ]
+
+    logger.info("Converting dataset dicts into COCO format")
+    images = []
+    annotations = []
+
+    # just for logging purposes
+    _annotation_keys = Counter()
+
+    for image_dict in dataset_dicts:
+        image = {
+            "id": image_dict["image_id"],
+            "width": image_dict["width"],
+            "height": image_dict["height"],
+            "file_name": image_dict["file_name"],
+        }
+
+        images.append(image)
+
+        # deep-copying various annotations from the original format
+        # can be bbox, segmentation, keypoint, etc.
+        anns_per_image = deepcopy(image_dict["annotations"])
+        for annotation in anns_per_image:
+            # COCO requirement: linking annotations to images
+            annotation["id"] = len(annotations) + 1
+            annotation["image_id"] = image_dict["image_id"]
+
+            # TODO: make BBOX_MODE serializable, otherwise remove it
+            bbox = annotation["bbox"]
+            bbox_mode = annotation["bbox_mode"]
+            bbox = BoxMode.convert(bbox, bbox_mode, BoxMode.XYWH_ABS)
+            del annotation["bbox_mode"]
+
+            # COCO requirement: instance area
+            if "segmentation" in annotation:
+                # Computing areas for instances by counting the pixels
+                segmentation = annotation["segmentation"]
+                # TODO: check segmentation type: RLE, BinaryMask or Polygon
+                polygons = PolygonMasks([segmentation])
+                area = polygons.area()[0]
+            else:
+                # Computing areas using bounding boxes
+                area = Boxes([bbox]).area()[0]
+            annotation["area"] = area
+
+            # Keeping track of fields present in instances
+            _annotation_keys.update(annotation.keys())
+
+            annotations.append(annotation)
+
+    logger.info(
+        "Conversion finished, " f"num images: {len(images)}, num annotations: {len(annotations)}"
+    )
+    logger.info(f"Annotation fields: {_annotation_keys}")
+    if len(_annotation_keys.most_common()) != len(_annotation_keys):
+        logger.warning(f"Annotation fields are not homogenous between instances")
+
+    info = {
+        "date_created": str(datetime.datetime.now()),
+        "description": "Automatically generated COCO json file for Detectron2.",
+    }
+    coco_dict = {
+        "info": info,
+        "images": images,
+        "annotations": annotations,
+        "categories": categories,
+        "licenses": None,
+    }
+    return coco_dict
+
+
+def convert_to_coco_json(dataset_name, allow_cached=True):
+    # TODO: The dataset or the conversion script *may* change,
+    # a checksum would be useful for validating the cached data
+    cache_path = f"/tmp/{dataset_name}_coco_format.json"
+    if os.path.exists(cache_path) and allow_cached:
+        logger.warning(f"Reading cached annotations in COCO format from:{cache_path}")
+    else:
+        logger.info("Fetching dataset annotations")
+        coco_dict = convert_to_coco_dict(dataset_name)
+
+        # TODO: json_file should be renamed to json_path
+        with open(cache_path, "w") as json_file_buff:
+            logger.info(f"Caching annotations in COCO format: {cache_path}")
+            json.dump(coco_dict, json_file_buff)
+
+    return cache_path
 
 
 if __name__ == "__main__":
