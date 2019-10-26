@@ -385,7 +385,7 @@ class Visualizer:
         labels, areas = np.unique(sem_seg, return_counts=True)
         sorted_idxs = np.argsort(-areas).tolist()
         labels = labels[sorted_idxs]
-        for label in labels:
+        for label in filter(lambda l: l < len(self.metadata.stuff_classes), labels):
             try:
                 mask_color = [x / 255 for x in self.metadata.stuff_colors[label]]
             except (AttributeError, IndexError):
@@ -463,7 +463,18 @@ class Visualizer:
 
         return self.output
 
-    def draw_dataset_dict(self, dic):
+    def draw_dataset_dict(self, dic, ignore_label=255):
+        """
+        Draw semantic segmentation predictions/labels.
+
+        Args:
+            dic (dict): Metadata of one image, in Detectron2 Dataset format.
+            ignore_label (int): value in semantic segmentation ground truth. The corresponding
+                pixels are not drawn.
+
+        Returns:
+            output (VisImage): image object with visualizations.
+        """
         annos = dic.get("annotations", None)
         if annos:
             if "segmentation" in annos[0]:
@@ -492,6 +503,7 @@ class Visualizer:
         if sem_seg is None and "sem_seg_file_name" in dic:
             sem_seg = cv2.imread(dic["sem_seg_file_name"], cv2.IMREAD_GRAYSCALE)
         if sem_seg is not None:
+            sem_seg[sem_seg == ignore_label] = len(self.metadata.stuff_classes)
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
         return self.output
 
