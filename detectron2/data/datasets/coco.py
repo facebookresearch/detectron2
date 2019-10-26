@@ -334,11 +334,13 @@ def convert_to_coco_dict(dataset_name):
             annotation["id"] = len(annotations) + 1
             annotation["image_id"] = image_dict["image_id"]
 
-            # TODO: make BBOX_MODE serializable, otherwise remove it
+            # COCO requirement: XYWH box format
             bbox = annotation["bbox"]
             bbox_mode = annotation["bbox_mode"]
             bbox = BoxMode.convert(bbox, bbox_mode, BoxMode.XYWH_ABS)
             del annotation["bbox_mode"]
+            # TODO: make BBOX_MODE serializable, otherwise remove it
+            annotation["bbox"] = bbox
 
             # COCO requirement: instance area
             if "segmentation" in annotation:
