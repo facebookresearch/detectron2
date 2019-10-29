@@ -465,10 +465,10 @@ class Visualizer:
 
     def draw_dataset_dict(self, dic):
         """
-        Draw semantic segmentation predictions/labels.
+        Draw annotations/segmentaions in Detectron2 Dataset format.
 
         Args:
-            dic (dict): Metadata of one image, in Detectron2 Dataset format.
+            dic (dict): annotation/segmentation data of one image, in Detectron2 Dataset format.
 
         Returns:
             output (VisImage): image object with visualizations.
