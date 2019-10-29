@@ -58,7 +58,12 @@ For most models, CPU training is not supported.
 (Note that we applied the [linear learning rate scaling rule](https://arxiv.org/abs/1706.02677)
 when changing the batch size.)
 
-To evaluate a model's performance, use `train_net.py --eval-only`.
+To evaluate this model's performance, use
+```
+python tools/train_net.py \
+	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+	MODEL.WEIGHTS /path/to/checkpoint_file
+```
 For more options, see `python tools/train_net.py -h`.
 
 ### Use Detectron2 in Your Code
