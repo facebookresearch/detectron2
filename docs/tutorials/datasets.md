@@ -48,8 +48,8 @@ can load an image from "file_name" if the "image" field is not available.
 + `sem_seg`: semantic segmentation ground truth in a 2D numpy array. Values in the array represent
    category labels.
 + `height`, `width`: integer. The shape of image.
-+ `image_id` (str): a string to identify this image. Mainly used during evaluation to identify the
-  image. Each dataset may use it for different purposes.
++ `image_id` (str): a string to identify this image. Mainly used by certain datasets
+	during evaluation to identify the image, but a dataset may use it for different purposes.
 + `annotations` (list[dict]): the per-instance annotations of every
   instance in this image. Each annotation dict may contain:
   + `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
