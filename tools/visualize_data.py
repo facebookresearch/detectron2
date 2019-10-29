@@ -92,6 +92,5 @@ if __name__ == "__main__":
         for dic in dicts:
             img = utils.read_image(dic["file_name"], "RGB")
             visualizer = Visualizer(img, metadata=metadata, scale=scale)
-            vis = visualizer.draw_dataset_dict(
-                dic, ignore_label=cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE)
+            vis = visualizer.draw_dataset_dict(dic)
             output(vis, os.path.basename(dic["file_name"]))

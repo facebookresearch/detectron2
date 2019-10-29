@@ -463,14 +463,12 @@ class Visualizer:
 
         return self.output
 
-    def draw_dataset_dict(self, dic, ignore_label=255):
+    def draw_dataset_dict(self, dic):
         """
         Draw semantic segmentation predictions/labels.
 
         Args:
             dic (dict): Metadata of one image, in Detectron2 Dataset format.
-            ignore_label (int): value in semantic segmentation ground truth. The corresponding
-                pixels are not drawn.
 
         Returns:
             output (VisImage): image object with visualizations.
@@ -503,7 +501,6 @@ class Visualizer:
         if sem_seg is None and "sem_seg_file_name" in dic:
             sem_seg = cv2.imread(dic["sem_seg_file_name"], cv2.IMREAD_GRAYSCALE)
         if sem_seg is not None:
-            sem_seg[sem_seg == ignore_label] = len(self.metadata.stuff_classes)
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
         return self.output
 
