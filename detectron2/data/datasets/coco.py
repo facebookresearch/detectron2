@@ -380,10 +380,10 @@ def convert_to_coco_dict(dataset_name):
     return coco_dict
 
 
-def convert_to_coco_json(dataset_name, allow_cached=True):
+def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
     # TODO: The dataset or the conversion script *may* change,
     # a checksum would be useful for validating the cached data
-    cache_path = f"/tmp/{dataset_name}_coco_format.json"
+    cache_path = os.path.join(output, f"{dataset_name}_coco_format.json")
     if os.path.exists(cache_path) and allow_cached:
         logger.warning(f"Reading cached annotations in COCO format from:{cache_path}")
     else:
