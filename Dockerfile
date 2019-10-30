@@ -1,7 +1,17 @@
 FROM nvidia/cuda:10.1-cudnn7-devel
 # To use this Dockerfile:
-# 1. `nvidia-docker build -t detectron2:v0 .`
-# 2. `nvidia-docker run -it --name detectron2 detectron2:v0`
+# 1. `docker build -t detectron2:v0 .`
+# 2. `docker run  --gpus all -it --name detectron2 detectron2:v0`
+
+#### Test nvidia-smi with the latest image
+# $ docker run --gpus all detectron2:v0 nvidia-smi
+
+# Start a GPU enabled container on two GPUs
+# $ docker run --gpus 2 detectron2:v0 nvidia-smi
+
+# Starting a GPU enabled container on specific GPUs
+# $  docker run --gpus '"device=1,2"' detectron2:v0 nvidia-smi
+# $ docker run --gpus '"device=UUID-ABCDEF,1"' detectron2:v0 nvidia-smi
 
 
 ENV DEBIAN_FRONTEND noninteractive
