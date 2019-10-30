@@ -381,6 +381,17 @@ def convert_to_coco_dict(dataset_name):
 
 
 def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
+    """
+    Converts dataset into COCO format and saves it to a json file.
+
+    Args:
+        dataset_name: reference from the config file to the catalogs
+        output_folde: where json file will be saved and loaded from
+        allow_cached: if json file is already present then skip conversion
+    Returns:
+        cache_path: path to the COCO-format json file
+    """
+
     # TODO: The dataset or the conversion script *may* change,
     # a checksum would be useful for validating the cached data
     cache_path = os.path.join(output, f"{dataset_name}_coco_format.json")

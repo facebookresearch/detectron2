@@ -351,6 +351,12 @@ class PolygonMasks:
         return torch.stack(results, dim=0).to(device=device)
 
     def area(self):
+        """
+        Computes area of the mask.
+        Only works with Polygons, using the shoelace formula:
+        # https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+        """
+
         area = []
         for polygons_per_instance in self.polygons:
             area_per_instance = 0
