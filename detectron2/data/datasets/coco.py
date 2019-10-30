@@ -292,7 +292,7 @@ def convert_to_coco_dict(dataset_name):
     Convert a generic dataset into COCO json format
 
     Generic dataset description can be found here:
-    https://github.com/facebookresearch/detectron2/blob/master/docs/tutorials/datasets.md#register-a-dataset
+    https://detectron2.readthedocs.io/tutorials/datasets.html#register-a-dataset
 
     COCO data format description can be found here:
     http://cocodataset.org/#format-data
