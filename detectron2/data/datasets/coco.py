@@ -310,37 +310,29 @@ def convert_to_coco_dict(dataset_name):
     ]
 
     logger.info("Converting dataset dicts into COCO format")
-    images = []
-    annotations = []
+    coco_images = []
+    coco_annotations = []
 
     # just for logging purposes
     _annotation_keys = Counter()
-
     for image_dict in dataset_dicts:
-        image = {
+        coco_image = {
             "id": image_dict["image_id"],
             "width": image_dict["width"],
             "height": image_dict["height"],
             "file_name": image_dict["file_name"],
         }
+        coco_images.append(coco_image)
 
-        images.append(image)
-
-        # deep-copying various annotations from the original format
-        # can be bbox, segmentation, keypoint, etc.
-        anns_per_image = deepcopy(image_dict["annotations"])
+        anns_per_image = image_dict["annotations"]
         for annotation in anns_per_image:
-            # COCO requirement: linking annotations to images
-            annotation["id"] = len(annotations) + 1
-            annotation["image_id"] = image_dict["image_id"]
+            # create a new dict with only COCO fields
+            coco_annotation = {}
 
             # COCO requirement: XYWH box format
             bbox = annotation["bbox"]
             bbox_mode = annotation["bbox_mode"]
             bbox = BoxMode.convert(bbox, bbox_mode, BoxMode.XYWH_ABS)
-            del annotation["bbox_mode"]
-            # TODO: make BBOX_MODE serializable, otherwise remove it
-            annotation["bbox"] = bbox
 
             # COCO requirement: instance area
             if "segmentation" in annotation:
@@ -348,23 +340,33 @@ def convert_to_coco_dict(dataset_name):
                 segmentation = annotation["segmentation"]
                 # TODO: check segmentation type: RLE, BinaryMask or Polygon
                 polygons = PolygonMasks([segmentation])
-                area = polygons.area()[0]
+                area = polygons.area()[0].item()
             else:
                 # Computing areas using bounding boxes
-                area = Boxes([bbox]).area()[0]
-            annotation["area"] = area
+                area = Boxes([bbox]).area()[0].item()
 
-            # Keeping track of fields present in instances
-            _annotation_keys.update(annotation.keys())
+            # COCO requirement:
+            #   linking annotations to images
+            #   "id" field must start with 1
+            coco_annotation["id"] = len(coco_annotations) + 1
+            coco_annotation["image_id"] = image_dict["image_id"]
+            coco_annotation["bbox"] = bbox
+            coco_annotation["area"] = area
+            coco_annotation["category_id"] = annotation["category_id"]
+            coco_annotation["iscrowd"] = annotation["iscrowd"]
 
-            annotations.append(annotation)
+            # Add optional fields
+            if "keypoints" in annotation:
+                coco_annotation["keypoints"] = annotation["keypoints"]
+            if "segmentation" in annotation:
+                coco_annotation["segmentation"] = annotation["segmentation"]
+
+            coco_annotations.append(coco_annotation)
 
     logger.info(
-        "Conversion finished, " f"num images: {len(images)}, num annotations: {len(annotations)}"
+        "Conversion finished, "
+        f"num images: {len(coco_images)}, num annotations: {len(coco_annotations)}"
     )
-    logger.info(f"Annotation fields: {_annotation_keys}")
-    if len(_annotation_keys.most_common()) != len(_annotation_keys):
-        logger.warning(f"Annotation fields are not homogenous between instances")
 
     info = {
         "date_created": str(datetime.datetime.now()),
@@ -372,8 +374,8 @@ def convert_to_coco_dict(dataset_name):
     }
     coco_dict = {
         "info": info,
-        "images": images,
-        "annotations": annotations,
+        "images": coco_images,
+        "annotations": coco_annotations,
         "categories": categories,
         "licenses": None,
     }
@@ -386,7 +388,7 @@ def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
 
     Args:
         dataset_name: reference from the config file to the catalogs
-        output_folde: where json file will be saved and loaded from
+        output_folder: where json file will be saved and loaded from
         allow_cached: if json file is already present then skip conversion
     Returns:
         cache_path: path to the COCO-format json file
@@ -394,7 +396,8 @@ def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
 
     # TODO: The dataset or the conversion script *may* change,
     # a checksum would be useful for validating the cached data
-    cache_path = os.path.join(output, f"{dataset_name}_coco_format.json")
+    cache_path = os.path.join(output_folder, f"{dataset_name}_coco_format.json")
+    os.makedirs(output_folder, exist_ok=True)
     if os.path.exists(cache_path) and allow_cached:
         logger.warning(f"Reading cached annotations in COCO format from:{cache_path}")
     else:
