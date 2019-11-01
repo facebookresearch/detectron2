@@ -9,7 +9,6 @@ import numpy as np
 
 from PIL import Image
 from copy import deepcopy
-from collections import Counter
 
 from fvcore.common.timer import Timer
 from detectron2.structures import BoxMode, PolygonMasks, Boxes
@@ -313,8 +312,6 @@ def convert_to_coco_dict(dataset_name):
     coco_images = []
     coco_annotations = []
 
-    # just for logging purposes
-    _annotation_keys = Counter()
     for image_dict in dataset_dicts:
         coco_image = {
             "id": image_dict["image_id"],
