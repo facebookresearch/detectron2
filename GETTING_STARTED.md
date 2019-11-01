@@ -62,7 +62,7 @@ To evaluate this model's performance, use
 ```
 python tools/train_net.py \
 	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
-	MODEL.WEIGHTS /path/to/checkpoint_file
+	--eval-only MODEL.WEIGHTS /path/to/checkpoint_file
 ```
 For more options, see `python tools/train_net.py -h`.
 
