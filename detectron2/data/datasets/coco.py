@@ -353,7 +353,7 @@ def convert_to_coco_dict(dataset_name):
             coco_annotation["bbox"] = bbox
             coco_annotation["area"] = area
             coco_annotation["category_id"] = annotation["category_id"]
-            coco_annotation["iscrowd"] = annotation["iscrowd"]
+            coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
 
             # Add optional fields
             if "keypoints" in annotation:
