@@ -189,13 +189,13 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
     return dataset_dicts
 
 
-# TODO this function is not specific to COCO, except for the "image_id" logic.
 def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
     """
     Load semantic segmentation datasets. All files under "gt_root" with "gt_ext" extension are
     treated as ground truth annotations and all files under "image_root" with "image_ext" extension
     as input images. Ground truth and input images are matched using file paths relative to
     "gt_root" and "image_root" respectively without taking into account file extensions.
+    This works for COCO as well as some other datasets.
 
     Args:
         gt_root (str): full path to ground truth semantic segmentation files. Semantic segmentation
@@ -216,18 +216,12 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
     """
 
     # We match input images with ground truth based on their relative filepaths (without file
-    # extensions) starting from 'image_root' and 'gt_root' respectively. COCO API works with integer
-    # IDs, hence, we try to convert these paths to int if possible.
+    # extensions) starting from 'image_root' and 'gt_root' respectively.
     def file2id(folder_path, file_path):
-        # TODO id is not used.
         # extract relative path starting from `folder_path`
         image_id = os.path.normpath(os.path.relpath(file_path, start=folder_path))
         # remove file extension
         image_id = os.path.splitext(image_id)[0]
-        try:
-            image_id = int(image_id)
-        except ValueError:
-            pass
         return image_id
 
     input_files = sorted(
@@ -266,10 +260,6 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
         record = {}
         record["file_name"] = img_path
         record["sem_seg_file_name"] = gt_path
-        record["image_id"] = file2id(image_root, img_path)
-        assert record["image_id"] == file2id(
-            gt_root, gt_path
-        ), "there is no ground truth for {}".format(img_path)
         with PathManager.open(gt_path, "rb") as f:
             img = Image.open(f)
             w, h = img.size

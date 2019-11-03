@@ -19,7 +19,8 @@ Unless otherwise noted, the following settings are used for all runs:
   [Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
   and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
   for speed comparison.
-* Inference speed is measured by `tools/train_net.py --eval-only`, with batch size 1 in detectron2 directly.
+* Inference speed is measured by `tools/train_net.py --eval-only`, or [inference_on_dataset()](https://detectron2.readthedocs.io/modules/evaluation.html#detectron2.evaluation.inference_on_dataset),
+  with batch size 1 in detectron2 directly.
   The actual deployment should in general be faster than the given inference
   speed due to more optimizations.
 * Training speed is averaged across the entire training.

@@ -385,7 +385,7 @@ class Visualizer:
         labels, areas = np.unique(sem_seg, return_counts=True)
         sorted_idxs = np.argsort(-areas).tolist()
         labels = labels[sorted_idxs]
-        for label in labels:
+        for label in filter(lambda l: l < len(self.metadata.stuff_classes), labels):
             try:
                 mask_color = [x / 255 for x in self.metadata.stuff_colors[label]]
             except (AttributeError, IndexError):
@@ -464,6 +464,15 @@ class Visualizer:
         return self.output
 
     def draw_dataset_dict(self, dic):
+        """
+        Draw annotations/segmentaions in Detectron2 Dataset format.
+
+        Args:
+            dic (dict): annotation/segmentation data of one image, in Detectron2 Dataset format.
+
+        Returns:
+            output (VisImage): image object with visualizations.
+        """
         annos = dic.get("annotations", None)
         if annos:
             if "segmentation" in annos[0]:

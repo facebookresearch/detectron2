@@ -35,7 +35,7 @@ Install panopticapi by:
 ```
 pip install git+https://github.com/cocodataset/panopticapi.git
 ```
-Then, run `./prepare_panoptic_fpn.py`, to extract semantic annotations from panoptic annotations.
+Then, run `python prepare_panoptic_fpn.py`, to extract semantic annotations from panoptic annotations.
 
 ## Expected dataset structure for LVIS instance segmentation:
 ```

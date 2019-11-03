@@ -254,6 +254,8 @@ def get_detection_dataset_dicts(
     """
     assert len(dataset_names)
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
+    for dataset_name, dicts in zip(dataset_names, dataset_dicts):
+        assert len(dicts), "Dataset '{}' is empty!".format(dataset_name)
 
     if proposal_files is not None:
         assert len(dataset_names) == len(proposal_files)
