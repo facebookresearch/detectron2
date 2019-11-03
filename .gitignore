@@ -38,3 +38,7 @@ dist/
 # project dirs
 /datasets
 /models
+
+# env
+venv
+env

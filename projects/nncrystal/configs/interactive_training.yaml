@@ -1,0 +1,15 @@
+_BASE_: "../../../configs/Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "output/model_final.pth"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 101
+
+DATALOADER:
+  NUM_WORKERS: 2
+
+SOLVER:
+  IMS_PER_BATCH: 3
+  BASE_LR: 0.0025
+  MAX_ITER: 110000
+

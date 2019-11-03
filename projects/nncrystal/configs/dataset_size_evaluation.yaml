@@ -1,0 +1,18 @@
+# This configuration is for quantification of training sample size to error relation
+_BASE_: "../../../configs/Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "output/model_final.pth"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 101
+
+DATALOADER:
+  NUM_WORKERS: 4
+
+SOLVER:
+  IMS_PER_BATCH: 3
+  BASE_LR: 0.0025
+  MAX_ITER: 60000
+  STEPS: [35000, 45000]
+  GAMMA: 0.5
+
