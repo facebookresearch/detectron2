@@ -365,7 +365,7 @@ def convert_to_coco_dict(dataset_name):
             # Add optional fields
             if "keypoints" in annotation:
                 coco_annotation["keypoints"] = keypoints
-                coco_annotation["num_keypoints"] = keypoints
+                coco_annotation["num_keypoints"] = num_keypoints
 
             if "segmentation" in annotation:
                 coco_annotation["segmentation"] = annotation["segmentation"]
