@@ -288,7 +288,7 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
 
 def convert_to_coco_dict(dataset_name):
     """
-    Convert a generic dataset into COCO json format
+    Convert a dataset in detectron2's standard format into COCO json format
 
     Generic dataset description can be found here:
     https://detectron2.readthedocs.io/tutorials/datasets.html#register-a-dataset
@@ -297,7 +297,9 @@ def convert_to_coco_dict(dataset_name):
     http://cocodataset.org/#format-data
 
     Args:
-        dataset_name: name of the source dataset
+        dataset_name:
+            name of the source dataset
+            must be registered in DatastCatalog and in detectron2's standard format
     Returns:
         coco_dict: serializable dict in COCO json format
     """
@@ -342,6 +344,14 @@ def convert_to_coco_dict(dataset_name):
                 # Computing areas using bounding boxes
                 area = Boxes([bbox]).area()[0].item()
 
+            if "keypoints" in annotation:
+                import pdb; pdb.set_trace()
+                keypoints = annotation["keypoints"]
+                if "num_keypoints" in annotation:
+                    num_keypoints = annotation["num_keypoints"]
+                else:
+                    num_keypoints = sum(kp > 0 for kp in keypoints[2::3])
+
             # COCO requirement:
             #   linking annotations to images
             #   "id" field must start with 1
@@ -354,9 +364,9 @@ def convert_to_coco_dict(dataset_name):
 
             # Add optional fields
             if "keypoints" in annotation:
-                coco_annotation["keypoints"] = annotation["keypoints"]
-            if "num_keypoints" in annotation:
-                coco_annotation["num_keypoints"] = annotation["num_keypoints"]
+                coco_annotation["keypoints"] = keypoints
+                coco_annotation["num_keypoints"] = keypoints
+
             if "segmentation" in annotation:
                 coco_annotation["segmentation"] = annotation["segmentation"]
 
@@ -384,9 +394,12 @@ def convert_to_coco_dict(dataset_name):
 def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
     """
     Converts dataset into COCO format and saves it to a json file.
+    dataset_name must be registered in DatastCatalog and in detectron2's standard format.
 
     Args:
-        dataset_name: reference from the config file to the catalogs
+        dataset_name:
+            reference from the config file to the catalogs
+            must be registered in DatastCatalog and in detectron2's standard format
         output_folder: where json file will be saved and loaded from
         allow_cached: if json file is already present then skip conversion
     Returns:
@@ -398,15 +411,14 @@ def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
     cache_path = os.path.join(output_folder, f"{dataset_name}_coco_format.json")
     os.makedirs(output_folder, exist_ok=True)
     if os.path.exists(cache_path) and allow_cached:
-        logger.warning(f"Reading cached annotations in COCO format from:{cache_path}")
+        logger.info(f"Reading cached annotations in COCO format from:{cache_path} ...")
     else:
-        logger.info("Fetching dataset annotations")
+        logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
         coco_dict = convert_to_coco_dict(dataset_name)
 
-        # TODO: json_file should be renamed to json_path
-        with open(cache_path, "w") as json_file_buff:
+        with PathManager.open(cache_path, "w") as json_file:
             logger.info(f"Caching annotations in COCO format: {cache_path}")
-            json.dump(coco_dict, json_file_buff)
+            json.dump(coco_dict, json_file)
 
     return cache_path
 

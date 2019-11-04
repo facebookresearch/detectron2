@@ -354,7 +354,7 @@ class PolygonMasks:
         """
         Computes area of the mask.
         Only works with Polygons, using the shoelace formula:
-        # https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
 
         Returns:
             Tensor: a vector, area for each instance
