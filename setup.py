@@ -70,6 +70,9 @@ setup(
     "platform for object detection and segmentation.",
     packages=find_packages(exclude=("configs", "tests")),
     python_requires=">=3.6",
+    setup_requires=[
+        "cython"
+    ],
     install_requires=[
         "termcolor>=1.1",
         "Pillow",
