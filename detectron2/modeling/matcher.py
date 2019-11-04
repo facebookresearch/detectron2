@@ -42,6 +42,7 @@ class Matcher(object):
         """
         # Add -inf and +inf to first and last position in thresholds
         thresholds = thresholds[:]
+        assert thresholds[0] > 0
         thresholds.insert(0, -float("inf"))
         thresholds.append(float("inf"))
         assert all(low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:]))
@@ -67,14 +68,17 @@ class Matcher(object):
         """
         assert match_quality_matrix.dim() == 2
         if match_quality_matrix.numel() == 0:
-            return (
-                match_quality_matrix.new_full(
-                    (match_quality_matrix.size(1),), 0, dtype=torch.int64
-                ),
-                match_quality_matrix.new_full(
-                    (match_quality_matrix.size(1),), -1, dtype=torch.int8
-                ),
+            default_matches = match_quality_matrix.new_full(
+                (match_quality_matrix.size(1),), 0, dtype=torch.int64
             )
+            # When no gt boxes exist, we define IOU = 0 and therefore set labels
+            # to `self.labels[0]`, which usually defaults to background class 0
+            # To choose to ignore instead, can make labels=[-1,0,-1,1] + set appropriate thresholds
+            default_match_labels = match_quality_matrix.new_full(
+                (match_quality_matrix.size(1),), self.labels[0], dtype=torch.int8
+            )
+            return default_matches, default_match_labels
+
         assert torch.all(match_quality_matrix >= 0)
 
         # match_quality_matrix is M (gt) x N (predicted)
