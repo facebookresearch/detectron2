@@ -79,6 +79,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
+        "fvcore @ git+https://github.com/facebookresearch/fvcore.git"
     ],
     extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),
