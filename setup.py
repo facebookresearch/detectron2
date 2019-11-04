@@ -79,7 +79,8 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
-        "pycocotools"
+        "cython",
+        "pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
     ],
     extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),
