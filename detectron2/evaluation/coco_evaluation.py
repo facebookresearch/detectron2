@@ -55,7 +55,7 @@ class COCOEvaluator(DatasetEvaluator):
 
         PathManager.mkdirs(output_dir)
         if not hasattr(self._metadata, "json_file"):
-            self._logger.warning(f"json_file was not found in MetaDataCatalog for [{dataset_name}]")
+            self._logger.warning(f"json_file was not found in MetaDataCatalog for '{dataset_name}'")
 
             cache_path = convert_to_coco_json(dataset_name, output_dir)
             self._metadata.json_file = cache_path
