@@ -60,7 +60,6 @@ class COCOEvaluator(DatasetEvaluator):
             cache_path = convert_to_coco_json(dataset_name, output_dir)
             self._metadata.json_file = cache_path
 
-        # TODO: json_file should be renamed to json_path
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)

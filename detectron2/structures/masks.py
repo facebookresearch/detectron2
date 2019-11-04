@@ -367,6 +367,4 @@ class PolygonMasks:
                 area_per_instance += polygon_area(p[0::2], p[1::2])
             area.append(area_per_instance)
 
-        # TODO: rewrite the helper function in torch when the PolygonMasks are
-        # rewritten to use torch
         return torch.tensor(area)
