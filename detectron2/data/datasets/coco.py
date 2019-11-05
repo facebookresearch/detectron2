@@ -345,7 +345,6 @@ def convert_to_coco_dict(dataset_name):
                 area = Boxes([bbox]).area()[0].item()
 
             if "keypoints" in annotation:
-                import pdb; pdb.set_trace()
                 keypoints = annotation["keypoints"]
                 if "num_keypoints" in annotation:
                     num_keypoints = annotation["num_keypoints"]
