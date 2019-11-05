@@ -52,8 +52,6 @@ class COCOEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
-
-        PathManager.mkdirs(output_dir)
         if not hasattr(self._metadata, "json_file"):
             self._logger.warning(f"json_file was not found in MetaDataCatalog for '{dataset_name}'")
 
