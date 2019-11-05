@@ -73,6 +73,11 @@ def check_image_size(dataset_dict, image):
                 "mismatch (W,H), got {}, expect {}".format(image_wh, expected_wh)
             )
 
+    # To ensure bbox always remap to original image size
+    if "width" not in dataset_dict:
+        dataset_dict["width"] = image.shape[1]
+    if "height" not in dataset_dict:
+        dataset_dict["height"] = image.shape[0]
 
 def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len, proposal_topk):
     """
