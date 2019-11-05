@@ -14,7 +14,7 @@ Here is how `build_detection_{train,test}_loader` work:
 1. It takes the name of the dataset (e.g., "coco_2017_train") and loads a `list[dict]` representing the dataset items
    in a lightweight, canonical format. These dataset items are not yet ready to be used by the model (e.g., images are
    not loaded into memory, random augmentations have not been applied, etc.).
-   Details about the dataset format and dataset registration can be found in        
+   Details about the dataset format and dataset registration can be found in
    [datasets](datasets.html).
 2. Each dict in this list is mapped by a function ("mapper"):
 	 * Users can customize this mapping function by specifying the "mapper" argument in
