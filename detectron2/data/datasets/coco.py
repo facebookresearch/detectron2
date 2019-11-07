@@ -8,7 +8,6 @@ import json
 import numpy as np
 
 from PIL import Image
-from copy import deepcopy
 
 from fvcore.common.timer import Timer
 from detectron2.structures import BoxMode, PolygonMasks, Boxes
@@ -433,7 +432,6 @@ if __name__ == "__main__":
         "dataset_name" can be "coco_2014_minival_100", or other
         pre-registered ones
     """
-    import numpy as np
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
     import detectron2.data.datasets  # noqa # add pre-defined metadata
