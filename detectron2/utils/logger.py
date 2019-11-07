@@ -6,7 +6,7 @@ import sys
 from collections import Counter
 from fvcore.common.file_io import PathManager
 from tabulate import tabulate
-from termcolor import colored
+from termcolor import colored, COLORS
 
 
 class _ColorfulFormatter(logging.Formatter):
@@ -31,13 +31,14 @@ class _ColorfulFormatter(logging.Formatter):
 
 @functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
 def setup_logger(
-    output=None, distributed_rank=0, *, color=True, name="detectron2", abbrev_name=None
+    output=None, distributed_rank=0, *, color="green", name="detectron2", abbrev_name=None
 ):
     """
     Args:
         output (str): a file name or a directory to save log. If None, will not save log file.
             If ends with ".txt" or ".log", assumed to be a file name.
             Otherwise, logs will be saved to `output/log.txt`.
+        color (str): valid termcolor.COLORS string or None for plain formatter
         name (str): the root module name of this logger
         abbrev_name (str): an abbreviation of the module, to avoid long names in logs.
             Set to "" to not log the root module in logs.
@@ -58,9 +59,9 @@ def setup_logger(
     if distributed_rank == 0:
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(logging.DEBUG)
-        if color:
+        if isinstance(color, str) and color in COLORS:
             formatter = _ColorfulFormatter(
-                colored("[%(asctime)s %(name)s]: ", "green") + "%(message)s",
+                colored("[%(asctime)s %(name)s]: ", color) + "%(message)s",
                 datefmt="%m/%d %H:%M:%S",
                 root_name=name,
                 abbrev_name=str(abbrev_name),
