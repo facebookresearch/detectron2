@@ -24,6 +24,17 @@ from detectron2.structures import (
 from . import transforms as T
 from .catalog import MetadataCatalog
 
+convert_image_with_exif = {
+    1: lambda img: img,
+    2: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),                              # horizontal flip
+    3: lambda img: img.transpose(Image.ROTATE_180),                                   # 180 degree rotate
+    4: lambda img: img.transpose(Image.FLIP_TOP_BOTTOM),                              # vertical flip
+    5: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90),  # horizontal flip & counter clock 90 degree rotate
+    6: lambda img: img.transpose(Image.ROTATE_270),                                   # counter clock wise 270 degree rotate
+    7: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_270), # horizontal flip & counter clock wise 270 degree rotate
+    8: lambda img: img.transpose(Image.ROTATE_90),                                    # counter clock wise 90 degree rotate
+}
+
 
 class SizeMismatchError(ValueError):
     """
@@ -44,6 +55,10 @@ def read_image(file_name, format=None):
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
+
+        exif = image._getexif()
+        orientation = exif.get(0x112, 1)
+        image = convert_image_with_exif[orientation](image)
 
         if format is not None:
             # PIL only supports RGB, so convert to RGB and flip channels over below
