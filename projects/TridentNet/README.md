@@ -28,7 +28,7 @@ python /path/to/detectron2/projects/TridentNet/train_net.py --config-file config
 
 ## Evaluation
 
-Model evaluationcan be done similarly:
+Model evaluation can be done similarly:
 ```bash
 python /path/to/detectron2/projects/TridentNet/train_net.py --config-file configs/tridentnet_fast_R_50_C4_1x.yaml --eval-only MODEL.WEIGHTS model.pth
 ```
