@@ -352,7 +352,6 @@ def convert_to_coco_dict(dataset_name):
                         # For COCO format consistency we substract 0.5
                         # https://github.com/facebookresearch/detectron2/pull/175#issuecomment-551202163
                         keypoints[idx] = v - 0.5
-                obj["keypoints"] = keypts
                 if "num_keypoints" in annotation:
                     num_keypoints = annotation["num_keypoints"]
                 else:
