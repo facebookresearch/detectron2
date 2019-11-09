@@ -65,7 +65,7 @@ class COCOEvaluator(DatasetEvaluator):
         self._kpt_oks_sigmas = cfg.TEST.KEYPOINT_OKS_SIGMAS
         # Test set json files do not contain annotations (evaluation must be
         # performed using the COCO evaluation server).
-        self._do_evaluation = len(self._coco_api.getAnnIds()) > 0
+        self._do_evaluation = "annotations" in self._coco_api.dataset
 
     def reset(self):
         self._predictions = []
