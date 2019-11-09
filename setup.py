@@ -3,8 +3,9 @@
 
 import glob
 import os
+import shutil
 from setuptools import find_packages, setup
-from typing import Sequence, Tuple
+from typing import List
 import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
@@ -13,7 +14,8 @@ assert torch_ver >= [1, 3], "Requires PyTorch >= 1.3"
 
 
 def get_extensions():
-    extensions_dir = os.path.join("detectron2", "layers", "csrc")
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    extensions_dir = os.path.join(this_dir, "detectron2", "layers", "csrc")
 
     main_source = os.path.join(extensions_dir, "vision.cpp")
     sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"))
@@ -58,13 +60,32 @@ def get_extensions():
     return ext_modules
 
 
-def get_model_zoo_configs(exclude: Sequence[str] = []) -> Sequence[Tuple[str, Sequence[str]]]:
+def get_model_zoo_configs() -> List[str]:
     """
-    Return a list of configs to include in package for model zoo.
+    Return a list of configs to include in package for model zoo. Copy over these configs inside
+    detectron2/model_zoo.
     """
+
+    # Use absolute paths while symlinking.
+    source_configs_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configs")
+    destination = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "detectron2", "model_zoo", "configs"
+    )
+    # Symlink the config directory inside package to have a cleaner pip install.
+    if os.path.exists(destination):
+        # Remove stale symlink/directory from a previous build.
+        if os.path.islink(destination):
+            os.unlink(destination)
+        else:
+            shutil.rmtree(destination)
+
+    try:
+        os.symlink(source_configs_dir, destination)
+    except OSError as e:
+        # Fall back to copying if symlink fails: ex. on Windows.
+        shutil.copytree(source_configs_dir, destination)
+
     config_paths = glob.glob("configs/**/*.yaml", recursive=True)
-    config_paths = [c for c in config_paths if not any(exc for exc in exclude if exc in c)]
-    config_paths = [(os.path.join("detectron2", os.path.dirname(c)), [c]) for c in config_paths]
     return config_paths
 
 
@@ -76,7 +97,7 @@ setup(
     description="Detectron2 is FAIR's next-generation research "
     "platform for object detection and segmentation.",
     packages=find_packages(exclude=("configs", "tests")),
-    data_files=get_model_zoo_configs(exclude=["quick_schedules", "Detectron1-Comparisons"]),
+    package_data={"detectron2.model_zoo": get_model_zoo_configs()},
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
@@ -87,7 +108,6 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
-        "fvcore @ git+https://github.com/facebookresearch/fvcore.git",
     ],
     extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),

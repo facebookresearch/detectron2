@@ -3,7 +3,7 @@ import logging
 from fvcore.common.file_io import PathHandler, PathManager
 
 
-class ThirdPartyModelCatalog(object):
+class ModelCatalog(object):
     """
     Store mappings from names to third-party models.
     """
@@ -54,27 +54,27 @@ class ThirdPartyModelCatalog(object):
     @staticmethod
     def get(name):
         if name.startswith("Caffe2Detectron/COCO"):
-            return ThirdPartyModelCatalog._get_c2_detectron_baseline(name)
+            return ModelCatalog._get_c2_detectron_baseline(name)
         if name.startswith("ImageNetPretrained/"):
-            return ThirdPartyModelCatalog._get_c2_imagenet_pretrained(name)
+            return ModelCatalog._get_c2_imagenet_pretrained(name)
         raise RuntimeError("model not present in the catalog: {}".format(name))
 
     @staticmethod
     def _get_c2_imagenet_pretrained(name):
-        prefix = ThirdPartyModelCatalog.S3_C2_DETECTRON_PREFIX
+        prefix = ModelCatalog.S3_C2_DETECTRON_PREFIX
         name = name[len("ImageNetPretrained/") :]
-        name = ThirdPartyModelCatalog.C2_IMAGENET_MODELS[name]
+        name = ModelCatalog.C2_IMAGENET_MODELS[name]
         url = "/".join([prefix, name])
         return url
 
     @staticmethod
     def _get_c2_detectron_baseline(name):
         name = name[len("Caffe2Detectron/COCO/") :]
-        url = ThirdPartyModelCatalog.C2_DETECTRON_MODELS[name]
+        url = ModelCatalog.C2_DETECTRON_MODELS[name]
         if "keypoint_rcnn" in name:
-            dataset = ThirdPartyModelCatalog.C2_DATASET_COCO_KEYPOINTS
+            dataset = ModelCatalog.C2_DATASET_COCO_KEYPOINTS
         else:
-            dataset = ThirdPartyModelCatalog.C2_DATASET_COCO
+            dataset = ModelCatalog.C2_DATASET_COCO
 
         if "35998355/rpn_R-50-C4_1x" in name:
             # this one model is somehow different from others ..
@@ -83,16 +83,13 @@ class ThirdPartyModelCatalog(object):
             type = "generalized_rcnn"
 
         # Detectron C2 models are stored in the structure defined in `C2_DETECTRON_PATH_FORMAT`.
-        url = ThirdPartyModelCatalog.C2_DETECTRON_PATH_FORMAT.format(
-            prefix=ThirdPartyModelCatalog.S3_C2_DETECTRON_PREFIX,
-            url=url,
-            type=type,
-            dataset=dataset,
+        url = ModelCatalog.C2_DETECTRON_PATH_FORMAT.format(
+            prefix=ModelCatalog.S3_C2_DETECTRON_PREFIX, url=url, type=type, dataset=dataset
         )
         return url
 
 
-class ThirdPartyModelCatalogHandler(PathHandler):
+class ModelCatalogHandler(PathHandler):
     """
     Resolve URL like catalog://.
     """
@@ -104,56 +101,12 @@ class ThirdPartyModelCatalogHandler(PathHandler):
 
     def _get_local_path(self, path):
         logger = logging.getLogger(__name__)
-        catalog_path = ThirdPartyModelCatalog.get(path[len(self.PREFIX) :])
+        catalog_path = ModelCatalog.get(path[len(self.PREFIX) :])
         logger.info("Catalog entry {} points to {}".format(path, catalog_path))
         return PathManager.get_local_path(catalog_path)
 
     def _open(self, path, mode="r", **kwargs):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
-
-
-class Detectron2ModelCatalog(object):
-    """
-    Store mappings from names to officially released Detectron2 pre-trained models.
-    """
-
-    S3_DETECTRON2_PREFIX = "https://dl.fbaipublicfiles.com/detectron2/"
-
-    # format: {model_name} -> model_id/model_final_{commit}.pkl
-    DETECTRON2_MODELS = {
-        "COCO-Detection/faster_rcnn_R_50_C4_1x": "137257644/model_final_721ade.pkl",
-        "COCO-Detection/faster_rcnn_R_50_DC5_1x": "137847829/model_final_51d356.pkl",
-        "COCO-Detection/faster_rcnn_R_50_FPN_1x": "137257794/model_final_b275ba.pkl",
-        "COCO-Detection/faster_rcnn_R_50_C4_3x": "137849393/model_final_f97cb7.pkl",
-        "COCO-Detection/faster_rcnn_R_50_DC5_3x": "137849425/model_final_68d202.pkl",
-        "COCO-Detection/faster_rcnn_R_50_FPN_3x": "137849458/model_final_280758.pkl",
-        "COCO-Detection/faster_rcnn_R_101_C4_3x": "138204752/model_final_298dad.pkl",
-        "COCO-Detection/faster_rcnn_R_101_DC5_3x": "138204841/model_final_3e0943.pkl",
-        "COCO-Detection/faster_rcnn_R_101_FPN_3x": "137851257/model_final_f6e8b1.pkl",
-        "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x": "139173657/model_final_68b088.pkl",
-    }
-
-    @classmethod
-    def get(cls, name):
-        if name.startswith("ImageNetPretrained/"):
-            return cls._get_imagenet_pretrained_backbone(name)
-        if name.startswith("COCO-Detection/"):
-            return cls._get_detectron2_pretrained_model(name)
-        raise RuntimeError("model not present in the catalog: {}".format(name))
-
-    @classmethod
-    def _get_imagenet_pretrained_backbone(cls, name):
-        url = cls.S3_DETECTRON2_PREFIX + name
-        return url
-
-    @classmethod
-    def _get_detectron2_pretrained_model(cls, name):
-        if name.endswith(".pkl"):
-            # Backward compatibility: this would already be a URL.
-            url = cls.S3_DETECTRON2_PREFIX + name
-        else:
-            url = cls.S3_DETECTRON2_PREFIX + name + "/" + cls.DETECTRON2_MODELS[name]
-        return url
 
 
 class Detectron2Handler(PathHandler):
@@ -162,19 +115,18 @@ class Detectron2Handler(PathHandler):
     """
 
     PREFIX = "detectron2://"
+    S3_DETECTRON2_PREFIX = "https://dl.fbaipublicfiles.com/detectron2/"
 
     def _get_supported_prefixes(self):
         return [self.PREFIX]
 
     def _get_local_path(self, path):
-        logger = logging.getLogger(__name__)
-        catalog_path = Detectron2ModelCatalog.get(path[len(self.PREFIX) :])
-        logger.info("Catalog entry {} points to {}".format(path, catalog_path))
-        return PathManager.get_local_path(catalog_path)
+        name = path[len(self.PREFIX) :]
+        return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name)
 
     def _open(self, path, mode="r", **kwargs):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
 
 
-PathManager.register_handler(ThirdPartyModelCatalogHandler())
+PathManager.register_handler(ModelCatalogHandler())
 PathManager.register_handler(Detectron2Handler())
