@@ -18,6 +18,7 @@ from tabulate import tabulate
 
 import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
+from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.logger import create_small_table
 
@@ -34,8 +35,10 @@ class COCOEvaluator(DatasetEvaluator):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
-                It must have the following corresponding metadata:
+                It must have either the following corresponding metadata:
                     "json_file": the path to the COCO format annotation
+                Or it must be in detectron2's standard dataset format
+                    so it can be converted to COCO format automatically.
             cfg (CfgNode): config instance
             distributed (True): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
@@ -49,6 +52,12 @@ class COCOEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
+        if not hasattr(self._metadata, "json_file"):
+            self._logger.warning(f"json_file was not found in MetaDataCatalog for '{dataset_name}'")
+
+            cache_path = convert_to_coco_json(dataset_name, output_dir)
+            self._metadata.json_file = cache_path
+
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)

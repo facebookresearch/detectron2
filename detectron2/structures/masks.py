@@ -10,6 +10,12 @@ from detectron2.layers.roi_align import ROIAlign
 from .boxes import Boxes
 
 
+def polygon_area(x, y):
+    # Using the shoelace formula
+    # https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+
+
 def polygons_to_bitmask(polygons: List[np.ndarray], height: int, width: int) -> np.ndarray:
     """
     Args:
@@ -343,3 +349,22 @@ class PolygonMasks:
         if len(results) == 0:
             return torch.empty(0, mask_size, mask_size, dtype=torch.bool, device=device)
         return torch.stack(results, dim=0).to(device=device)
+
+    def area(self):
+        """
+        Computes area of the mask.
+        Only works with Polygons, using the shoelace formula:
+        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+
+        Returns:
+            Tensor: a vector, area for each instance
+        """
+
+        area = []
+        for polygons_per_instance in self.polygons:
+            area_per_instance = 0
+            for p in polygons_per_instance:
+                area_per_instance += polygon_area(p[0::2], p[1::2])
+            area.append(area_per_instance)
+
+        return torch.tensor(area)
