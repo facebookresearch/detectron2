@@ -858,8 +858,8 @@ A few very large models trained for a long time, for demo purposes:
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml">Mask R-CNN X152</a></td>
 <td align="center">0.281</td>
 <td align="center">15.1</td>
-<td align="center">49.3</td>
-<td align="center">43.2</td>
+<td align="center">50.2</td>
+<td align="center">44.0</td>
 <td align="center"></td>
 <td align="center">18131413</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv/18131413/model_0039999_e76410.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv/18131413/metrics.json">metrics</a></td>
@@ -868,8 +868,8 @@ A few very large models trained for a long time, for demo purposes:
  <tr><td align="left">above + test-time aug.</td>
 <td align="center"></td>
 <td align="center"></td>
-<td align="center">51.4</td>
-<td align="center">45.5</td>
+<td align="center">51.9</td>
+<td align="center">45.9</td>
 <td align="center"></td>
 <td align="center"></td>
 <td align="center"></td>

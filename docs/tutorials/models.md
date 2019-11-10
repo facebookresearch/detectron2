@@ -23,7 +23,7 @@ corresponds to information about one image.
 
 The dict may contain the following keys:
 
-* "image": `Tensor` in (C, H, W) format.
+* "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
 * "instances": an `Instances` object, with the following fields:
 	+ "gt_boxes": `Boxes` object storing N boxes, one for each instance.
 	+ "gt_classes": `Tensor` of long type, a vector of N labels, in range [0, num_categories).

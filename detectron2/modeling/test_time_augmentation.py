@@ -194,7 +194,8 @@ class GeneralizedRCNNWithTTA(nn.Module):
 
         # 1.3: select from the union of all results
         num_classes = self.cfg.MODEL.ROI_HEADS.NUM_CLASSES
-        all_scores_2d = torch.zeros(num_boxes, num_classes, device=all_boxes.device)
+        # +1 because fast_rcnn_inference expects background scores as well
+        all_scores_2d = torch.zeros(num_boxes, num_classes + 1, device=all_boxes.device)
         for idx, cls, score in zip(count(), all_classes, all_scores):
             all_scores_2d[idx, cls] = score
 
