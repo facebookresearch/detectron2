@@ -6,6 +6,10 @@
 * 2019-10-10: initial release.
 
 
+### Minor Changes in Code
+
+* 2019-11-11: detectron2.data.detection_utils.read_image is transposing with exif information.
+
 ### Config Version Change Log
 
 * v1: Rename `RPN_HEAD.NAME` to `RPN.HEAD_NAME`.

@@ -160,3 +160,9 @@ NOTE: For background on the difference between "thing" and "stuff" categories, s
 In detectron2, the term "thing" is used for instance-level tasks,
 and "stuff" is used for semantic segmentation tasks.
 Both are used in panoptic segmentation.
+
+
+### EXIF
+
+If your images have [EXIF](https://en.wikipedia.org/wiki/Exif) information, transform according to that information when loading images.
+When you annotate images having exif information, please you annotate from after transform point space.
