@@ -42,7 +42,7 @@ The fields are often optional, and some functions may be able to
 infer certain fields from others if needed, e.g., the data loader
 can load an image from "file_name" if the "image" field is not available.
 
-+ `file_name`: the full path to the image file.
++ `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 + `image`: the image as a numpy array.
 + `sem_seg`: semantic segmentation ground truth in a 2D numpy array. Values in the array represent
@@ -160,3 +160,4 @@ NOTE: For background on the difference between "thing" and "stuff" categories, s
 In detectron2, the term "thing" is used for instance-level tasks,
 and "stuff" is used for semantic segmentation tasks.
 Both are used in panoptic segmentation.
+
