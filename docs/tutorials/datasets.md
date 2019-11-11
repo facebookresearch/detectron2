@@ -40,12 +40,11 @@ The format uses one dict to represent the annotations of
 one image. The dict may have the following fields.
 The fields are often optional, and some functions may be able to
 infer certain fields from others if needed, e.g., the data loader
-can load an image from "file_name" if the "image" field is not available.
+will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name".
 
 + `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
-+ `image`: the image as a numpy array.
-+ `sem_seg`: semantic segmentation ground truth in a 2D numpy array. Values in the array represent
++ `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
    category labels.
 + `height`, `width`: integer. The shape of image.
 + `image_id` (str): a string to identify this image. Mainly used by certain datasets
