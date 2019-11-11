@@ -34,7 +34,7 @@ class SizeMismatchError(ValueError):
 def read_image(file_name, format=None):
     """
     Read an image into the given format.
-    If image has exif information then rotate and flipping with that information.
+    Will apply rotation and flipping if the image has such exif information.
 
     Args:
         file_name (str): image file path
