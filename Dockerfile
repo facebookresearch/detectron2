@@ -16,9 +16,7 @@ RUN curl -fSsL -O https://bootstrap.pypa.io/get-pip.py && \
 
 # install dependencies
 # See https://pytorch.org/ for other options if you use a different version of CUDA
-RUN pip install torch torchvision cython \
-	'git+https://github.com/facebookresearch/fvcore'
-RUN pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+RUN pip install torch torchvision
 
 # install detectron2
 RUN git clone https://github.com/facebookresearch/detectron2 /detectron2_repo
