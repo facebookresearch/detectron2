@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import torch
 from fvcore.common.file_io import PathManager
-from PIL import Image
+from PIL import Image, ImageOps
 
 from detectron2.structures import (
     BitMasks,
@@ -24,17 +24,6 @@ from detectron2.structures import (
 from . import transforms as T
 from .catalog import MetadataCatalog
 
-convert_image_with_exif = {
-    1: lambda img: img,
-    2: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),                              # horizontal flip
-    3: lambda img: img.transpose(Image.ROTATE_180),                                   # 180 degree rotate
-    4: lambda img: img.transpose(Image.FLIP_TOP_BOTTOM),                              # vertical flip
-    5: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90),  # horizontal flip & counter clock 90 degree rotate
-    6: lambda img: img.transpose(Image.ROTATE_270),                                   # counter clock wise 270 degree rotate
-    7: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_270), # horizontal flip & counter clock wise 270 degree rotate
-    8: lambda img: img.transpose(Image.ROTATE_90),                                    # counter clock wise 90 degree rotate
-}
-
 
 class SizeMismatchError(ValueError):
     """
@@ -45,6 +34,7 @@ class SizeMismatchError(ValueError):
 def read_image(file_name, format=None):
     """
     Read an image into the given format.
+    If image has exif information then rotate and flipping with that information.
 
     Args:
         file_name (str): image file path
@@ -56,9 +46,7 @@ def read_image(file_name, format=None):
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
 
-        exif = image._getexif()
-        orientation = exif.get(0x112, 1)
-        image = convert_image_with_exif[orientation](image)
+        image = ImageOps.exif_transpose(image)
 
         if format is not None:
             # PIL only supports RGB, so convert to RGB and flip channels over below

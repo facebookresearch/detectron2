@@ -72,7 +72,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
-        "Pillow",
+        "Pillow>=6.0",
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",
