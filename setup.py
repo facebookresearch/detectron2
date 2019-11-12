@@ -75,7 +75,7 @@ setup(
     ],
     install_requires=[
         "termcolor>=1.1",
-        "Pillow",
+        "Pillow>=6.0",
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",
@@ -84,7 +84,7 @@ setup(
         "tensorboard",
         "cython",
         "pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI",
-        "fvcore @ git+https://github.com/facebookresearch/fvcore.git",
+        "fvcore @ git+https://github.com/facebookresearch/fvcore.git"
     ],
     dependency_links=[
         "git+https://github.com/facebookresearch/fvcore.git@master#egg=fvcore",

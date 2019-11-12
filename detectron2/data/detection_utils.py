@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import torch
 from fvcore.common.file_io import PathManager
-from PIL import Image
+from PIL import Image, ImageOps
 
 from detectron2.structures import (
     BitMasks,
@@ -34,6 +34,7 @@ class SizeMismatchError(ValueError):
 def read_image(file_name, format=None):
     """
     Read an image into the given format.
+    Will apply rotation and flipping if the image has such exif information.
 
     Args:
         file_name (str): image file path
@@ -44,6 +45,8 @@ def read_image(file_name, format=None):
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
+
+        image = ImageOps.exif_transpose(image)
 
         if format is not None:
             # PIL only supports RGB, so convert to RGB and flip channels over below
