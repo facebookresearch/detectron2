@@ -61,7 +61,7 @@ class DatasetMapper:
         """
         dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
         image = utils.read_image(dataset_dict["file_name"], format=self.img_format)
-        utils.check_image_size(dataset_dict, image, dataset_dict["file_name"])
+        utils.check_image_size(dataset_dict, image, name = dataset_dict["file_name"])
 
         image, transforms = T.apply_transform_gens(self.tfm_gens, image)
         image_shape = image.shape[:2]  # h, w
