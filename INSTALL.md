@@ -28,7 +28,7 @@ python setup.py build develop
 # MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ python setup.py build develop
 
 # or, as an alternative to `setup.py`, do
-# pip install .
+# pip install [--editable] .
 ```
 Note: you may need to rebuild detectron2 after reinstalling a different build of PyTorch.
 
@@ -61,4 +61,8 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 	```
 	print valid outputs at the time you build detectron2.
 
-+ "invalid device function": you build detectron2 with one version of CUDA but run it with a different version.
++ "invalid device function": two possibilities:
+  * You build detectron2 with one version of CUDA but run it with a different version.
+	* Detectron2 is not built with the correct compute compability for the GPU model.
+	  The compute compability defaults to match the GPU found on the machine,
+		and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during installation.

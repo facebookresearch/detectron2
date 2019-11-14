@@ -135,6 +135,10 @@ class DefaultPredictor:
     The predictor takes an BGR image, resizes it to the specified resolution,
     runs the model and produces a dict of predictions.
 
+    This predictor takes care of model loading and input preprocessing for you.
+    If you'd like to do anything more fancy, please refer to its source code
+    as examples to build and use the model manually.
+
     Attributes:
         metadata (Metadata): the metadata of the underlying dataset, obtained from
             cfg.DATASETS.TEST.

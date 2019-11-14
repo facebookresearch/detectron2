@@ -352,7 +352,7 @@ def convert_to_coco_dict(dataset_name):
             #   "id" field must start with 1
             coco_annotation["id"] = len(coco_annotations) + 1
             coco_annotation["image_id"] = image_dict["image_id"]
-            coco_annotation["bbox"] = bbox
+            coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
             coco_annotation["area"] = area
             coco_annotation["category_id"] = annotation["category_id"]
             coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
