@@ -64,7 +64,7 @@ def read_image(file_name, format=None):
         return image
 
 
-def check_image_size(dataset_dict, image):
+def check_image_size(dataset_dict, image, filename):
     """
     Raise an error if the image does not match the size specified in the dict.
     """
@@ -73,7 +73,7 @@ def check_image_size(dataset_dict, image):
         expected_wh = (dataset_dict["width"], dataset_dict["height"])
         if not image_wh == expected_wh:
             raise SizeMismatchError(
-                "mismatch (W,H), got {}, expect {}".format(image_wh, expected_wh)
+                "mismatch (W,H), got {}, expect {} with file {}".format(image_wh, expected_wh, filename)
             )
 
     # To ensure bbox always remap to original image size
