@@ -73,8 +73,12 @@ def check_image_size(dataset_dict, image):
         expected_wh = (dataset_dict["width"], dataset_dict["height"])
         if not image_wh == expected_wh:
             raise SizeMismatchError(
-                "mismatch (W,H), got {}, expect {} with name {}".format(
-                    image_wh, expected_wh, dataset_dict["file_name"]
+                "Mismatched (W,H){}, got {}, expect {}".format(
+                    " for image " + dataset_dict["file_name"]
+                    if "file_name" in dataset_dict
+                    else "",
+                    image_wh,
+                    expected_wh,
                 )
             )
 
