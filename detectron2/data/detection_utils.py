@@ -82,6 +82,7 @@ def check_image_size(dataset_dict, image):
     if "height" not in dataset_dict:
         dataset_dict["height"] = image.shape[0]
 
+
 def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len, proposal_topk):
     """
     Apply transformations to the proposals in dataset_dict, if any.

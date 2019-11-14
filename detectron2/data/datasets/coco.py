@@ -303,9 +303,9 @@ def convert_to_coco_dict(dataset_name):
     coco_images = []
     coco_annotations = []
 
-    for image_dict in dataset_dicts:
+    for image_id, image_dict in enumerate(dataset_dicts):
         coco_image = {
-            "id": image_dict["image_id"],
+            "id": image_dict.get("image_id", image_id),
             "width": image_dict["width"],
             "height": image_dict["height"],
             "file_name": image_dict["file_name"],
@@ -334,7 +334,7 @@ def convert_to_coco_dict(dataset_name):
                 area = Boxes([bbox]).area()[0].item()
 
             if "keypoints" in annotation:
-                keypoints = annotation["keypoints"] # list[int]
+                keypoints = annotation["keypoints"]  # list[int]
                 for idx, v in enumerate(keypoints):
                     if idx % 3 != 2:
                         # COCO's segmentation coordinates are floating points in [0, H or W],

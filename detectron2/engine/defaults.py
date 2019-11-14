@@ -415,7 +415,10 @@ class DefaultTrainer(SimpleTrainer):
 
         It is not implemented by default.
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Please either implement `build_evaluator()` in subclasses, or pass "
+            "your evaluator as arguments to `DefaultTrainer.test()`."
+        )
 
     @classmethod
     def test(cls, cfg, model, evaluators=None):
