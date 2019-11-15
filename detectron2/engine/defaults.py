@@ -456,8 +456,10 @@ class DefaultTrainer(SimpleTrainer):
                 try:
                     evaluator = cls.build_evaluator(cfg, dataset_name)
                 except NotImplementedError:
-                    logger.warn("No evaluator found. Use `DefaultTrainer.test(evaluators=)`, "
-                                "or implement its `build_evaluator` method.")
+                    logger.warn(
+                        "No evaluator found. Use `DefaultTrainer.test(evaluators=)`, "
+                        "or implement its `build_evaluator` method."
+                    )
                     results[dataset_name] = {}
                     continue
             results_i = inference_on_dataset(model, data_loader, evaluator)
