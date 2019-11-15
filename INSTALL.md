@@ -63,6 +63,6 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 
 + "invalid device function": two possibilities:
   * You build detectron2 with one version of CUDA but run it with a different version.
-	* Detectron2 is not built with the correct compute compability for the GPU model.
-	  The compute compability defaults to match the GPU found on the machine,
-		and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during installation.
+  * Detectron2 is not built with the correct compute compability for the GPU model.
+    The compute compability defaults to match the GPU found on the machine,
+    and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during installation.

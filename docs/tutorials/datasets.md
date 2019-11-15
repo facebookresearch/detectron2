@@ -29,7 +29,8 @@ DatasetCatalog.register("my_dataset", get_dicts)
 Here, the snippet associates a dataset "my_dataset" with a function that returns the data.
 If you do not modify downstream code (i.e., you use the standard data loader and data mapper),
 then the function has to return a list of dicts in detectron2's standard dataset format, described
-next.
+next. You can also use arbitrary custom data format, as long as the
+downstream code (mainly the [custom data loader](data_loading.html)) supports it.
 
 For standard tasks
 (instance detection, instance/semantic/panoptic segmentation, keypoint detection),
