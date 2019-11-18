@@ -15,6 +15,8 @@ also installs detectron2 with a few simple commands.
 - pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 - GCC >= 4.9
 
+Please note that building on Windows 10 is not supported.
+
 
 ### Build detectron2
 
