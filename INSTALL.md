@@ -6,6 +6,7 @@ The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/Dock
 also installs detectron2 with a few simple commands.
 
 ### Requirements
+- Linux or macOS
 - Python >= 3.6
 - PyTorch 1.3
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
@@ -16,7 +17,7 @@ also installs detectron2 with a few simple commands.
 - GCC >= 4.9
 
 
-### Build detectron2
+### Build Detectron2
 
 After having the above dependencies, run:
 ```

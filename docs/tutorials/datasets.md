@@ -48,7 +48,7 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
 + `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
    category labels.
 + `height`, `width`: integer. The shape of image.
-+ `image_id` (str): a string to identify this image. Mainly used by certain datasets
++ `image_id` (str): a string to identify this image. Used
 	during evaluation to identify the image, but a dataset may use it for different purposes.
 + `annotations` (list[dict]): the per-instance annotations of every
   instance in this image. Each annotation dict may contain:
