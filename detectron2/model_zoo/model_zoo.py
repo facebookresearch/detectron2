@@ -82,17 +82,21 @@ class ModelZooUrls(object):
 
 def get(config_path, trained: bool = False):
     """
-    Get a model specified by relative path under Detectron2's official
-    ``configs`` directory.
+    Get a model specified by relative path under Detectron2's official ``configs`` directory.
 
     Args:
-        trained (bool): Whether to initialize with pre-trained weights of full model. If False,
-        only the backbone is initialized with ImageNet pre-trained weights.
+        trained (bool): Whether to initialize with the trained model zoo weights. If False, the
+            initialization weights specified in the config file's ``MODEL.WEIGHTS`` key are used
+            instead; this will typically (though not always) initialize a subset of weights using
+            an ImageNet pre-trained model, while randomly initializing the other weights.
     """
 
     cfg_file = pkg_resources.resource_filename(
         "detectron2.model_zoo", os.path.join("configs", config_path)
     )
+    if not os.path.exists(cfg_file):
+        raise RuntimeError("{} not available in Model Zoo!".format(config_path))
+
     cfg = get_cfg()
     cfg.merge_from_file(cfg_file)
     if trained:
