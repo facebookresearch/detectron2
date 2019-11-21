@@ -101,7 +101,7 @@ def get_evaluator(cfg, dataset_name, output_folder=None):
 
 def do_test(cfg, model):
     results = OrderedDict()
-    for idx, dataset_name in enumerate(cfg.DATASETS.TEST):
+    for dataset_name in cfg.DATASETS.TEST:
         data_loader = build_detection_test_loader(cfg, dataset_name)
         evaluator = get_evaluator(
             cfg, dataset_name, os.path.join(cfg.OUTPUT_DIR, "inference", dataset_name)
