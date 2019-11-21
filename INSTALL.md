@@ -21,7 +21,7 @@ also installs detectron2 with a few simple commands.
 
 After having the above dependencies, run:
 ```
-git clone git@github.com:facebookresearch/detectron2.git
+git clone https://github.com/facebookresearch/detectron2.git
 cd detectron2
 python setup.py build develop
 
