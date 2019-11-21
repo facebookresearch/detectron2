@@ -103,6 +103,13 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
     """
     Load precomputed object proposals into the dataset.
 
+    The proposal file should be a pickled dict[str->list] with the following
+    keys:
+    - "image_id": list[int], the image ids
+    - "boxes": list[np.ndarray], an Nx4 array of boxes corresponding to the ids
+    - "objectness_logits": list[np.ndarray], a N sized array of objectness scores
+    - "bbox_mode": the BoxMode of the boxes array
+
     Args:
         dataset_dicts (list[dict]): annotations in Detectron2 Dataset format.
         proposal_file (str): file path of pre-computed proposals, in pkl format.
@@ -122,19 +129,16 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
         if key in proposals:
             proposals[rename_keys[key]] = proposals.pop(key)
 
-    # Remove proposals whose ids are not in dataset
+    # Fetch the indexes of all proposals that are in the dataset
     img_ids = set({entry["image_id"] for entry in dataset_dicts})
-    keep = [i for i, id in enumerate(proposals["ids"]) if id in img_ids]
-    # Sort proposals by ids following the image order in dataset
-    keep = sorted(keep)
-    for key in ["boxes", "ids", "objectness_logits"]:
-        proposals[key] = [proposals[key][i] for i in keep]
+    id_to_index = {id: i for i, id in enumerate(proposals["ids"]) if id in img_ids}
+
     # Assuming default bbox_mode of precomputed proposals are 'XYXY_ABS'
     bbox_mode = BoxMode(proposals["bbox_mode"]) if "bbox_mode" in proposals else BoxMode.XYXY_ABS
 
-    for i, record in enumerate(dataset_dicts):
-        # Sanity check that these proposals are for the correct image id
-        assert record["image_id"] == proposals["ids"][i]
+    for record in dataset_dicts:
+        # Get the index of the proposal
+        i = id_to_index[record["image_id"]]
 
         boxes = proposals["boxes"][i]
         objectness_logits = proposals["objectness_logits"][i]
