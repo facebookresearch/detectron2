@@ -134,7 +134,7 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
 
     for i, record in enumerate(dataset_dicts):
         # Sanity check that these proposals are for the correct image id
-        assert record["image_id"] == proposals["ids"][i]
+        assert str(record["image_id"]) == str(proposals["ids"][i])
 
         boxes = proposals["boxes"][i]
         objectness_logits = proposals["objectness_logits"][i]

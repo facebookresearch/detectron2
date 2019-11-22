@@ -131,7 +131,7 @@ class TensorboardXWriter(EventWriter):
 
 class CommonMetricPrinter(EventWriter):
     """
-    Print __common__ metrics to the terminal, including
+    Print **common** metrics to the terminal, including
     iteration time, ETA, memory, all losses, and the learning rate.
 
     To print something different, please implement a similar printer by yourself.

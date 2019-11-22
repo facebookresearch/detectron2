@@ -48,8 +48,8 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
 + `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
    category labels.
 + `height`, `width`: integer. The shape of image.
-+ `image_id` (str): a string to identify this image. Used
-	during evaluation to identify the image, but a dataset may use it for different purposes.
++ `image_id` (str or int): a unique id that identifies this image. Used
+	during evaluation to identify the images, but a dataset may use it for different purposes.
 + `annotations` (list[dict]): the per-instance annotations of every
   instance in this image. Each annotation dict may contain:
   + `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
@@ -66,7 +66,7 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
       depend on whether "bbox_mode" is relative.
     + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format.
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
-    v[i] means the visibility of this keypoint.
+    v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
     `n` must be equal to the number of keypoint categories.
     The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
     depend on whether "bbox_mode" is relative.

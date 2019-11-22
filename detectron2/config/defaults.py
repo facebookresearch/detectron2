@@ -26,12 +26,12 @@ _C.MODEL.KEYPOINT_ON = False
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
 
-# If the WEIGHT starts with a catalog://, like :R-50, the code will look for
-# the path in ModelCatalog. Else, it will use it as the specified absolute
-# path
+# Path (possibly with schema like catalog:// or detectron2://) to a checkpoint file
+# to be loaded to the model. You can find available models in the model zoo.
 _C.MODEL.WEIGHTS = ""
 
-# Values to be used for image normalization (BGR order)
+# Values to be used for image normalization (BGR order).
+# To train on images of different number of channels, just set different mean & std.
 # Default values are the mean pixel value from ImageNet: [103.53, 116.28, 123.675]
 _C.MODEL.PIXEL_MEAN = [103.530, 116.280, 123.675]
 # When using pre-trained models in Detectron1 or any MSRA models,
