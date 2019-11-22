@@ -82,10 +82,6 @@ setup(
         "pycocotools @ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI",
         "fvcore @ git+https://github.com/facebookresearch/fvcore.git"
     ],
-    dependency_links=[
-        "git+https://github.com/facebookresearch/fvcore.git@master#egg=fvcore",
-        "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI@master#egg=pycocotools"
-    ],
     extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
