@@ -54,6 +54,11 @@ class DatasetCatalog(object):
         try:
             f = DatasetCatalog._REGISTERED[name]
         except KeyError:
+            if "@" in name:
+                from detectron2.data.datasets.wrap import register_wrapper
+                source_dataset_name, target_dataset_name = name.split("@")
+                register_wrapper(source_dataset_name, target_dataset_name)
+                return DatasetCatalog._REGISTERED[name]()
             raise KeyError(
                 "Dataset '{}' is not registered! Available datasets are: {}".format(
                     name, ", ".join(DatasetCatalog._REGISTERED.keys())
