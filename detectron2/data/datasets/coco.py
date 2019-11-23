@@ -343,7 +343,7 @@ def convert_to_coco_dict(dataset_name):
                     # BinaryMask
                     raise RuntimeError(
                         "segmentation could not be interpreted as RLE or Polygon ",
-                        "BinaryMask in dataset dicts are deprecated."
+                        "BinaryMask in dataset dicts are deprecated.",
                     )
             else:
                 # Computing areas using bounding boxes

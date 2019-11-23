@@ -1,5 +1,6 @@
 from .. import DatasetCatalog, MetadataCatalog
 
+
 def load_wrapped_dataset(source_dataset_name, target_dataset_name):
     # load the source dataset dicts
     dataset_dicts = DatasetCatalog.get(source_dataset_name)
@@ -17,8 +18,7 @@ def get_id_mapping(source_class_names, target_class_names):
     assert len(common_classes) > 0
 
     idS_to_idT = {
-        source_class_names.index(name): target_class_names.index(name)
-        for name in common_classes
+        source_class_names.index(name): target_class_names.index(name) for name in common_classes
     }
 
     return idS_to_idT
@@ -83,6 +83,5 @@ def register_wrapper(source_dataset_name, target_dataset_name):
 
     # Register wrapped dataset loader
     DatasetCatalog.register(
-        wrap_name,
-        lambda: load_wrapped_dataset(source_dataset_name, target_dataset_name)
+        wrap_name, lambda: load_wrapped_dataset(source_dataset_name, target_dataset_name)
     )

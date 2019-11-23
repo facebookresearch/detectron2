@@ -56,6 +56,7 @@ class DatasetCatalog(object):
         except KeyError:
             if "@" in name:
                 from detectron2.data.datasets.wrap import register_wrapper
+
                 source_dataset_name, target_dataset_name = name.split("@")
                 register_wrapper(source_dataset_name, target_dataset_name)
                 return DatasetCatalog._REGISTERED[name]()
