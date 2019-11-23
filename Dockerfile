@@ -28,6 +28,12 @@ RUN pip install -e /detectron2_repo
 
 WORKDIR /detectron2_repo
 
+# create and switch to non-root user
+ENV FVCORE_CACHE="/tmp"
+RUN groupadd -g 999 appuser && \
+    useradd -r -u 999 -g appuser appuser
+USER appuser
+
 # run it, for example:
 # wget http://images.cocodataset.org/val2017/000000439715.jpg -O input.jpg
 # python3 demo/demo.py  \
