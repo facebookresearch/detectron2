@@ -1,0 +1,5 @@
+_BASE_: "../../Cityscapes/mask_rcnn_R_50_FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://Cityscapes/mask_rcnn_R_50_FPN/142423278/model_final_af9cf5.pkl"
+DATASETS:
+  TEST: ("coco_2014_minival_100@cityscapes_fine_instance_seg_val",)
