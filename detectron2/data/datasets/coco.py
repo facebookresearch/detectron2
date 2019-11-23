@@ -327,8 +327,24 @@ def convert_to_coco_dict(dataset_name):
                 # Computing areas for instances by counting the pixels
                 segmentation = annotation["segmentation"]
                 # TODO: check segmentation type: RLE, BinaryMask or Polygon
-                polygons = PolygonMasks([segmentation])
-                area = polygons.area()[0].item()
+                try:
+                    # RLE
+                    if isinstance(segmentation, dict):
+                        # in RLE every second value counts the True pixels
+                        # before the next False pixel is encountered
+                        # so we can use that to get the area quickly
+                        assert "counts" in segmentation
+                        area = sum(segmentation["counts"][1::2])
+                    # Polygon
+                    else:
+                        polygons = PolygonMasks([segmentation])
+                        area = polygons.area()[0].item()
+                except AssertionError:
+                    # BinaryMask
+                    raise RuntimeError(
+                        "segmentation could not be interpreted as RLE or Polygon ",
+                        "BinaryMask in dataset dicts are deprecated."
+                    )
             else:
                 # Computing areas using bounding boxes
                 area = Boxes([bbox]).area()[0].item()
