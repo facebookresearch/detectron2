@@ -9,7 +9,7 @@ FROM nvidia/cuda:10.1-cudnn7-devel
 # 2. `nvidia-docker run -it --name detectron2 --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" detectron2:v0`
 
 
-ENV DEBIAN_FRONTEND noninteractiveµ
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y \
 	libpng-dev libjpeg-dev python3-opencv ca-certificates \
 	python3-dev build-essential pkg-config git curl wget automake libtool && \
