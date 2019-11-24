@@ -161,3 +161,19 @@ In detectron2, the term "thing" is used for instance-level tasks,
 and "stuff" is used for semantic segmentation tasks.
 Both are used in panoptic segmentation.
 
+
+### Update the Config for New Datasets
+
+Once you've registered the dataset, you can use the name of the dataset (e.g., "my_dataset" in
+example above) in `DATASETS.{TRAIN,TEST}`.
+There are other configs you might want to change to train or evaluate on new datasets:
+
+* `MODEL.ROI_HEADS.NUM_CLASSES` and `MODEL.RETINANET.NUM_CLASSES` are the number of thing classes
+	for R-CNN and RetinaNet models.
+* `MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS` sets the number of keypoints for Keypoint R-CNN.
+  You'll also need to set [Keypoint OKS](http://cocodataset.org/#keypoints-eval)
+	with `TEST.KEYPOINT_OKS_SIGMAS` for evaluation.
+* `MODEL.SEM_SEG_HEAD.NUM_CLASSES` sets the number of stuff classes for Semantic FPN & Panoptic FPN.
+* If you're training Fast R-CNN (with precomputed proposals), `DATASETS.PROPOSAL_FILES_{TRAIN,TEST}`
+	need to match the datasts. The format of proposal files are documented
+	[here](../modules/data.html#detectron2.data.load_proposals_into_dataset).
