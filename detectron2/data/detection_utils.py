@@ -46,7 +46,11 @@ def read_image(file_name, format=None):
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
 
-        image = ImageOps.exif_transpose(image)
+        # capture and ignore this bug: https://github.com/python-pillow/Pillow/issues/3973
+        try:
+            image = ImageOps.exif_transpose(image)
+        except Exception:
+            pass
 
         if format is not None:
             # PIL only supports RGB, so convert to RGB and flip channels over below

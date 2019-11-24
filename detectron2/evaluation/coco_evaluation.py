@@ -100,8 +100,8 @@ class COCOEvaluator(DatasetEvaluator):
                 instances = output["instances"].to(self._cpu_device)
 
                 if instances.has("pred_masks"):
-                    # use RLE to encode the masks, because they are too large and takes memory
-                    # since this evaluator stores outputs of the entire dataset
+                    # Use RLE to encode the masks, because they are too large and take memory
+                    # since this evaluator stores outputs of the entire dataset.
                     # Our model may predict bool array, but cocoapi expects uint8
                     rles = [
                         mask_util.encode(np.array(mask[:, :, None], order="F", dtype="uint8"))[0]

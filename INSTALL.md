@@ -21,7 +21,7 @@ also installs detectron2 with a few simple commands.
 
 After having the above dependencies, run:
 ```
-git clone git@github.com:facebookresearch/detectron2.git
+git clone https://github.com/facebookresearch/detectron2.git
 cd detectron2
 python setup.py build develop
 
@@ -62,8 +62,8 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 	```
 	print valid outputs at the time you build detectron2.
 
-+ "invalid device function": two possibilities:
++ "invalid device function" or "no kernel image is available for execution": two possibilities:
   * You build detectron2 with one version of CUDA but run it with a different version.
   * Detectron2 is not built with the correct compute compability for the GPU model.
-    The compute compability defaults to match the GPU found on the machine,
+    The compute compability defaults to match the GPU found on the machine during building,
     and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during installation.
