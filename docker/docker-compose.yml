@@ -8,8 +8,13 @@ services:
       memlock: -1
       stack: 67108864
     volumes:
-      - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - $HOME/.torch/fvcore_cache:$HOME/.torch/fvcore_cache:rw
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
     environment:
       - DISPLAY=$DISPLAY
       - NVIDIA_VISIBLE_DEVICES=all
-    user: $UID
+      - FVCORE_CACHE=$HOME/.torch/fvcore_cache
+    user: $UID:$GID
