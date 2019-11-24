@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from itertools import count
 import torch
 from torch import nn
+from torch.nn.parallel import DistributedDataParallel
 
 from detectron2.data.detection_utils import read_image
 from detectron2.data.transforms import ResizeShortestEdge
@@ -83,6 +84,8 @@ class GeneralizedRCNNWithTTA(nn.Module):
             batch_size (int): batch the augmented images into this batch size for inference.
         """
         super().__init__()
+        if isinstance(model, DistributedDataParallel):
+            model = model.module
         assert isinstance(
             model, GeneralizedRCNN
         ), "TTA is only supported on GeneralizedRCNN. Got a model of type {}".format(type(model))
