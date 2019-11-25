@@ -28,7 +28,7 @@ USER root
 RUN apt-get update && apt-get install -y \
   nano vim emacs
 RUN pip install pandas
-USER appuser
+USER ${USER_NAME}
 ```
 
 ### Temporary
