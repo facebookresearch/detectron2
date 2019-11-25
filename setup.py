@@ -3,7 +3,9 @@
 
 import glob
 import os
+import shutil
 from setuptools import find_packages, setup
+from typing import List
 import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
@@ -22,7 +24,6 @@ def get_extensions():
     )
 
     sources = [main_source] + sources
-
     extension = CppExtension
 
     extra_compile_args = {"cxx": []}
@@ -44,8 +45,6 @@ def get_extensions():
         if CC is not None:
             extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
 
-    sources = [os.path.join(extensions_dir, s) for s in sources]
-
     include_dirs = [extensions_dir]
 
     ext_modules = [
@@ -61,6 +60,35 @@ def get_extensions():
     return ext_modules
 
 
+def get_model_zoo_configs() -> List[str]:
+    """
+    Return a list of configs to include in package for model zoo. Copy over these configs inside
+    detectron2/model_zoo.
+    """
+
+    # Use absolute paths while symlinking.
+    source_configs_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configs")
+    destination = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "detectron2", "model_zoo", "configs"
+    )
+    # Symlink the config directory inside package to have a cleaner pip install.
+    if os.path.exists(destination):
+        # Remove stale symlink/directory from a previous build.
+        if os.path.islink(destination):
+            os.unlink(destination)
+        else:
+            shutil.rmtree(destination)
+
+    try:
+        os.symlink(source_configs_dir, destination)
+    except OSError:
+        # Fall back to copying if symlink fails: ex. on Windows.
+        shutil.copytree(source_configs_dir, destination)
+
+    config_paths = glob.glob("configs/**/*.yaml", recursive=True)
+    return config_paths
+
+
 setup(
     name="detectron2",
     version="0.1",
@@ -69,6 +97,7 @@ setup(
     description="Detectron2 is FAIR's next-generation research "
     "platform for object detection and segmentation.",
     packages=find_packages(exclude=("configs", "tests")),
+    package_data={"detectron2.model_zoo": get_model_zoo_configs()},
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
