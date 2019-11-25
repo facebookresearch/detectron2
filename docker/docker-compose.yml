@@ -5,9 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        USER_ID: $UID
-        GROUP_ID: $GID
-        USER_NAME: $USER
+        USER_ID: ${UID:-0}
+        GROUP_ID: ${GID:-0}
+        USER_NAME: ${USER:-0}
     runtime: nvidia  # TODO: Exchange with "gpu: all" in the future (see https://github.com/facebookresearch/detectron2/pull/197/commits/00545e1f376918db4a8ce264d427a07c1e896c5a).
     shm_size: "8gb"
     ulimits:
@@ -24,4 +24,4 @@ services:
       - DISPLAY=$DISPLAY
       - NVIDIA_VISIBLE_DEVICES=all
       - FVCORE_CACHE=$HOME/.torch/fvcore_cache
-    user: $UID:$GID
+    user: ${UID:-0}:${GID:-0}

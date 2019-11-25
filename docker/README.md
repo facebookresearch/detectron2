@@ -1,11 +1,10 @@
 ## Run the container
-1. Create a directory for model caching (only necessary on initial run):  
+1. Create a directory for model caching (only necessary once):  
    `mkdir -p ~/.torch/fvcore_cache`
-2. Create environment variables to store the user and group ids (always necessary):  
-   `export UID=$(id -u)`  
-   `export GID=$(id -g)`
-3. Change to the *docker* directory of this repository:  
+2. Change to the *docker* directory of this repository:  
    `cd docker`
+3. Create environment variable file to store the user and group ids (only necessary once):  
+   `echo UID=$(id -u)>.env && echo GID=$(id -g)>>.env`
 4. Run the docker container:  
    `docker-compose run detectron2`
 
@@ -13,7 +12,9 @@
 Rebuilding the container is only necessary when *Dockerfile* has been changed. The initial build is done automatically.  
 1. Change to the *docker* directory of this repository:  
    `cd docker`
-2. Trigger the build:  
+2. Create environment variable file to store the user and group ids (only necessary once):  
+   `echo UID=$(id -u)>.env && echo GID=$(id -g)>>.env`
+3. Trigger the build:  
    `docker-compose build detectron2`
    
 ## Install new dependencies
