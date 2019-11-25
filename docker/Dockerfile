@@ -22,16 +22,27 @@ ENV FORCE_CUDA="1"
 ENV TORCH_CUDA_ARCH_LIST="Kepler;Kepler+Tesla;Maxwell;Maxwell+Tegra;Pascal;Volta;Turing"
 RUN pip install -e /detectron2_repo
 
+# create a non-root user
+ENV FVCORE_CACHE="/tmp"
+
+ARG USER_ID
+ARG GROUP_ID
+ARG USER_NAME
+
+RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
+    if getent passwd ${USER_NAME}; then userdel --force ${USER_NAME}; fi &&\
+    if getent group ${USER_NAME}; then groupdel ${USER_NAME}; fi &&\
+    groupadd --gid ${GROUP_ID} ${USER_NAME}&&\
+    useradd --no-log-init --uid ${USER_ID} --gid ${GROUP_ID} ${USER_NAME} &&\
+    chown --changes --silent --no-dereference --recursive \
+        ${USER_ID}:${GROUP_ID} \
+        /detectron2_repo \
+;fi
+
+USER ${USER_NAME}
+
 WORKDIR /detectron2_repo
 
-# make /detectron2_repo accessible for everyone
-RUN chmod 777 -R /detectron2_repo
-
-# create and switch to non-root user
-ENV FVCORE_CACHE="/tmp"
-RUN groupadd -g 999 appuser && \
-    useradd -r -u 999 -g appuser appuser
-USER appuser
 
 # run it, for example:
 # wget http://images.cocodataset.org/val2017/000000439715.jpg -O input.jpg
