@@ -331,7 +331,7 @@ def convert_to_coco_dict(dataset_name):
                 area = polygons.area()[0].item()
             else:
                 # Computing areas using bounding boxes
-                bbox_xy = BoxMode.convert(bbox, bbox_mode, BoxMode.XYXY_ABS)
+                bbox_xy = BoxMode.convert(bbox, BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
                 area = Boxes([bbox_xy]).area()[0].item()
 
             if "keypoints" in annotation:
