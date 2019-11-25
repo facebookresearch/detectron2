@@ -12,6 +12,20 @@ from fvcore.common.history_buffer import HistoryBuffer
 _CURRENT_STORAGE_STACK = []
 
 
+def get_eta(storage, max_iter):
+    iteration = storage.iter
+    data_time, time = None, None
+    eta_string = "N/A"
+    try:
+        data_time = storage.history("data_time").avg(20)
+        time = storage.history("time").global_avg()
+        eta_seconds = storage.history("time").median(1000) * (max_iter - iteration)
+        eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
+    except KeyError:  # they may not exist in the first few iterations (due to warmup)
+        pass
+    return (eta_string, data_time, time)
+
+
 def get_event_storage():
     assert len(
         _CURRENT_STORAGE_STACK
@@ -77,7 +91,7 @@ class JSONWriter(EventWriter):
 
     """
 
-    def __init__(self, json_file, window_size=20):
+    def __init__(self, json_file, window_size=20, max_iter=None):
         """
         Args:
             json_file (str): path to the json file. New data will be appended if the file exists.
@@ -86,10 +100,14 @@ class JSONWriter(EventWriter):
         """
         self._file_handle = PathManager.open(json_file, "a")
         self._window_size = window_size
+        self._max_iter = max_iter
 
     def write(self):
         storage = get_event_storage()
         to_save = {"iteration": storage.iter}
+        if self._max_iter:
+            (eta_string, data_time, time) = get_eta(storage, self._max_iter)
+            to_save["eta"] = eta_string
         to_save.update(storage.latest_with_smoothing_hint(self._window_size))
         self._file_handle.write(json.dumps(to_save, sort_keys=True) + "\n")
         self._file_handle.flush()
@@ -150,15 +168,7 @@ class CommonMetricPrinter(EventWriter):
         storage = get_event_storage()
         iteration = storage.iter
 
-        data_time, time = None, None
-        eta_string = "N/A"
-        try:
-            data_time = storage.history("data_time").avg(20)
-            time = storage.history("time").global_avg()
-            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
-            eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-        except KeyError:  # they may not exist in the first few iterations (due to warmup)
-            pass
+        (eta_string, data_time, time) = get_eta(storage, self._max_iter)
 
         try:
             lr = "{:.6f}".format(storage.history("lr").latest())
