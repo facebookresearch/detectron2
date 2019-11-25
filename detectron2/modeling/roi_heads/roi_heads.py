@@ -56,7 +56,7 @@ def select_foreground_proposals(proposals, bg_label):
     Returns:
         list[Instances]: N Instances, each contains only the selected foreground instances.
         list[Tensor]: N boolean vector, correspond to the selection mask of
-            each instance. True for selected instances.
+            each Instances object. True for selected instances.
     """
     assert isinstance(proposals, (list, tuple))
     assert isinstance(proposals[0], Instances)

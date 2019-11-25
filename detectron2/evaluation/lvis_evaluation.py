@@ -3,11 +3,9 @@ import copy
 import itertools
 import json
 import logging
-import numpy as np
 import os
 import pickle
 from collections import OrderedDict
-import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
 
