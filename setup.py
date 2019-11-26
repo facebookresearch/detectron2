@@ -108,6 +108,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
+        "imagesize",
     ],
     extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),
