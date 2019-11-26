@@ -136,7 +136,7 @@ def do_train(cfg, model, resume=False):
     writers = (
         [
             CommonMetricPrinter(max_iter),
-            JSONWriter(os.path.join(cfg.OUTPUT_DIR, "metrics.json"), max_iter=max_iter),
+            JSONWriter(os.path.join(cfg.OUTPUT_DIR, "metrics.json")),
             TensorboardXWriter(cfg.OUTPUT_DIR),
         ]
         if comm.is_main_process()
