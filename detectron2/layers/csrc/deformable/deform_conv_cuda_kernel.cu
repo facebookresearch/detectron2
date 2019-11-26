@@ -1187,7 +1187,7 @@ void modulated_deformable_col2im_cuda(
             kernel_h,
             kernel_w,
             pad_h,
-            pad_h,
+            pad_w,
             stride_h,
             stride_w,
             dilation_h,
