@@ -30,8 +30,8 @@ ARG GROUP_ID
 ARG USER_NAME
 
 RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
-    if getent passwd ${USER_NAME}; then userdel --force ${USER_NAME}; fi &&\
-    if getent group ${USER_NAME}; then groupdel ${USER_NAME}; fi &&\
+    if getent passwd ${USER_ID}; then userdel -f `id -nu $USER_ID`; fi &&\
+    if getent group ${GROUP_ID}; then groupdel -f `getent group $GROUP_ID | awk -F ":" '{ print $1}'`; fi &&\
     groupadd --gid ${GROUP_ID} ${USER_NAME}&&\
     useradd --no-log-init --uid ${USER_ID} --gid ${GROUP_ID} ${USER_NAME} &&\
     chown --changes --silent --no-dereference --recursive \
