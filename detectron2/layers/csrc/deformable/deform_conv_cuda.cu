@@ -836,7 +836,7 @@ void modulated_deform_conv_cuda_forward(
   if (kernel_h_ != kernel_h || kernel_w_ != kernel_w)
     AT_ERROR(
         "Input shape and kernel shape wont match: (%d x %d vs %d x %d).",
-        kernel_h_,
+        kernel_h,
         kernel_w,
         kernel_h_,
         kernel_w_);
@@ -964,7 +964,7 @@ void modulated_deform_conv_cuda_backward(
   if (kernel_h_ != kernel_h || kernel_w_ != kernel_w)
     AT_ERROR(
         "Input shape and kernel shape wont match: (%d x %d vs %d x %d).",
-        kernel_h_,
+        kernel_h,
         kernel_w,
         kernel_h_,
         kernel_w_);
