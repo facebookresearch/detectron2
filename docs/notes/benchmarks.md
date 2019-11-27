@@ -7,7 +7,7 @@ with some other popular open source Mask R-CNN implementations.
 
 ### Settings
 
-* Hardware: 8 NVIDIA V100s.
+* Hardware: 8 NVIDIA V100s with NVLink.
 * Software: Python 3.7, CUDA 10.0, cuDNN 7.6.4, PyTorch 1.3.0 (at
   [this link](https://download.pytorch.org/whl/nightly/cu100/torch-1.3.0%2Bcu100-cp37-cp37m-linux_x86_64.whl)),
   TensorFlow 1.5.0rc2, Keras 2.2.5, MxNet 1.6.0b20190820.

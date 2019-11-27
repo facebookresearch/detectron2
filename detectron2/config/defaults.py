@@ -75,6 +75,8 @@ _C.INPUT.CROP.SIZE = [0.9, 0.9]
 # with BGR being the one exception. One can set image format to BGR, we will
 # internally use RGB for conversion and flip the channels over
 _C.INPUT.FORMAT = "BGR"
+# The ground truth mask format that the model will use.
+# Mask R-CNN supports either "polygon" or "bitmask" as ground truth.
 _C.INPUT.MASK_FORMAT = "polygon"  # alternative: "bitmask"
 
 
@@ -547,8 +549,10 @@ _C.OUTPUT_DIR = "./output"
 # Set seed to positive to use a fixed seed. Note that a fixed seed does not
 # guarantee fully deterministic behavior.
 _C.SEED = -1
-# Benchmark different cudnn algorithms. It has large overhead for about 10k
-# iterations. It usually hurts total time, but can benefit for certain models.
+# Benchmark different cudnn algorithms.
+# If input images have very different sizes, this option will have large overhead
+# for about 10k iterations. It usually hurts total time, but can benefit for certain models.
+# If input images have the same or similar sizes, benchmark is often helpful.
 _C.CUDNN_BENCHMARK = False
 
 # global config is for quick hack purposes.

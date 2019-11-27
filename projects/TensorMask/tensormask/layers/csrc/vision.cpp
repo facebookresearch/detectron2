@@ -1,5 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+#include <torch/extension.h>
 #include "SwapAlign2Nat/SwapAlign2Nat.h"
 
 namespace tensormask {

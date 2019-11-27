@@ -91,17 +91,17 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
         and add it to the `pred_instances` as a `pred_keypoints` field.
 
     Args:
-        pred_keypoint_logits (Tensor): A tensor of shape (N, K, S, S) where N is the total number
+        pred_keypoint_logits (Tensor): A tensor of shape (R, K, S, S) where R is the total number
            of instances in the batch, K is the number of keypoints, and S is the side length of
            the keypoint heatmap. The values are spatial logits.
-        pred_instances (list[Instances]): A list of M Instances, where M is the batch size.
+        pred_instances (list[Instances]): A list of N Instances, where N is the number of images.
 
     Returns:
         None. boxes will contain an extra "pred_keypoints" field.
             The field is a tensor of shape (#instance, K, 3) where the last
             dimension corresponds to (x, y, probability).
     """
-    # flatten all bboxes from all images together (list[Boxes] -> Nx4 tensor)
+    # flatten all bboxes from all images together (list[Boxes] -> Rx4 tensor)
     bboxes_flat = cat([b.pred_boxes.tensor for b in pred_instances], dim=0)
 
     keypoint_results = heatmaps_to_keypoints(pred_keypoint_logits.detach(), bboxes_flat.detach())

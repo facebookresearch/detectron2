@@ -142,6 +142,13 @@ class DefaultPredictor:
     Attributes:
         metadata (Metadata): the metadata of the underlying dataset, obtained from
             cfg.DATASETS.TEST.
+
+    Examples:
+
+    .. code-block:: python
+
+        pred = DefaultPredictor(cfg)
+        outputs = pred(inputs)
     """
 
     def __init__(self, cfg):
@@ -214,6 +221,14 @@ class DefaultTrainer(SimpleTrainer):
         scheduler:
         checkpointer (DetectionCheckpointer):
         cfg (CfgNode):
+
+    Examples:
+
+    .. code-block:: python
+
+        trainer = DefaultTrainer(cfg)
+        trainer.resume_or_load()  # load last checkpoint or MODEL.WEIGHTS
+        trainer.train()
     """
 
     def __init__(self, cfg):

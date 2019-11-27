@@ -82,7 +82,8 @@ class DatasetEvaluators(DatasetEvaluator):
 
 def inference_on_dataset(model, data_loader, evaluator):
     """
-    Run model (in eval mode) on the data_loader and evaluate the metrics with evaluator.
+    Run model on the data_loader and evaluate the metrics with evaluator.
+    The model will be used in eval mode.
 
     Args:
         model (nn.Module): a module which accepts an object from
