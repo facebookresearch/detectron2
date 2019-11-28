@@ -252,7 +252,7 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        if filepath.endswith(".jpg") or filepath.endswith(".png"):
+        if filepath.lower().endswith(".jpg") or filepath.lower().endswith(".png"):
             # faster than matplotlib's imshow
             cv2.imwrite(filepath, self.get_image()[:, :, ::-1])
         else:
