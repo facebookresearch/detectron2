@@ -45,7 +45,7 @@ class SwapAlign2Nat(nn.Module):
                                 that is no masks outside of the tensor.
     """
 
-    def __init__(self, lambda_val, pad_val=-6.):
+    def __init__(self, lambda_val, pad_val=-6.0):
         super(SwapAlign2Nat, self).__init__()
         self.lambda_val = lambda_val
         self.pad_val = pad_val

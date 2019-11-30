@@ -74,7 +74,8 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
     Note that the coordinate annotations in COCO format are integers in range [0, H-1 or W-1].
     By default, detectron2 adds 0.5 to absolute keypoint coordinates to convert them from discrete
     pixel indices to floating point coordinates.
-  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd region".
+  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd
+    region". Don't include this field if you don't know what it means.
 + `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
   logits of proposals in 'proposal_boxes'.

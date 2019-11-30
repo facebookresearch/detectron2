@@ -80,6 +80,25 @@ class ModelZooUrls(object):
         raise RuntimeError("{} not available in Model Zoo!".format(name))
 
 
+def get_config_file(config_path):
+    """
+    Returns path to a builtin config file.
+
+    Args:
+        config_path (str): config file name relative to detectron2's "configs/"
+        directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+
+    Returns:
+        str: path to the config file.
+    """
+    cfg_file = pkg_resources.resource_filename(
+        "detectron2.model_zoo", os.path.join("configs", config_path)
+    )
+    if not os.path.exists(cfg_file):
+        raise RuntimeError("{} not available in Model Zoo!".format(config_path))
+    return cfg_file
+
+
 def get(config_path, trained: bool = False):
     """
     Get a model specified by relative path under Detectron2's official ``configs`` directory.
@@ -97,12 +116,7 @@ def get(config_path, trained: bool = False):
         from detectron2 import model_zoo
         model = model_zoo.get("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml", trained=True)
     """
-
-    cfg_file = pkg_resources.resource_filename(
-        "detectron2.model_zoo", os.path.join("configs", config_path)
-    )
-    if not os.path.exists(cfg_file):
-        raise RuntimeError("{} not available in Model Zoo!".format(config_path))
+    cfg_file = get_config_file(config_path)
 
     cfg = get_cfg()
     cfg.merge_from_file(cfg_file)
