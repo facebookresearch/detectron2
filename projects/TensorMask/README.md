@@ -30,7 +30,7 @@ python /path/to/detectron2/projects/TensorMask/train_net.py --config-file <confi
 For example, to launch TensorMask BiPyramid training (1x schedule) with ResNet-50 backbone on 8 GPUs,
 one should execute:
 ```bash
-python /path/to/detectron2/projects/TensorMask/train_net.py --config-file configs/tensormask_R_50_FPN_1x.yaml --num_gpus 8
+python /path/to/detectron2/projects/TensorMask/train_net.py --config-file configs/tensormask_R_50_FPN_1x.yaml --num-gpus 8
 ```
 
 ## Evaluation
