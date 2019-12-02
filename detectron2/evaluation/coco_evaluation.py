@@ -80,13 +80,6 @@ class COCOEvaluator(DatasetEvaluator):
         if cfg.MODEL.MASK_ON:
             tasks = tasks + ("segm",)
         if cfg.MODEL.KEYPOINT_ON:
-            assert (
-                len(cfg.TEST.KEYPOINT_OKS_SIGMAS) == cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
-                or cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS == 17
-            ), "The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) must be equal to " \
-               "cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS. For more information please refer to " \
-               "http://cocodataset.org/#keypoints-eval."
-
             tasks = tasks + ("keypoints",)
         return tasks
 
@@ -477,6 +470,16 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, iou_type, kpt_oks_sigma
     # Use the COCO default keypoint OKS sigmas unless overrides are specified
     if kpt_oks_sigmas:
         coco_eval.params.kpt_oks_sigmas = np.array(kpt_oks_sigmas)
+
+    if iou_type == "keypoints":
+        num_keypoints = len(coco_results[0]["keypoints"]) / 3
+        assert (
+                len(coco_eval.params.kpt_oks_sigmas) == num_keypoints
+                or num_keypoints == 17
+        ), "The length of kpt_oks_sigmas (see cfg.TEST.KEYPOINT_OKS_SIGMAS; default: 17) must be equal to the number " \
+           "of keypoints (see cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS). For more information please refer to " \
+           "http://cocodataset.org/#keypoints-eval."
+
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
