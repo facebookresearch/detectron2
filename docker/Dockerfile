@@ -26,20 +26,16 @@ RUN pip install -e /detectron2_repo
 ENV FVCORE_CACHE="/tmp"
 
 ARG USER_ID
-ARG GROUP_ID
-ARG USER_NAME
 
-RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
+RUN if [ ${USER_ID:-0} -ne 0 ]; then \
     if getent passwd ${USER_ID}; then userdel -f `id -nu $USER_ID`; fi &&\
-    if getent group ${GROUP_ID}; then groupdel -f `getent group $GROUP_ID | awk -F ":" '{ print $1}'`; fi &&\
-    groupadd --gid ${GROUP_ID} ${USER_NAME}&&\
-    useradd --no-log-init --uid ${USER_ID} --gid ${GROUP_ID} ${USER_NAME} &&\
+    useradd --no-log-init --uid ${USER_ID} appuser &&\
     chown --changes --silent --no-dereference --recursive \
-        ${USER_ID}:${GROUP_ID} \
+        ${USER_ID} \
         /detectron2_repo \
 ;fi
 
-USER ${USER_NAME}
+USER appuser
 
 WORKDIR /detectron2_repo
 
