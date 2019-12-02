@@ -473,12 +473,10 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, iou_type, kpt_oks_sigma
 
     if iou_type == "keypoints":
         num_keypoints = len(coco_results[0]["keypoints"]) / 3
-        assert (
-                len(coco_eval.params.kpt_oks_sigmas) == num_keypoints
-                or num_keypoints == 17
-        ), "The length of kpt_oks_sigmas (see cfg.TEST.KEYPOINT_OKS_SIGMAS; default: 17) must be equal to the number " \
-           "of keypoints (see cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS). For more information please refer to " \
-           "http://cocodataset.org/#keypoints-eval."
+        assert len(coco_eval.params.kpt_oks_sigmas) == num_keypoints, \
+            "The length of kpt_oks_sigmas (see cfg.TEST.KEYPOINT_OKS_SIGMAS; default: 17) must be equal to the " \
+            "number of keypoints (see cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS). For more information please refer " \
+            "to http://cocodataset.org/#keypoints-eval."
 
     coco_eval.evaluate()
     coco_eval.accumulate()
