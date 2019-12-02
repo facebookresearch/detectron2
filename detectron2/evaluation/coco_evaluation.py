@@ -80,6 +80,13 @@ class COCOEvaluator(DatasetEvaluator):
         if cfg.MODEL.MASK_ON:
             tasks = tasks + ("segm",)
         if cfg.MODEL.KEYPOINT_ON:
+            assert (
+                len(cfg.TEST.KEYPOINT_OKS_SIGMAS) == cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
+                or cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS == 17
+            ), "The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) must be equal to " \
+               "cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS. For more information please refer to " \
+               "http://cocodataset.org/#keypoints-eval."
+
             tasks = tasks + ("keypoints",)
         return tasks
 
