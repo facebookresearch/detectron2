@@ -42,6 +42,10 @@ class ImageList(object):
         cast_tensor = self.tensor.to(*args, **kwargs)
         return ImageList(cast_tensor, self.image_sizes)
 
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
+
     @staticmethod
     def from_tensors(
         tensors: Sequence[torch.Tensor], size_divisibility: int = 0, pad_value: float = 0.0

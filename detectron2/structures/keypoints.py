@@ -36,6 +36,10 @@ class Keypoints:
     def to(self, *args: Any, **kwargs: Any) -> "Keypoints":
         return type(self)(self.tensor.to(*args, **kwargs))
 
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
+
     def to_heatmap(self, boxes: torch.Tensor, heatmap_size: int) -> torch.Tensor:
         """
         Arguments:

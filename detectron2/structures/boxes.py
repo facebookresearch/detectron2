@@ -228,7 +228,7 @@ class Boxes:
         return cat_boxes
 
     @property
-    def device(self) -> str:
+    def device(self) -> torch.device:
         return self.tensor.device
 
     def __iter__(self) -> Iterator[torch.Tensor]:
@@ -258,11 +258,13 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
 
     boxes1, boxes2 = boxes1.tensor, boxes2.tensor
 
-    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]
-    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]
+    width_height = torch.min(boxes1[:, None, 2:], boxes2[:, 2:]) - torch.max(
+        boxes1[:, None, :2], boxes2[:, :2]
+    )  # [N,M,2]
 
-    wh = (rb - lt).clamp(min=0)  # [N,M,2]
-    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
+    width_height.clamp_(min=0)  # [N,M,2]
+    inter = width_height.prod(dim=2)  # [N,M]
+    del width_height
 
     # handle empty boxes
     iou = torch.where(

@@ -102,6 +102,10 @@ class BitMasks:
     def to(self, device: str) -> "BitMasks":
         return BitMasks(self.tensor.to(device))
 
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
+
     def __getitem__(self, item: Union[int, slice, torch.BoolTensor]) -> "BitMasks":
         """
         Returns:
@@ -243,6 +247,10 @@ class PolygonMasks:
 
     def to(self, *args: Any, **kwargs: Any) -> "PolygonMasks":
         return self
+
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
 
     def get_bounding_boxes(self) -> Boxes:
         """
