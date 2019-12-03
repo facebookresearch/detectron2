@@ -5,10 +5,10 @@ import unittest
 import torch
 
 import detectron2.model_zoo as model_zoo
+from detectron2.config import get_cfg
 from detectron2.modeling import build_model
 from detectron2.structures import BitMasks, Boxes, Instances
 from detectron2.utils.events import EventStorage
-from detectron2.config import get_cfg
 
 
 def get_model_zoo(config_path):

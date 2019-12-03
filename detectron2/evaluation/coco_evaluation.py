@@ -470,6 +470,16 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, iou_type, kpt_oks_sigma
     # Use the COCO default keypoint OKS sigmas unless overrides are specified
     if kpt_oks_sigmas:
         coco_eval.params.kpt_oks_sigmas = np.array(kpt_oks_sigmas)
+
+    if iou_type == "keypoints":
+        num_keypoints = len(coco_results[0]["keypoints"]) // 3
+        assert len(coco_eval.params.kpt_oks_sigmas) == num_keypoints, (
+            "[COCOEvaluator] The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) "
+            "must be equal to the number of keypoints. However the prediction has {} "
+            "keypoints! For more information please refer to "
+            "http://cocodataset.org/#keypoints-eval.".format(num_keypoints)
+        )
+
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
