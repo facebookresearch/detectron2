@@ -15,7 +15,6 @@ class CfgNode(_CfgNode):
       the content of the file.
     2. Support config versioning.
       When attempting to merge an old config, it will convert the old config automatically.
-
     """
 
     # Note that the default value of allow_unsafe is changed to True
@@ -60,6 +59,14 @@ class CfgNode(_CfgNode):
             new_config = upgrade_config(old_self)
             self.clear()
             self.update(new_config)
+
+    def dump(self, *args, **kwargs):
+        """
+        Returns:
+            str: a yaml string representation of the config
+        """
+        # to make it show up in docs
+        return super().dump(*args, **kwargs)
 
 
 global_cfg = CfgNode()

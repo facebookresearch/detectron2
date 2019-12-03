@@ -36,9 +36,11 @@ class COCOEvaluator(DatasetEvaluator):
         Args:
             dataset_name (str): name of the dataset to be evaluated.
                 It must have either the following corresponding metadata:
+
                     "json_file": the path to the COCO format annotation
+
                 Or it must be in detectron2's standard dataset format
-                    so it can be converted to COCO format automatically.
+                so it can be converted to COCO format automatically.
             cfg (CfgNode): config instance
             distributed (True): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.

@@ -139,7 +139,7 @@ def transform_instance_annotations(
     annotation, transforms, image_size, *, keypoint_hflip_indices=None
 ):
     """
-    Apply transforms to box, segmentation and keypoints of annotations of a single instance.
+    Apply transforms to box, segmentation and keypoints annotations of a single instance.
 
     It will use `transforms.apply_box` for the box, and
     `transforms.apply_coords` for segmentation polygons & keypoints.
@@ -148,6 +148,7 @@ def transform_instance_annotations(
 
     Args:
         annotation (dict): dict of instance annotations for a single instance.
+            It will be modified in-place.
         transforms (TransformList):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
