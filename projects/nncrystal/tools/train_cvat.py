@@ -6,30 +6,18 @@ from detectron2.utils.logger import setup_logger
 
 from cvat.api import CVATAPI
 from cvat.argument import cvat_args
+from cvat.cvat_xml import cvat_xml_to_coco
 from training.train import train
 
 setup_logger()
 
 
-def strip_annotation(coco_json, annotation_name):
-    for cat in coco_json["categories"]:
-        if cat["name"] == annotation_name:
-            matching_id = cat["id"]
-            coco_json["categories"].remove(cat)
-
-            for ann in coco_json["annotations"]:
-                if ann["category_id"] == matching_id:
-                    coco_json["annotations"].remove(ann)
-
-
-def get_data_set(job_id, strips):
+def get_data_set(job_id):
     job = api.get_job(job_id).json()
     task_id = job["task_id"]
-    data = api.export_data(task_id).json()
+    data = api.export_data(task_id, format="CVAT XML 1.1 for images").content
+    data = cvat_xml_to_coco(data, ignore_crowded=True)
 
-    if strips is not None:
-        for strip in strips:
-            strip_annotation(data, strip)
     return data, task_id
 
 
@@ -40,7 +28,6 @@ if __name__ == '__main__':
     parser.add_argument("--job_id", type=int, action="append")
     parser.add_argument("--val_job_id", type=int, action="append")
     parser.add_argument("--output")
-    parser.add_argument("--strip", type=str, action="append")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--restart", action="store_true")
     parser.add_argument("--force_test", action="store_true")
@@ -54,7 +41,7 @@ if __name__ == '__main__':
 
     # training tasks
     for job_id in args.job_id:
-        data, task_id = get_data_set(job_id, args.strip)
+        data, task_id = get_data_set(job_id)
 
         coco_json = f"datasets/train_cvat_{task_id}.coco.json"
         with open(coco_json, "w") as f:
@@ -68,7 +55,7 @@ if __name__ == '__main__':
     if args.val_job_id is not None:
         valid_tasks = []
         for val_job_id in args.val_job_id:
-            data, task_id = get_data_set(val_job_id, args.strip)
+            data, task_id = get_data_set(val_job_id)
             coco_json = f"datasets/valid_cvat_{task_id}.coco.json"
             with open(coco_json, "w") as f:
                 json.dump(data, f)

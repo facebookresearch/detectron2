@@ -1,18 +1,19 @@
 import argparse
 import json
+import multiprocessing as mp
 import logging
 from xml.etree import ElementTree
 
-import cv2
 import numpy as np
+
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.logger import setup_logger
 from rx import operators
 from rx.scheduler import ThreadPoolScheduler, ImmediateScheduler
+import cv2
 
-from cvat.argument import cvat_args
-from cvat.cvat_xml import build_image_node, build_polygon_nodes
+from cvat.cvat_xml import mask_to_polygon_xml, MaskAnnotations, build_image_node, build_polygon_nodes
 
 setup_logger()
 
@@ -21,8 +22,11 @@ import rx
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    cvat_args(parser)
+    parser.add_argument("--cvat_base")
     parser.add_argument("--config")
+    parser.add_argument("--cvat_host", default="http://localhost:8080")
+    parser.add_argument("--cvat_username")
+    parser.add_argument("--cvat_password")
     parser.add_argument("--epsilon", default=0.01)
     parser.add_argument("--job_id", type=int)
     parser.add_argument("--output_xml")
@@ -49,7 +53,7 @@ if __name__ == '__main__':
 
     predictor = DefaultPredictor(cfg=cfg)
 
-    task = api.list_task(task_id).json()
+    task = api.list_task(task_id)[0]
     labels = task["labels"]
     if args.label_list is None:
         label_list = [lbl["name"] for lbl in labels]
