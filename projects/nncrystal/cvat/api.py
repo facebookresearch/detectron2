@@ -69,9 +69,22 @@ class CVATAPI:
         return resp
 
     def list_task(self, id_=None):
-        url = f"{self.host}/api/v1/tasks" + (f"/{id_}" if id_ is not None else "")
-        resp = self.session.get(url)
-        return resp
+        if id_:
+            url = f"{self.host}/api/v1/tasks" + (f"/{id_}" if id_ is not None else "")
+            resp = self.session.get(url)
+            return [resp.json()]
+        else:
+            pagination = 10
+            url = f"{self.host}/api/v1/tasks"
+            resp = self.session.get(url).json()
+            task_count = resp.count
+            pages = int(task_count/pagination) + 1
+
+            tasks = []
+            for i in range(pages):
+                url = f"{self.host}/api/v1/tasks?page={i + 1}"
+                tasks.extend(self.session.get(url).json()["results"])
+        return tasks
 
     def add_task_data(self, server_files):
         pass
@@ -88,12 +101,8 @@ class CVATAPI:
 
     def export_data(self, task_id, filename=None, format="COCO JSON 1.0"):
         if filename is None:
-            tasks = self.list_task().json()
-            results = tasks["results"]
-            result = list(filter(lambda r: r["id"] == task_id, results))
-            assert len(result)
-            result = result[0]
-            filename = result["name"]
+            task = self.list_task(task_id)[0]
+            filename = task["name"]
         url = f"{self.host}/api/v1/tasks/{task_id}/annotations/{filename}?format={format}&action=download"
         while True:
             result = self.session.get(url)
