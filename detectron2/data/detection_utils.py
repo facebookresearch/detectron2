@@ -10,6 +10,8 @@ import numpy as np
 import torch
 from fvcore.common.file_io import PathManager
 from PIL import Image, ImageOps
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 from detectron2.structures import (
     BitMasks,
