@@ -6,16 +6,14 @@ import os
 import time
 import cv2
 import tqdm
-
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
-
 from predictor import VisualizationDemo
-
+from detectron2.utils.visualizer import GenericMask,Visualizer
+import json
 # constants
 WINDOW_NAME = "COCO detections"
-
 
 def setup_cfg(args):
     # load config from file and command-line arguments
@@ -31,7 +29,7 @@ def setup_cfg(args):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Detectron2 demo for builtin models")
+    parser = argparse.ArgumentParser(description="Detectron2 Demo")
     parser.add_argument(
         "--config-file",
         default="configs/quick_schedules/e2e_mask_rcnn_R_50_FPN_inference_acc_test.yaml",
@@ -55,7 +53,7 @@ def get_parser():
     )
     parser.add_argument(
         "--opts",
-        help="Modify config options using the command-line 'KEY VALUE' pairs",
+        help="Modify model config options using the command-line",
         default=[],
         nargs=argparse.REMAINDER,
     )
@@ -73,14 +71,37 @@ if __name__ == "__main__":
     demo = VisualizationDemo(cfg)
 
     if args.input:
-        if len(args.input) == 1:
-            args.input = glob.glob(os.path.expanduser(args.input[0]))
-            assert args.input, "The input path(s) was not found"
-        for path in tqdm.tqdm(args.input, disable=not args.output):
+#         if len(args.input) == 1:
+#             args.input = glob.glob(os.path.expanduser(args.input[0]))
+#             assert args.input, "The input path(s) was not found"
+        print(args.input)
+        with open(args.input[0]) as fr:
+            input_list_tmp=fr.readlines()
+        input_list=[each.strip() for each in input_list_tmp]
+        predict_info_dict={}
+        #若已经有输出的信息
+#         with open('tmp.json') as fr:
+#             predict_info_dict=json.load(fr)
+        for path in tqdm.tqdm(input_list, disable=not args.output):
             # use PIL, to be consistent with evaluation
             img = read_image(path, format="BGR")
             start_time = time.time()
             predictions, visualized_output = demo.run_on_image(img)
+            #自定义：输出polygon坐标
+            scores=predictions['instances'].scores
+            masks=predictions['instances'].pred_masks.cpu().numpy()
+            masks=[GenericMask(x, img.shape[0], img.shape[1]) for x in masks]
+            masks=Visualizer._convert_masks(masks,masks)
+            key='res_%s'%path.split('/')[-1].split('.')[-2].split('_')[1]
+            tmp_info=[]
+            for i in range(len(predictions['instances'])):
+                for segment in masks[i].polygons:
+                    each_info={}
+
+                    each_info['points']=segment.reshape(-1,2).tolist()
+                    each_info['confidence']=round(scores[i].item(),2)
+                    tmp_info.append(each_info)
+            predict_info_dict[key]=tmp_info
             logger.info(
                 "{}: detected {} instances in {:.2f}s".format(
                     path, len(predictions["instances"]), time.time() - start_time
@@ -100,6 +121,9 @@ if __name__ == "__main__":
                 cv2.imshow(WINDOW_NAME, visualized_output.get_image()[:, :, ::-1])
                 if cv2.waitKey(0) == 27:
                     break  # esc to quit
+        with open('tmp.json','w') as fr:
+            json.dump(predict_info_dict,fr)
+        
     elif args.webcam:
         assert args.input is None, "Cannot have both --input and --webcam!"
         cam = cv2.VideoCapture(0)

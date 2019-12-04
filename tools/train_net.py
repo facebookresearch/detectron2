@@ -25,6 +25,7 @@ from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
+from detectron2.data.datasets.register_icdar import register_icdar_instances
 from detectron2.evaluation import (
     CityscapesEvaluator,
     COCOEvaluator,
@@ -34,6 +35,7 @@ from detectron2.evaluation import (
     PascalVOCDetectionEvaluator,
     SemSegEvaluator,
     verify_results,
+    ICDAREvaluator,
 )
 from detectron2.modeling import GeneralizedRCNNWithTTA
 
@@ -81,6 +83,8 @@ class Trainer(DefaultTrainer):
             return PascalVOCDetectionEvaluator(dataset_name)
         if evaluator_type == "lvis":
             return LVISEvaluator(dataset_name, cfg, True, output_folder)
+        if evaluator_type=='icdar':
+            return ICDAREvaluator(dataset_name,cfg,True,output_folder)
         if len(evaluator_list) == 0:
             raise NotImplementedError(
                 "no Evaluator for the dataset {} with the type {}".format(
@@ -123,7 +127,7 @@ def setup(args):
 
 def main(args):
     cfg = setup(args)
-
+    register_icdar_instances()
     if args.eval_only:
         model = Trainer.build_model(cfg)
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
