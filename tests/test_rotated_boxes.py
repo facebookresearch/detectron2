@@ -313,8 +313,8 @@ class TestRotatedBoxesStructure(unittest.TestCase):
             rotated_boxes = RotatedBoxes(boxes_5d)
             normalized_boxes = rotated_boxes.clone()
             normalized_boxes.normalize_angles()
-            assert torch.all(normalized_boxes.tensor[:, 4] > -180)
-            assert torch.all(normalized_boxes.tensor[:, 4] <= 180)
+            assert torch.all(normalized_boxes.tensor[:, 4] >= -180)
+            assert torch.all(normalized_boxes.tensor[:, 4] < 180)
             # x, y, w, h should not change
             assert torch.allclose(boxes_5d[:, :4], normalized_boxes.tensor[:, :4])
             # the cos/sin values of the angles should stay the same
