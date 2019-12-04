@@ -2,16 +2,18 @@
 Change to the *docker* directory of this repository:  
 `cd docker`
    
-### as non-root user (recommended)
+#### as non-root user (recommended)
 `docker-compose run detectron2`
 
-### as root user
-`docker-compose -f docker-compose.yml -f docker-compose.run_as_root.yml run detectron2`
+#### as root user
+May fix problems on systems using non-standard user administration solutions (e.g. clusters).
 
-### with a persistent cache directory
+`docker-compose run --user=root detectron2`
+
+#### with a persistent cache directory
 Prevents models to be re-downloaded on every run, by storing them in your */tmp* directory.
 
-`docker-compose -f docker-compose.yml -f docker-compose.persistent_cache.yml run detectron2`
+`docker-compose run --volume=/tmp:/tmp:rw detectron2`
 
 ## Rebuild the container 
 Rebuilding the container is only necessary when *Dockerfile* has been changed. The initial build is done automatically.  
@@ -36,7 +38,7 @@ USER appuser
 ```
 
 ### Temporary
-Use sudo (with your usual credentials) inside of the container. Changes will be lost, when the container is restarted.  
+Use sudo (with your usual credentials) inside of the container. Changes will be lost when the container is restarted.  
 
 **Example:**  
 `sudo apt-get update`  
