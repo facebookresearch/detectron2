@@ -36,10 +36,9 @@ USER appuser
 ```
 
 ### Temporary
-Use sudo (with your usual credentials) inside of the container. Changes will be lost when the container is restarted.  
+Use sudo inside of the container. Changes will be lost when the container is restarted.  
 
 **Example:**  
 `sudo apt-get update`  
 `sudo apt-get install nano vim emacs`  
 `sudo pip install pandas`
-
