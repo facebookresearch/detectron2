@@ -5,9 +5,7 @@ Change to the *docker* directory of this repository:
 #### as non-root user (recommended)
 `docker-compose run detectron2`
 
-#### as root user
-May fix problems on systems using non-standard user administration solutions (e.g. clusters).
-
+#### as root user (not recommended)
 `docker-compose run --user=root detectron2`
 
 #### with a persistent cache directory

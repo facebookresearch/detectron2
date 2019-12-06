@@ -22,18 +22,21 @@ ENV FORCE_CUDA="1"
 ENV TORCH_CUDA_ARCH_LIST="Kepler;Kepler+Tesla;Maxwell;Maxwell+Tegra;Pascal;Volta;Turing"
 RUN pip install -e /detectron2_repo
 
-# create a non-root user
+# Set a fixed model cache directory.
 ENV FVCORE_CACHE="/tmp"
 
+# create a non-root user
 ARG USER_ID
 
 RUN if [ ${USER_ID:-0} -ne 0 ]; then \
     if getent passwd ${USER_ID}; then userdel -f `id -nu $USER_ID`; fi &&\
-    useradd --no-log-init --uid ${USER_ID} appuser &&\
+    useradd --no-log-init --system  --uid ${USER_ID} appuser -g sudo&&\
     chown --changes --silent --no-dereference --recursive \
         ${USER_ID} \
         /detectron2_repo \
 ;fi
+
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER appuser
 
