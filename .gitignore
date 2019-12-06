@@ -39,6 +39,3 @@ dist/
 /detectron2/model_zoo/configs
 /datasets
 /models
-
-# docker compose files
-/docker/.env
