@@ -18,6 +18,8 @@ def get_model_zoo(config_path):
     cfg_file = model_zoo.get_config_file(config_path)
     cfg = get_cfg()
     cfg.merge_from_file(cfg_file)
+    if not torch.cuda.is_available():
+        cfg.MODEL.DEVICE = "cpu"
     return build_model(cfg)
 
 

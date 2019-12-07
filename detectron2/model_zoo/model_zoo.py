@@ -122,6 +122,8 @@ def get(config_path, trained: bool = False):
     cfg.merge_from_file(cfg_file)
     if trained:
         cfg.MODEL.WEIGHTS = ModelZooUrls.get(config_path)
+    if not torch.cuda.is_available():
+        cfg.MODEL.DEVICE = "cpu"
 
     model = build_model(cfg)
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)

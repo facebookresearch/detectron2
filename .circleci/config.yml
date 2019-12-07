@@ -123,7 +123,16 @@ jobs:
 
 workflows:
   version: 2
-  build_and_test:
+  cpu_test:
     jobs:
       - cpu_tests
+  nightly_test:
+    jobs:
       - gpu_tests
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
