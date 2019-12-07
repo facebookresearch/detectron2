@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import os
 import pkg_resources
+import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -122,6 +123,8 @@ def get(config_path, trained: bool = False):
     cfg.merge_from_file(cfg_file)
     if trained:
         cfg.MODEL.WEIGHTS = ModelZooUrls.get(config_path)
+    if not torch.cuda.is_available():
+        cfg.MODEL.DEVICE = "cpu"
 
     model = build_model(cfg)
     DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)

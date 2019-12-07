@@ -1,0 +1,138 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+
+# -------------------------------------------------------------------------------------
+# Environments to run the jobs in
+# -------------------------------------------------------------------------------------
+cpu: &cpu
+  machine:
+    image: ubuntu-1604:201903-01
+  resource_class: medium
+
+gpu: &gpu
+  machine:
+    image: ubuntu-1604:201903-01
+  environment:
+    CUDA_VERSION: "10.1"
+  resource_class: gpu.small
+
+# -------------------------------------------------------------------------------------
+# Re-usable commands
+# -------------------------------------------------------------------------------------
+install_python: &install_python
+  - run:
+      name: Install Python
+      working_directory: ~/
+      command: |
+        pyenv install 3.6.1
+        pyenv global 3.6.1
+        python -m venv ~/venv
+        echo ". ~/venv/bin/activate" >> $BASH_ENV
+        . ~/venv/bin/activate
+        python --version
+        which python
+        which pip
+        pip install --upgrade pip
+
+install_dep: &install_dep
+  - run:
+      name: Install Dependencies
+      command: |
+        pip install -U 'git+https://github.com/facebookresearch/fvcore'
+        pip install cython opencv-python
+        pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+        pip install --progress-bar off torch torchvision
+
+install_detectron2: &install_detectron2
+  - run:
+      name: Install Detectron2
+      command: |
+        gcc --version
+        pip install -U --progress-bar off -e .[dev]
+        python -m detectron2.utils.collect_env
+
+run_unittests: &run_unittests
+  - run:
+      name: Run Unit Tests
+      command: |
+        cd tests && python -m unittest discover -v
+
+# -------------------------------------------------------------------------------------
+# Jobs to run
+# -------------------------------------------------------------------------------------
+jobs:
+  cpu_tests:
+    <<: *cpu
+
+    working_directory: ~/detectron2
+
+    steps:
+      - checkout
+      - <<: *install_python
+      - <<: *install_dep
+      - <<: *install_detectron2
+
+      - run:
+          name: isort
+          command: |
+            isort -c -sp .
+      - run:
+          name: black
+          command: |
+            black --check -l 100 .
+      - run:
+          name: flake8
+          command: |
+            flake8 .
+
+      - <<: *run_unittests
+
+  gpu_tests:
+    <<: *gpu
+
+    working_directory: ~/detectron2
+
+    steps:
+      - checkout
+      - <<: *install_python
+
+      - run:
+          name: Setup CUDA
+          working_directory: ~/
+          command: |
+            # download and install nvidia drivers, cuda, etc
+            wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
+            sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
+            wget -q https://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1404-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
+            sudo dpkg -i cuda-repo-ubuntu1404-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
+            sudo apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
+            sudo apt-get update && sudo apt-get --yes install cuda
+            nvidia-smi
+
+      - <<: *install_dep
+      - run:
+          name: Check CUDA Available
+          command: |
+            python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+      - <<: *install_detectron2
+      - <<: *run_unittests
+
+
+workflows:
+  version: 2
+  cpu_test:
+    jobs:
+      - cpu_tests
+  nightly_test:
+    jobs:
+      - gpu_tests
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
