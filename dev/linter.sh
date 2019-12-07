@@ -13,7 +13,7 @@
 set -v
 
 echo "Running isort ..."
-isort -y --multi-line 3 --trailing-comma -sp . --skip datasets --skip docs --skip-glob '*/__init__.py' --atomic
+isort -y -sp . --atomic
 
 echo "Running black ..."
 black -l 100 .
