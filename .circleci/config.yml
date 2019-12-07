@@ -47,8 +47,11 @@ install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
+        gcc --version
         pip install --progress-bar off -e .[dev]
-        python -m detectron2.utils.collect_env
+        sudo apt-get install gdb
+        gdb -ex "r" -ex "bt" -ex "quit" --args python -m detectron2.utils.collect_env
+        # python -m detectron2.utils.collect_env
 
 run_unittests: &run_unittests
   - run:
