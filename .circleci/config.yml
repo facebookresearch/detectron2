@@ -37,10 +37,13 @@ install_python: &install_python
         which pip
         pip install --upgrade pip
 
-install_torch: &install_torch
+install_dep: &install_dep
   - run:
-      name: Install PyTorch
+      name: Install Dependencies
       command: |
+        pip install -U 'git+https://github.com/facebookresearch/fvcore'
+        pip install cython opencv-python
+        pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
         pip install --progress-bar off torch torchvision
 
 install_detectron2: &install_detectron2
@@ -48,7 +51,7 @@ install_detectron2: &install_detectron2
       name: Install Detectron2
       command: |
         gcc --version
-        pip install --progress-bar off -e .[dev]
+        pip install -U --progress-bar off -e .[dev]
         python -m detectron2.utils.collect_env
 
 run_unittests: &run_unittests
@@ -69,7 +72,7 @@ jobs:
     steps:
       - checkout
       - <<: *install_python
-      - <<: *install_torch
+      - <<: *install_dep
       - <<: *install_detectron2
 
       - run:
@@ -106,9 +109,10 @@ jobs:
             wget -q https://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1404-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
             sudo dpkg -i cuda-repo-ubuntu1404-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
             sudo apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
+            sudo apt-get update && sudo apt-get --yes install cuda
             nvidia-smi
 
-      - <<: *install_torch
+      - <<: *install_dep
       - run:
           name: Check CUDA Available
           command: |
