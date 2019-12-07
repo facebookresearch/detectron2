@@ -9,12 +9,12 @@ version: 2
 # -------------------------------------------------------------------------------------
 cpu: &cpu
   machine:
-    image: default
+    image: ubuntu-1604:201903-01
   resource_class: medium
 
 gpu: &gpu
   machine:
-    image: default
+    image: ubuntu-1604:201903-01
   environment:
     CUDA_VERSION: "10.1"
   resource_class: gpu.small
