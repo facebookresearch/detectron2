@@ -6,4 +6,5 @@ Notes
 
    benchmarks
    compatibility
+   contributing
    changelog
