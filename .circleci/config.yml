@@ -48,6 +48,7 @@ install_detectron2: &install_detectron2
       name: Install Detectron2
       command: |
         pip install --progress-bar off -e .[dev]
+        python -m detectron2.utils.collect_env
 
 run_unittests: &run_unittests
   - run:
@@ -77,7 +78,7 @@ jobs:
       - run:
           name: black
           command: |
-            black --check -l 80 .
+            black --check -l 100 .
       - run:
           name: flake8
           command: |
