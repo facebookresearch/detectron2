@@ -177,7 +177,9 @@ _C.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.5, 1.0, 2.0]]
 # list[float], the angle in degrees, for each input feature map.
 # ANGLES[i] specifies the list of angles for IN_FEATURES[i].
 _C.MODEL.ANCHOR_GENERATOR.ANGLES = [[-90, 0, 90]]
-
+# Offset of anchor relave to tl corner of the pixel
+# Allowed values are floats in [0, 1] range inclusive
+_C.MODEL.ANCHOR_GENERATOR.OFFSET = 0.0
 
 # ---------------------------------------------------------------------------- #
 # RPN options

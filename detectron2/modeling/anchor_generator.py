@@ -38,12 +38,16 @@ class BufferList(nn.Module):
         return iter(self._buffers.values())
 
 
-def _create_grid_offsets(size, stride, device):
+def _create_grid_offsets(size, stride, device, offset):
     grid_height, grid_width = size
     shifts_x = torch.arange(0, grid_width * stride, step=stride, dtype=torch.float32, device=device)
     shifts_y = torch.arange(
         0, grid_height * stride, step=stride, dtype=torch.float32, device=device
     )
+
+    shifts_x += offset * stride
+    shifts_y += offset * stride
+
     shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
     shift_x = shift_x.reshape(-1)
     shift_y = shift_y.reshape(-1)
@@ -62,6 +66,10 @@ class DefaultAnchorGenerator(nn.Module):
         sizes         = cfg.MODEL.ANCHOR_GENERATOR.SIZES
         aspect_ratios = cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS
         self.strides  = [x.stride for x in input_shape]
+        self.offset = cfg.MODEL.ANCHOR_GENERATOR.OFFSET
+
+        assert 0.0 <= self.offset <= 1.0, self.offset
+
         # fmt: on
         """
         sizes (list[list[int]]): sizes[i] is the list of anchor sizes to use
@@ -121,7 +129,7 @@ class DefaultAnchorGenerator(nn.Module):
     def grid_anchors(self, grid_sizes):
         anchors = []
         for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
-            shift_x, shift_y = _create_grid_offsets(size, stride, base_anchors.device)
+            shift_x, shift_y = _create_grid_offsets(size, stride, base_anchors.device, self.offset)
             shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1)
 
             anchors.append((shifts.view(-1, 1, 4) + base_anchors.view(1, -1, 4)).reshape(-1, 4))
@@ -201,7 +209,11 @@ class RotatedAnchorGenerator(nn.Module):
         sizes         = cfg.MODEL.ANCHOR_GENERATOR.SIZES
         aspect_ratios = cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS
         angles        = cfg.MODEL.ANCHOR_GENERATOR.ANGLES
-        self.strides  = [x.stride for x in input_shape]
+        self.strides  = [x.stride for x in input_shape]        
+        self.offset = cfg.MODEL.ANCHOR_GENERATOR.OFFSET
+
+        assert 0.0 <= self.offset <= 1.0, self.offset
+
         # fmt: on
 
         self.num_features = len(self.strides)
@@ -274,7 +286,7 @@ class RotatedAnchorGenerator(nn.Module):
     def grid_anchors(self, grid_sizes):
         anchors = []
         for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
-            shift_x, shift_y = _create_grid_offsets(size, stride, base_anchors.device)
+            shift_x, shift_y = _create_grid_offsets(size, stride, base_anchors.device, self.offset)
             zeros = torch.zeros_like(shift_x)
             shifts = torch.stack((shift_x, shift_y, zeros, zeros, zeros), dim=1)
 
