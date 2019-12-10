@@ -66,7 +66,7 @@ class DefaultAnchorGenerator(nn.Module):
         sizes         = cfg.MODEL.ANCHOR_GENERATOR.SIZES
         aspect_ratios = cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS
         self.strides  = [x.stride for x in input_shape]
-        self.offset = cfg.MODEL.ANCHOR_GENERATOR.OFFSET
+        self.offset   = cfg.MODEL.ANCHOR_GENERATOR.OFFSET
 
         assert 0.0 <= self.offset <= 1.0, self.offset
 
@@ -209,8 +209,8 @@ class RotatedAnchorGenerator(nn.Module):
         sizes         = cfg.MODEL.ANCHOR_GENERATOR.SIZES
         aspect_ratios = cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS
         angles        = cfg.MODEL.ANCHOR_GENERATOR.ANGLES
-        self.strides  = [x.stride for x in input_shape]        
-        self.offset = cfg.MODEL.ANCHOR_GENERATOR.OFFSET
+        self.strides  = [x.stride for x in input_shape]
+        self.offset   = cfg.MODEL.ANCHOR_GENERATOR.OFFSET
 
         assert 0.0 <= self.offset <= 1.0, self.offset
 
