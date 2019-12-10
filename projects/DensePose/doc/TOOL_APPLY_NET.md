@@ -35,6 +35,67 @@ python apply_net.py dump configs/densepose_rcnn_R_50_FPN_s1x.yaml DensePose_ResN
 ```
 
 
+
+If you want to load the pickle file of DensePose model results: 
+```
+f = open('/your_result_path/result.pkl', 'rb')
+data = pickle.load(f)
+```
+
+
+The pickle loading code should be run in the `/your_detectron2_path/detectron2_repo/projects/DensePose/` directory, 
+or `ModuleNotFoundError: No module named 'densepose'` will occur. 
+
+If you have to run the code in other directory, simply add this before pickle loading:
+```
+import sys
+sys.path.append("/your_detectron2_path/detectron2_repo/projects/DensePose/")
+```
+
+The file `result.pkl` contain the list of results per image, for each image the result is a dictionary. 
+DensePose results are stored under `'pred_densepose'` key, which is an instance of DensePoseResult class. 
+```
+data: [{'file_name': '/your_path/image1.jpg', 
+        'scores': tensor([0.9884]), 
+        'pred_boxes_XYXY': tensor([[ 69.6114,   0.0000, 706.9797, 706.0000]]), 
+        'pred_densepose': <densepose.structures.DensePoseResult object at 0x7f791b312470>}, 
+       {'file_name': '/your_path/image2.jpg', 
+        'scores': tensor([0.9999, 0.5373, 0.3991]), 
+        'pred_boxes_XYXY': tensor([[ 59.5734,   7.7535, 579.9311, 932.3619],
+                                   [612.9418, 686.1254, 612.9999, 704.6053],
+                                   [164.5081, 407.4034, 598.3944, 920.4266]]), 
+        'pred_densepose': <densepose.structures.DensePoseResult object at 0x7f7071229be0>},
+       {'file_name': '/your_path/image3.jpg', 
+        'scores': tensor([0.9987, 0.8648, 0.7277, 0.6785]), 
+        'pred_boxes_XYXY': tensor([[ 29.5393,  29.7294, 260.2740, 929.7100],
+                                   [ 25.8856,  34.7234, 272.5084, 419.4978],
+                                   [ 47.4713, 475.4232, 245.2225, 906.9631],
+                                   [ 84.8272, 241.3668, 128.0741, 301.6587]]),
+        'pred_densepose': <densepose.structures.DensePoseResult object at 0x7f791b3126d8>}]
+
+```
+
+The `'pred_densepose'` object is encoded as a string, 
+thus you can use `DensePoseResult.decode_png_data()` to decode the string and extract the IUV array. 
+```
+img_id = 2  # Which image to extract IUV array from
+
+densepose_result = data[img_id]['pred_densepose']
+for i, result_encoded_w_shape in enumerate(densepose_result.results):
+  if i != 0:
+    break
+  iuv_arr = DensePoseResult.decode_png_data(*result_encoded_w_shape)
+  bbox_xywh = densepose_result.boxes_xywh[i]
+print('iuv arr:', iuv_arr)  #IUV_array is extracted
+print('iuv arr shape:', iuv_arr.shape) 
+print('bbox_xywh:', bbox_xywh)
+```
+For each image, `densepose_result.results` may contain several iuv_arrays, here we choose the first one which has the highest detection score as the IUV array. 
+
+
+
+
+
 ## Visualization Mode
 
 The general command form is:
