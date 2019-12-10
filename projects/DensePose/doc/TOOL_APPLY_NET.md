@@ -52,8 +52,7 @@ import sys
 sys.path.append("/your_detectron2_path/detectron2_repo/projects/DensePose/")
 ```
 
-The file `result.pkl` contain the list of results per image, for each image the result is a dictionary. 
-DensePose results are stored under `'pred_densepose'` key, which is an instance of DensePoseResult class. 
+The file `result.pkl` contain the list of results per image, for each image the result is a dictionary:
 ```
 data: [{'file_name': '/your_path/image1.jpg', 
         'scores': tensor([0.9884]), 
@@ -75,6 +74,7 @@ data: [{'file_name': '/your_path/image1.jpg',
 
 ```
 
+DensePose results are stored under `'pred_densepose'` key, which is an instance of DensePoseResult class. 
 The `'pred_densepose'` object is encoded as a string, 
 thus you can use `DensePoseResult.decode_png_data()` to decode the string and extract the IUV array. 
 ```
