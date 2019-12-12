@@ -39,6 +39,7 @@ The dict may contain the following keys:
 	If provided, the model will produce output in this resolution,
 	rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
 * "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth.
+  Values represent category labels starting from 0.
 
 
 #### How it connects to data loader:

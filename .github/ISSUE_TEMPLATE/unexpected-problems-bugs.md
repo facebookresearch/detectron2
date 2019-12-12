@@ -26,7 +26,8 @@ post according to this template:
 If there are no obvious error in "what you observed" provided above,
 please tell us the expected behavior.
 
-If you expect the model to converge / work better, note that we do not help you train your model.
+If you expect the model to converge / work better, note that we do not give suggestions
+on how to train your model.
 Only in one of the two conditions we will help with it:
 (1) You're unable to reproduce the results in detectron2 model zoo.
 (2) It indicates a detectron2 bug.

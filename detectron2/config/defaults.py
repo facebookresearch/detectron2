@@ -493,6 +493,7 @@ _C.SOLVER.WEIGHT_DECAY = 0.0001
 _C.SOLVER.WEIGHT_DECAY_NORM = 0.0
 
 _C.SOLVER.GAMMA = 0.1
+# The iteration number to decrease learning rate by GAMMA.
 _C.SOLVER.STEPS = (30000,)
 
 _C.SOLVER.WARMUP_FACTOR = 1.0 / 1000
