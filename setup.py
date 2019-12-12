@@ -101,6 +101,8 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
+        "torchvision==0.4.2",
+        "torch==1.3.1",
         "Pillow>=6.0",
         "yacs>=0.1.6",
         "tabulate",
