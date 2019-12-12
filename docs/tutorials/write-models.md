@@ -32,3 +32,5 @@ See [densepose in detectron2](https://github.com/facebookresearch/detectron2/tre
 for an example that implements new ROIHeads.
 
 Other registries can be found in [API documentation](../modules/modeling.html#model-registries).
+You can register components in these registries to customize different parts of a model, or the
+entire model.

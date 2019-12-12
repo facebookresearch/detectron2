@@ -76,30 +76,30 @@ from `densepose_coco_2014_train` dataset:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_segm -v
 ```
-![Bounding Box + Segmentation Visualization](images/vis_bbox_dp_segm.png)
+![Bounding Box + Segmentation Visualization](images/vis_bbox_dp_segm.jpg)
 
 2. Show bounding box and points colored according to the containing part:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_i -v
 ```
-![Bounding Box + Point Label Visualization](images/vis_bbox_dp_i.png)
+![Bounding Box + Point Label Visualization](images/vis_bbox_dp_i.jpg)
 
 3. Show bounding box and annotated points in green color:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_segm -v
 ```
-![Bounding Box + Point Visualization](images/vis_bbox_dp_pts.png)
+![Bounding Box + Point Visualization](images/vis_bbox_dp_pts.jpg)
 
 4. Show bounding box and annotated points colored according to their U coordinate in part parameterization:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_u -v
 ```
-![Bounding Box + Point U Visualization](images/vis_bbox_dp_u.png)
+![Bounding Box + Point U Visualization](images/vis_bbox_dp_u.jpg)
 
 5. Show bounding box and annotated points colored according to their V coordinate in part parameterization:
 ```bash
 python query_db.py show densepose_coco_2014_train image_id:int=322 bbox,dp_v -v
 ```
-![Bounding Box + Point V Visualization](images/vis_bbox_dp_v.png)
+![Bounding Box + Point V Visualization](images/vis_bbox_dp_v.jpg)
 
 

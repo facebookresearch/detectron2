@@ -110,6 +110,7 @@ class GenericMask:
         # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
         # Internal contours (holes) are placed in hierarchy-2.
         # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
+        mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
         res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
@@ -251,7 +252,7 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        if filepath.endswith(".jpg") or filepath.endswith(".png"):
+        if filepath.lower().endswith(".jpg") or filepath.lower().endswith(".png"):
             # faster than matplotlib's imshow
             cv2.imwrite(filepath, self.get_image()[:, :, ::-1])
         else:
@@ -337,7 +338,7 @@ class Visualizer:
         keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
 
         if predictions.has("pred_masks"):
-            masks = predictions.pred_masks.numpy()
+            masks = np.asarray(predictions.pred_masks)
             masks = [GenericMask(x, self.output.height, self.output.width) for x in masks]
         else:
             masks = None
@@ -385,7 +386,7 @@ class Visualizer:
         labels, areas = np.unique(sem_seg, return_counts=True)
         sorted_idxs = np.argsort(-areas).tolist()
         labels = labels[sorted_idxs]
-        for label in labels:
+        for label in filter(lambda l: l < len(self.metadata.stuff_classes), labels):
             try:
                 mask_color = [x / 255 for x in self.metadata.stuff_colors[label]]
             except (AttributeError, IndexError):
@@ -464,6 +465,15 @@ class Visualizer:
         return self.output
 
     def draw_dataset_dict(self, dic):
+        """
+        Draw annotations/segmentaions in Detectron2 Dataset format.
+
+        Args:
+            dic (dict): annotation/segmentation data of one image, in Detectron2 Dataset format.
+
+        Returns:
+            output (VisImage): image object with visualizations.
+        """
         annos = dic.get("annotations", None)
         if annos:
             if "segmentation" in annos[0]:

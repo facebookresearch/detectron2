@@ -56,7 +56,7 @@ def select_foreground_proposals(proposals, bg_label):
     Returns:
         list[Instances]: N Instances, each contains only the selected foreground instances.
         list[Tensor]: N boolean vector, correspond to the selection mask of
-            each instance. True for selected instances.
+            each Instances object. True for selected instances.
     """
     assert isinstance(proposals, (list, tuple))
     assert isinstance(proposals[0], Instances)
@@ -92,6 +92,10 @@ def select_proposals_with_visible_keypoints(proposals):
     ret = []
     all_num_fg = []
     for proposals_per_image in proposals:
+        # If empty/unannotated image (hard negatives), skip filtering for train
+        if len(proposals_per_image) == 0:
+            ret.append(proposals_per_image)
+            continue
         gt_keypoints = proposals_per_image.gt_keypoints.tensor
         # #fg x K x 3
         vis_mask = gt_keypoints[:, :, 2] >= 1
@@ -193,8 +197,9 @@ class ROIHeads(torch.nn.Module):
         Prepare some proposals to be used to train the ROI heads.
         It performs box matching between `proposals` and `targets`, and assigns
         training labels to the proposals.
-        It returns `self.batch_size_per_image` random samples from proposals and groundtruth boxes,
-        with a fraction of positives that is no larger than `self.positive_sample_fraction.
+        It returns ``self.batch_size_per_image`` random samples from proposals and groundtruth
+        boxes, with a fraction of positives that is no larger than
+        ``self.positive_sample_fraction``.
 
         Args:
             See :meth:`ROIHeads.forward`
@@ -203,10 +208,12 @@ class ROIHeads(torch.nn.Module):
             list[Instances]:
                 length `N` list of `Instances`s containing the proposals
                 sampled for training. Each `Instances` has the following fields:
+
                 - proposal_boxes: the proposal boxes
                 - gt_boxes: the ground-truth box that the proposal is assigned to
                   (this is only meaningful if the proposal has a label > 0; if label = 0
-                   then the ground-truth box is random)
+                  then the ground-truth box is random)
+
                 Other fields such as "gt_classes", "gt_masks", that's included in `targets`.
         """
         gt_boxes = [x.gt_boxes for x in targets]
@@ -285,6 +292,7 @@ class ROIHeads(torch.nn.Module):
                 `Instances` contains the ground-truth per-instance annotations
                 for the i-th input image.  Specify `targets` during training only.
                 It may have the following fields:
+
                 - gt_boxes: the bounding box of each instance.
                 - gt_classes: the label for each instance with a category ranging in [0, #class].
                 - gt_masks: PolygonMasks or BitMasks, the ground-truth masks of each instance.
@@ -292,10 +300,10 @@ class ROIHeads(torch.nn.Module):
 
         Returns:
             results (list[Instances]): length `N` list of `Instances`s containing the
-                detected instances. Returned during inference only; may be []
-                during training.
-            losses (dict[str: Tensor]): mapping from a named loss to a tensor
-                storing the loss. Used during training only.
+            detected instances. Returned during inference only; may be [] during training.
+
+            losses (dict[str->Tensor]):
+            mapping from a named loss to a tensor storing the loss. Used during training only.
         """
         raise NotImplementedError()
 

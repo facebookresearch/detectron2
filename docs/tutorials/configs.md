@@ -23,6 +23,8 @@ cfg.merge_from_file("my_cfg.yaml")   # load values from a file
 cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values from a list of str
 ```
 
+To see a list of available configs in detectron2, see [Config References](../modules/config.html#config-references)
+
 
 ### Best Practice with Configs
 

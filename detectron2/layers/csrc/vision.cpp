@@ -1,5 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+#include <torch/extension.h>
 #include "ROIAlign/ROIAlign.h"
 #include "ROIAlignRotated/ROIAlignRotated.h"
 #include "box_iou_rotated/box_iou_rotated.h"

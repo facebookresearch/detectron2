@@ -24,7 +24,7 @@ class Backbone(nn.Module, metaclass=ABCMeta):
         Subclasses must override this method, but adhere to the same return type.
 
         Returns:
-            dict[str: Tensor]: mapping from feature name (e.g., "res2") to tensor
+            dict[str->Tensor]: mapping from feature name (e.g., "res2") to tensor
         """
         pass
 

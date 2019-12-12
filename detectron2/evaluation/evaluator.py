@@ -82,7 +82,8 @@ class DatasetEvaluators(DatasetEvaluator):
 
 def inference_on_dataset(model, data_loader, evaluator):
     """
-    Run model (in eval mode) on the data_loader and evaluate the metrics with evaluator.
+    Run model on the data_loader and evaluate the metrics with evaluator.
+    The model will be used in eval mode.
 
     Args:
         model (nn.Module): a module which accepts an object from
@@ -92,7 +93,9 @@ def inference_on_dataset(model, data_loader, evaluator):
             wrap the given model and override its behavior of `.eval()` and `.train()`.
         data_loader: an iterable object with a length.
             The elements it generates will be the inputs to the model.
-        evaluator (DatasetEvaluator): the evaluator to run
+        evaluator (DatasetEvaluator): the evaluator to run. Use
+            :class:`DatasetEvaluators([])` if you only want to benchmark, but
+            don't want to do any evaluation.
 
     Returns:
         The return value of `evaluator.evaluate()`

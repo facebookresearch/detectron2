@@ -49,7 +49,7 @@ The major differences regarding inference are:
 	can improve mask AP on COCO by ~0.5% absolute.
 
 There are some other differences in training as well, but they won't affect
-model-level compatibility. The majors ones are:
+model-level compatibility. The major ones are:
 
 - We fixed a [bug](https://github.com/facebookresearch/Detectron/issues/459) in
   Detectron, by making `RPN.POST_NMS_TOPK_TRAIN` per-image, rather than per-batch.

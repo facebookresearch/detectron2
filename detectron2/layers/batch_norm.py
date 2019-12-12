@@ -98,7 +98,8 @@ class FrozenBatchNorm2d(nn.Module):
                 res.weight.data = module.weight.data.clone().detach()
                 res.bias.data = module.bias.data.clone().detach()
             res.running_mean.data = module.running_mean.data
-            res.running_var.data = module.running_var.data + module.eps
+            res.running_var.data = module.running_var.data
+            res.eps = module.eps
         else:
             for name, child in module.named_children():
                 new_child = cls.convert_frozen_batchnorm(child)

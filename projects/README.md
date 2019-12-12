@@ -5,5 +5,5 @@ maintainable.
 
 + [DensePose: Dense Human Pose Estimation In The Wild](DensePose)
 + [Scale-Aware Trident Networks for Object Detection](TridentNet)
-+ TensorMask: A Foundation for Dense Object Segmentation.  (Coming Soon)
++ [TensorMask: A Foundation for Dense Object Segmentation](TensorMask)
 + Mesh R-CNN.  (Coming Soon)

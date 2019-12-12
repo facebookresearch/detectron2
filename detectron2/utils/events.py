@@ -131,7 +131,7 @@ class TensorboardXWriter(EventWriter):
 
 class CommonMetricPrinter(EventWriter):
     """
-    Print __common__ metrics to the terminal, including
+    Print **common** metrics to the terminal, including
     iteration time, ETA, memory, all losses, and the learning rate.
 
     To print something different, please implement a similar printer by yourself.
@@ -156,6 +156,7 @@ class CommonMetricPrinter(EventWriter):
             data_time = storage.history("data_time").avg(20)
             time = storage.history("time").global_avg()
             eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
+            storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
         except KeyError:  # they may not exist in the first few iterations (due to warmup)
             pass

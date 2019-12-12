@@ -1,6 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 #pragma once
-#include <torch/extension.h>
+#include <torch/types.h>
 
 namespace detectron2 {
 

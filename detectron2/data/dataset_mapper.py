@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
+import logging
 import numpy as np
 import torch
 from fvcore.common.file_io import PathManager
@@ -30,12 +31,13 @@ class DatasetMapper:
     """
 
     def __init__(self, cfg, is_train=True):
-        self.tfm_gens = utils.build_transform_gen(cfg, is_train)
-
         if cfg.INPUT.CROP.ENABLED and is_train:
             self.crop_gen = T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE)
+            logging.getLogger(__name__).info("CropGen used in training: " + str(self.crop_gen))
         else:
             self.crop_gen = None
+
+        self.tfm_gens = utils.build_transform_gen(cfg, is_train)
 
         # fmt: off
         self.img_format     = cfg.INPUT.FORMAT

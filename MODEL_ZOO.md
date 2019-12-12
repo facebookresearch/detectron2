@@ -19,7 +19,8 @@ Unless otherwise noted, the following settings are used for all runs:
   [Detectron1-Comparisons](configs/Detectron1-Comparisons/) for accuracy comparison,
   and [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html)
   for speed comparison.
-* Inference speed is measured with batch size 1 in detectron2 directly.
+* Inference speed is measured by `tools/train_net.py --eval-only`, or [inference_on_dataset()](https://detectron2.readthedocs.io/modules/evaluation.html#detectron2.evaluation.inference_on_dataset),
+  with batch size 1 in detectron2 directly.
   The actual deployment should in general be faster than the given inference
   speed due to more optimizations.
 * Training speed is averaged across the entire training.
@@ -38,7 +39,8 @@ Unless otherwise noted, the following settings are used for all runs:
   Although 1x models are heavily under-trained, we provide some ResNet-50 models with the 1x (~12 COCO epochs)
   training schedule for comparison when doing quick research iteration.
 * The *model id* column is provided for ease of reference.
-  To check downloaded file integrity: any model on this page contains its md5 prefix in its file name.
+  To check downloaded file integrity, any model on this page contains its md5 prefix in its file name.
+	Each model also comes with a metrics file with all the training statistics and evaluation curves.
 
 #### ImageNet Pretrained Models
 
@@ -856,8 +858,8 @@ A few very large models trained for a long time, for demo purposes:
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml">Mask R-CNN X152</a></td>
 <td align="center">0.281</td>
 <td align="center">15.1</td>
-<td align="center">49.3</td>
-<td align="center">43.2</td>
+<td align="center">50.2</td>
+<td align="center">44.0</td>
 <td align="center"></td>
 <td align="center">18131413</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv/18131413/model_0039999_e76410.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv/18131413/metrics.json">metrics</a></td>
@@ -866,8 +868,8 @@ A few very large models trained for a long time, for demo purposes:
  <tr><td align="left">above + test-time aug.</td>
 <td align="center"></td>
 <td align="center"></td>
-<td align="center">51.4</td>
-<td align="center">45.5</td>
+<td align="center">51.9</td>
+<td align="center">45.9</td>
 <td align="center"></td>
 <td align="center"></td>
 <td align="center"></td>

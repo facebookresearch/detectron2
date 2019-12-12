@@ -113,7 +113,7 @@ class ConvTranspose2d(torch.nn.ConvTranspose2d):
                 self.output_padding,
             )
         ]
-        output_shape = [x.shape[0], self.bias.shape[0]] + output_shape
+        output_shape = [x.shape[0], self.out_channels] + output_shape
         # This is to make DDP happy.
         # DDP expects all workers to have gradient w.r.t the same set of parameters.
         _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0

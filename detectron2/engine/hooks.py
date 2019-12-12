@@ -233,6 +233,19 @@ class AutogradProfiler(HookBase):
     """
     A hook which runs `torch.autograd.profiler.profile`.
 
+    Examples:
+
+    .. code-block:: python
+
+        hooks.AutogradProfiler(
+             lambda trainer: trainer.iter > 10 and trainer.iter < 20, self.cfg.OUTPUT_DIR
+        )
+
+    The above example will run the profiler for iteration 10~20 and dump
+    results to ``OUTPUT_DIR``. We did not profile the first few iterations
+    because they are typically slower than the rest.
+    The result files can be loaded in the ``chrome://tracing`` page in chrome browser.
+
     Note:
         When used together with NCCL on older version of GPUs,
         autograd profiler may cause deadlock because it unnecessarily allocates

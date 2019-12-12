@@ -32,7 +32,9 @@ class RPNTest(unittest.TestCase):
         gt_instances = Instances(image_shape)
         gt_instances.gt_boxes = Boxes(gt_boxes)
         with EventStorage():  # capture events in a new storage to discard them
-            proposals, proposal_losses = proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses = proposal_generator(
+                images, features, [gt_instances[0], gt_instances[1]]
+            )
 
         expected_losses = {
             "loss_rpn_cls": torch.tensor(0.0804563984),
@@ -92,7 +94,9 @@ class RPNTest(unittest.TestCase):
         gt_instances = Instances(image_shape)
         gt_instances.gt_boxes = RotatedBoxes(gt_boxes)
         with EventStorage():  # capture events in a new storage to discard them
-            proposals, proposal_losses = proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses = proposal_generator(
+                images, features, [gt_instances[0], gt_instances[1]]
+            )
 
         expected_losses = {
             "loss_rpn_cls": torch.tensor(0.0432923734),
