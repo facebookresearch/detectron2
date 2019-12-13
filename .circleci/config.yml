@@ -15,8 +15,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     image: ubuntu-1604:201903-01
-  environment:
-    CUDA_VERSION: "10.1"
+    docker_layer_caching: true
   resource_class: gpu.small
 
 # -------------------------------------------------------------------------------------
@@ -140,13 +139,17 @@ jobs:
           working_directory: ~/detectron2/docker
           no_output_timeout: 20m
           command: |
-            docker-compose build --build-arg DISABLE_CACHE=$(date +%Y%m%d%H%M) detectron2
-            docker run -itd --name d2 docker_detectron2
+            nvidia-docker build -t detectron2:v0 -f Dockerfile-circleci .
+            nvidia-docker run -itd --name d2 detectron2:v0
             docker exec -it d2 nvidia-smi
 
       - run:
-          name: Check Installation
+          name: Build Detectron2
           command: |
+            docker exec -it d2 pip install 'git+https://github.com/facebookresearch/fvcore'
+            docker exec -it d2 git clone https://github.com/facebookresearch/detectron2
+            # This will build d2 for the target GPU arch only
+            docker exec -it d2 pip install -e detectron2
             docker exec -it d2 python3 -m detectron2.utils.collect_env
 
       - run:
