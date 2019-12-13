@@ -15,6 +15,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     image: ubuntu-1604:201903-01
+    docker_layer_caching: true
   environment:
     CUDA_VERSION: "10.1"
   resource_class: gpu.small
@@ -115,6 +116,13 @@ jobs:
 
     steps:
       - checkout
+      - run:
+          name: Install nvidia driver
+          working_directory: ~/
+          command: |
+            wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
+            sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
+            nvidia-smi
 
       - run:
           name: Install nvidia-docker
@@ -131,19 +139,21 @@ jobs:
       - run:
           name: Launch docker
           working_directory: ~/detectron2/docker
+          no_output_timeout: 20m
           command: |
-            docker-compose run -d --name d2 detectron2
-            docker exec d2 nvidia-smi
+            docker-compose build --build-arg DISABLE_CACHE=$(date +%Y%m%d%H%M) detectron2
+            docker run -itd --name d2 docker_detectron2
+            docker exec -it d2 nvidia-smi
 
       - run:
-          name: Check CUDA Available
+          name: Check Installation
           command: |
-            docker exec -it d2 python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+            docker exec -it d2 python3 -m detectron2.utils.collect_env
 
       - run:
           name: Run Unit Tests
           command: |
-            docker exec -it d2 python -m unittest discover -v -s tests
+            docker exec -it d2 python3 -m unittest discover -v -s tests
 
 workflows:
   version: 2
