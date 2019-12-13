@@ -6,6 +6,7 @@ import numpy as np
 import time
 import weakref
 import torch
+from abc import ABCMeta, abstractmethod
 
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage
@@ -13,7 +14,7 @@ from detectron2.utils.events import EventStorage
 __all__ = ["HookBase", "TrainerBase", "SimpleTrainer"]
 
 
-class HookBase:
+class HookBase(metaclass=ABCMeta):
     """
     Base class for hooks that can be registered with :class:`TrainerBase`.
 
@@ -48,24 +49,28 @@ class HookBase:
             registered.
     """
 
+    @abstractmethod
     def before_train(self):
         """
         Called before the first iteration.
         """
         pass
 
+    @abstractmethod
     def after_train(self):
         """
         Called after the last iteration.
         """
         pass
 
+    @abstractmethod
     def before_step(self):
         """
         Called before each iteration.
         """
         pass
 
+    @abstractmethod
     def after_step(self):
         """
         Called after each iteration.
