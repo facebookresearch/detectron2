@@ -15,7 +15,6 @@ cpu: &cpu
 gpu: &gpu
   machine:
     image: ubuntu-1604:201903-01
-    docker_layer_caching: true
   environment:
     CUDA_VERSION: "10.1"
   resource_class: gpu.small
