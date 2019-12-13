@@ -63,7 +63,7 @@ def read_image(file_name, format=None):
             # flip channels if needed
             image = image[:, :, ::-1]
         # PIL squeezes out the channel dimension for "L", so make it HWC
-        if format == "L":
+        elif format == "L":
             image = np.expand_dims(image, -1)
         return image
 
