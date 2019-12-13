@@ -1,10 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
+import numpy as np
 import torch
 from torch import nn
 
 from detectron2.structures import ImageList
+from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
+from detectron2.utils.visualizer import Visualizer
 
 from ..backbone import build_backbone
 from ..postprocessing import detector_postprocess
@@ -31,6 +34,8 @@ class GeneralizedRCNN(nn.Module):
         self.backbone = build_backbone(cfg)
         self.proposal_generator = build_proposal_generator(cfg, self.backbone.output_shape())
         self.roi_heads = build_roi_heads(cfg, self.backbone.output_shape())
+        self.vis_period = cfg.VIS_PERIOD
+        self.input_format = cfg.INPUT.FORMAT
 
         assert len(cfg.MODEL.PIXEL_MEAN) == len(cfg.MODEL.PIXEL_STD)
         num_channels = len(cfg.MODEL.PIXEL_MEAN)
@@ -38,6 +43,44 @@ class GeneralizedRCNN(nn.Module):
         pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(num_channels, 1, 1)
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
+
+    def visualize_training(self, batched_inputs, proposals):
+        """
+        A function used to visualize images and proposals. It shows ground truth
+        bounding boxes on the original image and up to 20 predicted object
+        proposals on the original image. Users can implement different
+        visualization functions for different models.
+
+        Args:
+            batched_inputs (list): a list that contains input to the model.
+            proposals (list): a list that contains predicted proposals. Both
+                batched_inputs and proposals should have the same length.
+        """
+
+        inputs = [x for x in batched_inputs]
+        prop_boxes = [p for p in proposals]
+        storage = get_event_storage()
+        max_vis_prop = 20
+
+        for input, prop in zip(inputs, prop_boxes):
+            img = input["image"].cpu().numpy()
+            assert img.shape[0] == 3, "Images should have 3 channels."
+            if self.input_format == "BGR":
+                img = img[::-1, :, :]
+            img = img.transpose(1, 2, 0)
+            v_gt = Visualizer(img, None)
+            v_gt = v_gt.overlay_instances(boxes=input["instances"].gt_boxes)
+            anno_img = v_gt.get_image()
+            box_size = min(len(prop.proposal_boxes), max_vis_prop)
+            v_pred = Visualizer(img, None)
+            v_pred = v_pred.overlay_instances(
+                boxes=prop.proposal_boxes[0:box_size].tensor.cpu().numpy()
+            )
+            prop_img = v_pred.get_image()
+            vis_img = np.concatenate((anno_img, prop_img), axis=1)
+            vis_img = vis_img.transpose(2, 0, 1)
+            vis_name = " 1. GT bounding boxes  2. Predicted proposals"
+            storage.put_image(vis_name, vis_img)
 
     def forward(self, batched_inputs):
         """
@@ -86,6 +129,10 @@ class GeneralizedRCNN(nn.Module):
             proposal_losses = {}
 
         _, detector_losses = self.roi_heads(images, features, proposals, gt_instances)
+        if self.vis_period > 0:
+            storage = get_event_storage()
+            if storage.iter % self.vis_period == 0:
+                self.visualize_training(batched_inputs, proposals)
 
         losses = {}
         losses.update(detector_losses)
