@@ -137,7 +137,6 @@ jobs:
       - run:
           name: Launch docker
           working_directory: ~/detectron2/docker
-          no_output_timeout: 20m
           command: |
             nvidia-docker build -t detectron2:v0 -f Dockerfile-circleci .
             nvidia-docker run -itd --name d2 detectron2:v0
@@ -155,11 +154,11 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
-            docker exec -it d2 python3 -m unittest discover -v -s tests
+            docker exec -it d2 python3 -m unittest discover -v -s detectron2/tests
 
 workflows:
   version: 2
-  cpu_test:
+  regular_test:
     jobs:
       - cpu_tests
       - gpu_tests
