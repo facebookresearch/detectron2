@@ -5,11 +5,12 @@ import time
 from collections import OrderedDict
 from contextlib import contextmanager
 import torch
+from abc import *
 
 from detectron2.utils.comm import is_main_process
 
 
-class DatasetEvaluator:
+class DatasetEvaluator(metaclass=ABCMeta):
     """
     Base class for a dataset evaluator.
 
@@ -20,6 +21,7 @@ class DatasetEvaluator:
     and produce evaluation results in the end (by :meth:`evaluate`).
     """
 
+    @abstractmethod
     def reset(self):
         """
         Preparation for a new round of evaluation.
@@ -27,6 +29,7 @@ class DatasetEvaluator:
         """
         pass
 
+    @abstractmethod
     def process(self, input, output):
         """
         Process an input/output pair.
@@ -37,6 +40,7 @@ class DatasetEvaluator:
         """
         pass
 
+    @abstractmethod
     def evaluate(self):
         """
         Evaluate/summarize the performance, after processing all input/output pairs.
