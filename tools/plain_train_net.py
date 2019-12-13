@@ -81,20 +81,20 @@ def get_evaluator(cfg, dataset_name, output_folder=None):
         evaluator_list.append(COCOEvaluator(dataset_name, cfg, True, output_folder))
     if evaluator_type == "coco_panoptic_seg":
         evaluator_list.append(COCOPanopticEvaluator(dataset_name, output_folder))
-    if evaluator_type == "cityscapes":
+    elif evaluator_type == "cityscapes":
         assert (
             torch.cuda.device_count() >= comm.get_rank()
         ), "CityscapesEvaluator currently do not work with multiple machines."
         return CityscapesEvaluator(dataset_name)
-    if evaluator_type == "pascal_voc":
+    elif evaluator_type == "pascal_voc":
         return PascalVOCDetectionEvaluator(dataset_name)
-    if evaluator_type == "lvis":
+    elif evaluator_type == "lvis":
         return LVISEvaluator(dataset_name, cfg, True, output_folder)
     if len(evaluator_list) == 0:
         raise NotImplementedError(
             "no Evaluator for the dataset {} with the type {}".format(dataset_name, evaluator_type)
         )
-    if len(evaluator_list) == 1:
+    elif len(evaluator_list) == 1:
         return evaluator_list[0]
     return DatasetEvaluators(evaluator_list)
 
