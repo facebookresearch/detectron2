@@ -5,7 +5,7 @@ import time
 from collections import OrderedDict
 from contextlib import contextmanager
 import torch
-from abc import *
+from abc import ABCMeta, abstractmethod
 
 from detectron2.utils.comm import is_main_process
 
