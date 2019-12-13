@@ -22,9 +22,6 @@ RUN wget https://bootstrap.pypa.io/get-pip.py && \
 RUN pip install --user torch torchvision tensorboard cython
 RUN pip install --user 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 
-# Pass a random number as arg, to disable cache for the commands afterwards
-# This is useful to test new updates of fvcore/detectron2
-ARG DISABLE_CACHE=0
 RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
 # install detectron2
 RUN git clone https://github.com/facebookresearch/detectron2 detectron2_repo
