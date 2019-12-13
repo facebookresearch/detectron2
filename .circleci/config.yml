@@ -64,7 +64,7 @@ run_unittests: &run_unittests
   - run:
       name: Run Unit Tests
       command: |
-        cd tests && python -m unittest discover -v
+        python -m unittest discover -v -s tests
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
@@ -115,43 +115,50 @@ jobs:
 
     steps:
       - checkout
-      - <<: *install_python
-      - <<: *setup_venv
 
       - run:
-          name: Setup CUDA
+          name: Install nvidia-docker
           working_directory: ~/
           command: |
-            # download and install nvidia drivers, cuda, etc
-            wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
-            sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
-            wget -q https://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1404-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
-            sudo dpkg -i cuda-repo-ubuntu1404-10-1-local-10.1.243-418.87.00_1.0-1_amd64.deb
-            sudo apt-key add /var/cuda-repo-10-1-local-10.1.243-418.87.00/7fa2af80.pub
-            sudo apt-get update && sudo apt-get --yes install cuda
-            nvidia-smi
+            curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+            distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+            curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+            sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+            sudo apt-get update && sudo apt-get install -y nvidia-docker2
+            # reload the docker daemon configuration
+            sudo pkill -SIGHUP dockerd
 
-      - <<: *install_dep
+      - run:
+          name: Launch docker
+          working_directory: ~/detectron2/docker
+          command: |
+            docker-compose run -d --name d2 detectron2
+            docker exec d2 nvidia-smi
+
       - run:
           name: Check CUDA Available
           command: |
-            python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
-      - <<: *install_detectron2
-      - <<: *run_unittests
+            docker exec -it d2 python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
 
+      - run:
+          name: Run Unit Tests
+          command: |
+            docker exec -it d2 python -m unittest discover -v -s tests
 
 workflows:
   version: 2
   cpu_test:
     jobs:
       - cpu_tests
-  nightly_test:
-    jobs:
       - gpu_tests
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
+
+  #nightly_test:
+    #jobs:
+      #- gpu_tests
+    #triggers:
+      #- schedule:
+          #cron: "0 0 * * *"
+          #filters:
+            #branches:
+              #only:
+                #- master
