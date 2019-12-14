@@ -1,6 +1,6 @@
 # Compatibility with Other Libraries
 
-## Compatibility with Detectron
+## Compatibility with Detectron (and maskrcnn-benchmark)
 
 Detectron2 addresses some legacy issues left in Detectron, as a result, their models
 are not compatible:

@@ -17,4 +17,5 @@ NOTE:
    please use the "Unexpected Problems / Bugs" issue template.
 
 2. We do not answer general machine learning / computer vision questions that are not specific to
-	 detectron2, such as how a model works, or how to improve your training.
+	 detectron2, such as how a model works, how to improve your training, or what algorithm/methods can be
+	 used to achieve X.

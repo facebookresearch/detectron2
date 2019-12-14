@@ -25,6 +25,7 @@ class DatasetMapper:
     You may need to follow it to implement your own one for customized logic.
 
     The callable currently does the following:
+
     1. Read the image from "file_name"
     2. Applies cropping/geometric transforms to the image and annotations
     3. Prepare data and annotations to Tensor and :class:`Instances`
