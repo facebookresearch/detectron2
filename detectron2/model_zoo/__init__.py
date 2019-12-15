@@ -6,4 +6,4 @@ optionally load pre-trained weights as released in
 """
 from .model_zoo import get, get_config_file
 
-__all__ = ['get', 'get_config_file']
+__all__ = ["get", "get_config_file"]

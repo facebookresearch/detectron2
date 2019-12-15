@@ -62,7 +62,7 @@ When in inference mode, the builtin models output a `list[dict]`, one dict for e
 	* "pred_classes": `Tensor`, a vector of N labels in range [0, num_categories).
 	+ "pred_masks": a `Tensor` of shape (N, H, W), masks for each detected instance.
 	+ "pred_keypoints": a `Tensor` of shape (N, num_keypoint, 3).
-		Each row in the last dimension is (x, y, score).
+		Each row in the last dimension is (x, y, score). Scores are larger than 0.
 * "sem_seg": `Tensor` of (num_categories, H, W), the semantic segmentation prediction.
 * "proposals": [Instances](../modules/structures.html#detectron2.structures.Instances)
 	object with the following fields:
