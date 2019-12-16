@@ -9,7 +9,8 @@ from detectron2.engine import DefaultPredictor
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
 
-from utils.msgpack_file_loader import msgpack_data_index, load_images_entries
+from utils import msgpack_data_index, load_images_entries
+
 
 class BatchPredictor(DefaultPredictor):
 
@@ -76,3 +77,19 @@ def get_predictor(config, weights=None):
 
     predictor = BatchPredictor(cfg)
     return predictor
+
+
+def batch_inference_result_split(results: List, keys: List):
+    """
+    Split inference result into a dict with provided key and result dicts.
+    The length of results and keys must match
+    :param results:
+    :param keys:
+    :return:
+    """
+
+    ret = {}
+    for result, key in zip(results, keys):
+        ret[key] = result
+
+    return ret

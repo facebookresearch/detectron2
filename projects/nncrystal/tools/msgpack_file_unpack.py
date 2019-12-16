@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from utils.msgpack_file_loader import load_images_entries, msgpack_data_index
+from utils import load_images_entries, msgpack_data_index
 import zipfile
 
 if __name__ == '__main__':

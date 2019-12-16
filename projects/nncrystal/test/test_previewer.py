@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from utils.previewer import montage_previewer
-from matplotlib import pyplot as plt
+from utils import montage_previewer
 
 
 class TestPreviewer(TestCase):
