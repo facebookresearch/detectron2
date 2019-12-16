@@ -177,7 +177,11 @@ _C.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.5, 1.0, 2.0]]
 # list[float], the angle in degrees, for each input feature map.
 # ANGLES[i] specifies the list of angles for IN_FEATURES[i].
 _C.MODEL.ANCHOR_GENERATOR.ANGLES = [[-90, 0, 90]]
-
+# Relative offset between the center of the first anchor and the top-left corner of the image
+# Units: fraction of feature map stride (e.g., 0.5 means half stride)
+# Allowed values are floats in [0, 1) range inclusive.
+# Recommended value is 0.5, although it is not expected to affect model accuracy.
+_C.MODEL.ANCHOR_GENERATOR.OFFSET = 0.0
 
 # ---------------------------------------------------------------------------- #
 # RPN options
