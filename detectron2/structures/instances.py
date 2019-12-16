@@ -131,6 +131,9 @@ class Instances:
             return len(v)
         raise NotImplementedError("Empty Instances does not support __len__!")
 
+    def __iter__(self):
+        raise NotImplementedError("`Instances` object is not iterable!")
+
     @staticmethod
     def cat(instance_lists: List["Instances"]) -> "Instances":
         """

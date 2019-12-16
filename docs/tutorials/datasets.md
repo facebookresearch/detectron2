@@ -29,7 +29,8 @@ DatasetCatalog.register("my_dataset", get_dicts)
 Here, the snippet associates a dataset "my_dataset" with a function that returns the data.
 If you do not modify downstream code (i.e., you use the standard data loader and data mapper),
 then the function has to return a list of dicts in detectron2's standard dataset format, described
-next.
+next. You can also use arbitrary custom data format, as long as the
+downstream code (mainly the [custom data loader](data_loading.html)) supports it.
 
 For standard tasks
 (instance detection, instance/semantic/panoptic segmentation, keypoint detection),
@@ -40,16 +41,15 @@ The format uses one dict to represent the annotations of
 one image. The dict may have the following fields.
 The fields are often optional, and some functions may be able to
 infer certain fields from others if needed, e.g., the data loader
-can load an image from "file_name" if the "image" field is not available.
+will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name".
 
-+ `file_name`: the full path to the image file.
++ `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
-+ `image`: the image as a numpy array.
-+ `sem_seg`: semantic segmentation ground truth in a 2D numpy array. Values in the array represent
-   category labels.
++ `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
+   category labels starting from 0.
 + `height`, `width`: integer. The shape of image.
-+ `image_id` (str): a string to identify this image. Mainly used by certain datasets
-	during evaluation to identify the image, but a dataset may use it for different purposes.
++ `image_id` (str or int): a unique id that identifies this image. Used
+	during evaluation to identify the images, but a dataset may use it for different purposes.
 + `annotations` (list[dict]): the per-instance annotations of every
   instance in this image. Each annotation dict may contain:
   + `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
@@ -66,7 +66,7 @@ can load an image from "file_name" if the "image" field is not available.
       depend on whether "bbox_mode" is relative.
     + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format.
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
-    v[i] means the visibility of this keypoint.
+    v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
     `n` must be equal to the number of keypoint categories.
     The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
     depend on whether "bbox_mode" is relative.
@@ -74,7 +74,8 @@ can load an image from "file_name" if the "image" field is not available.
     Note that the coordinate annotations in COCO format are integers in range [0, H-1 or W-1].
     By default, detectron2 adds 0.5 to absolute keypoint coordinates to convert them from discrete
     pixel indices to floating point coordinates.
-  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd region".
+  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd
+    region". Don't include this field if you don't know what it means.
 + `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
   logits of proposals in 'proposal_boxes'.
@@ -160,3 +161,20 @@ NOTE: For background on the difference between "thing" and "stuff" categories, s
 In detectron2, the term "thing" is used for instance-level tasks,
 and "stuff" is used for semantic segmentation tasks.
 Both are used in panoptic segmentation.
+
+
+### Update the Config for New Datasets
+
+Once you've registered the dataset, you can use the name of the dataset (e.g., "my_dataset" in
+example above) in `DATASETS.{TRAIN,TEST}`.
+There are other configs you might want to change to train or evaluate on new datasets:
+
+* `MODEL.ROI_HEADS.NUM_CLASSES` and `MODEL.RETINANET.NUM_CLASSES` are the number of thing classes
+	for R-CNN and RetinaNet models.
+* `MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS` sets the number of keypoints for Keypoint R-CNN.
+  You'll also need to set [Keypoint OKS](http://cocodataset.org/#keypoints-eval)
+	with `TEST.KEYPOINT_OKS_SIGMAS` for evaluation.
+* `MODEL.SEM_SEG_HEAD.NUM_CLASSES` sets the number of stuff classes for Semantic FPN & Panoptic FPN.
+* If you're training Fast R-CNN (with precomputed proposals), `DATASETS.PROPOSAL_FILES_{TRAIN,TEST}`
+	need to match the datasts. The format of proposal files are documented
+	[here](../modules/data.html#detectron2.data.load_proposals_into_dataset).

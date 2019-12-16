@@ -108,11 +108,11 @@ class FPN(Backbone):
     def forward(self, x):
         """
         Args:
-            input (dict[str: Tensor]): mapping feature map name (e.g., "res5") to
+            input (dict[str->Tensor]): mapping feature map name (e.g., "res5") to
                 feature map tensor for each feature level in high to low resolution order.
 
         Returns:
-            dict[str: Tensor]:
+            dict[str->Tensor]:
                 mapping from feature map name to FPN feature map tensor
                 in high to low resolution order. Returned feature names follow the FPN
                 paper convention: "p<stage>", where stage has stride = 2 ** stage e.g.,

@@ -233,15 +233,14 @@ class RetinaNet(nn.Module):
             match_quality_matrix = pairwise_iou(targets_per_image.gt_boxes, anchors_per_image)
             gt_matched_idxs, anchor_labels = self.matcher(match_quality_matrix)
 
-            # ground truth box regression
-            matched_gt_boxes = targets_per_image[gt_matched_idxs].gt_boxes
-            gt_anchors_reg_deltas_i = self.box2box_transform.get_deltas(
-                anchors_per_image.tensor, matched_gt_boxes.tensor
-            )
-
-            # ground truth classes
             has_gt = len(targets_per_image) > 0
             if has_gt:
+                # ground truth box regression
+                matched_gt_boxes = targets_per_image.gt_boxes[gt_matched_idxs]
+                gt_anchors_reg_deltas_i = self.box2box_transform.get_deltas(
+                    anchors_per_image.tensor, matched_gt_boxes.tensor
+                )
+
                 gt_classes_i = targets_per_image.gt_classes[gt_matched_idxs]
                 # Anchors with label 0 are treated as background.
                 gt_classes_i[anchor_labels == 0] = self.num_classes
@@ -249,6 +248,7 @@ class RetinaNet(nn.Module):
                 gt_classes_i[anchor_labels == -1] = -1
             else:
                 gt_classes_i = torch.zeros_like(gt_matched_idxs) + self.num_classes
+                gt_anchors_reg_deltas_i = torch.zeros_like(anchors_per_image.tensor)
 
             gt_classes.append(gt_classes_i)
             gt_anchors_deltas.append(gt_anchors_reg_deltas_i)

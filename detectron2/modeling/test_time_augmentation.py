@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from itertools import count
 import torch
 from torch import nn
+from torch.nn.parallel import DistributedDataParallel
 
 from detectron2.data.detection_utils import read_image
 from detectron2.data.transforms import ResizeShortestEdge
@@ -83,6 +84,8 @@ class GeneralizedRCNNWithTTA(nn.Module):
             batch_size (int): batch the augmented images into this batch size for inference.
         """
         super().__init__()
+        if isinstance(model, DistributedDataParallel):
+            model = model.module
         assert isinstance(
             model, GeneralizedRCNN
         ), "TTA is only supported on GeneralizedRCNN. Got a model of type {}".format(type(model))
@@ -194,7 +197,8 @@ class GeneralizedRCNNWithTTA(nn.Module):
 
         # 1.3: select from the union of all results
         num_classes = self.cfg.MODEL.ROI_HEADS.NUM_CLASSES
-        all_scores_2d = torch.zeros(num_boxes, num_classes, device=all_boxes.device)
+        # +1 because fast_rcnn_inference expects background scores as well
+        all_scores_2d = torch.zeros(num_boxes, num_classes + 1, device=all_boxes.device)
         for idx, cls, score in zip(count(), all_classes, all_scores):
             all_scores_2d[idx, cls] = score
 

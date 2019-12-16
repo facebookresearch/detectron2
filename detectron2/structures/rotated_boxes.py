@@ -25,7 +25,7 @@ class RotatedBoxes(Boxes):
                 (x_center, y_center, width, height, angle),
                 in which angle is represented in degrees.
                 While there's no strict range restriction for it,
-                the recommended principal range is between (-180, 180] degrees.
+                the recommended principal range is between [-180, 180) degrees.
 
         Assume we have a horizontal box B = (x_center, y_center, width, height),
         where width is along the x-axis and height is along the y-axis.
@@ -244,10 +244,9 @@ class RotatedBoxes(Boxes):
 
     def normalize_angles(self) -> None:
         """
-        Restrict angles to the range of (-180, 180] degrees
+        Restrict angles to the range of [-180, 180) degrees
         """
-        self.tensor[:, 4] = self.tensor[:, 4] % 360
-        self.tensor[:, 4][torch.where(self.tensor[:, 4] > 180)] -= 360
+        self.tensor[:, 4] = (self.tensor[:, 4] + 180.0) % 360.0 - 180.0
 
     def clip(self, box_size: Boxes.BoxSizeType, clip_angle_threshold: float = 1.0) -> None:
         """

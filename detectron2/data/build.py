@@ -103,6 +103,13 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
     """
     Load precomputed object proposals into the dataset.
 
+    The proposal file should be a pickled dict with the following keys:
+    - "ids": list[int] or list[str], the image ids
+    - "boxes": list[np.ndarray], each is an Nx4 array of boxes corresponding to the image id
+    - "objectness_logits": list[np.ndarray], each is an N sized array of objectness scores
+        corresponding to the boxes.
+    - "bbox_mode": the BoxMode of the boxes array. Defaults to ``BoxMode.XYXY_ABS``.
+
     Args:
         dataset_dicts (list[dict]): annotations in Detectron2 Dataset format.
         proposal_file (str): file path of pre-computed proposals, in pkl format.
@@ -122,19 +129,17 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
         if key in proposals:
             proposals[rename_keys[key]] = proposals.pop(key)
 
-    # Remove proposals whose ids are not in dataset
-    img_ids = set({entry["image_id"] for entry in dataset_dicts})
-    keep = [i for i, id in enumerate(proposals["ids"]) if id in img_ids]
-    # Sort proposals by ids following the image order in dataset
-    keep = sorted(keep)
-    for key in ["boxes", "ids", "objectness_logits"]:
-        proposals[key] = [proposals[key][i] for i in keep]
+    # Fetch the indexes of all proposals that are in the dataset
+    # Convert image_id to str since they could be int.
+    img_ids = set({str(record["image_id"]) for record in dataset_dicts})
+    id_to_index = {str(id): i for i, id in enumerate(proposals["ids"]) if str(id) in img_ids}
+
     # Assuming default bbox_mode of precomputed proposals are 'XYXY_ABS'
     bbox_mode = BoxMode(proposals["bbox_mode"]) if "bbox_mode" in proposals else BoxMode.XYXY_ABS
 
-    for i, record in enumerate(dataset_dicts):
-        # Sanity check that these proposals are for the correct image id
-        assert record["image_id"] == proposals["ids"][i]
+    for record in dataset_dicts:
+        # Get the index of the proposal
+        i = id_to_index[str(record["image_id"])]
 
         boxes = proposals["boxes"][i]
         objectness_logits = proposals["objectness_logits"][i]

@@ -44,6 +44,14 @@ detectron2.utils.registry module
     :undoc-members:
     :show-inheritance:
 
+detectron2.utils.memory module
+----------------------------------
+
+.. automodule:: detectron2.utils.memory
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 detectron2.utils.video\_visualizer module
 -----------------------------------------

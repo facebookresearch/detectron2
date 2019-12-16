@@ -2,25 +2,26 @@
 
 Our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
 has step-by-step instructions that install detectron2.
-The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/Dockerfile)
+The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/docker/Dockerfile)
 also installs detectron2 with a few simple commands.
 
 ### Requirements
+- Linux or macOS
 - Python >= 3.6
 - PyTorch 1.3
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
 	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, needed by demo and visualization
-- [fvcore](https://github.com/facebookresearch/fvcore/): `pip install 'git+https://github.com/facebookresearch/fvcore'`
+- [fvcore](https://github.com/facebookresearch/fvcore/): `pip install -U 'git+https://github.com/facebookresearch/fvcore'`
 - pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 - GCC >= 4.9
 
 
-### Build detectron2
+### Build Detectron2
 
 After having the above dependencies, run:
 ```
-git clone git@github.com:facebookresearch/detectron2.git
+git clone https://github.com/facebookresearch/detectron2.git
 cd detectron2
 python setup.py build develop
 
@@ -28,7 +29,7 @@ python setup.py build develop
 # MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ python setup.py build develop
 
 # or, as an alternative to `setup.py`, do
-# pip install .
+# pip install [--editable] .
 ```
 Note: you may need to rebuild detectron2 after reinstalling a different build of PyTorch.
 
@@ -61,4 +62,8 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 	```
 	print valid outputs at the time you build detectron2.
 
-+ "invalid device function": you build detectron2 with one version of CUDA but run it with a different version.
++ "invalid device function" or "no kernel image is available for execution": two possibilities:
+  * You build detectron2 with one version of CUDA but run it with a different version.
+  * Detectron2 is not built with the correct compute compability for the GPU model.
+    The compute compability defaults to match the GPU found on the machine during building,
+    and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during installation.

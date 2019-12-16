@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# File:
 
 import torch
 
 from detectron2.modeling import ROI_HEADS_REGISTRY, StandardROIHeads
 from detectron2.modeling.poolers import ROIPooler
-
-# Is this function good to expose as an API?
-from detectron2.modeling.roi_heads.roi_heads import select_foreground_proposals
+from detectron2.modeling.roi_heads import select_foreground_proposals
 
 from .densepose_head import (
     build_densepose_data_filter,

@@ -67,7 +67,7 @@ def register_coco_panoptic_separated(
     Args:
         name (str): the name that identifies a dataset,
             e.g. "coco_2017_train_panoptic"
-        metadata (str): extra metadata associated with this dataset.
+        metadata (dict): extra metadata associated with this dataset.
         image_root (str): directory which contains all the images
         panoptic_root (str): directory which contains panoptic annotation images
         panoptic_json (str): path to the json panoptic annotation file

@@ -82,7 +82,8 @@ class DatasetEvaluators(DatasetEvaluator):
 
 def inference_on_dataset(model, data_loader, evaluator):
     """
-    Run model (in eval mode) on the data_loader and evaluate the metrics with evaluator.
+    Run model on the data_loader and evaluate the metrics with evaluator.
+    The model will be used in eval mode.
 
     Args:
         model (nn.Module): a module which accepts an object from
@@ -118,7 +119,8 @@ def inference_on_dataset(model, data_loader, evaluator):
 
             start_compute_time = time.time()
             outputs = model(inputs)
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             total_compute_time += time.time() - start_compute_time
             evaluator.process(inputs, outputs)
 

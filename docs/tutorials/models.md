@@ -23,10 +23,10 @@ corresponds to information about one image.
 
 The dict may contain the following keys:
 
-* "image": `Tensor` in (C, H, W) format.
+* "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
 * "instances": an `Instances` object, with the following fields:
 	+ "gt_boxes": `Boxes` object storing N boxes, one for each instance.
-	+ "gt_classes": `Tensor`, a vector of N labels, in range [0, num_categories).
+	+ "gt_classes": `Tensor` of long type, a vector of N labels, in range [0, num_categories).
 	+ "gt_masks": a `PolygonMasks` object storing N masks, one for each instance.
 	+ "gt_keypoints": a `Keypoints` object storing N keypoint sets, one for each instance.
 * "proposals": an `Instances` object used in Fast R-CNN style models, with the following fields:
@@ -39,6 +39,7 @@ The dict may contain the following keys:
 	If provided, the model will produce output in this resolution,
 	rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
 * "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth.
+  Values represent category labels starting from 0.
 
 
 #### How it connects to data loader:
@@ -61,7 +62,7 @@ When in inference mode, the builtin models output a `list[dict]`, one dict for e
 	* "pred_classes": `Tensor`, a vector of N labels in range [0, num_categories).
 	+ "pred_masks": a `Tensor` of shape (N, H, W), masks for each detected instance.
 	+ "pred_keypoints": a `Tensor` of shape (N, num_keypoint, 3).
-		Each row in the last dimension is (x, y, score).
+		Each row in the last dimension is (x, y, score). Scores are larger than 0.
 * "sem_seg": `Tensor` of (num_categories, H, W), the semantic segmentation prediction.
 * "proposals": [Instances](../modules/structures.html#detectron2.structures.Instances)
 	object with the following fields:
