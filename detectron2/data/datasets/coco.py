@@ -12,6 +12,7 @@ from PIL import Image
 
 from fvcore.common.timer import Timer
 from detectron2.structures import BoxMode, PolygonMasks, Boxes
+from detectron2.utils import comm
 from fvcore.common.file_io import PathManager
 
 
@@ -408,7 +409,8 @@ def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
     PathManager.mkdirs(output_folder)
     if os.path.exists(cache_path) and allow_cached:
         logger.info(f"Reading cached annotations in COCO format from:{cache_path} ...")
-    else:
+    elif comm.is_main_process():
+        # Only convert/dump in the main process to avoid multiple processes writing to file
         logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
         coco_dict = convert_to_coco_dict(dataset_name)
 
