@@ -59,11 +59,7 @@ class COCOEvaluator(DatasetEvaluator):
 
             cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
             self._metadata.json_file = cache_path
-            if not distributed or comm.is_main_process():
-                convert_to_coco_json(dataset_name, cache_path)
-            if distributed:
-                # Wait until the json file has been written by the main process
-                comm.synchronize()
+            convert_to_coco_json(dataset_name, cache_path)
 
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):

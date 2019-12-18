@@ -398,26 +398,22 @@ def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
             must be registered in DatasetCatalog and in detectron2's standard format
         output_file: path of json file that will be saved to
         allow_cached: if json file is already present then skip conversion
-    Returns:
-        cache_path: path to the COCO-format json file
     """
 
     # TODO: The dataset or the conversion script *may* change,
     # a checksum would be useful for validating the cached data
 
     PathManager.mkdirs(os.path.dirname(output_file))
-    if os.path.exists(output_file) and allow_cached:
-        logger.info(f"Cached annotations in COCO format already exist: {output_file}")
-    else:
-        logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
-        coco_dict = convert_to_coco_dict(dataset_name)
+    with file_lock(output_file):
+        if os.path.exists(output_file) and allow_cached:
+            logger.info(f"Cached annotations in COCO format already exist: {output_file}")
+        else:
+            logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
+            coco_dict = convert_to_coco_dict(dataset_name)
 
-        with file_lock(output_file):
             with PathManager.open(output_file, "w") as json_file:
                 logger.info(f"Caching annotations in COCO format: {output_file}")
                 json.dump(coco_dict, json_file)
-
-    return output_file
 
 
 if __name__ == "__main__":
