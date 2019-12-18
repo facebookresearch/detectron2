@@ -198,7 +198,7 @@ def print_instances_class_histogram(dataset_dicts, class_names):
     )
     log_first_n(
         logging.INFO,
-        "Distribution of training instances among all {} categories:\n".format(num_classes)
+        "Distribution of instances among all {} categories:\n".format(num_classes)
         + colored(table, "cyan"),
         key="message",
     )
