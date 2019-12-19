@@ -82,9 +82,9 @@ for i, result_encoded_w_shape in enumerate(densepose_result.results):
 ```
 The array `bbox_xywh` consists of x-coordinate, y-coordinate, width, and height of the bounding box. The shape of `iuv_arr` is `[3, height of the bounding box, width of the bounding box]`, and the data format of `iuv_arr` is:
 
--   `iuv_arr[0,:,:]`: The patch index that indicates which of the 24 surface patches the point is on.
--   `iuv_arr[1,:,:]`: Coordinates in the U space. Each surface patch has a separate 2D parameterization.
--   `iuv_arr[2,:,:]`: Coordinates in the V space. Each surface patch has a separate 2D parameterization.
+-   `iuv_arr[0,:,:]`: The patch index of image points, indicating which of the 24 surface patches the point is on.
+-   `iuv_arr[1,:,:]`: The U-coordinate value of image points.
+-   `iuv_arr[2,:,:]`: The V-coordinate value of image points.
 
 
 
