@@ -153,7 +153,7 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
         (x, y, logit, score) for each keypoint.
 
     When converting discrete pixel indices in an NxN image to a continuous keypoint coordinate,
-    we maintain consistency with :func:`keypoints_to_heatmap` by using the conversion from
+    we maintain consistency with :meth:`Keypoints.to_heatmap` by using the conversion from
     Heckbert 1990: c = d + 0.5, where d is a discrete coordinate and c is a continuous coordinate.
     """
     offset_x = rois[:, 0]

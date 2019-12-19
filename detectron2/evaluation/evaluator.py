@@ -109,23 +109,23 @@ def inference_on_dataset(model, data_loader, evaluator):
 
     logging_interval = 50
     num_warmup = min(5, logging_interval - 1, total - 1)
-    start_time = time.time()
+    start_time = time.perf_counter()
     total_compute_time = 0
     with inference_context(model), torch.no_grad():
         for idx, inputs in enumerate(data_loader):
             if idx == num_warmup:
-                start_time = time.time()
+                start_time = time.perf_counter()
                 total_compute_time = 0
 
-            start_compute_time = time.time()
+            start_compute_time = time.perf_counter()
             outputs = model(inputs)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
-            total_compute_time += time.time() - start_compute_time
+            total_compute_time += time.perf_counter() - start_compute_time
             evaluator.process(inputs, outputs)
 
             if (idx + 1) % logging_interval == 0:
-                duration = time.time() - start_time
+                duration = time.perf_counter() - start_time
                 seconds_per_img = duration / (idx + 1 - num_warmup)
                 eta = datetime.timedelta(
                     seconds=int(seconds_per_img * (total - num_warmup) - duration)
@@ -137,7 +137,7 @@ def inference_on_dataset(model, data_loader, evaluator):
                 )
 
     # Measure the time only for this worker (before the synchronization barrier)
-    total_time = int(time.time() - start_time)
+    total_time = time.perf_counter() - start_time
     total_time_str = str(datetime.timedelta(seconds=total_time))
     # NOTE this format is parsed by grep
     logger.info(

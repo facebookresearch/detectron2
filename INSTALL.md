@@ -52,9 +52,13 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 		Technically, you need the identical compiler that's used to build pytorch to guarantee
 		compatibility. But in practice, gcc >= 4.9 should work OK.
 
++ Undefined C++ symbols in `detectron2/_C*.so`:
+
+  * This can happen with old anaconda. Try `conda update libgcc`.
+
 + Undefined cuda symbols. The version of NVCC you use to build detectron2 or torchvision does
 	not match the version of cuda you are running with.
-	This happens sometimes when using anaconda.
+	This often happens when using anaconda's cuda runtime.
 
 + "Not compiled with GPU support": make sure
 	```

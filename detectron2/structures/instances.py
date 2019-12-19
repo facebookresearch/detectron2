@@ -10,7 +10,7 @@ class Instances:
     """
     This class represents a list of instances in an image.
     It stores the attributes of instances (e.g., boxes, masks, labels, scores) as "fields".
-    All fields must have the same `__len__` which is the number of instances.
+    All fields must have the same ``__len__`` which is the number of instances.
 
     All other (non-field) attributes of this class are considered private:
     they must start with '_' and are not modifiable by a user.
@@ -18,14 +18,18 @@ class Instances:
     Some basic usage:
 
     1. Set/Get a field:
-       instances.gt_boxes = Boxes(...)
-       print(instances.pred_masks)
-       print('gt_masks' in instances)
-    2. `len(instances)` returns the number of instances
-    3. Indexing: `instances[indices]` will apply the indexing on all the fields
-       and returns a new `Instances`.
-       Typically, `indices` is a binary vector of length num_instances,
-       or a vector of integer indices.
+
+       .. code-block:: python
+
+          instances.gt_boxes = Boxes(...)
+          print(instances.pred_masks)  # a tensor of shape (N, H, W)
+          print('gt_masks' in instances)
+
+    2. ``len(instances)`` returns the number of instances
+    3. Indexing: ``instances[indices]`` will apply the indexing on all the fields
+       and returns a new :class:`Instances`.
+       Typically, ``indices`` is a integer vector of indices,
+       or a binary mask of length ``num_instances``,
     """
 
     def __init__(self, image_size: Tuple[int, int], **kwargs: Any):
