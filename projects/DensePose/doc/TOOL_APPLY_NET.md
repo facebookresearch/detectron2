@@ -52,7 +52,7 @@ import sys
 sys.path.append("/your_detectron2_path/detectron2_repo/projects/DensePose/")
 ```
 
-The file `result.pkl` contain the list of results per image, for each image the result is a dictionary:
+The file `result.pkl` contains the list of results per image, for each image the result is a dictionary:
 ```
 data: [{'file_name': '/your_path/image1.jpg', 
         'scores': tensor([0.9884]), 
@@ -63,34 +63,28 @@ data: [{'file_name': '/your_path/image1.jpg',
         'pred_boxes_XYXY': tensor([[ 59.5734,   7.7535, 579.9311, 932.3619],
                                    [612.9418, 686.1254, 612.9999, 704.6053],
                                    [164.5081, 407.4034, 598.3944, 920.4266]]), 
-        'pred_densepose': <densepose.structures.DensePoseResult object at 0x7f7071229be0>},
-       {'file_name': '/your_path/image3.jpg', 
-        'scores': tensor([0.9987, 0.8648, 0.7277, 0.6785]), 
-        'pred_boxes_XYXY': tensor([[ 29.5393,  29.7294, 260.2740, 929.7100],
-                                   [ 25.8856,  34.7234, 272.5084, 419.4978],
-                                   [ 47.4713, 475.4232, 245.2225, 906.9631],
-                                   [ 84.8272, 241.3668, 128.0741, 301.6587]]),
-        'pred_densepose': <densepose.structures.DensePoseResult object at 0x7f791b3126d8>}]
+        'pred_densepose': <densepose.structures.DensePoseResult object at 0x7f7071229be0>}]
 
 ```
 
 DensePose results are stored under `'pred_densepose'` key, which is an instance of DensePoseResult class. 
 The `'pred_densepose'` object is encoded as a string, 
 thus you can use `DensePoseResult.decode_png_data()` to decode the string and extract the IUV array. 
+For each image, `densepose_result.results` may contain several iuv_arrays, here we choose the first one which has the highest detection score as the IUV array. 
 ```
 img_id = 2  # Which image to extract IUV array from
 
 densepose_result = data[img_id]['pred_densepose']
 for i, result_encoded_w_shape in enumerate(densepose_result.results):
-  if i != 0:
+    iuv_arr = DensePoseResult.decode_png_data(*result_encoded_w_shape)
+    bbox_xywh = densepose_result.boxes_xywh[i]
     break
-  iuv_arr = DensePoseResult.decode_png_data(*result_encoded_w_shape)
-  bbox_xywh = densepose_result.boxes_xywh[i]
-print('iuv arr:', iuv_arr)  #IUV_array is extracted
-print('iuv arr shape:', iuv_arr.shape) 
-print('bbox_xywh:', bbox_xywh)
 ```
-For each image, `densepose_result.results` may contain several iuv_arrays, here we choose the first one which has the highest detection score as the IUV array. 
+The array `bbox_xywh` consists of x-coordinate, y-coordinate, width, and height of the bounding box. The shape of `iuv_arr` is `[3, height of the bounding box, width of the bounding box]`, and the data format of `iuv_arr` is:
+
+-   `iuv_arr[0,:,:]`: The patch index that indicates which of the 24 surface patches the point is on.
+-   `iuv_arr[1,:,:]`: Coordinates in the U space. Each surface patch has a separate 2D parameterization.
+-   `iuv_arr[2,:,:]`: Coordinates in the V space. Each surface patch has a separate 2D parameterization.
 
 
 
