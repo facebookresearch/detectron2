@@ -6,7 +6,6 @@ import os
 import datetime
 import json
 import numpy as np
-import imagesize
 
 from PIL import Image
 
@@ -263,13 +262,9 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
 
     dataset_dicts = []
     for (img_path, gt_path) in zip(input_files, gt_files):
-        local_path = PathManager.get_local_path(gt_path)
-        w, h = imagesize.get(local_path)
         record = {}
         record["file_name"] = img_path
         record["sem_seg_file_name"] = gt_path
-        record["height"] = h
-        record["width"] = w
         dataset_dicts.append(record)
 
     return dataset_dicts

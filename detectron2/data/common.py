@@ -6,7 +6,7 @@ import torch.utils.data as data
 
 from detectron2.utils.serialize import PicklableWrapper
 
-__all__ = ["MapDataset", "DatasetFromList"]
+__all__ = ["MapDataset", "DatasetFromList", "ToIterableDataset", "AspectRatioGroupedDataset"]
 
 
 class MapDataset(data.Dataset):
@@ -79,3 +79,59 @@ class DatasetFromList(data.Dataset):
             return copy.deepcopy(self._lst[idx])
         else:
             return self._lst[idx]
+
+
+class ToIterableDataset(data.IterableDataset):
+    """
+    Convert an old indices-based (also called map-style) dataset
+    to an iterable-style dataset.
+    """
+
+    def __init__(self, dataset, sampler):
+        """
+        Args:
+            dataset (torch.utils.data.Dataset): an old-style dataset with ``__getitem__``
+            sampler: an iterable that produces indices to be applied on ``dataset``.
+        """
+        assert not isinstance(dataset, data.IterableDataset), dataset
+        self.dataset = dataset
+        self.sampler = sampler
+
+    def __iter__(self):
+        for idx in self.sampler:
+            yield self.dataset[idx]
+
+
+class AspectRatioGroupedDataset(data.IterableDataset):
+    """
+    Batch data that have similar aspect ratio together.
+    In this implementation, images whose aspect ratio < (or >) 1 will
+    be batched together.
+
+    It assumes the underlying dataset produces dicts with "width" and "height" keys.
+    It will then produce a list of original dicts with length = batch_size,
+    all with similar aspect ratios.
+    """
+
+    def __init__(self, dataset, batch_size):
+        """
+        Args:
+            dataset: an iterable. Each element must be a dict with keys
+                "width" and "height", which will be used to batch data.
+            batch_size (int):
+        """
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self._buckets = [[] for _ in range(2)]
+        # Hard-coded two aspect ratio groups: w > h and w < h.
+        # Can add support for more aspect ratio groups, but doesn't seem useful
+
+    def __iter__(self):
+        for d in self.dataset:
+            w, h = d["width"], d["height"]
+            bucket_id = 0 if w > h else 1
+            bucket = self._buckets[bucket_id]
+            bucket.append(d)
+            if len(bucket) == self.batch_size:
+                yield bucket[:]
+                del bucket[:]
