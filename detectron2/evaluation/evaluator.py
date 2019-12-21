@@ -7,6 +7,7 @@ from contextlib import contextmanager
 import torch
 
 from detectron2.utils.comm import is_main_process
+from detectron2.utils.logger import log_every_n_seconds
 
 
 class DatasetEvaluator:
@@ -107,8 +108,7 @@ def inference_on_dataset(model, data_loader, evaluator):
     total = len(data_loader)  # inference data loader must have a fixed length
     evaluator.reset()
 
-    logging_interval = 50
-    num_warmup = min(5, logging_interval - 1, total - 1)
+    num_warmup = min(5, total - 1)
     start_time = time.perf_counter()
     total_compute_time = 0
     with inference_context(model), torch.no_grad():
@@ -124,16 +124,18 @@ def inference_on_dataset(model, data_loader, evaluator):
             total_compute_time += time.perf_counter() - start_compute_time
             evaluator.process(inputs, outputs)
 
-            if (idx + 1) % logging_interval == 0:
+            if idx >= num_warmup * 2:
                 duration = time.perf_counter() - start_time
-                seconds_per_img = duration / (idx + 1 - num_warmup)
+                seconds_per_img = total_compute_time / (idx + 1 - num_warmup)
                 eta = datetime.timedelta(
                     seconds=int(seconds_per_img * (total - num_warmup) - duration)
                 )
-                logger.info(
+                log_every_n_seconds(
+                    logging.INFO,
                     "Inference done {}/{}. {:.4f} s / img. ETA={}".format(
                         idx + 1, total, seconds_per_img, str(eta)
-                    )
+                    ),
+                    n=5,
                 )
 
     # Measure the time only for this worker (before the synchronization barrier)
