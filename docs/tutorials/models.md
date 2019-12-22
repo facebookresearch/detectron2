@@ -24,21 +24,26 @@ corresponds to information about one image.
 The dict may contain the following keys:
 
 * "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
-* "instances": an `Instances` object, with the following fields:
-	+ "gt_boxes": `Boxes` object storing N boxes, one for each instance.
+* "instances": an [Instances](../modules/structures.html#detectron2.structures.Instances)
+	object, with the following fields:
+	+ "gt_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing N boxes, one for each instance.
 	+ "gt_classes": `Tensor` of long type, a vector of N labels, in range [0, num_categories).
-	+ "gt_masks": a `PolygonMasks` object storing N masks, one for each instance.
-	+ "gt_keypoints": a `Keypoints` object storing N keypoint sets, one for each instance.
-* "proposals": an `Instances` object used in Fast R-CNN style models, with the following fields:
-	+ "proposal_boxes": `Boxes` object storing P proposal boxes.
+	+ "gt_masks": a [PolygonMasks](../modules/structures.html#detectron2.structures.PolygonMasks)
+	  or [BitMasks](../modules/structures.html#detectron2.structures.BitMasks) object storing N masks, one for each instance.
+	+ "gt_keypoints": a [Keypoints](../modules/structures.html#detectron2.structures.Keypoints)
+	  object storing N keypoint sets, one for each instance.
+* "proposals": an [Instances](../modules/structures.html#detectron2.structures.Instances)
+	object used in Fast R-CNN style models, with the following fields:
+	+ "proposal_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing P proposal boxes.
 	+ "objectness_logits": `Tensor`, a vector of P scores, one for each proposal.
-* "height", "width": the *desired* output height and width of the image, not necessarily the same
+* "height", "width": the **desired** output height and width of the image, not necessarily the same
 	as the height or width of the `image` when input into the model, which might be after resizing.
-	For example, it can be the *original* image height and width before resizing.
+	For example, it can be the **original** image height and width before resizing.
 
 	If provided, the model will produce output in this resolution,
 	rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
 * "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth.
+  Values represent category labels starting from 0.
 
 
 #### How it connects to data loader:
@@ -61,14 +66,14 @@ When in inference mode, the builtin models output a `list[dict]`, one dict for e
 	* "pred_classes": `Tensor`, a vector of N labels in range [0, num_categories).
 	+ "pred_masks": a `Tensor` of shape (N, H, W), masks for each detected instance.
 	+ "pred_keypoints": a `Tensor` of shape (N, num_keypoint, 3).
-		Each row in the last dimension is (x, y, score).
+		Each row in the last dimension is (x, y, score). Scores are larger than 0.
 * "sem_seg": `Tensor` of (num_categories, H, W), the semantic segmentation prediction.
 * "proposals": [Instances](../modules/structures.html#detectron2.structures.Instances)
 	object with the following fields:
 	* "proposal_boxes": [Boxes](../modules/structures.html#detectron2.structures.Boxes)
 		object storing N boxes.
 	* "objectness_logits": a torch vector of N scores.
-* "panoptic_seg": A tuple of (Tensor, list[dict]). The tensor has shape (H, W), where each element
+* "panoptic_seg": A tuple of `(Tensor, list[dict])`. The tensor has shape (H, W), where each element
 	represent the segment id of the pixel. Each dict describes one segment id and has the following fields:
 	* "id": the segment id
 	* "isthing": whether the segment is a thing or stuff

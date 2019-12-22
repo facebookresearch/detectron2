@@ -13,13 +13,14 @@ fi
 
 # [12/15 11:47:32] trainer INFO: Total training time: 12:15:04.446477 (0.4900 s / it)
 # [12/15 11:49:03] inference INFO: Total inference time: 0:01:25.326167 (0.13652186737060548 s / img per device, on 8 devices)
+# [12/15 11:49:03] inference INFO: Total inference pure compute time: .....
 
 # training time
 trainspeed=$(grep -o 'Overall training.*' "$LOG" | grep -Eo '\(.*\)' | grep -o '[0-9\.]*')
 echo "Training speed: $trainspeed s/it"
 
 # inference time: there could be multiple inference during training
-inferencespeed=$(grep -o 'Total inference.*' "$LOG" | tail -n1 | grep -Eo '\(.*\)' | grep -o '[0-9\.]*' | head -n1)
+inferencespeed=$(grep -o 'Total inference pure.*' "$LOG" | tail -n1 | grep -Eo '\(.*\)' | grep -o '[0-9\.]*' | head -n1)
 echo "Inference speed: $inferencespeed s/it"
 
 # [12/15 11:47:18] trainer INFO: eta: 0:00:00  iter: 90000  loss: 0.5407 (0.7256)  loss_classifier: 0.1744 (0.2446)  loss_box_reg: 0.0838 (0.1160)  loss_mask: 0.2159 (0.2722)  loss_objectness: 0.0244 (0.0429)  loss_rpn_box_reg: 0.0279 (0.0500)  time: 0.4487 (0.4899)  data: 0.0076 (0.0975) lr: 0.000200  max mem: 4161

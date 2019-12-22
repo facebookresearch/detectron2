@@ -4,6 +4,7 @@ import torch
 import torch.distributed as dist
 from torch import nn
 from torch.autograd.function import Function
+from torch.nn import functional as F
 
 from detectron2.utils import comm
 
@@ -42,11 +43,26 @@ class FrozenBatchNorm2d(nn.Module):
         self.register_buffer("running_var", torch.ones(num_features) - eps)
 
     def forward(self, x):
-        scale = self.weight * (self.running_var + self.eps).rsqrt()
-        bias = self.bias - self.running_mean * scale
-        scale = scale.reshape(1, -1, 1, 1)
-        bias = bias.reshape(1, -1, 1, 1)
-        return x * scale + bias
+        if x.requires_grad:
+            # When gradients are needed, F.batch_norm will use extra memory
+            # because its backward op computes gradients for weight/bias as well.
+            scale = self.weight * (self.running_var + self.eps).rsqrt()
+            bias = self.bias - self.running_mean * scale
+            scale = scale.reshape(1, -1, 1, 1)
+            bias = bias.reshape(1, -1, 1, 1)
+            return x * scale + bias
+        else:
+            # When gradients are not needed, F.batch_norm is a single fused op
+            # and provide more optimization opportunities.
+            return F.batch_norm(
+                x,
+                self.running_mean,
+                self.running_var,
+                self.weight,
+                self.bias,
+                training=False,
+                eps=self.eps,
+            )
 
     def _load_from_state_dict(
         self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs

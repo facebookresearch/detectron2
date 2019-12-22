@@ -46,7 +46,7 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
 + `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 + `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
-   category labels.
+   category labels starting from 0.
 + `height`, `width`: integer. The shape of image.
 + `image_id` (str or int): a unique id that identifies this image. Used
 	during evaluation to identify the images, but a dataset may use it for different purposes.

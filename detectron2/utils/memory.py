@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from functools import wraps
 import torch
 
+__all__ = ["retry_if_cuda_oom"]
+
 
 @contextmanager
 def _ignore_torch_cuda_oom():

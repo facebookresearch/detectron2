@@ -5,3 +5,5 @@ optionally load pre-trained weights as released in
 `MODEL_ZOO.md <https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md>`_.
 """
 from .model_zoo import get, get_config_file
+
+__all__ = ["get", "get_config_file"]

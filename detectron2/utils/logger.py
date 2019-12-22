@@ -3,6 +3,7 @@ import functools
 import logging
 import os
 import sys
+import time
 from collections import Counter
 from fvcore.common.file_io import PathManager
 from tabulate import tabulate
@@ -120,6 +121,7 @@ def _find_caller():
 
 
 _LOG_COUNTER = Counter()
+_LOG_TIMER = {}
 
 
 def log_first_n(lvl, msg, n=1, *, name=None, key="caller"):
@@ -171,6 +173,24 @@ def log_every_n(lvl, msg, n=1, *, name=None):
     _LOG_COUNTER[key] += 1
     if n == 1 or _LOG_COUNTER[key] % n == 1:
         logging.getLogger(name or caller_module).log(lvl, msg)
+
+
+def log_every_n_seconds(lvl, msg, n=1, *, name=None):
+    """
+    Log no more than once per n seconds.
+
+    Args:
+        lvl (int): the logging level
+        msg (str):
+        n (int):
+        name (str): name of the logger to use. Will use the caller's module by default.
+    """
+    caller_module, key = _find_caller()
+    last_logged = _LOG_TIMER.get(key, None)
+    current_time = time.time()
+    if last_logged is None or current_time - last_logged >= n:
+        logging.getLogger(name or caller_module).log(lvl, msg)
+        _LOG_TIMER[key] = current_time
 
 
 def create_small_table(small_dict):

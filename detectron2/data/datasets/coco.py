@@ -6,13 +6,12 @@ import os
 import datetime
 import json
 import numpy as np
-import imagesize
 
 from PIL import Image
 
 from fvcore.common.timer import Timer
 from detectron2.structures import BoxMode, PolygonMasks, Boxes
-from fvcore.common.file_io import PathManager
+from fvcore.common.file_io import PathManager, file_lock
 
 
 from .. import MetadataCatalog, DatasetCatalog
@@ -263,13 +262,9 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
 
     dataset_dicts = []
     for (img_path, gt_path) in zip(input_files, gt_files):
-        local_path = PathManager.get_local_path(gt_path)
-        w, h = imagesize.get(local_path)
         record = {}
         record["file_name"] = img_path
         record["sem_seg_file_name"] = gt_path
-        record["height"] = h
-        record["width"] = w
         dataset_dicts.append(record)
 
     return dataset_dicts
@@ -387,36 +382,33 @@ def convert_to_coco_dict(dataset_name):
     return coco_dict
 
 
-def convert_to_coco_json(dataset_name, output_folder="", allow_cached=True):
+def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
     """
     Converts dataset into COCO format and saves it to a json file.
-    dataset_name must be registered in DatastCatalog and in detectron2's standard format.
+    dataset_name must be registered in DatasetCatalog and in detectron2's standard format.
 
     Args:
         dataset_name:
             reference from the config file to the catalogs
-            must be registered in DatastCatalog and in detectron2's standard format
-        output_folder: where json file will be saved and loaded from
+            must be registered in DatasetCatalog and in detectron2's standard format
+        output_file: path of json file that will be saved to
         allow_cached: if json file is already present then skip conversion
-    Returns:
-        cache_path: path to the COCO-format json file
     """
 
     # TODO: The dataset or the conversion script *may* change,
     # a checksum would be useful for validating the cached data
-    cache_path = os.path.join(output_folder, f"{dataset_name}_coco_format.json")
-    PathManager.mkdirs(output_folder)
-    if os.path.exists(cache_path) and allow_cached:
-        logger.info(f"Reading cached annotations in COCO format from:{cache_path} ...")
-    else:
-        logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
-        coco_dict = convert_to_coco_dict(dataset_name)
 
-        with PathManager.open(cache_path, "w") as json_file:
-            logger.info(f"Caching annotations in COCO format: {cache_path}")
-            json.dump(coco_dict, json_file)
+    PathManager.mkdirs(os.path.dirname(output_file))
+    with file_lock(output_file):
+        if os.path.exists(output_file) and allow_cached:
+            logger.info(f"Cached annotations in COCO format already exist: {output_file}")
+        else:
+            logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
+            coco_dict = convert_to_coco_dict(dataset_name)
 
-    return cache_path
+            with PathManager.open(output_file, "w") as json_file:
+                logger.info(f"Caching annotations in COCO format: {output_file}")
+                json.dump(coco_dict, json_file)
 
 
 if __name__ == "__main__":

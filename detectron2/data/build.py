@@ -4,6 +4,7 @@ import copy
 import itertools
 import logging
 import numpy as np
+import operator
 import pickle
 import torch.utils.data
 from fvcore.common.file_io import PathManager
@@ -17,7 +18,7 @@ from detectron2.utils.logger import log_first_n
 
 from . import samplers
 from .catalog import DatasetCatalog, MetadataCatalog
-from .common import DatasetFromList, MapDataset
+from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIterableDataset
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 
@@ -198,49 +199,10 @@ def print_instances_class_histogram(dataset_dicts, class_names):
     )
     log_first_n(
         logging.INFO,
-        "Distribution of training instances among all {} categories:\n".format(num_classes)
+        "Distribution of instances among all {} categories:\n".format(num_classes)
         + colored(table, "cyan"),
         key="message",
     )
-
-
-def build_batch_data_sampler(
-    sampler, images_per_batch, group_bin_edges=None, grouping_features=None
-):
-    """
-    Return a dataset index sampler that batches dataset indices possibly with
-    grouping to improve training efficiency.
-
-    Args:
-        sampler (torch.utils.data.sampler.Sampler): any subclass of
-            :class:`torch.utils.data.sampler.Sampler`.
-        images_per_batch (int): the batch size. Note that the sampler may return
-            batches that have between 1 and images_per_batch (inclusive) elements
-            because the underlying index set (and grouping partitions, if grouping
-            is used) may not be divisible by images_per_batch.
-        group_bin_edges (None, list[number], tuple[number]): If None, then grouping
-            is disabled. If a list or tuple is given, the values are used as bin
-            edges for defining len(group_bin_edges) + 1 groups. When batches are
-            sampled, only elements from the same group are returned together.
-        grouping_features (None, list[number], tuple[number]): If None, then grouping
-            is disabled. If a list or tuple is given, it must specify for each index
-            in the underlying dataset the value to be used for placing that dataset
-            index into one of the grouping bins.
-
-    Returns:
-        A BatchSampler or subclass of BatchSampler.
-    """
-    if group_bin_edges and grouping_features:
-        assert isinstance(group_bin_edges, (list, tuple))
-        assert isinstance(grouping_features, (list, tuple))
-        group_ids = _quantize(grouping_features, group_bin_edges)
-        batch_sampler = samplers.GroupedBatchSampler(sampler, group_ids, images_per_batch)
-    else:
-        batch_sampler = torch.utils.data.sampler.BatchSampler(
-            sampler, images_per_batch, drop_last=True
-        )  # drop last so the batch always have the same size
-        # NOTE when we add batch inference support, make sure not to use this.
-    return batch_sampler
 
 
 def get_detection_dataset_dicts(
@@ -333,11 +295,6 @@ def build_detection_train_loader(cfg, mapper=None):
     )
     dataset = DatasetFromList(dataset_dicts, copy=False)
 
-    # Bin edges for batching images with similar aspect ratios. If ASPECT_RATIO_GROUPING
-    # is enabled, we define two bins with an edge at height / width = 1.
-    group_bin_edges = [1] if cfg.DATALOADER.ASPECT_RATIO_GROUPING else []
-    aspect_ratios = [float(img["height"]) / float(img["width"]) for img in dataset]
-
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
     dataset = MapDataset(dataset, mapper)
@@ -353,15 +310,26 @@ def build_detection_train_loader(cfg, mapper=None):
         )
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
-    batch_sampler = build_batch_data_sampler(
-        sampler, images_per_worker, group_bin_edges, aspect_ratios
-    )
+
+    if cfg.DATALOADER.ASPECT_RATIO_GROUPING:
+        dataset = ToIterableDataset(dataset, sampler)
+        dataset = AspectRatioGroupedDataset(dataset, images_per_worker)
+        batch_sampler = None  # batch_sampler is not allowed when using IterableDataset
+
+        # The dataloader still tries to batch it, though it's already batched
+        collate_fn = operator.itemgetter(0)
+    else:
+        batch_sampler = torch.utils.data.sampler.BatchSampler(
+            sampler, images_per_worker, drop_last=True
+        )
+        collate_fn = trivial_batch_collator
+        # drop_last so the batch always have the same size
 
     data_loader = torch.utils.data.DataLoader(
         dataset,
         num_workers=cfg.DATALOADER.NUM_WORKERS,
         batch_sampler=batch_sampler,
-        collate_fn=trivial_batch_collator,
+        collate_fn=collate_fn,
         worker_init_fn=worker_init_reset_seed,
     )
     return data_loader

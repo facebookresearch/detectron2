@@ -2,7 +2,7 @@
 
 Our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
 has step-by-step instructions that install detectron2.
-The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/Dockerfile)
+The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/docker/Dockerfile)
 also installs detectron2 with a few simple commands.
 
 ### Requirements
@@ -12,7 +12,7 @@ also installs detectron2 with a few simple commands.
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
 	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, needed by demo and visualization
-- [fvcore](https://github.com/facebookresearch/fvcore/): `pip install 'git+https://github.com/facebookresearch/fvcore'`
+- [fvcore](https://github.com/facebookresearch/fvcore/): `pip install -U 'git+https://github.com/facebookresearch/fvcore'`
 - pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 - GCC >= 4.9
 
@@ -52,9 +52,13 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 		Technically, you need the identical compiler that's used to build pytorch to guarantee
 		compatibility. But in practice, gcc >= 4.9 should work OK.
 
++ Undefined C++ symbols in `detectron2/_C*.so`:
+
+  * This can happen with old anaconda. Try `conda update libgcc`.
+
 + Undefined cuda symbols. The version of NVCC you use to build detectron2 or torchvision does
 	not match the version of cuda you are running with.
-	This happens sometimes when using anaconda.
+	This often happens when using anaconda's cuda runtime.
 
 + "Not compiled with GPU support": make sure
 	```

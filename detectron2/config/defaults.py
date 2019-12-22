@@ -177,7 +177,11 @@ _C.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.5, 1.0, 2.0]]
 # list[float], the angle in degrees, for each input feature map.
 # ANGLES[i] specifies the list of angles for IN_FEATURES[i].
 _C.MODEL.ANCHOR_GENERATOR.ANGLES = [[-90, 0, 90]]
-
+# Relative offset between the center of the first anchor and the top-left corner of the image
+# Units: fraction of feature map stride (e.g., 0.5 means half stride)
+# Allowed values are floats in [0, 1) range inclusive.
+# Recommended value is 0.5, although it is not expected to affect model accuracy.
+_C.MODEL.ANCHOR_GENERATOR.OFFSET = 0.0
 
 # ---------------------------------------------------------------------------- #
 # RPN options
@@ -493,12 +497,14 @@ _C.SOLVER.WEIGHT_DECAY = 0.0001
 _C.SOLVER.WEIGHT_DECAY_NORM = 0.0
 
 _C.SOLVER.GAMMA = 0.1
+# The iteration number to decrease learning rate by GAMMA.
 _C.SOLVER.STEPS = (30000,)
 
 _C.SOLVER.WARMUP_FACTOR = 1.0 / 1000
 _C.SOLVER.WARMUP_ITERS = 1000
 _C.SOLVER.WARMUP_METHOD = "linear"
 
+# Save a checkpoint after every this number of iterations
 _C.SOLVER.CHECKPOINT_PERIOD = 5000
 
 # Number of images per batch across all machines.
@@ -554,6 +560,9 @@ _C.SEED = -1
 # for about 10k iterations. It usually hurts total time, but can benefit for certain models.
 # If input images have the same or similar sizes, benchmark is often helpful.
 _C.CUDNN_BENCHMARK = False
+# The period (in terms of steps) for minibatch visualization at train time.
+# Set to 0 to disable.
+_C.VIS_PERIOD = 0
 
 # global config is for quick hack purposes.
 # You can set them in command line or config files,

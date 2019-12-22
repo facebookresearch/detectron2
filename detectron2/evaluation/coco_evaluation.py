@@ -57,8 +57,9 @@ class COCOEvaluator(DatasetEvaluator):
         if not hasattr(self._metadata, "json_file"):
             self._logger.warning(f"json_file was not found in MetaDataCatalog for '{dataset_name}'")
 
-            cache_path = convert_to_coco_json(dataset_name, output_dir)
+            cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
             self._metadata.json_file = cache_path
+            convert_to_coco_json(dataset_name, cache_path)
 
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
@@ -146,7 +147,13 @@ class COCOEvaluator(DatasetEvaluator):
                 v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
             }
             for result in self._coco_results:
-                result["category_id"] = reverse_id_mapping[result["category_id"]]
+                category_id = result["category_id"]
+                assert (
+                    category_id in reverse_id_mapping
+                ), "A prediction has category_id={}, which is not available in the dataset.".format(
+                    category_id
+                )
+                result["category_id"] = reverse_id_mapping[category_id]
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_instances_results.json")

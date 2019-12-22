@@ -118,6 +118,7 @@ def _assignment_rule(
     return matches, match_labels
 
 
+# TODO make the paste_mask function in d2 core support mask list
 def _paste_mask_lists_in_image(masks, boxes, image_shape, threshold=0.5):
     """
     Paste a list of masks that are of various resolutions (e.g., 28 x 28) into an image.
