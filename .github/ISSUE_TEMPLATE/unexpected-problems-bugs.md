@@ -34,6 +34,5 @@ Only in one of the two conditions we will help with it:
 
 ## Environment
 
-Please paste the output of `python -m detectron2.utils.collect_env`,
-or use `python detectron2/utils/collect_env.py`
-if detectron2 hasn't been successfully installed.
+Please paste the output of `python -m detectron2.utils.collect_env`.
+If detectron2 hasn't been successfully installed, use `python detectron2/utils/collect_env.py`.

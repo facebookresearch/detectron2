@@ -322,8 +322,8 @@ def build_detection_train_loader(cfg, mapper=None):
         batch_sampler = torch.utils.data.sampler.BatchSampler(
             sampler, images_per_worker, drop_last=True
         )
-        collate_fn = trivial_batch_collator
         # drop_last so the batch always have the same size
+        collate_fn = trivial_batch_collator
 
     data_loader = torch.utils.data.DataLoader(
         dataset,

@@ -23,15 +23,15 @@ After having the above dependencies, run:
 ```
 git clone https://github.com/facebookresearch/detectron2.git
 cd detectron2
-python setup.py build develop
+pip install -e .
 
 # or if you are on macOS
-# MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ python setup.py build develop
+# MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ pip install -e .
 
-# or, as an alternative to `setup.py`, do
-# pip install [--editable] .
+# or, as an alternative to `pip install`, use
+# python setup.py build develop
 ```
-Note: you may need to rebuild detectron2 after reinstalling a different build of PyTorch.
+Note: you often need to rebuild detectron2 after reinstalling PyTorch.
 
 ### Common Installation Issues
 
@@ -47,20 +47,20 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
 
 	* detectron2 or torchvision is not compiled using gcc >= 4.9.
 
-	  You'll see a warning message during compilation in this case. Please remove the files you build,
-		and rebuild them.
+	  You'll see a warning message during compilation in this case. Please remove the files you built,
+		and rebuild them with a supported compiler.
 		Technically, you need the identical compiler that's used to build pytorch to guarantee
 		compatibility. But in practice, gcc >= 4.9 should work OK.
 
 + Undefined C++ symbols in `detectron2/_C*.so`:
 
-  * This can happen with old anaconda. Try `conda update libgcc`.
+  * This can happen with old anaconda. Try `conda update libgcc`. Then remove the files you built and rebuild them.
 
-+ Undefined cuda symbols. The version of NVCC you use to build detectron2 or torchvision does
-	not match the version of cuda you are running with.
-	This often happens when using anaconda's cuda runtime.
++ Undefined CUDA symbols. The version of NVCC you use to build detectron2 or torchvision does
+	not match the version of CUDA you are running with.
+	This often happens when using anaconda's CUDA runtime.
 
-+ "Not compiled with GPU support": make sure
++ "Not compiled with GPU support" or "Detectron2 CUDA Compiler: not available": make sure
 	```
 	python -c 'import torch; from torch.utils.cpp_extension import CUDA_HOME; print(torch.cuda.is_available(), CUDA_HOME)'
 	```
@@ -70,4 +70,8 @@ Note: you may need to rebuild detectron2 after reinstalling a different build of
   * You build detectron2 with one version of CUDA but run it with a different version.
   * Detectron2 is not built with the correct compute compability for the GPU model.
     The compute compability defaults to match the GPU found on the machine during building,
-    and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during installation.
+    and can be controlled by `TORCH_CUDA_ARCH_LIST` environment variable during building.
+
+  You can use `python -m detectron2.utils.collect_env` to find out inconsistent CUDA versions.
+	In its output, you should expect "Detectron2 CUDA Compiler", "CUDA_HOME", "PyTorch built with - CUDA"
+	to contain cuda libraries of the same version.
