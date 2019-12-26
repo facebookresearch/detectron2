@@ -125,11 +125,8 @@ def inference_on_dataset(model, data_loader, evaluator):
             evaluator.process(inputs, outputs)
 
             if idx >= num_warmup * 2:
-                duration = time.perf_counter() - start_time
                 seconds_per_img = total_compute_time / (idx + 1 - num_warmup)
-                eta = datetime.timedelta(
-                    seconds=int(seconds_per_img * (total - num_warmup) - duration)
-                )
+                eta = datetime.timedelta(seconds=int(seconds_per_img * (total - idx - 1)))
                 log_every_n_seconds(
                     logging.INFO,
                     "Inference done {}/{}. {:.4f} s / img. ETA={}".format(
