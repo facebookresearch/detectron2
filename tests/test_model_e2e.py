@@ -38,59 +38,54 @@ def get_empty_instance(h, w):
     return inst
 
 
-class MaskRCNNE2ETest(unittest.TestCase):
+def get_regular_bitmask_instances(h, w):
+    inst = Instances((h, w))
+    inst.gt_boxes = Boxes(torch.rand(3, 4))
+    inst.gt_boxes.tensor[:, 2:] += inst.gt_boxes.tensor[:, :2]
+    inst.gt_classes = torch.tensor([3, 4, 5]).to(dtype=torch.int64)
+    inst.gt_masks = BitMasks((torch.rand(3, h, w) > 0.5))
+    return inst
+
+
+class ModelE2ETest(unittest.TestCase):
     def setUp(self):
-        self.model = get_model_zoo("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
+        self.model = get_model_zoo(self.CONFIG_PATH)
 
-    def test_empty_data(self):
-        inst = [get_empty_instance(200, 250), get_empty_instance(200, 249)]
-
-        # eval
+    def _test_eval(self, input_sizes):
+        inputs = [create_model_input(torch.rand(3, s[0], s[1])) for s in input_sizes]
         self.model.eval()
-        self.model(
-            [
-                create_model_input(torch.rand(3, 200, 250)),
-                create_model_input(torch.rand(3, 200, 249)),
-            ]
-        )
+        self.model(inputs)
 
-        # training
+    def _test_train(self, input_sizes, instances):
+        assert len(input_sizes) == len(instances)
+        inputs = [
+            create_model_input(torch.rand(3, s[0], s[1]), inst)
+            for s, inst in zip(input_sizes, instances)
+        ]
         self.model.train()
         with EventStorage():
-            losses = self.model(
-                [
-                    create_model_input(torch.rand(3, 200, 250), inst[0]),
-                    create_model_input(torch.rand(3, 200, 249), inst[1]),
-                ]
-            )
+            losses = self.model(inputs)
             sum(losses.values()).backward()
             del losses
 
 
-class RetinaNetE2ETest(unittest.TestCase):
-    def setUp(self):
-        self.model = get_model_zoo("COCO-Detection/retinanet_R_50_FPN_1x.yaml")
+class MaskRCNNE2ETest(ModelE2ETest):
+    CONFIG_PATH = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
 
     def test_empty_data(self):
-        inst = [get_empty_instance(200, 250), get_empty_instance(200, 249)]
+        instances = [get_empty_instance(200, 250), get_empty_instance(200, 249)]
+        self._test_eval([(200, 250), (200, 249)])
+        self._test_train([(200, 250), (200, 249)], instances)
 
-        # eval
-        self.model.eval()
-        self.model(
-            [
-                create_model_input(torch.rand(3, 200, 250)),
-                create_model_input(torch.rand(3, 200, 249)),
-            ]
-        )
+    def test_half_empty_data(self):
+        instances = [get_empty_instance(200, 250), get_regular_bitmask_instances(200, 249)]
+        self._test_train([(200, 250), (200, 249)], instances)
 
-        # training
-        self.model.train()
-        with EventStorage():
-            losses = self.model(
-                [
-                    create_model_input(torch.rand(3, 200, 250), inst[0]),
-                    create_model_input(torch.rand(3, 200, 249), inst[1]),
-                ]
-            )
-            sum(losses.values()).backward()
-            del losses
+
+class RetinaNetE2ETest(ModelE2ETest):
+    CONFIG_PATH = "COCO-Detection/retinanet_R_50_FPN_1x.yaml"
+
+    def test_empty_data(self):
+        instances = [get_empty_instance(200, 250), get_empty_instance(200, 249)]
+        self._test_eval([(200, 250), (200, 249)])
+        self._test_train([(200, 250), (200, 249)], instances)
