@@ -2,7 +2,7 @@
 
 ## Compatibility with Detectron (and maskrcnn-benchmark)
 
-Detectron2 addresses some legacy issues left in Detectron, as a result, their models
+Detectron2 addresses some legacy issues left in Detectron. As a result, their models
 are not compatible:
 running inference with the same model weights will produce different results in the two code bases.
 
@@ -59,8 +59,8 @@ model-level compatibility. The major ones are:
   We have observed that this tends to slightly decrease box AP50 while improving box AP for higher
 	overlap thresholds (and leading to a slight overall improvement in box AP).
 - We interpret the coordinates in COCO bounding box and segmentation annotations
-  as coordinates in range `[0, width]` or `[0, height]`, and the coordinates in
-  COCO keypoint annotations are pixel indices in range `[0, width - 1]` or `[0, height - 1]`.
+  as coordinates in range `[0, width]` or `[0, height]`. The coordinates in
+  COCO keypoint annotations are interpreted as pixel indices in range `[0, width - 1]` or `[0, height - 1]`.
 
 
 We will later share more details and rationale behind the above mentioned issues
