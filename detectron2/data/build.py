@@ -18,7 +18,7 @@ from detectron2.utils.logger import log_first_n
 
 from . import samplers
 from .catalog import DatasetCatalog, MetadataCatalog
-from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIterableDataset
+from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 
@@ -269,7 +269,7 @@ def build_detection_train_loader(cfg, mapper=None):
             By default it will be `DatasetMapper(cfg, True)`.
 
     Returns:
-        a torch DataLoader object
+        an infinite iterator of training data
     """
     num_workers = get_world_size()
     images_per_batch = cfg.SOLVER.IMS_PER_BATCH
@@ -312,26 +312,28 @@ def build_detection_train_loader(cfg, mapper=None):
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
     if cfg.DATALOADER.ASPECT_RATIO_GROUPING:
-        dataset = ToIterableDataset(dataset, sampler)
-        dataset = AspectRatioGroupedDataset(dataset, images_per_worker)
-        batch_sampler = None  # batch_sampler is not allowed when using IterableDataset
-
-        # The dataloader still tries to batch it, though it's already batched
-        collate_fn = operator.itemgetter(0)
+        data_loader = torch.utils.data.DataLoader(
+            dataset,
+            sampler=sampler,
+            num_workers=cfg.DATALOADER.NUM_WORKERS,
+            batch_sampler=None,
+            collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
+            worker_init_fn=worker_init_reset_seed,
+        )  # yield individual mapped dict
+        data_loader = AspectRatioGroupedDataset(data_loader, images_per_worker)
     else:
         batch_sampler = torch.utils.data.sampler.BatchSampler(
             sampler, images_per_worker, drop_last=True
         )
         # drop_last so the batch always have the same size
-        collate_fn = trivial_batch_collator
+        data_loader = torch.utils.data.DataLoader(
+            dataset,
+            num_workers=cfg.DATALOADER.NUM_WORKERS,
+            batch_sampler=batch_sampler,
+            collate_fn=trivial_batch_collator,
+            worker_init_fn=worker_init_reset_seed,
+        )
 
-    data_loader = torch.utils.data.DataLoader(
-        dataset,
-        num_workers=cfg.DATALOADER.NUM_WORKERS,
-        batch_sampler=batch_sampler,
-        collate_fn=collate_fn,
-        worker_init_fn=worker_init_reset_seed,
-    )
     return data_loader
 
 

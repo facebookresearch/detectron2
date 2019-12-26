@@ -6,7 +6,7 @@ import torch.utils.data as data
 
 from detectron2.utils.serialize import PicklableWrapper
 
-__all__ = ["MapDataset", "DatasetFromList", "ToIterableDataset", "AspectRatioGroupedDataset"]
+__all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset"]
 
 
 class MapDataset(data.Dataset):
@@ -79,27 +79,6 @@ class DatasetFromList(data.Dataset):
             return copy.deepcopy(self._lst[idx])
         else:
             return self._lst[idx]
-
-
-class ToIterableDataset(data.IterableDataset):
-    """
-    Convert an old indices-based (also called map-style) dataset
-    to an iterable-style dataset.
-    """
-
-    def __init__(self, dataset, sampler):
-        """
-        Args:
-            dataset (torch.utils.data.Dataset): an old-style dataset with ``__getitem__``
-            sampler: an iterable that produces indices to be applied on ``dataset``.
-        """
-        assert not isinstance(dataset, data.IterableDataset), dataset
-        self.dataset = dataset
-        self.sampler = sampler
-
-    def __iter__(self):
-        for idx in self.sampler:
-            yield self.dataset[idx]
 
 
 class AspectRatioGroupedDataset(data.IterableDataset):
