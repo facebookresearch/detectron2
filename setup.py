@@ -131,6 +131,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
+        "fvcore",
     ],
     extras_require={"all": ["shapely", "psutil"], "dev": ["flake8", "isort", "black==19.3b0"]},
     ext_modules=get_extensions(),

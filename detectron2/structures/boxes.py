@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import copy
 import math
 import numpy as np
 from enum import Enum, unique
@@ -47,15 +46,16 @@ class BoxMode(Enum):
             return box
 
         original_type = type(box)
+        is_numpy = isinstance(box, np.ndarray)
         single_box = isinstance(box, (list, tuple))
         if single_box:
-            arr = np.array(box)
-            assert arr.shape[0] == 4 or arr.shape[0] == 5, (
+            assert len(box) == 4 or len(box) == 5, (
                 "BoxMode.convert takes either a k-tuple/list or an Nxk array/tensor,"
                 " where k == 4 or 5"
             )
+            arr = torch.tensor(box)[None, :]
         else:
-            arr = copy.deepcopy(box)  # avoid modifying the input box
+            arr = torch.from_numpy(np.asarray(box)).clone()  # avoid modifying the input box
 
         assert to_mode.value not in [
             BoxMode.XYXY_REL,
@@ -69,15 +69,8 @@ class BoxMode(Enum):
             assert (
                 arr.shape[-1] == 5
             ), "The last dimension of input shape must be 5 for XYWHA format"
-            # Change the last dimension of output shape to 4
-            original_shape = arr.shape[:-1] + (4,)
-
-            is_numpy = False
-            if isinstance(arr, np.ndarray):
-                is_numpy = True
-                arr = torch.from_numpy(arr)
-
-            arr = arr.reshape(-1, 5).double()
+            original_dtype = arr.dtype
+            arr = arr.double()
 
             w = arr[:, 2]
             h = arr[:, 3]
@@ -95,14 +88,8 @@ class BoxMode(Enum):
             arr[:, 2] = arr[:, 0] + new_w
             arr[:, 3] = arr[:, 1] + new_h
 
-            arr = arr[:, :4]
-
-            if is_numpy:
-                arr = arr.numpy()
+            arr = arr[:, :4].to(dtype=original_dtype)
         else:
-            original_shape = arr.shape
-            # original dimension is 4x
-            arr = arr.reshape(-1, 4)
             if to_mode == BoxMode.XYXY_ABS and from_mode == BoxMode.XYWH_ABS:
                 arr[:, 2] += arr[:, 0]
                 arr[:, 3] += arr[:, 1]
@@ -118,7 +105,10 @@ class BoxMode(Enum):
 
         if single_box:
             return original_type(arr.flatten())
-        return arr.reshape(*original_shape)
+        if is_numpy:
+            return arr.numpy()
+        else:
+            return arr
 
 
 class Boxes:

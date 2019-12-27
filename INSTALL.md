@@ -12,7 +12,6 @@ also installs detectron2 with a few simple commands.
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
 	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, needed by demo and visualization
-- [fvcore](https://github.com/facebookresearch/fvcore/): `pip install -U 'git+https://github.com/facebookresearch/fvcore'`
 - pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 - GCC ≥ 4.9
 
@@ -70,9 +69,11 @@ Try `conda update libgcc`. Then remove the files you built (`build/`, `**/*.so`)
 </summary>
 CUDA is not found when building detectron2.
 You should make sure
+
 ```
 python -c 'import torch; from torch.utils.cpp_extension import CUDA_HOME; print(torch.cuda.is_available(), CUDA_HOME)'
 ```
+
 print valid outputs at the time you build detectron2.
 </details>
 
@@ -108,7 +109,7 @@ Two possibilities:
 
 <details>
 <summary>
-Undefined CUDA symbols.
+Undefined CUDA symbols or cannot open libcudart.so.
 </summary>
 
 The version of NVCC you use to build detectron2 or torchvision does

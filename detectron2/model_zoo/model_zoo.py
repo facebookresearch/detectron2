@@ -1,12 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import os
+import pkg_resources
 import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.modeling import build_model
-
-import pkg_resources
 
 
 class ModelZooUrls(object):
