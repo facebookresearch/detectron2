@@ -34,7 +34,7 @@ class DatasetEvaluator:
 
         Args:
             input: the input that's used to call the model.
-            output: the return value of `model(output)`
+            output: the return value of `model(input)`
         """
         pass
 
@@ -72,7 +72,7 @@ class DatasetEvaluators(DatasetEvaluator):
         results = OrderedDict()
         for evaluator in self._evaluators:
             result = evaluator.evaluate()
-            if is_main_process():
+            if is_main_process() and result is not None:
                 for k, v in result.items():
                     assert (
                         k not in results

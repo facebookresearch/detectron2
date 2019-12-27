@@ -27,9 +27,11 @@ You can use the following code to access it and log metrics to it:
 ```
 from detectron2.utils.events import get_event_storage
 
-# inside the training:
-storage = get_event_storage()
-storage.put_scalar("some_accuracy", value)
+# inside the model:
+if self.training:
+  value = # compute the value from inputs
+  storage = get_event_storage()
+  storage.put_scalar("some_accuracy", value)
 ```
 
 Refer to its documentation for more details.
