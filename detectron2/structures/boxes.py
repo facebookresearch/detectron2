@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
+import math
 import numpy as np
 from enum import Enum, unique
 from typing import Iterator, List, Tuple, Union
@@ -22,18 +23,21 @@ class BoxMode(Enum):
         XYWH_ABS: (x0, y0, w, h) in absolute floating points coordinates.
         XYXY_REL: (x0, y0, x1, y1) in range [0, 1]. They are relative to the size of the image.
         XYWH_REL: (x0, y0, w, h) in range [0, 1]. They are relative to the size of the image.
+        XYWHA_ABS: (xc, yc, w, h, a) in absolute floating points coordinates.
+            (xc, yc) is the center of the rotated box, and the angle a is in degrees ccw.
     """
 
     XYXY_ABS = 0
     XYWH_ABS = 1
     XYXY_REL = 2
     XYWH_REL = 3
+    XYWHA_ABS = 4
 
     @staticmethod
     def convert(box: _RawBoxType, from_mode: "BoxMode", to_mode: "BoxMode") -> _RawBoxType:
         """
         Args:
-            box: can be a 4-tuple, 4-list or a Nx4 array/tensor.
+            box: can be a k-tuple, k-list or an Nxk array/tensor, where k = 4 or 5
             from_mode, to_mode (BoxMode)
 
         Returns:
@@ -46,24 +50,72 @@ class BoxMode(Enum):
         single_box = isinstance(box, (list, tuple))
         if single_box:
             arr = np.array(box)
-            assert arr.shape == (
-                4,
-            ), "BoxMode.convert takes either a 4-tuple/list or a Nx4 array/tensor"
+            assert arr.shape[0] == 4 or arr.shape[0] == 5, (
+                "BoxMode.convert takes either a k-tuple/list or an Nxk array/tensor,"
+                " where k == 4 or 5"
+            )
         else:
             arr = copy.deepcopy(box)  # avoid modifying the input box
 
-        assert to_mode.value < 2 and from_mode.value < 2, "Relative mode not yet supported!"
+        assert to_mode.value not in [
+            BoxMode.XYXY_REL,
+            BoxMode.XYWH_REL,
+        ] and from_mode.value not in [
+            BoxMode.XYXY_REL,
+            BoxMode.XYWH_REL,
+        ], "Relative mode not yet supported!"
 
-        original_shape = arr.shape
-        arr = arr.reshape(-1, 4)
-        if to_mode == BoxMode.XYXY_ABS and from_mode == BoxMode.XYWH_ABS:
-            arr[:, 2] += arr[:, 0]
-            arr[:, 3] += arr[:, 1]
-        elif from_mode == BoxMode.XYXY_ABS and to_mode == BoxMode.XYWH_ABS:
-            arr[:, 2] -= arr[:, 0]
-            arr[:, 3] -= arr[:, 1]
+        if from_mode == BoxMode.XYWHA_ABS and to_mode == BoxMode.XYXY_ABS:
+            assert (
+                arr.shape[-1] == 5
+            ), "The last dimension of input shape must be 5 for XYWHA format"
+            # Change the last dimension of output shape to 4
+            original_shape = arr.shape[:-1] + (4,)
+
+            is_numpy = False
+            if isinstance(arr, np.ndarray):
+                is_numpy = True
+                arr = torch.from_numpy(arr)
+
+            arr = arr.reshape(-1, 5).double()
+
+            w = arr[:, 2]
+            h = arr[:, 3]
+            a = arr[:, 4]
+            c = torch.abs(torch.cos(a * math.pi / 180.0))
+            s = torch.abs(torch.sin(a * math.pi / 180.0))
+            # This basically computes the horizontal bounding rectangle of the rotated box
+            new_w = c * w + s * h
+            new_h = c * h + s * w
+
+            # convert center to top-left corner
+            arr[:, 0] -= new_w / 2.0
+            arr[:, 1] -= new_h / 2.0
+            # bottom-right corner
+            arr[:, 2] = arr[:, 0] + new_w
+            arr[:, 3] = arr[:, 1] + new_h
+
+            arr = arr[:, :4]
+
+            if is_numpy:
+                arr = arr.numpy()
         else:
-            raise RuntimeError("Cannot be here!")
+            original_shape = arr.shape
+            # original dimension is 4x
+            arr = arr.reshape(-1, 4)
+            if to_mode == BoxMode.XYXY_ABS and from_mode == BoxMode.XYWH_ABS:
+                arr[:, 2] += arr[:, 0]
+                arr[:, 3] += arr[:, 1]
+            elif from_mode == BoxMode.XYXY_ABS and to_mode == BoxMode.XYWH_ABS:
+                arr[:, 2] -= arr[:, 0]
+                arr[:, 3] -= arr[:, 1]
+            else:
+                raise NotImplementedError(
+                    "Conversion from BoxMode {} to {} is not supported yet".format(
+                        from_mode, to_mode
+                    )
+                )
+
         if single_box:
             return original_type(arr.flatten())
         return arr.reshape(*original_shape)

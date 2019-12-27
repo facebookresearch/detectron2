@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import math
 import numpy as np
 import unittest
 import torch
@@ -9,6 +10,9 @@ from detectron2.structures import Boxes, BoxMode, pairwise_iou
 class TestBoxMode(unittest.TestCase):
     def _convert_xy_to_wh(self, x):
         return BoxMode.convert(x, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+
+    def _convert_xywha_to_xyxy(self, x):
+        return BoxMode.convert(x, BoxMode.XYWHA_ABS, BoxMode.XYXY_ABS)
 
     def test_box_convert_list(self):
         for tp in [list, tuple]:
@@ -30,6 +34,34 @@ class TestBoxMode(unittest.TestCase):
         output = self._convert_xy_to_wh(box).numpy()
         self.assertTrue((output[0] == [5, 5, 5, 5]).all())
         self.assertTrue((output[1] == [1, 1, 1, 2]).all())
+
+    def test_box_convert_xywha_to_xyxy_list(self):
+        for tp in [list, tuple]:
+            box = tp([50, 50, 30, 20, 0])
+            output = self._convert_xywha_to_xyxy(box)
+            self.assertTrue(output == tp([35, 40, 65, 60]))
+
+            with self.assertRaises(Exception):
+                self._convert_xywha_to_xyxy([box])
+
+    def test_box_convert_xywha_to_xyxy_array(self):
+        box = np.asarray(
+            [[50, 50, 30, 20, 0], [50, 50, 30, 20, 90], [1, 1, math.sqrt(2), math.sqrt(2), -45]]
+        )
+        output = self._convert_xywha_to_xyxy(box)
+        expected = np.asarray([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=np.float64)
+        assert np.allclose(output, expected, atol=1e-6), "output={}".format(output)
+
+    def test_box_convert_xywha_to_xyxy_tensor(self):
+        box = torch.tensor(
+            [[50, 50, 30, 20, 0], [50, 50, 30, 20, 90], [1, 1, math.sqrt(2), math.sqrt(2), -45]]
+        )
+        output = self._convert_xywha_to_xyxy(box)
+        expected = torch.tensor(
+            [[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=torch.float64
+        )
+
+        assert torch.allclose(output, expected, atol=1e-6), "output={}".format(output)
 
 
 class TestBoxIOU(unittest.TestCase):
