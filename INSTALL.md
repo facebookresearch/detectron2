@@ -38,7 +38,7 @@ Click each issue for its solutions:
 
 <details>
 <summary>
-Undefined torch/aten symbols, or segmentation fault immediately when running the library.
+Undefined torch/aten/caffe2 symbols, or segmentation fault immediately when running the library.
 </summary>
 
 This can happen if detectron2 or torchvision is not

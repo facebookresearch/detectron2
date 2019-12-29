@@ -27,7 +27,7 @@ def get_version():
         from datetime import datetime
 
         date_str = datetime.today().strftime("%y%m%d")
-        version = version + ".post" + date_str
+        version = version + ".dev" + date_str
 
         new_init_py = [l for l in init_py if not l.startswith("__version__")]
         new_init_py.append('__version__ = "{}"\n'.format(version))
