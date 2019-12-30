@@ -177,9 +177,9 @@ def transform_instance_annotations(
             ]
         elif isinstance(segm, dict):
             # RLE
-            assert tuple(segm["size"]) == image_size
             mask = mask_util.decode(segm)
             mask = transforms.apply_segmentation(mask)
+            assert tuple(mask.shape[:2]) == image_size
             annotation["segmentation"] = mask
         else:
             raise ValueError(
