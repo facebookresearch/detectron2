@@ -16,7 +16,15 @@ e.g., I'm always frustrated when [...]. If this is related to another GitHub iss
 
 <!-- A clear and concise description, e.g., with code examples showing what you want to happen. -->
 
+Note that we only consider adding new features if they are relevant to many users.
+We do not take requests to implement recent research papers --
+we only consider papers that have enough significance and prevalance.
 
-Note that you can implement many features by [extending detectron2](https://detectron2.readthedocs.io/tutorials/extend.html).
-See [projects](https://github.com/facebookresearch/detectron2/tree/master/projects/) for some examples.
-We would only consider adding new features if they are relevant to many users.
+We don't take feature requests for most projects in the `projects/` directory,
+because they are research code release that is mainly for other researchers to reproduce results.
+
+Instead of adding features inside detectron2,
+you can implement many features by [extending detectron2](https://detectron2.readthedocs.io/tutorials/extend.html).
+The [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/) directory
+contains many of such examples.
+
