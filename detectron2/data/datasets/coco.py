@@ -400,7 +400,7 @@ def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
 
     PathManager.mkdirs(os.path.dirname(output_file))
     with file_lock(output_file):
-        if os.path.exists(output_file) and allow_cached:
+        if PathManager.exists(output_file) and allow_cached:
             logger.info(f"Cached annotations in COCO format already exist: {output_file}")
         else:
             logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
