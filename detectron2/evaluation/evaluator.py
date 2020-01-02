@@ -111,7 +111,6 @@ def inference_on_dataset(model, data_loader, evaluator):
     num_warmup = min(5, total - 1)
     start_time = time.perf_counter()
     total_compute_time = 0
-    total_time = 0
     with inference_context(model), torch.no_grad():
         for idx, inputs in enumerate(data_loader):
             if idx == num_warmup:
@@ -124,11 +123,10 @@ def inference_on_dataset(model, data_loader, evaluator):
                 torch.cuda.synchronize()
             total_compute_time += time.perf_counter() - start_compute_time
             evaluator.process(inputs, outputs)
-            total_time += time.perf_counter() - start_compute_time
 
             if idx >= num_warmup * 2:
                 seconds_per_img = total_compute_time / (idx + 1 - num_warmup)
-                total_seconds_per_img = total_time / (idx + 1 - num_warmup)
+                total_seconds_per_img = (time.perf_counter() - start_time) / (idx + 1 - num_warmup)
                 eta = datetime.timedelta(seconds=int(total_seconds_per_img * (total - idx - 1)))
                 log_every_n_seconds(
                     logging.INFO,
