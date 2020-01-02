@@ -185,7 +185,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         dataset_dicts.append(record)
 
     if num_instances_without_valid_segmentation > 0:
-        logger.warn(
+        logger.warning(
             "Filtered out {} instances without valid segmentation. "
             "There might be issues in your dataset generation process.".format(
                 num_instances_without_valid_segmentation
