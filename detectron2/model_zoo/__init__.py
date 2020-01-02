@@ -4,6 +4,6 @@ Model Zoo API for Detectron2: a collection of functions to create common model a
 optionally load pre-trained weights as released in
 `MODEL_ZOO.md <https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md>`_.
 """
-from .model_zoo import get, get_config_file
+from .model_zoo import get, get_config_file, get_checkpoint_url
 
-__all__ = ["get", "get_config_file"]
+__all__ = ["get_checkpoint_url", "get", "get_config_file"]

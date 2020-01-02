@@ -7,6 +7,7 @@ from detectron2.modeling import build_model
 model = build_model(cfg)  # returns a torch.nn.Module
 ```
 
+Note that `build_model` only builds the model structure, and fill it with random parameters.
 To load an existing checkpoint to the model, use
 `DetectionCheckpointer(model).load(file_path)`.
 Detectron2 recognizes models in pytorch's `.pth` format, as well as the `.pkl` files
@@ -33,12 +34,13 @@ The dict may contain the following keys:
 	+ "gt_keypoints": a [Keypoints](../modules/structures.html#detectron2.structures.Keypoints)
 	  object storing N keypoint sets, one for each instance.
 * "proposals": an [Instances](../modules/structures.html#detectron2.structures.Instances)
-	object used in Fast R-CNN style models, with the following fields:
+	object used only in Fast R-CNN style models, with the following fields:
 	+ "proposal_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing P proposal boxes.
 	+ "objectness_logits": `Tensor`, a vector of P scores, one for each proposal.
-* "height", "width": the **desired** output height and width of the image, not necessarily the same
-	as the height or width of the `image` when input into the model, which might be after resizing.
-	For example, it can be the **original** image height and width before resizing.
+* "height", "width": the **desired** output height and width, which is not necessarily the same
+	as the height or width of the `image` input field.
+	For example, the `image` input field might be a resized image,
+	but you may want the outputs to be in **original** resolution.
 
 	If provided, the model will produce output in this resolution,
 	rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
@@ -57,7 +59,8 @@ After the data loader performs batching, it becomes `list[dict]` which the built
 
 When in training mode, the builtin models output a `dict[str->ScalarTensor]` with all the losses.
 
-When in inference mode, the builtin models output a `list[dict]`, one dict for each image. Each dict may contain:
+When in inference mode, the builtin models output a `list[dict]`, one dict for each image.
+Based on the tasks the model is doing, each dict may contain the following fields:
 
 * "instances": [Instances](../modules/structures.html#detectron2.structures.Instances)
   object with the following fields:
@@ -83,8 +86,8 @@ When in inference mode, the builtin models output a `list[dict]`, one dict for e
 
 ### How to use a model in your code:
 
-Contruct your own `list[dict]`, with the necessary keys.
-For example, for inference, provide dicts with "image", and optionally "height" and "width".
+Contruct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
+For example, in order to do inference, provide dicts with "image", and optionally "height" and "width".
 
 Note that when in training mode, all models are required to be used under an `EventStorage`.
 The training statistics will be put into the storage:

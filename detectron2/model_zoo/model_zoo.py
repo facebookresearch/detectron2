@@ -8,7 +8,7 @@ from detectron2.config import get_cfg
 from detectron2.modeling import build_model
 
 
-class ModelZooUrls(object):
+class _ModelZooUrls(object):
     """
     Mapping from names to officially released Detectron2 pre-trained models.
     """
@@ -73,12 +73,23 @@ class ModelZooUrls(object):
         "Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml": "18131413/model_0039999_e76410.pkl",  # noqa
     }
 
-    @classmethod
-    def get(cls, config_path):
-        if config_path in cls.CONFIG_PATH_TO_URL_SUFFIX:
-            name = config_path.replace(".yaml", "")
-            return cls.S3_PREFIX + name + "/" + cls.CONFIG_PATH_TO_URL_SUFFIX[config_path]
-        raise RuntimeError("{} not available in Model Zoo!".format(name))
+
+def get_checkpoint_url(config_path):
+    """
+    Returns the URL to the model trained using the given config
+
+    Args:
+        config_path (str): config file name relative to detectron2's "configs/"
+            directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+
+    Returns:
+        str: a URL to the model
+    """
+    if config_path in _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX:
+        suffix = _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX[config_path]
+        name = config_path.replace(".yaml", "")
+        return _ModelZooUrls.S3_PREFIX + name + "/" + suffix
+    raise RuntimeError("{} not available in Model Zoo!".format(name))
 
 
 def get_config_file(config_path):
@@ -87,10 +98,10 @@ def get_config_file(config_path):
 
     Args:
         config_path (str): config file name relative to detectron2's "configs/"
-        directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+            directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
 
     Returns:
-        str: path to the config file.
+        str: the real path to the config file.
     """
     cfg_file = pkg_resources.resource_filename(
         "detectron2.model_zoo", os.path.join("configs", config_path)
@@ -102,11 +113,13 @@ def get_config_file(config_path):
 
 def get(config_path, trained: bool = False):
     """
-    Get a model specified by relative path under Detectron2's official ``configs`` directory.
+    Get a model specified by relative path under Detectron2's official ``configs/`` directory.
 
     Args:
-        trained (bool): Whether to initialize with the trained model zoo weights. If False, the
-            initialization weights specified in the config file's ``MODEL.WEIGHTS`` key are used
+        config_path (str): config file name relative to detectron2's "configs/"
+            directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+        trained (bool): If True, will initialize the model with the trained model zoo weights.
+            If False, the checkpoint specified in the config file's ``MODEL.WEIGHTS`` is used
             instead; this will typically (though not always) initialize a subset of weights using
             an ImageNet pre-trained model, while randomly initializing the other weights.
 
@@ -122,7 +135,7 @@ def get(config_path, trained: bool = False):
     cfg = get_cfg()
     cfg.merge_from_file(cfg_file)
     if trained:
-        cfg.MODEL.WEIGHTS = ModelZooUrls.get(config_path)
+        cfg.MODEL.WEIGHTS = get_checkpoint_url(config_path)
     if not torch.cuda.is_available():
         cfg.MODEL.DEVICE = "cpu"
 

@@ -97,7 +97,7 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
         pred_instances (list[Instances]): A list of N Instances, where N is the number of images.
 
     Returns:
-        None. boxes will contain an extra "pred_keypoints" field.
+        None. Each element in pred_instances will contain an extra "pred_keypoints" field.
             The field is a tensor of shape (#instance, K, 3) where the last
             dimension corresponds to (x, y, score).
             The scores are larger than 0.

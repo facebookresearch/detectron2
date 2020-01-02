@@ -4,6 +4,7 @@
 import glob
 import os
 import shutil
+from os import path
 from setuptools import find_packages, setup
 from typing import List
 import torch
@@ -13,14 +14,36 @@ torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
 assert torch_ver >= [1, 3], "Requires PyTorch >= 1.3"
 
 
-def get_extensions():
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    extensions_dir = os.path.join(this_dir, "detectron2", "layers", "csrc")
+def get_version():
+    init_py_path = path.join(path.abspath(path.dirname(__file__)), "detectron2", "__init__.py")
+    init_py = open(init_py_path, "r").readlines()
+    version_line = [l.strip() for l in init_py if l.startswith("__version__")][0]
+    version = version_line.split("=")[-1].strip().strip("'\"")
 
-    main_source = os.path.join(extensions_dir, "vision.cpp")
-    sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"))
-    source_cuda = glob.glob(os.path.join(extensions_dir, "**", "*.cu")) + glob.glob(
-        os.path.join(extensions_dir, "*.cu")
+    # Used by CI to build nightly packages. Users should never use it.
+    # To build a nightly wheel, run:
+    # FORCE_CUDA=1 BUILD_NIGHTLY=1 TORCH_CUDA_ARCH_LIST=All python setup.py bdist_wheel
+    if os.getenv("BUILD_NIGHTLY", "0") == "1":
+        from datetime import datetime
+
+        date_str = datetime.today().strftime("%y%m%d")
+        version = version + ".dev" + date_str
+
+        new_init_py = [l for l in init_py if not l.startswith("__version__")]
+        new_init_py.append('__version__ = "{}"\n'.format(version))
+        with open(init_py_path, "w") as f:
+            f.write("".join(new_init_py))
+    return version
+
+
+def get_extensions():
+    this_dir = path.dirname(path.abspath(__file__))
+    extensions_dir = path.join(this_dir, "detectron2", "layers", "csrc")
+
+    main_source = path.join(extensions_dir, "vision.cpp")
+    sources = glob.glob(path.join(extensions_dir, "**", "*.cpp"))
+    source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu")) + glob.glob(
+        path.join(extensions_dir, "*.cu")
     )
 
     sources = [main_source] + sources
@@ -67,14 +90,14 @@ def get_model_zoo_configs() -> List[str]:
     """
 
     # Use absolute paths while symlinking.
-    source_configs_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configs")
-    destination = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "detectron2", "model_zoo", "configs"
+    source_configs_dir = path.join(path.dirname(path.realpath(__file__)), "configs")
+    destination = path.join(
+        path.dirname(path.realpath(__file__)), "detectron2", "model_zoo", "configs"
     )
     # Symlink the config directory inside package to have a cleaner pip install.
-    if os.path.exists(destination):
+    if path.exists(destination):
         # Remove stale symlink/directory from a previous build.
-        if os.path.islink(destination):
+        if path.islink(destination):
             os.unlink(destination)
         else:
             shutil.rmtree(destination)
@@ -91,7 +114,7 @@ def get_model_zoo_configs() -> List[str]:
 
 setup(
     name="detectron2",
-    version="0.1",
+    version=get_version(),
     author="FAIR",
     url="https://github.com/facebookresearch/detectron2",
     description="Detectron2 is FAIR's next-generation research "
@@ -110,6 +133,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
+        "fvcore",
     ],
     extras_require={"all": ["shapely", "psutil"], "dev": ["flake8", "isort", "black==19.3b0"]},
     ext_modules=get_extensions(),

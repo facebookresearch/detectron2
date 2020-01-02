@@ -240,7 +240,10 @@ class PolygonMasks:
                 The third level Tensor should have the format of
                 torch.Tensor([x0, y0, x1, y1, ..., xn, yn]) (n >= 3).
         """
-        assert isinstance(polygons, list)
+        assert isinstance(polygons, list), (
+            "Cannot create PolygonMasks: Expect a list of list of polygons per image. "
+            "Got '{}' instead.".format(type(polygons))
+        )
 
         def _make_array(t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
             # Use float64 for higher precision, because why not?
@@ -254,7 +257,10 @@ class PolygonMasks:
         def process_polygons(
             polygons_per_instance: List[Union[torch.Tensor, np.ndarray]]
         ) -> List[torch.Tensor]:
-            assert isinstance(polygons_per_instance, list), type(polygons_per_instance)
+            assert isinstance(polygons_per_instance, list), (
+                "Cannot create polygons: Expect a list of polygons per instance. "
+                "Got '{}' instead.".format(type(polygons_per_instance))
+            )
             # transform the polygon to a tensor
             polygons_per_instance = [_make_array(p) for p in polygons_per_instance]
             for polygon in polygons_per_instance:

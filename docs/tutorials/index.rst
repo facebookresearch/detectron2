@@ -12,4 +12,5 @@ Tutorials
    models
    write-models
    training
+   evaluation
    configs

@@ -34,7 +34,7 @@ class DatasetEvaluator:
 
         Args:
             input: the input that's used to call the model.
-            output: the return value of `model(output)`
+            output: the return value of `model(input)`
         """
         pass
 
@@ -72,7 +72,7 @@ class DatasetEvaluators(DatasetEvaluator):
         results = OrderedDict()
         for evaluator in self._evaluators:
             result = evaluator.evaluate()
-            if is_main_process():
+            if is_main_process() and result is not None:
                 for k, v in result.items():
                     assert (
                         k not in results
@@ -125,11 +125,9 @@ def inference_on_dataset(model, data_loader, evaluator):
             evaluator.process(inputs, outputs)
 
             if idx >= num_warmup * 2:
-                duration = time.perf_counter() - start_time
                 seconds_per_img = total_compute_time / (idx + 1 - num_warmup)
-                eta = datetime.timedelta(
-                    seconds=int(seconds_per_img * (total - num_warmup) - duration)
-                )
+                total_seconds_per_img = (time.perf_counter() - start_time) / (idx + 1 - num_warmup)
+                eta = datetime.timedelta(seconds=int(total_seconds_per_img * (total - idx - 1)))
                 log_every_n_seconds(
                     logging.INFO,
                     "Inference done {}/{}. {:.4f} s / img. ETA={}".format(

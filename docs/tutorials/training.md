@@ -16,3 +16,22 @@ You can use
 which does single-cost single-optimizer single-data-source training.
 Or use [DefaultTrainer().train()](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer)
 which includes more standard behavior that one might want to opt in.
+This also means that it's less likely to support some non-standard behavior
+you might want during research.
+
+
+### Logging of Metrics
+
+During training, metrics are logged with a centralized [EventStorage](../modules/utils.html#detectron2.utils.events.EventStorage).
+You can use the following code to access it and log metrics to it:
+```
+from detectron2.utils.events import get_event_storage
+
+# inside the model:
+if self.training:
+  value = # compute the value from inputs
+  storage = get_event_storage()
+  storage.put_scalar("some_accuracy", value)
+```
+
+Refer to its documentation for more details.

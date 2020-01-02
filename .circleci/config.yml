@@ -146,15 +146,15 @@ jobs:
           name: Build Detectron2
           command: |
             docker exec -it d2 pip install 'git+https://github.com/facebookresearch/fvcore'
-            docker exec -it d2 git clone https://github.com/facebookresearch/detectron2
+            docker cp ~/detectron2 d2:/detectron2
             # This will build d2 for the target GPU arch only
-            docker exec -it d2 pip install -e detectron2
+            docker exec -it d2 pip install -e /detectron2
             docker exec -it d2 python3 -m detectron2.utils.collect_env
 
       - run:
           name: Run Unit Tests
           command: |
-            docker exec -it d2 python3 -m unittest discover -v -s detectron2/tests
+            docker exec -it d2 python3 -m unittest discover -v -s /detectron2/tests
 
 workflows:
   version: 2

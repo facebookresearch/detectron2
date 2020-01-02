@@ -21,6 +21,7 @@ cfg.xxx = yyy      # add new configs for your own custom components
 cfg.merge_from_file("my_cfg.yaml")   # load values from a file
 
 cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values from a list of str
+print(cfg.dump())  # print formatted configs
 ```
 
 To see a list of available configs in detectron2, see [Config References](../modules/config.html#config-references)
@@ -28,16 +29,16 @@ To see a list of available configs in detectron2, see [Config References](../mod
 
 ### Best Practice with Configs
 
-1. Treat the configs you write as "code": avoid copying them or duplicating them; use "_BASE_"
-   instead to share common parts between configs.
+1. Treat the configs you write as "code": avoid copying them or duplicating them; use `_BASE_`
+   to share common parts between configs.
 
 2. Keep the configs you write simple: don't include keys that do not affect the experimental setting.
 
 3. Keep a version number in your configs (or the base config), e.g., `VERSION: 2`,
    for backward compatibility.
-   The builtin configs do not include version number because they are meant to
+   The official configs do not include version number because they are meant to
    be always up-to-date.
 
 4. Save a full config together with a trained model, and use it to run inference.
    This is more robust to changes that may happen to the config definition
-   (e.g., if a default value changed).
+   (e.g., if a default value changed), although we will try to avoid such changes.
