@@ -11,7 +11,7 @@ import numpy as np
 import onnx
 import torch
 from caffe2.python.onnx.backend import Caffe2Backend as c2
-from detectron2.modeling import GeneralizedRCNN
+from detectron2.modeling import meta_arch
 from detectron2.structures import ImageList
 
 from .c10 import Caffe2Compatible
@@ -108,35 +108,111 @@ class Caffe2GeneralizedRCNN(Caffe2Compatible, torch.nn.Module):
         Note: it modifies torch_model in-place.
         """
         super(Caffe2GeneralizedRCNN, self).__init__()
-        assert isinstance(torch_model, GeneralizedRCNN)
-        self.generalized_rcnn = patch_generalized_rcnn(torch_model)
+        assert isinstance(torch_model, meta_arch.GeneralizedRCNN)
+        self._wrapped_model = patch_generalized_rcnn(torch_model)
         self.eval()
         # self.tensor_mode = False
         set_caffe2_compatible_tensor_mode(self, True)
 
-        self.roi_heads_patcher = ROIHeadsPatcher(cfg, self.generalized_rcnn.roi_heads)
+        self.roi_heads_patcher = ROIHeadsPatcher(cfg, self._wrapped_model.roi_heads)
 
     def get_tensors_input(self, batched_inputs):
         return convert_batched_inputs_to_c2_format(
             batched_inputs,
-            self.generalized_rcnn.backbone.size_divisibility,
-            self.generalized_rcnn.device,
+            self._wrapped_model.backbone.size_divisibility,
+            self._wrapped_model.device,
         )
 
     def encode_additional_info(self, predict_net, init_net):
-        size_divisibility = self.generalized_rcnn.backbone.size_divisibility
+        size_divisibility = self._wrapped_model.backbone.size_divisibility
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
-        # TODO: encode post-processing information
+        check_set_pb_arg(predict_net, "meta_architecture", "s", b"GeneralizedRCNN")
+        # NOTE: maybe just encode the entire cfg.MODEL
 
     @mock_torch_nn_functional_interpolate()
     def forward(self, inputs):
         if not self.tensor_mode:
-            return self.generalized_rcnn.inference(inputs)
+            return self._wrapped_model.inference(inputs)
 
-        with mock_preprocess_image(self.generalized_rcnn):
+        with mock_preprocess_image(self._wrapped_model):
             with self.roi_heads_patcher.mock_roi_heads(self.tensor_mode):
-                results = self.generalized_rcnn.inference(inputs, do_postprocess=False)
+                results = self._wrapped_model.inference(inputs, do_postprocess=False)
         return tuple(results[0].flatten())
+
+
+class Caffe2PanopticFPN(Caffe2Compatible, torch.nn.Module):
+    def __init__(self, cfg, torch_model):
+        super(Caffe2PanopticFPN, self).__init__()
+        assert isinstance(torch_model, meta_arch.PanopticFPN)
+        self._wrapped_model = patch_generalized_rcnn(torch_model)
+        self.eval()
+        set_caffe2_compatible_tensor_mode(self, True)
+
+        self.roi_heads_patcher = ROIHeadsPatcher(cfg, self._wrapped_model.roi_heads)
+
+    def get_tensors_input(self, batched_inputs):
+        return convert_batched_inputs_to_c2_format(
+            batched_inputs,
+            self._wrapped_model.backbone.size_divisibility,
+            self._wrapped_model.device,
+        )
+
+    def encode_additional_info(self, predict_net, init_net):
+        size_divisibility = self._wrapped_model.backbone.size_divisibility
+        check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
+        check_set_pb_arg(predict_net, "meta_architecture", "s", b"PanopticFPN")
+
+        check_set_pb_arg(predict_net, "combine_on", "i", self._wrapped_model.combine_on)
+        check_set_pb_arg(
+            predict_net,
+            "combine_overlap_threshold",
+            "f",
+            self._wrapped_model.combine_overlap_threshold,
+        )
+        check_set_pb_arg(
+            predict_net,
+            "combine_stuff_area_limit",
+            "i",
+            self._wrapped_model.combine_stuff_area_limit,
+        )
+        check_set_pb_arg(
+            predict_net,
+            "combine_instances_confidence_threshold",
+            "f",
+            self._wrapped_model.combine_instances_confidence_threshold,
+        )
+
+    @mock_torch_nn_functional_interpolate()
+    def forward(self, inputs):
+        """
+        Re-write the inference-only forward pass of PanopticFPN in c2 style
+        """
+        assert self.tensor_mode
+
+        images = caffe2_preprocess_image(self._wrapped_model, inputs)
+        features = self._wrapped_model.backbone(images.tensor)
+
+        gt_sem_seg = None
+        sem_seg_results, _ = self._wrapped_model.sem_seg_head(features, gt_sem_seg)
+        sem_seg_results = alias(sem_seg_results, "sem_seg")
+
+        gt_instances = None
+        proposals, _ = self._wrapped_model.proposal_generator(
+            images, features, gt_instances
+        )
+
+        with self.roi_heads_patcher.mock_roi_heads(self.tensor_mode):
+            detector_results, _ = self._wrapped_model.roi_heads(
+                images, features, proposals, gt_instances
+            )
+
+        return tuple(detector_results[0].flatten()) + (sem_seg_results,)
+
+
+META_ARCH_CAFFE2_EXPORT_TYPE_MAP = {
+    "GeneralizedRCNN": Caffe2GeneralizedRCNN,
+    "PanopticFPN": Caffe2PanopticFPN,
+}
 
 
 def _export_via_onnx(model, inputs):
