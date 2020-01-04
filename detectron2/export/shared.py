@@ -5,18 +5,17 @@ import contextlib
 import copy
 import functools
 import logging
+import numpy as np
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
-
 import caffe2.python.utils as putils
-import mock
-import numpy as np
 import torch
 import torch.nn.functional as F
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core, net_drawer, workspace
 from torch.nn.functional import interpolate as interp
 
+import mock
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +86,7 @@ def onnx_compatibale_interpolate(
             assert not align_corners, "No matching C2 op for align_corners == True"
             if mode == "nearest":
                 return torch.ops._caffe2.ResizeNearest(
-                    input,
-                    order="NCHW",
-                    width_scale=width_scale,
-                    height_scale=height_scale,
+                    input, order="NCHW", width_scale=width_scale, height_scale=height_scale
                 )
             elif mode == "bilinear":
                 logger.warning(
@@ -101,9 +97,7 @@ def onnx_compatibale_interpolate(
                 )
                 assert height_scale == width_scale
                 return BilinearInterpolation(input, up_scale=height_scale)
-        logger.warning(
-            "Output size is not static, it might cause ONNX conversion issue"
-        )
+        logger.warning("Output size is not static, it might cause ONNX conversion issue")
 
     return interp(input, size, scale_factor, mode, align_corners)
 
@@ -205,16 +199,14 @@ def check_set_pb_arg(pb, arg_name, arg_attr, arg_value, allow_override=False):
         pb.arg.extend([arg])
     if allow_override and getattr(arg, arg_attr) != arg_value:
         logger.warning(
-            "Override argument {}: {} -> {}".format(
-                arg_name, getattr(arg, arg_attr), arg_value
-            )
+            "Override argument {}: {} -> {}".format(arg_name, getattr(arg, arg_attr), arg_value)
         )
         setattr(arg, arg_attr, arg_value)
     else:
         assert arg is not None
-        assert (
-            getattr(arg, arg_attr) == arg_value
-        ), "Existing value {}, new value {}".format(getattr(arg, arg_attr), arg_value)
+        assert getattr(arg, arg_attr) == arg_value, "Existing value {}, new value {}".format(
+            getattr(arg, arg_attr), arg_value
+        )
 
 
 def _create_const_fill_op_from_numpy(name, tensor, device_option=None):
@@ -354,17 +346,13 @@ def remove_reshape_for_fc(predict_net, params):
     for sub_graph in sub_graphs_to_remove:
         logger.info(
             "Remove Reshape sub-graph:\n{}".format(
-                "".join(
-                    ["(#{:>4})\n{}".format(i, predict_net.op[i]) for i in sub_graph]
-                )
+                "".join(["(#{:>4})\n{}".format(i, predict_net.op[i]) for i in sub_graph])
             )
         )
         reshape_op_id = sub_graph[-1]
         new_reshap_output = predict_net.op[reshape_op_id].input[0]
         rename_op_output(predict_net, reshape_op_id, 0, new_reshap_output)
-        ext_inputs, ext_outputs = get_sub_graph_external_input_output(
-            predict_net, sub_graph
-        )
+        ext_inputs, ext_outputs = get_sub_graph_external_input_output(predict_net, sub_graph)
         non_params_ext_inputs = [inp for inp in ext_inputs if inp[1] != 0]
         params_ext_inputs = [inp for inp in ext_inputs if inp[1] == 0]
         assert len(non_params_ext_inputs) == 1 and len(ext_outputs) == 1
@@ -379,11 +367,7 @@ def remove_reshape_for_fc(predict_net, params):
     predict_net.op.extend(new_ops)
     for versioned_params in params_to_remove:
         name = versioned_params[0]
-        logger.info(
-            "Remove params: {} from init_net and predict_net.external_input".format(
-                name
-            )
-        )
+        logger.info("Remove params: {} from init_net and predict_net.external_input".format(name))
         del params[name]
         predict_net.external_input.remove(name)
 
@@ -425,18 +409,12 @@ def _rename_blob(name, blob_sizes, blob_ranges):
 
 
 # graph_name could not contain word 'graph'
-def save_graph(
-    net, file_name, graph_name="net", op_only=True, blob_sizes=None, blob_ranges=None
-):
-    blob_rename_f = functools.partial(
-        _rename_blob, blob_sizes=blob_sizes, blob_ranges=blob_ranges
-    )
+def save_graph(net, file_name, graph_name="net", op_only=True, blob_sizes=None, blob_ranges=None):
+    blob_rename_f = functools.partial(_rename_blob, blob_sizes=blob_sizes, blob_ranges=blob_ranges)
     return save_graph_base(net, file_name, graph_name, op_only, blob_rename_f)
 
 
-def save_graph_base(
-    net, file_name, graph_name="net", op_only=True, blob_rename_func=None
-):
+def save_graph_base(net, file_name, graph_name="net", op_only=True, blob_rename_func=None):
     graph = None
     ops = net.op
     if blob_rename_func is not None:
@@ -516,9 +494,7 @@ def fuse_alias_placeholder(predict_net, init_net):
             assert len(op.output) == 1
             name = get_pb_arg_vals(op, "name", None).decode()
             is_backward = bool(get_pb_arg_vali(op, "is_backward", 0))
-            rename_op_input(
-                predict_net, init_net, i, 0, name, from_producer=is_backward
-            )
+            rename_op_input(predict_net, init_net, i, 0, name, from_producer=is_backward)
             rename_op_output(predict_net, i, 0, name)
 
     # Remove AliasWithName, should be very safe since it's a non-op
@@ -639,9 +615,7 @@ def rename_op_input(
     )
 
 
-def rename_op_output(
-    predict_net: caffe2_pb2.NetDef, op_id: int, output_id: int, new_name: str
-):
+def rename_op_output(predict_net: caffe2_pb2.NetDef, op_id: int, output_id: int, new_name: str):
     """
     Rename the op_id-th operator in predict_net, change it's output_id-th input's
         name to the new_name. It also does automatic re-route and change

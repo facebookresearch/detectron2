@@ -3,29 +3,20 @@
 import collections
 import io
 import logging
-
 import numpy as np
 import torch
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core
-from detectron2.export.caffe2_export import convert_batched_inputs_to_c2_format
+
+from detectron2.export.caffe2_modeling import convert_batched_inputs_to_c2_format
 from detectron2.modeling.box_regression import Box2BoxTransform
-from detectron2.modeling.meta_arch.panoptic_fpn import (
-    combine_semantic_and_instance_outputs,
-)
+from detectron2.modeling.meta_arch.panoptic_fpn import combine_semantic_and_instance_outputs
 from detectron2.modeling.meta_arch.retinanet import RetinaNet
 from detectron2.modeling.postprocessing import detector_postprocess, sem_seg_postprocess
 from detectron2.modeling.roi_heads import keypoint_head
 from detectron2.structures import Boxes, Instances
 
-from .shared import (
-    ScopedWS,
-    get_pb_arg_floats,
-    get_pb_arg_valf,
-    get_pb_arg_vali,
-    get_pb_arg_vals,
-)
-
+from .shared import ScopedWS, get_pb_arg_floats, get_pb_arg_valf, get_pb_arg_vali, get_pb_arg_vals
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +25,7 @@ def is_valid_model_output_blob(blob):
     return isinstance(blob, np.ndarray)
 
 
-def assemble_tensor_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=False):
+def assemble_rcnn_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=False):
     """
     A function to assemble caffe2 model's outputs (i.e. Dict[str, Tensor])
     to detectron2's format (i.e. list of Instances instance).
@@ -99,7 +90,7 @@ def assemble_tensor_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=F
     return results
 
 
-class LegacyInstancesAssembler(object):
+class GeneralizedRCNNAssembler(object):
     """
     A class whose instance can assemble caffe2 model's outputs
     """
@@ -120,7 +111,7 @@ class LegacyInstancesAssembler(object):
 
     def assemble(self, batched_inputs, c2_inputs, c2_results):
         image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
-        results = assemble_tensor_outputs_by_name(image_sizes, c2_results)
+        results = assemble_rcnn_outputs_by_name(image_sizes, c2_results)
         return self.post_processing(batched_inputs, results, image_sizes)
 
 
@@ -135,13 +126,11 @@ class PanopticFPNAssembler(object):
         self.combine_on = combine_on
         self.combine_overlap_threshold = combine_overlap_threshold
         self.combine_stuff_area_limit = combine_stuff_area_limit
-        self.combine_instances_confidence_threshold = (
-            combine_instances_confidence_threshold
-        )
+        self.combine_instances_confidence_threshold = combine_instances_confidence_threshold
 
     def assemble(self, batched_inputs, c2_inputs, c2_results):
         image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
-        detector_results = assemble_tensor_outputs_by_name(
+        detector_results = assemble_rcnn_outputs_by_name(
             image_sizes, c2_results, force_mask_on=True
         )
         sem_seg_results = torch.Tensor(c2_results["sem_seg"])
@@ -230,15 +219,13 @@ def best_assembler_from_predict_net(predict_net):
     meta_arch = get_pb_arg_vals(predict_net, "meta_architecture", "GeneralizedRCNN")
 
     if meta_arch == b"GeneralizedRCNN":
-        return LegacyInstancesAssembler()
+        return GeneralizedRCNNAssembler()
     elif meta_arch == b"PanopticFPN":
         return PanopticFPNAssembler(
             get_pb_arg_vali(predict_net, "combine_on", None),
             get_pb_arg_valf(predict_net, "combine_overlap_threshold", None),
             get_pb_arg_vali(predict_net, "combine_stuff_area_limit", None),
-            get_pb_arg_valf(
-                predict_net, "combine_instances_confidence_threshold", None
-            ),
+            get_pb_arg_valf(predict_net, "combine_instances_confidence_threshold", None),
         )
     elif meta_arch == b"RetinaNet":
         serialized_anchor_generator = io.BytesIO(
@@ -306,15 +293,12 @@ class ProtobufModel(torch.nn.Module):
                 # Needs to create uninitialized blob to make the net runable.
                 # This is "equivalent" to: ws.RemoveBlob(b) then ws.CreateBlob(b),
                 # but there'no such API.
-                ws.FeedBlob(
-                    b,
-                    "{}, a C++ native class of type nullptr (uninitialized).".format(b),
-                )
+                ws.FeedBlob(b, "{}, a C++ native class of type nullptr (uninitialized).".format(b))
 
         return outputs_dict
 
 
-class ProtobufGeneralizedRCNN(torch.nn.Module):
+class ProtobufDetectionModel(torch.nn.Module):
     """
     A class works just like GeneralizedRCNN in terms of inference, but running
     caffe2 model under the hood.
@@ -326,31 +310,6 @@ class ProtobufGeneralizedRCNN(torch.nn.Module):
 
         self.size_divisibility = get_pb_arg_vali(predict_net, "size_divisibility", 0)
         self.assembler = assembler or best_assembler_from_predict_net(predict_net)
-
-        self._error_msgs = set()
-
-    def infer_mask_on(self):
-        # the real self.assembler should tell about this, currently use heuristic
-        possible_blob_names = {"mask_fcn_probs"}
-        return any(
-            possible_blob_names.intersection(op.output)
-            for op in self.protobuf_model.net.Proto().op
-        )
-
-    def infer_keypoint_on(self):
-        # the real self.assembler should tell about this, currently use heuristic
-        possible_blob_names = {"kps_score"}
-        return any(
-            possible_blob_names.intersection(op.output)
-            for op in self.protobuf_model.net.Proto().op
-        )
-
-    def infer_densepose_on(self):
-        possible_blob_names = {"AnnIndex", "Index_UV", "U_estimated", "V_estimated"}
-        return any(
-            possible_blob_names.intersection(op.output)
-            for op in self.protobuf_model.net.Proto().op
-        )
 
     def forward(self, batched_inputs):
         data, im_info = convert_batched_inputs_to_c2_format(

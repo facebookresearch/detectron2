@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 import math
-
 import torch
 import torch.nn.functional as F
+
 from detectron2.layers import cat
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
@@ -69,9 +69,7 @@ class InstancesList(object):
         if len(self.batch_extra_fields):
             assert (
                 len(self) == data_len
-            ), "Adding a field of length {} to a Instances of length {}".format(
-                data_len, len(self)
-            )
+            ), "Adding a field of length {} to a Instances of length {}".format(data_len, len(self))
         self.batch_extra_fields[name] = value
 
     def __setattr__(self, name, val):
@@ -82,9 +80,7 @@ class InstancesList(object):
 
     def __getattr__(self, name):
         if name not in self.batch_extra_fields:
-            raise AttributeError(
-                "Cannot find field '{}' in the given Instances!".format(name)
-            )
+            raise AttributeError("Cannot find field '{}' in the given Instances!".format(name))
         return self.batch_extra_fields[name]
 
     def __len__(self):
@@ -111,9 +107,7 @@ class InstancesList(object):
 
         ret = []
         for i, info in enumerate(instances_list.im_info):
-            instances = Instances(
-                torch.Size([int(info[0].item()), int(info[1].item())])
-            )
+            instances = Instances(torch.Size([int(info[0].item()), int(info[1].item())]))
 
             ids = instances_list.indices == i
             for k, v in instances_list.batch_extra_fields.items():
@@ -168,10 +162,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
             im_info = images.image_sizes
         else:
             im_info = torch.Tensor(
-                [
-                    [im_sz[0], im_sz[1], torch.Tensor([1.0])]
-                    for im_sz in images.image_sizes
-                ]
+                [[im_sz[0], im_sz[1], torch.Tensor([1.0])] for im_sz in images.image_sizes]
             ).to(images.tensor.device)
         assert isinstance(im_info, torch.Tensor)
 
@@ -219,9 +210,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
             rpn_post_nms_topN = self.post_nms_topk[self.training]
 
             device = rpn_rois_list[0].device
-            input_list = [
-                to_device(x, "cpu") for x in (rpn_rois_list + rpn_roi_probs_list)
-            ]
+            input_list = [to_device(x, "cpu") for x in (rpn_rois_list + rpn_roi_probs_list)]
 
             # TODO remove this after confirming rpn_max_level/rpn_min_level
             # is not needed in CollectRpnProposals.
@@ -245,9 +234,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
             rpn_rois = to_device(rpn_rois, device)
             rpn_roi_probs = []
 
-        proposals = self.c2_postprocess(
-            im_info, rpn_rois, rpn_roi_probs, self.tensor_mode
-        )
+        proposals = self.c2_postprocess(im_info, rpn_rois, rpn_roi_probs, self.tensor_mode)
         return proposals, {}
 
     @staticmethod
@@ -330,9 +317,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
             roi_feat_fpn_list.append(roi_feat_fpn)
 
         roi_feat_shuffled = cat(roi_feat_fpn_list, dim=0)
-        roi_feat = torch.ops._caffe2.BatchPermutation(
-            roi_feat_shuffled, rois_idx_restore_int32
-        )
+        roi_feat = torch.ops._caffe2.BatchPermutation(roi_feat_shuffled, rois_idx_restore_int32)
         return roi_feat
 
 
@@ -356,10 +341,7 @@ class Caffe2FastRCNNOutputsInference:
 
         im_info = (
             torch.Tensor(
-                [
-                    [sz[0], sz[1], torch.Tensor([1.0])]
-                    for sz in fastrcnn_outputs.image_shapes
-                ]
+                [[sz[0], sz[1], torch.Tensor([1.0])] for sz in fastrcnn_outputs.image_shapes]
             ).to(device)
             if not input_tensor_mode
             else fastrcnn_outputs.image_shapes[0]

@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import contextlib
-
-import mock
 import torch
+
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads import roi_heads
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputs
+
+import mock
 
 from .c10 import (
     Caffe2Compatible,
@@ -38,9 +39,7 @@ class Caffe2CompatibleConverter(object):
         if issubclass(self.replaceCls, GenericMixin):
             # replaceCls should act as mixin, create a new class on-the-fly
             new_class = type(
-                "{}MixedWith{}".format(
-                    self.replaceCls.__name__, module.__class__.__name__
-                ),
+                "{}MixedWith{}".format(self.replaceCls.__name__, module.__class__.__name__),
                 (self.replaceCls, module.__class__),
                 {},  # {"new_method": lambda self: ...},
             )
@@ -93,8 +92,7 @@ def mock_fastrcnn_outputs_inference(tensor_mode, check=True):
 @contextlib.contextmanager
 def mock_mask_rcnn_inference(tensor_mode, patched_module, check=True):
     with mock.patch(
-        "{}.mask_rcnn_inference".format(patched_module),
-        side_effect=Caffe2MaskRCNNInference(),
+        "{}.mask_rcnn_inference".format(patched_module), side_effect=Caffe2MaskRCNNInference()
     ) as mocked_func:
         yield
     if check:
@@ -102,9 +100,7 @@ def mock_mask_rcnn_inference(tensor_mode, patched_module, check=True):
 
 
 @contextlib.contextmanager
-def mock_keypoint_rcnn_inference(
-    tensor_mode, patched_module, use_heatmap_max_keypoint, check=True
-):
+def mock_keypoint_rcnn_inference(tensor_mode, patched_module, use_heatmap_max_keypoint, check=True):
     with mock.patch(
         "{}.keypoint_rcnn_inference".format(patched_module),
         side_effect=Caffe2KeypointRCNNInference(use_heatmap_max_keypoint),
@@ -132,9 +128,7 @@ class ROIHeadsPatcher:
         mock_ctx_managers = [mock_fastrcnn_outputs_inference(tensor_mode)]
         if getattr(self.heads, "keypoint_on", False):
             mock_ctx_managers += [
-                mock_keypoint_rcnn_inference(
-                    tensor_mode, module, self.use_heatmap_max_keypoint
-                )
+                mock_keypoint_rcnn_inference(tensor_mode, module, self.use_heatmap_max_keypoint)
             ]
         if getattr(self.heads, "mask_on", False):
             mock_ctx_managers += [mock_mask_rcnn_inference(tensor_mode, module)]
