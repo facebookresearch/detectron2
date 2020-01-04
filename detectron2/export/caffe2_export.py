@@ -4,6 +4,7 @@ import contextlib
 import copy
 import io
 import logging
+import struct
 from typing import List
 
 import mock
@@ -31,6 +32,10 @@ from .shared import (
 
 
 logger = logging.getLogger(__name__)
+
+
+def _cast_to_f32(f64):
+    return struct.unpack("f", struct.pack("f", f64))[0]
 
 
 def is_valid_model_output_blob(blob):
@@ -162,12 +167,13 @@ class Caffe2PanopticFPN(Caffe2Compatible, torch.nn.Module):
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"PanopticFPN")
 
+        # Inference parameters:
         check_set_pb_arg(predict_net, "combine_on", "i", self._wrapped_model.combine_on)
         check_set_pb_arg(
             predict_net,
             "combine_overlap_threshold",
             "f",
-            self._wrapped_model.combine_overlap_threshold,
+            _cast_to_f32(self._wrapped_model.combine_overlap_threshold),
         )
         check_set_pb_arg(
             predict_net,
@@ -179,7 +185,7 @@ class Caffe2PanopticFPN(Caffe2Compatible, torch.nn.Module):
             predict_net,
             "combine_instances_confidence_threshold",
             "f",
-            self._wrapped_model.combine_instances_confidence_threshold,
+            _cast_to_f32(self._wrapped_model.combine_instances_confidence_threshold),
         )
 
     @mock_torch_nn_functional_interpolate()
@@ -209,9 +215,93 @@ class Caffe2PanopticFPN(Caffe2Compatible, torch.nn.Module):
         return tuple(detector_results[0].flatten()) + (sem_seg_results,)
 
 
+class Caffe2RetinaNet(Caffe2Compatible, torch.nn.Module):
+    def __init__(self, cfg, torch_model):
+        super(Caffe2RetinaNet, self).__init__()
+        assert isinstance(torch_model, meta_arch.RetinaNet)
+        self._wrapped_model = torch_model
+        self.eval()
+        set_caffe2_compatible_tensor_mode(self, True)
+
+        # serialize anchor_generator for future use
+        self._serialized_anchor_generator = io.BytesIO()
+        torch.save(
+            self._wrapped_model.anchor_generator, self._serialized_anchor_generator
+        )
+
+    def get_tensors_input(self, batched_inputs):
+        return convert_batched_inputs_to_c2_format(
+            batched_inputs,
+            self._wrapped_model.backbone.size_divisibility,
+            self._wrapped_model.device,
+        )
+
+    def encode_additional_info(self, predict_net, init_net):
+        size_divisibility = self._wrapped_model.backbone.size_divisibility
+        check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
+        check_set_pb_arg(predict_net, "meta_architecture", "s", b"RetinaNet")
+
+        # Inference parameters:
+        check_set_pb_arg(
+            predict_net,
+            "score_threshold",
+            "f",
+            _cast_to_f32(self._wrapped_model.score_threshold),
+        )
+        check_set_pb_arg(
+            predict_net, "topk_candidates", "i", self._wrapped_model.topk_candidates
+        )
+        check_set_pb_arg(
+            predict_net,
+            "nms_threshold",
+            "f",
+            _cast_to_f32(self._wrapped_model.nms_threshold),
+        )
+        check_set_pb_arg(
+            predict_net,
+            "max_detections_per_image",
+            "i",
+            self._wrapped_model.max_detections_per_image,
+        )
+
+        check_set_pb_arg(
+            predict_net,
+            "bbox_reg_weights",
+            "floats",
+            [_cast_to_f32(w) for w in self._wrapped_model.box2box_transform.weights],
+        )
+        self._encode_anchor_generator_cfg(predict_net)
+
+    def _encode_anchor_generator_cfg(self, predict_net):
+        # Ideally we can put anchor generating inside the model, then we don't
+        # need to store this information.
+        bytes = self._serialized_anchor_generator.getvalue()
+        check_set_pb_arg(predict_net, "serialized_anchor_generator", "s", bytes)
+
+    @mock_torch_nn_functional_interpolate()
+    def forward(self, inputs):
+        assert self.tensor_mode
+        images = caffe2_preprocess_image(self._wrapped_model, inputs)
+
+        # explicitly return the images sizes to avoid removing "im_info" by ONNX
+        # since it's not used in the forward path
+        return_tensors = [images.image_sizes]
+
+        features = self._wrapped_model.backbone(images.tensor)
+        features = [features[f] for f in self._wrapped_model.in_features]
+
+        box_cls, box_delta = self._wrapped_model.head(features)
+        for i, (box_cls_i, box_delta_i) in enumerate(zip(box_cls, box_delta)):
+            return_tensors.append(alias(box_cls_i, "box_cls_{}".format(i)))
+            return_tensors.append(alias(box_delta_i, "box_delta_{}".format(i)))
+
+        return tuple(return_tensors)
+
+
 META_ARCH_CAFFE2_EXPORT_TYPE_MAP = {
     "GeneralizedRCNN": Caffe2GeneralizedRCNN,
     "PanopticFPN": Caffe2PanopticFPN,
+    "RetinaNet": Caffe2RetinaNet,
 }
 
 

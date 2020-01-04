@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import collections
+import io
 import logging
 
 import numpy as np
@@ -8,14 +9,22 @@ import torch
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core
 from detectron2.export.caffe2_export import convert_batched_inputs_to_c2_format
+from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.meta_arch.panoptic_fpn import (
     combine_semantic_and_instance_outputs,
 )
+from detectron2.modeling.meta_arch.retinanet import RetinaNet
 from detectron2.modeling.postprocessing import detector_postprocess, sem_seg_postprocess
 from detectron2.modeling.roi_heads import keypoint_head
 from detectron2.structures import Boxes, Instances
 
-from .shared import ScopedWS, get_pb_arg_valf, get_pb_arg_vali, get_pb_arg_vals
+from .shared import (
+    ScopedWS,
+    get_pb_arg_floats,
+    get_pb_arg_valf,
+    get_pb_arg_vali,
+    get_pb_arg_vals,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -160,6 +169,63 @@ class PanopticFPNAssembler(object):
         return processed_results
 
 
+class RetinaNetAssembler(object):
+    def __init__(
+        self,
+        anchor_generator,
+        box2box_transform,
+        score_threshold,
+        topk_candidates,
+        nms_threshold,
+        max_detections_per_image,
+    ):
+        # num_classes cannot be determined during initialization, it'll be filled
+        # before calling inference
+        self.num_classes = None
+
+        self.anchor_generator = anchor_generator
+        self.box2box_transform = box2box_transform
+
+        self.score_threshold = score_threshold
+        self.topk_candidates = topk_candidates
+        self.nms_threshold = nms_threshold
+        self.max_detections_per_image = max_detections_per_image
+
+    def inference_single_image(self, *args, **kwargs):
+        return RetinaNet.inference_single_image(self, *args, **kwargs)
+
+    def inference(self, *args, **kwargs):
+        return RetinaNet.inference(self, *args, **kwargs)
+
+    def assemble(self, batched_inputs, c2_inputs, c2_results):
+        c2_results = {k: torch.Tensor(v) for k, v in c2_results.items()}
+
+        image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
+
+        num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])
+        box_cls = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]
+        box_delta = [c2_results["box_delta_{}".format(i)] for i in range(num_features)]
+
+        # For each feature level, feature should have the same batch size and
+        # spatial dimension as the box_cls and box_delta.
+        dummy_features = [box_delta[i].clone()[:, 0:0, :, :] for i in range(num_features)]
+        anchors = self.anchor_generator(dummy_features)
+
+        # self.num_classess can be inferred
+        self.num_classes = box_cls[0].shape[1] // (box_delta[0].shape[1] // 4)
+
+        results = self.inference(box_cls, box_delta, anchors, image_sizes)
+        processed_results = []
+        for results_per_image, input_per_image, image_size in zip(
+            results, batched_inputs, image_sizes
+        ):
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
+            r = detector_postprocess(results_per_image, height, width)
+            processed_results.append({"instances": r})
+        return processed_results
+
+
 def best_assembler_from_predict_net(predict_net):
     meta_arch = get_pb_arg_vals(predict_net, "meta_architecture", "GeneralizedRCNN")
 
@@ -173,6 +239,21 @@ def best_assembler_from_predict_net(predict_net):
             get_pb_arg_valf(
                 predict_net, "combine_instances_confidence_threshold", None
             ),
+        )
+    elif meta_arch == b"RetinaNet":
+        serialized_anchor_generator = io.BytesIO(
+            get_pb_arg_vals(predict_net, "serialized_anchor_generator", None)
+        )
+        anchor_generator = torch.load(serialized_anchor_generator)
+        bbox_reg_weights = get_pb_arg_floats(predict_net, "bbox_reg_weights", None)
+        box2box_transform = Box2BoxTransform(weights=tuple(bbox_reg_weights))
+        return RetinaNetAssembler(
+            anchor_generator,
+            box2box_transform,
+            get_pb_arg_valf(predict_net, "score_threshold", None),
+            get_pb_arg_vali(predict_net, "topk_candidates", None),
+            get_pb_arg_valf(predict_net, "nms_threshold", None),
+            get_pb_arg_vali(predict_net, "max_detections_per_image", None),
         )
 
     raise ValueError("Unsupported meta architecture: {}".format(meta_arch))
