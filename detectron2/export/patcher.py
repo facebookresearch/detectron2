@@ -1,14 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import contextlib
+import mock
 import torch
 
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads import roi_heads
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputs
-
-import mock
 
 from .c10 import (
     Caffe2Compatible,

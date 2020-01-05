@@ -2,13 +2,12 @@
 
 import contextlib
 import io
+import mock
 import struct
 import torch
 
 from detectron2.modeling import meta_arch
 from detectron2.structures import ImageList
-
-import mock
 
 from .c10 import Caffe2Compatible
 from .patcher import ROIHeadsPatcher, patch_generalized_rcnn
