@@ -32,6 +32,9 @@ pip install -e .
 ```
 Note: you often need to rebuild detectron2 after reinstalling PyTorch.
 
+### User Made Installation Video
+https://youtu.be/HFoW0f9_H9I
+
 ### Common Installation Issues
 
 Click each issue for its solutions:
