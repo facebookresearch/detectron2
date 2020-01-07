@@ -133,8 +133,8 @@ class RPN(nn.Module):
                 Each `Instances` stores ground-truth instances for the corresponding image.
 
         Returns:
-            proposals: list[Instances] or None
-            loss: dict[Tensor]
+            proposals: list[Instances]: contains fields "proposal_boxes", "objectness_logits"
+            loss: dict[Tensor] or None
         """
         gt_boxes = [x.gt_boxes for x in gt_instances] if gt_instances is not None else None
         del gt_instances

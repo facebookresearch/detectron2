@@ -11,6 +11,16 @@ Please see [Apply Net](TOOL_APPLY_NET.md) for more details on the tool.
 
 ## Training
 
+First, prepare the [dataset](http://densepose.org/#dataset) into the following structure under the directory you'll run training scripts:
+<pre>
+datasets/coco/
+  annotations/
+    densepose_{train,minival,valminusminival}2014.json
+    <a href="https://dl.fbaipublicfiles.com/detectron2/densepose/densepose_minival2014_100.json">densepose_minival2014_100.json </a>  (optional, for testing only)
+  {train,val}2014/
+    # image files that are mentioned in the corresponding json
+</pre>
+
 To train a model one can use the [train_net.py](../train_net.py) script.
 This script was used to train all DensePose models in [Model Zoo](MODEL_ZOO.md).
 For example, to launch end-to-end DensePose-RCNN training with ResNet-50 FPN backbone

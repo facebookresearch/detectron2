@@ -96,3 +96,6 @@ from detectron2.utils.events import EventStorage
 with EventStorage() as storage:
   losses = model(inputs)
 ```
+
+Another small thing to remember: detectron2 models do not support `model.to(device)` or `model.cpu()`.
+The device is defined in `cfg.MODEL.DEVICE` and cannot be changed afterwards.

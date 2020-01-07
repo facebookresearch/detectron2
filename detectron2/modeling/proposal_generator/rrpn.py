@@ -28,20 +28,7 @@ class RRPN(RPN):
         self.box2box_transform = Box2BoxTransformRotated(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
 
     def forward(self, images, features, gt_instances=None):
-        """
-        Args:
-            images (ImageList): input images of length `N`
-            features (dict[str: Tensor]): input data as a mapping from feature
-                map name to tensor. Axis 0 represents the number of images `N` in
-                the input data; axes 1-3 are channels, height, and width, which may
-                vary between feature maps (e.g., if a feature pyramid is used).
-            gt_instances (list[Instances], optional): a length `N` list of `Instances`s.
-                Each `Instances` stores ground-truth instances for the corresponding image.
-
-        Returns:
-            proposals: list[Instances] or None
-            loss: dict[Tensor]
-        """
+        # same signature as RPN.forward
         gt_boxes = [x.gt_boxes for x in gt_instances] if gt_instances is not None else None
         del gt_instances
         features = [features[f] for f in self.in_features]
