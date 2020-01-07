@@ -16,7 +16,7 @@ First, prepare the [dataset](http://densepose.org/#dataset) into the following s
 datasets/coco/
   annotations/
     densepose_{train,minival,valminusminival}2014.json
-    <a href="densepose/densepose_minival2014_100.json">densepose_minival2014_100.json </a>  (optional, for testing only)
+    <a href="https://dl.fbaipublicfiles.com/detectron2/densepose/densepose_minival2014_100.json">densepose_minival2014_100.json </a>  (optional, for testing only)
   {train,val}2014/
     # image files that are mentioned in the corresponding json
 </pre>
