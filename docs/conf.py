@@ -241,7 +241,7 @@ texinfo_documents = [
 todo_include_todos = True
 
 
-_DEPRECATED_NAMES = set(["out_feature_channels", "out_feature_strides", "out_features"])
+_DEPRECATED_NAMES = set()
 
 
 def autodoc_skip_member(app, what, name, obj, skip, options):

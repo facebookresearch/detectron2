@@ -1,5 +1,5 @@
 ---
-name: "❓How to Use Detectron2"
+name: "❓How to do something?"
 about: How to do X with detectron2? How detectron2 does X?
 
 ---

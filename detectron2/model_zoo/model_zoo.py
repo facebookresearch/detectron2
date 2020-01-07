@@ -64,6 +64,8 @@ class _ModelZooUrls(object):
         "Cityscapes/mask_rcnn_R_50_FPN.yaml": "142423278/model_final_af9cf5.pkl",
         "PascalVOC-Detection/faster_rcnn_R_50_C4.yaml": "142202221/model_final_b1acc2.pkl",
         # Other Settings
+        "Misc/mask_rcnn_R_50_FPN_1x_dconv_c3-c5.yaml": "138602867/model_final_65c703.pkl",
+        "Misc/mask_rcnn_R_50_FPN_3x_dconv_c3-c5.yaml": "144998336/model_final_821d0b.pkl",
         "Misc/cascade_mask_rcnn_R_50_FPN_1x.yaml": "138602847/model_final_e9d89b.pkl",
         "Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml": "144998488/model_final_480dd8.pkl",
         "Misc/mask_rcnn_R_50_FPN_3x_syncbn.yaml": "143915318/model_final_220cfb.pkl",
@@ -85,9 +87,9 @@ def get_checkpoint_url(config_path):
     Returns:
         str: a URL to the model
     """
+    name = config_path.replace(".yaml", "")
     if config_path in _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX:
         suffix = _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX[config_path]
-        name = config_path.replace(".yaml", "")
         return _ModelZooUrls.S3_PREFIX + name + "/" + suffix
     raise RuntimeError("{} not available in Model Zoo!".format(name))
 

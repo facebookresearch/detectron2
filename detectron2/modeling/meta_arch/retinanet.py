@@ -136,7 +136,7 @@ class RetinaNet(nn.Module):
             gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
             return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
         else:
-            results = self.inference(box_cls, box_delta, anchors, images)
+            results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
                 results, batched_inputs, images.image_sizes
@@ -255,19 +255,19 @@ class RetinaNet(nn.Module):
 
         return torch.stack(gt_classes), torch.stack(gt_anchors_deltas)
 
-    def inference(self, box_cls, box_delta, anchors, images):
+    def inference(self, box_cls, box_delta, anchors, image_sizes):
         """
         Arguments:
             box_cls, box_delta: Same as the output of :meth:`RetinaNetHead.forward`
             anchors (list[list[Boxes]]): a list of #images elements. Each is a
                 list of #feature level Boxes. The Boxes contain anchors of this
                 image on the specific feature level.
-            images (ImageList): the input images
+            image_sizes (List[torch.Size]): the input image sizes
 
         Returns:
             results (List[Instances]): a list of #images elements.
         """
-        assert len(anchors) == len(images)
+        assert len(anchors) == len(image_sizes)
         results = []
 
         box_cls = [permute_to_N_HWA_K(x, self.num_classes) for x in box_cls]
@@ -275,7 +275,7 @@ class RetinaNet(nn.Module):
         # list[Tensor], one per level, each has shape (N, Hi x Wi x A, K or 4)
 
         for img_idx, anchors_per_image in enumerate(anchors):
-            image_size = images.image_sizes[img_idx]
+            image_size = image_sizes[img_idx]
             box_cls_per_image = [box_cls_per_level[img_idx] for box_cls_per_level in box_cls]
             box_reg_per_image = [box_reg_per_level[img_idx] for box_reg_per_level in box_delta]
             results_per_image = self.inference_single_image(

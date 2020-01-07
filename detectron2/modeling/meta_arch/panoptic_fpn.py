@@ -109,8 +109,8 @@ class PanopticFPN(nn.Module):
         for sem_seg_result, detector_result, input_per_image, image_size in zip(
             sem_seg_results, detector_results, batched_inputs, images.image_sizes
         ):
-            height = input_per_image.get("height")
-            width = input_per_image.get("width")
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
             sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
             detector_r = detector_postprocess(detector_result, height, width)
 

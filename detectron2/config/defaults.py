@@ -30,7 +30,7 @@ _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
 # to be loaded to the model. You can find available models in the model zoo.
 _C.MODEL.WEIGHTS = ""
 
-# Values to be used for image normalization (BGR order).
+# Values to be used for image normalization (BGR order, since INPUT.FORMAT defaults to BGR).
 # To train on images of different number of channels, just set different mean & std.
 # Default values are the mean pixel value from ImageNet: [103.53, 116.28, 123.675]
 _C.MODEL.PIXEL_MEAN = [103.530, 116.280, 123.675]

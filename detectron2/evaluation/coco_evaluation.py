@@ -44,7 +44,13 @@ class COCOEvaluator(DatasetEvaluator):
             cfg (CfgNode): config instance
             distributed (True): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
-            output_dir (str): optional, an output directory to dump results.
+            output_dir (str): optional, an output directory to dump all
+                results predicted on the dataset. The dump contains two files:
+
+                1. "instance_predictions.pth" a file in torch serialization
+                   format that contains all the raw original predictions.
+                2. "coco_instances_results.json" a json file in COCO's result
+                   format.
         """
         self._tasks = self._tasks_from_config(cfg)
         self._distributed = distributed
