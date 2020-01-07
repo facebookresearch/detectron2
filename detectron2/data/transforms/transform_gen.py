@@ -144,7 +144,6 @@ class RandomFlip(TransformGen):
             return NoOpTransform()
 
 
-
 class Resize(TransformGen):
     """ Resize image to a target size"""
 
