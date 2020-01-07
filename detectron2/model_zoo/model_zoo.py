@@ -87,9 +87,9 @@ def get_checkpoint_url(config_path):
     Returns:
         str: a URL to the model
     """
+    name = config_path.replace(".yaml", "")
     if config_path in _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX:
         suffix = _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX[config_path]
-        name = config_path.replace(".yaml", "")
         return _ModelZooUrls.S3_PREFIX + name + "/" + suffix
     raise RuntimeError("{} not available in Model Zoo!".format(name))
 
