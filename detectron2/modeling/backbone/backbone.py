@@ -51,20 +51,3 @@ class Backbone(nn.Module, metaclass=ABCMeta):
             )
             for name in self._out_features
         }
-
-    # the properties below are not used any more
-
-    @property
-    def out_features(self):
-        """deprecated"""
-        return self._out_features
-
-    @property
-    def out_feature_strides(self):
-        """deprecated"""
-        return {f: self._out_feature_strides[f] for f in self._out_features}
-
-    @property
-    def out_feature_channels(self):
-        """deprecated"""
-        return {f: self._out_feature_channels[f] for f in self._out_features}
