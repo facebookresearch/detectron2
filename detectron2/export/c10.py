@@ -214,7 +214,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
 
             # TODO remove this after confirming rpn_max_level/rpn_min_level
             # is not needed in CollectRpnProposals.
-            feature_strides = [s for s in self.anchor_generator.strides]
+            feature_strides = list(self.anchor_generator.strides)
             rpn_min_level = int(math.log2(feature_strides[0]))
             rpn_max_level = int(math.log2(feature_strides[-1]))
             assert (rpn_max_level - rpn_min_level + 1) == len(
@@ -406,7 +406,7 @@ class Caffe2FastRCNNOutputsInference:
         roi_batch_ids = cat(
             [
                 torch.full((b, 1), i, dtype=dtype, device=device)
-                for i, b in enumerate([int(x.item()) for x in roi_batch_splits_nms])
+                for i, b in enumerate(int(x.item()) for x in roi_batch_splits_nms)
             ],
             dim=0,
         )

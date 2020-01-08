@@ -56,13 +56,10 @@ class GeneralizedRCNN(nn.Module):
             proposals (list): a list that contains predicted proposals. Both
                 batched_inputs and proposals should have the same length.
         """
-
-        inputs = [x for x in batched_inputs]
-        prop_boxes = [p for p in proposals]
         storage = get_event_storage()
         max_vis_prop = 20
 
-        for input, prop in zip(inputs, prop_boxes):
+        for input, prop in zip(batched_inputs, proposals):
             img = input["image"].cpu().numpy()
             assert img.shape[0] == 3, "Images should have 3 channels."
             if self.input_format == "BGR":
