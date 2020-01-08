@@ -117,18 +117,18 @@ class RandomFlip(TransformGen):
     Flip the image horizontally or vertically with the given probability.
     """
 
-    def __init__(self, prob=0.5, horiz=True, vert=False):
+    def __init__(self, prob=0.5, *, horizontal=True, vertical=False):
         """
         Args:
             prob (float): probability of flip.
-            horiz (boolean): whether to apply horizontal flipping
-            vert (boolean): whether to apply vertical flipping
+            horizontal (boolean): whether to apply horizontal flipping
+            vertical (boolean): whether to apply vertical flipping
         """
         super().__init__()
 
-        if horiz and vert:
+        if horizontal and vertical:
             raise ValueError("Cannot do both horiz and vert. Please use two Flip instead.")
-        if not horiz and not vert:
+        if not horizontal and not vertical:
             raise ValueError("At least one of horiz or vert has to be True!")
         self._init(locals())
 
