@@ -36,6 +36,7 @@ To see a list of available configs in detectron2, see [Config References](../mod
 
 3. Keep a version number in your configs (or the base config), e.g., `VERSION: 2`,
    for backward compatibility.
+	 We print a warning when reading a config without version number.
    The official configs do not include version number because they are meant to
    be always up-to-date.
 
