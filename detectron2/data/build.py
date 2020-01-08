@@ -318,6 +318,7 @@ def build_detection_train_loader(cfg, mapper=None):
             num_workers=cfg.DATALOADER.NUM_WORKERS,
             batch_sampler=None,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
+            pin_memory=True,
             worker_init_fn=worker_init_reset_seed,
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, images_per_worker)
@@ -330,7 +331,8 @@ def build_detection_train_loader(cfg, mapper=None):
             dataset,
             num_workers=cfg.DATALOADER.NUM_WORKERS,
             batch_sampler=batch_sampler,
-            collate_fn=trivial_batch_collator,
+            collate_fn=pin_memory_batch_collator,
+            pin_memory=True,
             worker_init_fn=worker_init_reset_seed,
         )
 
@@ -378,7 +380,8 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         dataset,
         num_workers=cfg.DATALOADER.NUM_WORKERS,
         batch_sampler=batch_sampler,
-        collate_fn=trivial_batch_collator,
+        collate_fn=pin_memory_batch_collator,
+        pin_memory=True,
     )
     return data_loader
 
@@ -389,6 +392,13 @@ def trivial_batch_collator(batch):
     """
     return batch
 
+def pin_memory_batch_collator(batch):
+    """
+    A naive pin memory batch collator.
+    """
+    for sample in batch:
+        sample['image'] = sample['image'].pip_memory()
+    return batch
 
 def worker_init_reset_seed(worker_id):
     seed_all_rng(np.random.randint(2 ** 31) + worker_id)
