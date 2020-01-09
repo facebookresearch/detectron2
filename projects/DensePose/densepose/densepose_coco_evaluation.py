@@ -100,11 +100,15 @@ class DensePoseCocoEval(object):
         self.ignoreThrUV = 0.9
 
     def _loadGEval(self):
-        smpl_subdiv_fpath = PathManager.get_local_path("detectron2://densepose/SMPL_subdiv.mat")
-        pdist_transform_fpath = PathManager.get_local_path(
-            "detectron2://densepose/SMPL_SUBDIV_TRANSFORM.mat"
+        smpl_subdiv_fpath = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/SMPL_subdiv.mat"
         )
-        pdist_matrix_fpath = PathManager.get_local_path("detectron2://densepose/Pdist_matrix.pkl")
+        pdist_transform_fpath = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/SMPL_SUBDIV_TRANSFORM.mat"
+        )
+        pdist_matrix_fpath = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl"
+        )
         SMPL_subdiv = loadmat(smpl_subdiv_fpath)
         self.PDIST_transform = loadmat(pdist_transform_fpath)
         self.PDIST_transform = self.PDIST_transform["index"].squeeze()
