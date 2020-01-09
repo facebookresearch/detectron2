@@ -14,6 +14,7 @@ from fvcore.transforms.transform import (
     NoOpTransform,
     Transform,
     TransformList,
+    VFlipTransform,
 )
 from PIL import Image
 
@@ -113,31 +114,32 @@ class TransformGen(metaclass=ABCMeta):
 
 class RandomFlip(TransformGen):
     """
-    Flip the image horizontally with the given probability.
-
-    TODO Vertical flip to be implemented.
+    Flip the image horizontally or vertically with the given probability.
     """
 
-    def __init__(self, prob=0.5):
+    def __init__(self, prob=0.5, *, horizontal=True, vertical=False):
         """
         Args:
             prob (float): probability of flip.
+            horizontal (boolean): whether to apply horizontal flipping
+            vertical (boolean): whether to apply vertical flipping
         """
-        horiz, vert = True, False
-        # TODO implement vertical flip when we need it
         super().__init__()
 
-        if horiz and vert:
+        if horizontal and vertical:
             raise ValueError("Cannot do both horiz and vert. Please use two Flip instead.")
-        if not horiz and not vert:
+        if not horizontal and not vertical:
             raise ValueError("At least one of horiz or vert has to be True!")
         self._init(locals())
 
     def get_transform(self, img):
-        _, w = img.shape[:2]
+        h, w = img.shape[:2]
         do = self._rand_range() < self.prob
         if do:
-            return HFlipTransform(w)
+            if self.horizontal:
+                return HFlipTransform(w)
+            elif self.vertical:
+                return VFlipTransform(h)
         else:
             return NoOpTransform()
 
