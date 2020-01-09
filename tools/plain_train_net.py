@@ -14,8 +14,8 @@ Therefore, we recommend you to use detectron2 as an library and take
 this file as an example of how to use the library.
 You may want to write your own script with your datasets and other customizations.
 
-Compared to "train_net.py", this script supports fewer features, and also
-includes fewer abstraction.
+Compared to "train_net.py", this script supports fewer default features.
+It also includes fewer abstraction, therefore is easier to add custom logic.
 """
 
 import logging

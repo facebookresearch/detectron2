@@ -2,6 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
+import itertools
 import logging
 import os
 import tempfile
@@ -411,12 +412,8 @@ class PreciseBN(HookBase):
         if self._data_iter is None:
             self._data_iter = iter(self._data_loader)
 
-        num_iter = 0
-
         def data_loader():
-            nonlocal num_iter
-            while True:
-                num_iter += 1
+            for num_iter in itertools.count(1):
                 if num_iter % 100 == 0:
                     self._logger.info(
                         "Running precise-BN ... {}/{} iterations.".format(num_iter, self._num_iter)

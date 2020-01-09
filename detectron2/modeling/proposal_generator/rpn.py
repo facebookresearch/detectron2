@@ -17,6 +17,9 @@ RPN_HEAD_REGISTRY = Registry("RPN_HEAD")
 """
 Registry for RPN heads, which take feature maps and perform
 objectness classification and bounding box regression for anchors.
+
+The registered object will be called with `obj(cfg, input_shape)`.
+The call should return a `nn.Module` object.
 """
 
 
