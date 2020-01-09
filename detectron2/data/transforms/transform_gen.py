@@ -136,9 +136,9 @@ class RandomFlip(TransformGen):
         h, w = img.shape[:2]
         do = self._rand_range() < self.prob
         if do:
-            if self.horiz:
+            if self.horizontal:
                 return HFlipTransform(w)
-            elif self.vert:
+            elif self.vertical:
                 return VFlipTransform(h)
         else:
             return NoOpTransform()
