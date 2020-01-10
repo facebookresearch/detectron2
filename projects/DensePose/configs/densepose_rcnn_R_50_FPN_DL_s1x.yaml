@@ -3,6 +3,8 @@ MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   RESNETS:
     DEPTH: 50
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseDeepLabHead"
 SOLVER:
   MAX_ITER: 130000
   STEPS: (100000, 120000)

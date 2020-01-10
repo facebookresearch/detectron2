@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import fvcore.nn.weight_init as weight_init
 import torch
-from torch import nn
-from torch.nn import functional as F
-
 from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
 from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
+from torch import nn
+from torch.nn import functional as F
 
 from .structures import DensePoseOutput
+
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
 
@@ -18,6 +19,264 @@ def initialize_module_params(module):
             nn.init.constant_(param, 0)
         elif "weight" in name:
             nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
+
+
+@ROI_DENSEPOSE_HEAD_REGISTRY.register()
+class DensePoseDeepLabHead(nn.Module):
+    def __init__(self, cfg, input_channels):
+        super(DensePoseDeepLabHead, self).__init__()
+        # fmt: off
+        hidden_dim           = cfg.MODEL.ROI_DENSEPOSE_HEAD.CONV_HEAD_DIM
+        kernel_size          = cfg.MODEL.ROI_DENSEPOSE_HEAD.CONV_HEAD_KERNEL
+        norm                 = cfg.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB.NORM
+        self.n_stacked_convs = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_STACKED_CONVS
+        self.use_nonlocal    = cfg.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB.NONLOCAL_ON
+        # fmt: on
+        pad_size = kernel_size // 2
+        n_channels = input_channels
+
+        self.ASPP = ASPP(input_channels, [6, 12, 56], n_channels)  # 6, 12, 56
+        self.add_module("ASPP", self.ASPP)
+
+        if self.use_nonlocal:
+            self.NLBlock = NONLocalBlock2D(input_channels, bn_layer=True)
+            self.add_module("NLBlock", self.NLBlock)
+        # weight_init.c2_msra_fill(self.ASPP)
+
+        for i in range(self.n_stacked_convs):
+            norm_module = nn.GroupNorm(32, hidden_dim) if norm == "GN" else None
+            layer = Conv2d(
+                n_channels,
+                hidden_dim,
+                kernel_size,
+                stride=1,
+                padding=pad_size,
+                bias=not norm,
+                norm=norm_module,
+            )
+            weight_init.c2_msra_fill(layer)
+            n_channels = hidden_dim
+            layer_name = self._get_layer_name(i)
+            self.add_module(layer_name, layer)
+        self.n_out_channels = hidden_dim
+        # initialize_module_params(self)
+
+    def forward(self, features):
+        x0 = features
+        x = self.ASPP(x0)
+        if self.use_nonlocal:
+            x = self.NLBlock(x)
+        output = x
+        for i in range(self.n_stacked_convs):
+            layer_name = self._get_layer_name(i)
+            x = getattr(self, layer_name)(x)
+            x = F.relu(x)
+            output = x
+        return output
+
+    def _get_layer_name(self, i):
+        layer_name = "body_conv_fcn{}".format(i + 1)
+        return layer_name
+
+
+# Copied from
+# https://github.com/pytorch/vision/blob/master/torchvision/models/segmentation/deeplabv3.py
+# See https://arxiv.org/pdf/1706.05587.pdf for details
+class ASPPConv(nn.Sequential):
+    def __init__(self, in_channels, out_channels, dilation):
+        modules = [
+            nn.Conv2d(
+                in_channels,
+                out_channels,
+                3,
+                padding=dilation,
+                dilation=dilation,
+                bias=False,
+            ),
+            nn.GroupNorm(32, out_channels),
+            nn.ReLU(),
+        ]
+        super(ASPPConv, self).__init__(*modules)
+
+
+class ASPPPooling(nn.Sequential):
+    def __init__(self, in_channels, out_channels):
+        super(ASPPPooling, self).__init__(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels, out_channels, 1, bias=False),
+            nn.GroupNorm(32, out_channels),
+            nn.ReLU(),
+        )
+
+    def forward(self, x):
+        size = x.shape[-2:]
+        x = super(ASPPPooling, self).forward(x)
+        return F.interpolate(x, size=size, mode="bilinear", align_corners=False)
+
+
+class ASPP(nn.Module):
+    def __init__(self, in_channels, atrous_rates, out_channels):
+        super(ASPP, self).__init__()
+        modules = []
+        modules.append(
+            nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, 1, bias=False),
+                nn.GroupNorm(32, out_channels),
+                nn.ReLU(),
+            )
+        )
+
+        rate1, rate2, rate3 = tuple(atrous_rates)
+        modules.append(ASPPConv(in_channels, out_channels, rate1))
+        modules.append(ASPPConv(in_channels, out_channels, rate2))
+        modules.append(ASPPConv(in_channels, out_channels, rate3))
+        modules.append(ASPPPooling(in_channels, out_channels))
+
+        self.convs = nn.ModuleList(modules)
+
+        self.project = nn.Sequential(
+            nn.Conv2d(5 * out_channels, out_channels, 1, bias=False),
+            # nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+            # nn.Dropout(0.5)
+        )
+
+    def forward(self, x):
+        res = []
+        for conv in self.convs:
+            res.append(conv(x))
+        res = torch.cat(res, dim=1)
+        return self.project(res)
+
+
+# copied from
+# https://github.com/AlexHex7/Non-local_pytorch/blob/master/lib/non_local_embedded_gaussian.py
+# See https://arxiv.org/abs/1711.07971 for details
+class _NonLocalBlockND(nn.Module):
+    def __init__(
+        self,
+        in_channels,
+        inter_channels=None,
+        dimension=3,
+        sub_sample=True,
+        bn_layer=True,
+    ):
+        super(_NonLocalBlockND, self).__init__()
+
+        assert dimension in [1, 2, 3]
+
+        self.dimension = dimension
+        self.sub_sample = sub_sample
+
+        self.in_channels = in_channels
+        self.inter_channels = inter_channels
+
+        if self.inter_channels is None:
+            self.inter_channels = in_channels // 2
+            if self.inter_channels == 0:
+                self.inter_channels = 1
+
+        if dimension == 3:
+            conv_nd = nn.Conv3d
+            max_pool_layer = nn.MaxPool3d(kernel_size=(1, 2, 2))
+            bn = nn.GroupNorm  # (32, hidden_dim) #nn.BatchNorm3d
+        elif dimension == 2:
+            conv_nd = nn.Conv2d
+            max_pool_layer = nn.MaxPool2d(kernel_size=(2, 2))
+            bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm2d
+        else:
+            conv_nd = nn.Conv1d
+            max_pool_layer = nn.MaxPool1d(kernel_size=(2))
+            bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm1d
+
+        self.g = conv_nd(
+            in_channels=self.in_channels,
+            out_channels=self.inter_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+
+        if bn_layer:
+            self.W = nn.Sequential(
+                conv_nd(
+                    in_channels=self.inter_channels,
+                    out_channels=self.in_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                ),
+                bn(32, self.in_channels),
+            )
+            nn.init.constant_(self.W[1].weight, 0)
+            nn.init.constant_(self.W[1].bias, 0)
+        else:
+            self.W = conv_nd(
+                in_channels=self.inter_channels,
+                out_channels=self.in_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+            )
+            nn.init.constant_(self.W.weight, 0)
+            nn.init.constant_(self.W.bias, 0)
+
+        self.theta = conv_nd(
+            in_channels=self.in_channels,
+            out_channels=self.inter_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+        self.phi = conv_nd(
+            in_channels=self.in_channels,
+            out_channels=self.inter_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+        )
+
+        if sub_sample:
+            self.g = nn.Sequential(self.g, max_pool_layer)
+            self.phi = nn.Sequential(self.phi, max_pool_layer)
+
+    def forward(self, x):
+        """
+        :param x: (b, c, t, h, w)
+        :return:
+        """
+
+        batch_size = x.size(0)
+
+        g_x = self.g(x).view(batch_size, self.inter_channels, -1)
+        g_x = g_x.permute(0, 2, 1)
+
+        theta_x = self.theta(x).view(batch_size, self.inter_channels, -1)
+        theta_x = theta_x.permute(0, 2, 1)
+        phi_x = self.phi(x).view(batch_size, self.inter_channels, -1)
+        f = torch.matmul(theta_x, phi_x)
+        f_div_C = F.softmax(f, dim=-1)
+
+        y = torch.matmul(f_div_C, g_x)
+        y = y.permute(0, 2, 1).contiguous()
+        y = y.view(batch_size, self.inter_channels, *x.size()[2:])
+        W_y = self.W(y)
+        z = W_y + x
+
+        return z
+
+
+class NONLocalBlock2D(_NonLocalBlockND):
+    def __init__(
+        self, in_channels, inter_channels=None, sub_sample=True, bn_layer=True
+    ):
+        super(NONLocalBlock2D, self).__init__(
+            in_channels,
+            inter_channels=inter_channels,
+            dimension=2,
+            sub_sample=sub_sample,
+            bn_layer=bn_layer,
+        )
 
 
 @ROI_DENSEPOSE_HEAD_REGISTRY.register()
@@ -32,7 +291,9 @@ class DensePoseV1ConvXHead(nn.Module):
         pad_size = kernel_size // 2
         n_channels = input_channels
         for i in range(self.n_stacked_convs):
-            layer = Conv2d(n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size)
+            layer = Conv2d(
+                n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size
+            )
             layer_name = self._get_layer_name(i)
             self.add_module(layer_name, layer)
             n_channels = hidden_dim
@@ -65,16 +326,32 @@ class DensePosePredictor(nn.Module):
         dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
         self.ann_index_lowres = ConvTranspose2d(
-            dim_in, dim_out_ann_index, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_ann_index,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         self.index_uv_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_patches,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         self.u_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_patches,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         self.v_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_patches,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
@@ -87,14 +364,20 @@ class DensePosePredictor(nn.Module):
 
         def interp2d(input):
             return interpolate(
-                input, scale_factor=self.scale_factor, mode="bilinear", align_corners=False
+                input,
+                scale_factor=self.scale_factor,
+                mode="bilinear",
+                align_corners=False,
             )
 
         ann_index = interp2d(ann_index_lowres)
         index_uv = interp2d(index_uv_lowres)
         u = interp2d(u_lowres)
         v = interp2d(v_lowres)
-        return (ann_index, index_uv, u, v), (ann_index_lowres, index_uv_lowres, u_lowres, v_lowres)
+        return (
+            (ann_index, index_uv, u, v),
+            (ann_index_lowres, index_uv_lowres, u_lowres, v_lowres),
+        )
 
 
 class DensePoseDataFilter(object):
@@ -122,17 +405,25 @@ class DensePoseDataFilter(object):
             iou = matched_boxlist_iou(gt_boxes, est_boxes)
             iou_select = iou > self.iou_threshold
             proposals_per_image = proposals_per_image[iou_select]
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
+            assert len(proposals_per_image.gt_boxes) == len(
+                proposals_per_image.proposal_boxes
+            )
             # filter out any target without densepose annotation
             gt_densepose = proposals_per_image.gt_densepose
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
+            assert len(proposals_per_image.gt_boxes) == len(
+                proposals_per_image.gt_densepose
+            )
             selected_indices = [
                 i for i, dp_target in enumerate(gt_densepose) if dp_target is not None
             ]
             if len(selected_indices) != len(gt_densepose):
                 proposals_per_image = proposals_per_image[selected_indices]
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
+            assert len(proposals_per_image.gt_boxes) == len(
+                proposals_per_image.proposal_boxes
+            )
+            assert len(proposals_per_image.gt_boxes) == len(
+                proposals_per_image.gt_densepose
+            )
             proposals_filtered.append(proposals_per_image)
         return proposals_filtered
 
@@ -369,7 +660,9 @@ def _resample_data(
     grid_y = grid_h_expanded * dy_expanded + y0_expanded
     grid = torch.stack((grid_x, grid_y), dim=3)
     # resample Z from (N, C, H, W) into (N, C, Hout, Wout)
-    zresampled = F.grid_sample(z, grid, mode=mode, padding_mode=padding_mode, align_corners=True)
+    zresampled = F.grid_sample(
+        z, grid, mode=mode, padding_mode=padding_mode, align_corners=True
+    )
     return zresampled
 
 
@@ -416,7 +709,9 @@ def _extract_single_tensors_from_matches_one_image(
                     s_gt_all.append(dp_gt.segm.unsqueeze(0))
                     bbox_xywh_gt_all.append(box_xywh_gt.view(-1, 4))
                     bbox_xywh_est_all.append(box_xywh_est.view(-1, 4))
-                    i_bbox_k = torch.full_like(dp_gt.i, bbox_with_dp_offset + len(i_with_dp))
+                    i_bbox_k = torch.full_like(
+                        dp_gt.i, bbox_with_dp_offset + len(i_with_dp)
+                    )
                     i_bbox_all.append(i_bbox_k)
                     i_with_dp.append(bbox_global_offset + k)
     return (
@@ -542,7 +837,14 @@ class DensePoseLosses(object):
         zw = u.size(3)
 
         j_valid, y_lo, y_hi, x_lo, x_hi, w_ylo_xlo, w_ylo_xhi, w_yhi_xlo, w_yhi_xhi = _grid_sampling_utilities(  # noqa
-            zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, index_bbox
+            zh,
+            zw,
+            bbox_xywh_est,
+            bbox_xywh_gt,
+            index_gt_all,
+            x_norm,
+            y_norm,
+            index_bbox,
         )
 
         j_valid_fg = j_valid * (index_gt_all > 0)
