@@ -36,7 +36,7 @@ class OpFilter(object):
         self.cond = None
         self.reverse = False
 
-        assert all([x in self.__dict__ for x in kwargs])
+        assert all(x in self.__dict__ for x in kwargs)
         self.__dict__.update(kwargs)
 
     def check(self, op):
@@ -96,7 +96,7 @@ def convert_op_in_ops(ops_ref, func_or_list):
     func = func_or_list
     if isinstance(func_or_list, list):
         func = op_func_chain(func_or_list)
-    ops = [op for op in ops_ref]
+    ops = list(ops_ref)
     converted_ops = []
     for op in ops:
         new_ops = func(op)
@@ -302,7 +302,7 @@ def gen_init_net_from_blobs(blobs, blobs_to_use=None, excluded_blobs=None):
     """ Generate an initialization net based on a blob dict """
     ret = caffe2_pb2.NetDef()
     if blobs_to_use is None:
-        blobs_to_use = {x for x in blobs}
+        blobs_to_use = set(blobs)
     else:
         blobs_to_use = copy.deepcopy(blobs_to_use)
     if excluded_blobs is not None:
