@@ -13,6 +13,11 @@ from detectron2.structures import Boxes, ImageList, Instances, Keypoints
 from .shared import alias, to_device
 
 
+"""
+This file contains caffe2-compatible implementation of several detectrno2 components.
+"""
+
+
 class Boxes4or5(Boxes):
     """
     Representing a list of detectron2.structures.Boxes from minibatch, each box
@@ -143,8 +148,10 @@ class Caffe2Compatible(object):
     def _set_tensor_mode(self, v):
         self._tensor_mode = v
 
-    # tensor_mode is True indicates that the model expects C2 style tensor only input/output
     tensor_mode = property(_get_tensor_mode, _set_tensor_mode)
+    """
+    If true, the model expects C2-style tensor only inputs/outputs format.
+    """
 
 
 class Caffe2RPN(Caffe2Compatible, rpn.RPN):

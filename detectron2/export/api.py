@@ -50,7 +50,7 @@ def export_caffe2_model(cfg, model, inputs):
     assert isinstance(cfg, CN), cfg
     C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[cfg.MODEL.META_ARCHITECTURE]
     c2_compatible_model = C2MetaArch(cfg, model)
-    c2_format_input = c2_compatible_model.get_tensors_input(inputs)
+    c2_format_input = c2_compatible_model.get_caffe2_inputs(inputs)
     predict_net, init_net = export_caffe2_detection_model(c2_compatible_model, c2_format_input)
     return Caffe2Model(predict_net, init_net)
 
