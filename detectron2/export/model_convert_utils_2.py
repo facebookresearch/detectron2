@@ -404,13 +404,13 @@ def save_graph(net, file_name, graph_name="net", op_only=True):
 
 
 def convert_model_gpu(net, init_net):
-    """Given a predict/init net with no device_option's set, eg a CPU only model, this upgrades the predict/init nets
-    to run on the GPU device.
+    """Given a predict/init net with no device_option's set, eg a CPU only model, this upgrades the
+    predict/init nets to run on the GPU device.
     In summary, this performs:
     (1) init_net: Set device_option's for parameter-populating ops to the GPU device
-    (2) predict_net: Set device_option's to GPU/CPU as appropriate, and also add CopyCPUToGPU/CopyGPUToCPU ops
-        as appropriate
-    Copied+modified from: Detectron/tools/convert_pkl_to_pb.py
+    (2) predict_net: Set device_option's to GPU/CPU as appropriate, and also add CopyCPUToGPU,
+        CopyGPUToCPU ops appropriate
+    Copied + modified from: Detectron/tools/convert_pkl_to_pb.py
     Args:
         net (core.Net): A predict net, containing inference operators.
         init_net (core.Net): An init net, containing parameter-blob populating operators.

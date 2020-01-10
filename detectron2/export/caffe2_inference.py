@@ -317,9 +317,9 @@ class ProtobufDetectionModel(torch.nn.Module):
         )
         # passing in model inputs as numpy arrays works for both cpu and cuda models
         # (notably, this is what Caffe2Model.save_graph() does as well)
-        # alternately, if we really want to pass a Tensor instead of an ndarray, one could infer whether the inputs
-        # should be torch.device("cpu") or torch.device("cuda") based on the predict_net operator(s)'s device_option,
-        # or add a input_device_option map to this function as a kwarg
+        # alternately, if we really want to pass a Tensor instead of an ndarray, one could infer
+        # whether the inputs should be torch.device("cpu")/cuda based on the predict_net
+        # operator(s)'s device_option, or add a input_device_option map to this function as a kwarg
         c2_inputs = {"data": data.numpy(), "im_info": im_info.numpy()}
         c2_results = self.protobuf_model(c2_inputs)
 

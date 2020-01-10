@@ -19,7 +19,8 @@ import requests
 
 
 """
-CLI tool to export a Detectron2 pytorch model to Caffe2 protobuf init+predict nets. Supports cpu and cuda devices.
+CLI tool to export a Detectron2 pytorch model to Caffe2 protobuf init+predict nets. Supports cpu
+and cuda devices.
 
 Tip: when using --from-model-zoo, config-file should be relative to detectron2/configs, eg:
     --config-file COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml
@@ -91,8 +92,8 @@ def _build_batch_from_image_path(test_image_path):
     else:
         test_image_pil = Image.open(test_image_path)
 
-    # torchvision ToTensor() scales pixel values from [0,255] to [0,1]. Detection data loaders do not perform
-    # this scaling, so undo it.
+    # torchvision ToTensor() scales pixel values from [0,255] to [0,1]. Detection data loaders do
+    # not perform this scaling, so undo it.
     # Return image as float32, to avoid unnecessary Cast ops in caffe2 exported model
     test_image_tensor = (
         torchvision.transforms.ToTensor()(test_image_pil).float() * 255.0
@@ -188,11 +189,14 @@ if __name__ == "__main__":
     if not os.path.isfile(local_config_fullpath):
         raise OSError("Could not find config file: {}".format(local_config_fullpath))
     if "MODEL.WEIGHTS" not in opts:
-        # For most usecases, the user should pass MODEL.WEIGHTS in the CLI opts to point to their trained weights.
-        # Most config files have MODEL.WEIGHTS set to the backbone weights only, eg ResNet101 trained on ImageNet.
+        # For most usecases, the user should pass MODEL.WEIGHTS in the CLI opts to point to their
+        # trained weights.
+        # Most config files have MODEL.WEIGHTS set to the backbone weights only, eg ResNet101
+        # trained on ImageNet.
         logger.info(
-            "Warning: MODEL.WEIGHTS was not passed in CLI. Take care to ensure that MODEL.WEIGHTS in the config file "
-            "points to your trained weights, otherwise your exported model will contain uninitialized weights!"
+            "Warning: MODEL.WEIGHTS was not passed in CLI. Take care to ensure that MODEL.WEIGHTS"
+            "in the config file points to your trained weights, otherwise your exported model will "
+            "contain uninitialized weights!"
         )
     logger.info("Creating config from: {}, with opts={}".format(local_config_fullpath, opts))
     cfg = _create_and_setup_cfg(local_config_fullpath, opts)
