@@ -94,7 +94,13 @@ class ProtobufDetectionModel(torch.nn.Module):
         data, im_info = convert_batched_inputs_to_c2_format(
             batched_inputs, self.size_divisibility, torch.device("cpu")
         )
-        return {"data": data, "im_info": im_info}
+        # passing in model inputs as numpy arrays works for both cpu and cuda models
+        # (notably, this is what Caffe2Model.save_graph() does as well)
+        # alternately, if we really want to pass a Tensor instead of an ndarray, one could infer
+        # whether the inputs should be torch.device("cpu")/cuda based on the predict_net
+        # operator(s)'s device_option, or add a input_device_option map to this function as a kwarg
+        c2_inputs = {"data": data.numpy(), "im_info": im_info.numpy()}
+        c2_results = self.protobuf_model(c2_inputs)
 
     def forward(self, batched_inputs):
         c2_inputs = self._convert_inputs(batched_inputs)
