@@ -7,8 +7,15 @@ import numpy as np
 from typing import List
 import onnx
 import torch
+from caffe2.python import core
 from caffe2.python.onnx.backend import Caffe2Backend
 from torch.onnx import OperatorExportTypes
+
+from detectron2.export.model_convert_utils_2 import (
+    convert_model_gpu,
+    get_device_option_cpu,
+    get_device_option_cuda,
+)
 
 from .shared import (
     ScopedWS,
@@ -19,12 +26,6 @@ from .shared import (
     remove_reshape_for_fc,
     save_graph,
 )
-
-from detectron2.export.model_convert_utils_2 import convert_model_gpu
-from detectron2.export.model_convert_utils_2 import get_device_option_cpu
-from detectron2.export.model_convert_utils_2 import get_device_option_cuda
-
-from caffe2.python import core
 
 """
 IMPORTANT NOTE: This module relies on Caffe2 C++ operators defined in the pytorch repo, eg BatchPermutationOp.
@@ -120,13 +121,14 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     model_device = model._wrapped_model.device.type  # one of: "cuda", "cpu"
     assert model_device in ("cuda", "cpu")
 
-    device_option = get_device_option_cuda() if (model_device == "cuda") else get_device_option_cpu()
+    device_option = (
+        get_device_option_cuda() if (model_device == "cuda") else get_device_option_cpu()
+    )
 
     # Export via ONNX
     logger.info("Exporting a {} model via ONNX ...".format(type(model).__name__))
     # onnx uses "CUDA","CPU", not "cuda","cpu"
-    predict_net, init_net = _export_via_onnx(model, (tensor_inputs,),
-                                             device=model_device.upper())
+    predict_net, init_net = _export_via_onnx(model, (tensor_inputs,), device=model_device.upper())
     logger.info("ONNX export Done.")
 
     # Apply protobuf optimization

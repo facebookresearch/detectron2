@@ -13,21 +13,16 @@
 # limitations under the License.
 ##############################################################################
 
-'''Helper functions for model conversion to pb'''
+"""Helper functions for model conversion to pb"""
 # This is a copy+paste from Detectron:
 #   PinDetectron/detectron/utils/model_convert_utils.py
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from functools import wraps
+from __future__ import absolute_import, division, print_function, unicode_literals
 import copy
 import numpy as np
-
-from caffe2.python import core, workspace
+from functools import wraps
 from caffe2.proto import caffe2_pb2
+from caffe2.python import core, workspace
 
 
 class OpFilter(object):
@@ -64,24 +59,27 @@ class OpFilter(object):
 
 
 def filter_op(op, **kwargs):
-    ''' Returns true if passed all checks '''
+    """ Returns true if passed all checks """
     return OpFilter(**kwargs).check(op)
 
 
 def op_filter(**filter_args):
-    ''' Returns None if no condition is satisfied '''
+    """ Returns None if no condition is satisfied """
+
     def actual_decorator(f):
         @wraps(f)
         def wrapper(op, **params):
             if not filter_op(op, **filter_args):
                 return None
             return f(op, **params)
+
         return wrapper
+
     return actual_decorator
 
 
 def op_func_chain(convert_func_list):
-    ''' Run funcs one by one until func return is not None '''
+    """ Run funcs one by one until func return is not None """
     assert isinstance(convert_func_list, list)
 
     def _chain(op):
@@ -138,6 +136,7 @@ def update_mobile_engines(net):
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     from itertools import tee
+
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
@@ -159,11 +158,9 @@ def fuse_first_affine(net, params, removed_tensors):
         if next_.input[0] != current.output[0]:
             continue
 
-        if current.type not in ("Conv", "ConvTranspose") \
-           or next_.type != "AffineChannel":
+        if current.type not in ("Conv", "ConvTranspose") or next_.type != "AffineChannel":
             continue
-        if current.output[0] != next_.output[0] and \
-                len(blob_uses(net, current.output[0])) != 1:
+        if current.output[0] != next_.output[0] and len(blob_uses(net, current.output[0])) != 1:
             # Can't fuse if more than one user unless AffineChannel is inplace
             continue
 
@@ -208,8 +205,7 @@ def fuse_first_affine(net, params, removed_tensors):
         # so the weights broadcast slightly differently. Remember, our
         # BN scale 'B' is of size (S,)
 
-        A_ = A.reshape(-1, 1, 1, 1) if conv.type == "Conv" else \
-            A.reshape(1, -1, 1, 1)
+        A_ = A.reshape(-1, 1, 1, 1) if conv.type == "Conv" else A.reshape(1, -1, 1, 1)
 
         C = conv_bias * A + B
         Q = conv_weight * A_
@@ -225,7 +221,7 @@ def fuse_first_affine(net, params, removed_tensors):
             fused_conv.input.append(affine.input[2])
             params[affine.input[2]] = B
 
-        new_ops = net.op[:i] + [fused_conv] + net.op[j + 1:]
+        new_ops = net.op[:i] + [fused_conv] + net.op[j + 1 :]
         del net.op[:]
         if conv_has_bias:
             del params[affine.input[2]]
@@ -241,15 +237,10 @@ def fuse_affine(net, params, ignore_failure):
     # Run until we hit a fixed point
     removed_tensors = []
     while True:
-        (next_net, next_params, removed_tensors) = \
-            fuse_first_affine(net, params, removed_tensors)
+        (next_net, next_params, removed_tensors) = fuse_first_affine(net, params, removed_tensors)
         if len(next_net.op) == len(net.op):
-            if (
-                any(op.type == "AffineChannel" for op in next_net.op) and
-                not ignore_failure
-            ):
-                raise Exception(
-                    "Model contains AffineChannel op after fusion: %s", next_net)
+            if any(op.type == "AffineChannel" for op in next_net.op) and not ignore_failure:
+                raise Exception("Model contains AffineChannel op after fusion: %s", next_net)
             return (next_net, next_params, removed_tensors)
         net, params, removed_tensors = (next_net, next_params, removed_tensors)
 
@@ -274,28 +265,29 @@ def fuse_net_affine(net, blobs):
 
 
 def add_tensor(net, name, blob):
-    ''' Create an operator to store the tensor 'blob',
+    """ Create an operator to store the tensor 'blob',
         run the operator to put the blob to workspace.
         uint8 is stored as an array of string with one element.
-    '''
+    """
     kTypeNameMapper = {
-        np.dtype('float32'): "GivenTensorFill",
-        np.dtype('int32'): "GivenTensorIntFill",
-        np.dtype('int64'): "GivenTensorInt64Fill",
-        np.dtype('uint8'): "GivenTensorStringFill",
+        np.dtype("float32"): "GivenTensorFill",
+        np.dtype("int32"): "GivenTensorIntFill",
+        np.dtype("int64"): "GivenTensorInt64Fill",
+        np.dtype("uint8"): "GivenTensorStringFill",
     }
 
     shape = blob.shape
     values = blob
     # pass array of uint8 as a string to save storage
     # storing uint8_t has a large overhead for now
-    if blob.dtype == np.dtype('uint8'):
+    if blob.dtype == np.dtype("uint8"):
         shape = [1]
         values = [str(blob.data)]
 
     op = core.CreateOperator(
         kTypeNameMapper[blob.dtype],
-        [], [name],
+        [],
+        [name],
         shape=shape,
         values=values,
         # arg=[
@@ -307,7 +299,7 @@ def add_tensor(net, name, blob):
 
 
 def gen_init_net_from_blobs(blobs, blobs_to_use=None, excluded_blobs=None):
-    ''' Generate an initialization net based on a blob dict '''
+    """ Generate an initialization net based on a blob dict """
     ret = caffe2_pb2.NetDef()
     if blobs_to_use is None:
         blobs_to_use = {x for x in blobs}
@@ -318,8 +310,10 @@ def gen_init_net_from_blobs(blobs, blobs_to_use=None, excluded_blobs=None):
     for name in blobs_to_use:
         blob = blobs[name]
         if isinstance(blob, str):
-            print('Blob {} with type {} is not supported in generating init net,'
-                  ' skipped.'.format(name, type(blob)))
+            print(
+                "Blob {} with type {} is not supported in generating init net,"
+                " skipped.".format(name, type(blob))
+            )
             continue
         add_tensor(ret, name, blob)
 
@@ -327,8 +321,8 @@ def gen_init_net_from_blobs(blobs, blobs_to_use=None, excluded_blobs=None):
 
 
 def get_ws_blobs(blob_names=None):
-    ''' Get blobs in 'blob_names' in the default workspace,
-        get all blobs if blob_names is None '''
+    """ Get blobs in 'blob_names' in the default workspace,
+        get all blobs if blob_names is None """
     blobs = {}
     if blob_names is None:
         blob_names = workspace.Blobs()
@@ -357,33 +351,35 @@ def create_input_blobs_for_net(net_def):
 
 
 def compare_model(model1_func, model2_func, test_image, check_blobs):
-    ''' model_func(test_image, check_blobs)
-    '''
+    """ model_func(test_image, check_blobs)
+    """
     cb1, cb2 = check_blobs, check_blobs
     if isinstance(check_blobs, dict):
         cb1 = check_blobs.keys()
         cb2 = check_blobs.values()
-    print('Running the first model...')
+    print("Running the first model...")
     res1 = model1_func(test_image, check_blobs)
-    print('Running the second model...')
+    print("Running the second model...")
     res2 = model2_func(test_image, check_blobs)
     for idx in range(len(cb1)):
-        print('Checking {} -> {}...'.format(cb1[idx], cb2[idx]))
+        print("Checking {} -> {}...".format(cb1[idx], cb2[idx]))
         n1, n2 = cb1[idx], cb2[idx]
         r1 = res1[n1] if n1 in res1 else None
         r2 = res2[n2] if n2 in res2 else None
-        assert r1 is not None or r2 is None, \
-            "Blob {} in model1 is None".format(n1)
-        assert r2 is not None or r1 is None, \
-            "Blob {} in model2 is None".format(n2)
-        assert r1.shape == r2.shape, \
-            "Blob {} and {} shape mismatched: {} vs {}".format(
-                n1, n2, r1.shape, r2.shape)
+        assert r1 is not None or r2 is None, "Blob {} in model1 is None".format(n1)
+        assert r2 is not None or r1 is None, "Blob {} in model2 is None".format(n2)
+        assert r1.shape == r2.shape, "Blob {} and {} shape mismatched: {} vs {}".format(
+            n1, n2, r1.shape, r2.shape
+        )
 
         np.testing.assert_array_almost_equal(
-            r1, r2, decimal=3,
-            err_msg='{} and {} not matched. Max diff: {}'.format(
-                n1, n2, np.amax(np.absolute(r1 - r2))))
+            r1,
+            r2,
+            decimal=3,
+            err_msg="{} and {} not matched. Max diff: {}".format(
+                n1, n2, np.amax(np.absolute(r1 - r2))
+            ),
+        )
 
     return True
 
@@ -391,21 +387,20 @@ def compare_model(model1_func, model2_func, test_image, check_blobs):
 # graph_name could not contain word 'graph'
 def save_graph(net, file_name, graph_name="net", op_only=True):
     from caffe2.python import net_drawer
+
     graph = None
     ops = net.op
     if not op_only:
-        graph = net_drawer.GetPydotGraph(
-            ops, graph_name,
-            rankdir="TB")
+        graph = net_drawer.GetPydotGraph(ops, graph_name, rankdir="TB")
     else:
         graph = net_drawer.GetPydotGraphMinimal(
-            ops, graph_name,
-            rankdir="TB", minimal_dependency=True)
+            ops, graph_name, rankdir="TB", minimal_dependency=True
+        )
 
     try:
         graph.write_png(file_name)
     except Exception as e:
-        print('Error when writing graph to image {}'.format(e))
+        print("Error when writing graph to image {}".format(e))
 
 
 def convert_model_gpu(net, init_net):
@@ -445,7 +440,7 @@ def convert_model_gpu(net, init_net):
         ["Gather", None],
         # Detectron2
         ["CollectRpnProposals", None],
-        ["DistributeFpnProposals", None]
+        ["DistributeFpnProposals", None],
     ]
     # Blobs that reside on CPU memory
     CPU_BLOBS = ["im_info", "anchor"]

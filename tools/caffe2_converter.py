@@ -1,21 +1,22 @@
 import argparse
 import io
-import os
-import requests
-import time
-
-from PIL import Image
 import numpy as np
+import os
+import time
 import torchvision
+from PIL import Image
+
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.export import add_export_config, export_caffe2_model
+from detectron2.model_zoo import get_checkpoint_url, get_config_file
 from detectron2.modeling import build_model
 from detectron2.utils.logger import setup_logger
-from detectron2.model_zoo import get_checkpoint_url
-from detectron2.model_zoo import get_config_file
+
+import requests
+
 
 """
 CLI tool to export a Detectron2 pytorch model to Caffe2 protobuf init+predict nets. Supports cpu and cuda devices.
@@ -93,14 +94,16 @@ def _build_batch_from_image_path(test_image_path):
     # torchvision ToTensor() scales pixel values from [0,255] to [0,1]. Detection data loaders do not perform
     # this scaling, so undo it.
     # Return image as float32, to avoid unnecessary Cast ops in caffe2 exported model
-    test_image_tensor = torchvision.transforms.ToTensor()(test_image_pil).float() * 255.0  # [C, H, W]
+    test_image_tensor = (
+        torchvision.transforms.ToTensor()(test_image_pil).float() * 255.0
+    )  # [C, H, W]
     first_batch = [
         {
             "file_name": test_image_path,
             "width": test_image_pil.size[0],
             "height": test_image_pil.size[1],
             "image_id": 0,
-            "image": test_image_tensor
+            "image": test_image_tensor,
         }
     ]
     return first_batch
@@ -128,9 +131,11 @@ def infer_and_record_latency(caffe2_model, first_batch, nb_trials=25):
         tocs.append(time.time() - tic_i)
     model_output = caffe2_model(first_batch)
     logger.info("model_output: {}".format(model_output))
-    logger.info("inference latency: mn={:.4f}s std={:.4f}s min={:.4f}s max={:.4f}s ({} trials)".format(
-        np.mean(tocs), np.std(tocs), np.min(tocs), np.max(tocs), nb_trials
-    ))
+    logger.info(
+        "inference latency: mn={:.4f}s std={:.4f}s min={:.4f}s max={:.4f}s ({} trials)".format(
+            np.mean(tocs), np.std(tocs), np.min(tocs), np.max(tocs), nb_trials
+        )
+    )
     return model_output, tocs
 
 
@@ -139,16 +144,24 @@ if __name__ == "__main__":
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument("--run-eval", action="store_true")
     parser.add_argument("--output", help="output directory for the converted caffe2 model")
-    parser.add_argument("--from-model-zoo", action="store_true",
-                        help="Optional. If set, this will load the config and model snapshot weights from the "
-                             "Detectron2 model zoo API. --config-file should refer to a config file relative to "
-                             "detectron2/configs, eg 'configs/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'")
-    parser.add_argument("--test-image-path",
-                        help="Optional. Use a provided image as the sample image used to trace the model during "
-                             "conversion. Can be either a local image path or a URL. Overrides the DATASETS.TEST "
-                             "behavior")
-    parser.add_argument("--skip-infer-benchmark", action="store_true",
-                        help="Skips the inference benchmark after model export")
+    parser.add_argument(
+        "--from-model-zoo",
+        action="store_true",
+        help="Optional. If set, this will load the config and model snapshot weights from the "
+        "Detectron2 model zoo API. --config-file should refer to a config file relative to "
+        "detectron2/configs, eg 'configs/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'",
+    )
+    parser.add_argument(
+        "--test-image-path",
+        help="Optional. Use a provided image as the sample image used to trace the model during "
+        "conversion. Can be either a local image path or a URL. Overrides the DATASETS.TEST "
+        "behavior",
+    )
+    parser.add_argument(
+        "--skip-infer-benchmark",
+        action="store_true",
+        help="Skips the inference benchmark after model export",
+    )
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -179,10 +192,15 @@ if __name__ == "__main__":
         # Most config files have MODEL.WEIGHTS set to the backbone weights only, eg ResNet101 trained on ImageNet.
         logger.info(
             "Warning: MODEL.WEIGHTS was not passed in CLI. Take care to ensure that MODEL.WEIGHTS in the config file "
-            "points to your trained weights, otherwise your exported model will contain uninitialized weights!")
+            "points to your trained weights, otherwise your exported model will contain uninitialized weights!"
+        )
     logger.info("Creating config from: {}, with opts={}".format(local_config_fullpath, opts))
     cfg = _create_and_setup_cfg(local_config_fullpath, opts)
-    logger.info("Exporting model for {} device, using weights from {}".format(cfg.MODEL.DEVICE, cfg.MODEL.WEIGHTS))
+    logger.info(
+        "Exporting model for {} device, using weights from {}".format(
+            cfg.MODEL.DEVICE, cfg.MODEL.WEIGHTS
+        )
+    )
 
     # Create sample image to run detector on during conversion ("first_batch")
     if args.test_image_path:
