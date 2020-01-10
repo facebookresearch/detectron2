@@ -158,7 +158,7 @@ class DensePoseDataRelative(object):
         pt_label_symmetries = dp_transform_data.point_label_symmetries
         for i in range(self.N_PART_LABELS):
             if i + 1 in i_old:
-                annot_indices_i = (i_old == i + 1)
+                annot_indices_i = i_old == i + 1
                 if pt_label_symmetries[i + 1] != i + 1:
                     self.i[annot_indices_i] = pt_label_symmetries[i + 1]
                 u_loc = (self.u[annot_indices_i] * 255).long()

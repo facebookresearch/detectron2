@@ -99,8 +99,7 @@ class ProtobufDetectionModel(torch.nn.Module):
         # alternately, if we really want to pass a Tensor instead of an ndarray, one could infer
         # whether the inputs should be torch.device("cpu")/cuda based on the predict_net
         # operator(s)'s device_option, or add a input_device_option map to this function as a kwarg
-        c2_inputs = {"data": data.numpy(), "im_info": im_info.numpy()}
-        c2_results = self.protobuf_model(c2_inputs)
+        return {"data": data.numpy(), "im_info": im_info.numpy()}
 
     def forward(self, batched_inputs):
         c2_inputs = self._convert_inputs(batched_inputs)
