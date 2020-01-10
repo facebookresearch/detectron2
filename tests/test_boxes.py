@@ -18,8 +18,8 @@ class TestBoxMode(unittest.TestCase):
         for tp in [list, tuple]:
             box = tp([5, 5, 10, 10])
             output = self._convert_xy_to_wh(box)
-            self.assertTrue(isinstance(output, tp))
-            self.assertTrue(output == tp([5, 5, 5, 5]))
+            self.assertIsInstance(output, tp)
+            self.assertEqual(output, tp([5, 5, 5, 5]))
 
             with self.assertRaises(Exception):
                 self._convert_xy_to_wh([box])
@@ -45,8 +45,8 @@ class TestBoxMode(unittest.TestCase):
         for tp in [list, tuple]:
             box = tp([50, 50, 30, 20, 0])
             output = self._convert_xywha_to_xyxy(box)
-            self.assertTrue(isinstance(output, tp))
-            self.assertTrue(output == tp([35, 40, 65, 60]))
+            self.assertIsInstance(output, tp)
+            self.assertEqual(output, tp([35, 40, 65, 60]))
 
             with self.assertRaises(Exception):
                 self._convert_xywha_to_xyxy([box])
@@ -107,7 +107,7 @@ class TestBoxIOU(unittest.TestCase):
 
         ious = pairwise_iou(Boxes(boxes1), Boxes(boxes2))
 
-        assert torch.allclose(ious, expected_ious)
+        self.assertTrue(torch.allclose(ious, expected_ious))
 
 
 if __name__ == "__main__":
