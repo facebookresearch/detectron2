@@ -20,10 +20,33 @@ from .shared import (
     save_graph,
 )
 
+from detectron2.export.model_convert_utils_2 import convert_model_gpu
+from detectron2.export.model_convert_utils_2 import get_device_option_cpu
+from detectron2.export.model_convert_utils_2 import get_device_option_cuda
+
+from caffe2.python import core
+
+"""
+IMPORTANT NOTE: This module relies on Caffe2 C++ operators defined in the pytorch repo, eg BatchPermutationOp.
+As of [Jan 8th 2020], your pytorch installation must match or exceed this commit:
+    https://github.com/pytorch/pytorch/commit/d9c3913dfc4ac1812ef0e0e180f0433884758d7d
+Notably, this is not included in pytorch==1.3.1, but will (hopefully) be included in pytorch==1.4.0 (not released yet).
+Feel free to remove this text once pytorch==1.4.0 is released.
+"""
+
 logger = logging.getLogger(__name__)
 
 
-def _export_via_onnx(model, inputs):
+def _export_via_onnx(model, inputs, device="CPU"):
+    """Convert a pytorch Detectron2 model to Caffe2.
+    Args:
+        model: Pytorch Detectron2 model.
+        inputs: Model inputs, eg images. For tracing purposes.
+        device (str): Which device to export to. One of: "CPU", "CUDA".
+    Returns:
+        predict_net (NetDef):
+        init_net (NetDef):
+    """
     # make sure all modules are in eval mode, onnx may change the training state
     #  of the moodule if the states are not consistent
     def _check_eval(module):
@@ -32,6 +55,8 @@ def _export_via_onnx(model, inputs):
     model.apply(_check_eval)
 
     # Export the model to ONNX
+    # Set operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK to fix this onnx.optimizer.optimize() error:
+    #   https://github.com/onnx/onnx/issues/2417#issuecomment-546063460
     with torch.no_grad():
         with io.BytesIO() as f:
             torch.onnx.export(
@@ -51,7 +76,20 @@ def _export_via_onnx(model, inputs):
     onnx_model = onnx.optimizer.optimize(onnx_model, passes)
 
     # Convert ONNX model to Caffe2 protobuf
-    init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model)
+    assert device in ("CPU", "CUDA")
+    init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model, device=device)
+
+    if device == "CUDA":
+        # Context: onnx does not set any of the device_option's for init_net and predict_net. Since detection models,
+        # eg FRCNN, utilize several CPU-only operators, eg GenerateProposals, we must explicitly set device_option's in
+        # the init and predict nets (as well as CopyXToY ops) to avoid runtime errors
+        predict_net_net = core.Net(predict_net)
+        init_net_net = core.Net(init_net)
+
+        predict_net_net_gpu, init_net_net_gpu = convert_model_gpu(predict_net_net, init_net_net)
+
+        predict_net = predict_net_net_gpu.Proto()
+        init_net = init_net_net_gpu.Proto()
 
     return predict_net, init_net
 
@@ -77,9 +115,18 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     assert isinstance(model, torch.nn.Module)
     assert hasattr(model, "encode_additional_info")
 
+    # infer device from model
+    # model._wrapped_model.device is set by cfg.MODEL.DEVICE
+    model_device = model._wrapped_model.device.type  # one of: "cuda", "cpu"
+    assert model_device in ("cuda", "cpu")
+
+    device_option = get_device_option_cuda() if (model_device == "cuda") else get_device_option_cpu()
+
     # Export via ONNX
     logger.info("Exporting a {} model via ONNX ...".format(type(model).__name__))
-    predict_net, init_net = _export_via_onnx(model, (tensor_inputs,))
+    # onnx uses "CUDA","CPU", not "cuda","cpu"
+    predict_net, init_net = _export_via_onnx(model, (tensor_inputs,),
+                                             device=model_device.upper())
     logger.info("ONNX export Done.")
 
     # Apply protobuf optimization
@@ -87,7 +134,8 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     params = get_params_from_init_net(init_net)
     predict_net, params = remove_reshape_for_fc(predict_net, params)
     group_norm_replace_aten_with_caffe2(predict_net)
-    init_net = construct_init_net_from_params(params)
+    # if we don't pass device_option here, then this function will return a new init_net with NO device_option's set
+    init_net = construct_init_net_from_params(params, device_option=device_option)
 
     # Record necessary information for running the pb model in Detectron2 system.
     model.encode_additional_info(predict_net, init_net)
