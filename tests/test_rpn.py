@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import unittest
-
 import torch
 
 from detectron2.config import get_cfg
