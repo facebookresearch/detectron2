@@ -132,6 +132,8 @@ setup(
         "tqdm>4.29.0",
         "tensorboard",
         "fvcore",
+        "future",  # used by caffe2
+        "pydot",  # used to save caffe2 SVGs
     ],
     extras_require={
         "all": ["shapely", "psutil"],

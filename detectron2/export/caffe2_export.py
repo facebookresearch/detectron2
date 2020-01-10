@@ -7,7 +7,8 @@ import numpy as np
 from typing import List
 import onnx
 import torch
-from caffe2.python.onnx.backend import Caffe2Backend as c2
+from caffe2.python.onnx.backend import Caffe2Backend
+from torch.onnx import OperatorExportTypes
 
 from .shared import (
     ScopedWS,
@@ -37,6 +38,7 @@ def _export_via_onnx(model, inputs):
                 model,
                 inputs,
                 f,
+                operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
                 # verbose=True,  # NOTE: uncomment this for debugging
                 # export_params=True,
             )
@@ -49,7 +51,7 @@ def _export_via_onnx(model, inputs):
     onnx_model = onnx.optimizer.optimize(onnx_model, passes)
 
     # Convert ONNX model to Caffe2 protobuf
-    init_net, predict_net = c2.onnx_graph_to_caffe2_net(onnx_model)
+    init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model)
 
     return predict_net, init_net
 
