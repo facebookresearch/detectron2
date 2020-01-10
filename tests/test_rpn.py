@@ -63,13 +63,15 @@ class RPNTest(unittest.TestCase):
             torch.tensor([0.1415634006, 0.0989848152, 0.0565387346, -0.0072308783, -0.0428492837]),
         ]
 
-        for proposal, expected_proposal_box, im_size, expected_objectness_logit in zip(proposals,
-                                                                                       expected_proposal_boxes,
-                                                                                       image_sizes,
-                                                                                       expected_objectness_logits):
+        for proposal, expected_proposal_box, im_size, expected_objectness_logit in \
+                zip(proposals,
+                    expected_proposal_boxes,
+                    image_sizes,
+                    expected_objectness_logits):
             self.assertEqual(len(proposal), len(expected_proposal_box))
             self.assertEqual(proposal.image_size, im_size)
-            self.assertTrue(torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor))
+            self.assertTrue(
+                torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor))
             self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
 
     def test_rrpn(self):
@@ -186,10 +188,11 @@ class RPNTest(unittest.TestCase):
 
         torch.set_printoptions(precision=8, sci_mode=False)
 
-        for proposal, expected_proposal_box, im_size, expected_objectness_logit in zip(proposals,
-                                                                                       expected_proposal_boxes,
-                                                                                       image_sizes,
-                                                                                       expected_objectness_logits):
+        for proposal, expected_proposal_box, im_size, expected_objectness_logit in \
+                zip(proposals,
+                    expected_proposal_boxes,
+                    image_sizes,
+                    expected_objectness_logits):
             self.assertEqual(len(proposal), len(expected_proposal_box))
             self.assertEqual(proposal.image_size, im_size)
             # It seems that there's some randomness in the result across different machines:
@@ -198,12 +201,16 @@ class RPNTest(unittest.TestCase):
             # thus the atol here.
             err_msg = "computed proposal boxes = {}, expected {}".format(
                 proposal.proposal_boxes.tensor, expected_proposal_box.tensor)
-            self.assertTrue(torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor, atol=1e-5),
-                            err_msg)
+            self.assertTrue(
+                torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor,
+                               atol=1e-5),
+                err_msg)
 
             err_msg = "computed objectness logits = {}, expected {}".format(
                 proposal.objectness_logits, expected_objectness_logit)
-            self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit, atol=1e-5), err_msg)
+            self.assertTrue(
+                torch.allclose(proposal.objectness_logits, expected_objectness_logit, atol=1e-5),
+                err_msg)
 
 
 if __name__ == "__main__":
