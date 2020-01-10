@@ -3,6 +3,7 @@ import io
 import numpy as np
 import os
 import time
+import requests
 import torchvision
 from PIL import Image
 
@@ -14,8 +15,6 @@ from detectron2.export import add_export_config, export_caffe2_model
 from detectron2.model_zoo import get_checkpoint_url, get_config_file
 from detectron2.modeling import build_model
 from detectron2.utils.logger import setup_logger
-
-import requests
 
 
 """
