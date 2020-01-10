@@ -1,15 +1,99 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import functools
 import io
+import numpy as np
 import struct
+import types
 import torch
 
 from detectron2.modeling import meta_arch
-from detectron2.structures import ImageList
+from detectron2.modeling.box_regression import Box2BoxTransform
+from detectron2.modeling.meta_arch.panoptic_fpn import combine_semantic_and_instance_outputs
+from detectron2.modeling.postprocessing import detector_postprocess, sem_seg_postprocess
+from detectron2.modeling.roi_heads import keypoint_head
+from detectron2.structures import Boxes, ImageList, Instances
 
 from .c10 import Caffe2Compatible
 from .patcher import ROIHeadsPatcher, patch_generalized_rcnn
-from .shared import alias, check_set_pb_arg, mock_torch_nn_functional_interpolate
+from .shared import (
+    alias,
+    check_set_pb_arg,
+    get_pb_arg_floats,
+    get_pb_arg_valf,
+    get_pb_arg_vali,
+    get_pb_arg_vals,
+    mock_torch_nn_functional_interpolate,
+)
+
+
+def _is_valid_model_output_blob(blob):
+    return isinstance(blob, np.ndarray)
+
+
+def assemble_rcnn_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=False):
+    """
+    A function to assemble caffe2 model's outputs (i.e. Dict[str, Tensor])
+    to detectron2's format (i.e. list of Instances instance).
+    This only works when the model follows the Caffe2 detectron's naming convention.
+
+    Args:
+        image_sizes (List[List[int, int]]): [H, W] of every image.
+        tensor_outputs (Dict[str, Tensor]): external_output to its tensor.
+
+        force_mask_on (Bool): if true, the it make sure there'll be pred_masks even
+            if the mask is not found from tensor_outputs (usually due to model crash)
+    """
+
+    results = [Instances(image_size) for image_size in image_sizes]
+
+    batch_splits = tensor_outputs.get("batch_splits", None)
+    if batch_splits:
+        raise NotImplementedError()
+    assert len(image_sizes) == 1
+    result = results[0]
+
+    bbox_nms = tensor_outputs["bbox_nms"]
+    score_nms = tensor_outputs["score_nms"]
+    class_nms = tensor_outputs["class_nms"]
+    # Detection will always success because Conv support 0-batch
+    assert _is_valid_model_output_blob(bbox_nms)
+    assert _is_valid_model_output_blob(score_nms)
+    assert _is_valid_model_output_blob(class_nms)
+    result.pred_boxes = Boxes(torch.Tensor(bbox_nms))
+    result.scores = torch.Tensor(score_nms)
+    result.pred_classes = torch.Tensor(class_nms).to(torch.int64)
+
+    mask_fcn_probs = tensor_outputs.get("mask_fcn_probs", None)
+    if _is_valid_model_output_blob(mask_fcn_probs):
+        # finish the mask pred
+        mask_probs_pred = torch.Tensor(mask_fcn_probs)
+        num_masks = mask_probs_pred.shape[0]
+        class_pred = result.pred_classes
+        indices = torch.arange(num_masks, device=class_pred.device)
+        mask_probs_pred = mask_probs_pred[indices, class_pred][:, None]
+        result.pred_masks = mask_probs_pred
+    elif force_mask_on:
+        # NOTE: there's no way to know the height/width of mask here, it won't be
+        # used anyway when batch size is 0, so just set them to 0.
+        result.pred_masks = torch.zeros([0, 1, 0, 0], dtype=torch.uint8)
+
+    keypoints_out = tensor_outputs.get("keypoints_out", None)
+    kps_score = tensor_outputs.get("kps_score", None)
+    if _is_valid_model_output_blob(keypoints_out):
+        # keypoints_out: [N, 4, #kypoints], where 4 is in order of (x, y, score, prob)
+        keypoints_tensor = torch.Tensor(keypoints_out)
+        # NOTE: it's possible that prob is not calculated if "should_output_softmax"
+        # is set to False in HeatmapMaxKeypoint, so just using raw score, seems
+        # it doesn't affect mAP. TODO: check more carefully.
+        keypoint_xyp = keypoints_tensor.transpose(1, 2)[:, :, [0, 1, 2]]
+        result.pred_keypoints = keypoint_xyp
+    elif _is_valid_model_output_blob(kps_score):
+        # keypoint heatmap to sparse data structure
+        pred_keypoint_logits = torch.Tensor(kps_score)
+        keypoint_head.keypoint_rcnn_inference(pred_keypoint_logits, [result])
+
+    return results
 
 
 def _cast_to_f32(f64):
@@ -114,6 +198,7 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
             tuple[Tensor]: output tensors. They will be the outputs of the
                 converted caffe2 graph.
         """
+        raise NotImplementedError
 
     def _caffe2_preprocess_image(self, inputs):
         """
@@ -130,6 +215,34 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
         # Pack (data, im_info) into ImageList which is recognized by self.inference.
         images = ImageList(tensor=normalized_data, image_sizes=im_info)
         return images
+
+    @staticmethod
+    def get_outputs_converter(predict_net, init_net):
+        """
+        Creates a function that converts outputs of the caffe2 model to
+        detectron2's standard format.
+        The function uses information in `predict_net` and `init_net` that are
+        available at inferene time. Therefore the function logic can be used in inference.
+
+        The returned function has the following signature:
+
+            def convert(batched_inputs, c2_inputs, c2_results) -> detectron2_outputs
+
+        Where
+
+            * batched_inputs (list[dict]): the original input format of the meta arch
+            * c2_inputs (dict[str, Tensor]): the caffe2 inputs.
+            * c2_results (dict[str, Tensor]): the caffe2 output format,
+                corresponding to the outputs of the :meth:`forward` function.
+            * detectron2_outputs: the original output format of the meta arch.
+
+        This function can be used to compare the outputs of the original meta arch and
+        the converted caffe2 graph.
+
+        Returns:
+            callable: a callable of the above signature.
+        """
+        raise NotImplementedError
 
 
 class Caffe2GeneralizedRCNN(Caffe2MetaArch):
@@ -156,6 +269,15 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
             detector_results, _ = self._wrapped_model.roi_heads(images, features, proposals)
         return tuple(detector_results[0].flatten())
 
+    @staticmethod
+    def get_outputs_converter(predict_net, init_net):
+        def f(batched_inputs, c2_inputs, c2_results):
+            image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
+            results = assemble_rcnn_outputs_by_name(image_sizes, c2_results)
+            return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
+
+        return f
+
 
 class Caffe2PanopticFPN(Caffe2MetaArch):
     def __init__(self, cfg, torch_model):
@@ -164,6 +286,22 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
         super().__init__(cfg, torch_model)
 
         self.roi_heads_patcher = ROIHeadsPatcher(cfg, self._wrapped_model.roi_heads)
+
+    @mock_torch_nn_functional_interpolate()
+    def forward(self, inputs):
+        assert self.tensor_mode
+        images = self._caffe2_preprocess_image(inputs)
+        features = self._wrapped_model.backbone(images.tensor)
+
+        sem_seg_results, _ = self._wrapped_model.sem_seg_head(features)
+        sem_seg_results = alias(sem_seg_results, "sem_seg")
+
+        proposals, _ = self._wrapped_model.proposal_generator(images, features)
+
+        with self.roi_heads_patcher.mock_roi_heads(self.tensor_mode):
+            detector_results, _ = self._wrapped_model.roi_heads(images, features, proposals)
+
+        return tuple(detector_results[0].flatten()) + (sem_seg_results,)
 
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
@@ -191,27 +329,74 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
             _cast_to_f32(self._wrapped_model.combine_instances_confidence_threshold),
         )
 
-    @mock_torch_nn_functional_interpolate()
-    def forward(self, inputs):
-        assert self.tensor_mode
-        images = self._caffe2_preprocess_image(inputs)
-        features = self._wrapped_model.backbone(images.tensor)
+    @staticmethod
+    def get_outputs_converter(predict_net, init_net):
+        combine_on = get_pb_arg_vali(predict_net, "combine_on", None)
+        combine_overlap_threshold = get_pb_arg_valf(predict_net, "combine_overlap_threshold", None)
+        combine_stuff_area_limit = get_pb_arg_vali(predict_net, "combine_stuff_area_limit", None)
+        combine_instances_confidence_threshold = get_pb_arg_valf(
+            predict_net, "combine_instances_confidence_threshold", None
+        )
 
-        sem_seg_results, _ = self._wrapped_model.sem_seg_head(features)
-        sem_seg_results = alias(sem_seg_results, "sem_seg")
+        def f(batched_inputs, c2_inputs, c2_results):
+            image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
+            detector_results = assemble_rcnn_outputs_by_name(
+                image_sizes, c2_results, force_mask_on=True
+            )
+            sem_seg_results = torch.Tensor(c2_results["sem_seg"])
 
-        proposals, _ = self._wrapped_model.proposal_generator(images, features)
+            # copied from meta_arch/panoptic_fpn.py ...
+            processed_results = []
+            for sem_seg_result, detector_result, input_per_image, image_size in zip(
+                sem_seg_results, detector_results, batched_inputs, image_sizes
+            ):
+                height = input_per_image.get("height", image_size[0])
+                width = input_per_image.get("width", image_size[1])
+                sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
+                detector_r = detector_postprocess(detector_result, height, width)
 
-        with self.roi_heads_patcher.mock_roi_heads(self.tensor_mode):
-            detector_results, _ = self._wrapped_model.roi_heads(images, features, proposals)
+                processed_results.append({"sem_seg": sem_seg_r, "instances": detector_r})
 
-        return tuple(detector_results[0].flatten()) + (sem_seg_results,)
+                if combine_on:
+                    panoptic_r = combine_semantic_and_instance_outputs(
+                        detector_r,
+                        sem_seg_r.argmax(dim=0),
+                        combine_overlap_threshold,
+                        combine_stuff_area_limit,
+                        combine_instances_confidence_threshold,
+                    )
+                    processed_results[-1]["panoptic_seg"] = panoptic_r
+            return processed_results
+
+        return f
 
 
 class Caffe2RetinaNet(Caffe2MetaArch):
     def __init__(self, cfg, torch_model):
         assert isinstance(torch_model, meta_arch.RetinaNet)
         super().__init__(cfg, torch_model)
+
+    @mock_torch_nn_functional_interpolate()
+    def forward(self, inputs):
+        assert self.tensor_mode
+        images = self._caffe2_preprocess_image(inputs)
+
+        # explicitly return the images sizes to avoid removing "im_info" by ONNX
+        # since it's not used in the forward path
+        return_tensors = [images.image_sizes]
+
+        features = self._wrapped_model.backbone(images.tensor)
+        features = [features[f] for f in self._wrapped_model.in_features]
+        for i, feature_i in enumerate(features):
+            features[i] = alias(feature_i, "feature_{}".format(i), is_backward=True)
+            return_tensors.append(features[i])
+
+        box_cls, box_delta = self._wrapped_model.head(features)
+        for i, (box_cls_i, box_delta_i) in enumerate(zip(box_cls, box_delta)):
+            return_tensors.append(alias(box_cls_i, "box_cls_{}".format(i)))
+            return_tensors.append(alias(box_delta_i, "box_delta_{}".format(i)))
+
+        return tuple(return_tensors)
 
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
@@ -250,27 +435,49 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         bytes = serialized_anchor_generator.getvalue()
         check_set_pb_arg(predict_net, "serialized_anchor_generator", "s", bytes)
 
-    @mock_torch_nn_functional_interpolate()
-    def forward(self, inputs):
-        assert self.tensor_mode
-        images = self._caffe2_preprocess_image(inputs)
+    @staticmethod
+    def get_outputs_converter(predict_net, init_net):
+        self = types.SimpleNamespace()
+        serialized_anchor_generator = io.BytesIO(
+            get_pb_arg_vals(predict_net, "serialized_anchor_generator", None)
+        )
+        self.anchor_generator = torch.load(serialized_anchor_generator)
+        bbox_reg_weights = get_pb_arg_floats(predict_net, "bbox_reg_weights", None)
+        self.box2box_transform = Box2BoxTransform(weights=tuple(bbox_reg_weights))
+        self.score_threshold = get_pb_arg_valf(predict_net, "score_threshold", None)
+        self.topk_candidates = get_pb_arg_vali(predict_net, "topk_candidates", None)
+        self.nms_threshold = get_pb_arg_valf(predict_net, "nms_threshold", None)
+        self.max_detections_per_image = get_pb_arg_vali(
+            predict_net, "max_detections_per_image", None
+        )
 
-        # explicitly return the images sizes to avoid removing "im_info" by ONNX
-        # since it's not used in the forward path
-        return_tensors = [images.image_sizes]
+        # hack to reuse inference code from RetinaNet
+        self.inference = functools.partial(meta_arch.RetinaNet.inference, self)
+        self.inference_single_image = functools.partial(
+            meta_arch.RetinaNet.inference_single_image, self
+        )
 
-        features = self._wrapped_model.backbone(images.tensor)
-        features = [features[f] for f in self._wrapped_model.in_features]
-        for i, feature_i in enumerate(features):
-            features[i] = alias(feature_i, "feature_{}".format(i), is_backward=True)
-            return_tensors.append(features[i])
+        def f(batched_inputs, c2_inputs, c2_results):
+            c2_results = {k: torch.Tensor(v) for k, v in c2_results.items()}
 
-        box_cls, box_delta = self._wrapped_model.head(features)
-        for i, (box_cls_i, box_delta_i) in enumerate(zip(box_cls, box_delta)):
-            return_tensors.append(alias(box_cls_i, "box_cls_{}".format(i)))
-            return_tensors.append(alias(box_delta_i, "box_delta_{}".format(i)))
+            image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
 
-        return tuple(return_tensors)
+            num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])
+            box_cls = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]
+            box_delta = [c2_results["box_delta_{}".format(i)] for i in range(num_features)]
+
+            # For each feature level, feature should have the same batch size and
+            # spatial dimension as the box_cls and box_delta.
+            dummy_features = [box_delta[i].clone()[:, 0:0, :, :] for i in range(num_features)]
+            anchors = self.anchor_generator(dummy_features)
+
+            # self.num_classess can be inferred
+            self.num_classes = box_cls[0].shape[1] // (box_delta[0].shape[1] // 4)
+
+            results = self.inference(box_cls, box_delta, anchors, image_sizes)
+            return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
+
+        return f
 
 
 META_ARCH_CAFFE2_EXPORT_TYPE_MAP = {
