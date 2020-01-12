@@ -1,14 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import fvcore.nn.weight_init as weight_init
 import torch
-from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
-from detectron2.structures.boxes import matched_boxlist_iou
-from detectron2.utils.registry import Registry
 from torch import nn
 from torch.nn import functional as F
 
-from .structures import DensePoseOutput
+from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
+from detectron2.structures.boxes import matched_boxlist_iou
+from detectron2.utils.registry import Registry
 
+from .structures import DensePoseOutput
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
 
@@ -86,12 +86,7 @@ class ASPPConv(nn.Sequential):
     def __init__(self, in_channels, out_channels, dilation):
         modules = [
             nn.Conv2d(
-                in_channels,
-                out_channels,
-                3,
-                padding=dilation,
-                dilation=dilation,
-                bias=False,
+                in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False
             ),
             nn.GroupNorm(32, out_channels),
             nn.ReLU(),
@@ -154,12 +149,7 @@ class ASPP(nn.Module):
 # See https://arxiv.org/abs/1711.07971 for details
 class _NonLocalBlockND(nn.Module):
     def __init__(
-        self,
-        in_channels,
-        inter_channels=None,
-        dimension=3,
-        sub_sample=True,
-        bn_layer=True,
+        self, in_channels, inter_channels=None, dimension=3, sub_sample=True, bn_layer=True
     ):
         super(_NonLocalBlockND, self).__init__()
 
@@ -267,9 +257,7 @@ class _NonLocalBlockND(nn.Module):
 
 
 class NONLocalBlock2D(_NonLocalBlockND):
-    def __init__(
-        self, in_channels, inter_channels=None, sub_sample=True, bn_layer=True
-    ):
+    def __init__(self, in_channels, inter_channels=None, sub_sample=True, bn_layer=True):
         super(NONLocalBlock2D, self).__init__(
             in_channels,
             inter_channels=inter_channels,
@@ -291,9 +279,7 @@ class DensePoseV1ConvXHead(nn.Module):
         pad_size = kernel_size // 2
         n_channels = input_channels
         for i in range(self.n_stacked_convs):
-            layer = Conv2d(
-                n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size
-            )
+            layer = Conv2d(n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size)
             layer_name = self._get_layer_name(i)
             self.add_module(layer_name, layer)
             n_channels = hidden_dim
@@ -326,32 +312,16 @@ class DensePosePredictor(nn.Module):
         dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
         self.ann_index_lowres = ConvTranspose2d(
-            dim_in,
-            dim_out_ann_index,
-            kernel_size,
-            stride=2,
-            padding=int(kernel_size / 2 - 1),
+            dim_in, dim_out_ann_index, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.index_uv_lowres = ConvTranspose2d(
-            dim_in,
-            dim_out_patches,
-            kernel_size,
-            stride=2,
-            padding=int(kernel_size / 2 - 1),
+            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.u_lowres = ConvTranspose2d(
-            dim_in,
-            dim_out_patches,
-            kernel_size,
-            stride=2,
-            padding=int(kernel_size / 2 - 1),
+            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.v_lowres = ConvTranspose2d(
-            dim_in,
-            dim_out_patches,
-            kernel_size,
-            stride=2,
-            padding=int(kernel_size / 2 - 1),
+            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
@@ -364,10 +334,7 @@ class DensePosePredictor(nn.Module):
 
         def interp2d(input):
             return interpolate(
-                input,
-                scale_factor=self.scale_factor,
-                mode="bilinear",
-                align_corners=False,
+                input, scale_factor=self.scale_factor, mode="bilinear", align_corners=False
             )
 
         ann_index = interp2d(ann_index_lowres)
@@ -405,25 +372,17 @@ class DensePoseDataFilter(object):
             iou = matched_boxlist_iou(gt_boxes, est_boxes)
             iou_select = iou > self.iou_threshold
             proposals_per_image = proposals_per_image[iou_select]
-            assert len(proposals_per_image.gt_boxes) == len(
-                proposals_per_image.proposal_boxes
-            )
+            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
             # filter out any target without densepose annotation
             gt_densepose = proposals_per_image.gt_densepose
-            assert len(proposals_per_image.gt_boxes) == len(
-                proposals_per_image.gt_densepose
-            )
+            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
             selected_indices = [
                 i for i, dp_target in enumerate(gt_densepose) if dp_target is not None
             ]
             if len(selected_indices) != len(gt_densepose):
                 proposals_per_image = proposals_per_image[selected_indices]
-            assert len(proposals_per_image.gt_boxes) == len(
-                proposals_per_image.proposal_boxes
-            )
-            assert len(proposals_per_image.gt_boxes) == len(
-                proposals_per_image.gt_densepose
-            )
+            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
+            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
             proposals_filtered.append(proposals_per_image)
         return proposals_filtered
 
@@ -660,9 +619,7 @@ def _resample_data(
     grid_y = grid_h_expanded * dy_expanded + y0_expanded
     grid = torch.stack((grid_x, grid_y), dim=3)
     # resample Z from (N, C, H, W) into (N, C, Hout, Wout)
-    zresampled = F.grid_sample(
-        z, grid, mode=mode, padding_mode=padding_mode, align_corners=True
-    )
+    zresampled = F.grid_sample(z, grid, mode=mode, padding_mode=padding_mode, align_corners=True)
     return zresampled
 
 
@@ -709,9 +666,7 @@ def _extract_single_tensors_from_matches_one_image(
                     s_gt_all.append(dp_gt.segm.unsqueeze(0))
                     bbox_xywh_gt_all.append(box_xywh_gt.view(-1, 4))
                     bbox_xywh_est_all.append(box_xywh_est.view(-1, 4))
-                    i_bbox_k = torch.full_like(
-                        dp_gt.i, bbox_with_dp_offset + len(i_with_dp)
-                    )
+                    i_bbox_k = torch.full_like(dp_gt.i, bbox_with_dp_offset + len(i_with_dp))
                     i_bbox_all.append(i_bbox_k)
                     i_with_dp.append(bbox_global_offset + k)
     return (
@@ -837,14 +792,7 @@ class DensePoseLosses(object):
         zw = u.size(3)
 
         j_valid, y_lo, y_hi, x_lo, x_hi, w_ylo_xlo, w_ylo_xhi, w_yhi_xlo, w_yhi_xhi = _grid_sampling_utilities(  # noqa
-            zh,
-            zw,
-            bbox_xywh_est,
-            bbox_xywh_gt,
-            index_gt_all,
-            x_norm,
-            y_norm,
-            index_bbox,
+            zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, index_bbox
         )
 
         j_valid_fg = j_valid * (index_gt_all > 0)
