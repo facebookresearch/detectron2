@@ -302,7 +302,6 @@ class DensePoseV1ConvXHead(nn.Module):
 
 
 class DensePosePredictor(nn.Module):
-
     def __init__(self, cfg, input_channels):
 
         super(DensePosePredictor, self).__init__()

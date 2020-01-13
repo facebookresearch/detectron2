@@ -27,24 +27,15 @@ from .shared import (
     save_graph,
 )
 
-"""
-IMPORTANT NOTE: This module relies on Caffe2 C++ operators defined in the pytorch repo, eg
-BatchPermutationOp.
-As of [Jan 8th 2020], your pytorch installation must match or exceed this commit:
-    https://github.com/pytorch/pytorch/commit/d9c3913dfc4ac1812ef0e0e180f0433884758d7d
-Notably, this is not included in pytorch==1.3.1, but will (hopefully) be included in
-pytorch==1.4.0 (not released yet).
-Feel free to remove this text once pytorch==1.4.0 is released.
-"""
-
 logger = logging.getLogger(__name__)
 
 
 def _export_via_onnx(model, inputs, device="CPU"):
-    """Convert a pytorch Detectron2 model to Caffe2.
+    """
+    Convert a pytorch Detectron2 model to Caffe2, via onnx.
     Args:
-        model: Pytorch Detectron2 model.
-        inputs: Model inputs, eg images. For tracing purposes.
+        model: a caffe2-compatible version of detectron2 model, defined in caffe2_modeling.py
+        inputs tuple[List[torch.Tensor]]: a list of tensors that caffe2 model takes as input.
         device (str): Which device to export to. One of: "CPU", "CUDA".
     Returns:
         predict_net (NetDef):

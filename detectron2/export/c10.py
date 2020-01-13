@@ -297,7 +297,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
             self.max_level - self.min_level + 1 == 4
         ), "Currently DistributeFpnProposals only support 4 levels"
         # DistributeFpnProposals only has a CPU implementation, so copy the pooler_fmt_boxes to cpu
-        pooler_fmt_boxes_cpu = pooler_fmt_boxes.cpu().clone()
+        pooler_fmt_boxes_cpu = to_device(pooler_fmt_boxes, "cpu")
         fpn_outputs = torch.ops._caffe2.DistributeFpnProposals(
             pooler_fmt_boxes_cpu,
             roi_canonical_scale=self.canonical_box_size,
