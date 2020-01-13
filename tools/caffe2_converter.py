@@ -48,7 +48,7 @@ if __name__ == "__main__":
     caffe2_model = export_caffe2_model(cfg, torch_model, first_batch)
     caffe2_model.save_protobuf(args.output)
     # draw the caffe2 graph
-    caffe2_model.save_graph(os.path.join(args.output, "model_def.svg"), inputs=first_batch)
+    caffe2_model.save_graph(os.path.join(args.output, "model.svg"), inputs=first_batch)
 
     # run evaluation with the converted model
     if args.run_eval:
