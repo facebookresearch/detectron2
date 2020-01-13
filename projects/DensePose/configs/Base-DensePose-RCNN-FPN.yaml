@@ -33,6 +33,7 @@ MODEL:
   ROI_DENSEPOSE_HEAD:
     NAME: "DensePoseV1ConvXHead"
     POOLER_TYPE: "ROIAlign"
+    NUM_COARSE_SEGM_CHANNELS: 15
 DATASETS:
   TRAIN: ("densepose_coco_2014_train", "densepose_coco_2014_valminusminival")
   TEST: ("densepose_coco_2014_minival",)
