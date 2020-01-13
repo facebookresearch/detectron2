@@ -32,12 +32,23 @@ class TestBoxMode(unittest.TestCase):
         self.assertTrue((output[0] == [5, 5, 5, 5]).all())
         self.assertTrue((output[1] == [1, 1, 1, 2]).all())
 
-    def test_box_convert_tensor(self):
+    def test_box_convert_cpu_tensor(self):
         box = torch.tensor([[5, 5, 10, 10], [1, 1, 2, 3]])
         output = self._convert_xy_to_wh(box)
         self.assertEqual(output.dtype, box.dtype)
         self.assertEqual(output.shape, box.shape)
         output = output.numpy()
+        self.assertTrue((output[0] == [5, 5, 5, 5]).all())
+        self.assertTrue((output[1] == [1, 1, 1, 2]).all())
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA unavailable")
+    def test_box_convert_cuda_tensor(self):
+        box = torch.tensor([[5, 5, 10, 10], [1, 1, 2, 3]]).cuda()
+        output = self._convert_xy_to_wh(box)
+        self.assertEqual(output.dtype, box.dtype)
+        self.assertEqual(output.shape, box.shape)
+        self.assertEqual(output.device, box.device)
+        output = output.cpu().numpy()
         self.assertTrue((output[0] == [5, 5, 5, 5]).all())
         self.assertTrue((output[1] == [1, 1, 1, 2]).all())
 
