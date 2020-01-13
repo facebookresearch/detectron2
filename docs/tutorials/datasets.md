@@ -125,6 +125,9 @@ unavailable to you:
   A list of names for each instance/thing category.
   If you load a COCO format dataset, it will be automatically set by the function `load_coco_json`.
 
+* `thing_colors` (list[tuple(r, g, b)]): Pre-defined color (in [0, 255]) for each thing category.
+  Used for visualization. If not given, random colors are used.
+
 * `stuff_classes` (list[str]): Used by semantic and panoptic segmentation tasks.
   A list of names for each stuff category.
 
@@ -157,7 +160,7 @@ Some additional metadata that are specific to the evaluation of certain datasets
    You can just provide the [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator)
    for your dataset directly in your main script.
 
-NOTE: For background on the difference between "thing" and "stuff" categories, see
+NOTE: For background on the concept of "thing" and "stuff", see
 [On Seeing Stuff: The Perception of Materials by Humans and Machines](http://persci.mit.edu/pub_pdfs/adelson_spie_01.pdf).
 In detectron2, the term "thing" is used for instance-level tasks,
 and "stuff" is used for semantic segmentation tasks.

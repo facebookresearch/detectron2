@@ -78,7 +78,7 @@ def onnx_compatibale_interpolate(
             if isinstance(scale_factor, (int, float)):
                 height_scale, width_scale = (scale_factor, scale_factor)
             else:
-                assert isinstance(scale_factor, tuple)
+                assert isinstance(scale_factor, (tuple, list))
                 assert len(scale_factor) == 2
                 height_scale, width_scale = scale_factor
 

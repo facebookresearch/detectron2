@@ -303,16 +303,15 @@ class DensePoseV1ConvXHead(nn.Module):
 
 class DensePosePredictor(nn.Module):
 
-    NUM_ANN_INDICES = 15
-
     def __init__(self, cfg, input_channels):
+
         super(DensePosePredictor, self).__init__()
         dim_in = input_channels
-        dim_out_ann_index = self.NUM_ANN_INDICES
+        n_segm_chan = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
         self.ann_index_lowres = ConvTranspose2d(
-            dim_in, dim_out_ann_index, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in, n_segm_chan, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.index_uv_lowres = ConvTranspose2d(
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
@@ -758,6 +757,7 @@ class DensePoseLosses(object):
         self.w_points     = cfg.MODEL.ROI_DENSEPOSE_HEAD.POINT_REGRESSION_WEIGHTS
         self.w_part       = cfg.MODEL.ROI_DENSEPOSE_HEAD.PART_WEIGHTS
         self.w_segm       = cfg.MODEL.ROI_DENSEPOSE_HEAD.INDEX_WEIGHTS
+        self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # fmt: on
 
     def __call__(self, proposals_with_gt, densepose_outputs):
@@ -866,6 +866,9 @@ class DensePoseLosses(object):
         losses["loss_densepose_V"] = v_loss
         index_uv_loss = F.cross_entropy(index_uv_est, index_uv_gt.long()) * self.w_part
         losses["loss_densepose_I"] = index_uv_loss
+
+        if self.n_segm_chan == 2:
+            s_gt = s_gt > 0
         s_loss = F.cross_entropy(s_est, s_gt.long()) * self.w_segm
         losses["loss_densepose_S"] = s_loss
         return losses

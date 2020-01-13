@@ -25,6 +25,7 @@ def add_densepose_config(cfg):
     _C.MODEL.ROI_DENSEPOSE_HEAD.POOLER_TYPE = "ROIAlignV2"
     _C.MODEL.ROI_DENSEPOSE_HEAD.POOLER_RESOLUTION = 14
     _C.MODEL.ROI_DENSEPOSE_HEAD.POOLER_SAMPLING_RATIO = 2
+    _C.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS = 15  # 15 or 2
     # Overlap threshold for an RoI to be considered foreground (if >= FG_IOU_THRESHOLD)
     _C.MODEL.ROI_DENSEPOSE_HEAD.FG_IOU_THRESHOLD = 0.7
     # Loss weights for annotation masks.(14 Parts)
