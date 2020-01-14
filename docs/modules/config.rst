@@ -5,6 +5,7 @@ detectron2.config package
     :members:
     :undoc-members:
     :show-inheritance:
+    :inherited-members:
 
 
 Config References

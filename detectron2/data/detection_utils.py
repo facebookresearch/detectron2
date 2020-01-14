@@ -387,6 +387,12 @@ def gen_crop_transform_with_instance(crop_size, image_size, instance):
     crop_size = np.asarray(crop_size, dtype=np.int32)
     bbox = BoxMode.convert(instance["bbox"], instance["bbox_mode"], BoxMode.XYXY_ABS)
     center_yx = (bbox[1] + bbox[3]) * 0.5, (bbox[0] + bbox[2]) * 0.5
+    assert (
+        image_size[0] >= center_yx[0] and image_size[1] >= center_yx[1]
+    ), "The annotation bounding box is outside of the image!"
+    assert (
+        image_size[0] >= crop_size[0] and image_size[1] >= crop_size[1]
+    ), "Crop size is larger than image size!"
 
     min_yx = np.maximum(np.floor(center_yx).astype(np.int32) - crop_size, 0)
     max_yx = np.maximum(np.asarray(image_size, dtype=np.int32) - crop_size, 0)

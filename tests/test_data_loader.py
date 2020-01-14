@@ -104,3 +104,14 @@ class TestTransformAnnotations(unittest.TestCase):
             [output, output], (400, 400), mask_format="bitmask"
         )
         self.assertTrue(isinstance(inst.gt_masks, BitMasks))
+
+    def test_gen_crop(self):
+        instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
+        t = detection_utils.gen_crop_transform_with_instance((10, 10), (150, 150), instance)
+        # the box center must fall into the cropped region
+        self.assertTrue(t.x0 <= 55 <= t.x0 + t.w)
+
+    def test_gen_crop_outside_boxes(self):
+        instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
+        with self.assertRaises(AssertionError):
+            detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
