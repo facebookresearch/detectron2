@@ -1,5 +1,5 @@
 MODEL:
-  WEIGHTS: "/model_zoo/detection/R-50R-50.pkl"
+  WEIGHTS: "/model_zoo/detection/R-50.pkl"
   MASK_ON: True
   RESNETS:
     DEPTH: 50
