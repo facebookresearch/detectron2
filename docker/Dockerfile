@@ -18,7 +18,7 @@ ENV PATH="/home/appuser/.local/bin:${PATH}"
 RUN wget https://bootstrap.pypa.io/get-pip.py && \
 	python3 get-pip.py --user && \
 	rm get-pip.py
-
+# todo: unset proxy because proxy will forward request to tsinghua pypi host as well
 # install dependencies
 # See https://pytorch.org/ for other options if you use a different version of CUDA
 ENV PIP_INSTALL="pip install -i https://pypi.tuna.tsinghua.edu.cn/simple" 
