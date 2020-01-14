@@ -9,6 +9,8 @@ import torch
 from fvcore.common.file_io import PathManager
 from fvcore.common.history_buffer import HistoryBuffer
 
+import pandas as pd
+
 _CURRENT_STORAGE_STACK = []
 
 
@@ -34,6 +36,66 @@ class EventWriter:
 
     def close(self):
         pass
+
+
+class PDWriter(EventWriter):
+    def __init__(self, pd_frame, cfg, log_frequency, log_path=""):
+        self.logger = logging.getLogger(__name__)
+        self.pd_frame = pd_frame
+        self.cfg = cfg
+        self.log_frequency = log_frequency
+        self.log_path = log_path
+
+    def write(self):
+        storage = get_event_storage()
+        iteration = storage.iter
+        lr = storage.history("lr").latest()
+
+        losses = {}
+        for k, v in storage.histories().items():
+            if "loss" in k:
+                losses[k] = v.median(1)
+
+        time = 0.0
+        try:
+            time = storage.history("time").avg(1)
+        except KeyError:  # they may not exist in the first few iterations (due to warmup)
+            pass
+
+        df = pd.DataFrame(
+            [
+                {"iter": iteration, "legend": "elapsed_time", "value": time},
+                {"iter": iteration, "legend": "loss_rpn_box_reg", "value": losses["loss_rpn_loc"]},
+                {"iter": iteration, "legend": "loss_objectness", "value": losses["loss_rpn_cls"]},
+                {"iter": iteration, "legend": "loss_box_reg", "value": losses["loss_box_reg"]},
+                {"iter": iteration, "legend": "loss_classifier", "value": losses["loss_cls"]},
+                {"iter": iteration, "legend": "loss_mask", "value": losses["loss_mask"]},
+                {"iter": iteration, "legend": "lr", "value": lr},
+                {
+                    "iter": iteration,
+                    "legend": "max_mem",
+                    "value": torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
+                },
+                {"iter": iteration, "legend": "loader_time", "value": 0.0},
+            ]
+        )
+        self.pd_frame = pd.concat([self.pd_frame, df], axis=0, sort=False)
+
+        if iteration % self.log_frequency == 0:
+            npy_file_name = "torch-{}-batch_size-{}-image_dir-{}-{}.csv".format(
+                iteration,
+                self.cfg.SOLVER.IMS_PER_BATCH,
+                self.cfg.DATASETS.TRAIN[0],
+                str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
+            )
+            log_dir = os.path.join(
+                self.log_path, "csv_outpt_bz_{}".format(self.cfg.SOLVER.IMS_PER_BATCH)
+            )
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            npy_file_name = os.path.join(log_dir, npy_file_name)
+            self.pd_frame.to_csv(npy_file_name, index=False)
+            print("saved: {}".format(npy_file_name))
 
 
 class JSONWriter(EventWriter):
@@ -82,7 +144,7 @@ class JSONWriter(EventWriter):
 
     """
 
-    def __init__(self, json_file, window_size=20):
+    def __init__(self, json_file, window_size=1):
         """
         Args:
             json_file (str): path to the json file. New data will be appended if the file exists.
@@ -112,7 +174,7 @@ class TensorboardXWriter(EventWriter):
     Write all scalars to a tensorboard file.
     """
 
-    def __init__(self, log_dir: str, window_size: int = 20, **kwargs):
+    def __init__(self, log_dir: str, window_size: int = 1, **kwargs):
         """
         Args:
             log_dir (str): the directory to save the output events
@@ -164,7 +226,7 @@ class CommonMetricPrinter(EventWriter):
         data_time, time = None, None
         eta_string = "N/A"
         try:
-            data_time = storage.history("data_time").avg(20)
+            data_time = storage.history("data_time").avg(1)
             time = storage.history("time").global_avg()
             eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
             storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
@@ -193,7 +255,7 @@ lr: {lr}  {memory}\
                 iter=iteration,
                 losses="  ".join(
                     [
-                        "{}: {:.3f}".format(k, v.median(20))
+                        "{}: {:.3f}".format(k, v.median(1))
                         for k, v in storage.histories().items()
                         if "loss" in k
                     ]
@@ -308,7 +370,7 @@ class EventStorage:
         """
         return self._latest_scalars
 
-    def latest_with_smoothing_hint(self, window_size=20):
+    def latest_with_smoothing_hint(self, window_size=1):
         """
         Similar to :meth:`latest`, but the returned values
         are either the un-smoothed original latest value,

@@ -36,8 +36,10 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter, PDWriter
 from detectron2.utils.logger import setup_logger
+
+import pandas as pd
 
 from . import hooks
 from .train_loop import SimpleTrainer
@@ -326,11 +328,24 @@ class DefaultTrainer(SimpleTrainer):
 
         # Do evaluation after checkpointer, because then if it fails,
         # we can use the saved checkpoint to debug.
-        ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
+        # ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers()))
+            ret.append(
+                hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE)
+            )
+            metrics = pd.DataFrame({"iter": 0, "legend": "cfg"}, index=[0])
+            ret.append(
+                hooks.PeriodicWriter(
+                    [
+                        PDWriter(
+                            metrics, self.cfg, self.cfg.CSV_PRINT_FREQUENCE, self.cfg.OUTPUT_DIR
+                        )
+                    ],
+                    period=1,
+                )
+            )
         return ret
 
     def build_writers(self):

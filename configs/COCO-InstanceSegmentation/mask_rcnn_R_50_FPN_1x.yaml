@@ -1,6 +1,7 @@
 _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  # WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/dataset/kubernetes/dataset/models/maskrcnn/pytorch/detectron2/ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: True
   RESNETS:
     DEPTH: 50

@@ -39,8 +39,16 @@ _PREDEFINED_SPLITS_COCO["coco"] = {
         "coco/val2014",
         "coco/annotations/instances_valminusminival2014.json",
     ),
-    "coco_2017_train": ("coco/train2017", "coco/annotations/instances_train2017.json"),
-    "coco_2017_val": ("coco/val2017", "coco/annotations/instances_val2017.json"),
+    # "coco_2017_train": ("coco/train2017", "coco/annotations/instances_train2017.json"),
+    # "coco_2017_val": ("coco/val2017", "coco/annotations/instances_val2017.json"),
+    "coco_2017_train": (
+        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/train2017",
+        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/annotations/instances_train2017.json",
+    ),
+    "coco_2017_val": (
+        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/val2017",
+        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/annotations/sample_10_instances_val2017.json",
+    ),
     "coco_2017_test": ("coco/test2017", "coco/annotations/image_info_test2017.json"),
     "coco_2017_test-dev": ("coco/test2017", "coco/annotations/image_info_test-dev2017.json"),
     "coco_2017_val_100": ("coco/val2017", "coco/annotations/instances_val2017_100.json"),
@@ -209,7 +217,7 @@ def register_all_pascal_voc(root="datasets"):
 
 
 # Register them all under "./datasets"
-register_all_coco()
-register_all_lvis()
-register_all_cityscapes()
-register_all_pascal_voc()
+register_all_coco("")
+register_all_lvis("")
+register_all_cityscapes("")
+register_all_pascal_voc("")

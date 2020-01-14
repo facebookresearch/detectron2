@@ -551,6 +551,9 @@ _C.TEST.PRECISE_BN.NUM_ITER = 200
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
+_C.LOSS_PRINT_FREQUENCE = 1
+_C.CSV_PRINT_FREQUENCE = 50
+
 # Directory where output files are written
 _C.OUTPUT_DIR = "./output"
 # Set seed to negative to fully randomize everything.
