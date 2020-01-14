@@ -17,6 +17,8 @@ from .config import CfgNode as CN
 
 _C = CN()
 
+# The version number, to upgrade from old configs to new ones if any
+# changes happen. It's recommended to keep a VERSION in your config file.
 _C.VERSION = 2
 
 _C.MODEL = CN()

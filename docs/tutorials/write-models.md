@@ -30,7 +30,9 @@ you can implement a new
 [ROIHeads](../modules/modeling.html#detectron2.modeling.ROIHeads) subclass and put it in the `ROI_HEADS_REGISTRY`.
 See [densepose in detectron2](https://github.com/facebookresearch/detectron2/tree/master/projects/DensePose)
 for an example that implements new ROIHeads.
+And [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/)
+contains examples that implement a few different architectures.
 
-Other registries can be found in [API documentation](../modules/modeling.html#model-registries).
+A complete list of registries can be found in [API documentation](../modules/modeling.html#model-registries).
 You can register components in these registries to customize different parts of a model, or the
 entire model.

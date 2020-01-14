@@ -14,3 +14,4 @@ API Documentation
     solver
     structures
     utils
+    export

@@ -50,6 +50,8 @@ and register your component to that registry.
 .. autodata:: detectron2.modeling.META_ARCH_REGISTRY
 .. autodata:: detectron2.modeling.BACKBONE_REGISTRY
 .. autodata:: detectron2.modeling.PROPOSAL_GENERATOR_REGISTRY
+.. autodata:: detectron2.modeling.RPN_HEAD_REGISTRY
+.. autodata:: detectron2.modeling.ANCHOR_GENERATOR_REGISTRY
 .. autodata:: detectron2.modeling.ROI_HEADS_REGISTRY
 .. autodata:: detectron2.modeling.ROI_BOX_HEAD_REGISTRY
 .. autodata:: detectron2.modeling.ROI_MASK_HEAD_REGISTRY

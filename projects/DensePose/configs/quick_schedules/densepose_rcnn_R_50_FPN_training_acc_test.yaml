@@ -1,6 +1,6 @@
 _BASE_: "../Base-DensePose-RCNN-FPN.yaml"
 MODEL:
-  WEIGHTS: "catalog://ImageNetPretrained/MSRA/R-50"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   ROI_HEADS:
     NUM_CLASSES: 1
 DATASETS:

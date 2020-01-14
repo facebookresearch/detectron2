@@ -40,10 +40,11 @@ from detectron2.modeling import GeneralizedRCNNWithTTA
 
 class Trainer(DefaultTrainer):
     """
-    We use the "DefaultTrainer" which contains a number pre-defined logic for
+    We use the "DefaultTrainer" which contains pre-defined default logic for
     standard training workflow. They may not work for you, especially if you
     are working on a new research project. In that case you can use the cleaner
-    "SimpleTrainer", or write your own training loop.
+    "SimpleTrainer", or write your own training loop. You can use
+    "tools/plain_train_net.py" as an example.
     """
 
     @classmethod

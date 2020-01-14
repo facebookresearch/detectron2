@@ -10,3 +10,7 @@
 
 * v1: Rename `RPN_HEAD.NAME` to `RPN.HEAD_NAME`.
 * v2: A batch of rename of many configurations before release.
+
+### Known Bugs in Historical Versions:
+* Dec 19 - Dec 26: Using aspect ratio grouping causes a drop in accuracy.
+*  - Nov 9: Test time augmentation does not predict the last category.

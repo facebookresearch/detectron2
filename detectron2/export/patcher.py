@@ -116,9 +116,13 @@ class ROIHeadsPatcher:
         self.use_heatmap_max_keypoint = cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT
 
     @contextlib.contextmanager
-    def mock_roi_heads(self, tensor_mode):
+    def mock_roi_heads(self, tensor_mode=True):
         """
         Patching several inference functions inside ROIHeads and its subclasses
+
+        Args:
+            tensor_mode (bool): whether the inputs/outputs are caffe2's tensor
+                format or not. Default to True.
         """
         # NOTE: this requries the `keypoint_rcnn_inference` and `mask_rcnn_inference`
         # are called inside the same file as ROIHeads due to using mock.patch.

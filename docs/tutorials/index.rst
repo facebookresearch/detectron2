@@ -14,3 +14,4 @@ Tutorials
    training
    evaluation
    configs
+   deployment

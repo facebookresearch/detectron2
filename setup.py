@@ -134,8 +134,13 @@ setup(
         "tqdm>4.29.0",
         "tensorboard",
         "fvcore",
+        "future",  # used by caffe2
+        "pydot",  # used to save caffe2 SVGs
     ],
-    extras_require={"all": ["shapely", "psutil"], "dev": ["flake8", "isort", "black==19.3b0"]},
+    extras_require={
+        "all": ["shapely", "psutil"],
+        "dev": ["flake8", "isort", "black==19.3b0", "flake8-bugbear", "flake8-comprehensions"],
+    },
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
 )

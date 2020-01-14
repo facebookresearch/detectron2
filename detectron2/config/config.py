@@ -28,7 +28,7 @@ class CfgNode(_CfgNode):
         latest_ver = _C.VERSION
         assert (
             latest_ver == self.VERSION
-        ), "CfgNode.merge_from_file is only allowed on a config of latest version!"
+        ), "CfgNode.merge_from_file is only allowed on a config object of latest version!"
 
         logger = logging.getLogger(__name__)
 

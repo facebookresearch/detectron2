@@ -13,6 +13,11 @@ from detectron2.structures import Boxes, ImageList, Instances, Keypoints
 from .shared import alias, to_device
 
 
+"""
+This file contains caffe2-compatible implementation of several detectrno2 components.
+"""
+
+
 class Boxes4or5(Boxes):
     """
     Representing a list of detectron2.structures.Boxes from minibatch, each box
@@ -143,8 +148,10 @@ class Caffe2Compatible(object):
     def _set_tensor_mode(self, v):
         self._tensor_mode = v
 
-    # tensor_mode is True indicates that the model expects C2 style tensor only input/output
     tensor_mode = property(_get_tensor_mode, _set_tensor_mode)
+    """
+    If true, the model expects C2-style tensor only inputs/outputs format.
+    """
 
 
 class Caffe2RPN(Caffe2Compatible, rpn.RPN):
@@ -214,7 +221,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
 
             # TODO remove this after confirming rpn_max_level/rpn_min_level
             # is not needed in CollectRpnProposals.
-            feature_strides = [s for s in self.anchor_generator.strides]
+            feature_strides = list(self.anchor_generator.strides)
             rpn_min_level = int(math.log2(feature_strides[0]))
             rpn_max_level = int(math.log2(feature_strides[-1]))
             assert (rpn_max_level - rpn_min_level + 1) == len(
@@ -406,7 +413,7 @@ class Caffe2FastRCNNOutputsInference:
         roi_batch_ids = cat(
             [
                 torch.full((b, 1), i, dtype=dtype, device=device)
-                for i, b in enumerate([int(x.item()) for x in roi_batch_splits_nms])
+                for i, b in enumerate(int(x.item()) for x in roi_batch_splits_nms)
             ],
             dim=0,
         )

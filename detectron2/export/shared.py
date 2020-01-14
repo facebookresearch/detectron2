@@ -78,7 +78,7 @@ def onnx_compatibale_interpolate(
             if isinstance(scale_factor, (int, float)):
                 height_scale, width_scale = (scale_factor, scale_factor)
             else:
-                assert isinstance(scale_factor, tuple)
+                assert isinstance(scale_factor, (tuple, list))
                 assert len(scale_factor) == 2
                 height_scale, width_scale = scale_factor
 
@@ -187,7 +187,7 @@ def get_pb_arg_vals(pb, arg_name, default_val):
 
 def get_pb_arg_valstrings(pb, arg_name, default_val):
     arg = get_pb_arg(pb, arg_name)
-    return [s for s in arg.strings] if arg is not None else default_val
+    return list(arg.strings) if arg is not None else default_val
 
 
 def check_set_pb_arg(pb, arg_name, arg_attr, arg_value, allow_override=False):
@@ -650,7 +650,7 @@ def get_sub_graph_external_input_output(
     all_outputs = []
     for op_id in sub_graph_op_indices:
         all_inputs += [inp for inp in ssa[op_id][0] if inp not in all_inputs]
-        all_outputs += [outp for outp in ssa[op_id][1]]  # ssa output won't repeat
+        all_outputs += list(ssa[op_id][1])  # ssa output won't repeat
 
     # for versioned blobs, external inputs are just those blob in all_inputs
     # but not in all_outputs
@@ -659,7 +659,7 @@ def get_sub_graph_external_input_output(
     # external outputs are essentially outputs of this subgraph that are used
     # outside of this sub-graph (including predict_net.external_output)
     all_other_inputs = sum(
-        [ssa[i][0] for i in range(len(ssa)) if i not in sub_graph_op_indices],
+        (ssa[i][0] for i in range(len(ssa)) if i not in sub_graph_op_indices),
         [(outp, versions[outp]) for outp in predict_net.external_output],
     )
     ext_outputs = [outp for outp in all_outputs if outp in set(all_other_inputs)]
@@ -761,7 +761,7 @@ def _get_dependency_chain(ssa, versioned_target, versioned_source):
     dag = DiGraph.from_ssa(sub_graph_ssa)
     paths = dag.get_all_paths(versioned_source, versioned_target)  # include two ends
     ops_in_paths = [[producer_map[blob][0] for blob in path[1:]] for path in paths]
-    return sorted(list(set().union(*[set(ops) for ops in ops_in_paths])))
+    return sorted(set().union(*[set(ops) for ops in ops_in_paths]))
 
 
 def identify_reshape_sub_graph(predict_net: caffe2_pb2.NetDef,) -> List[List[int]]:
