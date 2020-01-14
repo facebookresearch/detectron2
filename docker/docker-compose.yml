@@ -1,6 +1,6 @@
 version: "2.3"
 services:
-  detectron2:
+  d2:
     build:
       context: .
       dockerfile: Dockerfile
