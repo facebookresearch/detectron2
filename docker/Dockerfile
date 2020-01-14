@@ -37,7 +37,19 @@ ENV TORCH_CUDA_ARCH_LIST="Kepler;Kepler+Tesla;Maxwell;Maxwell+Tegra;Pascal;Volta
 # Set a fixed model cache directory.
 ENV FVCORE_CACHE="/model_cache"
 WORKDIR /home/appuser/detectron2_repo
-
+# these copied from setup.py, could be updates there
+RUN pip install --user "termcolor>=1.1" \
+        "Pillow==6.2.2" \
+        "yacs>=0.1.6" \
+        "tabulate" \
+        "cloudpickle" \
+        "matplotlib" \
+        "tqdm>4.29.0" \
+        "tensorboard" \
+        "fvcore" \
+        "future" \
+        "pydot" \
+		"pandas"
 # run it, for example:
 # wget http://images.cocodataset.org/val2017/000000439715.jpg -O input.jpg
 # python3 demo/demo.py  \

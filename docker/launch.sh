@@ -1,4 +1,9 @@
-d2repo=/home/caishenghang/detectron2
 extra=""
+
+parentdir="$(dirname "$PWD")"
 extra+=" -v /dataset:/dataset"
-USER_ID=$UID docker-compose run $extra --volume=$PWD/model_cache:/model_cache:rw -v $d2repo:/home/appuser/detectron2_repo d2
+extra+=" -v /model_zoo:/model_zoo"
+extra+=" --volume=$PWD/model_cache:/model_cache:rw"
+extra+=" -v $parentdir:/home/appuser/detectron2_repo"
+
+USER_ID=$UID docker-compose run --rm $extra d2

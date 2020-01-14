@@ -1,1 +1,1 @@
-USER_ID=$UID docker-compose build d2
+USER_ID=$UID docker-compose -f docker-compose.yml build d2
