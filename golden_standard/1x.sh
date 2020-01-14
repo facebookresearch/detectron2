@@ -1,2 +1,2 @@
 python3 tools/train_net.py \
-    --config-file mrcn_1x_train.yaml
+    --config-file golden_standard/mrcn_1x_train.yaml

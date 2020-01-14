@@ -29,6 +29,8 @@ from .builtin_meta import _get_builtin_metadata
 
 # ==== Predefined datasets and splits for COCO ==========
 
+coco17_dataset_dir = "/dataset/kubernetes/dataset/public/coco/mscoco_2017"
+coco17_dataset_dir = "/dataset/mscoco_2017"
 _PREDEFINED_SPLITS_COCO = {}
 _PREDEFINED_SPLITS_COCO["coco"] = {
     "coco_2014_train": ("coco/train2014", "coco/annotations/instances_train2014.json"),
@@ -42,12 +44,12 @@ _PREDEFINED_SPLITS_COCO["coco"] = {
     # "coco_2017_train": ("coco/train2017", "coco/annotations/instances_train2017.json"),
     # "coco_2017_val": ("coco/val2017", "coco/annotations/instances_val2017.json"),
     "coco_2017_train": (
-        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/train2017",
-        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/annotations/instances_train2017.json",
+        f"{coco17_dataset_dir}/train2017",
+        f"{coco17_dataset_dir}/annotations/instances_train2017.json",
     ),
     "coco_2017_val": (
-        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/val2017",
-        "/dataset/kubernetes/dataset/public/coco/mscoco_2017/annotations/sample_10_instances_val2017.json",
+        f"{coco17_dataset_dir}/val2017",
+        f"{coco17_dataset_dir}/annotations/sample_10_instances_val2017.json",
     ),
     "coco_2017_test": ("coco/test2017", "coco/annotations/image_info_test2017.json"),
     "coco_2017_test-dev": ("coco/test2017", "coco/annotations/image_info_test-dev2017.json"),
