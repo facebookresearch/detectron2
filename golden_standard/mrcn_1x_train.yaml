@@ -1,5 +1,5 @@
 MODEL:
-  WEIGHTS: "/dataset/kubernetes/dataset/models/maskrcnn/pytorch/detectron2/ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/model_zoo/detection/R-50R-50.pkl"
   MASK_ON: True
   RESNETS:
     DEPTH: 50
@@ -41,5 +41,11 @@ SOLVER:
   BASE_LR: 0.0025
   STEPS: (60000, 80000)
   MAX_ITER: 1000
+  IMS_PER_BATCH: 2 
+  CHECKPOINT_PERIOD: 10000 
 INPUT:
   MIN_SIZE_TRAIN: (800,)
+TEST:
+  EVAL_PERIOD: 100000
+LOSS_PRINT_FREQUENCE: 1
+CSV_PRINT_FREQUENCE: 100
