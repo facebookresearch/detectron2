@@ -57,8 +57,10 @@ class PDWriter(EventWriter):
                 losses[k] = v.median(1)
 
         time = 0.0
+        data_time = 0.0
         try:
             time = storage.history("time").avg(1)
+            data_time = storage.history("data_time").avg(1)
         except KeyError:  # they may not exist in the first few iterations (due to warmup)
             pass
 
@@ -76,20 +78,20 @@ class PDWriter(EventWriter):
                     "legend": "max_mem",
                     "value": torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
                 },
-                {"iter": iteration, "legend": "loader_time", "value": 0.0},
+                {"iter": iteration, "legend": "loader_time", "value": data_time},
             ]
         )
         self.pd_frame = pd.concat([self.pd_frame, df], axis=0, sort=False)
 
         if iteration % self.log_frequency == 0:
-            npy_file_name = "torch-{}-batch_size-{}-image_dir-{}-{}.csv".format(
+            npy_file_name = "torch-d2-{}-batch_size-{}-image_dir-{}-{}.csv".format(
                 iteration,
                 self.cfg.SOLVER.IMS_PER_BATCH,
                 self.cfg.DATASETS.TRAIN[0],
                 str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
             )
             log_dir = os.path.join(
-                self.log_path, "csv_outpt_bz_{}".format(self.cfg.SOLVER.IMS_PER_BATCH)
+                self.log_path, "csv".format(self.cfg.SOLVER.IMS_PER_BATCH)
             )
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
