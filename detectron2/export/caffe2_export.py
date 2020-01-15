@@ -7,15 +7,10 @@ import numpy as np
 from typing import List
 import onnx
 import torch
-from caffe2.python import core
 from caffe2.python.onnx.backend import Caffe2Backend
 from torch.onnx import OperatorExportTypes
 
-from detectron2.export.model_convert_utils_2 import (
-    convert_model_gpu,
-    get_device_option_cpu,
-    get_device_option_cuda,
-)
+from detectron2.export.model_convert_utils_2 import get_device_option_cpu, get_device_option_cuda
 
 from .shared import (
     ScopedWS,
@@ -41,6 +36,10 @@ def _export_via_onnx(model, inputs, device="CPU"):
         predict_net (NetDef):
         init_net (NetDef):
     """
+    assert device in ("CPU", "CUDA")
+    # remove below assert once we fully support CUDA export
+    assert device != "CUDA", "CUDA conversion not yet supported, please use CPU instead for now"
+
     # make sure all modules are in eval mode, onnx may change the training state
     #  of the moodule if the states are not consistent
     def _check_eval(module):
@@ -70,21 +69,15 @@ def _export_via_onnx(model, inputs, device="CPU"):
     onnx_model = onnx.optimizer.optimize(onnx_model, passes)
 
     # Convert ONNX model to Caffe2 protobuf
-    assert device in ("CPU", "CUDA")
+    # Note: this init_net, predict_net does not yet support cuda devices, even if device="cuda".
+    # Because detection models use several CPU-only operators, eg GenerateProposals, we need
+    # the following:
+    #     (1) [predict] Set CPU device_option for CPU-only operators
+    #     (2) [predict] Add CopyGPUToCPU/CopyCPUToCPU ops to handle the CPU-only ops
+    #     (3) [init] Set GPU device_option
+    # A future PR will address this:
+    # https://github.com/facebookresearch/detectron2/pull/674#discussion_r366591430
     init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model, device=device)
-
-    if device == "CUDA":
-        # Context: onnx does not set any of the device_option's for init_net and predict_net. Since
-        # detection models, eg FRCNN, utilize several CPU-only operators, eg GenerateProposals, we
-        # must explicitly set device_option's in the init and predict nets (as well as CopyXToY ops)
-        # to avoid runtime errors
-        predict_net_net = core.Net(predict_net)
-        init_net_net = core.Net(init_net)
-
-        predict_net_net_gpu, init_net_net_gpu = convert_model_gpu(predict_net_net, init_net_net)
-
-        predict_net = predict_net_net_gpu.Proto()
-        init_net = init_net_net_gpu.Proto()
 
     return predict_net, init_net
 
