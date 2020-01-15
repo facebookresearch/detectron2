@@ -7,7 +7,6 @@ from torch import nn
 from detectron2.structures import ImageList
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
-from detectron2.utils.visualizer import Visualizer
 
 from ..backbone import build_backbone
 from ..postprocessing import detector_postprocess
@@ -56,6 +55,8 @@ class GeneralizedRCNN(nn.Module):
             proposals (list): a list that contains predicted proposals. Both
                 batched_inputs and proposals should have the same length.
         """
+        from detectron2.utils.visualizer import Visualizer
+
         storage = get_event_storage()
         max_vis_prop = 20
 

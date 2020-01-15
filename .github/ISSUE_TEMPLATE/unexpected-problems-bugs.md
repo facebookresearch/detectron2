@@ -1,6 +1,7 @@
 ---
-name: "Unexpected Problems / Bugs"
-about: Report unexpected problems or bugs in detectron2
+name: "Unexpected behaviors / Bugs"
+about: Report unexpected behaviors or bugs in detectron2
+title: Please read & provide the following:
 
 ---
 
