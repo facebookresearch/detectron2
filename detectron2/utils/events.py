@@ -83,7 +83,7 @@ class PDWriter(EventWriter):
         )
         self.pd_frame = pd.concat([self.pd_frame, df], axis=0, sort=False)
 
-        if iteration % self.log_frequency == 0:
+        if (iteration + 1) % self.log_frequency == 0 or iteration == (self.cfg["SOLVER"]["MAX_ITER"] - 1):
             npy_file_name = "torch-d2-{}-batch_size-{}-image_dir-{}-{}.csv".format(
                 iteration,
                 self.cfg.SOLVER.IMS_PER_BATCH,

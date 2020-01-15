@@ -335,7 +335,7 @@ class DefaultTrainer(SimpleTrainer):
             ret.append(
                 hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE)
             )
-            metrics = pd.DataFrame({"iter": 0, "legend": "cfg"}, index=[0])
+            metrics = pd.DataFrame({"iter": 0, "legend": "cfg", "note": str(cfg)}, index=[0])
             ret.append(
                 hooks.PeriodicWriter(
                     [
