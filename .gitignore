@@ -35,6 +35,9 @@ dist/
 # Pycharm editor settings
 .idea
 
+# VSCode editor settings
+.vscode
+
 # project dirs
 /detectron2/model_zoo/configs
 /datasets
