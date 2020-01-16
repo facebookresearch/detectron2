@@ -1,7 +1,7 @@
 ---
 name: "Unexpected behaviors / Bugs"
 about: Report unexpected behaviors or bugs in detectron2
-title: Please read & provide the following:
+title: Please read & provide the following
 
 ---
 
