@@ -333,7 +333,7 @@ class DefaultTrainer(SimpleTrainer):
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
             ret.append(
-                hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE)
+                hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE, name="loss writer"),
             )
             metrics = pd.DataFrame({"iter": 0, "legend": "cfg", "note": str(cfg)}, index=[0])
             ret.append(
@@ -344,6 +344,7 @@ class DefaultTrainer(SimpleTrainer):
                         )
                     ],
                     period=1,
+                    name="csv writer"
                 )
             )
         return ret
@@ -374,8 +375,8 @@ class DefaultTrainer(SimpleTrainer):
         return [
             # It may not always print what you want to see, since it prints "common" metrics only.
             CommonMetricPrinter(self.max_iter),
-            JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),
-            TensorboardXWriter(self.cfg.OUTPUT_DIR),
+            # JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),
+            # TensorboardXWriter(self.cfg.OUTPUT_DIR),
         ]
 
     def train(self):

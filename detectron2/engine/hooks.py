@@ -148,7 +148,7 @@ class PeriodicWriter(HookBase):
     It is executed every ``period`` iterations and after the last iteration.
     """
 
-    def __init__(self, writers, period=1):
+    def __init__(self, writers, period=1, name=None):
         """
         Args:
             writers (list[EventWriter]): a list of EventWriter objects
@@ -158,6 +158,8 @@ class PeriodicWriter(HookBase):
         for w in writers:
             assert isinstance(w, EventWriter), w
         self._period = period
+        if name is not None:
+            self._name = name
 
     def after_step(self):
         if (self.trainer.iter + 1) % self._period == 0 or (

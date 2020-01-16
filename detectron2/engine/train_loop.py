@@ -9,6 +9,7 @@ import torch
 
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage
+import pandas as pd
 
 __all__ = ["HookBase", "TrainerBase", "SimpleTrainer"]
 
@@ -72,6 +73,12 @@ class HookBase:
         """
         pass
 
+    @property
+    def name(self):
+        if hasattr(self, "_name"):
+            return self._name
+        else:
+            return "untitled"
 
 class TrainerBase:
     """
@@ -94,6 +101,8 @@ class TrainerBase:
 
     def __init__(self):
         self._hooks = []
+        if hasattr(self, "cfg") and self.cfg.TIME_HOOKS:
+            self._hook_time_df = pd.DataFrame()
 
     def register_hooks(self, hooks):
         """
@@ -133,22 +142,59 @@ class TrainerBase:
                     self.after_step()
             finally:
                 self.after_train()
+                if hasattr(self, "_hook_time_df"):
+                    print(self._hook_time_df)
+                    self._hook_time_df.to_csv("hook-time.csv", index=False)
+
+    def collect_hook_time(self, h, method, hook_time):
+        self._hook_time_df = pd.concat(
+            [
+                pd.DataFrame(
+                    {
+                        "method": method,
+                        "time": hook_time,
+                        "type": str(type(h)),
+                        "id": id(h),
+                        "name": h.name
+                    },
+                    index=[0],
+                ),
+                self._hook_time_df,
+            ],
+            axis=0,
+        )
 
     def before_train(self):
         for h in self._hooks:
+            if hasattr(self, "_hook_time_df"):
+                start_time = time.perf_counter()
             h.before_train()
+            if hasattr(self, "_hook_time_df"):
+                self.collect_hook_time(h, "before_train", time.perf_counter() - start_time)
 
     def after_train(self):
         for h in self._hooks:
+            if hasattr(self, "_hook_time_df"):
+                start_time = time.perf_counter()
             h.after_train()
+            if hasattr(self, "_hook_time_df"):
+                self.collect_hook_time(h, "after_train", time.perf_counter() - start_time)
 
     def before_step(self):
         for h in self._hooks:
+            if hasattr(self, "_hook_time_df"):
+                start_time = time.perf_counter()
             h.before_step()
+            if hasattr(self, "_hook_time_df"):
+                self.collect_hook_time(h, "before_step", time.perf_counter() - start_time)
 
     def after_step(self):
         for h in self._hooks:
+            if hasattr(self, "_hook_time_df"):
+                start_time = time.perf_counter()
             h.after_step()
+            if hasattr(self, "_hook_time_df"):
+                self.collect_hook_time(h, "after_step", time.perf_counter() - start_time)
         # this guarantees, that in each hook's after_step, storage.iter == trainer.iter
         self.storage.step()
 
@@ -261,7 +307,8 @@ class SimpleTrainer(TrainerBase):
 
             # average the rest metrics
             metrics_dict = {
-                k: np.mean([x[k] for x in all_metrics_dict]) for k in all_metrics_dict[0].keys()
+                k: np.mean([x[k] for x in all_metrics_dict])
+                for k in all_metrics_dict[0].keys()
             }
             total_losses_reduced = sum(loss for loss in metrics_dict.values())
 

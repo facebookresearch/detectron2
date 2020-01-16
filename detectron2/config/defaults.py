@@ -553,6 +553,7 @@ _C.TEST.PRECISE_BN.NUM_ITER = 200
 # ---------------------------------------------------------------------------- #
 _C.LOSS_PRINT_FREQUENCE = 1
 _C.CSV_PRINT_FREQUENCE = 50
+_C.TIME_HOOKS = False
 
 # Directory where output files are written
 _C.OUTPUT_DIR = "./output"
