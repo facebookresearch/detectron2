@@ -251,9 +251,8 @@ class DefaultTrainer(SimpleTrainer):
         if comm.get_world_size() > 1:
             model = DistributedDataParallel(
                 model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
-            )
-        time_hooks = hasattr(self, "cfg") and self.cfg.TIME_HOOKS
-        super().__init__(model, data_loader, optimizer, time_hooks=time_hooks)
+            ).
+        super().__init__(model, data_loader, optimizer, time_hooks=cfg.TIME_HOOKS)
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
         # Assume no other objects need to be checkpointed.
