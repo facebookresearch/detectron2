@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import json
 import math
 import numpy as np
 import unittest
@@ -92,6 +93,21 @@ class TestBoxMode(unittest.TestCase):
             expected = torch.tensor([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
 
             self.assertTrue(torch.allclose(output, expected, atol=1e-6), "output={}".format(output))
+
+    def test_json_serializable(self):
+        payload = {"box_mode": BoxMode.XYWH_REL}
+        try:
+            json.dumps(payload)
+        except Exception:
+            self.fail("JSON serialization failed")
+
+    def test_json_deserializable(self):
+        payload = '{"box_mode": 2}'
+        obj = json.loads(payload)
+        try:
+            obj["box_mode"] = BoxMode(obj["box_mode"])
+        except Exception:
+            self.fail("JSON deserialization failed")
 
 
 class TestBoxIOU(unittest.TestCase):
