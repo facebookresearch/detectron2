@@ -99,9 +99,9 @@ class TrainerBase:
         storage(EventStorage): An EventStorage that's opened during the course of training.
     """
 
-    def __init__(self):
+    def __init__(self, time_hooks=False):
         self._hooks = []
-        if hasattr(self, "cfg") and self.cfg.TIME_HOOKS:
+        if time_hooks:
             self._hook_time_df = pd.DataFrame()
 
     def register_hooks(self, hooks):
@@ -144,7 +144,9 @@ class TrainerBase:
                 self.after_train()
                 if hasattr(self, "_hook_time_df"):
                     print(self._hook_time_df)
-                    self._hook_time_df.to_csv("hook-time.csv", index=False)
+                    csv_file_path = "hook-time.csv"
+                    print(f"saved: {csv_file_path}")
+                    self._hook_time_df.to_csv(csv_file_path, index=False)
 
     def collect_hook_time(self, h, method, hook_time):
         self._hook_time_df = pd.concat(
@@ -217,7 +219,7 @@ class SimpleTrainer(TrainerBase):
     or write your own training loop.
     """
 
-    def __init__(self, model, data_loader, optimizer):
+    def __init__(self, model, data_loader, optimizer, time_hooks=False):
         """
         Args:
             model: a torch Module. Takes a data from data_loader and returns a
@@ -225,7 +227,7 @@ class SimpleTrainer(TrainerBase):
             data_loader: an iterable. Contains data to be used to call model.
             optimizer: a torch optimizer.
         """
-        super().__init__()
+        super().__init__(time_hooks=time_hooks)
 
         """
         We set the model to training mode in the trainer.
