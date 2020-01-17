@@ -1,14 +1,11 @@
 _BASE_: "../../../configs/Base-RetinaNet.yaml"
-DATALOADER:
-  NUM_WORKERS: 16
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   RESNETS:
     DEPTH: 50
+
 SOLVER:
   IMS_PER_BATCH: 32
-  BASE_LR: 0.02
-  STEPS: (105000, 125000)
-  MAX_ITER: 135000
-  WARMUP_FACTOR: 0.0001
-  WARMUP_ITERS: 500
+  BASE_LR: 0.04  # Note that RetinaNet uses a different default learning rate
+  STEPS: (30000, 40000)
+  MAX_ITER: 45000

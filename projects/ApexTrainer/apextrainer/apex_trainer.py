@@ -203,7 +203,7 @@ class ApexTrainer(SimpleTrainer):
                 self.after_train()
         if hasattr(self, "_last_eval_results") and comm.is_main_process():
             verify_results(self.cfg, self._last_eval_results)
-            return self._last_eval_result
+            return self._last_eval_results
 
     def run_step(self):
         """
