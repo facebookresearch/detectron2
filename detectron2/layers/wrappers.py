@@ -65,7 +65,7 @@ class Conv2d(torch.nn.Conv2d):
             ), "SyncBatchNorm does not support empty inputs!"
 
         x = super().forward(x)
-        if self.norm is not None:
+        if self.norm is not None and x.size()[0] > 0:
             x = self.norm(x)
         if self.activation is not None:
             x = self.activation(x)

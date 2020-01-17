@@ -186,8 +186,8 @@ class COCOEvaluator(DatasetEvaluator):
                 coco_eval, task, class_names=self._metadata.get("thing_classes")
             )
             self._results[task] = res
-            
-            #save matric json
+
+            # save metric json
             if self._output_dir:
                 file_path = os.path.join(self._output_dir, "coco_{}_metric.json".format(task))
                 self._logger.info("Saving metrics of {} to {}".format(task, file_path))
@@ -283,7 +283,7 @@ class COCOEvaluator(DatasetEvaluator):
             ap50 = np.mean(precision[0, :]) if precision.size else float("nan")
             precision = precision[precision > -1]
             ap = np.mean(precision) if precision.size else float("nan")
-            results_per_category.append(("{}".format(name), float(ap * 100), float(ap50*100)))
+            results_per_category.append(("{}".format(name), float(ap * 100), float(ap50 * 100)))
 
         # tabulate it
         N_COLS = min(6, len(results_per_category) * 3)
