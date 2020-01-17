@@ -551,9 +551,6 @@ _C.TEST.PRECISE_BN.NUM_ITER = 200
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.LOSS_PRINT_FREQUENCE = 1
-_C.CSV_PRINT_FREQUENCE = 50
-_C.TIME_HOOKS = False
 
 # Directory where output files are written
 _C.OUTPUT_DIR = "./output"
@@ -580,3 +577,9 @@ _C.VIS_PERIOD = 0
 # Do not commit any configs into it.
 _C.GLOBAL = CN()
 _C.GLOBAL.HACK = 1.0
+
+
+# Options add by oneflow
+_C.LOSS_PRINT_FREQUENCE = 1
+_C.CSV_PRINT_FREQUENCE = 100
+_C.TIME_HOOKS = False
