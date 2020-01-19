@@ -52,14 +52,14 @@ class ApexTrainer(SimpleTrainer):
     """
     A trainer with apex training logic. 
     """
+
     def __init__(self, cfg):
         """
         Args:
             cfg (CfgNode):
         """
         logger = logging.getLogger("detectron2")
-        if not logger.isEnabledFor(
-                logging.INFO):  # setup_logger is not called for d2
+        if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
             setup_logger()
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
@@ -68,10 +68,10 @@ class ApexTrainer(SimpleTrainer):
 
         # For training, wrap with DDP. But don't need this for inference.
         if comm.get_world_size() > 1:
-            model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
-            model = DistributedDataParallel(model,
-                                            device_ids=[comm.get_local_rank()],
-                                            broadcast_buffers=False)
+            model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
+            model = DistributedDataParallel(
+                model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
+            )
             # model = DDP(model, delay_allreduce=True)
         super().__init__(model, data_loader, optimizer)
 
@@ -102,8 +102,12 @@ class ApexTrainer(SimpleTrainer):
         """
         # The checkpoint stores the training iteration that just finished, thus we start
         # at the next iteration (or iter zero if there's no checkpoint).
-        self.start_iter = (self.checkpointer.resume_or_load(
-            self.cfg.MODEL.WEIGHTS, resume=resume).get("iteration", -1) + 1)
+        self.start_iter = (
+            self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume).get(
+                "iteration", -1
+            )
+            + 1
+        )
 
     def build_hooks(self):
         """
@@ -127,7 +131,8 @@ class ApexTrainer(SimpleTrainer):
                 # Build a new data loader to not affect training
                 self.build_train_loader(cfg),
                 cfg.TEST.PRECISE_BN.NUM_ITER,
-            ) if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
+            )
+            if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
             else None,
         ]
 
@@ -136,9 +141,7 @@ class ApexTrainer(SimpleTrainer):
         # This is not always the best: if checkpointing has a different frequency,
         # some checkpoints may have more precise statistics than others.
         if comm.is_main_process():
-            ret.append(
-                hooks.PeriodicCheckpointer(self.checkpointer,
-                                           cfg.SOLVER.CHECKPOINT_PERIOD))
+            ret.append(hooks.PeriodicCheckpointer(self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
 
         def test_and_save_results():
             self._last_eval_results = self.test(self.cfg, self.model)
@@ -189,8 +192,7 @@ class ApexTrainer(SimpleTrainer):
             start_iter, max_iter (int): See docs above
         """
         logger = logging.getLogger(__name__)
-        logger.info("Starting training from iteration {}".format(
-            self.start_iter))
+        logger.info("Starting training from iteration {}".format(self.start_iter))
 
         with EventStorage(self.start_iter) as self.storage:
             try:
@@ -304,7 +306,8 @@ class ApexTrainer(SimpleTrainer):
         """
         raise NotImplementedError(
             "Please either implement `build_evaluator()` in subclasses, or pass "
-            "your evaluator as arguments to `DefaultTrainer.test()`.")
+            "your evaluator as arguments to `DefaultTrainer.test()`."
+        )
 
     @classmethod
     def test(cls, cfg, model, evaluators=None):
@@ -323,9 +326,9 @@ class ApexTrainer(SimpleTrainer):
         if isinstance(evaluators, DatasetEvaluator):
             evaluators = [evaluators]
         if evaluators is not None:
-            assert len(
-                cfg.DATASETS.TEST) == len(evaluators), "{} != {}".format(
-                    len(cfg.DATASETS.TEST), len(evaluators))
+            assert len(cfg.DATASETS.TEST) == len(evaluators), "{} != {}".format(
+                len(cfg.DATASETS.TEST), len(evaluators)
+            )
 
         results = OrderedDict()
         for idx, dataset_name in enumerate(cfg.DATASETS.TEST):
@@ -340,7 +343,8 @@ class ApexTrainer(SimpleTrainer):
                 except NotImplementedError:
                     logger.warn(
                         "No evaluator found. Use `DefaultTrainer.test(evaluators=)`, "
-                        "or implement its `build_evaluator` method.")
+                        "or implement its `build_evaluator` method."
+                    )
                     results[dataset_name] = {}
                     continue
             results_i = inference_on_dataset(model, data_loader, evaluator)
@@ -349,9 +353,9 @@ class ApexTrainer(SimpleTrainer):
                 assert isinstance(
                     results_i, dict
                 ), "Evaluator must return a dict on the main process. Got {} instead.".format(
-                    results_i)
-                logger.info("Evaluation results for {} in csv format:".format(
-                    dataset_name))
+                    results_i
+                )
+                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
                 print_csv_format(results_i)
 
         if len(results) == 1:
