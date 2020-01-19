@@ -43,13 +43,13 @@
 <td align="center">137849486</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_3x/137849486/model_final_4cafe0.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_3x/137849486/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: retinanet_R_101_FPN_Apex_3x -->
- <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_Apex_3x.yaml">R50</a></td>
-<td align="center">3x</td>
+<!-- ROW: retinanet_R_50_FPN_Apex_1x -->
+ <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_Apex_1x.yaml">R50_ApexTrainer</a></td>
+<td align="center">1x</td>
 <td align="center">0.423</td>
 <td align="center">0.063</td>
 <td align="center">5.8</td>
-<td align="center">-</td>
+<td align="center">0.367</td>
 <td align="center">-</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/138363263/model_final_59f53c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/138363263/metrics.json">metrics</a></td>
 </tr>
