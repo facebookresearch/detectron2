@@ -51,6 +51,6 @@
 <td align="center">5.8</td>
 <td align="center">0.367</td>
 <td align="center">-</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/138363263/model_final_59f53c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/138363263/metrics.json">metrics</a></td>
+<td align="center"><a href="https://drive.google.com/file/d/1-tYnWz6e85q_lBjq7AbsU0kC80vnhWUY/view?usp=sharing">model</a>&nbsp;|&nbsp;<a href="https://drive.google.com/file/d/1VgvLTd9AvRy9H5Op1mkXfMC3piED6bRO/view?usp=sharing">metrics</a></td>
 </tr>
 </tbody></table>
