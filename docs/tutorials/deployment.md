@@ -23,7 +23,7 @@ We provide a tool, `tools/caffe2_converter.py` as an example that uses
 these APIs to convert a standard model.
 
 To convert an official Mask R-CNN trained on COCO, first
-[prepare the COCO dataset](datasets), then pick the model from [Model Zoo](MODEL_ZOO.md), and run:
+[prepare the COCO dataset](datasets.md), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
 python tools/caffe2_converter.py --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
 	--output ./caffe2_model --run-eval \
