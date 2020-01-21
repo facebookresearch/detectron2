@@ -9,7 +9,7 @@ version: 2
 # -------------------------------------------------------------------------------------
 cpu: &cpu
   docker:
-    - image: circleci/python:3.6.2
+    - image: circleci/python:3.6.8-stretch
   resource_class: medium
 
 gpu: &gpu

@@ -71,7 +71,7 @@ You can implement it using any tools you like.
 
 If you use [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
 you can overwrite its `build_{train,test}__loader` method to use your own dataloader.
-See the [densepose dataloader](/projects/DensePose/train_net.py)
+See the [densepose dataloader](../../projects/DensePose/train_net.py)
 for an example.
 
 If you write your own training loop, you can plug in your data loader easily.

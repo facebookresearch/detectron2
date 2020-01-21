@@ -131,7 +131,8 @@ def default_setup(cfg, args):
 
 class DefaultPredictor:
     """
-    Create a simple end-to-end predictor with the given config.
+    Create a simple end-to-end predictor with the given config that runs on
+    single device for a single input image.
     The predictor takes an BGR image, resizes it to the specified resolution,
     runs the model and produces a dict of predictions.
 
@@ -174,7 +175,9 @@ class DefaultPredictor:
             original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
 
         Returns:
-            predictions (dict): the output of the model
+            predictions (dict):
+                the output of the model for one image only.
+                See :doc:`/tutorials/models` for details about the format.
         """
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
