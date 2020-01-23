@@ -297,7 +297,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
             self.max_level - self.min_level + 1 == 4
         ), "Currently DistributeFpnProposals only support 4 levels"
         fpn_outputs = torch.ops._caffe2.DistributeFpnProposals(
-            pooler_fmt_boxes,
+            to_device(pooler_fmt_boxes, "cpu"),
             roi_canonical_scale=self.canonical_box_size,
             roi_canonical_level=self.canonical_level,
             roi_max_level=self.max_level,
@@ -469,11 +469,13 @@ class Caffe2KeypointRCNNInference:
         if all(isinstance(x, InstancesList) for x in pred_instances):
             assert len(pred_instances) == 1
             if self.use_heatmap_max_keypoint:
+                device = output.device
                 output = torch.ops._caffe2.HeatmapMaxKeypoint(
-                    output,
+                    to_device(output, "cpu"),
                     pred_instances[0].pred_boxes.tensor,
                     should_output_softmax=True,  # worth make it configerable?
                 )
+                output = to_device(output, device)
                 output = alias(output, "keypoints_out")
             pred_instances[0].pred_keypoints = output
         return pred_keypoint_logits

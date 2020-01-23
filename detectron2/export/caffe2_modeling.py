@@ -470,6 +470,12 @@ class Caffe2RetinaNet(Caffe2MetaArch):
             # spatial dimension as the box_cls and box_delta.
             dummy_features = [box_delta[i].clone()[:, 0:0, :, :] for i in range(num_features)]
             anchors = self.anchor_generator(dummy_features)
+            # NOTE: Ideally we can avoid this casting by assigning device for
+            # c2_inputs/c2_results, currently they're always on cpu (as numpy).
+            anchors = [
+                [anchor_l.to(feat_l.device) for anchor_l, feat_l in zip(anchor_i, dummy_features)]
+                for anchor_i in anchors
+            ]
 
             # self.num_classess can be inferred
             self.num_classes = box_cls[0].shape[1] // (box_delta[0].shape[1] // 4)
