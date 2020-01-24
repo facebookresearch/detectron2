@@ -19,7 +19,7 @@ __all__ = ["PanopticFPN"]
 @META_ARCH_REGISTRY.register()
 class PanopticFPN(nn.Module):
     """
-    Main class for Panoptic FPN architectures (see https://arxiv.org/abd/1901.02446).
+    Main class for Panoptic FPN architectures (see https://arxiv.org/abs/1901.02446).
     """
 
     def __init__(self, cfg):
