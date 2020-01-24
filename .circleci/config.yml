@@ -81,14 +81,14 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-0
+            - cache-key-{{ .Branch }}-ID-20200124
 
       - <<: *install_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-key-{{ .Branch }}-ID-0
+          key: cache-key-{{ .Branch }}-ID-20200124
 
       - <<: *install_detectron2
 

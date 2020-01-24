@@ -16,6 +16,10 @@ in our model zoo.
 You can use a model by just `outputs = model(inputs)`.
 Next, we explain the inputs/outputs format used by the builtin models in detectron2.
 
+[DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
+is a wrapper around model that provides the default behavior for regular inference. It includes model loading as
+well as preprocessing, and operates on single image rather than batches.
+
 
 ### Model Input Format
 

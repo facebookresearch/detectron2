@@ -81,5 +81,9 @@ They are not needed for instance segmentation.
 VOC20{07,12}/
   Annotations/
   ImageSets/
+    Main/
+      trainval.txt
+      test.txt
+      # train.txt or val.txt, if you use these splits
   JPEGImages/
 ```
