@@ -53,6 +53,7 @@ except ImportError:
         "torch.nn.modules.utils",
         "torch.utils",
         "torch.utils.data",
+        "torch.onnx",
         "torchvision",
         "torchvision.ops",
     ]:
@@ -67,6 +68,16 @@ for m in [
     "pycocotools.mask",
     "pycocotools.coco",
     "pycocotools.cocoeval",
+    "google",
+    "google.protobuf",
+    "google.protobuf.internal",
+    "onnx",
+    "caffe2",
+    "caffe2.proto",
+    "caffe2.python",
+    "caffe2.python.utils",
+    "caffe2.python.onnx",
+    "caffe2.python.onnx.backend",
 ]:
     sys.modules[m] = mock.Mock(name=m)
 sys.modules["cv2"].__version__ = "3.4"

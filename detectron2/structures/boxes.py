@@ -202,6 +202,7 @@ class Boxes:
             Boxes: Create a new :class:`Boxes` by indexing.
 
         The following usage are allowed:
+
         1. `new_boxes = boxes[3]`: return a `Boxes` which contains only one box.
         2. `new_boxes = boxes[2:10]`: return a slice of boxes.
         3. `new_boxes = boxes[vector]`, where vector is a torch.BoolTensor

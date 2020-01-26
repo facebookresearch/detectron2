@@ -12,8 +12,6 @@ yacs
 tabulate
 cloudpickle
 Pillow==6.2.2
-protobuf
-onnx
 future
 requests
 six

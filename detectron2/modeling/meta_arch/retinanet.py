@@ -111,7 +111,7 @@ class RetinaNet(nn.Module):
                 Other information that's included in the original dicts, such as:
 
                 * "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                  See :meth:`postprocess` for details.
         Returns:
             dict[str: Tensor]:
                 mapping from a named loss to a tensor storing the loss. Used during training only.

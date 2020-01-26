@@ -285,10 +285,10 @@ class ROIHeads(torch.nn.Module):
                 map name to tensor. Axis 0 represents the number of images `N` in
                 the input data; axes 1-3 are channels, height, and width, which may
                 vary between feature maps (e.g., if a feature pyramid is used).
-            proposals (list[Instances]): length `N` list of `Instances`s. The i-th
+            proposals (list[Instances]): length `N` list of `Instances`. The i-th
                 `Instances` contains object proposals for the i-th input image,
                 with fields "proposal_boxes" and "objectness_logits".
-            targets (list[Instances], optional): length `N` list of `Instances`s. The i-th
+            targets (list[Instances], optional): length `N` list of `Instances`. The i-th
                 `Instances` contains the ground-truth per-instance annotations
                 for the i-th input image.  Specify `targets` during training only.
                 It may have the following fields:
@@ -299,7 +299,7 @@ class ROIHeads(torch.nn.Module):
                 - gt_keypoints: NxKx3, the groud-truth keypoints for each instance.
 
         Returns:
-            results (list[Instances]): length `N` list of `Instances`s containing the
+            results (list[Instances]): length `N` list of `Instances` containing the
             detected instances. Returned during inference only; may be [] during training.
 
             losses (dict[str->Tensor]):
