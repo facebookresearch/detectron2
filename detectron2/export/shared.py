@@ -443,19 +443,25 @@ def _generic_status_identifier(
 
 
 def infer_device_type(
-    predict_net: caffe2_pb2.NetDef, known_status: Dict[Tuple[str, int], Any]
+    predict_net: caffe2_pb2.NetDef,
+    known_status: Dict[Tuple[str, int], Any],
+    device_name_style: str = "caffe2",
 ) -> Dict[Tuple[str, int], str]:
-    """ Return the device type ("cpu" or "gpu") of each (versioned) blob """
+    """ Return the device type ("cpu" or "gpu"/"cuda") of each (versioned) blob """
+
+    assert device_name_style in ["caffe2", "pytorch"]
+    _CPU_STR = "cpu"
+    _GPU_STR = "gpu" if device_name_style == "caffe2" else "cuda"
 
     def _copy_cpu_to_gpu_updater(op, input_types, output_types):
-        if input_types[0] == "gpu" or output_types[0] == "cpu":
+        if input_types[0] == _GPU_STR or output_types[0] == _CPU_STR:
             _updater_raise(op, input_types, output_types)
-        return (["cpu"], ["gpu"])
+        return ([_CPU_STR], [_GPU_STR])
 
     def _copy_gpu_to_cpu_updater(op, input_types, output_types):
-        if input_types[0] == "cpu" or output_types[0] == "gpu":
+        if input_types[0] == _CPU_STR or output_types[0] == _GPU_STR:
             _updater_raise(op, input_types, output_types)
-        return (["gpu"], ["cpu"])
+        return ([_GPU_STR], [_CPU_STR])
 
     def _other_ops_updater(op, input_types, output_types):
         non_none_types = [x for x in input_types + output_types if x is not None]

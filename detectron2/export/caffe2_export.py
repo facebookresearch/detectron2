@@ -81,12 +81,9 @@ def _assign_device_option(
     """
 
     def _get_device_type(torch_tensor):
-        if torch_tensor.device.type == "cpu":
-            return "cpu"
-        elif torch_tensor.device.type == "cuda" and torch_tensor.device.index == 0:
-            return "gpu"
-        else:
-            raise ValueError("Unsupported device {}".format(torch_tensor.device))
+        assert torch_tensor.device.type in ["cpu", "cuda"]
+        assert torch_tensor.device.index == 0
+        return torch_tensor.device.type
 
     def _assign_op_device_option(net_proto, net_ssa, blob_device_types):
         for op, ssa_i in zip(net_proto.op, net_ssa):
@@ -95,7 +92,7 @@ def _assign_device_option(
             else:
                 devices = [blob_device_types[b] for b in ssa_i[0] + ssa_i[1]]
                 assert all(d == devices[0] for d in devices)
-                if devices[0] == "gpu":
+                if devices[0] == "cuda":
                     op.device_option.CopyFrom(core.DeviceOption(caffe2_pb2.CUDA, 0))
 
     # update ops in predict_net
@@ -104,7 +101,7 @@ def _assign_device_option(
         for name, tensor in zip(predict_net.external_input, tensor_inputs)
     }
     predict_net_device_types = infer_device_type(
-        predict_net, known_status=predict_net_input_device_types
+        predict_net, known_status=predict_net_input_device_types, device_name_style="pytorch"
     )
     predict_net_ssa, _ = core.get_ssa(predict_net)
     _assign_op_device_option(predict_net, predict_net_ssa, predict_net_device_types)
@@ -115,7 +112,9 @@ def _assign_device_option(
         (name, versions[name]): predict_net_device_types[(name, 0)]
         for name in init_net.external_output
     }
-    init_net_device_types = infer_device_type(init_net, known_status=init_net_output_device_types)
+    init_net_device_types = infer_device_type(
+        init_net, known_status=init_net_output_device_types, device_name_style="pytorch"
+    )
     _assign_op_device_option(init_net, init_net_ssa, init_net_device_types)
 
 
