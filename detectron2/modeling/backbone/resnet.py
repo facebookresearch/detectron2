@@ -388,6 +388,7 @@ class ResNet(Backbone):
                 outputs[name] = x
         if self.num_classes is not None:
             x = self.avgpool(x)
+            x = torch.flatten(x, 1)
             x = self.linear(x)
             if "linear" in self._out_features:
                 outputs["linear"] = x
