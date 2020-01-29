@@ -241,6 +241,14 @@ class TestRotatedBoxesLayer(unittest.TestCase):
         ious_cuda = pairwise_iou_rotated(boxes1.cuda(), boxes2.cuda())
         assert torch.allclose(ious_cuda.cpu(), expected_ious)
 
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def test_iou_too_many_boxes_cuda(self):
+        s1, s2 = 5, 1289035
+        boxes1 = torch.zeros(s1, 5)
+        boxes2 = torch.zeros(s2, 5)
+        ious_cuda = pairwise_iou_rotated(boxes1.cuda(), boxes2.cuda())
+        self.assertTrue(tuple(ious_cuda.shape), (s1, s2))
+
 
 class TestRotatedBoxesStructure(unittest.TestCase):
     def test_clip_area_0_degree(self):
