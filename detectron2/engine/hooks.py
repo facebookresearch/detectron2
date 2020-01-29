@@ -316,7 +316,6 @@ class EvalHook(HookBase):
         """
         self._period = eval_period
         self._func = eval_function
-        self._done_eval_at_last = False
 
     def _do_eval(self):
         results = self._func()
@@ -346,12 +345,8 @@ class EvalHook(HookBase):
         is_final = next_iter == self.trainer.max_iter
         if is_final or (self._period > 0 and next_iter % self._period == 0):
             self._do_eval()
-            if is_final:
-                self._done_eval_at_last = True
 
     def after_train(self):
-        if not self._done_eval_at_last:
-            self._do_eval()
         # func is likely a closure that holds reference to the trainer
         # therefore we clean it to avoid circular reference in the end
         del self._func
