@@ -131,6 +131,8 @@ class TrainerBase:
                     self.before_step()
                     self.run_step()
                     self.after_step()
+            except Exception:
+                logger.exception("Exception during training:")
             finally:
                 self.after_train()
 
