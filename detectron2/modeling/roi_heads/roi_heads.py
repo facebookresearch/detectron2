@@ -473,10 +473,11 @@ class StandardROIHeads(ROIHeads):
 
     def _init_box_head(self, cfg):
         # fmt: off
-        pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales     = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
-        sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
+        pooler_scales            = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
+        sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
+        pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        self.train_on_pred_boxes = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
         # fmt: on
 
         # If StandardROIHeads is applied on multiple feature maps (as in FPN),
@@ -563,8 +564,9 @@ class StandardROIHeads(ROIHeads):
 
         if self.training:
             losses = self._forward_box(features_list, proposals)
-            # During training the proposals used by the box head are
-            # used by the mask, keypoint (and densepose) heads.
+            # Usually the original proposals used by the box head are used by the mask, keypoint
+            # heads. But when `self.train_on_pred_boxes is True`, proposals will contain boxes
+            # predicted by the box head.
             losses.update(self._forward_mask(features_list, proposals))
             losses.update(self._forward_keypoint(features_list, proposals))
             return proposals, losses
@@ -603,7 +605,8 @@ class StandardROIHeads(ROIHeads):
 
     def _forward_box(self, features, proposals):
         """
-        Forward logic of the box prediction branch.
+        Forward logic of the box prediction branch. If `self.train_on_pred_boxes is True`,
+            the function puts predicted boxes in the `proposal_boxes` field of `proposals` argument.
 
         Args:
             features (list[Tensor]): #level input features for box prediction
@@ -629,6 +632,10 @@ class StandardROIHeads(ROIHeads):
             self.smooth_l1_beta,
         )
         if self.training:
+            if self.train_on_pred_boxes:
+                pred_boxes = outputs.predict_boxes_for_gt_classes()
+                for proposals_per_image, pred_boxes_per_image in zip(proposals, pred_boxes):
+                    proposals_per_image.proposal_boxes = Boxes(pred_boxes_per_image)
             return outputs.losses()
         else:
             pred_instances, _ = outputs.inference(
