@@ -1,0 +1,23 @@
+_BASE_: Base-PointRend-RCNN-FPN.yaml
+MODEL:
+  WEIGHTS: detectron2://ImageNetPretrained/MSRA/R-50.pkl
+  MASK_ON: true
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 8
+  POINT_HEAD:
+    NUM_CLASSES: 8
+DATASETS:
+  TEST: ("cityscapes_fine_instance_seg_val",)
+  TRAIN: ("cityscapes_fine_instance_seg_train",)
+SOLVER:
+  BASE_LR: 0.01
+  IMS_PER_BATCH: 8
+  MAX_ITER: 24000
+  STEPS: (18000,)
+INPUT:
+  MAX_SIZE_TEST: 2048
+  MAX_SIZE_TRAIN: 2048
+  MIN_SIZE_TEST: 1024
+  MIN_SIZE_TRAIN: (800, 832, 864, 896, 928, 960, 992, 1024)

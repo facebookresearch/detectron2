@@ -1,0 +1,20 @@
+_BASE_: "../../../../configs/Base-RCNN-FPN.yaml"
+MODEL:
+  ROI_HEADS:
+    NAME: "PointRendROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+  ROI_BOX_HEAD:
+    TRAIN_ON_PRED_BOXES: True
+  ROI_MASK_HEAD:
+    NAME: "CoarseMaskHead"
+    FC_DIM: 1024
+    NUM_FC: 2
+    OUTPUT_SIDE_RESOLUTION: 7
+    IN_FEATURES: ["p2"]
+    POINT_HEAD_ON: True
+  POINT_HEAD:
+    FC_DIM: 256
+    NUM_FC: 3
+    IN_FEATURES: ["p2"]
+INPUT:
+  MASK_FORMAT: "bitmask"
