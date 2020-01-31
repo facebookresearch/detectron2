@@ -22,7 +22,7 @@ class Counter(DatasetEvaluator):
       self.count += len(output["instances"])
   def evaluate(self):
     # save self.count somewhere, or print it, or return it.
-		return {"count": self.count}
+    return {"count": self.count}
 ```
 
 Once you have some `DatasetEvaluator`, you can run it with
