@@ -12,6 +12,7 @@ since they are meant to represent the "common default behavior" people need in t
 import argparse
 import logging
 import os
+import time
 from collections import OrderedDict
 import torch
 from fvcore.common.file_io import PathManager
@@ -41,6 +42,13 @@ from detectron2.utils.logger import setup_logger
 
 from . import hooks
 from .train_loop import SimpleTrainer
+
+try:
+    from apex import amp
+except ImportError:
+    raise ImportError(
+        "Please install apex from https://www.github.com/nvidia/apex to run this example."
+    )
 
 __all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
 
@@ -254,6 +262,8 @@ class DefaultTrainer(SimpleTrainer):
 
         # For training, wrap with DDP. But don't need this for inference.
         if comm.get_world_size() > 1:
+            if cfg.MODEL.APEX is True:
+                model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
             model = DistributedDataParallel(
                 model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
             )
@@ -274,6 +284,46 @@ class DefaultTrainer(SimpleTrainer):
         self.cfg = cfg
 
         self.register_hooks(self.build_hooks())
+
+    def run_step(self):
+        """
+        Implement the standard training logic described above.
+        """
+        assert self.model.training, "[DefaultTrainer] model was changed to eval mode!"
+        start = time.perf_counter()
+        """
+        If your want to do something with the data, you can wrap the dataloader.
+        """
+        data = next(self._data_loader_iter)
+        data_time = time.perf_counter() - start
+
+        """
+        If your want to do something with the losses, you can wrap the model.
+        """
+        loss_dict = self.model(data)
+        losses = sum(loss for loss in loss_dict.values())
+        self._detect_anomaly(losses, loss_dict)
+
+        metrics_dict = loss_dict
+        metrics_dict["data_time"] = data_time
+        self._write_metrics(metrics_dict)
+
+        """
+        If you need accumulate gradients or something similar, you can
+        wrap the optimizer with your custom `zero_grad()` method.
+        """
+        self.optimizer.zero_grad()
+        if self.cfg.MODEL.APEX is True:
+            with amp.scale_loss(losses, self.optimizer) as scaled_loss:
+                scaled_loss.backward()
+        else:
+            losses.backward()
+
+        """
+        If you need gradient clipping/scaling or other processing, you can
+        wrap the optimizer with your custom `step()` method.
+        """
+        self.optimizer.step()
 
     def resume_or_load(self, resume=True):
         """
