@@ -19,7 +19,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py && \
 
 # install dependencies
 # See https://pytorch.org/ for other options if you use a different version of CUDA
-RUN pip install --user torch torchvision tensorboard cython
+RUN pip install --user torch torchvision tensorboard cython opencv-python
 RUN pip install --user 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 
 RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
