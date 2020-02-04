@@ -180,15 +180,19 @@ class Box2BoxTransformRotated(object):
 
         boxes = boxes.to(deltas.dtype)
 
-        ctr_x, ctr_y, widths, heights, angles = torch.unbind(boxes, dim=1)
-        wx, wy, ww, wh, wa = self.weights
-        dx, dy, dw, dh, da = torch.unbind(deltas, dim=1)
+        ctr_x = boxes[:, 0]
+        ctr_y = boxes[:, 1]
+        widths = boxes[:, 2]
+        heights = boxes[:, 3]
+        angles = boxes[:, 4]
 
-        dx.div_(wx)
-        dy.div_(wy)
-        dw.div_(ww)
-        dh.div_(wh)
-        da.div_(wa)
+        wx, wy, ww, wh, wa = self.weights
+
+        dx = deltas[:, 0] / wx
+        dy = deltas[:, 1] / wy
+        dw = deltas[:, 2] / ww
+        dh = deltas[:, 3] / wh
+        da = deltas[:, 4] / wa
 
         # Prevent sending too large values into torch.exp()
         dw = torch.clamp(dw, max=self.scale_clamp)
