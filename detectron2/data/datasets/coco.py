@@ -289,10 +289,20 @@ def convert_to_coco_dict(dataset_name):
     """
 
     dataset_dicts = DatasetCatalog.get(dataset_name)
-    categories = [
-        {"id": id, "name": name}
-        for id, name in enumerate(MetadataCatalog.get(dataset_name).thing_classes)
-    ]
+    metadata = MetadataCatalog.get(dataset_name)
+
+    # unmap the category ids for COCO
+    if hasattr(metadata, "thing_dataset_id_to_contiguous_id"):
+        reverse_id_mapping = {v: k for k, v in metadata.thing_dataset_id_to_contiguous_id.items()}
+        for dataset_dict in dataset_dicts:
+            dataset_dict["category_id"] = reverse_id_mapping[dataset_dict["category_id"]]
+        categories = [
+            {"id": reverse_id_mapping[id], "name": name}
+            for id, name in enumerate(metadata.thing_classes)
+        ]
+    else:
+
+        categories = [{"id": id, "name": name} for id, name in enumerate(metadata.thing_classes)]
 
     logger.info("Converting dataset dicts into COCO format")
     coco_images = []
