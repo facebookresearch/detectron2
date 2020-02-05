@@ -43,7 +43,7 @@ def read_image(file_name, format=None):
         format (str): one of the supported image modes in PIL, or "BGR"
 
     Returns:
-        image (np.ndarray): an HWC image
+        image (np.ndarray): an HWC image in the given format.
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)

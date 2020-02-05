@@ -65,7 +65,8 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
       The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
       depend on whether "bbox_mode" is relative.
     + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format. The dict should have
-			keys "size" and "counts".
+			keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and 1s into
+			RLE format by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
     v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
     `n` must be equal to the number of keypoint categories.

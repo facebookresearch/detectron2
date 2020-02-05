@@ -5,7 +5,10 @@ _BASE_: "mask_rcnn_R_50_FPN_3x_gn.yaml"
   # So we keep things consistent with C2.
   # PIXEL_STD: [57.375, 57.12, 58.395]
 MODEL:
+  # Train from random initialization.
   WEIGHTS: ""
   MASK_ON: True
   BACKBONE:
     FREEZE_AT: 0
+# NOTE: Please refer to Rethinking ImageNet Pre-training https://arxiv.org/abs/1811.08883
+# to learn what you need for training from scratch.
