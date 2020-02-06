@@ -7,6 +7,13 @@ from torchvision.ops import RoIPool
 
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat
 
+try:
+    from apex import amp
+except ImportError:
+    raise ImportError(
+        "Please install apex from https://www.github.com/nvidia/apex to run this example."
+    )
+
 __all__ = ["ROIPooler"]
 
 
@@ -177,6 +184,7 @@ class ROIPooler(nn.Module):
         assert canonical_box_size > 0
         self.canonical_box_size = canonical_box_size
 
+    @amp.float_function
     def forward(self, x, box_lists):
         """
         Args:
