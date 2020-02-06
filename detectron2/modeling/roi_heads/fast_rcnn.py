@@ -305,11 +305,11 @@ class FastRCNNOutputs(object):
         if predicted_boxes.shape[1] > B:
             num_pred = len(self.proposals)
             num_classes = predicted_boxes.shape[1] // B
-            # Some proposals are ignored or have a background class. Their gt_classes
-            # cannot be used as index.
-            gt_classes = torch.clamp(self.gt_classes, 0, num_classes - 1)
+            bg_class_ind = num_classes
+            fg_inds = (self.gt_classes != -1) & (self.gt_classes != bg_class_ind)
             predicted_boxes = predicted_boxes.view(num_pred, num_classes, B)[
-                torch.arange(num_pred, dtype=torch.long, device=predicted_boxes.device), gt_classes
+                torch.arange(num_pred, dtype=torch.long, device=predicted_boxes.device)[fg_inds],
+                self.gt_classes[fg_inds]
             ]
         return predicted_boxes.split(self.num_preds_per_image, dim=0)
 
