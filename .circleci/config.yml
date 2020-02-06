@@ -59,6 +59,15 @@ install_detectron2: &install_detectron2
         pip install -U --progress-bar off -e .[dev]
         python -m detectron2.utils.collect_env
 
+install_nvidia_driver: &install_nvidia_driver
+  - run:
+      name: Install nvidia driver
+      working_directory: ~/
+      command: |
+        wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
+        sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
+        nvidia-smi
+
 run_unittests: &run_unittests
   - run:
       name: Run Unit Tests
@@ -114,13 +123,7 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: Install nvidia driver
-          working_directory: ~/
-          command: |
-            wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
-            sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
-            nvidia-smi
+      - <<: *install_nvidia_driver
 
       - run:
           name: Install nvidia-docker

@@ -69,17 +69,45 @@ class ROIAlignTest(unittest.TestCase):
 
         rois = [0] + list(box)
         rois = torch.from_numpy(np.asarray(rois)[None, :].astype("float32"))
-        output = op.forward(input, rois).numpy()
+        output = op.forward(input, rois)
         if torch.cuda.is_available():
-            output_cuda = op.forward(input.cuda(), rois.cuda()).cpu().numpy()
-            self.assertTrue(np.allclose(output, output_cuda))
+            output_cuda = op.forward(input.cuda(), rois.cuda()).cpu()
+            self.assertTrue(torch.allclose(output, output_cuda))
         return output[0, 0]
+
+    def _simple_roialign_with_grad(self, img, box, resolution, device):
+        if isinstance(resolution, int):
+            resolution = (resolution, resolution)
+
+        op = ROIAlign(resolution, 1.0, 0, aligned=True)
+        input = torch.from_numpy(img[None, None, :, :].astype("float32"))
+
+        rois = [0] + list(box)
+        rois = torch.from_numpy(np.asarray(rois)[None, :].astype("float32"))
+        input = input.to(device=device)
+        rois = rois.to(device=device)
+        input.requires_grad = True
+        output = op.forward(input, rois)
+        return input, output
 
     def test_empty_box(self):
         img = np.random.rand(5, 5)
         box = [3, 4, 5, 4]
         o = self._simple_roialign(img, box, 7)
+        self.assertTrue(o.shape == (7, 7))
         self.assertTrue((o == 0).all())
+
+        for dev in ["cpu"] + ["cuda"] if torch.cuda.is_available() else []:
+            input, output = self._simple_roialign_with_grad(img, box, 7, torch.device(dev))
+            output.sum().backward()
+            self.assertTrue(torch.allclose(input.grad, torch.zeros_like(input)))
+
+    def test_empty_batch(self):
+        input = torch.zeros(0, 3, 10, 10, dtype=torch.float32)
+        rois = torch.zeros(0, 5, dtype=torch.float32)
+        op = ROIAlign((7, 7), 1.0, 0, aligned=True)
+        output = op.forward(input, rois)
+        self.assertTrue(output.shape == (0, 3, 7, 7))
 
 
 if __name__ == "__main__":
