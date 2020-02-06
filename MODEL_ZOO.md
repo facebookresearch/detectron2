@@ -47,7 +47,7 @@ You can access these models from code using [detectron2.model_zoo](https://detec
 #### ImageNet Pretrained Models
 
 We provide backbone models pretrained on ImageNet-1k dataset.
-These models are __different__ from those provided in Detectron: we do not fuse BatchNorm into an affine layer.
+These models have __different__ format from those provided in Detectron: we do not fuse BatchNorm into an affine layer.
 * [R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl): converted copy of MSRA's original ResNet-50 model
 * [R-101.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-101.pkl): converted copy of MSRA's original ResNet-101 model
 * [X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl): ResNeXt-101-32x8d model trained with Caffe2 at FB

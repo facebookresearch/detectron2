@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import logging
 import os
 from caffe2.proto import caffe2_pb2
