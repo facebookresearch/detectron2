@@ -17,4 +17,5 @@ MODEL:
     NUM_FC: 3
     IN_FEATURES: ["p2"]
 INPUT:
+  # PointRend for instance segmenation does not work with "polygon" mask_format.
   MASK_FORMAT: "bitmask"
