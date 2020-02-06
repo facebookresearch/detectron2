@@ -633,9 +633,10 @@ class StandardROIHeads(ROIHeads):
         )
         if self.training:
             if self.train_on_pred_boxes:
-                pred_boxes = outputs.predict_boxes_for_gt_classes()
-                for proposals_per_image, pred_boxes_per_image in zip(proposals, pred_boxes):
-                    proposals_per_image.proposal_boxes = Boxes(pred_boxes_per_image)
+                with torch.no_grad():
+                    pred_boxes = outputs.predict_boxes_for_gt_classes()
+                    for proposals_per_image, pred_boxes_per_image in zip(proposals, pred_boxes):
+                        proposals_per_image.proposal_boxes = Boxes(pred_boxes_per_image)
             return outputs.losses()
         else:
             pred_instances, _ = outputs.inference(
