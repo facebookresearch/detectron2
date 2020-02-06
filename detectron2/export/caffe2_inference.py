@@ -2,12 +2,13 @@
 
 import collections
 import logging
+import numpy as np
 import torch
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core
 
 from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format
-from .shared import ScopedWS, get_pb_arg_vali, get_pb_arg_vals
+from .shared import ScopedWS, get_pb_arg_vali, get_pb_arg_vals, infer_device_type
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,7 @@ class ProtobufDetectionModel(torch.nn.Module):
         super().__init__()
         self.protobuf_model = ProtobufModel(predict_net, init_net)
         self.size_divisibility = get_pb_arg_vali(predict_net, "size_divisibility", 0)
+        self.device = get_pb_arg_vals(predict_net, "device", b"cpu").decode("ascii")
 
         if convert_outputs is None:
             meta_arch = get_pb_arg_vals(predict_net, "meta_architecture", b"GeneralizedRCNN")
@@ -89,14 +91,46 @@ class ProtobufDetectionModel(torch.nn.Module):
         else:
             self._convert_outputs = convert_outputs
 
+    def _infer_output_devices(self, inputs_dict):
+        def _get_device_type(torch_tensor):
+            assert torch_tensor.device.type in ["cpu", "cuda"]
+            assert torch_tensor.device.index == 0
+            return torch_tensor.device.type
+
+        predict_net = self.protobuf_model.net.Proto()
+        input_device_types = {
+            (name, 0): _get_device_type(tensor) for name, tensor in inputs_dict.items()
+        }
+        device_type_map = infer_device_type(
+            predict_net, known_status=input_device_types, device_name_style="pytorch"
+        )
+        ssa, versions = core.get_ssa(predict_net)
+        versioned_outputs = [(name, versions[name]) for name in predict_net.external_output]
+        output_devices = [device_type_map[outp] for outp in versioned_outputs]
+        return output_devices
+
     def _convert_inputs(self, batched_inputs):
         # currently all models convert inputs in the same way
         data, im_info = convert_batched_inputs_to_c2_format(
-            batched_inputs, self.size_divisibility, torch.device("cpu")
+            batched_inputs, self.size_divisibility, self.device
         )
         return {"data": data, "im_info": im_info}
 
     def forward(self, batched_inputs):
         c2_inputs = self._convert_inputs(batched_inputs)
         c2_results = self.protobuf_model(c2_inputs)
+
+        if any(t.device.type != "cpu" for _, t in c2_inputs.items()):
+            output_devices = self._infer_output_devices(c2_inputs)
+        else:
+            output_devices = ["cpu" for _ in self.protobuf_model.net.Proto().external_output]
+
+        def _cast_caffe2_blob_to_torch_tensor(blob, device):
+            return torch.Tensor(blob).to(device) if isinstance(blob, np.ndarray) else None
+
+        c2_results = {
+            name: _cast_caffe2_blob_to_torch_tensor(c2_results[name], device)
+            for name, device in zip(self.protobuf_model.net.Proto().external_output, output_devices)
+        }
+
         return self._convert_outputs(batched_inputs, c2_inputs, c2_results)

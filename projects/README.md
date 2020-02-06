@@ -9,5 +9,5 @@ of support or stability of detectron2.
 + [DensePose: Dense Human Pose Estimation In The Wild](DensePose)
 + [Scale-Aware Trident Networks for Object Detection](TridentNet)
 + [TensorMask: A Foundation for Dense Object Segmentation](TensorMask)
-+ Mesh R-CNN (Coming Soon)
-+ PointRend: Image Segmentation as Rendering (Coming Soon)
++ [Mesh R-CNN](https://github.com/facebookresearch/meshrcnn)
++ [PointRend: Image Segmentation as Rendering](PointRend)

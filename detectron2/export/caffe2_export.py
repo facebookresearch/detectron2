@@ -7,15 +7,22 @@ import numpy as np
 from typing import List
 import onnx
 import torch
+from caffe2.proto import caffe2_pb2
+from caffe2.python import core
 from caffe2.python.onnx.backend import Caffe2Backend
+from tabulate import tabulate
+from termcolor import colored
 from torch.onnx import OperatorExportTypes
 
 from .shared import (
     ScopedWS,
     construct_init_net_from_params,
     fuse_alias_placeholder,
+    fuse_copy_between_cpu_and_gpu,
     get_params_from_init_net,
     group_norm_replace_aten_with_caffe2,
+    infer_device_type,
+    remove_dead_end_ops,
     remove_reshape_for_fc,
     save_graph,
 )
@@ -65,6 +72,52 @@ def _op_stats(net_def):
     return "\n".join("{:>4}x {}".format(count, name) for name, count in type_count_list)
 
 
+def _assign_device_option(
+    predict_net: caffe2_pb2.NetDef, init_net: caffe2_pb2.NetDef, tensor_inputs: List[torch.Tensor]
+):
+    """
+    ONNX exported network doesn't have concept of device, assign necessary
+    device option for each op in order to make it runable on GPU runtime.
+    """
+
+    def _get_device_type(torch_tensor):
+        assert torch_tensor.device.type in ["cpu", "cuda"]
+        assert torch_tensor.device.index == 0
+        return torch_tensor.device.type
+
+    def _assign_op_device_option(net_proto, net_ssa, blob_device_types):
+        for op, ssa_i in zip(net_proto.op, net_ssa):
+            if op.type in ["CopyCPUToGPU", "CopyGPUToCPU"]:
+                op.device_option.CopyFrom(core.DeviceOption(caffe2_pb2.CUDA, 0))
+            else:
+                devices = [blob_device_types[b] for b in ssa_i[0] + ssa_i[1]]
+                assert all(d == devices[0] for d in devices)
+                if devices[0] == "cuda":
+                    op.device_option.CopyFrom(core.DeviceOption(caffe2_pb2.CUDA, 0))
+
+    # update ops in predict_net
+    predict_net_input_device_types = {
+        (name, 0): _get_device_type(tensor)
+        for name, tensor in zip(predict_net.external_input, tensor_inputs)
+    }
+    predict_net_device_types = infer_device_type(
+        predict_net, known_status=predict_net_input_device_types, device_name_style="pytorch"
+    )
+    predict_net_ssa, _ = core.get_ssa(predict_net)
+    _assign_op_device_option(predict_net, predict_net_ssa, predict_net_device_types)
+
+    # update ops in init_net
+    init_net_ssa, versions = core.get_ssa(init_net)
+    init_net_output_device_types = {
+        (name, versions[name]): predict_net_device_types[(name, 0)]
+        for name in init_net.external_output
+    }
+    init_net_device_types = infer_device_type(
+        init_net, known_status=init_net_output_device_types, device_name_style="pytorch"
+    )
+    _assign_op_device_option(init_net, init_net_ssa, init_net_device_types)
+
+
 def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[torch.Tensor]):
     """
     Export a Detectron2 model via ONNX.
@@ -80,14 +133,22 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     # Export via ONNX
     logger.info("Exporting a {} model via ONNX ...".format(type(model).__name__))
     predict_net, init_net = _export_via_onnx(model, (tensor_inputs,))
-    logger.info("ONNX export Done.")
+    ops_table = [[op.type, op.input, op.output] for op in predict_net.op]
+    table = tabulate(ops_table, headers=["type", "input", "output"], tablefmt="pipe")
+    logger.info(
+        "ONNX export Done. Exported predict_net (before optimizations):\n" + colored(table, "cyan")
+    )
 
     # Apply protobuf optimization
     fuse_alias_placeholder(predict_net, init_net)
-    params = get_params_from_init_net(init_net)
+    if any(t.device.type != "cpu" for t in tensor_inputs):
+        fuse_copy_between_cpu_and_gpu(predict_net)
+        remove_dead_end_ops(init_net)
+        _assign_device_option(predict_net, init_net, tensor_inputs)
+    params, device_options = get_params_from_init_net(init_net)
     predict_net, params = remove_reshape_for_fc(predict_net, params)
+    init_net = construct_init_net_from_params(params, device_options)
     group_norm_replace_aten_with_caffe2(predict_net)
-    init_net = construct_init_net_from_params(params)
 
     # Record necessary information for running the pb model in Detectron2 system.
     model.encode_additional_info(predict_net, init_net)

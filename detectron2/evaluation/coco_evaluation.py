@@ -249,14 +249,19 @@ class COCOEvaluator(DatasetEvaluator):
         }[iou_type]
 
         if coco_eval is None:
-            self._logger.warn("No predictions from the model! Set scores to -1")
-            return {metric: -1 for metric in metrics}
+            self._logger.warn("No predictions from the model!")
+            return {metric: float("nan") for metric in metrics}
 
         # the standard metrics
-        results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
+        results = {
+            metric: float(coco_eval.stats[idx] * 100 if coco_eval.stats[idx] >= 0 else "nan")
+            for idx, metric in enumerate(metrics)
+        }
         self._logger.info(
             "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
         )
+        if not np.isfinite(sum(results.values())):
+            self._logger.info("Note that some metrics cannot be computed.")
 
         if class_names is None or len(class_names) <= 1:
             return results

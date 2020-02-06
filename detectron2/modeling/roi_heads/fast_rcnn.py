@@ -267,11 +267,11 @@ class FastRCNNOutputs(object):
             "loss_box_reg": self.smooth_l1_loss(),
         }
 
-    def predict_boxes(self):
+    def _predict_boxes(self):
         """
         Returns:
-            list[Tensor]: A list of Tensors of predicted class-specific or class-agnostic boxes
-                for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
+            Tensor: A Tensors of predicted class-specific or class-agnostic boxes
+                for all images in a batch. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
                 the number of predicted objects for image i and B is the box dimension (4 or 5)
         """
         num_pred = len(self.proposals)
@@ -281,7 +281,37 @@ class FastRCNNOutputs(object):
             self.pred_proposal_deltas.view(num_pred * K, B),
             self.proposals.tensor.unsqueeze(1).expand(num_pred, K, B).reshape(-1, B),
         )
-        return boxes.view(num_pred, K * B).split(self.num_preds_per_image, dim=0)
+        return boxes.view(num_pred, K * B)
+
+    def predict_boxes(self):
+        """
+        Returns:
+            list[Tensor]: A list of Tensors of predicted class-specific or class-agnostic boxes
+                for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
+                the number of predicted objects for image i and B is the box dimension (4 or 5)
+        """
+        return self._predict_boxes().split(self.num_preds_per_image, dim=0)
+
+    def predict_boxes_for_gt_classes(self):
+        """
+        Returns:
+            list[Tensor]: A list of Tensors of predicted boxes for GT classes in case of
+                class-specific box head. Element i of the list has shape (Ri, B), where Ri is
+                the number of predicted objects for image i and B is the box dimension (4 or 5)
+        """
+        predicted_boxes = self._predict_boxes()
+        B = self.proposals.tensor.shape[1]
+        # If the box head is class-agnostic, then the method is equivalent to `predicted_boxes`.
+        if predicted_boxes.shape[1] > B:
+            num_pred = len(self.proposals)
+            num_classes = predicted_boxes.shape[1] // B
+            # Some proposals are ignored or have a background class. Their gt_classes
+            # cannot be used as index.
+            gt_classes = torch.clamp(self.gt_classes, 0, num_classes - 1)
+            predicted_boxes = predicted_boxes.view(num_pred, num_classes, B)[
+                torch.arange(num_pred, dtype=torch.long, device=predicted_boxes.device), gt_classes
+            ]
+        return predicted_boxes.split(self.num_preds_per_image, dim=0)
 
     def predict_probs(self):
         """

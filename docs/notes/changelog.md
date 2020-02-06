@@ -13,4 +13,4 @@
 
 ### Known Bugs in Historical Versions:
 * Dec 19 - Dec 26: Using aspect ratio grouping causes a drop in accuracy.
-*  - Nov 9: Test time augmentation does not predict the last category.
+* Oct 10 - Nov 9: Test time augmentation does not predict the last category.

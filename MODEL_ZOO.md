@@ -4,9 +4,9 @@
 
 This file documents a large collection of baselines trained
 with detectron2 in Sep-Oct, 2019.
-All models were trained on [Big Basin](https://engineering.fb.com/data-center-engineering/introducing-big-basin-our-next-generation-ai-hardware/)
-servers with 8 NVIDIA V100 GPUs, with data-parallel sync SGD. The softwares in use were PyTorch 1.3, CUDA 9.2, cuDNN 7.4.2 or 7.6.3.
-You can programmataically access these models using [detectron2.model_zoo](https://detectron2.readthedocs.io/modules/model_zoo.html) APIs.
+All numbers were obtained on [Big Basin](https://engineering.fb.com/data-center-engineering/introducing-big-basin-our-next-generation-ai-hardware/)
+servers with 8 NVIDIA V100 GPUs & NVLink. The softwares in use were PyTorch 1.3, CUDA 9.2, cuDNN 7.4.2 or 7.6.3.
+You can access these models from code using [detectron2.model_zoo](https://detectron2.readthedocs.io/modules/model_zoo.html) APIs.
 
 #### How to Read the Tables
 * The "Name" column contains a link to the config file. Running `tools/train_net.py` with this config file
@@ -47,7 +47,7 @@ You can programmataically access these models using [detectron2.model_zoo](https
 #### ImageNet Pretrained Models
 
 We provide backbone models pretrained on ImageNet-1k dataset.
-These models are __different__ from those provided in Detectron: we do not fuse BatchNorm into an affine layer.
+These models have __different__ format from those provided in Detectron: we do not fuse BatchNorm into an affine layer.
 * [R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl): converted copy of MSRA's original ResNet-50 model
 * [R-101.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-101.pkl): converted copy of MSRA's original ResNet-101 model
 * [X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl): ResNeXt-101-32x8d model trained with Caffe2 at FB

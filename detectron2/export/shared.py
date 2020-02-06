@@ -8,7 +8,7 @@ import logging
 import mock
 import numpy as np
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import caffe2.python.utils as putils
 import torch
 import torch.nn.functional as F
@@ -24,10 +24,21 @@ logger = logging.getLogger(__name__)
 
 def to_device(t, device_str):
     """
-    ONNX will always export a CastOp even when calling with the same device, this
-    function avoids introducing this unncessary op.
+    This function is a replacement of .to(another_device) such that it allows the
+    casting to be traced properly by explicitly calling the underlying copy ops.
+    It also avoids introducing unncessary op when casting to the same device.
     """
-    return t.to(device_str) if t.device != torch.device(device_str) else t
+    src = t.device
+    dst = torch.device(device_str)
+
+    if src == dst:
+        return t
+    elif src.type == "cuda" and dst.type == "cpu":
+        return torch.ops._caffe2.CopyGPUToCPU(t)
+    elif src.type == "cpu" and dst.type == "cuda":
+        return torch.ops._caffe2.CopyCPUToGPU(t)
+    else:
+        raise RuntimeError("Can't cast tensor from device {} to device {}".format(src, dst))
 
 
 # ==== torch/utils_toffee/interpolate.py =======================================
@@ -274,12 +285,13 @@ def create_const_fill_op(
 
 
 def construct_init_net_from_params(
-    params: Dict[str, Any], device_option: Optional[caffe2_pb2.DeviceOption] = None
+    params: Dict[str, Any], device_options: Optional[Dict[str, caffe2_pb2.DeviceOption]] = None
 ) -> caffe2_pb2.NetDef:
     """
     Construct the init_net from params dictionary
     """
     init_net = caffe2_pb2.NetDef()
+    device_options = device_options or {}
     for name, blob in params.items():
         if isinstance(blob, str):
             logger.warning(
@@ -289,88 +301,185 @@ def construct_init_net_from_params(
                 )
             )
             continue
-        init_net.op.extend([create_const_fill_op(name, blob, device_option)])
+        init_net.op.extend(
+            [create_const_fill_op(name, blob, device_option=device_options.get(name, None))]
+        )
         init_net.external_output.append(name)
     return init_net
 
 
-def get_params_from_init_net(init_net: caffe2_pb2.NetDef) -> Dict[str, Any]:
+def get_producer_map(ssa):
     """
-    Run the init_net, take the blobs.
+    Return dict from versioned blob to (i, j),
+        where i is index of producer op, j is the index of output of that op.
     """
+    producer_map = {}
+    for i in range(len(ssa)):
+        outputs = ssa[i][1]
+        for j, outp in enumerate(outputs):
+            producer_map[outp] = (i, j)
+    return producer_map
+
+
+def get_consumer_map(ssa):
+    """
+    Return dict from versioned blob to list of (i, j),
+        where i is index of consumer op, j is the index of input of that op.
+    """
+    consumer_map = collections.defaultdict(list)
+    for i in range(len(ssa)):
+        inputs = ssa[i][0]
+        for j, inp in enumerate(inputs):
+            consumer_map[inp].append((i, j))
+    return consumer_map
+
+
+def get_params_from_init_net(
+    init_net: caffe2_pb2.NetDef
+) -> [Dict[str, Any], Dict[str, caffe2_pb2.DeviceOption]]:
+    """
+    Take the output blobs from init_net by running it.
+    Outputs:
+        params: dict from blob name to numpy array
+        device_options: dict from blob name to the device option of its creating op
+    """
+    # NOTE: this assumes that the params is determined by producer op with the
+    # only exception be CopyGPUToCPU which is CUDA op but returns CPU tensor.
+    def _get_device_option(producer_op):
+        if producer_op.type == "CopyGPUToCPU":
+            return caffe2_pb2.DeviceOption()
+        else:
+            return producer_op.device_option
+
     with ScopedWS("__get_params_from_init_net__", is_reset=True, is_cleanup=True) as ws:
         ws.RunNetOnce(init_net)
-        return {b: fetch_any_blob(b) for b in ws.Blobs()}
+        params = {b: fetch_any_blob(b) for b in init_net.external_output}
+    ssa, versions = core.get_ssa(init_net)
+    producer_map = get_producer_map(ssa)
+    device_options = {
+        b: _get_device_option(init_net.op[producer_map[(b, versions[b])][0]])
+        for b in init_net.external_output
+    }
+    return params, device_options
 
 
-def remove_reshape_for_fc(predict_net, params):
+def _updater_raise(op, input_types, output_types):
+    raise RuntimeError(
+        "Failed to apply updater for op {} given input_types {} and"
+        " output_types {}".format(op, input_types, output_types)
+    )
+
+
+def _generic_status_identifier(
+    predict_net: caffe2_pb2.NetDef,
+    status_updater: Callable,
+    known_status: Dict[Tuple[str, int], Any],
+) -> Dict[Tuple[str, int], Any]:
     """
-    In PyTorch nn.Linear has to take 2D tensor, this often leads to reshape
-        a 4D tensor to 2D by calling .view(). However this (dynamic) reshaping
-        doesn't work well with ONNX and Int8 tools, and cause using extra
-        ops (eg. ExpandDims) that might not be available on mobile.
-    Luckily Caffe2 supports 4D tensor for FC, so we can remove those reshape
-        after exporting ONNX model.
+    Statically infer the status of each blob, the status can be such as device type
+        (CPU/GPU), layout (NCHW/NHWC), data type (float32/int8), etc. "Blob" here
+        is versioned blob (Tuple[str, int]) in the format compatible with ssa.
+    Inputs:
+        predict_net: the caffe2 network
+        status_updater: a callable, given an op and the status of its input/output,
+            it returns the updated status of input/output. `None` is used for
+            representing unknown status.
+        known_status: a dict containing known status, used as initialization.
+    Outputs:
+        A dict mapping from versioned blob to its status
     """
-    from caffe2.python import core
+    ssa, versions = core.get_ssa(predict_net)
+    versioned_ext_input = [(b, 0) for b in predict_net.external_input]
+    versioned_ext_output = [(b, versions[b]) for b in predict_net.external_output]
+    all_versioned_blobs = set().union(*[set(x[0] + x[1]) for x in ssa])
 
-    # find all reshape sub-graph that can be removed, which is now all Reshape
-    # sub-graph whose output is only consumed by FC.
-    # TODO: to make it safer, we may need the actually value to better determine
-    # if a Reshape before FC is removable.
-    reshape_sub_graphs = identify_reshape_sub_graph(predict_net)
-    sub_graphs_to_remove = []
-    for reshape_sub_graph in reshape_sub_graphs:
-        reshape_op_id = reshape_sub_graph[-1]
-        assert predict_net.op[reshape_op_id].type == "Reshape"
-        ssa, _ = core.get_ssa(predict_net)
-        reshape_output = ssa[reshape_op_id][1][0]
-        consumers = [i for i in range(len(ssa)) if reshape_output in ssa[i][0]]
-        if all(predict_net.op[consumer].type == "FC" for consumer in consumers):
-            # safety check if the sub-graph is isolated, for this reshape sub-graph,
-            # it means it has one non-param external input and one external output.
-            ext_inputs, ext_outputs = get_sub_graph_external_input_output(
-                predict_net, reshape_sub_graph
+    allowed_vbs = all_versioned_blobs.union(versioned_ext_input).union(versioned_ext_output)
+    assert all(k in allowed_vbs for k in known_status)
+    assert all(v is not None for v in known_status.values())
+    _known_status = copy.deepcopy(known_status)
+
+    def _check_and_update(key, value):
+        assert value is not None
+        if key in _known_status:
+            if not _known_status[key] == value:
+                raise RuntimeError(
+                    "Confilict status for {}, existing status {}, new status {}".format(
+                        key, _known_status[key], value
+                    )
+                )
+        _known_status[key] = value
+
+    def _update_i(op, ssa_i):
+        versioned_inputs = ssa_i[0]
+        versioned_outputs = ssa_i[1]
+
+        inputs_status = [_known_status.get(b, None) for b in versioned_inputs]
+        outputs_status = [_known_status.get(b, None) for b in versioned_outputs]
+
+        new_inputs_status, new_outputs_status = status_updater(op, inputs_status, outputs_status)
+
+        for versioned_blob, status in zip(
+            versioned_inputs + versioned_outputs, new_inputs_status + new_outputs_status
+        ):
+            if status is not None:
+                _check_and_update(versioned_blob, status)
+
+    for op, ssa_i in zip(predict_net.op, ssa):
+        _update_i(op, ssa_i)
+    for op, ssa_i in zip(reversed(predict_net.op), reversed(ssa)):
+        _update_i(op, ssa_i)
+
+    # NOTE: This strictly checks all the blob from predict_net must be assgined
+    # a known status. However sometimes it's impossible (eg. having deadend op),
+    # we may relax this constraint if
+    for k in all_versioned_blobs:
+        if k not in _known_status:
+            raise NotImplementedError(
+                "Can not infer the status for {}. Currently only support the case where"
+                " a single forward and backward pass can identify status for all blobs.".format(k)
             )
-            non_params_ext_inputs = [inp for inp in ext_inputs if inp[1] != 0]
-            if len(non_params_ext_inputs) == 1 and len(ext_outputs) == 1:
-                sub_graphs_to_remove.append(reshape_sub_graph)
 
-    # perform removing subgraph by:
-    # 1: rename the Reshape's output to its input, then the graph can be
-    #   seen as in-place itentify, meaning whose external input/output are the same.
-    # 2: simply remove those ops.
-    remove_op_ids = []
-    params_to_remove = []
-    for sub_graph in sub_graphs_to_remove:
-        logger.info(
-            "Remove Reshape sub-graph:\n{}".format(
-                "".join(["(#{:>4})\n{}".format(i, predict_net.op[i]) for i in sub_graph])
-            )
-        )
-        reshape_op_id = sub_graph[-1]
-        new_reshap_output = predict_net.op[reshape_op_id].input[0]
-        rename_op_output(predict_net, reshape_op_id, 0, new_reshap_output)
-        ext_inputs, ext_outputs = get_sub_graph_external_input_output(predict_net, sub_graph)
-        non_params_ext_inputs = [inp for inp in ext_inputs if inp[1] != 0]
-        params_ext_inputs = [inp for inp in ext_inputs if inp[1] == 0]
-        assert len(non_params_ext_inputs) == 1 and len(ext_outputs) == 1
-        assert ext_outputs[0][0] == non_params_ext_inputs[0][0]
-        assert ext_outputs[0][1] == non_params_ext_inputs[0][1] + 1
-        remove_op_ids.extend(sub_graph)
-        params_to_remove.extend(params_ext_inputs)
+    return _known_status
 
-    predict_net = copy.deepcopy(predict_net)
-    new_ops = [op for i, op in enumerate(predict_net.op) if i not in remove_op_ids]
-    del predict_net.op[:]
-    predict_net.op.extend(new_ops)
-    for versioned_params in params_to_remove:
-        name = versioned_params[0]
-        logger.info("Remove params: {} from init_net and predict_net.external_input".format(name))
-        del params[name]
-        predict_net.external_input.remove(name)
 
-    return predict_net, params
+def infer_device_type(
+    predict_net: caffe2_pb2.NetDef,
+    known_status: Dict[Tuple[str, int], Any],
+    device_name_style: str = "caffe2",
+) -> Dict[Tuple[str, int], str]:
+    """ Return the device type ("cpu" or "gpu"/"cuda") of each (versioned) blob """
+
+    assert device_name_style in ["caffe2", "pytorch"]
+    _CPU_STR = "cpu"
+    _GPU_STR = "gpu" if device_name_style == "caffe2" else "cuda"
+
+    def _copy_cpu_to_gpu_updater(op, input_types, output_types):
+        if input_types[0] == _GPU_STR or output_types[0] == _CPU_STR:
+            _updater_raise(op, input_types, output_types)
+        return ([_CPU_STR], [_GPU_STR])
+
+    def _copy_gpu_to_cpu_updater(op, input_types, output_types):
+        if input_types[0] == _CPU_STR or output_types[0] == _GPU_STR:
+            _updater_raise(op, input_types, output_types)
+        return ([_GPU_STR], [_CPU_STR])
+
+    def _other_ops_updater(op, input_types, output_types):
+        non_none_types = [x for x in input_types + output_types if x is not None]
+        if len(non_none_types) > 0:
+            the_type = non_none_types[0]
+            if not all(x == the_type for x in non_none_types):
+                _updater_raise(op, input_types, output_types)
+        else:
+            the_type = None
+        return ([the_type for _ in op.input], [the_type for _ in op.output])
+
+    def _device_updater(op, *args, **kwargs):
+        return {
+            "CopyCPUToGPU": _copy_cpu_to_gpu_updater,
+            "CopyGPUToCPU": _copy_gpu_to_cpu_updater,
+        }.get(op.type, _other_ops_updater)(op, *args, **kwargs)
+
+    return _generic_status_identifier(predict_net, _device_updater, known_status)
 
 
 # ==== torch/utils_caffe2/vis.py ===============================================
@@ -667,32 +776,6 @@ def get_sub_graph_external_input_output(
     return ext_inputs, ext_outputs
 
 
-def get_producer_map(ssa):
-    """
-    Return dict from versioned blob to (i, j),
-        where i is index of producer op, j is the index of output of that op.
-    """
-    producer_map = {}
-    for i in range(len(ssa)):
-        outputs = ssa[i][1]
-        for j, outp in enumerate(outputs):
-            producer_map[outp] = (i, j)
-    return producer_map
-
-
-def get_consumer_map(ssa):
-    """
-    Return dict from versioned blob to list of (i, j),
-        where i is index of consumer op, j is the index of input of that op.
-    """
-    consumer_map = collections.defaultdict(list)
-    for i in range(len(ssa)):
-        inputs = ssa[i][0]
-        for j, inp in enumerate(inputs):
-            consumer_map[inp].append((i, j))
-    return consumer_map
-
-
 class DiGraph:
     """ A DAG representation of caffe2 graph, each vertice is a versioned blob. """
 
@@ -748,7 +831,9 @@ def _get_dependency_chain(ssa, versioned_target, versioned_source):
     consumer_map = get_consumer_map(ssa)
     producer_map = get_producer_map(ssa)
     start_op = min(x[0] for x in consumer_map[versioned_source]) - 15
-    end_op = producer_map[versioned_target][0] + 15
+    end_op = (
+        producer_map[versioned_target][0] + 15 if versioned_target in producer_map else start_op
+    )
     sub_graph_ssa = ssa[start_op : end_op + 1]
     if len(sub_graph_ssa) > 30:
         logger.warning(
@@ -789,3 +874,158 @@ def identify_reshape_sub_graph(predict_net: caffe2_pb2.NetDef,) -> List[List[int
             op_indices = _get_dependency_chain(ssa, shape_source, data_source)
             ret.append(op_indices + [i])
     return ret
+
+
+def remove_reshape_for_fc(predict_net, params):
+    """
+    In PyTorch nn.Linear has to take 2D tensor, this often leads to reshape
+        a 4D tensor to 2D by calling .view(). However this (dynamic) reshaping
+        doesn't work well with ONNX and Int8 tools, and cause using extra
+        ops (eg. ExpandDims) that might not be available on mobile.
+    Luckily Caffe2 supports 4D tensor for FC, so we can remove those reshape
+        after exporting ONNX model.
+    """
+    from caffe2.python import core
+
+    # find all reshape sub-graph that can be removed, which is now all Reshape
+    # sub-graph whose output is only consumed by FC.
+    # TODO: to make it safer, we may need the actually value to better determine
+    # if a Reshape before FC is removable.
+    reshape_sub_graphs = identify_reshape_sub_graph(predict_net)
+    sub_graphs_to_remove = []
+    for reshape_sub_graph in reshape_sub_graphs:
+        reshape_op_id = reshape_sub_graph[-1]
+        assert predict_net.op[reshape_op_id].type == "Reshape"
+        ssa, _ = core.get_ssa(predict_net)
+        reshape_output = ssa[reshape_op_id][1][0]
+        consumers = [i for i in range(len(ssa)) if reshape_output in ssa[i][0]]
+        if all(predict_net.op[consumer].type == "FC" for consumer in consumers):
+            # safety check if the sub-graph is isolated, for this reshape sub-graph,
+            # it means it has one non-param external input and one external output.
+            ext_inputs, ext_outputs = get_sub_graph_external_input_output(
+                predict_net, reshape_sub_graph
+            )
+            non_params_ext_inputs = [inp for inp in ext_inputs if inp[1] != 0]
+            if len(non_params_ext_inputs) == 1 and len(ext_outputs) == 1:
+                sub_graphs_to_remove.append(reshape_sub_graph)
+
+    # perform removing subgraph by:
+    # 1: rename the Reshape's output to its input, then the graph can be
+    #   seen as in-place itentify, meaning whose external input/output are the same.
+    # 2: simply remove those ops.
+    remove_op_ids = []
+    params_to_remove = []
+    for sub_graph in sub_graphs_to_remove:
+        logger.info(
+            "Remove Reshape sub-graph:\n{}".format(
+                "".join(["(#{:>4})\n{}".format(i, predict_net.op[i]) for i in sub_graph])
+            )
+        )
+        reshape_op_id = sub_graph[-1]
+        new_reshap_output = predict_net.op[reshape_op_id].input[0]
+        rename_op_output(predict_net, reshape_op_id, 0, new_reshap_output)
+        ext_inputs, ext_outputs = get_sub_graph_external_input_output(predict_net, sub_graph)
+        non_params_ext_inputs = [inp for inp in ext_inputs if inp[1] != 0]
+        params_ext_inputs = [inp for inp in ext_inputs if inp[1] == 0]
+        assert len(non_params_ext_inputs) == 1 and len(ext_outputs) == 1
+        assert ext_outputs[0][0] == non_params_ext_inputs[0][0]
+        assert ext_outputs[0][1] == non_params_ext_inputs[0][1] + 1
+        remove_op_ids.extend(sub_graph)
+        params_to_remove.extend(params_ext_inputs)
+
+    predict_net = copy.deepcopy(predict_net)
+    new_ops = [op for i, op in enumerate(predict_net.op) if i not in remove_op_ids]
+    del predict_net.op[:]
+    predict_net.op.extend(new_ops)
+    for versioned_params in params_to_remove:
+        name = versioned_params[0]
+        logger.info("Remove params: {} from init_net and predict_net.external_input".format(name))
+        del params[name]
+        predict_net.external_input.remove(name)
+
+    return predict_net, params
+
+
+def fuse_copy_between_cpu_and_gpu(predict_net: caffe2_pb2.NetDef):
+    """
+    In-place fuse extra copy ops between cpu/gpu for the following case:
+        a -CopyAToB-> b -CopyBToA> c1 -NextOp1-> d1
+                        -CopyBToA> c2 -NextOp2-> d2
+    The fused network will look like:
+        a -NextOp1-> d1
+          -NextOp2-> d2
+    """
+
+    _COPY_OPS = ["CopyCPUToGPU", "CopyGPUToCPU"]
+
+    def _fuse_once(predict_net):
+        ssa, blob_versions = core.get_ssa(predict_net)
+        consumer_map = get_consumer_map(ssa)
+        versioned_external_output = [
+            (name, blob_versions[name]) for name in predict_net.external_output
+        ]
+
+        for op_id, op in enumerate(predict_net.op):
+            if op.type in _COPY_OPS:
+                fw_copy_versioned_output = ssa[op_id][1][0]
+                consumer_ids = [x[0] for x in consumer_map[fw_copy_versioned_output]]
+                reverse_op_type = _COPY_OPS[1 - _COPY_OPS.index(op.type)]
+
+                is_fusable = (
+                    len(consumer_ids) > 0
+                    and fw_copy_versioned_output not in versioned_external_output
+                    and all(
+                        predict_net.op[_op_id].type == reverse_op_type
+                        and ssa[_op_id][1][0] not in versioned_external_output
+                        for _op_id in consumer_ids
+                    )
+                )
+
+                if is_fusable:
+                    for rv_copy_op_id in consumer_ids:
+                        # making each NextOp uses "a" directly and removing Copy ops
+                        rs_copy_versioned_output = ssa[rv_copy_op_id][1][0]
+                        next_op_id, inp_id = consumer_map[rs_copy_versioned_output][0]
+                        predict_net.op[next_op_id].input[inp_id] = op.input[0]
+                    # remove CopyOps
+                    new_ops = [
+                        op
+                        for i, op in enumerate(predict_net.op)
+                        if i != op_id and i not in consumer_ids
+                    ]
+                    del predict_net.op[:]
+                    predict_net.op.extend(new_ops)
+                    return True
+
+        return False
+
+    # _fuse_once returns False is nothing can be fused
+    while _fuse_once(predict_net):
+        pass
+
+
+def remove_dead_end_ops(net_def: caffe2_pb2.NetDef):
+    """ remove ops if its output is not used or not in external_output """
+    ssa, versions = core.get_ssa(net_def)
+    versioned_external_output = [(name, versions[name]) for name in net_def.external_output]
+    consumer_map = get_consumer_map(ssa)
+    removed_op_ids = set()
+
+    def _is_dead_end(versioned_blob):
+        return not (
+            versioned_blob in versioned_external_output
+            or (
+                len(consumer_map[versioned_blob]) > 0
+                and all(x[0] not in removed_op_ids for x in consumer_map[versioned_blob])
+            )
+        )
+
+    for i, ssa_i in reversed(list(enumerate(ssa))):
+        versioned_outputs = ssa_i[1]
+        if all(_is_dead_end(outp) for outp in versioned_outputs):
+            removed_op_ids.add(i)
+
+    # simply removing those deadend ops should have no effect to external_output
+    new_ops = [op for i, op in enumerate(net_def.op) if i not in removed_op_ids]
+    del net_def.op[:]
+    net_def.op.extend(new_ops)

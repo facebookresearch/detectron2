@@ -1,7 +1,7 @@
 ---
 name: "Unexpected behaviors / Bugs"
 about: Report unexpected behaviors or bugs in detectron2
-title: Please read & provide the following:
+title: Please read & provide the following
 
 ---
 
@@ -35,7 +35,7 @@ Only in one of the two conditions we will help with it:
 
 ## Environment:
 
-Please paste the output of `python -m detectron2.utils.collect_env`.
+Run `python -m detectron2.utils.collect_env` in the environment where you observerd the issue, and paste the output.
 If detectron2 hasn't been successfully installed, use `python detectron2/utils/collect_env.py`.
 
 If your issue looks like an installation issue / environment issue,

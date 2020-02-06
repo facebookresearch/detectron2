@@ -11,7 +11,10 @@ termcolor
 yacs
 tabulate
 cloudpickle
-Pillow
+Pillow==6.2.2
+future
+requests
+six
 git+git://github.com/facebookresearch/fvcore.git
 https://download.pytorch.org/whl/nightly/cpu/torch-1.3.0.dev20191010%2Bcpu-cp37-cp37m-linux_x86_64.whl
 https://download.pytorch.org/whl/nightly/cpu/torchvision-0.5.0.dev20191008%2Bcpu-cp37-cp37m-linux_x86_64.whl

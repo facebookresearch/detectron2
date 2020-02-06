@@ -271,7 +271,6 @@ _C.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.5
 # train ROI heads.
 _C.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT = True
 
-
 # ---------------------------------------------------------------------------- #
 # Box Head
 # ---------------------------------------------------------------------------- #
@@ -300,6 +299,8 @@ _C.MODEL.ROI_BOX_HEAD.CONV_DIM = 256
 _C.MODEL.ROI_BOX_HEAD.NORM = ""
 # Whether to use class agnostic for bbox regression
 _C.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG = False
+# If true, RoI heads use bounding boxes predicted by the box head rather than proposal boxes.
+_C.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES = False
 
 # ---------------------------------------------------------------------------- #
 # Cascaded Box Head

@@ -43,7 +43,7 @@ def read_image(file_name, format=None):
         format (str): one of the supported image modes in PIL, or "BGR"
 
     Returns:
-        image (np.ndarray): an HWC image
+        image (np.ndarray): an HWC image in the given format.
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
@@ -283,7 +283,10 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
                         " COCO-style RLE as a dict, or a full-image segmentation mask "
                         "as a 2D ndarray.".format(type(segm))
                     )
-            masks = BitMasks(torch.stack([torch.from_numpy(x) for x in masks]))
+            # torch.from_numpy does not support array with negative stride.
+            masks = BitMasks(
+                torch.stack([torch.from_numpy(np.ascontiguousarray(x)) for x in masks])
+            )
         target.gt_masks = masks
 
     if len(annos) and "keypoints" in annos[0]:

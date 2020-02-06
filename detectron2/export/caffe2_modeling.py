@@ -2,7 +2,6 @@
 
 import functools
 import io
-import numpy as np
 import struct
 import types
 import torch
@@ -25,10 +24,6 @@ from .shared import (
     get_pb_arg_vals,
     mock_torch_nn_functional_interpolate,
 )
-
-
-def _is_valid_model_output_blob(blob):
-    return isinstance(blob, np.ndarray)
 
 
 def assemble_rcnn_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=False):
@@ -57,17 +52,17 @@ def assemble_rcnn_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=Fal
     score_nms = tensor_outputs["score_nms"]
     class_nms = tensor_outputs["class_nms"]
     # Detection will always success because Conv support 0-batch
-    assert _is_valid_model_output_blob(bbox_nms)
-    assert _is_valid_model_output_blob(score_nms)
-    assert _is_valid_model_output_blob(class_nms)
-    result.pred_boxes = Boxes(torch.Tensor(bbox_nms))
-    result.scores = torch.Tensor(score_nms)
-    result.pred_classes = torch.Tensor(class_nms).to(torch.int64)
+    assert bbox_nms is not None
+    assert score_nms is not None
+    assert class_nms is not None
+    result.pred_boxes = Boxes(bbox_nms)
+    result.scores = score_nms
+    result.pred_classes = class_nms.to(torch.int64)
 
     mask_fcn_probs = tensor_outputs.get("mask_fcn_probs", None)
-    if _is_valid_model_output_blob(mask_fcn_probs):
+    if mask_fcn_probs is not None:
         # finish the mask pred
-        mask_probs_pred = torch.Tensor(mask_fcn_probs)
+        mask_probs_pred = mask_fcn_probs
         num_masks = mask_probs_pred.shape[0]
         class_pred = result.pred_classes
         indices = torch.arange(num_masks, device=class_pred.device)
@@ -80,17 +75,17 @@ def assemble_rcnn_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=Fal
 
     keypoints_out = tensor_outputs.get("keypoints_out", None)
     kps_score = tensor_outputs.get("kps_score", None)
-    if _is_valid_model_output_blob(keypoints_out):
+    if keypoints_out is not None:
         # keypoints_out: [N, 4, #kypoints], where 4 is in order of (x, y, score, prob)
-        keypoints_tensor = torch.Tensor(keypoints_out)
+        keypoints_tensor = keypoints_out
         # NOTE: it's possible that prob is not calculated if "should_output_softmax"
         # is set to False in HeatmapMaxKeypoint, so just using raw score, seems
         # it doesn't affect mAP. TODO: check more carefully.
         keypoint_xyp = keypoints_tensor.transpose(1, 2)[:, :, [0, 1, 2]]
         result.pred_keypoints = keypoint_xyp
-    elif _is_valid_model_output_blob(kps_score):
+    elif kps_score is not None:
         # keypoint heatmap to sparse data structure
-        pred_keypoint_logits = torch.Tensor(kps_score)
+        pred_keypoint_logits = kps_score
         keypoint_head.keypoint_rcnn_inference(pred_keypoint_logits, [result])
 
     return results
@@ -256,6 +251,9 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
+        check_set_pb_arg(
+            predict_net, "device", "s", str.encode(str(self._wrapped_model.device), "ascii")
+        )
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"GeneralizedRCNN")
 
     @mock_torch_nn_functional_interpolate()
@@ -306,6 +304,9 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
+        check_set_pb_arg(
+            predict_net, "device", "s", str.encode(str(self._wrapped_model.device), "ascii")
+        )
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"PanopticFPN")
 
         # Inference parameters:
@@ -343,7 +344,7 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
             detector_results = assemble_rcnn_outputs_by_name(
                 image_sizes, c2_results, force_mask_on=True
             )
-            sem_seg_results = torch.Tensor(c2_results["sem_seg"])
+            sem_seg_results = c2_results["sem_seg"]
 
             # copied from meta_arch/panoptic_fpn.py ...
             processed_results = []
@@ -401,6 +402,9 @@ class Caffe2RetinaNet(Caffe2MetaArch):
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
+        check_set_pb_arg(
+            predict_net, "device", "s", str.encode(str(self._wrapped_model.device), "ascii")
+        )
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"RetinaNet")
 
         # Inference parameters:
@@ -458,8 +462,6 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         )
 
         def f(batched_inputs, c2_inputs, c2_results):
-            c2_results = {k: torch.Tensor(v) for k, v in c2_results.items()}
-
             image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
 
             num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])

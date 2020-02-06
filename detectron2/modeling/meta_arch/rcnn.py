@@ -94,14 +94,14 @@ class GeneralizedRCNN(nn.Module):
                 Other information that's included in the original dicts, such as:
 
                 * "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                  See :meth:`postprocess` for details.
 
         Returns:
             list[dict]:
                 Each dict is the output for one input image.
                 The dict contains one key "instances" whose value is a :class:`Instances`.
                 The :class:`Instances` object has the following keys:
-                    "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
+                "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
         """
         if not self.training:
             return self.inference(batched_inputs)
@@ -222,7 +222,8 @@ class ProposalNetwork(nn.Module):
             Same as in :class:`GeneralizedRCNN.forward`
 
         Returns:
-            list[dict]: Each dict is the output for one input image.
+            list[dict]:
+                Each dict is the output for one input image.
                 The dict contains one key "proposals" whose value is a
                 :class:`Instances` with keys "proposal_boxes" and "objectness_logits".
         """

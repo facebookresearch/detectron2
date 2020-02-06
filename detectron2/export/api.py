@@ -1,6 +1,6 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import logging
 import os
-import torch
 from caffe2.proto import caffe2_pb2
 from torch import nn
 
@@ -9,7 +9,7 @@ from detectron2.config import CfgNode as CN
 from .caffe2_export import export_caffe2_detection_model, run_and_save_graph
 from .caffe2_inference import ProtobufDetectionModel
 from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format
-from .shared import get_pb_arg_vali, save_graph
+from .shared import get_pb_arg_vali, get_pb_arg_vals, save_graph
 
 __all__ = ["add_export_config", "export_caffe2_model", "Caffe2Model"]
 
@@ -114,9 +114,8 @@ class Caffe2Model(nn.Module):
             save_graph(self._predict_net, output_file, op_only=False)
         else:
             size_divisibility = get_pb_arg_vali(self._predict_net, "size_divisibility", 0)
-            inputs = convert_batched_inputs_to_c2_format(
-                inputs, size_divisibility, torch.device("cpu")
-            )
+            device = get_pb_arg_vals(self._predict_net, "device", b"cpu").decode("ascii")
+            inputs = convert_batched_inputs_to_c2_format(inputs, size_divisibility, device)
             inputs = [x.numpy() for x in inputs]
             run_and_save_graph(self._predict_net, self._init_net, inputs, output_file)
 

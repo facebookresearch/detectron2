@@ -272,6 +272,7 @@ class DeformBottleneckBlock(ResNetBlockBase):
 def make_stage(block_class, num_blocks, first_stride, **kwargs):
     """
     Create a resnet stage by creating many blocks.
+
     Args:
         block_class (class): a subclass of ResNetBlockBase
         num_blocks (int):
@@ -387,6 +388,7 @@ class ResNet(Backbone):
                 outputs[name] = x
         if self.num_classes is not None:
             x = self.avgpool(x)
+            x = torch.flatten(x, 1)
             x = self.linear(x)
             if "linear" in self._out_features:
                 outputs["linear"] = x

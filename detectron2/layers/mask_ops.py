@@ -74,8 +74,8 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
         masks (tensor): Tensor of shape (Bimg, Hmask, Wmask), where Bimg is the number of
             detected object instances in the image and Hmask, Wmask are the mask width and mask
             height of the predicted mask (e.g., Hmask = Wmask = 28). Values are in [0, 1].
-        boxes (Boxes): A Boxes of length Bimg. boxes.tensor[i] and masks[i] correspond
-            to the same object instance.
+        boxes (Boxes or Tensor): A Boxes of length Bimg or Tensor of shape (Bimg, 4).
+            boxes[i] and masks[i] correspond to the same object instance.
         image_shape (tuple): height, width
         threshold (float): A threshold in [0, 1] for converting the (soft) masks to
             binary masks.
@@ -89,8 +89,8 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
     N = len(masks)
     if N == 0:
         return masks.new_empty((0,) + image_shape, dtype=torch.uint8)
-
-    boxes = boxes.tensor
+    if not isinstance(boxes, torch.Tensor):
+        boxes = boxes.tensor
     device = boxes.device
     assert len(boxes) == N, boxes.shape
 

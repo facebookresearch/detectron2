@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import argparse
 import os
 
@@ -12,6 +13,8 @@ from detectron2.utils.logger import setup_logger
 
 def setup_cfg(args):
     cfg = get_cfg()
+    # cuda context is initialized before creating dataloader, so we don't fork anymore
+    cfg.DATALOADER.NUM_WORKERS = 0
     cfg = add_export_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)

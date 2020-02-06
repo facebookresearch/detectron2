@@ -3,7 +3,7 @@
 ## Caffe2 Deployment
 We currently support converting a detectron2 model to Caffe2 format through ONNX.
 The converted Caffe2 model is able to run without detectron2 dependency in either Python or C++.
-It has a runtime optimized for CPU & mobile inference.
+It has a runtime optimized for CPU & mobile inference, but not for GPU inference.
 
 Caffe2 conversion requires PyTorch ≥ 1.4 and ONNX ≥ 1.6.
 
@@ -23,18 +23,18 @@ We provide a tool, `tools/caffe2_converter.py` as an example that uses
 these APIs to convert a standard model.
 
 To convert an official Mask R-CNN trained on COCO, first
-[prepare the COCO dataset](datasets), then pick the model from [Model Zoo](MODEL_ZOO.md), and run:
+[prepare the COCO dataset](../../datasets/), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
 python tools/caffe2_converter.py --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
 	--output ./caffe2_model --run-eval \
-	MODEL.WEIGHTS detectron2://COCO-Detection/faster_rcnn_R_50_FPN_3x/137849458/model_final_280758.pkl \
+	MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
 	MODEL.DEVICE cpu
 ```
 
 Note that:
-1. The conversion needs sample inputs to trace the model. That's why the script requires the dataset.
+1. The conversion needs valid sample inputs & weights to trace the model. That's why the script requires the dataset.
 	 You can modify the script to obtain sample inputs in other ways.
-2. GPU deployment is currently not supported for R-CNN models. So we use `MODEL.DEVICE cpu`.
+2. GPU conversion is supported only with Pytorch's master. So we use `MODEL.DEVICE cpu`.
 3. With the `--run-eval` flag, it will evaluate the converted models to verify its accuracy.
    The accuracy is typically slightly different (within 0.1 AP) from PyTorch due to
 	 numerical precisions between different implementations.

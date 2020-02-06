@@ -258,8 +258,10 @@ def build_detection_train_loader(cfg, mapper=None):
 
     1. Use the dataset names in config to query :class:`DatasetCatalog`, and obtain a list of dicts.
     2. Start workers to work on the dicts. Each worker will:
-      * Map each metadata dict into another format to be consumed by the model.
-      * Batch them by simply putting dicts into a list.
+
+       * Map each metadata dict into another format to be consumed by the model.
+       * Batch them by simply putting dicts into a list.
+
     The batched ``list[mapped_dict]`` is what this dataloader will return.
 
     Args:

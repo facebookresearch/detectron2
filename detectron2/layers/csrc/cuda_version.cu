@@ -1,3 +1,5 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+
 #include <cuda_runtime_api.h>
 
 namespace detectron2 {

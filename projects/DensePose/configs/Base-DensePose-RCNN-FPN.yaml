@@ -33,13 +33,13 @@ MODEL:
   ROI_DENSEPOSE_HEAD:
     NAME: "DensePoseV1ConvXHead"
     POOLER_TYPE: "ROIAlign"
-    NUM_COARSE_SEGM_CHANNELS: 15
+    NUM_COARSE_SEGM_CHANNELS: 2
 DATASETS:
   TRAIN: ("densepose_coco_2014_train", "densepose_coco_2014_valminusminival")
   TEST: ("densepose_coco_2014_minival",)
 SOLVER:
   IMS_PER_BATCH: 16
-  BASE_LR: 0.002
+  BASE_LR: 0.01
   STEPS: (60000, 80000)
   MAX_ITER: 90000
   WARMUP_FACTOR: 0.1
