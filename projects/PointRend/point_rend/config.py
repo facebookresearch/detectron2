@@ -10,8 +10,8 @@ def add_pointrend_config(cfg):
     """
     # Names of the input feature maps to be used by a coarse mask head.
     cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES = ("p2",)
-    cfg.MODEL.ROI_MASK_HEAD.FC_DIM = 2
-    cfg.MODEL.ROI_MASK_HEAD.NUM_FC = 1024
+    cfg.MODEL.ROI_MASK_HEAD.FC_DIM = 1024
+    cfg.MODEL.ROI_MASK_HEAD.NUM_FC = 2
     # The side size of a coarse mask head prediction.
     cfg.MODEL.ROI_MASK_HEAD.OUTPUT_SIDE_RESOLUTION = 7
     # True if point head is used.
