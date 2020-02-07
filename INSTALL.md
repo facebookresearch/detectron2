@@ -12,12 +12,11 @@ also installs detectron2 with a few simple commands.
 	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, optional, needed by demo and visualization
 - pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
-- gcc & g++ ≥ 4.9
 
 
-### Build and Install Detectron2
+### Build Detectron2 from Source
 
-After having the above dependencies, run:
+After having the above dependencies and gcc & g++ ≥ 4.9, run:
 ```
 pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # (add --user if you don't have permission)
@@ -33,7 +32,20 @@ cd detectron2 && pip install -e .
 To __rebuild__ detectron2 that's built from a local clone, `rm -rf build/ **/*.so` then `pip install -e .`.
 You often need to rebuild detectron2 after reinstalling PyTorch.
 
+### Install Pre-Built Detectron2
+```
+# for CUDA 10.1:
+pip install detectron2 -f \
+	https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
+```
+You can replace cu101 with "cu{100,92}" or "cpu".
+
+Note that such installation has to be used with the latest official PyTorch release (currently 1.4).
+It will not work with your custom build of PyTorch.
+
 ### Common Installation Issues
+
+If you met issues using the pre-built detectron2, please uninstall it and try building it from source.
 
 Click each issue for its solutions:
 
