@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import json
+import math
 import numpy as np
 import unittest
 import torch
@@ -10,11 +12,15 @@ class TestBoxMode(unittest.TestCase):
     def _convert_xy_to_wh(self, x):
         return BoxMode.convert(x, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
 
+    def _convert_xywha_to_xyxy(self, x):
+        return BoxMode.convert(x, BoxMode.XYWHA_ABS, BoxMode.XYXY_ABS)
+
     def test_box_convert_list(self):
         for tp in [list, tuple]:
             box = tp([5, 5, 10, 10])
             output = self._convert_xy_to_wh(box)
-            self.assertTrue(output == tp([5, 5, 5, 5]))
+            self.assertIsInstance(output, tp)
+            self.assertEqual(output, tp([5, 5, 5, 5]))
 
             with self.assertRaises(Exception):
                 self._convert_xy_to_wh([box])
@@ -22,14 +28,86 @@ class TestBoxMode(unittest.TestCase):
     def test_box_convert_array(self):
         box = np.asarray([[5, 5, 10, 10], [1, 1, 2, 3]])
         output = self._convert_xy_to_wh(box)
+        self.assertEqual(output.dtype, box.dtype)
+        self.assertEqual(output.shape, box.shape)
         self.assertTrue((output[0] == [5, 5, 5, 5]).all())
         self.assertTrue((output[1] == [1, 1, 1, 2]).all())
 
-    def test_box_convert_tensor(self):
+    def test_box_convert_cpu_tensor(self):
         box = torch.tensor([[5, 5, 10, 10], [1, 1, 2, 3]])
-        output = self._convert_xy_to_wh(box).numpy()
+        output = self._convert_xy_to_wh(box)
+        self.assertEqual(output.dtype, box.dtype)
+        self.assertEqual(output.shape, box.shape)
+        output = output.numpy()
         self.assertTrue((output[0] == [5, 5, 5, 5]).all())
         self.assertTrue((output[1] == [1, 1, 1, 2]).all())
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA unavailable")
+    def test_box_convert_cuda_tensor(self):
+        box = torch.tensor([[5, 5, 10, 10], [1, 1, 2, 3]]).cuda()
+        output = self._convert_xy_to_wh(box)
+        self.assertEqual(output.dtype, box.dtype)
+        self.assertEqual(output.shape, box.shape)
+        self.assertEqual(output.device, box.device)
+        output = output.cpu().numpy()
+        self.assertTrue((output[0] == [5, 5, 5, 5]).all())
+        self.assertTrue((output[1] == [1, 1, 1, 2]).all())
+
+    def test_box_convert_xywha_to_xyxy_list(self):
+        for tp in [list, tuple]:
+            box = tp([50, 50, 30, 20, 0])
+            output = self._convert_xywha_to_xyxy(box)
+            self.assertIsInstance(output, tp)
+            self.assertEqual(output, tp([35, 40, 65, 60]))
+
+            with self.assertRaises(Exception):
+                self._convert_xywha_to_xyxy([box])
+
+    def test_box_convert_xywha_to_xyxy_array(self):
+        for dtype in [np.float64, np.float32]:
+            box = np.asarray(
+                [
+                    [50, 50, 30, 20, 0],
+                    [50, 50, 30, 20, 90],
+                    [1, 1, math.sqrt(2), math.sqrt(2), -45],
+                ],
+                dtype=dtype,
+            )
+            output = self._convert_xywha_to_xyxy(box)
+            self.assertEqual(output.dtype, box.dtype)
+            expected = np.asarray([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
+            self.assertTrue(np.allclose(output, expected, atol=1e-6), "output={}".format(output))
+
+    def test_box_convert_xywha_to_xyxy_tensor(self):
+        for dtype in [torch.float32, torch.float64]:
+            box = torch.tensor(
+                [
+                    [50, 50, 30, 20, 0],
+                    [50, 50, 30, 20, 90],
+                    [1, 1, math.sqrt(2), math.sqrt(2), -45],
+                ],
+                dtype=dtype,
+            )
+            output = self._convert_xywha_to_xyxy(box)
+            self.assertEqual(output.dtype, box.dtype)
+            expected = torch.tensor([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
+
+            self.assertTrue(torch.allclose(output, expected, atol=1e-6), "output={}".format(output))
+
+    def test_json_serializable(self):
+        payload = {"box_mode": BoxMode.XYWH_REL}
+        try:
+            json.dumps(payload)
+        except Exception:
+            self.fail("JSON serialization failed")
+
+    def test_json_deserializable(self):
+        payload = '{"box_mode": 2}'
+        obj = json.loads(payload)
+        try:
+            obj["box_mode"] = BoxMode(obj["box_mode"])
+        except Exception:
+            self.fail("JSON deserialization failed")
 
 
 class TestBoxIOU(unittest.TestCase):
@@ -56,7 +134,7 @@ class TestBoxIOU(unittest.TestCase):
 
         ious = pairwise_iou(Boxes(boxes1), Boxes(boxes2))
 
-        assert torch.allclose(ious, expected_ious)
+        self.assertTrue(torch.allclose(ious, expected_ious))
 
 
 if __name__ == "__main__":

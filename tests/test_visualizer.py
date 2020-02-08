@@ -7,7 +7,7 @@ import unittest
 import torch
 
 from detectron2.data import MetadataCatalog
-from detectron2.structures import Instances, RotatedBoxes
+from detectron2.structures import BoxMode, Instances, RotatedBoxes
 from detectron2.utils.visualizer import Visualizer
 
 
@@ -33,6 +33,33 @@ class TestVisualizer(unittest.TestCase):
     @property
     def metadata(self):
         return MetadataCatalog.get("coco_2017_train")
+
+    def test_draw_dataset_dict(self):
+        img = np.random.rand(512, 512, 3) * 255
+        dic = {
+            "annotations": [
+                {
+                    "bbox": [
+                        368.9946492271106,
+                        330.891438763377,
+                        13.148537455410235,
+                        13.644708680142685,
+                    ],
+                    "bbox_mode": BoxMode.XYWH_ABS,
+                    "category_id": 0,
+                    "iscrowd": 1,
+                    "segmentation": {
+                        "counts": "_jh52m?2N2N2N2O100O10O001N1O2MceP2",
+                        "size": [512, 512],
+                    },
+                }
+            ],
+            "height": 512,
+            "image_id": 1,
+            "width": 512,
+        }
+        v = Visualizer(img, self.metadata)
+        v.draw_dataset_dict(dic)
 
     def test_overlay_instances(self):
         img, boxes, labels, polygons, masks = self._random_data()

@@ -4,13 +4,15 @@ import os
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import load_coco_json
 
+_URL_PREFIX = "https://dl.fbaipublicfiles.com/densepose/data/"
+
 
 def get_densepose_metadata():
     meta = {
         "thing_classes": ["person"],
-        "densepose_transform_src": "detectron2://densepose/UV_symmetry_transforms.mat",
-        "densepose_smpl_subdiv": "detectron2://densepose/SMPL_subdiv.mat",
-        "densepose_smpl_subdiv_transform": "detectron2://densepose/SMPL_SUBDIV_TRANSFORM.mat",
+        "densepose_transform_src": _URL_PREFIX + "UV_symmetry_transforms.mat",
+        "densepose_smpl_subdiv": _URL_PREFIX + "SMPL_subdiv.mat",
+        "densepose_smpl_subdiv_transform": _URL_PREFIX + "SMPL_SUBDIV_TRANSFORM.mat",
     }
     return meta
 

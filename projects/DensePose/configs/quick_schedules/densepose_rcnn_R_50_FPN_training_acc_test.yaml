@@ -1,6 +1,6 @@
 _BASE_: "../Base-DensePose-RCNN-FPN.yaml"
 MODEL:
-  WEIGHTS: "catalog://ImageNetPretrained/MSRA/R-50"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   ROI_HEADS:
     NUM_CLASSES: 1
 DATASETS:
@@ -10,5 +10,5 @@ SOLVER:
   MAX_ITER: 6000
   STEPS: (5500, 5800)
 TEST:
-  EXPECTED_RESULTS: [["bbox", "AP", 58.27, 1.0], ["densepose", "AP", 42.47, 1.5]]
+  EXPECTED_RESULTS: [["bbox", "AP", 58.27, 1.0], ["densepose_gps", "AP", 42.47, 1.5], ["densepose_gpsm", "AP", 49.20, 1.5]]
 

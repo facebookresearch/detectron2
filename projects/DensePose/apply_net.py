@@ -63,6 +63,12 @@ class InferenceAction(Action):
         parser.add_argument("cfg", metavar="<config>", help="Config file")
         parser.add_argument("model", metavar="<model>", help="Model file")
         parser.add_argument("input", metavar="<input>", help="Input data")
+        parser.add_argument(
+            "--opts",
+            help="Modify config options using the command-line 'KEY VALUE' pairs",
+            default=[],
+            nargs=argparse.REMAINDER,
+        )
 
     @classmethod
     def execute(cls: type, args: argparse.Namespace):
@@ -91,6 +97,7 @@ class InferenceAction(Action):
         cfg = get_cfg()
         add_densepose_config(cfg)
         cfg.merge_from_file(config_fpath)
+        cfg.merge_from_list(args.opts)
         if opts:
             cfg.merge_from_list(opts)
         cfg.MODEL.WEIGHTS = model_fpath

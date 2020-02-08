@@ -15,14 +15,39 @@ import numpy as np
 import pickle
 import time
 from collections import defaultdict
+from enum import Enum
+from typing import Any, Dict, Tuple
 import scipy.spatial.distance as ssd
 from fvcore.common.file_io import PathManager
 from pycocotools import mask as maskUtils
 from scipy.io import loadmat
+from scipy.ndimage import zoom as spzoom
 
-from .structures import DensePoseResult
+from .structures import DensePoseDataRelative, DensePoseResult
 
 logger = logging.getLogger(__name__)
+
+
+class DensePoseEvalMode(str, Enum):
+    # use both masks and geodesic distances (GPS * IOU) to compute scores
+    GPSM = "gpsm"
+    # use only geodesic distances (GPS)  to compute scores
+    GPS = "gps"
+    # use only masks (IOU) to compute scores
+    IOU = "iou"
+
+
+class DensePoseDataMode(str, Enum):
+    # use estimated IUV data (default mode)
+    IUV_DT = "iuvdt"
+    # use ground truth IUV data
+    IUV_GT = "iuvgt"
+    # use ground truth labels I and set UV to 0
+    I_GT_UV_0 = "igtuv0"
+    # use ground truth labels I and estimated UV coordinates
+    I_GT_UV_DT = "igtuvdt"
+    # use estimated labels I and set UV to 0
+    I_DT_UV_0 = "idtuv0"
 
 
 class DensePoseCocoEval(object):
@@ -75,7 +100,14 @@ class DensePoseCocoEval(object):
     # Data, paper, and tutorials available at:  http://mscoco.org/
     # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
     # Licensed under the Simplified BSD License [see coco/license.txt]
-    def __init__(self, cocoGt=None, cocoDt=None, iouType="densepose"):
+    def __init__(
+        self,
+        cocoGt=None,
+        cocoDt=None,
+        iouType: str = "densepose",
+        dpEvalMode: DensePoseEvalMode = DensePoseEvalMode.GPS,
+        dpDataMode: DensePoseDataMode = DensePoseDataMode.IUV_DT,
+    ):
         """
         Initialize CocoEval using coco APIs for gt and dt
         :param cocoGt: coco object with ground truth annotations
@@ -84,6 +116,8 @@ class DensePoseCocoEval(object):
         """
         self.cocoGt = cocoGt  # ground truth COCO API
         self.cocoDt = cocoDt  # detections COCO API
+        self._dpEvalMode = dpEvalMode
+        self._dpDataMode = dpDataMode
         self.params = {}  # evaluation parameters
         self.evalImgs = defaultdict(list)  # per-image per-category eval results [KxAxI]
         self.eval = {}  # accumulated evaluation results
@@ -100,11 +134,15 @@ class DensePoseCocoEval(object):
         self.ignoreThrUV = 0.9
 
     def _loadGEval(self):
-        smpl_subdiv_fpath = PathManager.get_local_path("detectron2://densepose/SMPL_subdiv.mat")
-        pdist_transform_fpath = PathManager.get_local_path(
-            "detectron2://densepose/SMPL_SUBDIV_TRANSFORM.mat"
+        smpl_subdiv_fpath = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/SMPL_subdiv.mat"
         )
-        pdist_matrix_fpath = PathManager.get_local_path("detectron2://densepose/Pdist_matrix.pkl")
+        pdist_transform_fpath = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/SMPL_SUBDIV_TRANSFORM.mat"
+        )
+        pdist_matrix_fpath = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl"
+        )
         SMPL_subdiv = loadmat(smpl_subdiv_fpath)
         self.PDIST_transform = loadmat(pdist_transform_fpath)
         self.PDIST_transform = self.PDIST_transform["index"].squeeze()
@@ -180,9 +218,8 @@ class DensePoseCocoEval(object):
 
             # filtering UVs
             ignoremask = np.require(crop_iregion, requirements=["F"])
-            uvmask = np.require(
-                np.asarray(dt["densepose"][0] > 0), dtype=np.uint8, requirements=["F"]
-            )
+            mask = self._extract_mask(dt)
+            uvmask = np.require(np.asarray(mask > 0), dtype=np.uint8, requirements=["F"])
             uvmask_ = maskUtils.encode(uvmask)
             ignoremask_ = maskUtils.encode(ignoremask)
             uviou = maskUtils.iou([uvmask_], [ignoremask_], [1])[0]
@@ -196,6 +233,11 @@ class DensePoseCocoEval(object):
         else:
             gts = self.cocoGt.loadAnns(self.cocoGt.getAnnIds(imgIds=p.imgIds))
             dts = self.cocoDt.loadAnns(self.cocoDt.getAnnIds(imgIds=p.imgIds))
+
+        imns = self.cocoGt.loadImgs(p.imgIds)
+        self.size_mapping = {}
+        for im in imns:
+            self.size_mapping[im["id"]] = [im["height"], im["width"]]
 
         # if iouType == 'uv', add point gt annotations
         if p.iouType == "densepose":
@@ -260,6 +302,12 @@ class DensePoseCocoEval(object):
             computeIoU = self.computeOks
         elif p.iouType == "densepose":
             computeIoU = self.computeOgps
+            if self._dpEvalMode == DensePoseEvalMode.GPSM:
+                self.real_ious = {
+                    (imgId, catId): self.computeDPIoU(imgId, catId)
+                    for imgId in p.imgIds
+                    for catId in catIds
+                }
 
         self.ious = {
             (imgId, catId): computeIoU(imgId, catId) for imgId in p.imgIds for catId in catIds
@@ -276,6 +324,72 @@ class DensePoseCocoEval(object):
         self._paramsEval = copy.deepcopy(self.params)
         toc = time.time()
         logger.info("DensePose evaluation DONE (t={:0.2f}s).".format(toc - tic))
+
+    def getDensePoseMask(self, polys):
+        maskGen = np.zeros([256, 256])
+        for i in range(1, 15):
+            if polys[i - 1]:
+                currentMask = maskUtils.decode(polys[i - 1])
+                maskGen[currentMask > 0] = i
+        return maskGen
+
+    def _generate_rlemask_on_image(self, mask, imgId, data):
+        bbox_xywh = np.array(data["bbox"])
+        x, y, w, h = bbox_xywh
+        im_h, im_w = self.size_mapping[imgId]
+        im_mask = np.zeros((im_h, im_w), dtype=np.uint8)
+        if mask is not None:
+            x0 = max(int(x), 0)
+            x1 = min(int(x + w), im_w, int(x) + mask.shape[1])
+            y0 = max(int(y), 0)
+            y1 = min(int(y + h), im_h, int(y) + mask.shape[0])
+            y = int(y)
+            x = int(x)
+            im_mask[y0:y1, x0:x1] = mask[y0 - y : y1 - y, x0 - x : x1 - x]
+        im_mask = np.require(np.asarray(im_mask > 0), dtype=np.uint8, requirements=["F"])
+        rle_mask = maskUtils.encode(np.array(im_mask[:, :, np.newaxis], order="F"))[0]
+        return rle_mask
+
+    def computeDPIoU(self, imgId, catId):
+        p = self.params
+        if p.useCats:
+            gt = self._gts[imgId, catId]
+            dt = self._dts[imgId, catId]
+        else:
+            gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
+            dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
+        if len(gt) == 0 and len(dt) == 0:
+            return []
+        inds = np.argsort([-d["score"] for d in dt], kind="mergesort")
+        dt = [dt[i] for i in inds]
+        if len(dt) > p.maxDets[-1]:
+            dt = dt[0 : p.maxDets[-1]]
+
+        gtmasks = []
+        for g in gt:
+            if DensePoseDataRelative.S_KEY in g.keys():
+                mask = self.getDensePoseMask(g[DensePoseDataRelative.S_KEY])
+                _, _, w, h = g["bbox"]
+                scale_x = float(max(w, 1)) / mask.shape[1]
+                scale_y = float(max(h, 1)) / mask.shape[0]
+                mask = spzoom(mask, (scale_y, scale_x), order=1, prefilter=False)
+                mask = np.array(mask > 0.5, dtype=np.uint8)
+            else:
+                mask = None
+            rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
+            gtmasks.append(rle_mask)
+
+        dtmasks = []
+        for d in dt:
+            mask = self._extract_mask(d)
+            mask = np.require(np.asarray(mask > 0), dtype=np.uint8, requirements=["F"])
+            rle_mask = self._generate_rlemask_on_image(mask, imgId, d)
+            dtmasks.append(rle_mask)
+
+        # compute iou between each dt and gt region
+        iscrowd = [int(o["iscrowd"]) for o in gt]
+        iousDP = maskUtils.iou(dtmasks, gtmasks, iscrowd)
+        return iousDP
 
     def computeIoU(self, imgId, catId):
         p = self.params
@@ -377,6 +491,47 @@ class DensePoseCocoEval(object):
                 ious[i, j] = np.sum(np.exp(-e)) / e.shape[0]
         return ious
 
+    def _extract_mask(self, dt: Dict[str, Any]) -> np.ndarray:
+        (densepose_shape, densepose_data_encoded), densepose_bbox_xywh = dt["densepose"]
+        densepose_data = DensePoseResult.decode_png_data(densepose_shape, densepose_data_encoded)
+        return densepose_data[0]
+
+    def _extract_iuv(
+        self, densepose_data: np.ndarray, py: np.ndarray, px: np.ndarray, gt: Dict[str, Any]
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Extract arrays of I, U and V values at given points as numpy arrays
+        given the data mode stored in self._dpDataMode
+        """
+        if self._dpDataMode == DensePoseDataMode.IUV_DT:
+            # estimated labels and UV (default)
+            ipoints = densepose_data[0, py, px]
+            upoints = densepose_data[1, py, px] / 255.0  # convert from uint8 by /255.
+            vpoints = densepose_data[2, py, px] / 255.0
+        elif self._dpDataMode == DensePoseDataMode.IUV_GT:
+            # ground truth
+            ipoints = np.array(gt["dp_I"])
+            upoints = np.array(gt["dp_U"])
+            vpoints = np.array(gt["dp_V"])
+        elif self._dpDataMode == DensePoseDataMode.I_GT_UV_0:
+            # ground truth labels, UV = 0
+            ipoints = np.array(gt["dp_I"])
+            upoints = upoints * 0.0
+            vpoints = vpoints * 0.0
+        elif self._dpDataMode == DensePoseDataMode.I_GT_UV_DT:
+            # ground truth labels, estimated UV
+            ipoints = np.array(gt["dp_I"])
+            upoints = densepose_data[1, py, px] / 255.0  # convert from uint8 by /255.
+            vpoints = densepose_data[2, py, px] / 255.0
+        elif self._dpDataMode == DensePoseDataMode.I_DT_UV_0:
+            # estimated labels, UV = 0
+            ipoints = densepose_data[0, py, px]
+            upoints = upoints * 0.0
+            vpoints = vpoints * 0.0
+        else:
+            raise ValueError(f"Unknown data mode: {self._dpDataMode}")
+        return ipoints, upoints, vpoints
+
     def computeOgps(self, imgId, catId):
         p = self.params
         # dimension here should be Nxm
@@ -432,9 +587,7 @@ class DensePoseCocoEval(object):
                             "DensePoseData height {} should be equal to "
                             "detection bounding box height {}".format(densepose_data.shape[1], dy)
                         )
-                        ipoints = densepose_data[0, py, px]
-                        upoints = densepose_data[1, py, px] / 255.0  # convert from uint8 by /255.
-                        vpoints = densepose_data[2, py, px] / 255.0
+                        ipoints, upoints, vpoints = self._extract_iuv(densepose_data, py, px, gt)
                         ipoints[pts == -1] = 0
                         # Find closest vertices in subsampled mesh.
                         cVerts, cVertsGT = self.findAllClosestVerts(gt, upoints, vpoints, ipoints)
@@ -505,6 +658,12 @@ class DensePoseCocoEval(object):
                 if len(self.ious[imgId, catId]) > 0
                 else self.ious[imgId, catId]
             )
+            if self._dpEvalMode == DensePoseEvalMode.GPSM:
+                iousM = (
+                    self.real_ious[imgId, catId][:, gtind]
+                    if len(self.real_ious[imgId, catId]) > 0
+                    else self.real_ious[imgId, catId]
+                )
         else:
             ious = (
                 self.ious[imgId, catId][:, gtind]
@@ -535,13 +694,21 @@ class DensePoseCocoEval(object):
                         # if dt matched to reg gt, and on ignore gt, stop
                         if m > -1 and gtIg[m] == 0 and gtIg[gind] == 1:
                             break
-                        # continue to next gt unless better match made
-                        if ious[dind, gind] < iou:
+                        if p.iouType == "densepose":
+                            if self._dpEvalMode == DensePoseEvalMode.GPSM:
+                                new_iou = np.sqrt(iousM[dind, gind] * ious[dind, gind])
+                            elif self._dpEvalMode == DensePoseEvalMode.IOU:
+                                new_iou = iousM[dind, gind]
+                            elif self._dpEvalMode == DensePoseEvalMode.GPS:
+                                new_iou = ious[dind, gind]
+                        else:
+                            new_iou = ious[dind, gind]
+                        if new_iou < iou:
                             continue
-                        if ious[dind, gind] == 0.0:
+                        if new_iou == 0.0:
                             continue
                         # if match successful and best so far, store appropriately
-                        iou = ious[dind, gind]
+                        iou = new_iou
                         m = gind
                     # if match made store id of match for both dt and gt
                     if m == -1:

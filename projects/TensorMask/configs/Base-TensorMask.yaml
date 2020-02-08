@@ -1,0 +1,25 @@
+MODEL:
+  META_ARCHITECTURE: "TensorMask"
+  MASK_ON: True
+  BACKBONE:
+    NAME: "build_retinanet_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  ANCHOR_GENERATOR:
+    SIZES: [[44, 60], [88, 120], [176, 240], [352, 480], [704, 960], [1408, 1920]]
+    ASPECT_RATIOS: [[1.0]]
+  FPN:
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
+    FUSE_TYPE: "avg"
+  TENSOR_MASK:
+    ALIGNED_ON: True
+    BIPYRAMID_ON: True
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.02
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+VERSION: 2
