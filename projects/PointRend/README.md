@@ -13,6 +13,10 @@ In this repository, we release code for PointRend in Detectron2. PointRend can b
 ## Installation
 Install Detectron 2 following [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). You are ready to go!
 
+## Quick start and visualization
+
+This [Colab Notebook](https://colab.research.google.com/drive/1isGPL5h5_cKoPPhVL9XhMokRtHDvmMVL) tutorial contains examples of PointRend usage and visualisations of its point sampling stages.
+
 ## Training
 
 To train a model with 8 GPUs run:

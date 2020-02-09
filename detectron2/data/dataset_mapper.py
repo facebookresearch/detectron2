@@ -107,6 +107,7 @@ class DatasetMapper:
             )
 
         if not self.is_train:
+            # USER: Modify this if you want to keep them for some reason.
             dataset_dict.pop("annotations", None)
             dataset_dict.pop("sem_seg_file_name", None)
             return dataset_dict

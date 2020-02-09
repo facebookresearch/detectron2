@@ -33,7 +33,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
 <!-- ROW: faster_rcnn_R_50_FPN_noaug_1x -->
- <tr><td align="left"><a href="configs/Detectron1-Comparisons/faster_rcnn_R_50_FPN_noaug_1x.yaml">Faster R-CNN</a></td>
+ <tr><td align="left"><a href="faster_rcnn_R_50_FPN_noaug_1x.yaml">Faster R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.219</td>
 <td align="center">0.048</td>
@@ -45,7 +45,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Detectron1-Comparisons/faster_rcnn_R_50_FPN_noaug_1x/137781054/model_final_7ab50c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Detectron1-Comparisons/faster_rcnn_R_50_FPN_noaug_1x/137781054/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: keypoint_rcnn_R_50_FPN_1x -->
- <tr><td align="left"><a href="configs/Detectron1-Comparisons/keypoint_rcnn_R_50_FPN_1x.yaml">Keypoint R-CNN</a></td>
+ <tr><td align="left"><a href="keypoint_rcnn_R_50_FPN_1x.yaml">Keypoint R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.313</td>
 <td align="center">0.082</td>
@@ -57,7 +57,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Detectron1-Comparisons/keypoint_rcnn_R_50_FPN_1x/137781195/model_final_cce136.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Detectron1-Comparisons/keypoint_rcnn_R_50_FPN_1x/137781195/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_R_50_FPN_noaug_1x -->
- <tr><td align="left"><a href="configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml">Mask R-CNN</a></td>
+ <tr><td align="left"><a href="mask_rcnn_R_50_FPN_noaug_1x.yaml">Mask R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.273</td>
 <td align="center">0.052</td>

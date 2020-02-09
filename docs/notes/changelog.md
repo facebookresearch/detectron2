@@ -1,7 +1,10 @@
 # Change Log
 
+### Releases
+See release log at
+[https://github.com/facebookresearch/detectron2/releases](https://github.com/facebookresearch/detectron2/releases)
 
-### Notable Changes:
+### Notable Backward Incompatible Changes:
 
 * 2019-11-11: `detectron2.data.detection_utils.read_image` transposes images with exif information.
 * 2019-10-10: initial release.

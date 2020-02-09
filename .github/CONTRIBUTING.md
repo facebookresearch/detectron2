@@ -32,13 +32,14 @@ If some part is not as extensible, you can also bring up the issue to make it mo
 
 When sending a PR, please do:
 
-1. Fork the repo and create your branch from `master`.
+1. If a PR contains multiple orthogonal changes, split it to several PRs.
 2. If you've added code that should be tested, add tests.
-3. If APIs are changed, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints with `./dev/linter.sh`.
-6. If a PR contains multiple orthogonal changes, split it to several PRs.
-7. If you haven't already, complete the Contributor License Agreement ("CLA").
+3. For PRs that need experiments (e.g. adding a new model), you don't need to update model zoo,
+   but do provide experiment results in the description of the PR.
+4. If APIs are changed, update the documentation.
+5. Ensure the test suite passes.
+6. Make sure your code lints with `./dev/linter.sh`.
+
 
 ## Contributor License Agreement ("CLA")
 In order to accept your pull request, we need you to submit a CLA. You only need

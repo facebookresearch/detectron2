@@ -165,7 +165,7 @@ void ROIAlignForward(
         (sampling_ratio > 0) ? sampling_ratio : ceil(roi_width / pooled_width);
 
     // We do average (integral) pooling inside a bin
-    // When the grid is empty, output zeros.
+    // When the grid is empty, output zeros == 0/1, instead of NaN.
     const T count = std::max(roi_bin_grid_h * roi_bin_grid_w, 1); // e.g. = 4
 
     // we want to precalculate indices and weights shared by all channels,

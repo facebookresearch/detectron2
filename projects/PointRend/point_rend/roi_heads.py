@@ -191,10 +191,18 @@ class PointRendROIHeads(StandardROIHeads):
                 return mask_coarse_logits
 
             mask_logits = mask_coarse_logits.clone()
-            for _ in range(self.mask_point_subdivision_steps):
+            for subdivions_step in range(self.mask_point_subdivision_steps):
                 mask_logits = interpolate(
                     mask_logits, scale_factor=2, mode="bilinear", align_corners=False
                 )
+                # If `mask_point_subdivision_num_points` is larger or equal to the
+                # resolution of the next step, then we can skip this step
+                H, W = mask_logits.shape[-2:]
+                if (
+                    self.mask_point_subdivision_num_points >= 4 * H * W
+                    and subdivions_step < self.mask_point_subdivision_steps - 1
+                ):
+                    continue
                 uncertainty_map = calculate_uncertainty(mask_logits, pred_classes)
                 point_indices, point_coords = get_uncertain_point_coords_on_grid(
                     uncertainty_map, self.mask_point_subdivision_num_points
