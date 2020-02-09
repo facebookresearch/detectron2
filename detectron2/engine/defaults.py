@@ -262,8 +262,10 @@ class DefaultTrainer(SimpleTrainer):
 
         # For training, wrap with DDP. But don't need this for inference.
         if comm.get_world_size() > 1:
-            if cfg.MODEL.APEX is True:
-                model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
+            if cfg.MODEL.APEX_ON is True:
+                model, optimizer = amp.initialize(
+                    model, optimizer, opt_level=cfg.MODEL.APEX_OPT_LEVEL
+                )
             model = DistributedDataParallel(
                 model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
             )
@@ -313,7 +315,7 @@ class DefaultTrainer(SimpleTrainer):
         wrap the optimizer with your custom `zero_grad()` method.
         """
         self.optimizer.zero_grad()
-        if self.cfg.MODEL.APEX is True:
+        if self.cfg.MODEL.APEX_ON is True:
             with amp.scale_loss(losses, self.optimizer) as scaled_loss:
                 scaled_loss.backward()
         else:
