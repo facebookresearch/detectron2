@@ -24,6 +24,7 @@ from detectron2.data import (
     MetadataCatalog,
     build_detection_test_loader,
     build_detection_train_loader,
+    register_transform
 )
 from detectron2.evaluation import (
     DatasetEvaluator,
@@ -249,6 +250,7 @@ class DefaultTrainer(SimpleTrainer):
             setup_logger()
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
+        register_transform(cfg)
         optimizer = self.build_optimizer(cfg, model)
         data_loader = self.build_train_loader(cfg)
 

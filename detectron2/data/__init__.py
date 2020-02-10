@@ -8,6 +8,8 @@ from .build import (
     load_proposals_into_dataset,
     print_instances_class_histogram,
 )
+
+from .transforms.transform import register_transform
 from .catalog import DatasetCatalog, MetadataCatalog
 from .common import DatasetFromList, MapDataset
 from .dataset_mapper import DatasetMapper

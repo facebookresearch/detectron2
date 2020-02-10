@@ -486,7 +486,9 @@ class Visualizer:
             else:
                 keypts = None
 
-            boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
+            boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYWHA_ABS)
+                     if x["bbox_mode"] is BoxMode.XYWHA_ABS else
+                     BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
 
             labels = [x["category_id"] for x in annos]
             names = self.metadata.get("thing_classes", None)

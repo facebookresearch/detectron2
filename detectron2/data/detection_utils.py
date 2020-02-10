@@ -161,39 +161,45 @@ def transform_instance_annotations(
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
-    bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
-    # Note that bbox is 1d (per-instance bounding box)
-    annotation["bbox"] = transforms.apply_box([bbox])[0]
-    annotation["bbox_mode"] = BoxMode.XYXY_ABS
+    
+    
+    if annotation["bbox_mode"] == BoxMode.XYWHA_ABS:
+        bbox = np.asarray([annotation['bbox']])
+        annotation["bbox"] = transforms.apply_box(bbox)[0]
+        annotation["bbox_mode"] = BoxMode.XYWHA_ABS
+    else:
+        bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
+        # Note that bbox is 1d (per-instance bounding box)
+        annotation["bbox"] = transforms.apply_box([bbox])[0]
+        annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
-    if "segmentation" in annotation:
-        # each instance contains 1 or more polygons
-        segm = annotation["segmentation"]
-        if isinstance(segm, list):
-            # polygons
-            polygons = [np.asarray(p).reshape(-1, 2) for p in segm]
-            annotation["segmentation"] = [
-                p.reshape(-1) for p in transforms.apply_polygons(polygons)
-            ]
-        elif isinstance(segm, dict):
-            # RLE
-            mask = mask_util.decode(segm)
-            mask = transforms.apply_segmentation(mask)
-            assert tuple(mask.shape[:2]) == image_size
-            annotation["segmentation"] = mask
-        else:
-            raise ValueError(
-                "Cannot transform segmentation of type '{}'!"
-                "Supported types are: polygons as list[list[float] or ndarray],"
-                " COCO-style RLE as a dict.".format(type(segm))
+        if "segmentation" in annotation:
+            # each instance contains 1 or more polygons
+            segm = annotation["segmentation"]
+            if isinstance(segm, list):
+                # polygons
+                polygons = [np.asarray(p).reshape(-1, 2) for p in segm]
+                annotation["segmentation"] = [
+                    p.reshape(-1) for p in transforms.apply_polygons(polygons)
+                ]
+            elif isinstance(segm, dict):
+                # RLE
+                mask = mask_util.decode(segm)
+                mask = transforms.apply_segmentation(mask)
+                assert tuple(mask.shape[:2]) == image_size
+                annotation["segmentation"] = mask
+            else:
+                raise ValueError(
+                    "Cannot transform segmentation of type '{}'!"
+                    "Supported types are: polygons as list[list[float] or ndarray],"
+                    " COCO-style RLE as a dict.".format(type(segm))
+                )
+
+        if "keypoints" in annotation:
+            keypoints = transform_keypoint_annotations(
+                annotation["keypoints"], transforms, image_size, keypoint_hflip_indices
             )
-
-    if "keypoints" in annotation:
-        keypoints = transform_keypoint_annotations(
-            annotation["keypoints"], transforms, image_size, keypoint_hflip_indices
-        )
-        annotation["keypoints"] = keypoints
-
+            annotation["keypoints"] = keypoints
     return annotation
 
 

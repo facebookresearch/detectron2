@@ -3,7 +3,7 @@
 # File: transform.py
 
 import numpy as np
-from fvcore.transforms.transform import HFlipTransform, NoOpTransform, Transform
+from fvcore.transforms.transform import HFlipTransform, VFlipTransform, NoOpTransform, Transform
 from PIL import Image
 
 __all__ = ["ExtentTransform", "ResizeTransform"]
@@ -110,6 +110,22 @@ def HFlip_rotated_box(transform, rotated_boxes):
     return rotated_boxes
 
 
+def VFlip_rotated_box(transform, rotated_boxes):
+    """
+    Apply the vertical flip transform on rotated boxes.
+
+    Args:
+        rotated_boxes (ndarray): Nx5 floating point array of
+            (x_center, y_center, width, height, angle_degrees) format
+            in absolute coordinates.
+    """
+    # Transform y_center
+    rotated_boxes[:, 1] = transform.height - rotated_boxes[:, 1]
+    # Transform angle
+    rotated_boxes[:, 4] = -rotated_boxes[:, 4]
+    return rotated_boxes
+
+
 def Resize_rotated_box(transform, rotated_boxes):
     """
     Apply the resizing transform on rotated boxes. For details of how these (approximation)
@@ -134,6 +150,14 @@ def Resize_rotated_box(transform, rotated_boxes):
     return rotated_boxes
 
 
-HFlipTransform.register_type("rotated_box", HFlip_rotated_box)
-NoOpTransform.register_type("rotated_box", lambda t, x: x)
-ResizeTransform.register_type("rotated_box", Resize_rotated_box)
+def register_transform(cfg):
+    '''
+    Change Transform with rotated transform function.
+    '''
+    if cfg.MODEL.PROPOSAL_GENERATOR.NAME == "RRPN":
+        HFlipTransform.register_type("box", HFlip_rotated_box)
+        VFlipTransform.register_type("box", VFlip_rotated_box)
+        NoOpTransform.register_type("box", lambda t, x: x)
+        ResizeTransform.register_type("box", Resize_rotated_box)
+        print("--- change transform with rotated functions ---")
+
