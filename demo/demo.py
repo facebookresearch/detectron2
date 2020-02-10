@@ -77,6 +77,10 @@ if __name__ == "__main__":
         if len(args.input) == 1:
             args.input = glob.glob(os.path.expanduser(args.input[0]))
             assert args.input, "The input path(s) was not found"
+
+        if os.path.isdir(args.input[0]):
+            args.input = [os.path.join(args.input[0], img) for img in os.listdir(args.input[0])]
+
         for path in tqdm.tqdm(args.input, disable=not args.output):
             # use PIL, to be consistent with evaluation
             img = read_image(path, format="BGR")
