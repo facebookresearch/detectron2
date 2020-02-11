@@ -279,6 +279,7 @@ class AutogradProfiler(HookBase):
         if self._profiler is None:
             return
         self._profiler.__exit__(None, None, None)
+        PathManager.mkdirs(self._output_dir)
         out_file = os.path.join(
             self._output_dir, "profiler-trace-iter{}.json".format(self.trainer.iter)
         )

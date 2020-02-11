@@ -50,18 +50,20 @@ class SemanticSegmentor(nn.Module):
             batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
                 Each item in the list contains the inputs for one image.
 
-        For now, each item in the list is a dict that contains:
-            image: Tensor, image in (C, H, W) format.
-            sem_seg: semantic segmentation ground truth
-            Other information that's included in the original dicts, such as:
-                "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                For now, each item in the list is a dict that contains:
+
+                   * "image": Tensor, image in (C, H, W) format.
+                   * "sem_seg": semantic segmentation ground truth
+                   * Other information that's included in the original dicts, such as:
+                     "height", "width" (int): the output resolution of the model, used in inference.
+                     See :meth:`postprocess` for details.
 
         Returns:
-            list[dict]: Each dict is the output for one input image.
-                The dict contains one key "sem_seg" whose value is a
-                Tensor of the output resolution that represents the
-                per-pixel segmentation prediction.
+            list[dict]:
+              Each dict is the output for one input image.
+              The dict contains one key "sem_seg" whose value is a
+              Tensor of the output resolution that represents the
+              per-pixel segmentation prediction.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [self.normalizer(x) for x in images]
