@@ -124,7 +124,7 @@ class ROIAlignRotatedTest(unittest.TestCase):
         assert gradcheck(func, (x,)), "gradcheck failed for RoIAlignRotated CPU"
         assert gradcheck(func, (x.transpose(2, 3),)), "gradcheck failed for RoIAlignRotated CPU"
 
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA unavailable")
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_roi_align_rotated_gradient_cuda(self):
         """
         Compute gradients for ROIAlignRotated with multiple bounding boxes on the GPU,
