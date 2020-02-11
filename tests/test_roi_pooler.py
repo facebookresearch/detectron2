@@ -71,12 +71,12 @@ class TestROIPooler(unittest.TestCase):
 
         roialignrotated_out = roialignrotated_pooler(features, rois_rotated)
 
-        assert torch.allclose(roialignv2_out, roialignrotated_out, atol=1e-4)
+        self.assertTrue(torch.allclose(roialignv2_out, roialignrotated_out, atol=1e-4))
 
     def test_roialignv2_roialignrotated_match_cpu(self):
         self._test_roialignv2_roialignrotated_match(device="cpu")
 
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA unavailable")
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_roialignv2_roialignrotated_match_cuda(self):
         self._test_roialignv2_roialignrotated_match(device="cuda")
 

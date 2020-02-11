@@ -7,14 +7,14 @@ from tensormask.layers.swap_align2nat import SwapAlign2Nat
 
 
 class SwapAlign2NatTest(unittest.TestCase):
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA unavailable")
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_swap_align2nat_gradcheck_cuda(self):
         dtype = torch.float64
         device = torch.device("cuda")
         m = SwapAlign2Nat(2).to(dtype=dtype, device=device)
         x = torch.rand(2, 4, 10, 10, dtype=dtype, device=device, requires_grad=True)
 
-        assert gradcheck(m, x), "gradcheck failed for SwapAlign2Nat CUDA"
+        self.assertTrue(gradcheck(m, x), "gradcheck failed for SwapAlign2Nat CUDA")
 
     def _swap_align2nat(self, tensor, lambda_val):
         """
