@@ -61,7 +61,10 @@ class COCOEvaluator(DatasetEvaluator):
 
         self._metadata = MetadataCatalog.get(dataset_name)
         if not hasattr(self._metadata, "json_file"):
-            self._logger.warning(f"json_file was not found in MetaDataCatalog for '{dataset_name}'")
+            self._logger.warning(
+                f"json_file was not found in MetaDataCatalog for '{dataset_name}'."
+                " Trying to convert it to COCO format ..."
+            )
 
             cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
             self._metadata.json_file = cache_path

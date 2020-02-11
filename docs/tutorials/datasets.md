@@ -50,8 +50,10 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
 + `height`, `width`: integer. The shape of image.
 + `image_id` (str or int): a unique id that identifies this image. Used
 	during evaluation to identify the images, but a dataset may use it for different purposes.
-+ `annotations` (list[dict]): the per-instance annotations of every
-  instance in this image. Each annotation dict may contain:
++ `annotations` (list[dict]): each dict corresponds to annotations of one instance
+  in this image. Images with empty `annotations` will by default be removed from training,
+	but can be included using `DATALOADER.FILTER_EMPTY_ANNOTATIONS`.
+	Each dict may contain the following keys:
   + `bbox` (list[float]): list of 4 numbers representing the bounding box of the instance.
   + `bbox_mode` (int): the format of bbox.
     It must be a member of
@@ -78,6 +80,9 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
     pixel indices to floating point coordinates.
   + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd
     region". Don't include this field if you don't know what it means.
+
+The following keys are used by Fast R-CNN style training, which is rare today.
+
 + `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
   logits of proposals in 'proposal_boxes'.

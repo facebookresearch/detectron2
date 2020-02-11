@@ -3,6 +3,7 @@ import numpy as np
 import unittest
 import cv2
 import torch
+from fvcore.common.benchmark import benchmark
 
 from detectron2.layers.roi_align import ROIAlign
 
@@ -110,5 +111,42 @@ class ROIAlignTest(unittest.TestCase):
         self.assertTrue(output.shape == (0, 3, 7, 7))
 
 
+def benchmark_roi_align():
+    from detectron2 import _C
+
+    def random_boxes(mean_box, stdev, N, maxsize):
+        ret = torch.rand(N, 4) * stdev + torch.tensor(mean_box, dtype=torch.float)
+        ret.clamp_(min=0, max=maxsize)
+        return ret
+
+    def func(N, C, H, W, nboxes_per_img):
+        input = torch.rand(N, C, H, W)
+        boxes = []
+        batch_idx = []
+        for k in range(N):
+            b = random_boxes([80, 80, 130, 130], 24, nboxes_per_img, H)
+            # try smaller boxes:
+            # b = random_boxes([100, 100, 110, 110], 4, nboxes_per_img, H)
+            boxes.append(b)
+            batch_idx.append(torch.zeros(nboxes_per_img, 1, dtype=torch.float32) + k)
+        boxes = torch.cat(boxes, axis=0)
+        batch_idx = torch.cat(batch_idx, axis=0)
+        boxes = torch.cat([batch_idx, boxes], axis=1)
+
+        input = input.cuda()
+        boxes = boxes.cuda()
+
+        def bench():
+            _C.roi_align_forward(input, boxes, 1.0, 7, 7, 0, True)
+            torch.cuda.synchronize()
+
+        return bench
+
+    args = [dict(N=2, C=512, H=256, W=256, nboxes_per_img=500)]
+    benchmark(func, "cuda_roialign", args, num_iters=20, warmup_iters=1)
+
+
 if __name__ == "__main__":
+    if torch.cuda.is_available():
+        benchmark_roi_align()
     unittest.main()
