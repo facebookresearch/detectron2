@@ -294,9 +294,9 @@ def convert_to_coco_dict(dataset_name):
     # unmap the category mapping ids for COCO
     if hasattr(metadata, "thing_dataset_id_to_contiguous_id"):
         reverse_id_mapping = {v: k for k, v in metadata.thing_dataset_id_to_contiguous_id.items()}
-        reverse_id_mapper = lambda contiguous_id: reverse_id_mapping[contiguous_id]
+        reverse_id_mapper = lambda contiguous_id: reverse_id_mapping[contiguous_id] #noqa
     else:
-        reverse_id_mapper = lambda contiguous_id: contiguous_id
+        reverse_id_mapper = lambda contiguous_id: contiguous_id #noqa
 
     categories = [
         {"id": reverse_id_mapper(id), "name": name}
