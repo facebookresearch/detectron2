@@ -87,6 +87,11 @@ def fast_rcnn_inference_single_image(
     Returns:
         Same as `fast_rcnn_inference`, but for only one image.
     """
+    valid_mask = torch.isfinite(boxes).all(dim=1) & torch.isfinite(scores).all(dim=1)
+    if not valid_mask.all():
+        boxes = boxes[valid_mask]
+        scores = scores[valid_mask]
+
     scores = scores[:, :-1]
     num_bbox_reg_classes = boxes.shape[1] // 4
     # Convert to Boxes to use the `clip` function ...

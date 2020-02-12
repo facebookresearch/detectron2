@@ -94,6 +94,11 @@ def fast_rcnn_inference_single_image_rotated(
     Returns:
         Same as `fast_rcnn_inference_rotated`, but for only one image.
     """
+    valid_mask = torch.isfinite(boxes).all(dim=1) & torch.isfinite(scores).all(dim=1)
+    if not valid_mask.all():
+        boxes = boxes[valid_mask]
+        scores = scores[valid_mask]
+
     B = 5  # box dimension
     scores = scores[:, :-1]
     num_bbox_reg_classes = boxes.shape[1] // B
