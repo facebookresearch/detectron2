@@ -133,6 +133,7 @@ class TrainerBase:
                     self.after_step()
             except Exception:
                 logger.exception("Exception during training:")
+                raise
             finally:
                 self.after_train()
 
