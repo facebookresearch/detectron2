@@ -233,19 +233,19 @@ class PolygonMasks:
     def __init__(self, polygons: List[List[Union[torch.Tensor, np.ndarray]]]):
         """
         Arguments:
-            polygons (list[list[Tensor[float]]]): The first
+            polygons (list[list[np.ndarray]]): The first
                 level of the list correspond to individual instances,
                 the second level to all the polygons that compose the
                 instance, and the third level to the polygon coordinates.
-                The third level Tensor should have the format of
-                torch.Tensor([x0, y0, x1, y1, ..., xn, yn]) (n >= 3).
+                The third level array should have the format of
+                [x0, y0, x1, y1, ..., xn, yn] (n >= 3).
         """
         assert isinstance(polygons, list), (
             "Cannot create PolygonMasks: Expect a list of list of polygons per image. "
             "Got '{}' instead.".format(type(polygons))
         )
 
-        def _make_array(t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
+        def _make_array(t: Union[torch.Tensor, np.ndarray]) -> np.ndarray:
             # Use float64 for higher precision, because why not?
             # Always put polygons on CPU (self.to is a no-op) since they
             # are supposed to be small tensors.
@@ -256,7 +256,7 @@ class PolygonMasks:
 
         def process_polygons(
             polygons_per_instance: List[Union[torch.Tensor, np.ndarray]]
-        ) -> List[torch.Tensor]:
+        ) -> List[np.ndarray]:
             assert isinstance(polygons_per_instance, list), (
                 "Cannot create polygons: Expect a list of polygons per instance. "
                 "Got '{}' instead.".format(type(polygons_per_instance))
@@ -267,7 +267,7 @@ class PolygonMasks:
                 assert len(polygon) % 2 == 0 and len(polygon) >= 6
             return polygons_per_instance
 
-        self.polygons: List[List[torch.Tensor]] = [
+        self.polygons: List[List[np.ndarray]] = [
             process_polygons(polygons_per_instance) for polygons_per_instance in polygons
         ]
 
@@ -276,7 +276,7 @@ class PolygonMasks:
 
     @property
     def device(self) -> torch.device:
-        return self.tensor.device
+        return torch.device("cpu")
 
     def get_bounding_boxes(self) -> Boxes:
         """
@@ -304,7 +304,7 @@ class PolygonMasks:
                 a BoolTensor which represents whether each mask is empty (False) or not (True).
         """
         keep = [1 if len(polygon) > 0 else 0 for polygon in self.polygons]
-        return torch.as_tensor(keep, dtype=torch.bool)
+        return torch.from_numpy(np.asarray(keep, dtype=np.bool))
 
     def __getitem__(self, item: Union[int, slice, List[int], torch.BoolTensor]) -> "PolygonMasks":
         """
@@ -336,7 +336,7 @@ class PolygonMasks:
             selected_polygons = [self.polygons[i] for i in item]
         return PolygonMasks(selected_polygons)
 
-    def __iter__(self) -> Iterator[List[torch.Tensor]]:
+    def __iter__(self) -> Iterator[List[np.ndarray]]:
         """
         Yields:
             list[ndarray]: the polygons for one instance.
