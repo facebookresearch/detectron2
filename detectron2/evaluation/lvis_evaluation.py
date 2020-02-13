@@ -53,7 +53,6 @@ class LVISEvaluator(DatasetEvaluator):
 
     def reset(self):
         self._predictions = []
-        self._lvis_results = []
 
     def _tasks_from_config(self, cfg):
         """
@@ -87,13 +86,15 @@ class LVISEvaluator(DatasetEvaluator):
     def evaluate(self):
         if self._distributed:
             comm.synchronize()
-            self._predictions = comm.gather(self._predictions, dst=0)
-            self._predictions = list(itertools.chain(*self._predictions))
+            predictions = comm.gather(self._predictions, dst=0)
+            predictions = list(itertools.chain(*predictions))
 
             if not comm.is_main_process():
                 return
+        else:
+            predictions = self._predictions
 
-        if len(self._predictions) == 0:
+        if len(predictions) == 0:
             self._logger.warning("[LVISEvaluator] Did not receive valid predictions.")
             return {}
 
@@ -101,33 +102,36 @@ class LVISEvaluator(DatasetEvaluator):
             PathManager.mkdirs(self._output_dir)
             file_path = os.path.join(self._output_dir, "instances_predictions.pth")
             with PathManager.open(file_path, "wb") as f:
-                torch.save(self._predictions, f)
+                torch.save(predictions, f)
 
         self._results = OrderedDict()
-        if "proposals" in self._predictions[0]:
-            self._eval_box_proposals()
-        if "instances" in self._predictions[0]:
-            self._eval_predictions(set(self._tasks))
+        if "proposals" in predictions[0]:
+            self._eval_box_proposals(predictions)
+        if "instances" in predictions[0]:
+            self._eval_predictions(set(self._tasks), predictions)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
-    def _eval_predictions(self, tasks):
+    def _eval_predictions(self, tasks, predictions):
         """
-        Evaluate self._predictions on the given tasks.
+        Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
+
+        Args:
+            predictions (list[dict]): list of outputs from the model
         """
         self._logger.info("Preparing results in the LVIS format ...")
-        self._lvis_results = list(itertools.chain(*[x["instances"] for x in self._predictions]))
+        lvis_results = list(itertools.chain(*[x["instances"] for x in predictions]))
 
         # unmap the category ids for LVIS (from 0-indexed to 1-indexed)
-        for result in self._lvis_results:
+        for result in lvis_results:
             result["category_id"] += 1
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "lvis_instances_results.json")
             self._logger.info("Saving results to {}".format(file_path))
             with PathManager.open(file_path, "w") as f:
-                f.write(json.dumps(self._lvis_results))
+                f.write(json.dumps(lvis_results))
                 f.flush()
 
         if not self._do_evaluation:
@@ -137,16 +141,13 @@ class LVISEvaluator(DatasetEvaluator):
         self._logger.info("Evaluating predictions ...")
         for task in sorted(tasks):
             res = _evaluate_predictions_on_lvis(
-                self._lvis_api,
-                self._lvis_results,
-                task,
-                class_names=self._metadata.get("thing_classes"),
+                self._lvis_api, lvis_results, task, class_names=self._metadata.get("thing_classes")
             )
             self._results[task] = res
 
-    def _eval_box_proposals(self):
+    def _eval_box_proposals(self, predictions):
         """
-        Evaluate the box proposals in self._predictions.
+        Evaluate the box proposals in predictions.
         Fill self._results with the metrics for "box_proposals" task.
         """
         if self._output_dir:
@@ -154,7 +155,7 @@ class LVISEvaluator(DatasetEvaluator):
             # Predicted box_proposals are in XYXY_ABS mode.
             bbox_mode = BoxMode.XYXY_ABS.value
             ids, boxes, objectness_logits = [], [], []
-            for prediction in self._predictions:
+            for prediction in predictions:
                 ids.append(prediction["image_id"])
                 boxes.append(prediction["proposals"].proposal_boxes.tensor.numpy())
                 objectness_logits.append(prediction["proposals"].objectness_logits.numpy())
@@ -177,9 +178,7 @@ class LVISEvaluator(DatasetEvaluator):
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
         for limit in [100, 1000]:
             for area, suffix in areas.items():
-                stats = _evaluate_box_proposals(
-                    self._predictions, self._lvis_api, area=area, limit=limit
-                )
+                stats = _evaluate_box_proposals(predictions, self._lvis_api, area=area, limit=limit)
                 key = "AR{}@{:d}".format(suffix, limit)
                 res[key] = float(stats["ar"].item() * 100)
         self._logger.info("Proposal metrics: \n" + create_small_table(res))

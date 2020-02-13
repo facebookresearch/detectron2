@@ -144,27 +144,27 @@ class RotatedCOCOEvaluator(COCOEvaluator):
             results.append(result)
         return results
 
-    def _eval_predictions(self, tasks):
+    def _eval_predictions(self, tasks, predictions):
         """
-        Evaluate self._predictions on the given tasks.
+        Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
         """
         self._logger.info("Preparing results for COCO format ...")
-        self._coco_results = list(itertools.chain(*[x["instances"] for x in self._predictions]))
+        coco_results = list(itertools.chain(*[x["instances"] for x in predictions]))
 
         # unmap the category ids for COCO
         if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
             reverse_id_mapping = {
                 v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
             }
-            for result in self._coco_results:
+            for result in coco_results:
                 result["category_id"] = reverse_id_mapping[result["category_id"]]
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_instances_results.json")
             self._logger.info("Saving results to {}".format(file_path))
             with PathManager.open(file_path, "w") as f:
-                f.write(json.dumps(self._coco_results))
+                f.write(json.dumps(coco_results))
                 f.flush()
 
         if not self._do_evaluation:
@@ -175,8 +175,8 @@ class RotatedCOCOEvaluator(COCOEvaluator):
         for task in sorted(tasks):
             assert task == "bbox", "Task {} is not supported".format(task)
             coco_eval = (
-                self._evaluate_predictions_on_coco(self._coco_api, self._coco_results)
-                if len(self._coco_results) > 0
+                self._evaluate_predictions_on_coco(self._coco_api, coco_results)
+                if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
             )
 
