@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def _export_via_onnx(model, inputs):
     # make sure all modules are in eval mode, onnx may change the training state
-    #  of the moodule if the states are not consistent
+    #  of the module if the states are not consistent
     def _check_eval(module):
         assert not module.training
 
