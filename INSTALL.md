@@ -6,6 +6,10 @@ The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/dock
 also installs detectron2 with a few simple commands.
 
 ### Requirements
+- You can use convenient [Anaconda Python](https://www.anaconda.com/distribution/#download-section) environment to 
+manage all dependencies (and/or source install): `conda env create`
+
+Or install yourself: 
 - Linux or macOS with Python ≥ 3.6
 - PyTorch ≥ 1.3
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
