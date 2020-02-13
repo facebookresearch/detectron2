@@ -79,7 +79,7 @@ class ImageList(object):
             max_size[-1] = int(math.ceil(max_size[-1] / stride) * stride)  # type: ignore
             max_size = tuple(max_size)
 
-        image_sizes = [im.shape[-2:] for im in tensors]
+        image_sizes = [tuple(int(x) for x in im.shape[-2:]) for im in tensors]
 
         if len(tensors) == 1:
             # This seems slightly (2%) faster.
