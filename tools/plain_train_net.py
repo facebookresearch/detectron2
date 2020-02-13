@@ -154,7 +154,8 @@ def do_train(cfg, model, resume=False):
 
             loss_dict = model(data)
             losses = sum(loss_dict.values())
-            assert torch.isfinite(losses).all(), loss_dict
+            assert torch.isfinite(losses).all()
+            assert loss_dict
 
             loss_dict_reduced = {k: v.item() for k, v in comm.reduce_dict(loss_dict).items()}
             losses_reduced = sum(loss for loss in loss_dict_reduced.values())
