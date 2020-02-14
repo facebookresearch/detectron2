@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from typing import List
 import torch
 
 
@@ -18,7 +19,9 @@ class Matcher(object):
     (b) a vector of length N containing the labels for each prediction.
     """
 
-    def __init__(self, thresholds, labels, allow_low_quality_matches=False):
+    def __init__(
+        self, thresholds: List[float], labels: List[int], allow_low_quality_matches: bool = False
+    ):
         """
         Args:
             thresholds (list): a list of thresholds used to stratify predictions
