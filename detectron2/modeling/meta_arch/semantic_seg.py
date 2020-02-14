@@ -159,9 +159,10 @@ class SemSegFPNHead(nn.Module):
             else:
                 x = x + self.scale_heads[i](features[f])
         x = self.predictor(x)
-        x = F.interpolate(x, scale_factor=self.common_stride, mode="bilinear", align_corners=False)
 
         if self.training:
+            target = F.interpolate(target, scale_factor=1./self.common_stride,
+                                   mode="bilinear", align_corners=False)
             losses = {}
             losses["loss_sem_seg"] = (
                 F.cross_entropy(x, targets, reduction="mean", ignore_index=self.ignore_value)
