@@ -127,7 +127,7 @@ class SemSegFPNHead(nn.Module):
         for in_feature in self.in_features:
             head_ops = []
             head_length = max(
-                1, int(np.log2(feature_strides[in_feature]) - np.log2(self.common_stride))
+                1, abs(int(np.log2(feature_strides[in_feature]) - np.log2(self.common_stride)))
             )
             for k in range(head_length):
                 norm_module = nn.GroupNorm(32, conv_dims) if norm == "GN" else None
@@ -143,9 +143,13 @@ class SemSegFPNHead(nn.Module):
                 )
                 weight_init.c2_msra_fill(conv)
                 head_ops.append(conv)
-                if feature_strides[in_feature] != self.common_stride:
+                if feature_strides[in_feature] < self.common_stride:
                     head_ops.append(
                         nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
+                    )
+                elif feature_strides[in_feature] > self.common_stride:
+                    head_ops.append(
+                        nn.AvgPool2d(kernel_size=2, stride=2)
                     )
             self.scale_heads.append(nn.Sequential(*head_ops))
             self.add_module(in_feature, self.scale_heads[-1])
