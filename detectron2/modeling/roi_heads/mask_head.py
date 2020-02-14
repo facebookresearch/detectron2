@@ -17,7 +17,7 @@ The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 
-def mask_rcnn_loss(pred_mask_logits, instances):
+def mask_rcnn_loss(pred_mask_logits, instances, vis_period=0):
     """
     Compute the mask prediction loss defined in the Mask R-CNN paper.
 
@@ -30,6 +30,7 @@ def mask_rcnn_loss(pred_mask_logits, instances):
             in the batch. These instances are in 1:1
             correspondence with the pred_mask_logits. The ground-truth labels (class, box, mask,
             ...) associated with each instance are stored in fields.
+        vis_period (int): the period (in steps) to dump visualization.
 
     Returns:
         mask_loss (Tensor): A scalar tensor containing the loss.
@@ -71,6 +72,7 @@ def mask_rcnn_loss(pred_mask_logits, instances):
     else:
         # Here we allow gt_masks to be float as well (depend on the implementation of rasterize())
         gt_masks_bool = gt_masks > 0.5
+    gt_masks = gt_masks.to(dtype=torch.float32)
 
     # Log the training accuracy (using gt classes and 0.5 threshold)
     mask_incorrect = (pred_mask_logits > 0.0) != gt_masks_bool
@@ -85,10 +87,15 @@ def mask_rcnn_loss(pred_mask_logits, instances):
     storage.put_scalar("mask_rcnn/accuracy", mask_accuracy)
     storage.put_scalar("mask_rcnn/false_positive", false_positive)
     storage.put_scalar("mask_rcnn/false_negative", false_negative)
+    if vis_period > 0 and storage.iter % vis_period == 0:
+        pred_masks = pred_mask_logits.sigmoid()
+        vis_masks = torch.cat([pred_masks, gt_masks], axis=2)
+        name = "Left: mask prediction;   Right: mask GT"
+        for idx, vis_mask in enumerate(vis_masks):
+            vis_mask = torch.stack([vis_mask] * 3, axis=0)
+            storage.put_image(name + f" ({idx})", vis_mask)
 
-    mask_loss = F.binary_cross_entropy_with_logits(
-        pred_mask_logits, gt_masks.to(dtype=torch.float32), reduction="mean"
-    )
+    mask_loss = F.binary_cross_entropy_with_logits(pred_mask_logits, gt_masks, reduction="mean")
     return mask_loss
 
 
@@ -140,6 +147,7 @@ class BaseMaskRCNNHead(nn.Module):
 
     def __init__(self, cfg, input_shape):
         super().__init__()
+        self.vis_period = cfg.VIS_PERIOD
 
     def forward(self, x, instances):
         """
@@ -157,7 +165,7 @@ class BaseMaskRCNNHead(nn.Module):
         """
         x = self.layers(x)
         if self.training:
-            return {"loss_mask": mask_rcnn_loss(x, instances)}
+            return {"loss_mask": mask_rcnn_loss(x, instances, self.vis_period)}
         else:
             mask_rcnn_inference(x, instances)
             return instances
