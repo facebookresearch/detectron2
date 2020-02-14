@@ -39,6 +39,7 @@ from .roi_heads import (
     ROI_MASK_HEAD_REGISTRY,
     ROIHeads,
     StandardROIHeads,
+    BaseMaskRCNNHead,
     build_box_head,
     build_keypoint_head,
     build_mask_head,

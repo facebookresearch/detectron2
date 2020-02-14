@@ -19,7 +19,7 @@ from ..sampling import subsample_labels
 from .box_head import build_box_head
 from .fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
 from .keypoint_head import build_keypoint_head, keypoint_rcnn_inference, keypoint_rcnn_loss
-from .mask_head import build_mask_head, mask_rcnn_inference, mask_rcnn_loss
+from .mask_head import build_mask_head
 
 ROI_HEADS_REGISTRY = Registry("ROI_HEADS")
 ROI_HEADS_REGISTRY.__doc__ = """
@@ -430,8 +430,7 @@ class Res5ROIHeads(ROIHeads):
                 # features.
                 mask_features = box_features[torch.cat(fg_selection_masks, dim=0)]
                 del box_features
-                mask_logits = self.mask_head(mask_features)
-                losses["loss_mask"] = mask_rcnn_loss(mask_logits, proposals)
+                losses.update(self.mask_head(mask_features, proposals))
             return [], losses
         else:
             pred_instances, _ = outputs.inference(
@@ -460,9 +459,9 @@ class Res5ROIHeads(ROIHeads):
         if self.mask_on:
             features = [features[f] for f in self.in_features]
             x = self._shared_roi_transform(features, [x.pred_boxes for x in instances])
-            mask_logits = self.mask_head(x)
-            mask_rcnn_inference(mask_logits, instances)
-        return instances
+            return self.mask_head(x, instances)
+        else:
+            return instances
 
 
 @ROI_HEADS_REGISTRY.register()
@@ -692,14 +691,11 @@ class StandardROIHeads(ROIHeads):
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             proposal_boxes = [x.proposal_boxes for x in proposals]
             mask_features = self.mask_pooler(features, proposal_boxes)
-            mask_logits = self.mask_head(mask_features)
-            return {"loss_mask": mask_rcnn_loss(mask_logits, proposals)}
+            return self.mask_head(mask_features, proposals)
         else:
             pred_boxes = [x.pred_boxes for x in instances]
             mask_features = self.mask_pooler(features, pred_boxes)
-            mask_logits = self.mask_head(mask_features)
-            mask_rcnn_inference(mask_logits, instances)
-            return instances
+            return self.mask_head(mask_features, instances)
 
     def _forward_keypoint(
         self, features: List[torch.Tensor], instances: List[Instances]

@@ -133,8 +133,44 @@ def mask_rcnn_inference(pred_mask_logits, pred_instances):
         instances.pred_masks = prob  # (1, Hmask, Wmask)
 
 
+class BaseMaskRCNNHead(nn.Module):
+    """
+    Implement the basic Mask R-CNN losses and inference logic.
+    """
+
+    def __init__(self, cfg, input_shape):
+        super().__init__()
+
+    def forward(self, x, instances):
+        """
+        Args:
+            x: input region feature(s) provided by :class:`ROIHeads`.
+            instances: contains the boxes & labels corresponding
+                to the input features.
+                Exact format is up to its caller to decide.
+                Typically, this is the foreground instances in training, with
+                "proposal_boxes" field and other gt annotations.
+                In inference, it contains boxes that are already predicted.
+
+        Returns:
+            A dict of losses in training. The predicted "instances" in inference.
+        """
+        x = self.layers(x)
+        if self.training:
+            return {"loss_mask": mask_rcnn_loss(x, instances)}
+        else:
+            mask_rcnn_inference(x, instances)
+            return instances
+
+    def layers(self, x):
+        """
+        Neural network layers that makes predictions from input features.
+        """
+        raise NotImplementedError
+
+
 @ROI_MASK_HEAD_REGISTRY.register()
-class MaskRCNNConvUpsampleHead(nn.Module):
+class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
     """
     A mask head with several conv layers, plus an upsample layer (with `ConvTranspose2d`).
     """
@@ -146,7 +182,7 @@ class MaskRCNNConvUpsampleHead(nn.Module):
             conv_dim: the dimension of the conv layers
             norm: normalization for the conv layers
         """
-        super(MaskRCNNConvUpsampleHead, self).__init__()
+        super().__init__(cfg, input_shape)
 
         # fmt: off
         num_classes       = cfg.MODEL.ROI_HEADS.NUM_CLASSES
@@ -191,7 +227,7 @@ class MaskRCNNConvUpsampleHead(nn.Module):
         if self.predictor.bias is not None:
             nn.init.constant_(self.predictor.bias, 0)
 
-    def forward(self, x):
+    def layers(self, x):
         for layer in self.conv_norm_relus:
             x = layer(x)
         x = F.relu(self.deconv(x))
