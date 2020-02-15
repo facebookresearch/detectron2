@@ -101,17 +101,29 @@ def get_uncertain_point_coords_with_randomness(
     idx = torch.topk(point_uncertainties[:, 0, :], k=num_uncertain_points, dim=1)[1]
     shift = num_sampled * torch.arange(num_boxes, dtype=torch.long, device=coarse_logits.device)
     idx += shift[:, None]
-    point_coords = point_coords.view(-1, 2)[idx.view(-1), :].view(
+    point_coords_uncertain = point_coords.view(-1, 2)[idx.view(-1), :].view(
         num_boxes, num_uncertain_points, 2
     )
     if num_random_points > 0:
+        num_remain_points = num_sampled - num_uncertain_points
+        idx = torch.topk(point_uncertainties[:, 0, :],
+                         k=num_remain_points, dim=1, largest=False)[1]
+        # every box uses the same perm is ok,
+        # because the point_coords is already generated randomly.
+        perm = torch.randperm(num_remain_points, device=coarse_logits.device)[:num_random_points]
+        idx = idx[:, perm] + shift[:, None]
+        point_coords_random = point_coords.view(-1, 2)[idx.view(-1), :].view(
+            num_boxes, num_random_points, 2
+        )
         point_coords = cat(
             [
-                point_coords,
-                torch.rand(num_boxes, num_random_points, 2, device=coarse_logits.device),
+                point_coords_uncertain,
+                point_coords_random,
             ],
             dim=1,
         )
+    else:
+        point_coords = point_coords_uncertain
     return point_coords
 
 
