@@ -8,6 +8,7 @@ from torch import nn
 
 from detectron2.layers import ShapeSpec, batched_nms, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
+from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
 
 from ..anchor_generator import build_anchor_generator
@@ -18,6 +19,7 @@ from ..postprocessing import detector_postprocess
 from .build import META_ARCH_REGISTRY
 
 __all__ = ["RetinaNet"]
+
 
 
 def permute_to_N_HWA_K(tensor, K):
@@ -92,11 +94,53 @@ class RetinaNet(nn.Module):
             cfg.MODEL.RETINANET.IOU_LABELS,
             allow_low_quality_matches=True,
         )
+        self.vis_period = cfg.VIS_PERIOD
+        self.input_format = cfg.INPUT.FORMAT
+
 
         pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
         pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
+
+    def visualize_training(self, batched_inputs, results):
+        """
+        A function used to visualize images and intermidiate network results. It shows ground truth
+        bounding boxes on the original image and up to 20 predicted object
+        bounding boxes on the original image.
+
+        Args:
+            batched_inputs (list): a list that contains input to the model.
+            results (List[Instances]): a list of #images elements.
+        """
+        from detectron2.utils.visualizer import Visualizer
+        import numpy as np
+
+        assert len(batched_inputs) == len(results), "Cannot visualize inputs and results of different sizes"
+        storage = get_event_storage()
+        max_vis_prop = 20
+
+        image_index = 0  # only visualize a single image
+        img = batched_inputs[image_index]["image"].cpu().numpy()
+        assert img.shape[0] == 3, "Images should have 3 channels."
+        if self.input_format == "BGR":
+            img = img[::-1, :, :]
+        img = img.transpose(1, 2, 0)
+        v_gt = Visualizer(img, None)
+        v_gt = v_gt.overlay_instances(boxes=batched_inputs[image_index]["instances"].gt_boxes)
+        anno_img = v_gt.get_image()
+        processed_results = detector_postprocess(results[image_index], img.shape[0], img.shape[1])
+        predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
+        box_size = min(len(predicted_boxes), max_vis_prop)
+        v_pred = Visualizer(img, None)
+        v_pred = v_pred.overlay_instances(
+            boxes=predicted_boxes[0:box_size]
+        )
+        prop_img = v_pred.get_image()
+        vis_img = np.vstack((anno_img, prop_img))
+        vis_img = vis_img.transpose(2, 0, 1)
+        vis_name = f"Left: GT bounding boxes; Right: {max_vis_prop} Highest Scoring Results"
+        storage.put_image(vis_name, vis_img)
 
     def forward(self, batched_inputs):
         """
@@ -134,7 +178,15 @@ class RetinaNet(nn.Module):
 
         if self.training:
             gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
-            return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+            losses = self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+
+            if self.vis_period > 0:
+                storage = get_event_storage()
+                if storage.iter % self.vis_period == 0:
+                    results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
+                    self.visualize_training(batched_inputs, results)
+
+            return losses
         else:
             results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
             processed_results = []
