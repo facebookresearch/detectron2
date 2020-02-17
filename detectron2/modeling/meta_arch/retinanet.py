@@ -21,7 +21,6 @@ from .build import META_ARCH_REGISTRY
 __all__ = ["RetinaNet"]
 
 
-
 def permute_to_N_HWA_K(tensor, K):
     """
     Transpose/reshape a tensor from (N, (A x K), H, W) to (N, (HxWxA), K)
@@ -97,7 +96,6 @@ class RetinaNet(nn.Module):
         self.vis_period = cfg.VIS_PERIOD
         self.input_format = cfg.INPUT.FORMAT
 
-
         pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
         pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
@@ -116,7 +114,9 @@ class RetinaNet(nn.Module):
         from detectron2.utils.visualizer import Visualizer
         import numpy as np
 
-        assert len(batched_inputs) == len(results), "Cannot visualize inputs and results of different sizes"
+        assert len(batched_inputs) == len(
+            results
+        ), "Cannot visualize inputs and results of different sizes"
         storage = get_event_storage()
         max_vis_prop = 20
 
@@ -133,9 +133,7 @@ class RetinaNet(nn.Module):
         predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
         box_size = min(len(predicted_boxes), max_vis_prop)
         v_pred = Visualizer(img, None)
-        v_pred = v_pred.overlay_instances(
-            boxes=predicted_boxes[0:box_size]
-        )
+        v_pred = v_pred.overlay_instances(boxes=predicted_boxes[0:box_size])
         prop_img = v_pred.get_image()
         vis_img = np.vstack((anno_img, prop_img))
         vis_img = vis_img.transpose(2, 0, 1)
