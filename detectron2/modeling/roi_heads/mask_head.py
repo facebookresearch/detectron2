@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from typing import Dict, List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import Conv2d, ConvTranspose2d, ShapeSpec, cat, get_norm
+from detectron2.structures import Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
@@ -149,11 +151,11 @@ class BaseMaskRCNNHead(nn.Module):
         super().__init__()
         self.vis_period = cfg.VIS_PERIOD
 
-    def forward(self, x, instances):
+    def forward(self, x: Dict[str, torch.Tensor], instances: List[Instances]):
         """
         Args:
-            x: input region feature(s) provided by :class:`ROIHeads`.
-            instances: contains the boxes & labels corresponding
+            x (dict[str,Tensor]): input region feature(s) provided by :class:`ROIHeads`.
+            instances (list[Instances]): contains the boxes & labels corresponding
                 to the input features.
                 Exact format is up to its caller to decide.
                 Typically, this is the foreground instances in training, with

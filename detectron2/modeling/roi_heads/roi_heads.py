@@ -18,7 +18,7 @@ from ..proposal_generator.proposal_utils import add_ground_truth_to_proposals
 from ..sampling import subsample_labels
 from .box_head import build_box_head
 from .fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
-from .keypoint_head import build_keypoint_head, keypoint_rcnn_inference, keypoint_rcnn_loss
+from .keypoint_head import build_keypoint_head
 from .mask_head import build_mask_head
 
 ROI_HEADS_REGISTRY = Registry("ROI_HEADS")
@@ -541,15 +541,13 @@ class StandardROIHeads(ROIHeads):
 
     def _init_keypoint_head(self, cfg, input_shape):
         # fmt: off
-        self.keypoint_on                         = cfg.MODEL.KEYPOINT_ON
+        self.keypoint_on  = cfg.MODEL.KEYPOINT_ON
         if not self.keypoint_on:
             return
-        pooler_resolution                        = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_RESOLUTION
-        pooler_scales                            = tuple(1.0 / input_shape[k].stride for k in self.in_features)  # noqa
-        sampling_ratio                           = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_SAMPLING_RATIO
-        pooler_type                              = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_TYPE
-        self.normalize_loss_by_visible_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.NORMALIZE_LOSS_BY_VISIBLE_KEYPOINTS  # noqa
-        self.keypoint_loss_weight                = cfg.MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT
+        pooler_resolution = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_RESOLUTION
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in self.in_features)  # noqa
+        sampling_ratio    = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_SAMPLING_RATIO
+        pooler_type       = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_TYPE
         # fmt: on
 
         in_channels = [input_shape[f].channels for f in self.in_features][0]
@@ -717,8 +715,6 @@ class StandardROIHeads(ROIHeads):
         if not self.keypoint_on:
             return {} if self.training else instances
 
-        num_images = len(instances)
-
         if self.training:
             # The loss is defined on positive proposals with at >=1 visible keypoints.
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
@@ -726,23 +722,8 @@ class StandardROIHeads(ROIHeads):
             proposal_boxes = [x.proposal_boxes for x in proposals]
 
             keypoint_features = self.keypoint_pooler(features, proposal_boxes)
-            keypoint_logits = self.keypoint_head(keypoint_features)
-
-            normalizer = (
-                num_images
-                * self.batch_size_per_image
-                * self.positive_sample_fraction
-                * keypoint_logits.shape[1]
-            )
-            loss = keypoint_rcnn_loss(
-                keypoint_logits,
-                proposals,
-                normalizer=None if self.normalize_loss_by_visible_keypoints else normalizer,
-            )
-            return {"loss_keypoint": loss * self.keypoint_loss_weight}
+            return self.keypoint_head(keypoint_features, proposals)
         else:
             pred_boxes = [x.pred_boxes for x in instances]
             keypoint_features = self.keypoint_pooler(features, pred_boxes)
-            keypoint_logits = self.keypoint_head(keypoint_features)
-            keypoint_rcnn_inference(keypoint_logits, instances)
-            return instances
+            return self.keypoint_head(keypoint_features, instances)

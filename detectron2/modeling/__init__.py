@@ -40,6 +40,7 @@ from .roi_heads import (
     ROIHeads,
     StandardROIHeads,
     BaseMaskRCNNHead,
+    BaseKeypointRCNNHead,
     build_box_head,
     build_keypoint_head,
     build_mask_head,

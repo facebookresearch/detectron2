@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from typing import Dict, List
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import Conv2d, ConvTranspose2d, ShapeSpec, cat, interpolate
-from detectron2.structures import heatmaps_to_keypoints
+from detectron2.structures import Instances, heatmaps_to_keypoints
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
@@ -114,8 +115,63 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
         instances_per_image.pred_keypoints = keypoint_results_per_image
 
 
+class BaseKeypointRCNNHead(nn.Module):
+    """
+    Implement the basic Keypoint R-CNN losses and inference logic.
+    """
+
+    def __init__(self, cfg, input_shape):
+        super().__init__()
+        # fmt: off
+        self.loss_weight                    = cfg.MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT
+        self.normalize_by_visible_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.NORMALIZE_LOSS_BY_VISIBLE_KEYPOINTS  # noqa
+        self.num_keypoints                  = cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
+        batch_size_per_image                = cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
+        positive_sample_fraction            = cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
+        # fmt: on
+        self.normalizer_per_img = (
+            self.num_keypoints * batch_size_per_image * positive_sample_fraction
+        )
+
+    def forward(self, x: Dict[str, torch.Tensor], instances: List[Instances]):
+        """
+        Args:
+            x (dict[str,Tensor]): input region feature(s) provided by :class:`ROIHeads`.
+            instances (list[Instances]): contains the boxes & labels corresponding
+                to the input features.
+                Exact format is up to its caller to decide.
+                Typically, this is the foreground instances in training, with
+                "proposal_boxes" field and other gt annotations.
+                In inference, it contains boxes that are already predicted.
+
+        Returns:
+            A dict of losses if in training. The predicted "instances" if in inference.
+        """
+        x = self.layers(x)
+        if self.training:
+            num_images = len(instances)
+            normalizer = (
+                None
+                if self.normalize_by_visible_keypoints
+                else num_images * self.normalizer_per_img
+            )
+            return {
+                "loss_keypoint": keypoint_rcnn_loss(x, instances, normalizer=normalizer)
+                * self.loss_weight
+            }
+        else:
+            keypoint_rcnn_inference(x, instances)
+            return instances
+
+    def layers(self, x):
+        """
+        Neural network layers that makes predictions from regional input features.
+        """
+        raise NotImplementedError
+
+
 @ROI_KEYPOINT_HEAD_REGISTRY.register()
-class KRCNNConvDeconvUpsampleHead(nn.Module):
+class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead):
     """
     A standard keypoint head containing a series of 3x3 convs, followed by
     a transpose convolution and bilinear interpolation for upsampling.
@@ -129,7 +185,7 @@ class KRCNNConvDeconvUpsampleHead(nn.Module):
             num_keypoints: number of keypoint heatmaps to predicts, determines the number of
                            channels in the final output.
         """
-        super(KRCNNConvDeconvUpsampleHead, self).__init__()
+        super().__init__(cfg, input_shape)
 
         # fmt: off
         # default up_scale to 2 (this can eventually be moved to config)
@@ -160,7 +216,7 @@ class KRCNNConvDeconvUpsampleHead(nn.Module):
                 # corresponds to kaiming_normal_ in PyTorch
                 nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
 
-    def forward(self, x):
+    def layers(self, x):
         for layer in self.blocks:
             x = F.relu(layer(x))
         x = self.score_lowres(x)
