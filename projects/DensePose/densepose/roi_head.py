@@ -100,12 +100,12 @@ class DensePoseROIHeads(StandardROIHeads):
         dp_pooler_sampling_ratio   = cfg.MODEL.ROI_DENSEPOSE_HEAD.POOLER_SAMPLING_RATIO
         dp_pooler_type             = cfg.MODEL.ROI_DENSEPOSE_HEAD.POOLER_TYPE
         self.use_decoder           = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECODER_ON
-        if self.use_decoder:
-            dp_pooler_scales       = (1.0 / self.feature_strides[self.in_features[0]], )
-        else:
-            dp_pooler_scales       = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
         # fmt: on
-        in_channels = [self.feature_channels[f] for f in self.in_features][0]
+        if self.use_decoder:
+            dp_pooler_scales = (1.0 / input_shape[self.in_features[0]].stride,)
+        else:
+            dp_pooler_scales = tuple(1.0 / input_shape[k].stride for k in self.in_features)
+        in_channels = [input_shape[f].channels for f in self.in_features][0]
 
         if self.use_decoder:
             self.decoder = Decoder(cfg, input_shape, self.in_features)

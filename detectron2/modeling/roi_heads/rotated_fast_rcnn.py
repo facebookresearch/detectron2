@@ -171,17 +171,17 @@ class RROIHeads(StandardROIHeads):
             not self.mask_on and not self.keypoint_on
         ), "Mask/Keypoints not supported in Rotated ROIHeads."
 
-    def _init_box_head(self, cfg):
+    def _init_box_head(self, cfg, input_shape):
         # fmt: off
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales     = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in self.in_features)
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         # fmt: on
 
         # If StandardROIHeads is applied on multiple feature maps (as in FPN),
         # then we share the same predictors and therefore the channel counts must be the same
-        in_channels = [self.feature_channels[f] for f in self.in_features]
+        in_channels = [input_shape[f].channels for f in self.in_features]
         # Check all channel counts are equal
         assert len(set(in_channels)) == 1, in_channels
         in_channels = in_channels[0]

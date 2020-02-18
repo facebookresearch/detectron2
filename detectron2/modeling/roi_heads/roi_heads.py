@@ -141,10 +141,11 @@ class ROIHeads(torch.nn.Module):
         self.in_features              = cfg.MODEL.ROI_HEADS.IN_FEATURES
         self.num_classes              = cfg.MODEL.ROI_HEADS.NUM_CLASSES
         self.proposal_append_gt       = cfg.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT
-        self.feature_strides          = {k: v.stride for k, v in input_shape.items()}
-        self.feature_channels         = {k: v.channels for k, v in input_shape.items()}
         self.cls_agnostic_bbox_reg    = cfg.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG
         self.smooth_l1_beta           = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
+        # TODO deprecate the following two attributes, in favor of input_shape
+        self.feature_strides          = {k: v.stride for k, v in input_shape.items()}
+        self.feature_channels         = {k: v.channels for k, v in input_shape.items()}
         # fmt: on
 
         # Matcher to assign box proposals to gt boxes
@@ -336,7 +337,7 @@ class Res5ROIHeads(ROIHeads):
         # fmt: off
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
-        pooler_scales     = (1.0 / self.feature_strides[self.in_features[0]], )
+        pooler_scales     = (1.0 / input_shape[self.in_features[0]].stride, )
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         self.mask_on      = cfg.MODEL.MASK_ON
         # fmt: on
@@ -479,14 +480,14 @@ class StandardROIHeads(ROIHeads):
 
     def __init__(self, cfg, input_shape):
         super(StandardROIHeads, self).__init__(cfg, input_shape)
-        self._init_box_head(cfg)
-        self._init_mask_head(cfg)
-        self._init_keypoint_head(cfg)
+        self._init_box_head(cfg, input_shape)
+        self._init_mask_head(cfg, input_shape)
+        self._init_keypoint_head(cfg, input_shape)
 
-    def _init_box_head(self, cfg):
+    def _init_box_head(self, cfg, input_shape):
         # fmt: off
         pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales            = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
+        pooler_scales            = tuple(1.0 / input_shape[k].stride for k in self.in_features)
         sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         self.train_on_pred_boxes = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
@@ -494,7 +495,7 @@ class StandardROIHeads(ROIHeads):
 
         # If StandardROIHeads is applied on multiple feature maps (as in FPN),
         # then we share the same predictors and therefore the channel counts must be the same
-        in_channels = [self.feature_channels[f] for f in self.in_features]
+        in_channels = [input_shape[f].channels for f in self.in_features]
         # Check all channel counts are equal
         assert len(set(in_channels)) == 1, in_channels
         in_channels = in_channels[0]
@@ -515,18 +516,18 @@ class StandardROIHeads(ROIHeads):
             self.box_head.output_size, self.num_classes, self.cls_agnostic_bbox_reg
         )
 
-    def _init_mask_head(self, cfg):
+    def _init_mask_head(self, cfg, input_shape):
         # fmt: off
         self.mask_on           = cfg.MODEL.MASK_ON
         if not self.mask_on:
             return
         pooler_resolution = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
-        pooler_scales     = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in self.in_features)
         sampling_ratio    = cfg.MODEL.ROI_MASK_HEAD.POOLER_SAMPLING_RATIO
         pooler_type       = cfg.MODEL.ROI_MASK_HEAD.POOLER_TYPE
         # fmt: on
 
-        in_channels = [self.feature_channels[f] for f in self.in_features][0]
+        in_channels = [input_shape[f].channels for f in self.in_features][0]
 
         self.mask_pooler = ROIPooler(
             output_size=pooler_resolution,
@@ -538,20 +539,20 @@ class StandardROIHeads(ROIHeads):
             cfg, ShapeSpec(channels=in_channels, width=pooler_resolution, height=pooler_resolution)
         )
 
-    def _init_keypoint_head(self, cfg):
+    def _init_keypoint_head(self, cfg, input_shape):
         # fmt: off
         self.keypoint_on                         = cfg.MODEL.KEYPOINT_ON
         if not self.keypoint_on:
             return
         pooler_resolution                        = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_RESOLUTION
-        pooler_scales                            = tuple(1.0 / self.feature_strides[k] for k in self.in_features)  # noqa
+        pooler_scales                            = tuple(1.0 / input_shape[k].stride for k in self.in_features)  # noqa
         sampling_ratio                           = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_SAMPLING_RATIO
         pooler_type                              = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_TYPE
         self.normalize_loss_by_visible_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.NORMALIZE_LOSS_BY_VISIBLE_KEYPOINTS  # noqa
         self.keypoint_loss_weight                = cfg.MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT
         # fmt: on
 
-        in_channels = [self.feature_channels[f] for f in self.in_features][0]
+        in_channels = [input_shape[f].channels for f in self.in_features][0]
 
         self.keypoint_pooler = ROIPooler(
             output_size=pooler_resolution,
