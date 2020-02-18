@@ -119,7 +119,7 @@ class RetinaNet(nn.Module):
             results
         ), "Cannot visualize inputs and results of different sizes"
         storage = get_event_storage()
-        max_boxes = 35
+        max_boxes = 20
 
         image_index = 0  # only visualize a single image
         img = batched_inputs[image_index]["image"].cpu().numpy()
