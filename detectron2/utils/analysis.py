@@ -4,12 +4,12 @@
 import logging
 import typing
 import torch
-from fvcore.nn import flop_count
+from fvcore.nn import flop_count, parameter_count, parameter_count_table
 from torch import nn
 
 from .logger import log_first_n
 
-__all__ = ["flop_count_operators"]
+__all__ = ["flop_count_operators", "parameter_count_table", "parameter_count"]
 
 
 def flop_count_operators(
