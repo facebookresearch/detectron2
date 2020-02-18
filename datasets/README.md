@@ -51,6 +51,8 @@ Install lvis-api by:
 pip install git+https://github.com/lvis-dataset/lvis-api.git
 ```
 
+Run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations for evaluation of models trained on the COCO dataset.
+
 ## Expected dataset structure for cityscapes:
 ```
 cityscapes/

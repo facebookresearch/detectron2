@@ -123,9 +123,18 @@ class LVISEvaluator(DatasetEvaluator):
         self._logger.info("Preparing results in the LVIS format ...")
         lvis_results = list(itertools.chain(*[x["instances"] for x in predictions]))
 
-        # unmap the category ids for LVIS (from 0-indexed to 1-indexed)
-        for result in lvis_results:
-            result["category_id"] += 1
+        # LVIS evaluator can be used to evaluate results for COCO dataset categories.
+        # In this case `_metadata` variable will have a field with COCO-specific category mapping.
+        if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
+            reverse_id_mapping = {
+                v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
+            }
+            for result in lvis_results:
+                result["category_id"] = reverse_id_mapping[result["category_id"]]
+        else:
+            # unmap the category ids for LVIS (from 0-indexed to 1-indexed)
+            for result in lvis_results:
+                result["category_id"] += 1
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "lvis_instances_results.json")
