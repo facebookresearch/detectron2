@@ -96,6 +96,9 @@ def get_uncertain_point_coords_with_randomness(
     # two coarse predictions with -1 and 1 logits has 0 logits, and therefore 0 uncertainty value.
     # However, if we calculate uncertainties for the coarse predictions first,
     # both will have -1 uncertainty, and the sampled point will get -1 uncertainty.
+    # In a word, you cannot do that because uncertainty_func(logits)=-abs(logits) is not
+    # a monotonic function.
+    # It is natural not crucial.
     point_uncertainties = uncertainty_func(point_logits)
     num_uncertain_points = int(importance_sample_ratio * num_points)
     num_random_points = num_points - num_uncertain_points
