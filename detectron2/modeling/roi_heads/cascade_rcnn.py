@@ -99,6 +99,15 @@ class CascadeROIHeads(StandardROIHeads):
             return pred_instances, {}
 
     def _forward_box(self, features, proposals, targets=None):
+        """
+        Args:
+            features, targets: the same as in
+                Same as in :meth:`ROIHeads.forward`.
+            proposals (list[Instances]): the per-image object proposals with
+                their matching ground truth.
+                Each has fields "proposal_boxes", and "objectness_logits",
+                "gt_classes", "gt_boxes".
+        """
         features = [features[f] for f in self.in_features]
         head_outputs = []
         image_sizes = [x.image_size for x in proposals]

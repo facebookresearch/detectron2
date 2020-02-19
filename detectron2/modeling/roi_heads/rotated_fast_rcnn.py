@@ -272,7 +272,8 @@ class RROIHeads(StandardROIHeads):
         Forward logic of the box prediction branch.
 
         Args:
-            features (dict[str,Tensor]): #level input features for box prediction
+            features (dict[str, Tensor]): mapping from feature map names to tensor.
+                Same as in :meth:`ROIHeads.forward`.
             proposals (list[Instances]): the per-image object proposals with
                 their matching ground truth.
                 Each has fields "proposal_boxes", and "objectness_logits",
