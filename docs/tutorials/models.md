@@ -125,10 +125,7 @@ images = ImageList(...)  # preprocessed input tensor
 model = build_model(cfg)
 features = model.backbone(images.tensor)
 proposals, _ = model.proposal_generator(images, features)
-instances = model.roi_heads._forward_box(
-  [features[k] for k in model.roi_heads.in_features],
-  proposals
-)
+instances = model.roi_heads._forward_box(features, proposals)
 mask_features = model.roi_heads.mask_pooler(features, [x.pred_boxes for x in instances])
 ```
 

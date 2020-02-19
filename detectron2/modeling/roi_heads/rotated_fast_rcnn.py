@@ -272,7 +272,7 @@ class RROIHeads(StandardROIHeads):
         Forward logic of the box prediction branch.
 
         Args:
-            features (list[Tensor]): #level input features for box prediction
+            features (dict[str,Tensor]): #level input features for box prediction
             proposals (list[Instances]): the per-image object proposals with
                 their matching ground truth.
                 Each has fields "proposal_boxes", and "objectness_logits",
@@ -282,6 +282,7 @@ class RROIHeads(StandardROIHeads):
             In training, a dict of losses.
             In inference, a list of `Instances`, the predicted instances.
         """
+        features = [features[f] for f in self.in_features]
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         box_features = self.box_head(box_features)
         pred_class_logits, pred_proposal_deltas = self.box_predictor(box_features)

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# File:
 import numpy as np
 import torch
 
@@ -58,16 +57,17 @@ class PointRendROIHeads(StandardROIHeads):
     variables that correspond to the mask head in the class's namespace.
     """
 
-    def _init_mask_head(self, cfg):
+    def _init_mask_head(self, cfg, input_shape):
         # fmt: off
         self.mask_on                 = cfg.MODEL.MASK_ON
         if not self.mask_on:
             return
         self.mask_coarse_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
         self.mask_coarse_side_size   = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
+        self._feature_scales          = {k: 1.0 / v.stride for k, v in input_shape.items()}
         # fmt: on
 
-        in_channels = np.sum([self.feature_channels[f] for f in self.mask_coarse_in_features])
+        in_channels = np.sum([input_shape[f].channels for f in self.mask_coarse_in_features])
         self.mask_coarse_head = build_mask_head(
             cfg,
             ShapeSpec(
@@ -76,9 +76,9 @@ class PointRendROIHeads(StandardROIHeads):
                 height=self.mask_coarse_side_size,
             ),
         )
-        self._init_point_head(cfg)
+        self._init_point_head(cfg, input_shape)
 
-    def _init_point_head(self, cfg):
+    def _init_point_head(self, cfg, input_shape):
         # fmt: off
         self.mask_point_on                      = cfg.MODEL.ROI_MASK_HEAD.POINT_HEAD_ON
         if not self.mask_point_on:
@@ -93,7 +93,7 @@ class PointRendROIHeads(StandardROIHeads):
         self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
-        in_channels = np.sum([self.feature_channels[f] for f in self.mask_point_in_features])
+        in_channels = np.sum([input_shape[f].channels for f in self.mask_point_in_features])
         self.mask_point_head = build_point_head(
             cfg, ShapeSpec(channels=in_channels, width=1, height=1)
         )
@@ -103,7 +103,7 @@ class PointRendROIHeads(StandardROIHeads):
         Forward logic of the mask prediction branch.
 
         Args:
-            features (list[Tensor]): #level input features for mask prediction
+            features (dict[str, Tensor]): #level input features for mask prediction
             instances (list[Instances]): the per-image instances to train/predict masks.
                 In training, they can be the proposals.
                 In inference, they can be the predicted boxes.
@@ -138,10 +138,8 @@ class PointRendROIHeads(StandardROIHeads):
         point_coords = generate_regular_grid_point_coords(
             np.sum(len(x) for x in boxes), self.mask_coarse_side_size, boxes[0].device
         )
-        mask_coarse_features_list = [
-            features[self.in_features.index(k)] for k in self.mask_coarse_in_features
-        ]
-        features_scales = [1.0 / self.feature_strides[k] for k in self.mask_coarse_in_features]
+        mask_coarse_features_list = [features[k] for k in self.mask_coarse_in_features]
+        features_scales = [self._feature_scales[k] for k in self.mask_coarse_in_features]
         # For regular grids of points, this function is equivalent to `len(features_list)' calls
         # of `ROIAlign` (with `SAMPLING_RATIO=2`), and concat the results.
         mask_features, _ = point_sample_fine_grained_features(
@@ -156,10 +154,8 @@ class PointRendROIHeads(StandardROIHeads):
         if not self.mask_point_on:
             return {} if self.training else mask_coarse_logits
 
-        mask_features_list = [
-            features[self.in_features.index(k)] for k in self.mask_point_in_features
-        ]
-        features_scales = [1.0 / self.feature_strides[k] for k in self.mask_point_in_features]
+        mask_features_list = [features[k] for k in self.mask_point_in_features]
+        features_scales = [self._feature_scales[k] for k in self.mask_point_in_features]
 
         if self.training:
             proposal_boxes = [x.proposal_boxes for x in instances]

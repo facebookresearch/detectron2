@@ -393,7 +393,7 @@ class Res5ROIHeads(ROIHeads):
 
     def forward(self, images, features, proposals, targets=None):
         """
-        See :class:`ROIHeads.forward`.
+        See :meth:`ROIHeads.forward`.
         """
         del images
 
@@ -578,18 +578,16 @@ class StandardROIHeads(ROIHeads):
             proposals = self.label_and_sample_proposals(proposals, targets)
         del targets
 
-        features_list = [features[f] for f in self.in_features]
-
         if self.training:
-            losses = self._forward_box(features_list, proposals)
+            losses = self._forward_box(features, proposals)
             # Usually the original proposals used by the box head are used by the mask, keypoint
             # heads. But when `self.train_on_pred_boxes is True`, proposals will contain boxes
             # predicted by the box head.
-            losses.update(self._forward_mask(features_list, proposals))
-            losses.update(self._forward_keypoint(features_list, proposals))
+            losses.update(self._forward_mask(features, proposals))
+            losses.update(self._forward_keypoint(features, proposals))
             return proposals, losses
         else:
-            pred_instances = self._forward_box(features_list, proposals)
+            pred_instances = self._forward_box(features, proposals)
             # During inference cascaded prediction is used: the mask and keypoints heads are only
             # applied to the top scoring box detections.
             pred_instances = self.forward_with_given_boxes(features, pred_instances)
@@ -617,21 +615,21 @@ class StandardROIHeads(ROIHeads):
         """
         assert not self.training
         assert instances[0].has("pred_boxes") and instances[0].has("pred_classes")
-        features_list = [features[f] for f in self.in_features]
 
-        instances = self._forward_mask(features_list, instances)
-        instances = self._forward_keypoint(features_list, instances)
+        instances = self._forward_mask(features, instances)
+        instances = self._forward_keypoint(features, instances)
         return instances
 
     def _forward_box(
-        self, features: List[torch.Tensor], proposals: List[Instances]
+        self, features: Dict[str, torch.Tensor], proposals: List[Instances]
     ) -> Union[Dict[str, torch.Tensor], List[Instances]]:
         """
         Forward logic of the box prediction branch. If `self.train_on_pred_boxes is True`,
             the function puts predicted boxes in the `proposal_boxes` field of `proposals` argument.
 
         Args:
-            features (list[Tensor]): #level input features for box prediction
+            features (dict[str, Tensor]): mapping from feature map names to tensor.
+                Same as in :meth:`ROIHeads.forward`.
             proposals (list[Instances]): the per-image object proposals with
                 their matching ground truth.
                 Each has fields "proposal_boxes", and "objectness_logits",
@@ -641,6 +639,7 @@ class StandardROIHeads(ROIHeads):
             In training, a dict of losses.
             In inference, a list of `Instances`, the predicted instances.
         """
+        features = [features[f] for f in self.in_features]
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         box_features = self.box_head(box_features)
         pred_class_logits, pred_proposal_deltas = self.box_predictor(box_features)
@@ -667,13 +666,14 @@ class StandardROIHeads(ROIHeads):
             return pred_instances
 
     def _forward_mask(
-        self, features: List[torch.Tensor], instances: List[Instances]
+        self, features: Dict[str, torch.Tensor], instances: List[Instances]
     ) -> Union[Dict[str, torch.Tensor], List[Instances]]:
         """
         Forward logic of the mask prediction branch.
 
         Args:
-            features (list[Tensor]): #level input features for mask prediction
+            features (dict[str, Tensor]): mapping from feature map names to tensor.
+                Same as in :meth:`ROIHeads.forward`.
             instances (list[Instances]): the per-image instances to train/predict masks.
                 In training, they can be the proposals.
                 In inference, they can be the predicted boxes.
@@ -684,6 +684,8 @@ class StandardROIHeads(ROIHeads):
         """
         if not self.mask_on:
             return {} if self.training else instances
+
+        features = [features[f] for f in self.in_features]
 
         if self.training:
             # The loss is only defined on positive proposals.
@@ -697,13 +699,14 @@ class StandardROIHeads(ROIHeads):
             return self.mask_head(mask_features, instances)
 
     def _forward_keypoint(
-        self, features: List[torch.Tensor], instances: List[Instances]
+        self, features: Dict[str, torch.Tensor], instances: List[Instances]
     ) -> Union[Dict[str, torch.Tensor], List[Instances]]:
         """
         Forward logic of the keypoint prediction branch.
 
         Args:
-            features (list[Tensor]): #level input features for keypoint prediction
+            features (dict[str, Tensor]): mapping from feature map names to tensor.
+                Same as in :meth:`ROIHeads.forward`.
             instances (list[Instances]): the per-image instances to train/predict keypoints.
                 In training, they can be the proposals.
                 In inference, they can be the predicted boxes.
@@ -714,6 +717,8 @@ class StandardROIHeads(ROIHeads):
         """
         if not self.keypoint_on:
             return {} if self.training else instances
+
+        features = [features[f] for f in self.in_features]
 
         if self.training:
             # The loss is defined on positive proposals with at >=1 visible keypoints.
