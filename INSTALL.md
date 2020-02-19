@@ -26,7 +26,7 @@ git clone https://github.com/facebookresearch/detectron2.git
 cd detectron2 && pip install -e .
 
 # Or if you are on macOS
-# MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ pip install -e .
+# CC=clang CXX=clang++ pip install -e .
 ```
 
 To __rebuild__ detectron2 that's built from a local clone, `rm -rf build/ **/*.so` then `pip install -e .`.
@@ -39,8 +39,12 @@ pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101
 ```
 You can replace cu101 with "cu{100,92}" or "cpu".
 
-Note that such installation has to be used with the latest official PyTorch release (currently 1.4).
-It will not work with your custom build of PyTorch.
+Note that:
+1. Such installation has to be used with the latest official PyTorch release (currently 1.4).
+   It will not work with your custom build of PyTorch.
+2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
+	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
+	 [projects](./projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
 
 ### Common Installation Issues
 

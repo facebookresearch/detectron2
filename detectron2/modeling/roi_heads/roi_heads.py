@@ -294,7 +294,7 @@ class ROIHeads(torch.nn.Module):
         """
         Args:
             images (ImageList):
-            features (dict[str: Tensor]): input data as a mapping from feature
+            features (dict[str,Tensor]): input data as a mapping from feature
                 map name to tensor. Axis 0 represents the number of images `N` in
                 the input data; axes 1-3 are channels, height, and width, which may
                 vary between feature maps (e.g., if a feature pyramid is used).
@@ -312,10 +312,10 @@ class ROIHeads(torch.nn.Module):
                 - gt_keypoints: NxKx3, the groud-truth keypoints for each instance.
 
         Returns:
-            results (list[Instances]): length `N` list of `Instances` containing the
+            list[Instances]: length `N` list of `Instances` containing the
             detected instances. Returned during inference only; may be [] during training.
 
-            losses (dict[str->Tensor]):
+            dict[str->Tensor]:
             mapping from a named loss to a tensor storing the loss. Used during training only.
         """
         raise NotImplementedError()

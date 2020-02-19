@@ -53,18 +53,27 @@ detectron2.utils.memory module
     :show-inheritance:
 
 
-detectron2.utils.video\_visualizer module
------------------------------------------
+detectron2.utils.analysis module
+----------------------------------
 
-.. automodule:: detectron2.utils.video_visualizer
+.. automodule:: detectron2.utils.analysis
     :members:
     :undoc-members:
     :show-inheritance:
+
 
 detectron2.utils.visualizer module
 ----------------------------------
 
 .. automodule:: detectron2.utils.visualizer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+detectron2.utils.video\_visualizer module
+-----------------------------------------
+
+.. automodule:: detectron2.utils.video_visualizer
     :members:
     :undoc-members:
     :show-inheritance:

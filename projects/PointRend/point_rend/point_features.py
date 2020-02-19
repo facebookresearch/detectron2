@@ -89,12 +89,13 @@ def get_uncertain_point_coords_with_randomness(
     num_sampled = int(num_points * oversample_ratio)
     point_coords = torch.rand(num_boxes, num_sampled, 2, device=coarse_logits.device)
     point_logits = point_sample(coarse_logits, point_coords, align_corners=False)
-    # It is crucial to calculate uncertanty based on the sampled prediction value for the points.
+    # It is crucial to calculate uncertainty based on the sampled prediction value for the points.
     # Calculating uncertainties of the coarse predictions first and sampling them for points leads
-    # to worse results. To illustrate the difference: a sampled point between two coarse predictions
-    # with -1 and 1 logits has 0 logit prediction and therefore 0 uncertainty value, however, if one
-    # calculates uncertainties for the coarse predictions first (-1 and -1) and sampe it for the
-    # center point, they will get -1 unceratinty.
+    # to incorrect results.
+    # To illustrate this: assume uncertainty_func(logits)=-abs(logits), a sampled point between
+    # two coarse predictions with -1 and 1 logits has 0 logits, and therefore 0 uncertainty value.
+    # However, if we calculate uncertainties for the coarse predictions first,
+    # both will have -1 uncertainty, and the sampled point will get -1 uncertainty.
     point_uncertainties = uncertainty_func(point_logits)
     num_uncertain_points = int(importance_sample_ratio * num_points)
     num_random_points = num_points - num_uncertain_points
