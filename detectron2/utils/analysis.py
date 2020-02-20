@@ -38,7 +38,12 @@ def flop_count_operators(
     class WrapModel(nn.Module):
         def __init__(self, model):
             super().__init__()
-            self.model = model
+            if isinstance(
+                model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
+            ):
+                self.model = model.module
+            else:
+                self.model = model
 
         def forward(self, image):
             # jit requires the input/output to be Tensors
