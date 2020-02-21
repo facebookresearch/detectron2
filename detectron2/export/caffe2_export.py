@@ -30,9 +30,21 @@ from .shared import (
 logger = logging.getLogger(__name__)
 
 
-def _export_via_onnx(model, inputs):
+def export_onnx_model(model, inputs):
+    """
+    Trace and export a model to onnx format.
+
+    Args:
+        model (nn.Module):
+        inputs (tuple[args]): the model will be called by `model(*inputs)`
+
+    Returns:
+        an onnx model
+    """
+    assert isinstance(model, torch.nn.Module)
+
     # make sure all modules are in eval mode, onnx may change the training state
-    #  of the module if the states are not consistent
+    # of the module if the states are not consistent
     def _check_eval(module):
         assert not module.training
 
@@ -56,11 +68,7 @@ def _export_via_onnx(model, inputs):
     passes = ["fuse_bn_into_conv"]
     assert all(p in all_passes for p in passes)
     onnx_model = onnx.optimizer.optimize(onnx_model, passes)
-
-    # Convert ONNX model to Caffe2 protobuf
-    init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model)
-
-    return predict_net, init_net
+    return onnx_model
 
 
 def _op_stats(net_def):
@@ -120,7 +128,7 @@ def _assign_device_option(
 
 def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[torch.Tensor]):
     """
-    Export a Detectron2 model via ONNX.
+    Export a caffe2-compatible Detectron2 model to caffe2 format via ONNX.
 
     Arg:
         model: a caffe2-compatible version of detectron2 model, defined in caffe2_modeling.py
@@ -132,7 +140,9 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
 
     # Export via ONNX
     logger.info("Exporting a {} model via ONNX ...".format(type(model).__name__))
-    predict_net, init_net = _export_via_onnx(model, (tensor_inputs,))
+    onnx_model = export_onnx_model(model, (tensor_inputs,))
+    # Convert ONNX model to Caffe2 protobuf
+    init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model)
     ops_table = [[op.type, op.input, op.output] for op in predict_net.op]
     table = tabulate(ops_table, headers=["type", "input", "output"], tablefmt="pipe")
     logger.info(
