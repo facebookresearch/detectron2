@@ -28,7 +28,6 @@ _C.MODEL.KEYPOINT_ON = False
 _C.MODEL.DEVICE = "cuda"
 _C.MODEL.APEX_ON = False
 _C.MODEL.APEX_OPT_LEVEL = "O1"
-_C.MODEL.APEX_KEEP_BN_FP32 = None
 _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
 
 # Path (possibly with schema like catalog:// or detectron2://) to a checkpoint file
