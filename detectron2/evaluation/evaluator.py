@@ -56,7 +56,6 @@ class DatasetEvaluator:
 
 class DatasetEvaluators(DatasetEvaluator):
     def __init__(self, evaluators):
-        assert len(evaluators)
         super().__init__()
         self._evaluators = evaluators
 

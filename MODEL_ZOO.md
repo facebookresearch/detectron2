@@ -70,7 +70,7 @@ All models available for download through this document are licensed under the
 #### Faster R-CNN:
 <!--
 (fb only) To update the table in vim:
-1. Remove the old table: d{
+1. Remove the old table: d}
 2. Copy the below command to the place of the table
 3. :.!bash
 
@@ -94,7 +94,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_C4_1x.yaml">R50-C4</a></td>
 <td align="center">1x</td>
 <td align="center">0.551</td>
-<td align="center">0.110</td>
+<td align="center">0.102</td>
 <td align="center">4.8</td>
 <td align="center">35.7</td>
 <td align="center">137257644</td>
@@ -114,7 +114,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.210</td>
-<td align="center">0.055</td>
+<td align="center">0.038</td>
 <td align="center">3.0</td>
 <td align="center">37.9</td>
 <td align="center">137257794</td>
@@ -124,7 +124,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_C4_3x.yaml">R50-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.543</td>
-<td align="center">0.110</td>
+<td align="center">0.104</td>
 <td align="center">4.8</td>
 <td align="center">38.4</td>
 <td align="center">137849393</td>
@@ -134,7 +134,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_DC5_3x.yaml">R50-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.378</td>
-<td align="center">0.073</td>
+<td align="center">0.070</td>
 <td align="center">5.0</td>
 <td align="center">39.0</td>
 <td align="center">137849425</td>
@@ -144,7 +144,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.209</td>
-<td align="center">0.047</td>
+<td align="center">0.038</td>
 <td align="center">3.0</td>
 <td align="center">40.2</td>
 <td align="center">137849458</td>
@@ -154,7 +154,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_C4_3x.yaml">R101-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.619</td>
-<td align="center">0.149</td>
+<td align="center">0.139</td>
 <td align="center">5.9</td>
 <td align="center">41.1</td>
 <td align="center">138204752</td>
@@ -164,7 +164,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_DC5_3x.yaml">R101-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.452</td>
-<td align="center">0.082</td>
+<td align="center">0.086</td>
 <td align="center">6.1</td>
 <td align="center">40.6</td>
 <td align="center">138204841</td>
@@ -174,7 +174,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.286</td>
-<td align="center">0.063</td>
+<td align="center">0.051</td>
 <td align="center">4.1</td>
 <td align="center">42.0</td>
 <td align="center">137851257</td>
@@ -184,14 +184,13 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml">X101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.638</td>
-<td align="center">0.120</td>
+<td align="center">0.098</td>
 <td align="center">6.7</td>
 <td align="center">43.0</td>
 <td align="center">139173657</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x/139173657/model_final_68b088.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x/139173657/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
-
 
 #### RetinaNet:
 <!--
@@ -215,7 +214,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml">R50</a></td>
 <td align="center">1x</td>
 <td align="center">0.200</td>
-<td align="center">0.062</td>
+<td align="center">0.055</td>
 <td align="center">3.9</td>
 <td align="center">36.5</td>
 <td align="center">137593951</td>
@@ -225,7 +224,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_3x.yaml">R50</a></td>
 <td align="center">3x</td>
 <td align="center">0.201</td>
-<td align="center">0.063</td>
+<td align="center">0.055</td>
 <td align="center">3.9</td>
 <td align="center">37.9</td>
 <td align="center">137849486</td>
@@ -235,7 +234,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml">R101</a></td>
 <td align="center">3x</td>
 <td align="center">0.280</td>
-<td align="center">0.080</td>
+<td align="center">0.068</td>
 <td align="center">5.1</td>
 <td align="center">39.9</td>
 <td align="center">138363263</td>
@@ -265,7 +264,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/rpn_R_50_C4_1x.yaml">RPN R50-C4</a></td>
 <td align="center">1x</td>
 <td align="center">0.130</td>
-<td align="center">0.051</td>
+<td align="center">0.034</td>
 <td align="center">1.5</td>
 <td align="center"></td>
 <td align="center">51.6</td>
@@ -276,7 +275,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/rpn_R_50_FPN_1x.yaml">RPN R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.186</td>
-<td align="center">0.045</td>
+<td align="center">0.032</td>
 <td align="center">2.7</td>
 <td align="center"></td>
 <td align="center">58.0</td>
@@ -287,7 +286,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/fast_rcnn_R_50_FPN_1x.yaml">Fast R-CNN R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.140</td>
-<td align="center">0.035</td>
+<td align="center">0.029</td>
 <td align="center">2.6</td>
 <td align="center">37.8</td>
 <td align="center"></td>
@@ -320,7 +319,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_1x.yaml">R50-C4</a></td>
 <td align="center">1x</td>
 <td align="center">0.584</td>
-<td align="center">0.117</td>
+<td align="center">0.110</td>
 <td align="center">5.2</td>
 <td align="center">36.8</td>
 <td align="center">32.2</td>
@@ -331,7 +330,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_1x.yaml">R50-DC5</a></td>
 <td align="center">1x</td>
 <td align="center">0.471</td>
-<td align="center">0.074</td>
+<td align="center">0.076</td>
 <td align="center">6.5</td>
 <td align="center">38.3</td>
 <td align="center">34.2</td>
@@ -342,7 +341,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.261</td>
-<td align="center">0.053</td>
+<td align="center">0.043</td>
 <td align="center">3.4</td>
 <td align="center">38.6</td>
 <td align="center">35.2</td>
@@ -353,7 +352,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml">R50-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.575</td>
-<td align="center">0.118</td>
+<td align="center">0.111</td>
 <td align="center">5.2</td>
 <td align="center">39.8</td>
 <td align="center">34.4</td>
@@ -364,7 +363,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_3x.yaml">R50-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.470</td>
-<td align="center">0.075</td>
+<td align="center">0.076</td>
 <td align="center">6.5</td>
 <td align="center">40.0</td>
 <td align="center">35.9</td>
@@ -375,7 +374,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.261</td>
-<td align="center">0.055</td>
+<td align="center">0.043</td>
 <td align="center">3.4</td>
 <td align="center">41.0</td>
 <td align="center">37.2</td>
@@ -386,7 +385,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_C4_3x.yaml">R101-C4</a></td>
 <td align="center">3x</td>
 <td align="center">0.652</td>
-<td align="center">0.155</td>
+<td align="center">0.145</td>
 <td align="center">6.3</td>
 <td align="center">42.6</td>
 <td align="center">36.7</td>
@@ -397,7 +396,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_DC5_3x.yaml">R101-DC5</a></td>
 <td align="center">3x</td>
 <td align="center">0.545</td>
-<td align="center">0.155</td>
+<td align="center">0.092</td>
 <td align="center">7.6</td>
 <td align="center">41.9</td>
 <td align="center">37.3</td>
@@ -408,7 +407,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.340</td>
-<td align="center">0.070</td>
+<td align="center">0.056</td>
 <td align="center">4.6</td>
 <td align="center">42.9</td>
 <td align="center">38.6</td>
@@ -419,7 +418,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml">X101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.690</td>
-<td align="center">0.129</td>
+<td align="center">0.103</td>
 <td align="center">7.2</td>
 <td align="center">44.3</td>
 <td align="center">39.5</td>
@@ -451,7 +450,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.315</td>
-<td align="center">0.083</td>
+<td align="center">0.072</td>
 <td align="center">5.0</td>
 <td align="center">53.6</td>
 <td align="center">64.0</td>
@@ -462,7 +461,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.316</td>
-<td align="center">0.076</td>
+<td align="center">0.066</td>
 <td align="center">5.0</td>
 <td align="center">55.4</td>
 <td align="center">65.5</td>
@@ -473,7 +472,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.390</td>
-<td align="center">0.090</td>
+<td align="center">0.076</td>
 <td align="center">6.1</td>
 <td align="center">56.4</td>
 <td align="center">66.1</td>
@@ -484,7 +483,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Keypoints/keypoint_rcnn_X_101_32x8d_FPN_3x.yaml">X101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.738</td>
-<td align="center">0.142</td>
+<td align="center">0.121</td>
 <td align="center">8.7</td>
 <td align="center">57.3</td>
 <td align="center">66.0</td>
@@ -517,7 +516,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_fpn_R_50_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.304</td>
-<td align="center">0.063</td>
+<td align="center">0.053</td>
 <td align="center">4.8</td>
 <td align="center">37.6</td>
 <td align="center">34.7</td>
@@ -529,7 +528,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_fpn_R_50_3x.yaml">R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.302</td>
-<td align="center">0.063</td>
+<td align="center">0.053</td>
 <td align="center">4.8</td>
 <td align="center">40.0</td>
 <td align="center">36.5</td>
@@ -541,7 +540,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_fpn_R_101_3x.yaml">R101-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.392</td>
-<td align="center">0.078</td>
+<td align="center">0.066</td>
 <td align="center">6.0</td>
 <td align="center">42.4</td>
 <td align="center">38.5</td>
@@ -583,7 +582,7 @@ The final results of these configs have large variance across different runs.
  <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.292</td>
-<td align="center">0.127</td>
+<td align="center">0.107</td>
 <td align="center">7.1</td>
 <td align="center">23.6</td>
 <td align="center">24.4</td>
@@ -594,7 +593,7 @@ The final results of these configs have large variance across different runs.
  <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x.yaml">R101-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.371</td>
-<td align="center">0.124</td>
+<td align="center">0.114</td>
 <td align="center">7.8</td>
 <td align="center">25.6</td>
 <td align="center">25.9</td>
@@ -605,7 +604,7 @@ The final results of these configs have large variance across different runs.
  <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x.yaml">X101-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.712</td>
-<td align="center">0.166</td>
+<td align="center">0.151</td>
 <td align="center">10.2</td>
 <td align="center">26.7</td>
 <td align="center">27.1</td>
@@ -643,7 +642,7 @@ Simple baselines for
 <!-- ROW: mask_rcnn_R_50_FPN -->
  <tr><td align="left"><a href="configs/Cityscapes/mask_rcnn_R_50_FPN.yaml">R50-FPN, Cityscapes</a></td>
 <td align="center">0.240</td>
-<td align="center">0.092</td>
+<td align="center">0.078</td>
 <td align="center">4.4</td>
 <td align="center"></td>
 <td align="center"></td>
@@ -654,7 +653,7 @@ Simple baselines for
 <!-- ROW: faster_rcnn_R_50_C4 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/faster_rcnn_R_50_C4.yaml">R50-C4, VOC</a></td>
 <td align="center">0.537</td>
-<td align="center">0.086</td>
+<td align="center">0.081</td>
 <td align="center">4.8</td>
 <td align="center">51.9</td>
 <td align="center">80.3</td>
@@ -692,7 +691,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">Baseline R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.261</td>
-<td align="center">0.053</td>
+<td align="center">0.043</td>
 <td align="center">3.4</td>
 <td align="center">38.6</td>
 <td align="center">35.2</td>
@@ -703,7 +702,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_1x_dconv_c3-c5.yaml">Deformable Conv</a></td>
 <td align="center">1x</td>
 <td align="center">0.342</td>
-<td align="center">0.061</td>
+<td align="center">0.048</td>
 <td align="center">3.5</td>
 <td align="center">41.5</td>
 <td align="center">37.5</td>
@@ -714,7 +713,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_R_50_FPN_1x.yaml">Cascade R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.317</td>
-<td align="center">0.066</td>
+<td align="center">0.052</td>
 <td align="center">4.0</td>
 <td align="center">42.1</td>
 <td align="center">36.4</td>
@@ -725,7 +724,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml">Baseline R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.261</td>
-<td align="center">0.055</td>
+<td align="center">0.043</td>
 <td align="center">3.4</td>
 <td align="center">41.0</td>
 <td align="center">37.2</td>
@@ -736,7 +735,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_dconv_c3-c5.yaml">Deformable Conv</a></td>
 <td align="center">3x</td>
 <td align="center">0.349</td>
-<td align="center">0.066</td>
+<td align="center">0.047</td>
 <td align="center">3.5</td>
 <td align="center">42.7</td>
 <td align="center">38.5</td>
@@ -747,7 +746,7 @@ Ablations for Deformable Conv and Cascade R-CNN:
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml">Cascade R-CNN</a></td>
 <td align="center">3x</td>
 <td align="center">0.328</td>
-<td align="center">0.075</td>
+<td align="center">0.053</td>
 <td align="center">4.0</td>
 <td align="center">44.3</td>
 <td align="center">38.5</td>
@@ -782,7 +781,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml">Baseline R50-FPN</a></td>
 <td align="center">3x</td>
 <td align="center">0.261</td>
-<td align="center">0.055</td>
+<td align="center">0.043</td>
 <td align="center">3.4</td>
 <td align="center">41.0</td>
 <td align="center">37.2</td>
@@ -804,7 +803,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_gn.yaml">GN</a></td>
 <td align="center">3x</td>
 <td align="center">0.356</td>
-<td align="center">0.070</td>
+<td align="center">0.069</td>
 <td align="center">7.3</td>
 <td align="center">42.6</td>
 <td align="center">38.6</td>
@@ -815,7 +814,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml">GN (scratch)</a></td>
 <td align="center">3x</td>
 <td align="center">0.400</td>
-<td align="center">0.070</td>
+<td align="center">0.069</td>
 <td align="center">9.8</td>
 <td align="center">39.9</td>
 <td align="center">36.6</td>
@@ -848,7 +847,7 @@ A few very large models trained for a long time, for demo purposes:
 <!-- TABLE BODY -->
 <!-- ROW: panoptic_fpn_R_101_dconv_cascade_gn_3x -->
  <tr><td align="left"><a href="configs/Misc/panoptic_fpn_R_101_dconv_cascade_gn_3x.yaml">Panoptic FPN R101</a></td>
-<td align="center">0.123</td>
+<td align="center">0.107</td>
 <td align="center">11.4</td>
 <td align="center">47.4</td>
 <td align="center">41.3</td>
@@ -858,7 +857,7 @@ A few very large models trained for a long time, for demo purposes:
 </tr>
 <!-- ROW: cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv -->
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml">Mask R-CNN X152</a></td>
-<td align="center">0.281</td>
+<td align="center">0.242</td>
 <td align="center">15.1</td>
 <td align="center">50.2</td>
 <td align="center">44.0</td>
