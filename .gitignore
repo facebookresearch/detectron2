@@ -36,6 +36,9 @@ wheels/
 # Pycharm editor settings
 .idea
 
+# Vscode editor settings
+.vscode
+
 # project dirs
 /detectron2/model_zoo/configs
 /datasets

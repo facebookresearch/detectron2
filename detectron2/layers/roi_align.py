@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from apex.amp import float_function
 from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
@@ -6,17 +7,10 @@ from torch.nn.modules.utils import _pair
 
 from detectron2 import _C
 
-try:
-    from apex import amp
-except ImportError:
-    raise ImportError(
-        "Please install apex from https://www.github.com/nvidia/apex to run this example."
-    )
-
 
 class _ROIAlign(Function):
     @staticmethod
-    @amp.float_function
+    @float_function
     def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio, aligned):
         ctx.save_for_backward(roi)
         ctx.output_size = _pair(output_size)
@@ -31,9 +25,9 @@ class _ROIAlign(Function):
 
     @staticmethod
     @once_differentiable
-    @amp.float_function
+    @float_function
     def backward(ctx, grad_output):
-        rois, = ctx.saved_tensors
+        (rois,) = ctx.saved_tensors
         output_size = ctx.output_size
         spatial_scale = ctx.spatial_scale
         sampling_ratio = ctx.sampling_ratio
