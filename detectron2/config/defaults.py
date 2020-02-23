@@ -125,7 +125,9 @@ _C.DATALOADER.FILTER_EMPTY_ANNOTATIONS = True
 _C.MODEL.BACKBONE = CN()
 
 _C.MODEL.BACKBONE.NAME = "build_resnet_backbone"
-# Add StopGrad at a specified stage so the bottom layers are frozen
+# Freeze the first several stages so they are not trained.
+# There are 5 stages in ResNet. The first is a convolution, and the following
+# stages are each group of residual blocks.
 _C.MODEL.BACKBONE.FREEZE_AT = 2
 
 

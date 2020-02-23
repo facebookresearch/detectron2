@@ -792,19 +792,19 @@ Ablations for normalization methods:
 <!-- ROW: mask_rcnn_R_50_FPN_3x_syncbn -->
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_syncbn.yaml">SyncBN</a></td>
 <td align="center">3x</td>
-<td align="center">0.464</td>
-<td align="center">0.063</td>
-<td align="center">5.6</td>
-<td align="center">42.0</td>
+<td align="center">0.412</td>
+<td align="center">0.053</td>
+<td align="center">5.5</td>
+<td align="center">41.9</td>
 <td align="center">37.8</td>
-<td align="center">143915318</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_syncbn/143915318/model_final_220cfb.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_syncbn/143915318/metrics.json">metrics</a></td>
+<td align="center">169527823</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_syncbn/169527823/model_final_3b3c51.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/Misc/mask_rcnn_R_50_FPN_3x_syncbn/169527823/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_R_50_FPN_3x_gn -->
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_gn.yaml">GN</a></td>
 <td align="center">3x</td>
 <td align="center">0.356</td>
-<td align="center">0.077</td>
+<td align="center">0.070</td>
 <td align="center">7.3</td>
 <td align="center">42.6</td>
 <td align="center">38.6</td>
@@ -815,7 +815,7 @@ Ablations for normalization methods:
  <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml">GN (scratch)</a></td>
 <td align="center">3x</td>
 <td align="center">0.400</td>
-<td align="center">0.077</td>
+<td align="center">0.070</td>
 <td align="center">9.8</td>
 <td align="center">39.9</td>
 <td align="center">36.6</td>

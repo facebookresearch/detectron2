@@ -29,6 +29,7 @@ corresponds to information about one image.
 The dict may contain the following keys:
 
 * "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
+  Image normalization, if any, will be performed inside the model.
 * "instances": an [Instances](../modules/structures.html#detectron2.structures.Instances)
   object, with the following fields:
   + "gt_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing N boxes, one for each instance.

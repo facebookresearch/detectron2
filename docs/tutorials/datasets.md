@@ -27,18 +27,23 @@ DatasetCatalog.register("my_dataset", get_dicts)
 ```
 
 Here, the snippet associates a dataset "my_dataset" with a function that returns the data.
-If you do not modify downstream code (i.e., you use the standard data loader and data mapper),
-then the function has to return a list of dicts in detectron2's standard dataset format, described
-next. You can also use arbitrary custom data format, as long as the
-downstream code (mainly the [custom data loader](data_loading.html)) supports it.
+The function can processes data from its original format into either one of the following:
+1. Detectron2's standard dataset dict, described below. This will work with many other builtin
+	 features in detectron2, so it's recommended to use it when it's sufficient for your task.
+2. Your custom dataset dict. You can also returns arbitrary dicts in your own format,
+	 such as adding extra keys for new tasks.
+	 Then you will need to handle them properly in the downstream as well.
+	 See below for more details.
+
+#### Standard Dataset Dicts
 
 For standard tasks
 (instance detection, instance/semantic/panoptic segmentation, keypoint detection),
-we use a format similar to COCO's json annotations
-as the basic dataset representation.
+we load the original dataset into `list[dict]` with a specification similar to COCO's json annotations.
+This is our standard representation for a dataset.
 
-The format uses one dict to represent the annotations of
-one image. The dict may have the following fields.
+Each dict contains information about one image.
+The dict may have the following fields.
 The fields are often optional, and some functions may be able to
 infer certain fields from others if needed, e.g., the data loader
 will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name".
@@ -89,10 +94,10 @@ The following keys are used by Fast R-CNN style training, which is rare today.
 + `proposal_bbox_mode` (int): the format of the precomputed proposal bbox.
   It must be a member of
   [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
-  Default format is `BoxMode.XYXY_ABS`.
+  Default is `BoxMode.XYXY_ABS`.
 
 
-If your dataset is already in the COCO format, you can simply register it by
+If your dataset is already a json file in COCO format, you can simply register it by
 ```python
 from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
@@ -102,12 +107,29 @@ which will take care of everything (including metadata) for you.
 If your dataset is in COCO format with custom per-instance annotations,
 the [load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_json) function can be used.
 
+#### Custom Dataset Dicts
+
+In the `list[dict]` that your dataset function return, the dictionary can also has arbitrary custom data.
+This can be useful when you're doing a new task and needs extra information not supported
+by the standard dataset dicts. In this case, you need to make sure the downstream code can handle your data
+correctly. Usually this requires writing a new `mapper` for the dataloader (see [Use Custom Dataloaders](data_loading.html))
+
+When designing your custom format, note that all dicts are stored in memory
+(sometimes serialized and with multiple copies).
+To save memory, each dict is meant to contain small but sufficient information
+about each sample, such as file names and annotations.
+Loading full samples typically happens in the data loader.
+
+For attributes shared among the entire dataset, use `Metadata` (see below).
+To avoid exmemory, do not save such information repeatly for each sample.
+
 
 ### "Metadata" for Datasets
 
 Each dataset is associated with some metadata, accessible through
 `MetadataCatalog.get(dataset_name).some_metadata`.
-Metadata is a key-value mapping that contains primitive information that helps interpret what's in the dataset, e.g.,
+Metadata is a key-value mapping that contains information that's shared among
+the entire dataset, and usually is used to interpret what's in the dataset, e.g.,
 names of classes, colors of classes, root of files, etc.
 This information will be useful for augmentation, evaluation, visualization, logging, etc.
 The structure of metadata depends on the what is needed from the corresponding downstream code.

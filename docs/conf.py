@@ -86,7 +86,7 @@ import detectron2  # isort: skip
 
 
 project = "detectron2"
-copyright = "2019, detectron2 contributors"
+copyright = "2019-2020, detectron2 contributors"
 author = "detectron2 contributors"
 
 # The short X.Y version
