@@ -27,6 +27,8 @@ DatasetCatalog.register("my_dataset", get_dicts)
 ```
 
 Here, the snippet associates a dataset "my_dataset" with a function that returns the data.
+The registration stays effective until the process exists.
+
 The function can processes data from its original format into either one of the following:
 1. Detectron2's standard dataset dict, described below. This will work with many other builtin
 	 features in detectron2, so it's recommended to use it when it's sufficient for your task.
