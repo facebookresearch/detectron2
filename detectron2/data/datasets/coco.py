@@ -34,7 +34,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
 
     Args:
         json_file (str): full path to the json file in COCO instances annotation format.
-        image_root (str): the directory where the images in this json file exists.
+        image_root (str or path-like): the directory where the images in this json file exists.
         dataset_name (str): the name of the dataset (e.g., coco_2017_train).
             If provided, this function will also put "thing_classes" into
             the metadata associated with this dataset.
