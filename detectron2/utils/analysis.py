@@ -69,6 +69,9 @@ def flop_count_operators(
 
     old_train = model.training
     with torch.no_grad():
-        ret, _ = flop_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
+        ret = flop_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
+        # compatible with change in fvcore
+        if isinstance(ret, tuple):
+            ret = ret[0]
     model.train(old_train)
     return ret
