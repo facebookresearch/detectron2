@@ -209,3 +209,13 @@ metadata to each split (now called dataset) separately!
         else:
             m = MetadataCatalog._NAME_TO_META[name] = Metadata(name=name)
             return m
+
+    @staticmethod
+    def list():
+        """
+        List all registered metadata.
+
+        Returns:
+            list[str]: keys (names of datasets) of all registered metadata
+        """
+        return list(MetadataCatalog._NAME_TO_META.keys())

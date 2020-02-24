@@ -85,13 +85,11 @@ class CascadeROIHeads(StandardROIHeads):
         if self.training:
             proposals = self.label_and_sample_proposals(proposals, targets)
 
-        features_list = [features[f] for f in self.in_features]
-
         if self.training:
             # Need targets to box head
             losses = self._forward_box(features, proposals, targets)
-            losses.update(self._forward_mask(features_list, proposals))
-            losses.update(self._forward_keypoint(features_list, proposals))
+            losses.update(self._forward_mask(features, proposals))
+            losses.update(self._forward_keypoint(features, proposals))
             return proposals, losses
         else:
             pred_instances = self._forward_box(features, proposals)
