@@ -69,6 +69,6 @@ def flop_count_operators(
 
     old_train = model.training
     with torch.no_grad():
-        ret = flop_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
+        ret, _ = flop_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
     model.train(old_train)
     return ret
