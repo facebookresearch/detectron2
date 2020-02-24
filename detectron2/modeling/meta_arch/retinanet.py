@@ -138,7 +138,7 @@ class RetinaNet(nn.Module):
         prop_img = v_pred.get_image()
         vis_img = np.vstack((anno_img, prop_img))
         vis_img = vis_img.transpose(2, 0, 1)
-        vis_name = f"Left: GT bounding boxes; Right: {max_boxes} Highest Scoring Results"
+        vis_name = f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
         storage.put_image(vis_name, vis_img)
 
     def forward(self, batched_inputs):
