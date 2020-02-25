@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from typing import Dict, List
+from typing import List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -151,10 +151,10 @@ class BaseMaskRCNNHead(nn.Module):
         super().__init__()
         self.vis_period = cfg.VIS_PERIOD
 
-    def forward(self, x: Dict[str, torch.Tensor], instances: List[Instances]):
+    def forward(self, x, instances: List[Instances]):
         """
         Args:
-            x (dict[str,Tensor]): input region feature(s) provided by :class:`ROIHeads`.
+            x: input region feature(s) provided by :class:`ROIHeads`.
             instances (list[Instances]): contains the boxes & labels corresponding
                 to the input features.
                 Exact format is up to its caller to decide.

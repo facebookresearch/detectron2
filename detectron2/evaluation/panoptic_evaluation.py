@@ -90,8 +90,9 @@ class COCOPanopticEvaluator(DatasetEvaluator):
         if not comm.is_main_process():
             return
 
+        # PanopticApi requires local files
         gt_json = PathManager.get_local_path(self._metadata.panoptic_json)
-        gt_folder = self._metadata.panoptic_root
+        gt_folder = PathManager.get_local_path(self._metadata.panoptic_root)
 
         with tempfile.TemporaryDirectory(prefix="panoptic_eval") as pred_dir:
             logger.info("Writing all panoptic predictions to {} ...".format(pred_dir))
