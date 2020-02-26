@@ -103,11 +103,11 @@ These models use an improved training schedule and Panoptic FPN head from [Kiril
     </tr>
     </tbody></table>
 
-    ### Improved Baselines, DeepLabV3 Head
+### Improved Baselines, DeepLabV3 Head
 
-    These models use an improved training schedule, Panoptic FPN head from [Kirillov et al, 2019](https://arxiv.org/abs/1901.02446) and DeepLabV3 head from [Chen et al, 2017](https://arxiv.org/abs/1706.05587).
+These models use an improved training schedule, Panoptic FPN head from [Kirillov et al, 2019](https://arxiv.org/abs/1901.02446) and DeepLabV3 head from [Chen et al, 2017](https://arxiv.org/abs/1706.05587).
 
-    <table><tbody>
+<table><tbody>
     <!-- START TABLE -->
     <!-- TABLE HEADER -->
     <th valign="bottom">Name</th>
