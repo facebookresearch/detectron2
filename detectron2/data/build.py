@@ -105,10 +105,11 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
     Load precomputed object proposals into the dataset.
 
     The proposal file should be a pickled dict with the following keys:
+
     - "ids": list[int] or list[str], the image ids
     - "boxes": list[np.ndarray], each is an Nx4 array of boxes corresponding to the image id
     - "objectness_logits": list[np.ndarray], each is an N sized array of objectness scores
-        corresponding to the boxes.
+      corresponding to the boxes.
     - "bbox_mode": the BoxMode of the boxes array. Defaults to ``BoxMode.XYXY_ABS``.
 
     Args:

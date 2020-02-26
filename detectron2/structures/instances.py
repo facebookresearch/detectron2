@@ -175,16 +175,7 @@ class Instances:
         s += "num_instances={}, ".format(len(self))
         s += "image_height={}, ".format(self._image_size[0])
         s += "image_width={}, ".format(self._image_size[1])
-        s += "fields=[{}])".format(", ".join(self._fields.keys()))
+        s += "fields=[{}])".format(", ".join((f"{k}: {v}" for k, v in self._fields.items())))
         return s
 
-    def __repr__(self) -> str:
-        s = self.__class__.__name__ + "("
-        s += "num_instances={}, ".format(len(self))
-        s += "image_height={}, ".format(self._image_size[0])
-        s += "image_width={}, ".format(self._image_size[1])
-        s += "fields=["
-        for k, v in self._fields.items():
-            s += "{} = {}, ".format(k, v)
-        s += "])"
-        return s
+    __repr__ = __str__

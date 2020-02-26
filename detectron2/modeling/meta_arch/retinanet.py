@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import math
+import numpy as np
 from typing import List
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit, smooth_l1_loss
@@ -8,6 +9,7 @@ from torch import nn
 
 from detectron2.layers import ShapeSpec, batched_nms, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
+from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
 
 from ..anchor_generator import build_anchor_generator
@@ -76,6 +78,9 @@ class RetinaNet(nn.Module):
         self.topk_candidates          = cfg.MODEL.RETINANET.TOPK_CANDIDATES_TEST
         self.nms_threshold            = cfg.MODEL.RETINANET.NMS_THRESH_TEST
         self.max_detections_per_image = cfg.TEST.DETECTIONS_PER_IMAGE
+        # Vis parameters
+        self.vis_period               = cfg.VIS_PERIOD
+        self.input_format             = cfg.INPUT.FORMAT
         # fmt: on
 
         self.backbone = build_backbone(cfg)
@@ -97,6 +102,53 @@ class RetinaNet(nn.Module):
         pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
+
+        """
+        In Detectron1, loss is normalized by number of foreground samples in the batch.
+        When batch size is 1 per GPU, #foreground has a large variance and
+        using it lead to lower performance. Here we maintain an EMA of #foreground to
+        stabilize the normalizer.
+        """
+        self.loss_normalizer = 100  # initialize with any reasonable #fg that's not too small
+        self.loss_normalizer_momentum = 0.9
+
+    def visualize_training(self, batched_inputs, results):
+        """
+        A function used to visualize ground truth images and final network predictions.
+        It shows ground truth bounding boxes on the original image and up to 20
+        predicted object bounding boxes on the original image.
+
+        Args:
+            batched_inputs (list): a list that contains input to the model.
+            results (List[Instances]): a list of #images elements.
+        """
+        from detectron2.utils.visualizer import Visualizer
+
+        assert len(batched_inputs) == len(
+            results
+        ), "Cannot visualize inputs and results of different sizes"
+        storage = get_event_storage()
+        max_boxes = 20
+
+        image_index = 0  # only visualize a single image
+        img = batched_inputs[image_index]["image"].cpu().numpy()
+        assert img.shape[0] == 3, "Images should have 3 channels."
+        if self.input_format == "BGR":
+            img = img[::-1, :, :]
+        img = img.transpose(1, 2, 0)
+        v_gt = Visualizer(img, None)
+        v_gt = v_gt.overlay_instances(boxes=batched_inputs[image_index]["instances"].gt_boxes)
+        anno_img = v_gt.get_image()
+        processed_results = detector_postprocess(results[image_index], img.shape[0], img.shape[1])
+        predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
+
+        v_pred = Visualizer(img, None)
+        v_pred = v_pred.overlay_instances(boxes=predicted_boxes[0:max_boxes])
+        prop_img = v_pred.get_image()
+        vis_img = np.vstack((anno_img, prop_img))
+        vis_img = vis_img.transpose(2, 0, 1)
+        vis_name = f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
+        storage.put_image(vis_name, vis_img)
 
     def forward(self, batched_inputs):
         """
@@ -134,7 +186,15 @@ class RetinaNet(nn.Module):
 
         if self.training:
             gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
-            return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+            losses = self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+
+            if self.vis_period > 0:
+                storage = get_event_storage()
+                if storage.iter % self.vis_period == 0:
+                    results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
+                    self.visualize_training(batched_inputs, results)
+
+            return losses
         else:
             results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
             processed_results = []
@@ -172,7 +232,12 @@ class RetinaNet(nn.Module):
 
         valid_idxs = gt_classes >= 0
         foreground_idxs = (gt_classes >= 0) & (gt_classes != self.num_classes)
-        num_foreground = foreground_idxs.sum()
+        num_foreground = foreground_idxs.sum().item()
+        get_event_storage().put_scalar("num_foreground", num_foreground)
+        self.loss_normalizer = (
+            self.loss_normalizer_momentum * self.loss_normalizer
+            + (1 - self.loss_normalizer_momentum) * num_foreground
+        )
 
         gt_classes_target = torch.zeros_like(pred_class_logits)
         gt_classes_target[foreground_idxs, gt_classes[foreground_idxs]] = 1
@@ -184,7 +249,7 @@ class RetinaNet(nn.Module):
             alpha=self.focal_loss_alpha,
             gamma=self.focal_loss_gamma,
             reduction="sum",
-        ) / max(1, num_foreground)
+        ) / max(1, self.loss_normalizer)
 
         # regression loss
         loss_box_reg = smooth_l1_loss(
@@ -192,7 +257,7 @@ class RetinaNet(nn.Module):
             gt_anchors_deltas[foreground_idxs],
             beta=self.smooth_l1_loss_beta,
             reduction="sum",
-        ) / max(1, num_foreground)
+        ) / max(1, self.loss_normalizer)
 
         return {"loss_cls": loss_cls, "loss_box_reg": loss_box_reg}
 

@@ -34,7 +34,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
 
     Args:
         json_file (str): full path to the json file in COCO instances annotation format.
-        image_root (str): the directory where the images in this json file exists.
+        image_root (str or path-like): the directory where the images in this json file exists.
         dataset_name (str): the name of the dataset (e.g., coco_2017_train).
             If provided, this function will also put "thing_classes" into
             the metadata associated with this dataset.
@@ -44,7 +44,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
             For example, the densepose annotations are loaded in this way.
 
     Returns:
-        list[dict]: a list of dicts in Detectron2 standard format. (See
+        list[dict]: a list of dicts in Detectron2 standard dataset dicts format. (See
         `Using Custom Datasets </tutorials/datasets.html>`_ )
 
     Notes:
@@ -289,9 +289,18 @@ def convert_to_coco_dict(dataset_name):
     """
 
     dataset_dicts = DatasetCatalog.get(dataset_name)
+    metadata = MetadataCatalog.get(dataset_name)
+
+    # unmap the category mapping ids for COCO
+    if hasattr(metadata, "thing_dataset_id_to_contiguous_id"):
+        reverse_id_mapping = {v: k for k, v in metadata.thing_dataset_id_to_contiguous_id.items()}
+        reverse_id_mapper = lambda contiguous_id: reverse_id_mapping[contiguous_id]  # noqa
+    else:
+        reverse_id_mapper = lambda contiguous_id: contiguous_id  # noqa
+
     categories = [
-        {"id": id, "name": name}
-        for id, name in enumerate(MetadataCatalog.get(dataset_name).thing_classes)
+        {"id": reverse_id_mapper(id), "name": name}
+        for id, name in enumerate(metadata.thing_classes)
     ]
 
     logger.info("Converting dataset dicts into COCO format")
@@ -350,8 +359,8 @@ def convert_to_coco_dict(dataset_name):
             coco_annotation["image_id"] = coco_image["id"]
             coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
             coco_annotation["area"] = area
-            coco_annotation["category_id"] = annotation["category_id"]
             coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
+            coco_annotation["category_id"] = reverse_id_mapper(annotation["category_id"])
 
             # Add optional fields
             if "keypoints" in annotation:

@@ -87,6 +87,11 @@ def fast_rcnn_inference_single_image(
     Returns:
         Same as `fast_rcnn_inference`, but for only one image.
     """
+    valid_mask = torch.isfinite(boxes).all(dim=1) & torch.isfinite(scores).all(dim=1)
+    if not valid_mask.all():
+        boxes = boxes[valid_mask]
+        scores = scores[valid_mask]
+
     scores = scores[:, :-1]
     num_bbox_reg_classes = boxes.shape[1] // 4
     # Convert to Boxes to use the `clip` function ...
@@ -121,6 +126,7 @@ def fast_rcnn_inference_single_image(
 class FastRCNNOutputs(object):
     """
     A class that stores information about outputs of a Fast R-CNN head.
+    It provides methods that are used to decode the outputs of a Fast R-CNN head.
     """
 
     def __init__(
@@ -254,19 +260,6 @@ class FastRCNNOutputs(object):
         loss_box_reg = loss_box_reg / self.gt_classes.numel()
         return loss_box_reg
 
-    def losses(self):
-        """
-        Compute the default losses for box head in Fast(er) R-CNN,
-        with softmax cross entropy loss and smooth L1 loss.
-
-        Returns:
-            A dict of losses (scalar tensors) containing keys "loss_cls" and "loss_box_reg".
-        """
-        return {
-            "loss_cls": self.softmax_cross_entropy_loss(),
-            "loss_box_reg": self.smooth_l1_loss(),
-        }
-
     def _predict_boxes(self):
         """
         Returns:
@@ -282,6 +275,24 @@ class FastRCNNOutputs(object):
             self.proposals.tensor.unsqueeze(1).expand(num_pred, K, B).reshape(-1, B),
         )
         return boxes.view(num_pred, K * B)
+
+    """
+    A subclass is expected to have the following methods because
+    they are used to query information about the head predictions.0
+    """
+
+    def losses(self):
+        """
+        Compute the default losses for box head in Fast(er) R-CNN,
+        with softmax cross entropy loss and smooth L1 loss.
+
+        Returns:
+            A dict of losses (scalar tensors) containing keys "loss_cls" and "loss_box_reg".
+        """
+        return {
+            "loss_cls": self.softmax_cross_entropy_loss(),
+            "loss_box_reg": self.smooth_l1_loss(),
+        }
 
     def predict_boxes(self):
         """

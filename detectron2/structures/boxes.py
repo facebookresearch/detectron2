@@ -144,7 +144,9 @@ class Boxes:
         device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
         tensor = torch.as_tensor(tensor, dtype=torch.float32, device=device)
         if tensor.numel() == 0:
-            tensor = torch.zeros(0, 4, dtype=torch.float32, device=device)
+            # Use reshape, so we don't end up creating a new tensor that does not depend on
+            # the inputs (and consequently confuses jit)
+            tensor = tensor.reshape((0, 4)).to(dtype=torch.float32, device=device)
         assert tensor.dim() == 2 and tensor.size(-1) == 4, tensor.size()
 
         self.tensor = tensor

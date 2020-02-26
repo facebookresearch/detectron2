@@ -53,7 +53,7 @@ class ROIHeadsTest(unittest.TestCase):
             "loss_box_reg": torch.tensor(0.0091214813),
         }
         for name in expected_losses.keys():
-            assert torch.allclose(detector_losses[name], expected_losses[name])
+            self.assertTrue(torch.allclose(detector_losses[name], expected_losses[name]))
 
     def test_rroi_heads(self):
         torch.manual_seed(121)
@@ -101,7 +101,7 @@ class ROIHeadsTest(unittest.TestCase):
             err_msg = "detector_losses[{}] = {}, expected losses = {}".format(
                 name, detector_losses[name], expected_losses[name]
             )
-            assert torch.allclose(detector_losses[name], expected_losses[name]), err_msg
+            self.assertTrue(torch.allclose(detector_losses[name], expected_losses[name]), err_msg)
 
 
 if __name__ == "__main__":

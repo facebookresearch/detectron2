@@ -28,10 +28,10 @@ class _ScaleGradient(Function):
 
 @ROI_HEADS_REGISTRY.register()
 class CascadeROIHeads(StandardROIHeads):
-    def _init_box_head(self, cfg):
+    def _init_box_head(self, cfg, input_shape):
         # fmt: off
         pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales            = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
+        pooler_scales            = tuple(1.0 / input_shape[k].stride for k in self.in_features)
         sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         cascade_bbox_reg_weights = cfg.MODEL.ROI_BOX_CASCADE_HEAD.BBOX_REG_WEIGHTS
@@ -43,7 +43,7 @@ class CascadeROIHeads(StandardROIHeads):
         assert cascade_ious[0] == cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS[0]
         # fmt: on
 
-        in_channels = [self.feature_channels[f] for f in self.in_features]
+        in_channels = [input_shape[f].channels for f in self.in_features]
         # Check all channel counts are equal
         assert len(set(in_channels)) == 1, in_channels
         in_channels = in_channels[0]
@@ -85,20 +85,28 @@ class CascadeROIHeads(StandardROIHeads):
         if self.training:
             proposals = self.label_and_sample_proposals(proposals, targets)
 
-        features_list = [features[f] for f in self.in_features]
-
         if self.training:
             # Need targets to box head
-            losses = self._forward_box(features_list, proposals, targets)
-            losses.update(self._forward_mask(features_list, proposals))
-            losses.update(self._forward_keypoint(features_list, proposals))
+            losses = self._forward_box(features, proposals, targets)
+            losses.update(self._forward_mask(features, proposals))
+            losses.update(self._forward_keypoint(features, proposals))
             return proposals, losses
         else:
-            pred_instances = self._forward_box(features_list, proposals)
+            pred_instances = self._forward_box(features, proposals)
             pred_instances = self.forward_with_given_boxes(features, pred_instances)
             return pred_instances, {}
 
     def _forward_box(self, features, proposals, targets=None):
+        """
+        Args:
+            features, targets: the same as in
+                Same as in :meth:`ROIHeads.forward`.
+            proposals (list[Instances]): the per-image object proposals with
+                their matching ground truth.
+                Each has fields "proposal_boxes", and "objectness_logits",
+                "gt_classes", "gt_boxes".
+        """
+        features = [features[f] for f in self.in_features]
         head_outputs = []
         image_sizes = [x.image_size for x in proposals]
         for k in range(self.num_cascade_stages):

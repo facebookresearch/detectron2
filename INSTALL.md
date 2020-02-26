@@ -26,7 +26,7 @@ git clone https://github.com/facebookresearch/detectron2.git
 cd detectron2 && pip install -e .
 
 # Or if you are on macOS
-# MACOSX_DEPLOYMENT_TARGET=10.9 CC=clang CXX=clang++ pip install -e .
+# CC=clang CXX=clang++ pip install -e .
 ```
 
 To __rebuild__ detectron2 that's built from a local clone, `rm -rf build/ **/*.so` then `pip install -e .`.
@@ -35,13 +35,16 @@ You often need to rebuild detectron2 after reinstalling PyTorch.
 ### Install Pre-Built Detectron2
 ```
 # for CUDA 10.1:
-pip install detectron2 -f \
-	https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
+pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
 ```
 You can replace cu101 with "cu{100,92}" or "cpu".
 
-Note that such installation has to be used with the latest official PyTorch release (currently 1.4).
-It will not work with your custom build of PyTorch.
+Note that:
+1. Such installation has to be used with the latest official PyTorch release (currently 1.4).
+   It will not work with your custom build of PyTorch.
+2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
+	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
+	 [projects](./projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
 
 ### Common Installation Issues
 
@@ -53,6 +56,7 @@ Click each issue for its solutions:
 <summary>
 Undefined torch/aten/caffe2 symbols, or segmentation fault immediately when running the library.
 </summary>
+<br/>
 
 This can happen if detectron2 or torchvision is not
 compiled with the version of PyTorch you're running.
@@ -70,6 +74,7 @@ in your issue.
 <summary>
 Undefined C++ symbols in `detectron2/_C*.so`.
 </summary>
+<br/>
 Usually it's because the library is compiled with a newer C++ compiler but run with an old C++ run time.
 This can happen with old anaconda.
 
@@ -80,6 +85,7 @@ Try `conda update libgcc`. Then rebuild detectron2.
 <summary>
 "Not compiled with GPU support" or "Detectron2 CUDA Compiler: not available".
 </summary>
+<br/>
 CUDA is not found when building detectron2.
 You should make sure
 
@@ -94,7 +100,7 @@ print valid outputs at the time you build detectron2.
 <summary>
 "invalid device function" or "no kernel image is available for execution".
 </summary>
-
+<br/>
 Two possibilities:
 
 * You build detectron2 with one version of CUDA but run it with a different version.
@@ -127,7 +133,7 @@ Two possibilities:
 <summary>
 Undefined CUDA symbols or cannot open libcudart.so.
 </summary>
-
+<br/>
 The version of NVCC you use to build detectron2 or torchvision does
 not match the version of CUDA you are running with.
 This often happens when using anaconda's CUDA runtime.
@@ -146,5 +152,15 @@ to match your local CUDA installation, or install a different version of CUDA to
 <summary>
 "ImportError: cannot import name '_C'".
 </summary>
+<br/>
 Please build and install detectron2 following the instructions above.
+</details>
+
+<details>
+<summary>
+ONNX conversion segfault after some "TraceWarning".
+</summary>
+<br/>
+Build and install ONNX from its source code using a compiler
+whose version is closer to what's used by PyTorch (available in `torch.__config__.show()`).
 </details>

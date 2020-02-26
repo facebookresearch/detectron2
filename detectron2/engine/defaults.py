@@ -389,7 +389,7 @@ class DefaultTrainer(SimpleTrainer):
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers()))
+            ret.append(hooks.PeriodicWriter(self.build_writers(), period=20))
         return ret
 
     def build_writers(self):
@@ -414,7 +414,7 @@ class DefaultTrainer(SimpleTrainer):
             ]
 
         """
-        # Assume the default print/log frequency.
+        # Here the default print/log frequency of each writer is used.
         return [
             # It may not always print what you want to see, since it prints "common" metrics only.
             CommonMetricPrinter(self.max_iter),
@@ -496,7 +496,7 @@ class DefaultTrainer(SimpleTrainer):
     def build_evaluator(cls, cfg, dataset_name):
         """
         Returns:
-            DatasetEvaluator
+            DatasetEvaluator or None
 
         It is not implemented by default.
         """

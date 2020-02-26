@@ -17,6 +17,7 @@ from detectron2.evaluation import (
     CityscapesEvaluator,
     COCOEvaluator,
     DatasetEvaluators,
+    LVISEvaluator,
     verify_results,
 )
 
@@ -43,8 +44,10 @@ class Trainer(DefaultTrainer):
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
         evaluator_list = []
         evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
-        if evaluator_type in ["coco"]:
-            evaluator_list.append(COCOEvaluator(dataset_name, cfg, True, output_folder))
+        if evaluator_type == "lvis":
+            return LVISEvaluator(dataset_name, cfg, True, output_folder)
+        if evaluator_type == "coco":
+            return COCOEvaluator(dataset_name, cfg, True, output_folder)
         if evaluator_type == "cityscapes":
             assert (
                 torch.cuda.device_count() >= comm.get_rank()

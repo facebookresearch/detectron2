@@ -78,6 +78,8 @@ class CoarseMaskHead(nn.Module):
             weight_init.c2_xavier_fill(layer)
 
     def forward(self, x):
+        # unlike BaseMaskRCNNHead, this head only outputs intermediate
+        # features, because the features will be used later by PointHead.
         N = x.shape[0]
         x = x.view(N, self.input_channels, self.input_h, self.input_w)
         for layer in self.conv_layers:

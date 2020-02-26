@@ -5,7 +5,7 @@ MODEL:
   RESNETS:
     DEPTH: 50
     NORM: "SyncBN"
-    STRIDE_IN_1X1: False
+    STRIDE_IN_1X1: True
   FPN:
     NORM: "SyncBN"
   ROI_BOX_HEAD:

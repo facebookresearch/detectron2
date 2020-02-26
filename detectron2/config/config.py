@@ -3,6 +3,7 @@
 
 import logging
 from fvcore.common.config import CfgNode as _CfgNode
+from fvcore.common.file_io import PathManager
 
 
 class CfgNode(_CfgNode):
@@ -19,6 +20,7 @@ class CfgNode(_CfgNode):
 
     # Note that the default value of allow_unsafe is changed to True
     def merge_from_file(self, cfg_filename: str, allow_unsafe: bool = True) -> None:
+        assert PathManager.isfile(cfg_filename), f"Config file '{cfg_filename}' does not exist!"
         loaded_cfg = _CfgNode.load_yaml_with_base(cfg_filename, allow_unsafe=allow_unsafe)
         loaded_cfg = type(self)(loaded_cfg)
 

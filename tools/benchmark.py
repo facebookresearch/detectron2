@@ -68,6 +68,18 @@ def benchmark_data(args):
         )
     )
 
+    # test for a few more rounds
+    for _ in range(10):
+        timer = Timer()
+        max_iter = 1000
+        for _ in tqdm.trange(max_iter):
+            next(itr)
+        logger.info(
+            "{} iters ({} images) in {} seconds.".format(
+                max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
+            )
+        )
+
 
 def benchmark_train(args):
     cfg = setup(args)

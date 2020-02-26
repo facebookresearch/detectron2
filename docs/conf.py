@@ -86,7 +86,7 @@ import detectron2  # isort: skip
 
 
 project = "detectron2"
-copyright = "2019, detectron2 contributors"
+copyright = "2019-2020, detectron2 contributors"
 author = "detectron2 contributors"
 
 # The short X.Y version
@@ -285,7 +285,6 @@ def setup(app):
         "recommonmark_config",
         {
             "url_resolver": url_resolver,
-            "auto_toc_tree_section": "Contents",
             "enable_math": True,
             "enable_inline_math": True,
             "enable_eval_rst": True,

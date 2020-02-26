@@ -22,7 +22,9 @@ class DatasetMapper:
     and map it into a format used by the model.
 
     This is the default callable to be used to map your dataset dict into training data.
-    You may need to follow it to implement your own one for customized logic.
+    You may need to follow it to implement your own one for customized logic,
+    such as a different way to read or transform images.
+    See :doc:`/tutorials/data_loading` for details.
 
     The callable currently does the following:
 

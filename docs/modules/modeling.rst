@@ -7,7 +7,7 @@ detectron2.modeling package
     :show-inheritance:
 
 
-detectron2.modeilng.poolers module
+detectron2.modeling.poolers module
 ---------------------------------------
 
 .. automodule:: detectron2.modeling.poolers
@@ -16,7 +16,7 @@ detectron2.modeilng.poolers module
     :show-inheritance:
 
 
-detectron2.modeilng.sampling module
+detectron2.modeling.sampling module
 ------------------------------------
 
 .. automodule:: detectron2.modeling.sampling
@@ -25,7 +25,7 @@ detectron2.modeilng.sampling module
     :show-inheritance:
 
 
-detectron2.modeilng.box_regression module
+detectron2.modeling.box_regression module
 ------------------------------------------
 
 .. automodule:: detectron2.modeling.box_regression

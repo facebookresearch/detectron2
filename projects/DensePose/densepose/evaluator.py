@@ -59,16 +59,18 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
     def evaluate(self):
         if self._distributed:
             synchronize()
-            self._predictions = all_gather(self._predictions)
-            self._predictions = list(itertools.chain(*self._predictions))
+            predictions = all_gather(self._predictions)
+            predictions = list(itertools.chain(*predictions))
             if not is_main_process():
                 return
+        else:
+            predictions = self._predictions
 
-        return copy.deepcopy(self._eval_predictions())
+        return copy.deepcopy(self._eval_predictions(predictions))
 
-    def _eval_predictions(self):
+    def _eval_predictions(self, predictions):
         """
-        Evaluate self._predictions on densepose.
+        Evaluate predictions on densepose.
         Return results with the metrics of the tasks.
         """
         self._logger.info("Preparing results for COCO format ...")
@@ -76,13 +78,13 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_densepose_results.json")
             with open(file_path, "w") as f:
-                json.dump(self._predictions, f)
+                json.dump(predictions, f)
                 f.flush()
                 os.fsync(f.fileno())
 
         self._logger.info("Evaluating predictions ...")
         res = OrderedDict()
-        results_gps, results_gpsm = _evaluate_predictions_on_coco(self._coco_api, self._predictions)
+        results_gps, results_gpsm = _evaluate_predictions_on_coco(self._coco_api, predictions)
         res["densepose_gps"] = results_gps
         res["densepose_gpsm"] = results_gpsm
         return res

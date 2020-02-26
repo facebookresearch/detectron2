@@ -6,8 +6,9 @@ See release log at
 
 ### Notable Backward Incompatible Changes:
 
-* 2019-11-11: `detectron2.data.detection_utils.read_image` transposes images with exif information.
-* 2019-10-10: initial release.
+* 02/14/2020,02/18/2020: Mask head and keypoint head now include logic for losses & inference. Custom heads
+	should overwrite the feature computation by `layers()` method.
+* 11/11/2019: `detectron2.data.detection_utils.read_image` transposes images with exif information.
 
 ### Config Version Change Log
 

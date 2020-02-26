@@ -181,11 +181,5 @@ class RPN(nn.Module):
                 self.min_box_side_len,
                 self.training,
             )
-            # For RPN-only models, the proposals are the final output and we return them in
-            # high-to-low confidence order.
-            # For end-to-end models, the RPN proposals are an intermediate state
-            # and this sorting is actually not needed. But the cost is negligible.
-            inds = [p.objectness_logits.sort(descending=True)[1] for p in proposals]
-            proposals = [p[ind] for p, ind in zip(proposals, inds)]
 
         return proposals, losses

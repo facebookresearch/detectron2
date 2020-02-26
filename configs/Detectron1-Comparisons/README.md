@@ -5,16 +5,17 @@ The differences in implementation details are shared in
 [Compatibility with Other Libraries](../../docs/notes/compatibility.md).
 
 The differences in default config includes:
-* Use scale augmentation during training.
-* Use L1 loss instead of smooth L1 loss.
-* Use `POOLER_SAMPLING_RATIO=0` instead of 2.
-* Use `ROIAlignV2`.
+* Use scale augmentation during training. This improves AP with lower training cost.
+* Use L1 loss instead of smooth L1 loss for simplicity. This sometimes improves box AP but may
+  affect other AP.
+* Use `POOLER_SAMPLING_RATIO=0` instead of 2. This does not significantly affect AP.
+* Use `ROIAlignV2`. This does not significantly affect AP.
 
 In this directory, we provide a few configs that mimic Detectron's behavior as close as possible.
 This provides a fair comparison of accuracy and speed against Detectron.
 
 <!--
-./gen_html_table.py --config 'Detectron1-Comparisons/*.yaml' --name "Faster R-CNN" "Keypoint R-CNN" "Mask R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP keypoint_AP
+./gen_html_table.py --config 'Detectron1-Comparisons/*.yaml' --name "Faster R-CNN" "Keypoint R-CNN" "Mask R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP keypoint_AP --base-dir ../../../configs/Detectron1-Comparisons
 -->
 
 
@@ -36,7 +37,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
  <tr><td align="left"><a href="faster_rcnn_R_50_FPN_noaug_1x.yaml">Faster R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.219</td>
-<td align="center">0.048</td>
+<td align="center">0.038</td>
 <td align="center">3.1</td>
 <td align="center">36.9</td>
 <td align="center"></td>
@@ -48,7 +49,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
  <tr><td align="left"><a href="keypoint_rcnn_R_50_FPN_1x.yaml">Keypoint R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.313</td>
-<td align="center">0.082</td>
+<td align="center">0.071</td>
 <td align="center">5.0</td>
 <td align="center">53.1</td>
 <td align="center"></td>
@@ -60,7 +61,7 @@ This provides a fair comparison of accuracy and speed against Detectron.
  <tr><td align="left"><a href="mask_rcnn_R_50_FPN_noaug_1x.yaml">Mask R-CNN</a></td>
 <td align="center">1x</td>
 <td align="center">0.273</td>
-<td align="center">0.052</td>
+<td align="center">0.043</td>
 <td align="center">3.4</td>
 <td align="center">37.8</td>
 <td align="center">34.9</td>

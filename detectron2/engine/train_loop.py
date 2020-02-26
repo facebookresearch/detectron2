@@ -133,6 +133,7 @@ class TrainerBase:
                     self.after_step()
             except Exception:
                 logger.exception("Exception during training:")
+                raise
             finally:
                 self.after_train()
 
@@ -203,16 +204,16 @@ class SimpleTrainer(TrainerBase):
         assert self.model.training, "[SimpleTrainer] model was changed to eval mode!"
         start = time.perf_counter()
         """
-        If your want to do something with the data, you can wrap the dataloader.
+        If you want to do something with the data, you can wrap the dataloader.
         """
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
         """
-        If your want to do something with the losses, you can wrap the model.
+        If you want to do something with the losses, you can wrap the model.
         """
         loss_dict = self.model(data)
-        losses = sum(loss for loss in loss_dict.values())
+        losses = sum(loss_dict.values())
         self._detect_anomaly(losses, loss_dict)
 
         metrics_dict = loss_dict
@@ -220,7 +221,7 @@ class SimpleTrainer(TrainerBase):
         self._write_metrics(metrics_dict)
 
         """
-        If you need accumulate gradients or something similar, you can
+        If you need to accumulate gradients or something similar, you can
         wrap the optimizer with your custom `zero_grad()` method.
         """
         self.optimizer.zero_grad()

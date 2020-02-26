@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import math
+from typing import Tuple
 import torch
 
 # Value for clamping large dw and dh predictions. The heuristic is that we clamp
@@ -11,6 +12,7 @@ _DEFAULT_SCALE_CLAMP = math.log(1000.0 / 16)
 __all__ = ["Box2BoxTransform", "Box2BoxTransformRotated"]
 
 
+@torch.jit.script
 class Box2BoxTransform(object):
     """
     The box-to-box transform defined in R-CNN. The transformation is parameterized
@@ -18,7 +20,9 @@ class Box2BoxTransform(object):
     by exp(dw), exp(dh) and shifts a box's center by the offset (dx * width, dy * height).
     """
 
-    def __init__(self, weights, scale_clamp=_DEFAULT_SCALE_CLAMP):
+    def __init__(
+        self, weights: Tuple[float, float, float, float], scale_clamp: float = _DEFAULT_SCALE_CLAMP
+    ):
         """
         Args:
             weights (4-element tuple): Scaling factors that are applied to the
@@ -76,7 +80,6 @@ class Box2BoxTransform(object):
                 box transformations for the single box boxes[i].
             boxes (Tensor): boxes to transform, of shape (N, 4)
         """
-        assert torch.isfinite(deltas).all().item(), "Box regression deltas become infinite or NaN!"
         boxes = boxes.to(deltas.dtype)
 
         widths = boxes[:, 2] - boxes[:, 0]
@@ -107,6 +110,7 @@ class Box2BoxTransform(object):
         return pred_boxes
 
 
+@torch.jit.script
 class Box2BoxTransformRotated(object):
     """
     The box-to-box transform defined in Rotated R-CNN. The transformation is parameterized
@@ -116,7 +120,11 @@ class Box2BoxTransformRotated(object):
     Note: angles of deltas are in radians while angles of boxes are in degrees.
     """
 
-    def __init__(self, weights, scale_clamp=_DEFAULT_SCALE_CLAMP):
+    def __init__(
+        self,
+        weights: Tuple[float, float, float, float, float],
+        scale_clamp: float = _DEFAULT_SCALE_CLAMP,
+    ):
         """
         Args:
             weights (5-element tuple): Scaling factors that are applied to the
@@ -176,7 +184,6 @@ class Box2BoxTransformRotated(object):
             boxes (Tensor): boxes to transform, of shape (N, 5)
         """
         assert deltas.shape[1] == 5 and boxes.shape[1] == 5
-        assert torch.isfinite(deltas).all().item(), "Box regression deltas become infinite or NaN!"
 
         boxes = boxes.to(deltas.dtype)
 

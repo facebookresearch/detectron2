@@ -61,7 +61,7 @@ model-level compatibility. The major ones are:
 - We interpret the coordinates in COCO bounding box and segmentation annotations
   as coordinates in range `[0, width]` or `[0, height]`. The coordinates in
   COCO keypoint annotations are interpreted as pixel indices in range `[0, width - 1]` or `[0, height - 1]`.
-  Note that this affects how flip augmentation is implemetned.
+  Note that this affects how flip augmentation is implemented.
 
 
 We will later share more details and rationale behind the above mentioned issues
@@ -71,8 +71,7 @@ about pixels, coordinates, and "+1"s.
 ## Compatibility with Caffe2
 
 As mentioned above, despite the incompatibilities with Detectron, the relevant
-ops have been implemented in Caffe2, in [PR1](https://github.com/pytorch/pytorch/pull/20550)
-and [PR2](https://github.com/pytorch/pytorch/pull/23706).
+ops have been implemented in Caffe2.
 Therefore, models trained with detectron2 can be converted in Caffe2.
 See [Deployment](../tutorials/deployment.html) for the tutorial.
 
@@ -81,4 +80,4 @@ See [Deployment](../tutorials/deployment.html) for the tutorial.
 Most ops are available in TensorFlow, although some tiny differences in
 the implementation of resize / ROIAlign / padding need to be addressed.
 A working conversion script is provided by [tensorpack FasterRCNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
-to run a standard Detectron2 model in TensorFlow.
+to run a standard detectron2 model in TensorFlow.

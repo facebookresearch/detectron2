@@ -100,12 +100,12 @@ class DensePoseROIHeads(StandardROIHeads):
         dp_pooler_sampling_ratio   = cfg.MODEL.ROI_DENSEPOSE_HEAD.POOLER_SAMPLING_RATIO
         dp_pooler_type             = cfg.MODEL.ROI_DENSEPOSE_HEAD.POOLER_TYPE
         self.use_decoder           = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECODER_ON
-        if self.use_decoder:
-            dp_pooler_scales       = (1.0 / self.feature_strides[self.in_features[0]], )
-        else:
-            dp_pooler_scales       = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
         # fmt: on
-        in_channels = [self.feature_channels[f] for f in self.in_features][0]
+        if self.use_decoder:
+            dp_pooler_scales = (1.0 / input_shape[self.in_features[0]].stride,)
+        else:
+            dp_pooler_scales = tuple(1.0 / input_shape[k].stride for k in self.in_features)
+        in_channels = [input_shape[f].channels for f in self.in_features][0]
 
         if self.use_decoder:
             self.decoder = Decoder(cfg, input_shape, self.in_features)
@@ -139,18 +139,18 @@ class DensePoseROIHeads(StandardROIHeads):
         if not self.densepose_on:
             return {} if self.training else instances
 
+        features = [features[f] for f in self.in_features]
         if self.training:
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             proposals_dp = self.densepose_data_filter(proposals)
             if len(proposals_dp) > 0:
+                # NOTE may deadlock in DDP if certain workers have empty proposals_dp
                 proposal_boxes = [x.proposal_boxes for x in proposals_dp]
 
                 if self.use_decoder:
-                    features_dec = [self.decoder(features)]
-                else:
-                    features_dec = [features[f] for f in range(len(self.in_features))]
+                    features = [self.decoder(features)]
 
-                features_dp = self.densepose_pooler(features_dec, proposal_boxes)
+                features_dp = self.densepose_pooler(features, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
                 densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
                 densepose_loss_dict = self.densepose_losses(proposals_dp, densepose_outputs)
@@ -159,11 +159,9 @@ class DensePoseROIHeads(StandardROIHeads):
             pred_boxes = [x.pred_boxes for x in instances]
 
             if self.use_decoder:
-                features_dec = [self.decoder(features)]
-            else:
-                features_dec = [features[f] for f in range(len(self.in_features))]
+                features = [self.decoder(features)]
 
-            features_dp = self.densepose_pooler(features_dec, pred_boxes)
+            features_dp = self.densepose_pooler(features, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
                 densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
@@ -177,13 +175,11 @@ class DensePoseROIHeads(StandardROIHeads):
             return instances
 
     def forward(self, images, features, proposals, targets=None):
-        features_list = [features[f] for f in self.in_features]
-
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
 
         if self.training:
-            losses.update(self._forward_densepose(features_list, instances))
+            losses.update(self._forward_densepose(features, instances))
         else:
-            instances = self._forward_densepose(features_list, instances)
+            instances = self._forward_densepose(features, instances)
         return instances, losses

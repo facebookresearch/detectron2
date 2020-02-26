@@ -115,6 +115,10 @@ def find_top_rrpn_proposals(
     for n, image_size in enumerate(image_sizes):
         boxes = RotatedBoxes(topk_proposals[n])
         scores_per_img = topk_scores[n]
+        valid_mask = torch.isfinite(boxes.tensor).all(dim=1) & torch.isfinite(scores_per_img)
+        if not valid_mask.all():
+            boxes = boxes[valid_mask]
+            scores_per_img = scores_per_img[valid_mask]
         boxes.clip(image_size)
 
         # filter empty boxes

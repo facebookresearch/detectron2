@@ -92,10 +92,12 @@ class IterationTimer(HookBase):
         """
         self._warmup_iter = warmup_iter
         self._step_timer = Timer()
+        self._start_time = time.perf_counter()
+        self._total_timer = Timer()
 
     def before_train(self):
         self._start_time = time.perf_counter()
-        self._total_timer = Timer()
+        self._total_timer.reset()
         self._total_timer.pause()
 
     def after_train(self):
@@ -279,6 +281,7 @@ class AutogradProfiler(HookBase):
         if self._profiler is None:
             return
         self._profiler.__exit__(None, None, None)
+        PathManager.mkdirs(self._output_dir)
         out_file = os.path.join(
             self._output_dir, "profiler-trace-iter{}.json".format(self.trainer.iter)
         )
