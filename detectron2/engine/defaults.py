@@ -449,8 +449,11 @@ class DefaultTrainer(SimpleTrainer):
         It is not implemented by default.
         """
         raise NotImplementedError(
-            "Please either implement `build_evaluator()` in subclasses, or pass "
-            "your evaluator as arguments to `DefaultTrainer.test()`."
+            """
+If you want DefaultTrainer to automatically run evaluation,
+please implement `build_evaluator()` in subclasses (see train_net.py for example).
+Alternatively, you can call evaluation functions yourself (see Colab balloon tutorial for example).
+"""
         )
 
     @classmethod
