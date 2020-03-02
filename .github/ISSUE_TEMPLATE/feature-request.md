@@ -5,22 +5,24 @@ about: Submit a proposal/request for a new detectron2 feature
 ---
 
 ## 🚀 Feature
-<!-- A clear and concise description of the feature proposal -->
+A clear and concise description of the feature proposal.
 
-## Motivation
 
-<!-- Please outline the motivation for the proposal. Is your feature request related to a problem?
-e.g., I'm always frustrated when [...]. If this is related to another GitHub issue, please link here too -->
+## Motivation & Examples
 
-## Pitch
+Tell us why the feature is useful.
 
-<!-- A clear and concise description, e.g., with code examples showing what you want to happen. -->
+Describe what the feature would look like, if it is implemented.
+Best demonstrated using **code examples** in addition to words.
 
-Note that we only consider adding new features if they are relevant to many users.
-We do not take requests to implement recent research papers --
+## Note
+
+We only consider adding new features if they are relevant to many users.
+
+If you request implementation of research papers --
 we only consider papers that have enough significance and prevalance.
 
-We don't take feature requests for most projects in the `projects/` directory,
+We do not take requests for most projects in the `projects/` directory,
 because they are research code release that is mainly for other researchers to reproduce results.
 
 Instead of adding features inside detectron2,
