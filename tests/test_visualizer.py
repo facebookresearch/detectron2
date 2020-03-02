@@ -141,3 +141,8 @@ class TestVisualizer(unittest.TestCase):
 
         v = Visualizer(img, MetadataCatalog.get("asdfasdf"))
         v.draw_instance_predictions(inst)
+
+
+
+if __name__ == "__main__":
+    unittest.main()

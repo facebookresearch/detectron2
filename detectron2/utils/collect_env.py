@@ -53,11 +53,16 @@ def detect_compute_compatibility(CUDA_HOME, so_file):
 
 
 def collect_env_info():
-    has_cuda = torch.cuda.is_available()
-    # NOTE: the use of CUDA_HOME requires the CUDA build deps, though in
-    # theory detectron2 should be made runnable with only the CUDA runtime
-    from torch.utils.cpp_extension import CUDA_HOME
 
+    # "has_gpu" really. 
+    has_cuda = torch.cuda.is_available()
+    
+    # NOTE: the use of CUDA_HOME and ROCM_HOME requires the CUDA/ROCM build deps, though in
+    # theory detectron2 should be made runnable with only the corresponding runtimes
+    from torch.utils.cpp_extension import CUDA_HOME, ROCM_HOME
+
+    is_rocm_pytorch = True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
+    
     data = []
     data.append(("sys.platform", sys.platform))
     data.append(("Python", sys.version.replace("\n", "")))
@@ -99,6 +104,7 @@ def collect_env_info():
     else:
         # print compilers that are used to build extension
         data.append(("Compiler", _C.get_compiler_version()))
+        # CUDA or HIP and version
         data.append(("CUDA compiler", _C.get_cuda_version()))
         if has_cuda:
             data.append(
@@ -109,21 +115,22 @@ def collect_env_info():
     data.append(("PyTorch", torch.__version__ + " @" + os.path.dirname(torch.__file__)))
     data.append(("PyTorch debug build", torch.version.debug))
 
-    data.append(("CUDA available", has_cuda))
+    data.append(("GPU available", has_cuda))
     if has_cuda:
         devices = defaultdict(list)
         for k in range(torch.cuda.device_count()):
             devices[torch.cuda.get_device_name(k)].append(str(k))
         for name, devids in devices.items():
             data.append(("GPU " + ",".join(devids), name))
+        
+        if is_rocm_pytorch:
+            data.append(("ROCM_HOME", str(ROCM_HOME)))
+        else:
+            data.append(("CUDA_HOME", str(CUDA_HOME)))
 
-        from torch.utils.cpp_extension import CUDA_HOME
-
-        data.append(("CUDA_HOME", str(CUDA_HOME)))
-
-        cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
-        if cuda_arch_list:
-            data.append(("TORCH_CUDA_ARCH_LIST", cuda_arch_list))
+            cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
+            if cuda_arch_list:
+                data.append(("TORCH_CUDA_ARCH_LIST", cuda_arch_list))
     data.append(("Pillow", PIL.__version__))
 
     try:
