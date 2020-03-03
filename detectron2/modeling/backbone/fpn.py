@@ -129,8 +129,9 @@ class FPN(Backbone):
         for features, lateral_conv, output_conv in zip(
             x[1:], self.lateral_convs[1:], self.output_convs[1:]
         ):
-            # Using F.interpolate with scale_factor instead of size creates a Gather op in the ONNX model
-            # that onnx2trt tool doesn't like. See https://github.com/onnx/onnx-tensorrt/issues/192
+            # Using F.interpolate with scale_factor instead of size creates a Gather op in the ONNX
+            # model that onnx2trt tool doesn't like.
+            # See https://github.com/onnx/onnx-tensorrt/issues/192
             sh = torch.tensor(prev_features.shape)
             top_down_features = F.interpolate(
                 prev_features, size=(sh[2] * 2, sh[3] * 2), mode="nearest"
