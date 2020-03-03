@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import math
 import fvcore.nn.weight_init as weight_init
+import torch
 import torch.nn.functional as F
 from torch import nn
 
@@ -128,7 +129,10 @@ class FPN(Backbone):
         for features, lateral_conv, output_conv in zip(
             x[1:], self.lateral_convs[1:], self.output_convs[1:]
         ):
-            top_down_features = F.interpolate(prev_features, scale_factor=2, mode="nearest")
+            # Using F.interpolate with scale_factor instead of size  creates a Gather op in the ONNX model
+            # that onnx2trt tool doesn't like. See https://github.com/onnx/onnx-tensorrt/issues/192
+            sh = torch.tensor(prev_features.shape)
+            top_down_features = F.interpolate(prev_features, size=(prev_features.shape(2) * 2, prev_features.shape(3) * 2), mode="nearest")
             lateral_features = lateral_conv(features)
             prev_features = lateral_features + top_down_features
             if self._fuse_type == "avg":
