@@ -50,7 +50,7 @@ class Box2BoxTransform(object):
         """
         assert isinstance(src_boxes, torch.Tensor), type(src_boxes)
         assert isinstance(target_boxes, torch.Tensor), type(target_boxes)
-        assert len(src_boxes) == 4 and len(target_boxes) == 4
+        assert src_boxes.shape[1] == 4 and target_boxes.shape[1] == 4
 
         src_widths = src_boxes[:, 2] - src_boxes[:, 0]
         src_heights = src_boxes[:, 3] - src_boxes[:, 1]

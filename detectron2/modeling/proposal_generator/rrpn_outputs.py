@@ -201,6 +201,9 @@ class RRPNOutputs(RPNOutputs):
             smooth_l1_beta,
         )
         self._boxsz = 5 # 4 as in RPNOutputs + angle
+        if gt_boxes is not None and len(gt_boxes) > 0:
+          assert(isinstance(gt_boxes[0], RotatedBoxes)), "RRPN must be provided witg gt_boxes of type RotatedBoxes, but got {}"\
+                  .format(type(gt_boxes[0]))
 
     def _get_ground_truth(self):
         """
