@@ -127,7 +127,8 @@ model = build_model(cfg)
 features = model.backbone(images.tensor)
 proposals, _ = model.proposal_generator(images, features)
 instances = model.roi_heads._forward_box(features, proposals)
-mask_features = model.roi_heads.mask_pooler(features, [x.pred_boxes for x in instances])
+mask_features = [features[f] for f in model.roi_heads.in_features]
+mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
 ```
 
 Note that both options require you to read the existing forward code to understand

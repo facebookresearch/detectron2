@@ -19,13 +19,13 @@ To add new dataset, refer to the tutorial "docs/DATASETS.md".
 
 import os
 
-from detectron2.data import MetadataCatalog, DatasetCatalog
-from .register_coco import register_coco_instances, register_coco_panoptic_separated
-from .lvis import register_lvis_instances, get_lvis_instances_meta
-from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
-from .pascal_voc import register_pascal_voc
-from .builtin_meta import _get_builtin_metadata
+from detectron2.data import DatasetCatalog, MetadataCatalog
 
+from .builtin_meta import _get_builtin_metadata
+from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
+from .lvis import get_lvis_instances_meta, register_lvis_instances
+from .pascal_voc import register_pascal_voc
+from .register_coco import register_coco_instances, register_coco_panoptic_separated
 
 # ==== Predefined datasets and splits for COCO ==========
 

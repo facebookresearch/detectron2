@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from fvcore.common.file_io import PathManager
-import os
 import numpy as np
+import os
 import xml.etree.ElementTree as ET
+from fvcore.common.file_io import PathManager
 
-from detectron2.structures import BoxMode
 from detectron2.data import DatasetCatalog, MetadataCatalog
-
+from detectron2.structures import BoxMode
 
 __all__ = ["register_pascal_voc"]
 
