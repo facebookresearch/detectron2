@@ -8,6 +8,7 @@ from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads import keypoint_head, mask_head
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputs
+from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputs, RROIHeads
 
 from .c10 import (
     Caffe2Compatible,
@@ -76,9 +77,11 @@ def patch_generalized_rcnn(model):
 
 
 @contextlib.contextmanager
-def mock_fastrcnn_outputs_inference(tensor_mode, check=True):
+def mock_fastrcnn_outputs_inference(
+    tensor_mode, check=True, fast_rcnn_outputs_type=FastRCNNOutputs
+):
     with mock.patch.object(
-        FastRCNNOutputs,
+        fast_rcnn_outputs_type,
         "inference",
         autospec=True,
         side_effect=Caffe2FastRCNNOutputsInference(tensor_mode),
@@ -128,8 +131,16 @@ class ROIHeadsPatcher:
         # are called inside the same file as BaseXxxHead due to using mock.patch.
         kpt_heads_mod = keypoint_head.BaseKeypointRCNNHead.__module__
         mask_head_mod = mask_head.BaseMaskRCNNHead.__module__
+        if isinstance(self.heads, RROIHeads):
+            fast_rcnn_outputs_type = RotatedFastRCNNOutputs
+        else:
+            fast_rcnn_outputs_type = FastRCNNOutputs
 
-        mock_ctx_managers = [mock_fastrcnn_outputs_inference(tensor_mode)]
+        mock_ctx_managers = [
+            mock_fastrcnn_outputs_inference(
+                tensor_mode=tensor_mode, check=True, fast_rcnn_outputs_type=fast_rcnn_outputs_type
+            )
+        ]
         if getattr(self.heads, "keypoint_on", False):
             mock_ctx_managers += [
                 mock_keypoint_rcnn_inference(
