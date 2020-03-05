@@ -33,6 +33,7 @@ class Box2BoxTransform(object):
                 factors (dw and dh) are clamped such that they are <= scale_clamp.
         """
         self.weights = weights
+        assert(len(weights)==4),"Expecting a 4-elements tuple (for scaling (dx,dy,dw,dh))"
         self.scale_clamp = scale_clamp
 
     def get_deltas(self, src_boxes, target_boxes):
@@ -49,6 +50,7 @@ class Box2BoxTransform(object):
         """
         assert isinstance(src_boxes, torch.Tensor), type(src_boxes)
         assert isinstance(target_boxes, torch.Tensor), type(target_boxes)
+        assert len(src_boxes) == 4 and len(target_boxes) == 4
 
         src_widths = src_boxes[:, 2] - src_boxes[:, 0]
         src_heights = src_boxes[:, 3] - src_boxes[:, 1]
@@ -111,7 +113,7 @@ class Box2BoxTransform(object):
 
 
 @torch.jit.script
-class Box2BoxTransformRotated(object):
+class Box2BoxTransformRotated(object): #TODO when JIT allows, inherit from Box2BoxTransform
     """
     The box-to-box transform defined in Rotated R-CNN. The transformation is parameterized
     by 5 deltas: (dx, dy, dw, dh, da). The transformation scales the box's width and height
@@ -134,6 +136,7 @@ class Box2BoxTransformRotated(object):
                 factors (dw and dh) are clamped such that they are <= scale_clamp.
         """
         self.weights = weights
+        assert(len(weights)==5), "Expecting a (5-element tuple) applied to the (dx,dy,dw,dh,da) deltas"
         self.scale_clamp = scale_clamp
 
     def get_deltas(self, src_boxes, target_boxes):
@@ -150,6 +153,8 @@ class Box2BoxTransformRotated(object):
         """
         assert isinstance(src_boxes, torch.Tensor), type(src_boxes)
         assert isinstance(target_boxes, torch.Tensor), type(target_boxes)
+        assert(src_boxes.shape[1] == 5), src_boxes.shape[1]
+        assert(target_boxes.shape[1] == 5), target_boxes.shape[1]
 
         src_ctr_x, src_ctr_y, src_widths, src_heights, src_angles = torch.unbind(src_boxes, dim=1)
 

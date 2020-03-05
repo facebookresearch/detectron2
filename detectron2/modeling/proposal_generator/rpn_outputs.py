@@ -28,7 +28,7 @@ Shape shorthand in this module:
     L: number of feature maps per image on which RPN is run
     A: number of cell anchors (must be the same for all feature maps)
     Hi, Wi: height and width of the i-th feature map
-    4: size of the box parameterization
+    4: size of the box parameterization, self._boxsz
 
 Naming convention:
 
@@ -251,13 +251,14 @@ class RPNOutputs(object):
         self.image_sizes = images.image_sizes
         self.boundary_threshold = boundary_threshold
         self.smooth_l1_beta = smooth_l1_beta
+        self._boxsz = 4 #num params of the box (x, y, w, h)
 
     def _get_ground_truth(self):
         """
         Returns:
-            gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-                total number of anchors in image i (i.e., len(anchors[i])). Label values are
-                in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
+            gt_objectness_logits: list of N tensors. 
+              Tensor i is a vector whose length is the total number of anchors in image i (i.e., len(anchors[i])). 
+              Label values are in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
             gt_anchor_deltas: list of N tensors. Tensor i has shape (len(anchors[i]), 4).
         """
         gt_objectness_logits = []
@@ -280,7 +281,7 @@ class RPNOutputs(object):
 
             if self.boundary_threshold >= 0:
                 # Discard anchors that go out of the boundaries of the image
-                # NOTE: This is legacy functionality that is turned off by default in Detectron2
+                print("RPNOutputs.boundary_threshold: Warning: This is legacy functionality that is turned off by default in Detectron2")
                 anchors_inside_image = anchors_i.inside_box(image_size_i, self.boundary_threshold)
                 gt_objectness_logits_i[~anchors_inside_image] = -1
 
@@ -358,6 +359,8 @@ class RPNOutputs(object):
         gt_anchor_deltas = torch.stack(gt_anchor_deltas, dim=0)
         assert gt_anchor_deltas.shape[1] == num_anchors_per_image
         B = gt_anchor_deltas.shape[2]  # box dimension (4 or 5)
+        assert( B == self._boxsz), "RRPN has to have box  dimension {} but has {}"\
+                .format(self._boxsz, B)
 
         # Split to tuple of L tensors, each with shape (N, num_anchors_per_image)
         gt_anchor_deltas = torch.split(gt_anchor_deltas, num_anchors_per_map, dim=1)

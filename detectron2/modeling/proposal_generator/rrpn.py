@@ -29,6 +29,10 @@ class RRPN(RPN):
         assert(isinstance(self.anchor_generator, RotatedAnchorGenerator)), \
           "RRPN: must set MODEL.ANCHOR_GENERATOR.NAME to 'RotatedAnchorGenerator' but it is {}"\
           .format(cfg.MODEL.ANCHOR_GENERATOR.NAME)
+        assert(len(cfg.MODEL.RPN.BBOX_REG_WEIGHTS)==5),\
+                "RRPN: must provide 5-element tuple weights, but got {}.\
+                 Please set cfg.MODEL.RPN.BBOX_REG_WEIGHTS correctly."\
+                .format(cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
         self.box2box_transform = Box2BoxTransformRotated(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
 
     def forward(self, images, features, gt_instances=None):

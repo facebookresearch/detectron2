@@ -200,6 +200,7 @@ class RRPNOutputs(RPNOutputs):
             gt_boxes,
             smooth_l1_beta,
         )
+        self._boxsz = 5 # 4 as in RPNOutputs + angle
 
     def _get_ground_truth(self):
         """
