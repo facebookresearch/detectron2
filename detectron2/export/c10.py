@@ -5,9 +5,11 @@ import torch
 import torch.nn.functional as F
 
 from detectron2.layers import cat
+from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference
+from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputs
 from detectron2.structures import Boxes, ImageList, Instances, Keypoints
 
 from .shared import alias, to_device
@@ -18,16 +20,18 @@ This file contains caffe2-compatible implementation of several detectrno2 compon
 """
 
 
-class Boxes4or5(Boxes):
+class Caffe2Boxes(Boxes):
     """
     Representing a list of detectron2.structures.Boxes from minibatch, each box
-    is represented by a 5d vector (batch index + 4 coordinates).
+    is represented by a 5d vector (batch index + 4 coordinates), or a 6d vector
+    (batch index + 5 coordinates) for RotatedBoxes.
     """
 
     def __init__(self, tensor):
         assert isinstance(tensor, torch.Tensor)
-        assert tensor.dim() == 2 and tensor.size(-1) in [4, 5], tensor.size()
-        # TODO: make tensor immutable when dim is Nx5?
+        assert tensor.dim() == 2 and tensor.size(-1) in [4, 5, 6], tensor.size()
+        # TODO: make tensor immutable when dim is Nx5 for Boxes,
+        # and Nx6 for RotatedBoxes?
         self.tensor = tensor
 
 
@@ -196,8 +200,8 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
                 min_size=self.min_box_side_len,
                 # correct_transform_coords=True,  # deprecated argument
                 angle_bound_on=True,  # Default
-                angle_bound_lo=-90,  # Default
-                angle_bound_hi=90,  # Default
+                angle_bound_lo=-180,
+                angle_bound_hi=180,
                 clip_angle_thresh=1.0,  # Default
                 legacy_plus_one=False,
             )
@@ -250,7 +254,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
             im_info=im_info,
             indices=rpn_rois[:, 0],
             extra_fields={
-                "proposal_boxes": Boxes4or5(rpn_rois),
+                "proposal_boxes": Caffe2Boxes(rpn_rois),
                 "objectness_logits": (torch.Tensor, rpn_roi_probs),
             },
         )
@@ -265,7 +269,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
     @staticmethod
     def c2_preprocess(box_lists):
         assert all(isinstance(x, Boxes) for x in box_lists)
-        if all(isinstance(x, Boxes4or5) for x in box_lists):
+        if all(isinstance(x, Caffe2Boxes) for x in box_lists):
             # input is pure-tensor based
             assert len(box_lists) == 1
             pooler_fmt_boxes = box_lists[0].tensor
@@ -280,7 +284,14 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
         num_level_assignments = len(self.level_poolers)
 
         if num_level_assignments == 1:
-            out = torch.ops._caffe2.RoIAlign(
+            if isinstance(self.level_poolers[0], ROIAlignRotated):
+                c2_roi_align = torch.ops._caffe2.RoIAlignRotated
+                aligned = True
+            else:
+                c2_roi_align = torch.ops._caffe2.RoIAlign
+                aligned = self.level_poolers[0].aligned
+
+            out = c2_roi_align(
                 x[0],
                 pooler_fmt_boxes,
                 order="NCHW",
@@ -288,7 +299,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
                 pooled_h=int(self.output_size[0]),
                 pooled_w=int(self.output_size[1]),
                 sampling_ratio=int(self.level_poolers[0].sampling_ratio),
-                aligned=bool(self.level_poolers[0].aligned),
+                aligned=aligned,
             )
             return out
 
@@ -311,7 +322,14 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
 
         roi_feat_fpn_list = []
         for roi_fpn, x_level, pooler in zip(rois_fpn_list, x, self.level_poolers):
-            roi_feat_fpn = torch.ops._caffe2.RoIAlign(
+            if isinstance(pooler, ROIAlignRotated):
+                c2_roi_align = torch.ops._caffe2.RoIAlignRotated
+                aligned = True
+            else:
+                c2_roi_align = torch.ops._caffe2.RoIAlign
+                aligned = bool(pooler.aligned)
+
+            roi_feat_fpn = c2_roi_align(
                 x_level,
                 roi_fpn,
                 order="NCHW",
@@ -319,7 +337,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
                 pooled_h=int(self.output_size[0]),
                 pooled_w=int(self.output_size[1]),
                 sampling_ratio=int(pooler.sampling_ratio),
-                aligned=bool(pooler.aligned),
+                aligned=aligned,
             )
             roi_feat_fpn_list.append(roi_feat_fpn)
 
@@ -335,14 +353,30 @@ class Caffe2FastRCNNOutputsInference:
     def __call__(self, fastrcnn_outputs, score_thresh, nms_thresh, topk_per_image):
         """ equivalent to FastRCNNOutputs.inference """
         assert isinstance(fastrcnn_outputs.proposals, Boxes)
-        input_tensor_mode = fastrcnn_outputs.proposals.tensor.shape[1] == 5
+
+        # note: fastrcnn_outputs.proposals is Caffe2Box but not RotatedBoxes here,
+        # thus cannot be used to judge if it's rotated model
+        is_rotated = isinstance(fastrcnn_outputs, RotatedFastRCNNOutputs)
+
+        if is_rotated:
+            box_dim = 5
+            assert fastrcnn_outputs.box2box_transform.weights[4] == 1, (
+                "The weights for Rotated BBoxTransform in C2 have only 4 dimensions,"
+                + " thus enforcing the angle weight to be 1 for now"
+            )
+            box2box_transform_weights = fastrcnn_outputs.box2box_transform.weights[:4]
+        else:
+            box_dim = 4
+            box2box_transform_weights = fastrcnn_outputs.box2box_transform.weights
+
+        input_tensor_mode = fastrcnn_outputs.proposals.tensor.shape[1] == (box_dim + 1)
 
         class_logits = fastrcnn_outputs.pred_class_logits
         box_regression = fastrcnn_outputs.pred_proposal_deltas
         class_prob = F.softmax(class_logits, -1)
 
-        assert box_regression.shape[1] % 4 == 0
-        cls_agnostic_bbox_reg = box_regression.shape[1] // 4 == 1
+        assert box_regression.shape[1] % box_dim == 0
+        cls_agnostic_bbox_reg = box_regression.shape[1] // box_dim == 1
 
         device = class_logits.device
 
@@ -372,12 +406,12 @@ class Caffe2FastRCNNOutputsInference:
             to_device(rois, "cpu"),
             to_device(box_regression, "cpu"),
             to_device(im_info, "cpu"),
-            weights=fastrcnn_outputs.box2box_transform.weights,
+            weights=box2box_transform_weights,
             apply_scale=True,
-            rotated=False,
+            rotated=is_rotated,
             angle_bound_on=True,
-            angle_bound_lo=-90,
-            angle_bound_hi=90,
+            angle_bound_lo=-180,
+            angle_bound_hi=180,
             clip_angle_thresh=1.0,
             legacy_plus_one=False,
         )
@@ -395,7 +429,7 @@ class Caffe2FastRCNNOutputsInference:
             soft_nms_method="linear",
             soft_nms_sigma=0.5,
             soft_nms_min_score_thres=0.001,
-            rotated=False,
+            rotated=is_rotated,
             cls_agnostic_bbox_reg=cls_agnostic_bbox_reg,
             input_boxes_include_bg_cls=False,
             output_classes_include_bg_cls=False,
@@ -429,7 +463,7 @@ class Caffe2FastRCNNOutputsInference:
             im_info=im_info,
             indices=roi_batch_ids[:, 0],
             extra_fields={
-                "pred_boxes": Boxes4or5(roi_bbox_nms),
+                "pred_boxes": Caffe2Boxes(roi_bbox_nms),
                 "scores": roi_score_nms,
                 "pred_classes": roi_class_nms,
             },
