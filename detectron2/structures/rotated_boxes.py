@@ -464,7 +464,7 @@ class RotatedBoxes(Boxes):
         """
         assert isinstance(boxes_list, (list, tuple))
         assert len(boxes_list) > 0
-        assert all(isinstance(box, RotatedBoxes) for box in boxes_list)
+        assert all(isinstance(box, RotatedBoxes) for box in boxes_list), "box: {}".format(boxes_list)
 
         cat_boxes = type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
         return cat_boxes

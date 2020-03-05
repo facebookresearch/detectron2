@@ -8,6 +8,7 @@ from detectron2.layers import ShapeSpec
 from ..box_regression import Box2BoxTransformRotated
 from .build import PROPOSAL_GENERATOR_REGISTRY
 from .rpn import RPN
+from ..anchor_generator import RotatedAnchorGenerator
 from .rrpn_outputs import RRPNOutputs, find_top_rrpn_proposals
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,9 @@ class RRPN(RPN):
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
         super().__init__(cfg, input_shape)
+        assert(isinstance(self.anchor_generator, RotatedAnchorGenerator)), \
+          "RRPN: must set MODEL.ANCHOR_GENERATOR.NAME to 'RotatedAnchorGenerator' but it is {}"\
+          .format(cfg.MODEL.ANCHOR_GENERATOR.NAME)
         self.box2box_transform = Box2BoxTransformRotated(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
 
     def forward(self, images, features, gt_instances=None):
