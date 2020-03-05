@@ -200,10 +200,13 @@ class RRPNOutputs(RPNOutputs):
             gt_boxes,
             smooth_l1_beta,
         )
-        self._boxsz = 5 # 4 as in RPNOutputs + angle
+        self._boxsz = 5  # 4 as in RPNOutputs + angle
         if gt_boxes is not None and len(gt_boxes) > 0:
-          assert(isinstance(gt_boxes[0], RotatedBoxes)), "RRPN must be provided witg gt_boxes of type RotatedBoxes, but got {}"\
-                  .format(type(gt_boxes[0]))
+            assert isinstance(
+                gt_boxes[0], RotatedBoxes
+            ), "RRPN must be provided witg gt_boxes of type RotatedBoxes, but got {}".format(
+                type(gt_boxes[0])
+            )
 
     def _get_ground_truth(self):
         """
@@ -228,7 +231,9 @@ class RRPNOutputs(RPNOutputs):
 
             if self.boundary_threshold >= 0:
                 # Discard anchors that go out of the boundaries of the image
-                print("RRPN.boundary_threshold: This is legacy functionality that is turned off by default in Detectron2")
+                print(
+                    "RRPN.boundary_threshold: This is legacy functionality that is turned off by default in Detectron2"
+                )
                 anchors_inside_image = anchors_i.inside_box(image_size_i, self.boundary_threshold)
                 gt_objectness_logits_i[~anchors_inside_image] = -1
 
