@@ -26,6 +26,10 @@ class RRPN(RPN):
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
         super().__init__(cfg, input_shape)
+        #TODO custom DataLoader for rotated bboxes
+        #TODO generated dataset with rotation info (+angle)
+        #TODO code for visualization of rotated bboxes
+        
         assert(isinstance(self.anchor_generator, RotatedAnchorGenerator)), \
           "RRPN: must set MODEL.ANCHOR_GENERATOR.NAME to 'RotatedAnchorGenerator' but it is {}"\
           .format(cfg.MODEL.ANCHOR_GENERATOR.NAME)
@@ -39,6 +43,7 @@ class RRPN(RPN):
                 "RRPN: must provide 5-element tuple weights, but got {}.\
                  Please set cfg.MODEL.RPN.BBOX_REG_WEIGHTS correctly."\
                 .format(weights)
+        assert cfg.MODEL.ROI_HEADS.POOLER_TYPE == "ROIAlignRotated", "RRPN must use MODEL.ROI_HEADS.POOLER_TYPE: 'ROIAlignRotated' "
         self.box2box_transform = Box2BoxTransformRotated(weights=weights)
 
     def forward(self, images, features, gt_instances=None):
