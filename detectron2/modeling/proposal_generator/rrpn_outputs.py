@@ -204,9 +204,9 @@ class RRPNOutputs(RPNOutputs):
     def _get_ground_truth(self):
         """
         Returns:
-            gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-                total number of anchors in image i (i.e., len(anchors[i])). Label values are
-                in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
+            gt_objectness_logits: list of N tensors. 
+              Tensor i is a vector whose length is the total number of anchors in image i (i.e., len(anchors[i])). 
+              Label values are in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
             gt_anchor_deltas: list of N tensors. Tensor i has shape (len(anchors[i]), 5).
         """
         gt_objectness_logits = []
@@ -224,7 +224,7 @@ class RRPNOutputs(RPNOutputs):
 
             if self.boundary_threshold >= 0:
                 # Discard anchors that go out of the boundaries of the image
-                # NOTE: This is legacy functionality that is turned off by default in Detectron2
+                print("RRPN.boundary_threshold: This is legacy functionality that is turned off by default in Detectron2")
                 anchors_inside_image = anchors_i.inside_box(image_size_i, self.boundary_threshold)
                 gt_objectness_logits_i[~anchors_inside_image] = -1
 
