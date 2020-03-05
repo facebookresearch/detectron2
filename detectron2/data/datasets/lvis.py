@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import os
-
-from fvcore.common.timer import Timer
-from detectron2.structures import BoxMode
 from fvcore.common.file_io import PathManager
+from fvcore.common.timer import Timer
+
 from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.structures import BoxMode
 
 from .builtin_meta import _get_coco_instances_meta
 from .lvis_v0_5_categories import LVIS_CATEGORIES

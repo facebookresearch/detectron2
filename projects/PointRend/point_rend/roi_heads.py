@@ -64,7 +64,7 @@ class PointRendROIHeads(StandardROIHeads):
             return
         self.mask_coarse_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
         self.mask_coarse_side_size   = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
-        self._feature_scales          = {k: 1.0 / v.stride for k, v in input_shape.items()}
+        self._feature_scales         = {k: 1.0 / v.stride for k, v in input_shape.items()}
         # fmt: on
 
         in_channels = np.sum([input_shape[f].channels for f in self.mask_coarse_in_features])
