@@ -362,4 +362,8 @@ def build_anchor_generator(cfg, input_shape):
     Built an anchor generator from `cfg.MODEL.ANCHOR_GENERATOR.NAME`.
     """
     anchor_generator = cfg.MODEL.ANCHOR_GENERATOR.NAME
+    if cfg.MODEL.PROPOSAL_GENERATOR.NAME == "RRPN":
+        print("Forcing RotatedAnchorGenerator for RRPN")
+        anchor_generator = "RotatedAnchorGenerator"
+
     return ANCHOR_GENERATOR_REGISTRY.get(anchor_generator)(cfg, input_shape)
