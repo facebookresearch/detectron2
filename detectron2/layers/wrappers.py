@@ -161,9 +161,6 @@ else:
         Because of https://github.com/pytorch/pytorch/issues/34202
         """
 
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
         def forward(self, x):
             if x.numel() == 0:
                 output_shape = [x.shape[0], self.weight.shape[0]]
