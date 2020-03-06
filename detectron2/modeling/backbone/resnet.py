@@ -12,6 +12,7 @@ from detectron2.layers import (
     ModulatedDeformConv,
     ShapeSpec,
     get_norm,
+    Linear
 )
 
 from .backbone import Backbone
@@ -361,7 +362,7 @@ class ResNet(Backbone):
 
         if num_classes is not None:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-            self.linear = nn.Linear(curr_channels, num_classes)
+            self.linear = Linear(curr_channels, num_classes)
 
             # Sec 5.1 in "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour":
             # "The 1000-way fully-connected layer is initialized by
