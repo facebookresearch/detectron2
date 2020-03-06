@@ -25,6 +25,27 @@ class RRPN(RPN):
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
+        """
+        Rotated RPN, 
+
+        Requirements:
+        minimal config options to run RRPN: 
+        MODEL:
+          ANCHOR_GENERATOR:
+            NAME: RotatedAnchorGenerator
+            ANGLES: [[-90,-60,-30,0,30,60,90]]
+          PROPOSAL_GENERATOR:
+            NAME: RRPN
+          RPN:
+            BBOX_REG_WEIGHTS: (1,1,1,1,1)
+          ROI_BOX_HEAD:
+            POOLER_TYPE: ROIAlignRotated
+            BBOX_REG_WEIGHTS: (10,10,5,5,1)
+          ROI_HEADS:
+            NAME: RROIHeads
+
+          dataset: you'll need training dataset with bboxes in "XYWHA" format.
+        """
         super().__init__(cfg, input_shape)
         # TODO custom DataLoader for rotated bboxes
         # TODO generated dataset with rotation info (+angle)
