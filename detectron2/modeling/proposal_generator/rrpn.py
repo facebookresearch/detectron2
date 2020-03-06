@@ -55,6 +55,12 @@ class RRPN(RPN):
         assert (
             cfg.MODEL.ROI_HEADS.POOLER_TYPE == "ROIAlignRotated"
         ), "RRPN must use MODEL.ROI_HEADS.POOLER_TYPE: 'ROIAlignRotated' "
+        assert(cfg.MODEL.ANCHOR_GENERATOR.ANGLES[0] >0), "RRPN: must provide list of angles in \
+                cfg.MODEL.ANCHOR_GENERATOR.ANGLES"
+        assert(len(cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS)==5), "RRPN: provide 5-element weights in\
+                MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS"
+        assert(cfg.MODEL.ROI_HEADS.NAME == "RROIHeads")
+
         self.box2box_transform = Box2BoxTransformRotated(weights=weights)
 
     def forward(self, images, features, gt_instances=None):
