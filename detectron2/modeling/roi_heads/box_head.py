@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.layers import Conv2d, ShapeSpec, get_norm, Linear
+from detectron2.layers import Conv2d, Linear, ShapeSpec, get_norm
 from detectron2.utils.registry import Registry
 
 ROI_BOX_HEAD_REGISTRY = Registry("ROI_BOX_HEAD")

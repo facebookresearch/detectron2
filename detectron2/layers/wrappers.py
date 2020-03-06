@@ -154,7 +154,7 @@ else:
 if TORCH_VERSION > (1, 4):
     Linear = torch.nn.Linear
 else:
-    
+
     class Linear(torch.nn.Linear):
         """
         A wrapper around :class:`torch.nn.Linear` to support empty inputs and more features.
@@ -167,7 +167,7 @@ else:
         def forward(self, x):
             if x.numel() == 0:
                 output_shape = [x.shape[0], self.weight.shape[0]]
-                
+
                 empty = _NewEmptyTensorOp.apply(x, output_shape)
                 if self.training:
                     # This is to make DDP happy.

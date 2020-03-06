@@ -9,10 +9,10 @@ from detectron2.layers import (
     Conv2d,
     DeformConv,
     FrozenBatchNorm2d,
+    Linear,
     ModulatedDeformConv,
     ShapeSpec,
     get_norm,
-    Linear
 )
 
 from .backbone import Backbone

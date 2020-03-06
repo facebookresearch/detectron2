@@ -6,7 +6,7 @@ from fvcore.nn import smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.layers import batched_nms, cat, Linear
+from detectron2.layers import Linear, batched_nms, cat
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
