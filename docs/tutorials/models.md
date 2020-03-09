@@ -91,7 +91,7 @@ Based on the tasks the model is doing, each dict may contain the following field
 
 ### How to use a model in your code:
 
-Contruct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
+Construct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
 For example, in order to do inference, provide dicts with "image", and optionally "height" and "width".
 
 Note that when in training mode, all models are required to be used under an `EventStorage`.
