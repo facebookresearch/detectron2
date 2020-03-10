@@ -4,8 +4,7 @@ MODEL:
 DATASETS:
   TEST: ("coco_2017_val_100",)
 TEST:
-  EXPECTED_RESULTS: [["bbox", "AP", 47.34, 0.02], ["segm", "AP",  42.67, 0.02]]
-  # expected results do not use test-time augmentation. TTA results are not verified.
+  EXPECTED_RESULTS: [["bbox", "AP", 47.34, 0.02], ["segm", "AP",  42.67, 0.02], ["bbox_TTA", "AP", 49.11, 0.02], ["segm_TTA", "AP", 45.04, 0.02]]
   AUG:
     ENABLED: True
-    MIN_SIZES: (400, 500)  # to save some time
+    MIN_SIZES: (700, 800)  # to save some time
