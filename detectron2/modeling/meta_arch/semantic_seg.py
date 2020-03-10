@@ -153,20 +153,35 @@ class SemSegFPNHead(nn.Module):
         weight_init.c2_msra_fill(self.predictor)
 
     def forward(self, features, targets=None):
+        """
+        Returns:
+            In training, returns (None, dict of losses)
+            In inference, returns (predictions, {})
+        """
+        x = self.layers(features)
+        if self.training:
+            return None, self.losses(x, targets)
+        else:
+            x = F.interpolate(
+                x, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            )
+            return x, {}
+
+    def layers(self, features):
         for i, f in enumerate(self.in_features):
             if i == 0:
                 x = self.scale_heads[i](features[f])
             else:
                 x = x + self.scale_heads[i](features[f])
         x = self.predictor(x)
-        x = F.interpolate(x, scale_factor=self.common_stride, mode="bilinear", align_corners=False)
+        return x
 
-        if self.training:
-            losses = {}
-            losses["loss_sem_seg"] = (
-                F.cross_entropy(x, targets, reduction="mean", ignore_index=self.ignore_value)
-                * self.loss_weight
-            )
-            return [], losses
-        else:
-            return x, {}
+    def losses(self, predictions, targets):
+        predictions = F.interpolate(
+            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+        )
+        loss = F.cross_entropy(
+            predictions, targets, reduction="mean", ignore_index=self.ignore_value
+        )
+        losses = {"loss_sem_seg": loss * self.loss_weight}
+        return losses

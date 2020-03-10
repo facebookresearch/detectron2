@@ -131,7 +131,7 @@ class Boxes:
     (support indexing, `to(device)`, `.device`, and iteration over all boxes)
 
     Attributes:
-        tensor (torch.Tensor): float matrix of Nx4.
+        tensor (torch.Tensor): float matrix of Nx4. Each row is (x1, y1, x2, y2).
     """
 
     BoxSizeType = Union[List[int], Tuple[int, int]]

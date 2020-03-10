@@ -11,12 +11,12 @@ also installs detectron2 with a few simple commands.
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
 	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, optional, needed by demo and visualization
-- pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
+- pycocotools: `pip install cython; pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 
 
 ### Build Detectron2 from Source
 
-After having the above dependencies and gcc & g++ ≥ 4.9, run:
+After having the above dependencies and gcc & g++ ≥ 5, run:
 ```
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # (add --user if you don't have permission)
@@ -154,6 +154,9 @@ to match your local CUDA installation, or install a different version of CUDA to
 </summary>
 <br/>
 Please build and install detectron2 following the instructions above.
+
+If you are running code from detectron2's root directory, `cd` to a different one.
+Otherwise you may not import the code that you installed.
 </details>
 
 <details>

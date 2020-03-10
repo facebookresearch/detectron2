@@ -64,20 +64,25 @@ def collect_env_info():
     data.append(("numpy", np.__version__))
 
     try:
-        import detectron2
-        from detectron2 import _C
-    except ImportError:
-        data.append(("detectron2._C", "failed to import"))
-    else:
+        import detectron2  # noqa
+
         data.append(
             ("detectron2", detectron2.__version__ + " @" + os.path.dirname(detectron2.__file__))
         )
-        data.append(("detectron2 compiler", _C.get_compiler_version()))
-        data.append(("detectron2 CUDA compiler", _C.get_cuda_version()))
-        if has_cuda:
-            data.append(
-                ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
-            )
+    except ImportError:
+        data.append(("detectron2", "failed to import"))
+    else:
+        try:
+            from detectron2 import _C
+        except ImportError:
+            data.append(("detectron2._C", "failed to import"))
+        else:
+            data.append(("detectron2 compiler", _C.get_compiler_version()))
+            data.append(("detectron2 CUDA compiler", _C.get_cuda_version()))
+            if has_cuda:
+                data.append(
+                    ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
+                )
 
     data.append(get_env_module())
     data.append(("PyTorch", torch.__version__ + " @" + os.path.dirname(torch.__file__)))
@@ -138,4 +143,11 @@ def collect_env_info():
 
 
 if __name__ == "__main__":
-    print(collect_env_info())
+    try:
+        import detectron2  # noqa
+    except ImportError:
+        print(collect_env_info())
+    else:
+        from detectron2.utils.collect_env import collect_env_info
+
+        print(collect_env_info())
