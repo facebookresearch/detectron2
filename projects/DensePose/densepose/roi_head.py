@@ -152,8 +152,12 @@ class DensePoseROIHeads(StandardROIHeads):
 
                 features_dp = self.densepose_pooler(features, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
-                densepose_loss_dict = self.densepose_losses(proposals_dp, densepose_outputs)
+                densepose_outputs, _, confidences, _ = self.densepose_predictor(
+                    densepose_head_outputs
+                )
+                densepose_loss_dict = self.densepose_losses(
+                    proposals_dp, densepose_outputs, confidences
+                )
                 return densepose_loss_dict
         else:
             pred_boxes = [x.pred_boxes for x in instances]
@@ -164,14 +168,17 @@ class DensePoseROIHeads(StandardROIHeads):
             features_dp = self.densepose_pooler(features, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
+                densepose_outputs, _, confidences, _ = self.densepose_predictor(
+                    densepose_head_outputs
+                )
             else:
                 # If no detection occurred instances
                 # set densepose_outputs to empty tensors
                 empty_tensor = torch.zeros(size=(0, 0, 0, 0), device=features_dp.device)
                 densepose_outputs = tuple([empty_tensor] * 4)
+                confidences = tuple([empty_tensor] * 4)
 
-            densepose_inference(densepose_outputs, instances)
+            densepose_inference(densepose_outputs, confidences, instances)
             return instances
 
     def forward(self, images, features, proposals, targets=None):

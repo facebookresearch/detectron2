@@ -122,7 +122,9 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results):
 
     if len(coco_results) == 0:  # cocoapi does not handle empty results very well
         logger.warn("No predictions from the model! Set scores to -1")
-        return {metric: -1 for metric in metrics}
+        results_gps = {metric: -1 for metric in metrics}
+        results_gpsm = {metric: -1 for metric in metrics}
+        return results_gps, results_gpsm
 
     coco_dt = coco_gt.loadRes(coco_results)
     results_gps = _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics)

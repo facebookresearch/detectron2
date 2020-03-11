@@ -44,3 +44,14 @@ def add_densepose_config(cfg):
     _C.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB = CN()
     _C.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB.NORM = "GN"
     _C.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB.NONLOCAL_ON = 0
+    # Confidences
+    # Enable learning confidences (variances) along with the actual values
+    _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE = CN({"ENABLED": False})
+    # UV confidence lower bound
+    _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.EPSILON = 0.01
+    # Statistical model type for confidence learning, possible values:
+    # - "iid_iso": statistically independent identically distributed residuals
+    #    with isotropic covariance
+    # - "indep_aniso": statistically independent residuals with anisotropic
+    #    covariances
+    _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE = "iid_iso"

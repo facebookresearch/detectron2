@@ -28,7 +28,24 @@ Detectron2 is released under the [Apache 2.0 license](../../LICENSE)
 
 ## <a name="CitingDensePose"></a>Citing DensePose
 
-If you use DensePose, please use the following BibTeX entry.
+If you use DensePose, please take the references from the following BibTeX entries:
+
+For DensePose with estimated confidences:
+
+```
+@incollection{Neverova_NIPS2019_8378_DensePoseConfidences,
+    title = {Correlated Uncertainty for Learning Dense Correspondences from Noisy Labels},
+    author = {Neverova, Natalia and Novotny, David and Vedaldi, Andrea},
+    booktitle = {Advances in Neural Information Processing Systems 32},
+    editor = {H. Wallach and H. Larochelle and A. Beygelzimer and F. d\textquotesingle Alch\'{e}-Buc and E. Fox and R. Garnett},
+    pages = {920--928},
+    year = {2019},
+    publisher = {Curran Associates, Inc.},
+    url = {http://papers.nips.cc/paper/8378-correlated-uncertainty-for-learning-dense-correspondences-from-noisy-labels.pdf}
+}
+```
+
+For the original DensePose:
 
 ```
 @InProceedings{Guler2018DensePose,

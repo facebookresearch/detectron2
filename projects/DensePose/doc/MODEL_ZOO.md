@@ -147,6 +147,122 @@ These models use an improved training schedule, Panoptic FPN head from [Kirillov
       </tr>
 </tbody></table>
 
+### Baselines with Confidence Estimation
+
+These models perform additional estimation of confidence in regressed UV coodrinates, along the lines of [Neverova et al., 2019](https://papers.nips.cc/paper/8378-correlated-uncertainty-for-learning-dense-correspondences-from-noisy-labels).
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom">lr<br/>sched</th>
+<th valign="bottom">train<br/>time<br/>(s/iter)</th>
+<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">train<br/>mem<br/>(GB)</th>
+<th valign="bottom">box<br/>AP</th>
+<th valign="bottom">dp. AP<br/>GPS</th>
+<th valign="bottom">dp. AP<br/>GPSm</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY --> 
+<!-- ROW: densepose_rcnn_R_50_FPN_WC1_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_WC1_s1x.yaml">R_50_FPN_WC1_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.353</td>
+<td align="center">0.064</td>
+<td align="center">4.6</td>
+<td align="center">60.5</td>
+<td align="center">64.2</td>
+<td align="center">65.6</td>
+<td align="center">173862049</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC1_s1x/173862049/model_final_289019.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC1_s1x/173862049/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_WC2_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_WC2_s1x.yaml">R_50_FPN_WC2_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.364</td>
+<td align="center">0.066</td>
+<td align="center">4.8</td>
+<td align="center">60.7</td>
+<td align="center">64.2</td>
+<td align="center">65.7</td>
+<td align="center">173861455</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC2_s1x/173861455/model_final_3abe14.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC2_s1x/173861455/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC1_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_DL_WC1_s1x.yaml">R_50_FPN_DL_WC1_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.397</td>
+<td align="center">0.068</td>
+<td align="center">6.7</td>
+<td align="center">61.1</td>
+<td align="center">65.8</td>
+<td align="center">67.1</td>
+<td align="center">173067973</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC1_s1x/173067973/model_final_b1e525.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC1_s1x/173067973/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC2_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_DL_WC2_s1x.yaml">R_50_FPN_DL_WC2_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.410</td>
+<td align="center">0.070</td>
+<td align="center">6.8</td>
+<td align="center">60.8</td>
+<td align="center">65.6</td>
+<td align="center">66.7</td>
+<td align="center">173859335</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC2_s1x/173859335/model_final_60fed4.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC2_s1x/173859335/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_WC1_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_WC1_s1x.yaml">R_101_FPN_WC1_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.435</td>
+<td align="center">0.076</td>
+<td align="center">5.7</td>
+<td align="center">62.5</td>
+<td align="center">64.9</td>
+<td align="center">66.5</td>
+<td align="center">171402969</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC1_s1x/171402969/model_final_9e47f0.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC1_s1x/171402969/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_WC2_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_WC2_s1x.yaml">R_101_FPN_WC2_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.450</td>
+<td align="center">0.078</td>
+<td align="center">5.7</td>
+<td align="center">62.3</td>
+<td align="center">64.8</td>
+<td align="center">66.6</td>
+<td align="center">173860702</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC2_s1x/173860702/model_final_5ea023.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC2_s1x/173860702/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC1_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_DL_WC1_s1x.yaml">R_101_FPN_DL_WC1_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.479</td>
+<td align="center">0.081</td>
+<td align="center">7.9</td>
+<td align="center">62.0</td>
+<td align="center">66.2</td>
+<td align="center">67.4</td>
+<td align="center">173858525</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC1_s1x/173858525/model_final_f359f3.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC1_s1x/173858525/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC2_s1x --> 
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_DL_WC2_s1x.yaml">R_101_FPN_DL_WC2_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.491</td>
+<td align="center">0.082</td>
+<td align="center">7.6</td>
+<td align="center">61.7</td>
+<td align="center">65.9</td>
+<td align="center">67.3</td>
+<td align="center">173294801</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2_s1x/173294801/model_final_6e1ed1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2_s1x/173294801/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
+
 ## Old Baselines
 
 It is still possible to use some baselines from [DensePose 1](https://github.com/facebookresearch/DensePose).
