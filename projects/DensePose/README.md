@@ -33,15 +33,11 @@ If you use DensePose, please take the references from the following BibTeX entri
 For DensePose with estimated confidences:
 
 ```
-@incollection{Neverova_NIPS2019_8378_DensePoseConfidences,
+@InProceedings{Neverova2019DensePoseConfidences,
     title = {Correlated Uncertainty for Learning Dense Correspondences from Noisy Labels},
     author = {Neverova, Natalia and Novotny, David and Vedaldi, Andrea},
-    booktitle = {Advances in Neural Information Processing Systems 32},
-    editor = {H. Wallach and H. Larochelle and A. Beygelzimer and F. d\textquotesingle Alch\'{e}-Buc and E. Fox and R. Garnett},
-    pages = {920--928},
+    journal = {Advances in Neural Information Processing Systems},
     year = {2019},
-    publisher = {Curran Associates, Inc.},
-    url = {http://papers.nips.cc/paper/8378-correlated-uncertainty-for-learning-dense-correspondences-from-noisy-labels.pdf}
 }
 ```
 
