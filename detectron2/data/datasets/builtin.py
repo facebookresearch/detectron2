@@ -101,7 +101,7 @@ _PREDEFINED_SPLITS_COCO_PANOPTIC = {
 }
 
 
-def register_all_coco(root="datasets"):
+def register_all_coco(root):
     for dataset_name, splits_per_dataset in _PREDEFINED_SPLITS_COCO.items():
         for key, (image_root, json_file) in splits_per_dataset.items():
             # Assume pre-defined datasets live in `./datasets`.
@@ -147,7 +147,7 @@ _PREDEFINED_SPLITS_LVIS = {
 }
 
 
-def register_all_lvis(root="datasets"):
+def register_all_lvis(root):
     for dataset_name, splits_per_dataset in _PREDEFINED_SPLITS_LVIS.items():
         for key, (image_root, json_file) in splits_per_dataset.items():
             # Assume pre-defined datasets live in `./datasets`.
@@ -169,7 +169,7 @@ _RAW_CITYSCAPES_SPLITS = {
 }
 
 
-def register_all_cityscapes(root="datasets"):
+def register_all_cityscapes(root):
     for key, (image_dir, gt_dir) in _RAW_CITYSCAPES_SPLITS.items():
         meta = _get_builtin_metadata("cityscapes")
         image_dir = os.path.join(root, image_dir)
@@ -196,7 +196,7 @@ def register_all_cityscapes(root="datasets"):
 
 
 # ==== Predefined splits for PASCAL VOC ===========
-def register_all_pascal_voc(root="datasets"):
+def register_all_pascal_voc(root):
     SPLITS = [
         ("voc_2007_trainval", "VOC2007", "trainval"),
         ("voc_2007_train", "VOC2007", "train"),
@@ -213,7 +213,8 @@ def register_all_pascal_voc(root="datasets"):
 
 
 # Register them all under "./datasets"
-register_all_coco()
-register_all_lvis()
-register_all_cityscapes()
-register_all_pascal_voc()
+_root = os.getenv("DETECTRON2_DATASETS", "datasets")
+register_all_coco(_root)
+register_all_lvis(_root)
+register_all_cityscapes(_root)
+register_all_pascal_voc(_root)
