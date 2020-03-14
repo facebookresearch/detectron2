@@ -211,7 +211,11 @@ class FastRCNNOutputs(object):
             scalar Tensor
         """
         if self._no_instances:
-            return 0.0 * self.pred_class_logits.sum()
+            return 0.0 * F.cross_entropy(
+                self.pred_class_logits,
+                torch.zeros(0, dtype=torch.long, device=self.pred_class_logits.device),
+                reduction="sum",
+            )
         else:
             self._log_accuracy()
             return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
@@ -224,7 +228,12 @@ class FastRCNNOutputs(object):
             scalar Tensor
         """
         if self._no_instances:
-            return 0.0 * self.pred_proposal_deltas.sum()
+            return 0.0 * smooth_l1_loss(
+                self.pred_proposal_deltas,
+                torch.zeros_like(self.pred_proposal_deltas),
+                0.0,
+                reduction="sum",
+            )
         gt_proposal_deltas = self.box2box_transform.get_deltas(
             self.proposals.tensor, self.gt_boxes.tensor
         )
