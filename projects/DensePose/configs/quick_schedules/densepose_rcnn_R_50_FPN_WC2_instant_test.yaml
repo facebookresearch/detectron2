@@ -4,8 +4,9 @@ MODEL:
   RESNETS:
     DEPTH: 50
   ROI_DENSEPOSE_HEAD:
-    ENABLE_UV_CONFIDENCE: True
-    CONFIDENCE_MODEL_TYPE: "indep_aniso"
+    UV_CONFIDENCE:
+      ENABLED: True
+      TYPE: "indep_aniso"
     POINT_REGRESSION_WEIGHTS: 0.0005
 DATASETS:
   TRAIN: ("densepose_coco_2014_minival_100",)
