@@ -100,8 +100,9 @@ def benchmark_train(args):
     dummy_data = list(itertools.islice(data_loader, 100))
 
     def f():
+        data = DatasetFromList(dummy_data, copy=False)
         while True:
-            yield from DatasetFromList(dummy_data, copy=False)
+            yield from data
 
     max_iter = 400
     trainer = SimpleTrainer(model, f(), optimizer)

@@ -20,6 +20,7 @@ class CityscapesEvaluator(DatasetEvaluator):
     Note:
         * It does not work in multi-machine distributed training.
         * It contains a synchronization, therefore has to be used on all ranks.
+        * Only the main process runs evaluation.
     """
 
     def __init__(self, dataset_name):

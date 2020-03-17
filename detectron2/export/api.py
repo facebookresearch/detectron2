@@ -62,7 +62,8 @@ def export_onnx_model(cfg, model, inputs):
     """
     Export a detectron2 model to ONNX format.
     Note that the exported model contains custom ops only available in caffe2, therefore it
-    cannot be directly executed by other runtime.
+    cannot be directly executed by other runtime. Post-processing or transformation passes
+    may be applied on the model to accommodate different runtimes.
 
     Args:
         cfg (CfgNode): a detectron2 config, with extra export-related options

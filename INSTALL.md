@@ -94,6 +94,8 @@ python -c 'import torch; from torch.utils.cpp_extension import CUDA_HOME; print(
 ```
 
 print valid outputs at the time you build detectron2.
+
+Most models can run inference (but not training) without GPU support. To use CPUs, set `MODEL.DEVICE='cpu'` in the config.
 </details>
 
 <details>
