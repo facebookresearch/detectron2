@@ -44,9 +44,11 @@ def setup(args):
 def benchmark_data(args):
     cfg = setup(args)
 
-    dataloader = build_detection_train_loader(cfg)
-
     timer = Timer()
+    dataloader = build_detection_train_loader(cfg)
+    logger.info("Initialize loader using {} seconds.".format(timer.seconds()))
+
+    timer.reset()
     itr = iter(dataloader)
     for i in range(10):  # warmup
         next(itr)

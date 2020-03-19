@@ -32,12 +32,15 @@ def load_voc_instances(dirname: str, split: str):
     with PathManager.open(os.path.join(dirname, "ImageSets", "Main", split + ".txt")) as f:
         fileids = np.loadtxt(f, dtype=np.str)
 
+    # Needs to read many small annotation files. Makes sense at local
+    annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
     dicts = []
     for fileid in fileids:
-        anno_file = os.path.join(dirname, "Annotations", fileid + ".xml")
+        anno_file = os.path.join(annotation_dirname, fileid + ".xml")
         jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
 
-        tree = ET.parse(anno_file)
+        with PathManager.open(anno_file) as f:
+            tree = ET.parse(f)
 
         r = {
             "file_name": jpeg_file,
