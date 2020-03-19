@@ -176,7 +176,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
         When ``stats_mode==""``, this module computes overall statistics by using
         statistics of each worker with equal weight.  The result is true statistics
         of all samples (as if they are all on one worker) only when all workers
-        have the same (N, H, W).
+        have the same (N, H, W). This mode does not support inputs with zero batch size.
 
         When ``stats_mode=="N"``, this module computes overall statistics by weighting
         the statistics of each worker by their ``N``. The result is true statistics
@@ -205,6 +205,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
         meansqr = torch.mean(input * input, dim=[0, 2, 3])
 
         if self._stats_mode == "":
+            assert B > 0, 'SyncBatchNorm(stats_mode="") does not support zero batch size.'
             vec = torch.cat([mean, meansqr], dim=0)
             vec = AllReduce.apply(vec) * (1.0 / dist.get_world_size())
             mean, meansqr = torch.split(vec, C)
