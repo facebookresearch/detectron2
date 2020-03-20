@@ -1,0 +1,54 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+  BACKBONE:
+    NAME: "build_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  FPN:
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
+  ANCHOR_GENERATOR:
+    NAME: "RotatedAnchorGenerator"
+    SIZES: [[32], [64], [128], [256], [512]]  # One size for each in feature map
+    ASPECT_RATIOS: [[0.5, 1.0, 2.0]]
+    ANGLES: [[0, 30, 60]]
+  PROPOSAL_GENERATOR:
+    NAME: "RRPN"
+    MIN_SIZE: 1 # VERY IMPORTANT! otherwise various crashes
+  RPN:
+    HEAD_NAME: "StandardRPNHead"
+    BBOX_REG_WEIGHTS: [1, 1, 1, 1, 1]
+    IN_FEATURES: ["p2", "p3", "p4", "p5", "p6"]
+    PRE_NMS_TOPK_TRAIN: 2000  # Per FPN level
+    PRE_NMS_TOPK_TEST: 1000  # Per FPN level
+    # Detectron1 uses 2000 proposals per-batch,
+    # (See "modeling/rpn/rpn_outputs.py" for details of this legacy issue)
+    # which is approximately 1000 proposals per-image since the default batch size for FPN is 2.
+    POST_NMS_TOPK_TRAIN: 1000
+    POST_NMS_TOPK_TEST: 1000
+    IOU_THRESHOLDS: [0.3, 0.7]
+  ROI_HEADS:
+    NAME: "RROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    IOU_THRESHOLDS: [0.5]
+    PROPOSAL_APPEND_GT: True
+    NUM_CLASSES: 2
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_FC: 2
+    POOLER_RESOLUTION: 7
+    POOLER_TYPE: "ROIAlignRotated"
+    BBOX_REG_WEIGHTS: [10, 10, 5, 5, 1]
+    CLS_AGNOSTIC_BBOX_REG: False
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.02
+  WEIGHT_DECAY: 0.0001
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  CHECKPOINT_PERIOD: 10000
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+VERSION: 2

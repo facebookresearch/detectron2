@@ -487,7 +487,12 @@ class Visualizer:
             else:
                 keypts = None
 
-            boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
+            if annos[0]["bbox_mode"] == BoxMode.XYWHA_ABS:
+                boxes = RotatedBoxes(torch.stack([torch.as_tensor(x["bbox"]) for x in annos]))
+            else:
+                boxes = [
+                    BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos
+                ]
 
             labels = [x["category_id"] for x in annos]
             names = self.metadata.get("thing_classes", None)
