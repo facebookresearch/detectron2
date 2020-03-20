@@ -204,7 +204,8 @@ class DefaultTrainer(SimpleTrainer):
     contains the following logic in addition:
 
     1. Create model, optimizer, scheduler, dataloader from the given config.
-    2. Load a checkpoint or `cfg.MODEL.WEIGHTS`, if exists.
+    2. Load a checkpoint or `cfg.MODEL.WEIGHTS`, if exists, when
+       `resume_or_load` is called.
     3. Register a few common hooks.
 
     It is created to simplify the **standard model training workflow** and reduce code boilerplate
@@ -226,11 +227,6 @@ class DefaultTrainer(SimpleTrainer):
     It is only guaranteed to work well with the standard models and training workflow in detectron2.
     To obtain more stable behavior, write your own training logic with other public APIs.
 
-    Attributes:
-        scheduler:
-        checkpointer (DetectionCheckpointer):
-        cfg (CfgNode):
-
     Examples:
 
     .. code-block:: python
@@ -238,6 +234,11 @@ class DefaultTrainer(SimpleTrainer):
         trainer = DefaultTrainer(cfg)
         trainer.resume_or_load()  # load last checkpoint or MODEL.WEIGHTS
         trainer.train()
+
+    Attributes:
+        scheduler:
+        checkpointer (DetectionCheckpointer):
+        cfg (CfgNode):
     """
 
     def __init__(self, cfg):
@@ -280,7 +281,7 @@ class DefaultTrainer(SimpleTrainer):
         """
         If `resume==True`, and last checkpoint exists, resume from it.
 
-        Otherwise, load a model specified by the config.
+        Otherwise, load the model specified by the config.
 
         Args:
             resume (bool): whether to do resume or not
