@@ -22,6 +22,35 @@ except ImportError:
     pass
 
 
+logger = logging.getLogger(__name__)
+
+
+def get_cityscapes_files(image_dir, gt_dir):
+    files = []
+    # scan through the directory
+    cities = PathManager.ls(image_dir)
+    logger.info(f"{len(cities)} cities found in '{image_dir}'.")
+    for city in cities:
+        city_img_dir = os.path.join(image_dir, city)
+        city_gt_dir = os.path.join(gt_dir, city)
+        for basename in PathManager.ls(city_img_dir):
+            image_file = os.path.join(city_img_dir, basename)
+
+            suffix = "leftImg8bit.png"
+            assert basename.endswith(suffix)
+            basename = basename[: -len(suffix)]
+
+            instance_file = os.path.join(city_gt_dir, basename + "gtFine_instanceIds.png")
+            label_file = os.path.join(city_gt_dir, basename + "gtFine_labelIds.png")
+            json_file = os.path.join(city_gt_dir, basename + "gtFine_polygons.json")
+
+            files.append((image_file, instance_file, label_file, json_file))
+    assert len(files), "No images found in {}".format(image_dir)
+    for f in files[0]:
+        assert PathManager.isfile(f), f
+    return files
+
+
 def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=True):
     """
     Args:
@@ -40,22 +69,8 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
             "Cityscapes's json annotations are in polygon format. "
             "Converting to mask format is not supported now."
         )
-    files = []
-    for image_file in glob.glob(os.path.join(image_dir, "**/*.png")):
-        suffix = "leftImg8bit.png"
-        assert image_file.endswith(suffix)
-        prefix = image_dir
-        instance_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_instanceIds.png"
-        assert os.path.isfile(instance_file), instance_file
+    files = get_cityscapes_files(image_dir, gt_dir)
 
-        label_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_labelIds.png"
-        assert os.path.isfile(label_file), label_file
-
-        json_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_polygons.json"
-        files.append((image_file, instance_file, label_file, json_file))
-    assert len(files), "No images found in {}".format(image_dir)
-
-    logger = logging.getLogger(__name__)
     logger.info("Preprocessing cityscapes annotations ...")
     # This is still not fast: all workers will execute duplicate works and will
     # take up to 10m on a 8GPU server.
