@@ -18,7 +18,7 @@ __all__ = ["SemanticSegmentor", "SEM_SEG_HEADS_REGISTRY", "SemSegFPNHead", "buil
 
 
 SEM_SEG_HEADS_REGISTRY = Registry("SEM_SEG_HEADS")
-"""
+SEM_SEG_HEADS_REGISTRY.__doc__ = """
 Registry for semantic segmentation heads, which make semantic segmentation predictions
 from feature maps.
 """
