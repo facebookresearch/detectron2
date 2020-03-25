@@ -14,7 +14,7 @@ from .build import PROPOSAL_GENERATOR_REGISTRY
 from .rpn_outputs import RPNOutputs, find_top_rpn_proposals
 
 RPN_HEAD_REGISTRY = Registry("RPN_HEAD")
-"""
+RPN_HEAD_REGISTRY.__doc__ = """
 Registry for RPN heads, which take feature maps and perform
 objectness classification and bounding box regression for anchors.
 
