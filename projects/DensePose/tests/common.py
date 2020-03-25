@@ -5,6 +5,7 @@ import torch
 
 from detectron2.config import get_cfg
 from detectron2.engine import default_setup
+from detectron2.modeling import build_model
 
 from densepose import add_densepose_config
 
@@ -72,6 +73,14 @@ def _get_model_config(config_file):
     if not torch.cuda.is_available():
         cfg.MODEL_DEVICE = "cpu"
     return cfg
+
+
+def get_model(config_file):
+    """
+    Get the model from the specified file (relative to the base configuration directory)
+    """
+    cfg = _get_model_config(config_file)
+    return build_model(cfg)
 
 
 def setup(config_file):
