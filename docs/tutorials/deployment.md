@@ -19,13 +19,13 @@ For example, custom backbones and heads are often supported out of the box.
 ### Usage
 
 The conversion APIs are documented at [the API documentation](../modules/export.html).
-We provide a tool, `tools/caffe2_converter.py` as an example that uses
+We provide a tool, `caffe2_converter.py` as an example that uses
 these APIs to convert a standard model.
 
 To convert an official Mask R-CNN trained on COCO, first
 [prepare the COCO dataset](../../datasets/), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
-cd tools/ && ./caffe2_converter.py --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+cd tools/deploy/ && ./caffe2_converter.py --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
 	--output ./caffe2_model --run-eval \
 	MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
 	MODEL.DEVICE cpu
@@ -48,20 +48,25 @@ These files can then be loaded in C++ or Python using Caffe2's APIs.
 The script generates `model.svg` file which contains a visualization of the network.
 You can also load `model.pb` to tools such as [netron](https://github.com/lutzroeder/netron) to visualize it.
 
-### Inputs & Outputs
+### Use the model in C++/Python
 
-All converted models (the .pb file) take two input tensors:
-"data" which is an NCHW image, and "im_info" which is a Nx3 tensor of (height, width, unused legacy parameter) for
-each image (the shape of "data" might be larger than that in "im_info" due to padding).
+The model can be loaded in C++. An example [caffe2_mask_rcnn.cpp](../../tools/deploy/) is given,
+which performs CPU inference using `COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x`.
 
-The converted models do not contain post-processing operations that
-transform raw layer outputs into formatted predictions.
-The models only produce raw outputs from the final
-layers that are not post-processed, because in actual deployment, an application often needs
-its custom lightweight post-processing (e.g. full-image masks for every detected object is often not necessary).
+Note that:
 
-Due to different inputs & outputs formats,
-we provide a wrapper around the converted model, in the [Caffe2Model.__call__](../modules/export.html#detectron2.export.Caffe2Model.__call__) method.
-It has an interface that's identical to the [format of pytorch versions of models](models.html),
+* All converted models (the .pb file) take two input tensors:
+  "data" is an NCHW image, and "im_info" is an Nx3 tensor consisting of (height, width, 1.0) for
+  each image (the shape of "data" might be larger than that in "im_info" due to padding).
+
+* The converted models do not contain post-processing operations that
+  transform raw layer outputs into formatted predictions.
+  The example only produces raw outputs (28x28 masks) from the final
+  layers that are not post-processed, because in actual deployment, an application often needs
+  its custom lightweight post-processing (e.g. full-image masks for every detected object is often not necessary).
+
+We also provide a python wrapper around the converted model, in the
+[Caffe2Model.__call__](../modules/export.html#detectron2.export.Caffe2Model.__call__) method.
+This method has an interface that's identical to the [pytorch versions of models](models.html),
 and it internally applies pre/post-processing code to match the formats.
 They can serve as a reference for pre/post-processing in actual deployment.
