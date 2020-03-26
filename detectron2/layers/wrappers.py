@@ -151,7 +151,7 @@ else:
             return _NewEmptyTensorOp.apply(x, output_shape)
 
 
-if TORCH_VERSION > (1, 4):
+if False:  # not yet fixed in pytorch
     Linear = torch.nn.Linear
 else:
 

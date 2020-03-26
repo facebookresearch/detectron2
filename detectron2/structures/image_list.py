@@ -20,7 +20,8 @@ class ImageList(object):
         """
         Arguments:
             tensor (Tensor): of shape (N, H, W) or (N, C_1, ..., C_K, H, W) where K >= 1
-            image_sizes (list[tuple[int, int]]): Each tuple is (h, w).
+            image_sizes (list[tuple[int, int]]): Each tuple is (h, w). It can
+                be smaller than (H, W) due to padding.
         """
         self.tensor = tensor
         self.image_sizes = image_sizes
@@ -53,10 +54,11 @@ class ImageList(object):
         """
         Args:
             tensors: a tuple or list of `torch.Tensors`, each of shape (Hi, Wi) or
-                (C_1, ..., C_K, Hi, Wi) where K >= 1. The Tensors will be padded with `pad_value`
-                so that they will have the same shape.
-            size_divisibility (int): If `size_divisibility > 0`, also adds padding to ensure
-                the common height and width is divisible by `size_divisibility`
+                (C_1, ..., C_K, Hi, Wi) where K >= 1. The Tensors will be padded
+                to the same shape with `pad_value`.
+            size_divisibility (int): If `size_divisibility > 0`, add padding to ensure
+                the common height and width is divisible by `size_divisibility`.
+                This depends on the model and many models need a divisibility of 32.
             pad_value (float): value to pad
 
         Returns:

@@ -122,7 +122,7 @@ You have the following options:
    the following code obtains mask features before mask head.
 
 ```python
-images = ImageList(...)  # preprocessed input tensor
+images = ImageList.from_tensors(...)  # preprocessed input tensor
 model = build_model(cfg)
 features = model.backbone(images.tensor)
 proposals, _ = model.proposal_generator(images, features)
