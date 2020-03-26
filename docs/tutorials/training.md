@@ -16,19 +16,21 @@ You can use
 which provides minimal abstraction for single-cost single-optimizer single-data-source training.
 The builtin `train_net.py` script uses
 [DefaultTrainer().train()](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
-which includes more standard default behavior that one might want to opt in.
+which includes more standard default behavior that one might want to opt in,
+including default configurations for logging, evaluation, checkpointing etc.
 This also means that it's less likely to support some non-standard behavior
 you might want during research.
 
-To customize the training loops, you can either start
-from [tools/plain_train_net.py](../../tools/plain_train_net.py),
-or look at the source code of [DefaultTrainer](../../detectron2/engine/defaults.py)
-and overwrite some of its behaviors with new parameters or new hooks.
+To customize the training loops, you can:
 
+1. If your customization is similar to what `DefaultTrainer` is already doing,
+you can look at the source code of [DefaultTrainer](../../detectron2/engine/defaults.py)
+and overwrite some of its behaviors with new parameters or new hooks.
+2. If you need something very novel, you can start from [tools/plain_train_net.py](../../tools/plain_train_net.py) to implement them yourself.
 
 ### Logging of Metrics
 
-During training, metrics are logged with a centralized [EventStorage](../modules/utils.html#detectron2.utils.events.EventStorage).
+During training, metrics are saved to a centralized [EventStorage](../modules/utils.html#detectron2.utils.events.EventStorage).
 You can use the following code to access it and log metrics to it:
 ```
 from detectron2.utils.events import get_event_storage
@@ -41,3 +43,7 @@ if self.training:
 ```
 
 Refer to its documentation for more details.
+
+Metrics are then saved to various destinations with [EventWriter](../modules/utils.html#module-detectron2.utils.events).
+DefaultTrainer enables a few `EventWriter` with default configurations.
+See above for how to customize them.

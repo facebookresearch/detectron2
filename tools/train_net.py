@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 Detection Training Script.
@@ -131,10 +132,10 @@ def main(args):
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)
-        if comm.is_main_process():
-            verify_results(cfg, res)
         if cfg.TEST.AUG.ENABLED:
             res.update(Trainer.test_with_TTA(cfg, model))
+        if comm.is_main_process():
+            verify_results(cfg, res)
         return res
 
     """

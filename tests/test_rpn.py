@@ -6,6 +6,7 @@ import torch
 from detectron2.config import get_cfg
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
+from detectron2.modeling.proposal_generator.rpn_outputs import find_top_rpn_proposals
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
 
@@ -213,6 +214,14 @@ class RPNTest(unittest.TestCase):
                 torch.allclose(proposal.objectness_logits, expected_objectness_logit, atol=1e-5),
                 err_msg,
             )
+
+    def test_rpn_proposals_inf(self):
+        N, Hi, Wi, A = 3, 3, 3, 3
+        proposals = [torch.rand(N, Hi * Wi * A, 4)]
+        pred_logits = [torch.rand(N, Hi * Wi * A)]
+        pred_logits[0][1][3:5].fill_(float("inf"))
+        images = ImageList.from_tensors([torch.rand(3, 10, 10)] * 3)
+        find_top_rpn_proposals(proposals, pred_logits, images, 0.5, 1000, 1000, 0, False)
 
 
 if __name__ == "__main__":

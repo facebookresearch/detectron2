@@ -37,7 +37,8 @@ class ColorMode(Enum):
 
     Attributes:
         IMAGE: Picks a random color for every instance and overlay segmentations with low opacity.
-        SEGMENTATION: Let instances of the same category have similar colors, and overlay them with
+        SEGMENTATION: Let instances of the same category have similar colors
+            (from metadata.thing_colors), and overlay them with
             high opacity. This provides more attention on the quality of segmentation.
         IMAGE_BW: same as IMAGE, but convert all areas without masks to gray-scale.
             Only available for drawing per-instance mask predictions.

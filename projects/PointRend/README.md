@@ -15,7 +15,7 @@ Install Detectron 2 following [INSTALL.md](https://github.com/facebookresearch/d
 
 ## Quick start and visualization
 
-This [Colab Notebook](https://colab.research.google.com/drive/1isGPL5h5_cKoPPhVL9XhMokRtHDvmMVL) tutorial contains examples of PointRend usage and visualisations of its point sampling stages.
+This [Colab Notebook](https://colab.research.google.com/drive/1isGPL5h5_cKoPPhVL9XhMokRtHDvmMVL) tutorial contains examples of PointRend usage and visualizations of its point sampling stages.
 
 ## Training
 

@@ -10,7 +10,7 @@ from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.registry import Registry
 
 ANCHOR_GENERATOR_REGISTRY = Registry("ANCHOR_GENERATOR")
-"""
+ANCHOR_GENERATOR_REGISTRY.__doc__ = """
 Registry for modules that creates object detection anchors for feature maps.
 
 The registered object will be called with `obj(cfg, input_shape)`.

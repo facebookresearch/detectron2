@@ -1,20 +1,19 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import io
-import logging
 import contextlib
-import os
 import datetime
+import io
 import json
+import logging
 import numpy as np
-
+import os
+import pycocotools.mask as mask_util
+from fvcore.common.file_io import PathManager, file_lock
+from fvcore.common.timer import Timer
 from PIL import Image
 
-from fvcore.common.timer import Timer
-from detectron2.structures import BoxMode, PolygonMasks, Boxes
-from fvcore.common.file_io import PathManager, file_lock
+from detectron2.structures import Boxes, BoxMode, PolygonMasks
 
-
-from .. import MetadataCatalog, DatasetCatalog
+from .. import DatasetCatalog, MetadataCatalog
 
 """
 This file contains functions to parse COCO-format annotations into dicts in "Detectron2 format".
@@ -272,7 +271,8 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
 
 def convert_to_coco_dict(dataset_name):
     """
-    Convert a dataset in detectron2's standard format into COCO json format
+    Convert an instance detection/segmentation or keypoint detection dataset
+    in detectron2's standard format into COCO json format.
 
     Generic dataset description can be found here:
     https://detectron2.readthedocs.io/tutorials/datasets.html#register-a-dataset
@@ -281,9 +281,10 @@ def convert_to_coco_dict(dataset_name):
     http://cocodataset.org/#format-data
 
     Args:
-        dataset_name:
+        dataset_name (str):
             name of the source dataset
-            must be registered in DatastCatalog and in detectron2's standard format
+            Must be registered in DatastCatalog and in detectron2's standard format.
+            Must have corresponding metadata "thing_classes"
     Returns:
         coco_dict: serializable dict in COCO json format
     """
@@ -331,8 +332,13 @@ def convert_to_coco_dict(dataset_name):
                 # Computing areas for instances by counting the pixels
                 segmentation = annotation["segmentation"]
                 # TODO: check segmentation type: RLE, BinaryMask or Polygon
-                polygons = PolygonMasks([segmentation])
-                area = polygons.area()[0].item()
+                if isinstance(segmentation, list):
+                    polygons = PolygonMasks([segmentation])
+                    area = polygons.area()[0].item()
+                elif isinstance(segmentation, dict):  # RLE
+                    area = mask_util.area(segmentation)
+                else:
+                    raise TypeError(f"Unknown segmentation type {type(segmentation)}!")
             else:
                 # Computing areas using bounding boxes
                 bbox_xy = BoxMode.convert(bbox, BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
@@ -410,14 +416,17 @@ def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
     PathManager.mkdirs(os.path.dirname(output_file))
     with file_lock(output_file):
         if PathManager.exists(output_file) and allow_cached:
-            logger.info(f"Cached annotations in COCO format already exist: {output_file}")
+            logger.warning(
+                f"Using previously cached COCO format annotations at '{output_file}'. "
+                "You need to clear the cache file if your dataset has been modified."
+            )
         else:
-            logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")
+            logger.info(f"Converting annotations of dataset '{dataset_name}' to COCO format ...)")
             coco_dict = convert_to_coco_dict(dataset_name)
 
-            with PathManager.open(output_file, "w") as json_file:
-                logger.info(f"Caching annotations in COCO format: {output_file}")
-                json.dump(coco_dict, json_file)
+            logger.info(f"Caching COCO format annotations at '{output_file}' ...")
+            with PathManager.open(output_file, "w") as f:
+                json.dump(coco_dict, f)
 
 
 if __name__ == "__main__":

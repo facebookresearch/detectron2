@@ -91,7 +91,7 @@ Based on the tasks the model is doing, each dict may contain the following field
 
 ### How to use a model in your code:
 
-Contruct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
+Construct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
 For example, in order to do inference, provide dicts with "image", and optionally "height" and "width".
 
 Note that when in training mode, all models are required to be used under an `EventStorage`.
@@ -127,7 +127,8 @@ model = build_model(cfg)
 features = model.backbone(images.tensor)
 proposals, _ = model.proposal_generator(images, features)
 instances = model.roi_heads._forward_box(features, proposals)
-mask_features = model.roi_heads.mask_pooler(features, [x.pred_boxes for x in instances])
+mask_features = [features[f] for f in model.roi_heads.in_features]
+mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
 ```
 
 Note that both options require you to read the existing forward code to understand

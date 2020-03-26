@@ -127,17 +127,23 @@ def find_top_rpn_proposals(
     for n, image_size in enumerate(image_sizes):
         boxes = Boxes(topk_proposals[n])
         scores_per_img = topk_scores[n]
+        lvl = level_ids
+
         valid_mask = torch.isfinite(boxes.tensor).all(dim=1) & torch.isfinite(scores_per_img)
         if not valid_mask.all():
+            if training:
+                raise FloatingPointError(
+                    "Predicted boxes or scores contain Inf/NaN. Training has diverged."
+                )
             boxes = boxes[valid_mask]
             scores_per_img = scores_per_img[valid_mask]
+            lvl = lvl[valid_mask]
         boxes.clip(image_size)
 
         # filter empty boxes
         keep = boxes.nonempty(threshold=min_box_side_len)
-        lvl = level_ids
         if keep.sum().item() != len(boxes):
-            boxes, scores_per_img, lvl = boxes[keep], scores_per_img[keep], level_ids[keep]
+            boxes, scores_per_img, lvl = boxes[keep], scores_per_img[keep], lvl[keep]
 
         keep = batched_nms(boxes.tensor, scores_per_img, lvl, nms_thresh)
         # In Detectron1, there was different behavior during training vs. testing.

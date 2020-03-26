@@ -2,6 +2,7 @@
 import copy
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
+
 from .coco import load_coco_json, load_sem_seg
 
 """

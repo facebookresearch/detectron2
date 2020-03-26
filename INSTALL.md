@@ -11,31 +11,31 @@ also installs detectron2 with a few simple commands.
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
 	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, optional, needed by demo and visualization
-- pycocotools: `pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
+- pycocotools: `pip install cython; pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 
 
 ### Build Detectron2 from Source
 
-After having the above dependencies and gcc & g++ ≥ 4.9, run:
+After having the above dependencies and gcc & g++ ≥ 5, run:
 ```
-pip install 'git+https://github.com/facebookresearch/detectron2.git'
+python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # (add --user if you don't have permission)
 
 # Or, to install it from a local clone:
 git clone https://github.com/facebookresearch/detectron2.git
-cd detectron2 && pip install -e .
+cd detectron2 && python -m pip install -e .
 
 # Or if you are on macOS
-# CC=clang CXX=clang++ pip install -e .
+# CC=clang CXX=clang++ python -m pip install -e .
 ```
 
-To __rebuild__ detectron2 that's built from a local clone, `rm -rf build/ **/*.so` then `pip install -e .`.
-You often need to rebuild detectron2 after reinstalling PyTorch.
+To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
+old build first. You often need to rebuild detectron2 after reinstalling PyTorch.
 
 ### Install Pre-Built Detectron2
 ```
 # for CUDA 10.1:
-pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
+python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
 ```
 You can replace cu101 with "cu{100,92}" or "cpu".
 
@@ -94,6 +94,8 @@ python -c 'import torch; from torch.utils.cpp_extension import CUDA_HOME; print(
 ```
 
 print valid outputs at the time you build detectron2.
+
+Most models can run inference (but not training) without GPU support. To use CPUs, set `MODEL.DEVICE='cpu'` in the config.
 </details>
 
 <details>
@@ -154,6 +156,9 @@ to match your local CUDA installation, or install a different version of CUDA to
 </summary>
 <br/>
 Please build and install detectron2 following the instructions above.
+
+If you are running code from detectron2's root directory, `cd` to a different one.
+Otherwise you may not import the code that you installed.
 </details>
 
 <details>

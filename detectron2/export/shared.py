@@ -671,7 +671,7 @@ def rename_op_input(
     - It requires the input is only consumed by this op.
     - This function modifies predict_net and init_net in-place.
     - When from_producer is enable, this also updates other operators that consumes
-        the same input. Be cautious because may trigger unintended behaviour.
+        the same input. Be cautious because may trigger unintended behavior.
     """
     assert isinstance(predict_net, caffe2_pb2.NetDef)
     assert isinstance(init_net, caffe2_pb2.NetDef)

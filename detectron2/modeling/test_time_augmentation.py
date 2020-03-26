@@ -103,26 +103,30 @@ class GeneralizedRCNNWithTTA(nn.Module):
         self.batch_size = batch_size
 
     @contextmanager
-    def _turn_off_roi_head(self, attr):
+    def _turn_off_roi_heads(self, attrs):
         """
-        Open a context where one head in `model.roi_heads` is temporarily turned off.
+        Open a context where some heads in `model.roi_heads` are temporarily turned off.
         Args:
-            attr (str): the attribute in `model.roi_heads` which can be used
+            attr (list[str]): the attribute in `model.roi_heads` which can be used
                 to turn off a specific head, e.g., "mask_on", "keypoint_on".
         """
         roi_heads = self.model.roi_heads
-        try:
-            old = getattr(roi_heads, attr)
-        except AttributeError:
-            # The head may not be implemented in certain ROIHeads
-            old = None
+        old = {}
+        for attr in attrs:
+            try:
+                old[attr] = getattr(roi_heads, attr)
+            except AttributeError:
+                # The head may not be implemented in certain ROIHeads
+                pass
 
-        if old is None:
+        if len(old.keys()) == 0:
             yield
         else:
-            setattr(roi_heads, attr, False)
+            for attr in old.keys():
+                setattr(roi_heads, attr, False)
             yield
-            setattr(roi_heads, attr, old)
+            for attr in old.keys():
+                setattr(roi_heads, attr, old[attr])
 
     def _batch_inference(self, batched_inputs, detected_instances=None, do_postprocess=True):
         """
@@ -156,6 +160,9 @@ class GeneralizedRCNNWithTTA(nn.Module):
         """
         return [self._inference_one_image(x) for x in batched_inputs]
 
+    def _detector_postprocess(self, outputs, aug_vars):
+        return detector_postprocess(outputs, aug_vars["height"], aug_vars["width"])
+
     def _inference_one_image(self, input):
         """
         Args:
@@ -164,6 +171,38 @@ class GeneralizedRCNNWithTTA(nn.Module):
         Returns:
             dict: one output dict
         """
+
+        augmented_inputs, aug_vars = self._get_augmented_inputs(input)
+        # Detect boxes from all augmented versions
+        with self._turn_off_roi_heads(["mask_on", "keypoint_on"]):
+            # temporarily disable roi heads
+            all_boxes, all_scores, all_classes = self._get_augmented_boxes(
+                augmented_inputs, aug_vars
+            )
+        merged_instances = self._merge_detections(
+            all_boxes, all_scores, all_classes, (aug_vars["height"], aug_vars["width"])
+        )
+
+        if self.cfg.MODEL.MASK_ON:
+            # Use the detected boxes to obtain new fields
+            augmented_instances = self._rescale_detected_boxes(
+                augmented_inputs, merged_instances, aug_vars
+            )
+            # run forward on the detected boxes
+            outputs = self._batch_inference(
+                augmented_inputs, augmented_instances, do_postprocess=False
+            )
+            # Delete now useless variables to avoid being out of memory
+            del augmented_inputs, augmented_instances, merged_instances
+            # average the predictions
+            outputs[0].pred_masks = self._reduce_pred_masks(outputs, aug_vars)
+            # postprocess
+            output = self._detector_postprocess(outputs[0], aug_vars)
+            return {"instances": output}
+        else:
+            return {"instances": merged_instances}
+
+    def _get_augmented_inputs(self, input):
         augmented_inputs = self.tta_mapper(input)
 
         do_hflip = [k.pop("horiz_flip", False) for k in augmented_inputs]
@@ -174,28 +213,31 @@ class GeneralizedRCNNWithTTA(nn.Module):
         ), "Augmented version of the inputs should have the same original resolution!"
         height = heights[0]
         width = widths[0]
+        aug_vars = {"height": height, "width": width, "do_hflip": do_hflip}
 
-        # 1. Detect boxes from all augmented versions
-        # 1.1: forward with all augmented images
-        with self._turn_off_roi_head("mask_on"), self._turn_off_roi_head("keypoint_on"):
-            # temporarily disable mask/keypoint head
-            outputs = self._batch_inference(augmented_inputs, do_postprocess=False)
-        # 1.2: union the results
+        return augmented_inputs, aug_vars
+
+    def _get_augmented_boxes(self, augmented_inputs, aug_vars):
+        # 1: forward with all augmented images
+        outputs = self._batch_inference(augmented_inputs, do_postprocess=False)
+        # 2: union the results
         all_boxes = []
         all_scores = []
         all_classes = []
         for idx, output in enumerate(outputs):
-            rescaled_output = detector_postprocess(output, height, width)
+            rescaled_output = self._detector_postprocess(output, aug_vars)
             pred_boxes = rescaled_output.pred_boxes.tensor
-            if do_hflip[idx]:
-                pred_boxes[:, [0, 2]] = width - pred_boxes[:, [2, 0]]
+            if aug_vars["do_hflip"][idx]:
+                pred_boxes[:, [0, 2]] = aug_vars["width"] - pred_boxes[:, [2, 0]]
             all_boxes.append(pred_boxes)
             all_scores.extend(rescaled_output.scores)
             all_classes.extend(rescaled_output.pred_classes)
         all_boxes = torch.cat(all_boxes, dim=0).cpu()
-        num_boxes = len(all_boxes)
+        return all_boxes, all_scores, all_classes
 
-        # 1.3: select from the union of all results
+    def _merge_detections(self, all_boxes, all_scores, all_classes, shape_hw):
+        # select from the union of all results
+        num_boxes = len(all_boxes)
         num_classes = self.cfg.MODEL.ROI_HEADS.NUM_CLASSES
         # +1 because fast_rcnn_inference expects background scores as well
         all_scores_2d = torch.zeros(num_boxes, num_classes + 1, device=all_boxes.device)
@@ -205,26 +247,24 @@ class GeneralizedRCNNWithTTA(nn.Module):
         merged_instances, _ = fast_rcnn_inference_single_image(
             all_boxes,
             all_scores_2d,
-            (height, width),
+            shape_hw,
             1e-8,
             self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
             self.cfg.TEST.DETECTIONS_PER_IMAGE,
         )
 
-        if not self.cfg.MODEL.MASK_ON:
-            return {"instances": merged_instances}
+        return merged_instances
 
-        # 2. Use the detected boxes to obtain masks
-        # 2.1: rescale the detected boxes
+    def _rescale_detected_boxes(self, augmented_inputs, merged_instances, aug_vars):
         augmented_instances = []
         for idx, input in enumerate(augmented_inputs):
             actual_height, actual_width = input["image"].shape[1:3]
-            scale_x = actual_width * 1.0 / width
-            scale_y = actual_height * 1.0 / height
+            scale_x = actual_width * 1.0 / aug_vars["width"]
+            scale_y = actual_height * 1.0 / aug_vars["height"]
             pred_boxes = merged_instances.pred_boxes.clone()
             pred_boxes.tensor[:, 0::2] *= scale_x
             pred_boxes.tensor[:, 1::2] *= scale_y
-            if do_hflip[idx]:
+            if aug_vars["do_hflip"][idx]:
                 pred_boxes.tensor[:, [0, 2]] = actual_width - pred_boxes.tensor[:, [2, 0]]
 
             aug_instances = Instances(
@@ -234,15 +274,12 @@ class GeneralizedRCNNWithTTA(nn.Module):
                 scores=merged_instances.scores,
             )
             augmented_instances.append(aug_instances)
-        # 2.2: run forward on the detected boxes
-        outputs = self._batch_inference(augmented_inputs, augmented_instances, do_postprocess=False)
+        return augmented_instances
+
+    def _reduce_pred_masks(self, outputs, aug_vars):
         for idx, output in enumerate(outputs):
-            if do_hflip[idx]:
+            if aug_vars["do_hflip"][idx]:
                 output.pred_masks = output.pred_masks.flip(dims=[3])
-        # 2.3: average the predictions
         all_pred_masks = torch.stack([o.pred_masks for o in outputs], dim=0)
         avg_pred_masks = torch.mean(all_pred_masks, dim=0)
-        output = outputs[0]
-        output.pred_masks = avg_pred_masks
-        output = detector_postprocess(output, height, width)
-        return {"instances": output}
+        return avg_pred_masks

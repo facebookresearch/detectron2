@@ -152,8 +152,12 @@ class DensePoseROIHeads(StandardROIHeads):
 
                 features_dp = self.densepose_pooler(features, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
-                densepose_loss_dict = self.densepose_losses(proposals_dp, densepose_outputs)
+                densepose_outputs, _, confidences, _ = self.densepose_predictor(
+                    densepose_head_outputs
+                )
+                densepose_loss_dict = self.densepose_losses(
+                    proposals_dp, densepose_outputs, confidences
+                )
                 return densepose_loss_dict
         else:
             pred_boxes = [x.pred_boxes for x in instances]
@@ -164,14 +168,17 @@ class DensePoseROIHeads(StandardROIHeads):
             features_dp = self.densepose_pooler(features, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
+                densepose_outputs, _, confidences, _ = self.densepose_predictor(
+                    densepose_head_outputs
+                )
             else:
                 # If no detection occurred instances
                 # set densepose_outputs to empty tensors
                 empty_tensor = torch.zeros(size=(0, 0, 0, 0), device=features_dp.device)
                 densepose_outputs = tuple([empty_tensor] * 4)
+                confidences = tuple([empty_tensor] * 4)
 
-            densepose_inference(densepose_outputs, instances)
+            densepose_inference(densepose_outputs, confidences, instances)
             return instances
 
     def forward(self, images, features, proposals, targets=None):
@@ -180,6 +187,27 @@ class DensePoseROIHeads(StandardROIHeads):
 
         if self.training:
             losses.update(self._forward_densepose(features, instances))
-        else:
-            instances = self._forward_densepose(features, instances)
         return instances, losses
+
+    def forward_with_given_boxes(self, features, instances):
+        """
+        Use the given boxes in `instances` to produce other (non-box) per-ROI outputs.
+
+        This is useful for downstream tasks where a box is known, but need to obtain
+        other attributes (outputs of other heads).
+        Test-time augmentation also uses this.
+
+        Args:
+            features: same as in `forward()`
+            instances (list[Instances]): instances to predict other outputs. Expect the keys
+                "pred_boxes" and "pred_classes" to exist.
+
+        Returns:
+            instances (list[Instances]):
+                the same `Instances` objects, with extra
+                fields such as `pred_masks` or `pred_keypoints`.
+        """
+
+        instances = super().forward_with_given_boxes(features, instances)
+        instances = self._forward_densepose(features, instances)
+        return instances

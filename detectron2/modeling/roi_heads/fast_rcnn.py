@@ -6,7 +6,7 @@ from fvcore.nn import smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.layers import batched_nms, cat
+from detectron2.layers import Linear, batched_nms, cat
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
@@ -70,7 +70,7 @@ def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, t
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
-    return tuple(list(x) for x in zip(*result_per_image))
+    return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
 
 
 def fast_rcnn_inference_single_image(
@@ -149,6 +149,7 @@ class FastRCNNOutputs(object):
                 proposals for image i, in the field "proposal_boxes".
                 When training, each Instances must have ground-truth labels
                 stored in the field "gt_classes" and "gt_boxes".
+                The total number of all instances must be equal to R.
             smooth_l1_beta (float): The transition point between L1 and L2 loss in
                 the smooth L1 loss function. When set to 0, the loss becomes L1. When
                 set to +inf, the loss becomes constant 0.
@@ -159,17 +160,24 @@ class FastRCNNOutputs(object):
         self.pred_proposal_deltas = pred_proposal_deltas
         self.smooth_l1_beta = smooth_l1_beta
 
-        box_type = type(proposals[0].proposal_boxes)
-        # cat(..., dim=0) concatenates over all images in the batch
-        self.proposals = box_type.cat([p.proposal_boxes for p in proposals])
-        assert not self.proposals.tensor.requires_grad, "Proposals should not require gradients!"
-        self.image_shapes = [x.image_size for x in proposals]
+        if len(proposals):
+            box_type = type(proposals[0].proposal_boxes)
+            # cat(..., dim=0) concatenates over all images in the batch
+            self.proposals = box_type.cat([p.proposal_boxes for p in proposals])
+            assert (
+                not self.proposals.tensor.requires_grad
+            ), "Proposals should not require gradients!"
+            self.image_shapes = [x.image_size for x in proposals]
 
-        # The following fields should exist only when training.
-        if proposals[0].has("gt_boxes"):
-            self.gt_boxes = box_type.cat([p.gt_boxes for p in proposals])
-            assert proposals[0].has("gt_classes")
-            self.gt_classes = cat([p.gt_classes for p in proposals], dim=0)
+            # The following fields should exist only when training.
+            if proposals[0].has("gt_boxes"):
+                self.gt_boxes = box_type.cat([p.gt_boxes for p in proposals])
+                assert proposals[0].has("gt_classes")
+                self.gt_classes = cat([p.gt_classes for p in proposals], dim=0)
+        else:
+            self.proposals = Boxes(torch.zeros(0, 4, device=self.pred_proposal_deltas.device))
+            self.image_shapes = []
+        self._no_instances = len(proposals) == 0  # no instances found
 
     def _log_accuracy(self):
         """
@@ -189,10 +197,11 @@ class FastRCNNOutputs(object):
         fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
 
         storage = get_event_storage()
-        storage.put_scalar("fast_rcnn/cls_accuracy", num_accurate / num_instances)
-        if num_fg > 0:
-            storage.put_scalar("fast_rcnn/fg_cls_accuracy", fg_num_accurate / num_fg)
-            storage.put_scalar("fast_rcnn/false_negative", num_false_negative / num_fg)
+        if num_instances > 0:
+            storage.put_scalar("fast_rcnn/cls_accuracy", num_accurate / num_instances)
+            if num_fg > 0:
+                storage.put_scalar("fast_rcnn/fg_cls_accuracy", fg_num_accurate / num_fg)
+                storage.put_scalar("fast_rcnn/false_negative", num_false_negative / num_fg)
 
     def softmax_cross_entropy_loss(self):
         """
@@ -201,8 +210,15 @@ class FastRCNNOutputs(object):
         Returns:
             scalar Tensor
         """
-        self._log_accuracy()
-        return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
+        if self._no_instances:
+            return 0.0 * F.cross_entropy(
+                self.pred_class_logits,
+                torch.zeros(0, dtype=torch.long, device=self.pred_class_logits.device),
+                reduction="sum",
+            )
+        else:
+            self._log_accuracy()
+            return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
 
     def smooth_l1_loss(self):
         """
@@ -211,6 +227,13 @@ class FastRCNNOutputs(object):
         Returns:
             scalar Tensor
         """
+        if self._no_instances:
+            return 0.0 * smooth_l1_loss(
+                self.pred_proposal_deltas,
+                torch.zeros_like(self.pred_proposal_deltas),
+                0.0,
+                reduction="sum",
+            )
         gt_proposal_deltas = self.box2box_transform.get_deltas(
             self.proposals.tensor, self.gt_boxes.tensor
         )
@@ -376,9 +399,9 @@ class FastRCNNOutputLayers(nn.Module):
 
         # The prediction layer for num_classes foreground classes and one background class
         # (hence + 1)
-        self.cls_score = nn.Linear(input_size, num_classes + 1)
+        self.cls_score = Linear(input_size, num_classes + 1)
         num_bbox_reg_classes = 1 if cls_agnostic_bbox_reg else num_classes
-        self.bbox_pred = nn.Linear(input_size, num_bbox_reg_classes * box_dim)
+        self.bbox_pred = Linear(input_size, num_bbox_reg_classes * box_dim)
 
         nn.init.normal_(self.cls_score.weight, std=0.01)
         nn.init.normal_(self.bbox_pred.weight, std=0.001)

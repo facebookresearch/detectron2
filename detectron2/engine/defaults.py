@@ -12,7 +12,10 @@ since they are meant to represent the "common default behavior" people need in t
 import argparse
 import logging
 import os
+
 import time
+import sys
+
 from collections import OrderedDict
 import torch
 from fvcore.common.file_io import PathManager
@@ -77,7 +80,7 @@ def default_argument_parser():
     # PyTorch still may leave orphan processes in multi-gpu training.
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
-    port = 2 ** 15 + 2 ** 14 + hash(os.getuid()) % 2 ** 14
+    port = 2 ** 15 + 2 ** 14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2 ** 14
     parser.add_argument("--dist-url", default="tcp://127.0.0.1:{}".format(port))
     parser.add_argument(
         "opts",
@@ -126,7 +129,7 @@ def default_setup(cfg, args):
         path = os.path.join(output_dir, "config.yaml")
         with PathManager.open(path, "w") as f:
             f.write(cfg.dump())
-        logger.info("Full config saved to {}".format(os.path.abspath(path)))
+        logger.info("Full config saved to {}".format(path))
 
     # make sure each worker has a different, yet deterministic seed if specified
     seed_all_rng(None if cfg.SEED < 0 else cfg.SEED + rank)
@@ -211,7 +214,8 @@ class DefaultTrainer(SimpleTrainer):
     contains the following logic in addition:
 
     1. Create model, optimizer, scheduler, dataloader from the given config.
-    2. Load a checkpoint or `cfg.MODEL.WEIGHTS`, if exists.
+    2. Load a checkpoint or `cfg.MODEL.WEIGHTS`, if exists, when
+       `resume_or_load` is called.
     3. Register a few common hooks.
 
     It is created to simplify the **standard model training workflow** and reduce code boilerplate
@@ -233,11 +237,6 @@ class DefaultTrainer(SimpleTrainer):
     It is only guaranteed to work well with the standard models and training workflow in detectron2.
     To obtain more stable behavior, write your own training logic with other public APIs.
 
-    Attributes:
-        scheduler:
-        checkpointer (DetectionCheckpointer):
-        cfg (CfgNode):
-
     Examples:
 
     .. code-block:: python
@@ -245,6 +244,11 @@ class DefaultTrainer(SimpleTrainer):
         trainer = DefaultTrainer(cfg)
         trainer.resume_or_load()  # load last checkpoint or MODEL.WEIGHTS
         trainer.train()
+
+    Attributes:
+        scheduler:
+        checkpointer (DetectionCheckpointer):
+        cfg (CfgNode):
     """
 
     def __init__(self, cfg):
@@ -331,7 +335,7 @@ class DefaultTrainer(SimpleTrainer):
         """
         If `resume==True`, and last checkpoint exists, resume from it.
 
-        Otherwise, load a model specified by the config.
+        Otherwise, load the model specified by the config.
 
         Args:
             resume (bool): whether to do resume or not
@@ -501,8 +505,11 @@ class DefaultTrainer(SimpleTrainer):
         It is not implemented by default.
         """
         raise NotImplementedError(
-            "Please either implement `build_evaluator()` in subclasses, or pass "
-            "your evaluator as arguments to `DefaultTrainer.test()`."
+            """
+If you want DefaultTrainer to automatically run evaluation,
+please implement `build_evaluator()` in subclasses (see train_net.py for example).
+Alternatively, you can call evaluation functions yourself (see Colab balloon tutorial for example).
+"""
         )
 
     @classmethod

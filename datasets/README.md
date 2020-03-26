@@ -1,8 +1,8 @@
 
 For a few datasets that detectron2 natively supports,
-the datasets are assumed to exist in a directory called
-"datasets/", under the directory where you launch the program.
-They need to have the following directory structure:
+the datasets are assumed to exist in a directory specified by the environment variable
+`DETECTRON2_DATASETS` (default is `./datasets` relative to your current working directory).
+Under this directory, detectron2 expects to find datasets in the following structure:
 
 ## Expected dataset structure for COCO instance/keypoint detection:
 

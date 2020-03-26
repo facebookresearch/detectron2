@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
 from functools import lru_cache
 import torch
+from fvcore.common.file_io import PathManager
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
@@ -124,7 +125,8 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 @lru_cache(maxsize=None)
 def parse_rec(filename):
     """Parse a PASCAL VOC xml file."""
-    tree = ET.parse(filename)
+    with PathManager.open(filename) as f:
+        tree = ET.parse(f)
     objects = []
     for obj in tree.findall("object"):
         obj_struct = {}
@@ -202,7 +204,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
 
     # first load gt
     # read list of images
-    with open(imagesetfile, "r") as f:
+    with PathManager.open(imagesetfile, "r") as f:
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
 

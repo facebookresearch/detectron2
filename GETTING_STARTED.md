@@ -18,7 +18,8 @@ For more advanced tutorials, refer to our [documentation](https://detectron2.rea
 	for example, `mask_rcnn_R_50_FPN_3x.yaml`.
 2. We provide `demo.py` that is able to run builtin standard models. Run it with:
 ```
-python demo/demo.py --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+cd demo/
+python demo.py --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
   --input input1.jpg input2.jpg \
   [--other-options]
   --opts MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl
@@ -45,29 +46,28 @@ setup the corresponding datasets following
 [datasets/README.md](https://github.com/facebookresearch/detectron2/blob/master/datasets/README.md),
 then run:
 ```
-python tools/train_net.py --num-gpus 8 \
-	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
+cd tools/
+./train_net.py --num-gpus 8 \
+	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
 ```
 
-The configs are made for 8-GPU training. To train on 1 GPU, change the batch size with:
+The configs are made for 8-GPU training.
+To train on 1 GPU, you may need to [change some parameters](https://arxiv.org/abs/1706.02677), e.g.:
 ```
-python tools/train_net.py \
-	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+./train_net.py \
+	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
 	SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 ```
 
 For most models, CPU training is not supported.
 
-(Note that we applied the [linear learning rate scaling rule](https://arxiv.org/abs/1706.02677)
-when changing the batch size.)
-
 To evaluate a model's performance, use
 ```
-python tools/train_net.py \
-	--config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+./train_net.py \
+	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
 	--eval-only MODEL.WEIGHTS /path/to/checkpoint_file
 ```
-For more options, see `python tools/train_net.py -h`.
+For more options, see `./train_net.py -h`.
 
 ### Use Detectron2 APIs in Your Code
 
