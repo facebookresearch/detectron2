@@ -279,21 +279,19 @@ class DefaultTrainer(SimpleTrainer):
 
     def resume_or_load(self, resume=True):
         """
-        If `resume==True`, and last checkpoint exists, resume from it.
+        If `resume==True`, and last checkpoint exists, resume from it and load all
+        checkpointables (eg. optimizer and scheduler).
 
-        Otherwise, load the model specified by the config.
+        Otherwise, load the model specified by the config (skip all checkpointables).
 
         Args:
             resume (bool): whether to do resume or not
         """
+        checkpoint = self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
+        self.start_iter = checkpoint.get("iteration", -1) if resume else -1
         # The checkpoint stores the training iteration that just finished, thus we start
         # at the next iteration (or iter zero if there's no checkpoint).
-        self.start_iter = (
-            self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume).get(
-                "iteration", -1
-            )
-            + 1
-        )
+        self.start_iter += 1
 
     def build_hooks(self):
         """
