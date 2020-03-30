@@ -19,6 +19,7 @@ from .build import BACKBONE_REGISTRY
 
 __all__ = [
     "ResNetBlockBase",
+    "BasicBlock",
     "BottleneckBlock",
     "DeformBottleneckBlock",
     "BasicStem",
@@ -48,6 +49,72 @@ class ResNetBlockBase(nn.Module):
             p.requires_grad = False
         FrozenBatchNorm2d.convert_frozen_batchnorm(self)
         return self
+
+
+class BasicBlock(ResNetBlockBase):
+    def __init__(self, in_channels, out_channels, *, stride=1, norm="BN"):
+        """
+        The standard block type for ResNet18 and ResNet34.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+            stride (int): Stride for the first conv.
+            norm (str or callable): A callable that takes the number of
+                channels and returns a `nn.Module`, or a pre-defined string
+                (one of {"FrozenBN", "BN", "GN"}).
+        """
+        super().__init__(in_channels, out_channels, stride)
+
+        if in_channels != out_channels:
+            self.shortcut = Conv2d(
+                in_channels,
+                out_channels,
+                kernel_size=1,
+                stride=stride,
+                bias=False,
+                norm=get_norm(norm, out_channels),
+            )
+        else:
+            self.shortcut = None
+
+        self.conv1 = Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
+            norm=get_norm(norm, out_channels),
+        )
+
+        self.conv2 = Conv2d(
+            out_channels,
+            out_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=False,
+            norm=get_norm(norm, out_channels),
+        )
+
+        for layer in [self.conv1, self.conv2, self.shortcut]:
+            if layer is not None:  # shortcut can be None
+                weight_init.c2_msra_fill(layer)
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = F.relu_(out)
+        out = self.conv2(out)
+
+        if self.shortcut is not None:
+            shortcut = self.shortcut(x)
+        else:
+            shortcut = x
+
+        out += shortcut
+        out = F.relu_(out)
+        return out
 
 
 class BottleneckBlock(ResNetBlockBase):
@@ -441,7 +508,21 @@ def build_resnet_backbone(cfg, input_shape):
     # fmt: on
     assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
 
-    num_blocks_per_stage = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}[depth]
+    num_blocks_per_stage = {
+        18: [2, 2, 2, 2],
+        34: [3, 4, 6, 3],
+        50: [3, 4, 6, 3],
+        101: [3, 4, 23, 3],
+        152: [3, 8, 36, 3],
+    }[depth]
+
+    if depth in [18, 34]:
+        assert out_channels == 64, "Must set MODEL.RESNETS.RES2_OUT_CHANNELS = 64 for R18/R34"
+        assert not any(
+            deform_on_per_stage
+        ), "MODEL.RESNETS.DEFORM_ON_PER_STAGE unsupported for R18/R34"
+        assert res5_dilation == 1, "Must set MODEL.RESNETS.RES5_DILATION = 1 for R18/R34"
+        assert num_groups == 1, "Must set MODEL.RESNETS.NUM_GROUPS = 1 for R18/R34"
 
     stages = []
 
@@ -456,19 +537,23 @@ def build_resnet_backbone(cfg, input_shape):
             "num_blocks": num_blocks_per_stage[idx],
             "first_stride": first_stride,
             "in_channels": in_channels,
-            "bottleneck_channels": bottleneck_channels,
             "out_channels": out_channels,
-            "num_groups": num_groups,
             "norm": norm,
-            "stride_in_1x1": stride_in_1x1,
-            "dilation": dilation,
         }
-        if deform_on_per_stage[idx]:
-            stage_kargs["block_class"] = DeformBottleneckBlock
-            stage_kargs["deform_modulated"] = deform_modulated
-            stage_kargs["deform_num_groups"] = deform_num_groups
+        # Use BasicBlock for R18 and R34.
+        if depth in [18, 34]:
+            stage_kargs["block_class"] = BasicBlock
         else:
-            stage_kargs["block_class"] = BottleneckBlock
+            stage_kargs["bottleneck_channels"] = bottleneck_channels
+            stage_kargs["stride_in_1x1"]: stride_in_1x1
+            stage_kargs["dilation"]: dilation
+            stage_kargs["num_groups"]: num_groups
+            if deform_on_per_stage[idx]:
+                stage_kargs["block_class"] = DeformBottleneckBlock
+                stage_kargs["deform_modulated"] = deform_modulated
+                stage_kargs["deform_num_groups"] = deform_num_groups
+            else:
+                stage_kargs["block_class"] = BottleneckBlock
         blocks = make_stage(**stage_kargs)
         in_channels = out_channels
         out_channels *= 2

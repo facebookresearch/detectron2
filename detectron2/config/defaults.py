@@ -470,6 +470,7 @@ _C.MODEL.RESNETS.STRIDE_IN_1X1 = True
 _C.MODEL.RESNETS.RES5_DILATION = 1
 
 # Output width of res2. Scaling this parameters will scale the width of all 1x1 convs in ResNet
+# For R18 and R34, this needs to be set to 64
 _C.MODEL.RESNETS.RES2_OUT_CHANNELS = 256
 _C.MODEL.RESNETS.STEM_OUT_CHANNELS = 64
 
