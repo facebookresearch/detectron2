@@ -115,7 +115,7 @@ class BoxMode(IntEnum):
                 )
 
         if single_box:
-            return original_type(arr.flatten())
+            return original_type(arr.flatten().tolist())
         if is_numpy:
             return arr.numpy()
         else:

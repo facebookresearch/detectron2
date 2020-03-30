@@ -49,6 +49,7 @@ def get_regular_bitmask_instances(h, w):
 
 class ModelE2ETest(unittest.TestCase):
     def setUp(self):
+        torch.manual_seed(43)
         self.model = get_model_zoo(self.CONFIG_PATH)
 
     def _test_eval(self, input_sizes):

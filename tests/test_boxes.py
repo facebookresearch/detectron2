@@ -20,10 +20,11 @@ class TestBoxMode(unittest.TestCase):
 
     def test_box_convert_list(self):
         for tp in [list, tuple]:
-            box = tp([5, 5, 10, 10])
+            box = tp([5.0, 5.0, 10.0, 10.0])
             output = self._convert_xy_to_wh(box)
             self.assertIsInstance(output, tp)
-            self.assertEqual(output, tp([5, 5, 5, 5]))
+            self.assertIsInstance(output[0], float)
+            self.assertEqual(output, tp([5.0, 5.0, 5.0, 5.0]))
 
             with self.assertRaises(Exception):
                 self._convert_xy_to_wh([box])
