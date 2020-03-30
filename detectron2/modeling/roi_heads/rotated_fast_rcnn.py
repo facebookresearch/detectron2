@@ -199,7 +199,7 @@ class RROIHeads(StandardROIHeads):
         )
 
         self.box_predictor = FastRCNNOutputLayers(
-            input_size=self.box_head.output_size,
+            self.box_head.output_shape,
             num_classes=self.num_classes,
             cls_agnostic_bbox_reg=self.cls_agnostic_bbox_reg,
             box_dim=5,

@@ -349,7 +349,9 @@ class Res5ROIHeads(ROIHeads):
 
         self.res5, out_channels = self._build_res5_block(cfg)
         self.box_predictor = FastRCNNOutputLayers(
-            out_channels, self.num_classes, self.cls_agnostic_bbox_reg
+            ShapeSpec(channels=out_channels, width=1, height=1),
+            self.num_classes,
+            self.cls_agnostic_bbox_reg,
         )
 
         if self.mask_on:
@@ -510,7 +512,7 @@ class StandardROIHeads(ROIHeads):
             cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
         )
         self.box_predictor = FastRCNNOutputLayers(
-            self.box_head.output_size, self.num_classes, self.cls_agnostic_bbox_reg
+            self.box_head.output_shape, self.num_classes, self.cls_agnostic_bbox_reg
         )
 
     def _init_mask_head(self, cfg, input_shape):

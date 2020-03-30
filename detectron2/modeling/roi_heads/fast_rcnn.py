@@ -1,12 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
-import numpy as np
 import torch
 from fvcore.nn import smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.layers import Linear, batched_nms, cat
+from detectron2.layers import Linear, ShapeSpec, batched_nms, cat
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
@@ -383,20 +382,19 @@ class FastRCNNOutputLayers(nn.Module):
       (2) classification scores
     """
 
-    def __init__(self, input_size, num_classes, cls_agnostic_bbox_reg, box_dim=4):
+    def __init__(self, input_shape, num_classes, cls_agnostic_bbox_reg, box_dim=4):
         """
         Args:
-            input_size (int): channels, or (channels, height, width)
+            input_shape (ShapeSpec): shape of the input feature
             num_classes (int): number of foreground classes
             cls_agnostic_bbox_reg (bool): whether to use class agnostic for bbox regression
             box_dim (int): the dimension of bounding boxes.
                 Example box dimensions: 4 for regular XYXY boxes and 5 for rotated XYWHA boxes
         """
-        super(FastRCNNOutputLayers, self).__init__()
-
-        if not isinstance(input_size, int):
-            input_size = np.prod(input_size)
-
+        super().__init__()
+        if isinstance(input_shape, int):  # some backward compatbility
+            input_shape = ShapeSpec(channels=input_shape)
+        input_size = input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
         # The prediction layer for num_classes foreground classes and one background class
         # (hence + 1)
         self.cls_score = Linear(input_size, num_classes + 1)

@@ -81,8 +81,16 @@ class FastRCNNConvFCHead(nn.Module):
         return x
 
     @property
-    def output_size(self):
-        return self._output_size
+    def output_shape(self):
+        """
+        Returns:
+            ShapeSpec: the output feature shape
+        """
+        o = self._output_size
+        if isinstance(o, int):
+            return ShapeSpec(channels=o)
+        else:
+            return ShapeSpec(channels=o[0], height=o[1], width=o[2])
 
 
 def build_box_head(cfg, input_shape):

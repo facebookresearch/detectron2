@@ -4,6 +4,7 @@ import unittest
 import torch
 
 from detectron2.config import get_cfg
+from detectron2.layers import ShapeSpec
 from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransformRotated
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
 from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputs
@@ -25,7 +26,7 @@ class FastRCNNTest(unittest.TestCase):
         cls_agnostic_bbox_reg = False
 
         box_predictor = FastRCNNOutputLayers(
-            box_head_output_size, num_classes, cls_agnostic_bbox_reg, box_dim=4
+            ShapeSpec(channels=box_head_output_size), num_classes, cls_agnostic_bbox_reg, box_dim=4
         )
         feature_pooled = torch.rand(2, box_head_output_size)
         pred_class_logits, pred_proposal_deltas = box_predictor(feature_pooled)

@@ -67,7 +67,7 @@ class CascadeROIHeads(StandardROIHeads):
             self.box_head.append(box_head)
             self.box_predictor.append(
                 FastRCNNOutputLayers(
-                    box_head.output_size, self.num_classes, cls_agnostic_bbox_reg=True
+                    box_head.output_shape, self.num_classes, cls_agnostic_bbox_reg=True
                 )
             )
             self.box2box_transform.append(Box2BoxTransform(weights=cascade_bbox_reg_weights[k]))
