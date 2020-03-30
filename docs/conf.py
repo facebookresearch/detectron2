@@ -31,7 +31,7 @@ import sphinx_rtd_theme
 from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("../"))
-
+os.environ["DOC_BUILDING"] = "True"
 DEPLOY = os.environ.get("READTHEDOCS") == "True"
 
 
