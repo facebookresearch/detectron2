@@ -6,3 +6,5 @@ from .densepose_head import ROI_DENSEPOSE_HEAD_REGISTRY
 from .evaluator import DensePoseCOCOEvaluator
 from .roi_head import DensePoseROIHeads
 from .structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
+from .modeling.test_time_augmentation import DensePoseGeneralizedRCNNWithTTA
+from .utils.transform import load_from_cfg
