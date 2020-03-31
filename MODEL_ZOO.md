@@ -62,6 +62,8 @@ Pretrained models in Detectron's format can still be used. For example:
 * [R-101-GN.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/47592356/R-101-GN.pkl):
   ResNet-101 with Group Normalization.
 
+Torchvision's ResNet models can be used after converted by [this script](tools/convert-torchvision-to-d2.py).
+
 #### License
 
 All models available for download through this document are licensed under the
