@@ -28,13 +28,21 @@ class DatasetEvaluator:
         """
         pass
 
-    def process(self, input, output):
+    def process(self, inputs, outputs):
         """
-        Process an input/output pair.
+        Process inputs/outputs pairs
+
+        The pairs can easily be consumed one-by-one using `zip`:
+
+        .. code-block:: python
+
+            for input_, output in zip(inputs, outputs):
+                # do evaluation on single input/output pair
+                ...
 
         Args:
-            input: the input that's used to call the model.
-            output: the return value of `model(input)`
+            inputs (list): the inputs that's used to call the model.
+            outputs (list): the return value of `model(inputs)`
         """
         pass
 
@@ -55,7 +63,18 @@ class DatasetEvaluator:
 
 
 class DatasetEvaluators(DatasetEvaluator):
+    """
+    Wrapper class to combine multiple :ref:`DatasetEvaluator` instances.
+
+    This class dispatches every evaluation call to
+    all of its :ref:`DatasetEvaluator`s.
+    """
+
     def __init__(self, evaluators):
+        """
+        Args:
+            evaluators (list): the evaluators to combine.
+        """
         super().__init__()
         self._evaluators = evaluators
 
@@ -63,9 +82,9 @@ class DatasetEvaluators(DatasetEvaluator):
         for evaluator in self._evaluators:
             evaluator.reset()
 
-    def process(self, input, output):
+    def process(self, inputs, outputs):
         for evaluator in self._evaluators:
-            evaluator.process(input, output)
+            evaluator.process(inputs, outputs)
 
     def evaluate(self):
         results = OrderedDict()
