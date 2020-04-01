@@ -16,5 +16,6 @@ See release log at
 * v2: A batch of rename of many configurations before release.
 
 ### Known Bugs in Historical Versions:
+* Mar 30 - Apr 1: ResNets are not correctly built.
 * Dec 19 - Dec 26: Using aspect ratio grouping causes a drop in accuracy.
 * Oct 10 - Nov 9: Test time augmentation does not predict the last category.

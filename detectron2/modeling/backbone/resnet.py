@@ -545,9 +545,9 @@ def build_resnet_backbone(cfg, input_shape):
             stage_kargs["block_class"] = BasicBlock
         else:
             stage_kargs["bottleneck_channels"] = bottleneck_channels
-            stage_kargs["stride_in_1x1"]: stride_in_1x1
-            stage_kargs["dilation"]: dilation
-            stage_kargs["num_groups"]: num_groups
+            stage_kargs["stride_in_1x1"] = stride_in_1x1
+            stage_kargs["dilation"] = dilation
+            stage_kargs["num_groups"] = num_groups
             if deform_on_per_stage[idx]:
                 stage_kargs["block_class"] = DeformBottleneckBlock
                 stage_kargs["deform_modulated"] = deform_modulated
