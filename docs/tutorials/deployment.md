@@ -60,7 +60,7 @@ The C++ code needs to be built with:
 * MKL headers if caffe2 is built with MKL
 * `-D_GLIBCXX_USE_CXX11_ABI=` equals `torch._C._GLIBCXX_USE_CXX11_ABI`
 
-The following works inside official detectron2 docker:
+As an example, the following works inside official detectron2 docker:
 ```
 apt install libgflags-dev libgoogle-glog-dev
 pip install mkl-include

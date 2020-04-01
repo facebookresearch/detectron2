@@ -72,13 +72,17 @@ in your issue.
 
 <details>
 <summary>
-Undefined C++ symbols in `detectron2/_C*.so`.
+Undefined C++ symbols (e.g. `GLIBCXX`) or C++ symbols not found.
 </summary>
 <br/>
-Usually it's because the library is compiled with a newer C++ compiler but run with an old C++ run time.
-This can happen with old anaconda.
+Usually it's because the library is compiled with a newer C++ compiler but run with an old C++ runtime.
 
+This often happens with old anaconda.
 Try `conda update libgcc`. Then rebuild detectron2.
+
+The fundamental solution is to run the code with sufficiently new C++ runtime
+using `LD_PRELOAD=/path/to/libstdc++.so`
+
 </details>
 
 <details>

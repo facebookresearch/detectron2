@@ -70,7 +70,7 @@ You can implement it using any tools you like.
 ## Use a Custom Dataloader
 
 If you use [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
-you can overwrite its `build_{train,test}__loader` method to use your own dataloader.
+you can overwrite its `build_{train,test}_loader` method to use your own dataloader.
 See the [densepose dataloader](../../projects/DensePose/train_net.py)
 for an example.
 

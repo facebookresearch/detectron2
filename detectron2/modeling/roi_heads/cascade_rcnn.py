@@ -146,9 +146,9 @@ class CascadeROIHeads(StandardROIHeads):
                 boxes,
                 scores,
                 image_sizes,
-                self.test_score_thresh,
-                self.test_nms_thresh,
-                self.test_detections_per_img,
+                predictor.test_score_thresh,
+                predictor.test_nms_thresh,
+                predictor.test_topk_per_image,
             )
             return pred_instances
 
