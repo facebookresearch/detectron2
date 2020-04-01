@@ -11,7 +11,7 @@ from ..box_regression import Box2BoxTransform
 from ..matcher import Matcher
 from ..poolers import ROIPooler
 from .box_head import build_box_head
-from .fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs, fast_rcnn_inference
+from .fast_rcnn import FastRCNNOutputLayers, fast_rcnn_inference
 from .roi_heads import ROI_HEADS_REGISTRY, StandardROIHeads
 
 
@@ -67,10 +67,11 @@ class CascadeROIHeads(StandardROIHeads):
             self.box_head.append(box_head)
             self.box_predictor.append(
                 FastRCNNOutputLayers(
-                    box_head.output_shape, self.num_classes, cls_agnostic_bbox_reg=True
+                    cfg,
+                    box_head.output_shape,
+                    box2box_transform=Box2BoxTransform(weights=cascade_bbox_reg_weights[k]),
                 )
             )
-            self.box2box_transform.append(Box2BoxTransform(weights=cascade_bbox_reg_weights[k]))
 
             if k == 0:
                 # The first matching is done by the matcher of ROIHeads (self.proposal_matcher).
@@ -107,29 +108,31 @@ class CascadeROIHeads(StandardROIHeads):
                 "gt_classes", "gt_boxes".
         """
         features = [features[f] for f in self.in_features]
-        head_outputs = []
+        head_outputs = []  # (predictor, predictions, proposals)
+        prev_pred_boxes = None
         image_sizes = [x.image_size for x in proposals]
         for k in range(self.num_cascade_stages):
             if k > 0:
-                # The output boxes of the previous stage are the input proposals of the next stage
-                proposals = self._create_proposals_from_boxes(
-                    head_outputs[-1].predict_boxes(), image_sizes
-                )
+                # The output boxes of the previous stage are used to create the input
+                # proposals of the next stage.
+                proposals = self._create_proposals_from_boxes(prev_pred_boxes, image_sizes)
                 if self.training:
                     proposals = self._match_and_label_boxes(proposals, k, targets)
-            head_outputs.append(self._run_stage(features, proposals, k))
+            predictions = self._run_stage(features, proposals, k)
+            prev_pred_boxes = self.box_predictor[k].predict_boxes(predictions, proposals)
+            head_outputs.append((self.box_predictor[k], predictions, proposals))
 
         if self.training:
             losses = {}
             storage = get_event_storage()
-            for stage, output in enumerate(head_outputs):
+            for stage, (predictor, predictions, proposals) in enumerate(head_outputs):
                 with storage.name_scope("stage{}".format(stage)):
-                    stage_losses = output.losses()
+                    stage_losses = predictor.losses(predictions, proposals)
                 losses.update({k + "_stage{}".format(stage): v for k, v in stage_losses.items()})
             return losses
         else:
             # Each is a list[Tensor] of length #image. Each tensor is Ri x (K+1)
-            scores_per_stage = [h.predict_probs() for h in head_outputs]
+            scores_per_stage = [h[0].predict_probs(h[1], h[2]) for h in head_outputs]
 
             # Average the scores across heads
             scores = [
@@ -137,7 +140,8 @@ class CascadeROIHeads(StandardROIHeads):
                 for scores_per_image in zip(*scores_per_stage)
             ]
             # Use the boxes of the last head
-            boxes = head_outputs[-1].predict_boxes()
+            predictor, predictions, proposals = head_outputs[-1]
+            boxes = predictor.predict_boxes(predictions, proposals)
             pred_instances, _ = fast_rcnn_inference(
                 boxes,
                 scores,
@@ -206,7 +210,7 @@ class CascadeROIHeads(StandardROIHeads):
             stage (int): the current stage
 
         Returns:
-            FastRCNNOutputs: the output of this stage
+            Same output as `FastRCNNOutputLayers.forward()`.
         """
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         # The original implementation averages the losses among heads,
@@ -215,17 +219,7 @@ class CascadeROIHeads(StandardROIHeads):
         # but scale down the gradients on features.
         box_features = _ScaleGradient.apply(box_features, 1.0 / self.num_cascade_stages)
         box_features = self.box_head[stage](box_features)
-        pred_class_logits, pred_proposal_deltas = self.box_predictor[stage](box_features)
-        del box_features
-
-        outputs = FastRCNNOutputs(
-            self.box2box_transform[stage],
-            pred_class_logits,
-            pred_proposal_deltas,
-            proposals,
-            self.smooth_l1_beta,
-        )
-        return outputs
+        return self.box_predictor[stage](box_features)
 
     def _create_proposals_from_boxes(self, boxes, image_sizes):
         """

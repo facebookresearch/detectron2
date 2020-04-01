@@ -12,7 +12,7 @@ from ..box_regression import Box2BoxTransformRotated
 from ..poolers import ROIPooler
 from ..proposal_generator.proposal_utils import add_ground_truth_to_proposals
 from .box_head import build_box_head
-from .fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
+from .fast_rcnn import FastRCNNOutputLayers
 from .roi_heads import ROI_HEADS_REGISTRY, StandardROIHeads
 
 logger = logging.getLogger(__name__)
@@ -131,27 +131,36 @@ def fast_rcnn_inference_single_image_rotated(
     return result, filter_inds[:, 0]
 
 
-class RotatedFastRCNNOutputs(FastRCNNOutputs):
+class RotatedFastRCNNOutputLayers(FastRCNNOutputLayers):
     """
     A class that stores information about outputs of a Fast R-CNN head with RotatedBoxes.
     """
 
-    def inference(self, score_thresh, nms_thresh, topk_per_image):
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        args = super().from_config(cfg, input_shape)
+        args["box2box_transform"] = Box2BoxTransformRotated(
+            weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS
+        )
+        return args
+
+    def inference(self, predictions, proposals):
         """
-        Args:
-            score_thresh (float): same as `fast_rcnn_inference_rotated`.
-            nms_thresh (float): same as `fast_rcnn_inference_rotated`.
-            topk_per_image (int): same as `fast_rcnn_inference_rotated`.
         Returns:
             list[Instances]: same as `fast_rcnn_inference_rotated`.
             list[Tensor]: same as `fast_rcnn_inference_rotated`.
         """
-        boxes = self.predict_boxes()
-        scores = self.predict_probs()
-        image_shapes = self.image_shapes
+        boxes = self.predict_boxes(predictions, proposals)
+        scores = self.predict_probs(predictions, proposals)
+        image_shapes = [x.image_size for x in proposals]
 
         return fast_rcnn_inference_rotated(
-            boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image
+            boxes,
+            scores,
+            image_shapes,
+            self.test_score_thresh,
+            self.test_nms_thresh,
+            self.test_topk_per_image,
         )
 
 
@@ -164,20 +173,19 @@ class RROIHeads(StandardROIHeads):
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
         super().__init__(cfg, input_shape)
-        self.box2box_transform = Box2BoxTransformRotated(
-            weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS
-        )
         assert (
             not self.mask_on and not self.keypoint_on
         ), "Mask/Keypoints not supported in Rotated ROIHeads."
 
     def _init_box_head(self, cfg, input_shape):
         # fmt: off
-        pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in self.in_features)
-        sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
+        pooler_scales            = tuple(1.0 / input_shape[k].stride for k in self.in_features)
+        sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
+        pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        self.train_on_pred_boxes = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
         # fmt: on
+        assert not self.train_on_pred_boxes, "Not Implemented!"
 
         # If StandardROIHeads is applied on multiple feature maps (as in FPN),
         # then we share the same predictors and therefore the channel counts must be the same
@@ -198,12 +206,7 @@ class RROIHeads(StandardROIHeads):
             cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
         )
 
-        self.box_predictor = FastRCNNOutputLayers(
-            self.box_head.output_shape,
-            num_classes=self.num_classes,
-            cls_agnostic_bbox_reg=self.cls_agnostic_bbox_reg,
-            box_dim=5,
-        )
+        self.box_predictor = RotatedFastRCNNOutputLayers(cfg, self.box_head.output_shape)
 
     @torch.no_grad()
     def label_and_sample_proposals(self, proposals, targets):
@@ -266,40 +269,3 @@ class RROIHeads(StandardROIHeads):
         storage.put_scalar("roi_head/num_bg_samples", np.mean(num_bg_samples))
 
         return proposals_with_gt
-
-    def _forward_box(self, features, proposals):
-        """
-        Forward logic of the box prediction branch.
-
-        Args:
-            features (dict[str, Tensor]): mapping from feature map names to tensor.
-                Same as in :meth:`ROIHeads.forward`.
-            proposals (list[Instances]): the per-image object proposals with
-                their matching ground truth.
-                Each has fields "proposal_boxes", and "objectness_logits",
-                "gt_classes", "gt_boxes".
-
-        Returns:
-            In training, a dict of losses.
-            In inference, a list of `Instances`, the predicted instances.
-        """
-        features = [features[f] for f in self.in_features]
-        box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
-        box_features = self.box_head(box_features)
-        pred_class_logits, pred_proposal_deltas = self.box_predictor(box_features)
-        del box_features
-
-        outputs = RotatedFastRCNNOutputs(
-            self.box2box_transform,
-            pred_class_logits,
-            pred_proposal_deltas,
-            proposals,
-            self.smooth_l1_beta,
-        )
-        if self.training:
-            return outputs.losses()
-        else:
-            pred_instances, _ = outputs.inference(
-                self.test_score_thresh, self.test_nms_thresh, self.test_detections_per_img
-            )
-            return pred_instances

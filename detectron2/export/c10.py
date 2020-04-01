@@ -9,7 +9,6 @@ from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference
-from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputs
 from detectron2.structures import Boxes, ImageList, Instances, Keypoints
 
 from .shared import alias, to_device
@@ -348,59 +347,51 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
 
 class Caffe2FastRCNNOutputsInference:
     def __init__(self, tensor_mode):
-        self.tensor_mode = tensor_mode
+        self.tensor_mode = tensor_mode  # whether the output is caffe2 tensor mode
 
-    def __call__(self, fastrcnn_outputs, score_thresh, nms_thresh, topk_per_image):
-        """ equivalent to FastRCNNOutputs.inference """
-        assert isinstance(fastrcnn_outputs.proposals, Boxes)
-
-        # note: fastrcnn_outputs.proposals is Caffe2Box but not RotatedBoxes here,
-        # thus cannot be used to judge if it's rotated model
-        is_rotated = isinstance(fastrcnn_outputs, RotatedFastRCNNOutputs)
+    def __call__(self, box_predictor, predictions, proposals):
+        """ equivalent to FastRCNNOutputLayers.inference """
+        score_thresh = box_predictor.test_score_thresh
+        nms_thresh = box_predictor.test_nms_thresh
+        topk_per_image = box_predictor.test_topk_per_image
+        is_rotated = len(box_predictor.box2box_transform.weights) == 5
 
         if is_rotated:
             box_dim = 5
-            assert fastrcnn_outputs.box2box_transform.weights[4] == 1, (
+            assert box_predictor.box2box_transform.weights[4] == 1, (
                 "The weights for Rotated BBoxTransform in C2 have only 4 dimensions,"
                 + " thus enforcing the angle weight to be 1 for now"
             )
-            box2box_transform_weights = fastrcnn_outputs.box2box_transform.weights[:4]
+            box2box_transform_weights = box_predictor.box2box_transform.weights[:4]
         else:
             box_dim = 4
-            box2box_transform_weights = fastrcnn_outputs.box2box_transform.weights
+            box2box_transform_weights = box_predictor.box2box_transform.weights
 
-        input_tensor_mode = fastrcnn_outputs.proposals.tensor.shape[1] == (box_dim + 1)
-
-        class_logits = fastrcnn_outputs.pred_class_logits
-        box_regression = fastrcnn_outputs.pred_proposal_deltas
+        class_logits, box_regression = predictions
         class_prob = F.softmax(class_logits, -1)
 
         assert box_regression.shape[1] % box_dim == 0
         cls_agnostic_bbox_reg = box_regression.shape[1] // box_dim == 1
 
-        device = class_logits.device
+        input_tensor_mode = proposals[0].proposal_boxes.tensor.shape[1] == box_dim + 1
 
-        im_info = (
-            torch.Tensor(
-                [[sz[0], sz[1], torch.Tensor([1.0])] for sz in fastrcnn_outputs.image_shapes]
-            ).to(device)
-            if not input_tensor_mode
-            else fastrcnn_outputs.image_shapes[0]
-        )
-
-        rois_n4 = fastrcnn_outputs.proposals.tensor
-        device, dtype = rois_n4.device, rois_n4.dtype
-        if not input_tensor_mode:
+        rois = type(proposals[0].proposal_boxes).cat([p.proposal_boxes for p in proposals])
+        device, dtype = rois.tensor.device, rois.tensor.dtype
+        if input_tensor_mode:
+            im_info = proposals[0].image_size
+            rois = rois.tensor
+        else:
+            im_info = torch.Tensor(
+                [[sz[0], sz[1], 1.0] for sz in [x.image_size for x in proposals]]
+            )
             batch_ids = cat(
                 [
                     torch.full((b, 1), i, dtype=dtype, device=device)
-                    for i, b in enumerate(fastrcnn_outputs.num_preds_per_image)
+                    for i, b in enumerate(len(p) for p in proposals)
                 ],
                 dim=0,
             )
-            rois = torch.cat([batch_ids, rois_n4], dim=1)
-        else:
-            rois = fastrcnn_outputs.proposals.tensor
+            rois = torch.cat([batch_ids, rois.tensor], dim=1)
 
         roi_pred_bbox, roi_batch_splits = torch.ops._caffe2.BBoxTransform(
             to_device(rois, "cpu"),
