@@ -128,8 +128,6 @@ class Caffe2Model(nn.Module):
             f.write(str(self._predict_net))
         with open(os.path.join(output_dir, "model_init.pb"), "wb") as f:
             f.write(self._init_net.SerializeToString())
-        with open(os.path.join(output_dir, "model_init.pbtxt"), "w") as f:
-            f.write(str(self._init_net))
 
     def save_graph(self, output_file, inputs=None):
         """
