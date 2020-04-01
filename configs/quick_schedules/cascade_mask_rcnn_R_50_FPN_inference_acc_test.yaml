@@ -1,0 +1,7 @@
+_BASE_: "../Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml"
+MODEL:
+  WEIGHTS: "detectron2://Misc/cascade_mask_rcnn_R_50_FPN_3x/144998488/model_final_480dd8.pkl"
+DATASETS:
+  TEST: ("coco_2017_val_100",)
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 50.18, 0.02], ["segm", "AP",  43.87, 0.02]]

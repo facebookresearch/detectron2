@@ -1,0 +1,11 @@
+_BASE_: "../Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml"
+DATASETS:
+  TRAIN: ("coco_2017_val_100",)
+  TEST: ("coco_2017_val_100",)
+SOLVER:
+  BASE_LR: 0.005
+  STEPS: (30,)
+  MAX_ITER: 40
+  IMS_PER_BATCH: 4
+DATALOADER:
+  NUM_WORKERS: 2
