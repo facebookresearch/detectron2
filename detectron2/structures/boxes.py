@@ -5,8 +5,6 @@ from enum import IntEnum, unique
 from typing import Iterator, List, Tuple, Union
 import torch
 
-from detectron2.layers import cat
-
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
 
@@ -280,7 +278,8 @@ class Boxes:
         assert len(boxes_list) > 0
         assert all(isinstance(box, Boxes) for box in boxes_list)
 
-        cat_boxes = type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
+        # use torch.cat (v.s. layers.cat) so the returned boxes never share storage with input
+        cat_boxes = type(boxes_list[0])(torch.cat([b.tensor for b in boxes_list], dim=0))
         return cat_boxes
 
     @property

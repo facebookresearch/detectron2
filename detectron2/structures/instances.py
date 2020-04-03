@@ -3,8 +3,6 @@ import itertools
 from typing import Any, Dict, List, Tuple, Union
 import torch
 
-from detectron2.layers import cat
-
 
 class Instances:
     """
@@ -166,7 +164,7 @@ class Instances:
             values = [i.get(k) for i in instance_lists]
             v0 = values[0]
             if isinstance(v0, torch.Tensor):
-                values = cat(values, dim=0)
+                values = torch.cat(values, dim=0)
             elif isinstance(v0, list):
                 values = list(itertools.chain(*values))
             elif hasattr(type(v0), "cat"):

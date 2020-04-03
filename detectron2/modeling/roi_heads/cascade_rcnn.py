@@ -65,6 +65,7 @@ class CascadeROIHeads(StandardROIHeads):
         for k in range(self.num_cascade_stages):
             box_head = build_box_head(cfg, pooled_shape)
             self.box_head.append(box_head)
+            # NOTE: use list of predictor in explicit args?
             self.box_predictor.append(
                 FastRCNNOutputLayers(
                     cfg,

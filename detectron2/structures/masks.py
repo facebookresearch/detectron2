@@ -6,7 +6,6 @@ from typing import Any, Iterator, List, Union
 import pycocotools.mask as mask_utils
 import torch
 
-from detectron2.layers import cat
 from detectron2.layers.roi_align import ROIAlign
 
 from .boxes import Boxes
@@ -218,7 +217,7 @@ class BitMasks:
         assert len(bitmasks_list) > 0
         assert all(isinstance(bitmask, BitMasks) for bitmask in bitmasks_list)
 
-        cat_bitmasks = type(bitmasks_list[0])(cat([bm.tensor for bm in bitmasks_list], dim=0))
+        cat_bitmasks = type(bitmasks_list[0])(torch.cat([bm.tensor for bm in bitmasks_list], dim=0))
         return cat_bitmasks
 
 
