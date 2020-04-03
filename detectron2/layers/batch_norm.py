@@ -127,7 +127,9 @@ class FrozenBatchNorm2d(nn.Module):
 def get_norm(norm, out_channels):
     """
     Args:
-        norm (str or callable):
+        norm (str or callable): either one of BN, SyncBN, FrozenBN, GN;
+            or a callable that takes a channel number and returns
+            the normalization layer as a nn.Module.
 
     Returns:
         nn.Module or None: the normalization layer
