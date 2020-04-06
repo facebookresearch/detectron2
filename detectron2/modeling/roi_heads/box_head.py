@@ -39,8 +39,8 @@ class FastRCNNConvFCHead(nn.Module):
             input_shape (ShapeSpec): shape of the input feature.
             num_conv, num_fc: the number of conv/fc layers
             conv_dim/fc_dim: the output dimension of the conv/fc layers
-            conv_norm: normalization for the conv layers. See :func:`detectron2.layers.get_norm`
-                for supported types.
+            conv_norm (str or callable): normalization for the conv layers.
+                See :func:`detectron2.layers.get_norm` for supported types.
         """
         super().__init__()
         assert num_conv + num_fc > 0
