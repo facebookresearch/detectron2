@@ -58,12 +58,12 @@ class FPN(Backbone):
         output_convs = []
 
         use_bias = norm == ""
-        for idx, in_channels in enumerate(in_channels):
+        for idx, in_channels_idx in enumerate(in_channels):
             lateral_norm = get_norm(norm, out_channels)
             output_norm = get_norm(norm, out_channels)
 
             lateral_conv = Conv2d(
-                in_channels, out_channels, kernel_size=1, bias=use_bias, norm=lateral_norm
+                in_channels_idx, out_channels, kernel_size=1, bias=use_bias, norm=lateral_norm
             )
             output_conv = Conv2d(
                 out_channels,
