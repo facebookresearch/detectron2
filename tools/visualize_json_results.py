@@ -22,6 +22,9 @@ def create_instances(predictions, image_size):
     score = np.asarray([x["score"] for x in predictions])
     chosen = (score > args.conf_threshold).nonzero()[0]
     score = score[chosen]
+    if score.shape[0] == 0:
+        return None
+
     bbox = np.asarray([predictions[i]["bbox"] for i in chosen])
     bbox = BoxMode.convert(bbox, BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
 
@@ -80,6 +83,9 @@ if __name__ == "__main__":
         basename = os.path.basename(dic["file_name"])
 
         predictions = create_instances(pred_by_image[dic["image_id"]], img.shape[:2])
+        if predictions is None:
+            continue
+
         vis = Visualizer(img, metadata)
         vis_pred = vis.draw_instance_predictions(predictions).get_image()
 
