@@ -21,10 +21,8 @@ def create_instances(predictions, image_size):
 
     score = np.asarray([x["score"] for x in predictions])
     chosen = (score > args.conf_threshold).nonzero()[0]
-    if chosen.shape[0] == 0:
-        return None
     score = score[chosen]
-    bbox = np.asarray([predictions[i]["bbox"] for i in chosen])
+    bbox = np.asarray([predictions[i]["bbox"] for i in chosen]).reshape(-1, 4)
     bbox = BoxMode.convert(bbox, BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
 
     labels = np.asarray([dataset_id_map(predictions[i]["category_id"]) for i in chosen])
