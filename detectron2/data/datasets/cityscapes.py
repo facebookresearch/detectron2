@@ -103,6 +103,8 @@ def load_cityscapes_semantic(image_dir, gt_dir):
             "sem_seg_file_name".
     """
     ret = []
+    # gt_dir is small and contain many small files. make sense to fetch to local first
+    gt_dir = PathManager.get_local_path(gt_dir)
     for image_file, _, label_file, json_file in get_cityscapes_files(image_dir, gt_dir):
         label_file = label_file.replace("labelIds", "labelTrainIds")
 
