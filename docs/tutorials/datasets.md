@@ -6,7 +6,7 @@ you will need to
 1. Register your dataset (i.e., tell detectron2 how to obtain your dataset).
 2. Optionally, register metadata for your dataset.
 
-Next, we explain the above two concepts in details.
+Next, we explain the above two concepts in detail.
 
 The [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
 has a working example of how to register and train on a dataset of custom formats.
@@ -32,9 +32,9 @@ The registration stays effective until the process exists.
 The function can processes data from its original format into either one of the following:
 1. Detectron2's standard dataset dict, described below. This will work with many other builtin
 	 features in detectron2, so it's recommended to use it when it's sufficient for your task.
-2. Your custom dataset dict. You can also returns arbitrary dicts in your own format,
+2. Your custom dataset dict. You can also return arbitrary dicts in your own format,
 	 such as adding extra keys for new tasks.
-	 Then you will need to handle them properly in the downstream as well.
+	 Then you will need to handle them properly downstream as well.
 	 See below for more details.
 
 #### Standard Dataset Dicts
@@ -99,7 +99,7 @@ The following keys are used by Fast R-CNN style training, which is rare today.
   Default is `BoxMode.XYXY_ABS`.
 
 
-If your dataset is already a json file in COCO format, you can simply register it by
+If your dataset is already a json file in the COCO format, you can simply register it by
 ```python
 from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
@@ -111,8 +111,8 @@ the [load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_jso
 
 #### Custom Dataset Dicts
 
-In the `list[dict]` that your dataset function return, the dictionary can also has arbitrary custom data.
-This can be useful when you're doing a new task and needs extra information not supported
+In the `list[dict]` that your dataset function returns, the dictionary can also have arbitrary custom data.
+This can be useful when you're doing a new task that needs extra information not supported
 by the standard dataset dicts. In this case, you need to make sure the downstream code can handle your data
 correctly. Usually this requires writing a new `mapper` for the dataloader (see [Use Custom Dataloaders](data_loading.html))
 
@@ -210,5 +210,5 @@ There are other configs you might want to change to train or evaluate on new dat
 	with `TEST.KEYPOINT_OKS_SIGMAS` for evaluation.
 * `MODEL.SEM_SEG_HEAD.NUM_CLASSES` sets the number of stuff classes for Semantic FPN & Panoptic FPN.
 * If you're training Fast R-CNN (with precomputed proposals), `DATASETS.PROPOSAL_FILES_{TRAIN,TEST}`
-	need to match the datasts. The format of proposal files are documented
+	need to match the datasets. The format of proposal files are documented
 	[here](../modules/data.html#detectron2.data.load_proposals_into_dataset).
