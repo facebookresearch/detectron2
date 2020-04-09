@@ -151,7 +151,7 @@ class DensePoseDataRelative(object):
         # NOTE: This assumes that HorizFlipTransform is the only one that does flip
         do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
         if do_hflip:
-            self.x = self.segm.size(1) - self.x
+            self.x = self.segm.size(1) - 1 - self.x
             self._flip_iuv_semantics(dp_transform_data)
 
     def _flip_iuv_semantics(self, dp_transform_data: DensePoseTransformData) -> None:
