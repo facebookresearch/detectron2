@@ -138,7 +138,8 @@ def _soft_nms(box_class, pairwise_iou_func, boxes, scores, method, sigma, thresh
     """
     Soft non-max suppression algorithm.
 
-    Implementation of [Soft-NMS -- Improving Object Detection With One Line of Codec](https://arxiv.org/abs/1704.04503)
+    Implementation of [Soft-NMS -- Improving Object Detection With One Line of Codec]
+    (https://arxiv.org/abs/1704.04503)
 
     Each index value correspond to a category, and NMS
     will not be applied between elements of different categories.
