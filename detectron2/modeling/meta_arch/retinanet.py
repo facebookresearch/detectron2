@@ -8,6 +8,7 @@ from fvcore.nn import sigmoid_focal_loss_jit, smooth_l1_loss
 from torch import nn
 
 from detectron2.layers import ShapeSpec, batched_nms, cat
+from detectron2.layers.soft_nms import batched_soft_nms
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
@@ -77,6 +78,9 @@ class RetinaNet(nn.Module):
         self.score_threshold          = cfg.MODEL.RETINANET.SCORE_THRESH_TEST
         self.topk_candidates          = cfg.MODEL.RETINANET.TOPK_CANDIDATES_TEST
         self.nms_threshold            = cfg.MODEL.RETINANET.NMS_THRESH_TEST
+        self.soft_nms_enabled         = cfg.MODEL.RETINANET.SOFT_NMS_ENABLED
+        self.soft_nms_method          = cfg.MODEL.RETINANET.SOFT_NMS_METHOD
+        self.soft_nms_sigma           = cfg.MODEL.RETINANET.SOFT_NMS_SIGMA
         self.max_detections_per_image = cfg.TEST.DETECTIONS_PER_IMAGE
         # Vis parameters
         self.vis_period               = cfg.VIS_PERIOD
@@ -404,7 +408,17 @@ class RetinaNet(nn.Module):
         boxes_all, scores_all, class_idxs_all = [
             cat(x) for x in [boxes_all, scores_all, class_idxs_all]
         ]
-        keep = batched_nms(boxes_all, scores_all, class_idxs_all, self.nms_threshold)
+        if not self.soft_nms_enabled:
+            keep = batched_nms(boxes_all, scores_all, class_idxs_all, self.nms_threshold)
+        else:
+            keep = batched_soft_nms(
+                boxes_all,
+                scores_all,
+                class_idxs_all,
+                self.soft_nms_method,
+                self.soft_nms_sigma,
+                self.soft_nms_threshold,
+            )
         keep = keep[: self.max_detections_per_image]
 
         result = Instances(image_size)

@@ -250,6 +250,9 @@ class GeneralizedRCNNWithTTA(nn.Module):
             shape_hw,
             1e-8,
             self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
+            self.cfg.MODEL.ROI_HEADS.SOFT_NMS_ENABLED,
+            self.cfg.MODEL.ROI_HEADS.SOFT_NMS_METHOD,
+            self.cfg.MODEL.ROI_HEADS.SOFT_NMS_SIGMA,
             self.cfg.TEST.DETECTIONS_PER_IMAGE,
         )
 
