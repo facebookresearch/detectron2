@@ -197,27 +197,26 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
     """
 
     @configurable
-    def __init__(
-        self, input_shape: ShapeSpec, num_classes, num_conv, conv_dim, conv_norm="", vis_period=0
-    ):
+    def __init__(self, input_shape: ShapeSpec, num_classes, conv_dims, conv_norm="", vis_period=0):
         """
         Args:
             input_shape (ShapeSpec): shape of the input feature
             num_classes (int): the number of classes. 1 if using class agnostic prediction.
-            num_conv (int): the number of conv layers
-            conv_dim (int): the dimension of the conv layers
+            conv_dims (list[int]): a list of N>0 integers representing the output dimensions
+                of N-1 conv layers and the last upsample layer.
             conv_norm (str or callable): normalization for the conv layers.
                 See :func:`detectron2.layers.get_norm` for supported types.
             vis_period (int): visualization period. 0 to disable visualization.
         """
         super().__init__(vis_period)
-        input_channels = input_shape.channels
+        assert len(conv_dims) >= 1, "conv_dims have to be non-empty!"
 
         self.conv_norm_relus = []
 
-        for k in range(num_conv):
+        cur_channels = input_shape.channels
+        for k, conv_dim in enumerate(conv_dims[:-1]):
             conv = Conv2d(
-                input_channels if k == 0 else conv_dim,
+                cur_channels,
                 conv_dim,
                 kernel_size=3,
                 stride=1,
@@ -228,16 +227,14 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
             )
             self.add_module("mask_fcn{}".format(k + 1), conv)
             self.conv_norm_relus.append(conv)
+            cur_channels = conv_dim
 
         self.deconv = ConvTranspose2d(
-            conv_dim if num_conv > 0 else input_channels,
-            conv_dim,
-            kernel_size=2,
-            stride=2,
-            padding=0,
+            cur_channels, conv_dims[-1], kernel_size=2, stride=2, padding=0
         )
+        cur_channels = conv_dims[-1]
 
-        self.predictor = Conv2d(conv_dim, num_classes, kernel_size=1, stride=1, padding=0)
+        self.predictor = Conv2d(cur_channels, num_classes, kernel_size=1, stride=1, padding=0)
 
         for layer in self.conv_norm_relus + [self.deconv]:
             weight_init.c2_msra_fill(layer)
@@ -249,10 +246,11 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
     @classmethod
     def from_config(cls, cfg, input_shape):
         ret = super().from_config(cfg, input_shape)
+        conv_dim = cfg.MODEL.ROI_MASK_HEAD.CONV_DIM
+        num_conv = cfg.MODEL.ROI_MASK_HEAD.NUM_CONV
         ret.update(
-            conv_dim=cfg.MODEL.ROI_MASK_HEAD.CONV_DIM,
+            conv_dims=[conv_dim] * (num_conv + 1),  # +1 for ConvTranspose
             conv_norm=cfg.MODEL.ROI_MASK_HEAD.NORM,
-            num_conv=cfg.MODEL.ROI_MASK_HEAD.NUM_CONV,
             input_shape=input_shape,
         )
         if cfg.MODEL.ROI_MASK_HEAD.CLS_AGNOSTIC_MASK:

@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import numpy as np
+from typing import List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -26,29 +27,23 @@ class FastRCNNConvFCHead(nn.Module):
 
     @configurable
     def __init__(
-        self,
-        input_shape: ShapeSpec,
-        num_conv: int,
-        conv_dim: int,
-        num_fc: int,
-        fc_dim: int,
-        conv_norm="",
+        self, input_shape: ShapeSpec, conv_dims: List[int], fc_dims: List[int], conv_norm=""
     ):
         """
         Args:
             input_shape (ShapeSpec): shape of the input feature.
-            num_conv, num_fc: the number of conv/fc layers
-            conv_dim/fc_dim: the output dimension of the conv/fc layers
+            conv_dims (list[int]): the output dimensions of the conv layers
+            fc_dims (list[int]): the output dimensions of the fc layers
             conv_norm (str or callable): normalization for the conv layers.
                 See :func:`detectron2.layers.get_norm` for supported types.
         """
         super().__init__()
-        assert num_conv + num_fc > 0
+        assert len(conv_dims) + len(fc_dims) > 0
 
         self._output_size = (input_shape.channels, input_shape.height, input_shape.width)
 
         self.conv_norm_relus = []
-        for k in range(num_conv):
+        for k, conv_dim in enumerate(conv_dims):
             conv = Conv2d(
                 self._output_size[0],
                 conv_dim,
@@ -63,7 +58,7 @@ class FastRCNNConvFCHead(nn.Module):
             self._output_size = (conv_dim, self._output_size[1], self._output_size[2])
 
         self.fcs = []
-        for k in range(num_fc):
+        for k, fc_dim in enumerate(fc_dims):
             fc = Linear(np.prod(self._output_size), fc_dim)
             self.add_module("fc{}".format(k + 1), fc)
             self.fcs.append(fc)
@@ -76,13 +71,15 @@ class FastRCNNConvFCHead(nn.Module):
 
     @classmethod
     def from_config(cls, cfg, input_shape):
+        num_conv = cfg.MODEL.ROI_BOX_HEAD.NUM_CONV
+        conv_dim = cfg.MODEL.ROI_BOX_HEAD.CONV_DIM
+        num_fc = cfg.MODEL.ROI_BOX_HEAD.NUM_FC
+        fc_dim = cfg.MODEL.ROI_BOX_HEAD.FC_DIM
         return {
-            "num_conv": cfg.MODEL.ROI_BOX_HEAD.NUM_CONV,
-            "conv_dim": cfg.MODEL.ROI_BOX_HEAD.CONV_DIM,
-            "num_fc": cfg.MODEL.ROI_BOX_HEAD.NUM_FC,
-            "fc_dim": cfg.MODEL.ROI_BOX_HEAD.FC_DIM,
-            "conv_norm": cfg.MODEL.ROI_BOX_HEAD.NORM,
             "input_shape": input_shape,
+            "conv_dims": [conv_dim] * num_conv,
+            "fc_dims": [fc_dim] * num_fc,
+            "conv_norm": cfg.MODEL.ROI_BOX_HEAD.NORM,
         }
 
     def forward(self, x):
