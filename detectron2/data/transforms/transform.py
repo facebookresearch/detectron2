@@ -138,7 +138,7 @@ class RotationTransform(Transform):
         # Needed because of this problem https://github.com/opencv/opencv/issues/11784
         self.rm_image = self.create_rotation_matrix(offset=-0.5)
 
-    def apply_image(self, img, interp=cv2.INTER_LINEAR):
+    def apply_image(self, img, interp=None):
         """
         img should be a numpy array, formatted as Height * Width * Nchannels
         """

@@ -18,7 +18,7 @@ from fvcore.transforms.transform import (
 )
 from PIL import Image
 
-from .transform import ExtentTransform, ResizeTransform
+from .transform import ExtentTransform, ResizeTransform, RotationTransform
 
 __all__ = [
     "RandomBrightness",
@@ -28,6 +28,7 @@ __all__ = [
     "RandomFlip",
     "RandomSaturation",
     "RandomLighting",
+    "RandomRotation",
     "Resize",
     "ResizeShortestEdge",
     "TransformGen",
@@ -211,6 +212,57 @@ class ResizeShortestEdge(TransformGen):
         neww = int(neww + 0.5)
         newh = int(newh + 0.5)
         return ResizeTransform(h, w, newh, neww, self.interp)
+
+
+class RandomRotation(TransformGen):
+    """
+    This method returns a copy of this image, rotated the given
+    number of degrees counter clockwise around the given center.
+    """
+
+    def __init__(self, angle, expand=True, center=None, sample_style="range", interp=None):
+        """
+        Args:
+            angle (list[float]): If ``sample_style=="range"``,
+                a [min, max] interval from which to sample the angle (in degrees).
+                If ``sample_style=="choice"``, a list of angles to sample from
+            expand (bool): choose if the image should be resized to fit the whole
+                rotated image (default), or simply cropped
+            center (list[[float, float]]):  If ``sample_style=="range"``,
+                a [[minx, miny], [maxx, maxy]] relative interval from which to sample the center,
+                [0, 0] being the top left of the image and [1, 1] the bottom right.
+                If ``sample_style=="choice"``, a list of centers to sample from
+                Default: None, which means that the center of rotation is the center of the image
+                center has no effect if expand=True because it only affects shifting
+        """
+        super().__init__()
+        assert sample_style in ["range", "choice"], sample_style
+        self.is_range = sample_style == "range"
+        if isinstance(angle, (float, int)):
+            angle = (angle, angle)
+        if center is not None and isinstance(center[0], (float, int)):
+            center = (center, center)
+        self._init(locals())
+
+    def get_transform(self, img):
+        h, w = img.shape[:2]
+        center = None
+        if self.is_range:
+            angle = np.random.uniform(self.angle[0], self.angle[1])
+            if self.center is not None:
+                center = (
+                    np.random.uniform(self.center[0][0], self.center[1][0]),
+                    np.random.uniform(self.center[0][1], self.center[1][1]),
+                )
+        else:
+            angle = np.random.choice(self.angle)
+            if self.center is not None:
+                center = np.random.choice(self.center)
+
+        if center is not None:
+            center = (w * center[0], h * center[1])  # Convert to absolute coordinates
+
+        return RotationTransform(h, w, angle, expand=self.expand, center=center, interp=self.interp)
 
 
 class RandomCrop(TransformGen):
