@@ -117,4 +117,7 @@ class Matcher(object):
         _, pred_inds_with_highest_quality = torch.nonzero(
             match_quality_matrix == highest_quality_foreach_gt[:, None], as_tuple=True
         )
+        # If an anchor was labeled positive only due to a low-quality match
+        # with gt_A, but it has larger overlap with gt_B, it's matched index will still be gt_B.
+        # This follows the implementation in Detectron, and is found to have no significant impact.
         match_labels[pred_inds_with_highest_quality] = 1

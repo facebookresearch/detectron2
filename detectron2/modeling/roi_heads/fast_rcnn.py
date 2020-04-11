@@ -401,6 +401,8 @@ class FastRCNNOutputLayers(nn.Module):
         test_topk_per_image=100,
     ):
         """
+        NOTE: this interface is experimental.
+
         Args:
             input_shape (ShapeSpec): shape of the input feature to this module
             box2box_transform (Box2BoxTransform or Box2BoxTransformRotated):

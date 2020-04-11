@@ -133,6 +133,10 @@ def configurable(init_func):
         a3 = A(cfg, b=3, c=4)  # construct with extra overwrite
     """
     assert init_func.__name__ == "__init__", "@configurable should only be used for __init__!"
+    if init_func.__module__.startswith("detectron2."):
+        assert (
+            "experimental" in init_func.__doc__
+        ), f"configurable {init_func} should be marked experimental"
 
     @functools.wraps(init_func)
     def wrapped(self, *args, **kwargs):

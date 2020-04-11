@@ -151,6 +151,8 @@ class BaseMaskRCNNHead(nn.Module):
     @configurable
     def __init__(self, vis_period=0):
         """
+        NOTE: this interface is experimental.
+
         Args:
             vis_period (int): visualization period
         """
@@ -199,6 +201,8 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
     @configurable
     def __init__(self, input_shape: ShapeSpec, num_classes, conv_dims, conv_norm="", vis_period=0):
         """
+        NOTE: this interface is experimental.
+
         Args:
             input_shape (ShapeSpec): shape of the input feature
             num_classes (int): the number of classes. 1 if using class agnostic prediction.
