@@ -412,7 +412,7 @@ class RetinaNet(nn.Module):
         if not self.soft_nms_enabled:
             keep = batched_nms(boxes_all, scores_all, class_idxs_all, self.nms_threshold)
         else:
-            keep = batched_soft_nms(
+            keep, soft_nms_scores = batched_soft_nms(
                 boxes_all,
                 scores_all,
                 class_idxs_all,
@@ -421,6 +421,7 @@ class RetinaNet(nn.Module):
                 self.soft_nms_threshold,
                 self.soft_nms_prune,
             )
+            scores_all[keep] = soft_nms_scores
         keep = keep[: self.max_detections_per_image]
 
         result = Instances(image_size)

@@ -153,7 +153,7 @@ def fast_rcnn_inference_single_image_rotated(
     if not soft_nms_enabled:
         keep = batched_nms_rotated(boxes, scores, filter_inds[:, 1], nms_thresh)
     else:
-        keep = batched_soft_nms_rotated(
+        keep, soft_nms_scores = batched_soft_nms_rotated(
             boxes,
             scores,
             filter_inds[:, 1],
@@ -162,6 +162,7 @@ def fast_rcnn_inference_single_image_rotated(
             nms_thresh,
             soft_nms_prune,
         )
+        scores[keep] = soft_nms_scores
     if topk_per_image >= 0:
         keep = keep[:topk_per_image]
     boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]

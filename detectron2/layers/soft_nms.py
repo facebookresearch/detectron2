@@ -27,10 +27,11 @@ def soft_nms(boxes, scores, method, gaussian_sigma, linear_threshold, prune_thre
            Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
 
     Returns:
-        Tensor:
-            int64 tensor with the indices of the elements that have been kept
-            by NMS, sorted in decreasing order of scores
-    """
+        tuple(Tensor, Tensor):
+            [0]: int64 tensor with the indices of the elements that have been kept
+            by Soft NMS, sorted in decreasing order of scores
+            [1]: float tensor with the re-scored scores of the elements that were kept
+"""
     return _soft_nms(
         Boxes,
         pairwise_iou,
@@ -67,10 +68,10 @@ def soft_nms_rotated(boxes, scores, method, gaussian_sigma, linear_threshold, pr
            Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
 
     Returns:
-        Tensor:
-            int64 tensor with the indices of the elements that have been kept
-            by NMS, sorted in decreasing order of scores
-    """
+        tuple(Tensor, Tensor):
+            [0]: int64 tensor with the indices of the elements that have been kept
+            by Soft NMS, sorted in decreasing order of scores
+            [1]: float tensor with the re-scored scores of the elements that were kept    """
     return _soft_nms(
         RotatedBoxes,
         pairwise_iou_rotated,
@@ -113,9 +114,10 @@ def batched_soft_nms(
            boxes with scores below this threshold are pruned at each iteration.
            Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
     Returns:
-        Tensor:
-            int64 tensor with the indices of the elements that have been kept
-            by NMS, sorted in decreasing order of scores
+        tuple(Tensor, Tensor):
+            [0]: int64 tensor with the indices of the elements that have been kept
+            by Soft NMS, sorted in decreasing order of scores
+            [1]: float tensor with the re-scored scores of the elements that were kept
     """
     if boxes.numel() == 0:
         return torch.empty((0,), dtype=torch.int64, device=boxes.device)
@@ -126,10 +128,9 @@ def batched_soft_nms(
     max_coordinate = boxes.max()
     offsets = idxs.to(boxes) * (max_coordinate + 1)
     boxes_for_nms = boxes + offsets[:, None]
-    keep = soft_nms(
+    return soft_nms(
         boxes_for_nms, scores, method, gaussian_sigma, linear_threshold, prune_threshold
     )
-    return keep
 
 
 def batched_soft_nms_rotated(
@@ -140,7 +141,6 @@ def batched_soft_nms_rotated(
 
     Each index value correspond to a category, and NMS
     will not be applied between elements of different categories.
-
 
     Args:
         boxes (Tensor[N, 5]):
@@ -163,9 +163,10 @@ def batched_soft_nms_rotated(
            boxes with scores below this threshold are pruned at each iteration.
            Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
     Returns:
-        Tensor:
-            int64 tensor with the indices of the elements that have been kept
-            by NMS, sorted in decreasing order of scores
+        tuple(Tensor, Tensor):
+            [0]: int64 tensor with the indices of the elements that have been kept
+            by Soft NMS, sorted in decreasing order of scores
+            [1]: float tensor with the re-scored scores of the elements that were kept
     """
     if boxes.numel() == 0:
         return torch.empty((0,), dtype=torch.int64, device=boxes.device)
@@ -177,10 +178,9 @@ def batched_soft_nms_rotated(
     offsets = idxs.to(boxes) * (max_coordinate + 1)
     boxes_for_nms = boxes.clone()
     boxes_for_nms[:, :2] += offsets[:, None]
-    keep = soft_nms_rotated(
+    return soft_nms_rotated(
         boxes_for_nms, scores, method, gaussian_sigma, linear_threshold, prune_threshold
     )
-    return keep
 
 
 def _soft_nms(
@@ -198,9 +198,6 @@ def _soft_nms(
 
     Implementation of [Soft-NMS -- Improving Object Detection With One Line of Codec]
     (https://arxiv.org/abs/1704.04503)
-
-    Each index value correspond to a category, and NMS
-    will not be applied between elements of different categories.
 
     Args:
         box_class (cls): one of Box, RotatedBoxes
@@ -225,19 +222,23 @@ def _soft_nms(
            Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
 
     Returns:
-        Tensor:
-            int64 tensor with the indices of the elements that have been kept
+        tuple(Tensor, Tensor):
+            [0]: int64 tensor with the indices of the elements that have been kept
             by Soft NMS, sorted in decreasing order of scores
+            [1]: float tensor with the re-scored scores of the elements that were kept
     """
-
-    out = []
-
     boxes = boxes.clone()
     scores = scores.clone()
     idxs = torch.arange(scores.size()[0])
 
+    idxs_out = []
+    scores_out = []
+
     while scores.numel() > 0:
         top_idx = torch.argmax(scores)
+        idxs_out.append(idxs[top_idx].item())
+        scores_out.append(scores[top_idx].item())
+
         top_box = boxes[top_idx]
         ious = pairwise_iou_func(box_class(top_box.unsqueeze(0)), box_class(boxes))[0]
 
@@ -256,10 +257,8 @@ def _soft_nms(
         keep = scores > prune_threshold
         keep[top_idx] = False
 
-        out.append(idxs[top_idx])
-
         boxes = boxes[keep]
         scores = scores[keep]
         idxs = idxs[keep]
 
-    return torch.tensor(out)
+    return torch.tensor(idxs_out).to(boxes.device), torch.tensor(scores_out).to(scores.device)
