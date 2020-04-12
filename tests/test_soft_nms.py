@@ -28,7 +28,7 @@ class TestSoftNMS(unittest.TestCase):
         boxes = torch.tensor([[10, 10, 15, 15]], dtype=torch.float, device=self.device)
         scores = torch.tensor([1.0], device=self.device)
         for method in self.methods:
-            keep = soft_nms(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms(boxes, scores, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0])
             ), "Single box not kept for soft nms method {}.".format(method)
@@ -37,7 +37,7 @@ class TestSoftNMS(unittest.TestCase):
         boxes = torch.tensor([[10, 10, 15, 15], [20, 20, 25, 25]], dtype=torch.float)
         scores = torch.tensor([1.0, 0.99])
         for method in self.methods:
-            keep = soft_nms(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms(boxes, scores, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 1])
             ), "Separate boxes not kept for soft nms method {}".format(method)
@@ -46,7 +46,7 @@ class TestSoftNMS(unittest.TestCase):
         boxes = torch.tensor([[10, 10, 15, 15], [10, 10, 15, 15]], dtype=torch.float)
         scores = torch.tensor(([1.0, 0.4]))
         for method in self.methods:
-            keep = soft_nms(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms(boxes, scores, method, 0.05, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0])
             ), "Box not suppressed properly for soft nms method {}.".format(method)
@@ -55,7 +55,7 @@ class TestSoftNMS(unittest.TestCase):
         boxes = torch.tensor([], dtype=torch.float).reshape(0, 4)
         scores = torch.tensor(([]))
         for method in self.methods:
-            keep = soft_nms(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms(boxes, scores, method, 0.5, 0.3, 0.001)
             assert keep.size()[0] == 0, "Soft nms failed for method {}".format(method)
 
     def test_batched_single_box(self):
@@ -63,7 +63,7 @@ class TestSoftNMS(unittest.TestCase):
         scores = torch.tensor([1.0, 0.4])
         category_idxs = torch.tensor([0, 1])
         for method in self.methods:
-            keep = batched_soft_nms(boxes, scores, category_idxs, method, 0.5, 0.3)
+            keep = batched_soft_nms(boxes, scores, category_idxs, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 1])
             ), "Single box not kept for soft nms method {}.".format(method)
@@ -76,7 +76,7 @@ class TestSoftNMS(unittest.TestCase):
         scores = torch.tensor([1.0, 0.99, 0.98, 0.97])
         category_idxs = torch.tensor([0, 0, 1, 1])
         for method in self.methods:
-            keep = batched_soft_nms(boxes, scores, category_idxs, method, 0.5, 0.3)
+            keep = batched_soft_nms(boxes, scores, category_idxs, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 1, 2, 3])
             ), "Separate boxes not kept for soft nms method {}".format(method)
@@ -89,7 +89,7 @@ class TestSoftNMS(unittest.TestCase):
         scores = torch.tensor(([1.0, 0.4, 0.99, 0.4]))
         category_idxs = torch.tensor([0, 0, 1, 1])
         for method in self.methods:
-            keep = batched_soft_nms(boxes, scores, category_idxs, method, 0.5, 0.3)
+            keep = batched_soft_nms(boxes, scores, category_idxs, method, 0.05, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 2])
             ), "Box not suppressed properly for soft nms method {}.".format(method)
@@ -113,7 +113,7 @@ class TestSoftNMSRotated(unittest.TestCase):
         boxes = torch.tensor([[10, 10, 5, 5, 0]], dtype=torch.float)
         scores = torch.tensor([1.0])
         for method in self.methods:
-            keep = soft_nms_rotated(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms_rotated(boxes, scores, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0])
             ), "Single box not kept for soft nms method {}.".format(method)
@@ -124,7 +124,7 @@ class TestSoftNMSRotated(unittest.TestCase):
         )
         scores = torch.tensor([1.0, 0.99], device=self.device)
         for method in self.methods:
-            keep = soft_nms_rotated(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms_rotated(boxes, scores, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 1])
             ), "Separate boxes not kept for soft nms method {}".format(method)
@@ -135,7 +135,7 @@ class TestSoftNMSRotated(unittest.TestCase):
         )
         scores = torch.tensor([1.0, 0.4], device=self.device)
         for method in self.methods:
-            keep = soft_nms_rotated(boxes, scores, method, 0.5, 0.3)
+            keep = soft_nms_rotated(boxes, scores, method, 0.05, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0])
             ), "Box not suppressed properly for soft nms method {}.".format(method)
@@ -147,7 +147,7 @@ class TestSoftNMSRotated(unittest.TestCase):
         scores = torch.tensor([1.0, 0.4], device=self.device)
         category_idxs = torch.tensor([0, 1], device=self.device)
         for method in self.methods:
-            keep = batched_soft_nms_rotated(boxes, scores, category_idxs, method, 0.5, 0.3)
+            keep = batched_soft_nms_rotated(boxes, scores, category_idxs, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 1])
             ), "Single box not kept for soft nms method {}.".format(method)
@@ -161,7 +161,7 @@ class TestSoftNMSRotated(unittest.TestCase):
         scores = torch.tensor([1.0, 0.99, 0.98, 0.97], device=self.device)
         category_idxs = torch.tensor([0, 0, 1, 1], device=self.device)
         for method in self.methods:
-            keep = batched_soft_nms_rotated(boxes, scores, category_idxs, method, 0.5, 0.3)
+            keep = batched_soft_nms_rotated(boxes, scores, category_idxs, method, 0.5, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 1, 2, 3])
             ), "Separate boxes not kept for soft nms method {}".format(method)
@@ -175,7 +175,7 @@ class TestSoftNMSRotated(unittest.TestCase):
         scores = torch.tensor([1.0, 0.4, 0.99, 0.4], device=self.device)
         category_idxs = torch.tensor([0, 0, 1, 1], device=self.device)
         for method in self.methods:
-            keep = batched_soft_nms_rotated(boxes, scores, category_idxs, method, 0.5, 0.3)
+            keep = batched_soft_nms_rotated(boxes, scores, category_idxs, method, 0.05, 0.3, 0.001)
             assert torch.equal(
                 keep, torch.tensor([0, 2])
             ), "Box not suppressed properly for soft nms method {}.".format(method)
@@ -193,25 +193,25 @@ class TestSoftNMSRotated(unittest.TestCase):
         rotated_boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
         err_msg = (
             "Rotated Soft NMS with 0 degree is incompatible with horizontal Soft NMS "
-            "for method={}, sigma={}, discard_threshold={}"
+            "for method={}, gaussian_sigma={}, linear_threshold={}"
         )
         for method in self.methods:
-            for sigma in [0.5, 1.0, 2.0]:
-                for discard_threshold in [0.2, 0.5, 0.8]:
+            for gaussian_sigma in [0.5, 1.0, 2.0]:
+                for linear_threshold in [0.2, 0.5, 0.8]:
                     backup = boxes.clone()
                     keep_ref = batched_soft_nms(
-                        boxes, scores, idxs, method, sigma, discard_threshold
+                        boxes, scores, idxs, method, gaussian_sigma, linear_threshold, 0.001
                     )
                     assert torch.allclose(boxes, backup), "boxes modified by batched_soft_nms"
                     backup = rotated_boxes.clone()
                     keep = batched_soft_nms_rotated(
-                        rotated_boxes, scores, idxs, method, sigma, discard_threshold
+                        rotated_boxes, scores, idxs, method, gaussian_sigma, linear_threshold, 0.001
                     )
                     assert torch.allclose(
                         rotated_boxes, backup
                     ), "rotated_boxes modified by batched_soft_nms_rotated"
                     assert keeps_are_equal(keep, keep_ref, 1), err_msg.format(
-                        method, sigma, discard_threshold
+                        method, gaussian_sigma, linear_threshold
                     )
 
     def test_soft_nms_rotated_90_degrees(self):
@@ -229,15 +229,19 @@ class TestSoftNMSRotated(unittest.TestCase):
         rotated_boxes[:, 4] = torch.ones(N) * 90
         err_msg = (
             "Rotated Soft NMS with 90 degree is incompatible with horizontal Soft NMS "
-            "for method={}, sigma={}, discard_threshold={}"
+            "for method={}, gaussian_sigma={}, linear_threshold={}"
         )
         for method in self.methods:
-            for sigma in [0.5, 1.0, 2.0]:
-                for discard_threshold in [0.2, 0.5, 0.8]:
-                    keep_ref = soft_nms(boxes, scores, method, sigma, discard_threshold)
-                    keep = soft_nms_rotated(rotated_boxes, scores, method, sigma, discard_threshold)
+            for gaussian_sigma in [0.5, 1.0, 2.0]:
+                for linear_threshold in [0.2, 0.5, 0.8]:
+                    keep_ref = soft_nms(
+                        boxes, scores, method, gaussian_sigma, linear_threshold, 0.001
+                    )
+                    keep = soft_nms_rotated(
+                        rotated_boxes, scores, method, gaussian_sigma, linear_threshold, 0.001
+                    )
                     assert keeps_are_equal(keep, keep_ref, 1), err_msg.format(
-                        method, sigma, discard_threshold
+                        method, gaussian_sigma, linear_threshold
                     )
 
     def test_soft_nms_rotated_180_degrees(self):
@@ -251,15 +255,19 @@ class TestSoftNMSRotated(unittest.TestCase):
         rotated_boxes[:, 4] = torch.ones(N) * 180
         err_msg = (
             "Rotated Soft NMS with 180 degree is incompatible with horizontal Soft NMS "
-            "for method={}, sigma={}, discard_threshold={}"
+            "for method={}, gaussian_sigma={}, linear_threshold={}"
         )
         for method in self.methods:
-            for sigma in [0.5, 1.0, 2.0]:
-                for discard_threshold in [0.2, 0.5, 0.8]:
-                    keep_ref = soft_nms(boxes, scores, method, sigma, discard_threshold)
-                    keep = soft_nms_rotated(rotated_boxes, scores, method, sigma, discard_threshold)
+            for gaussian_sigma in [0.5, 1.0, 2.0]:
+                for linear_threshold in [0.2, 0.5, 0.8]:
+                    keep_ref = soft_nms(
+                        boxes, scores, method, gaussian_sigma, linear_threshold, 0.001
+                    )
+                    keep = soft_nms_rotated(
+                        rotated_boxes, scores, method, gaussian_sigma, linear_threshold, 0.001
+                    )
                     assert keeps_are_equal(keep, keep_ref, 1), err_msg.format(
-                        method, sigma, discard_threshold
+                        method, gaussian_sigma, linear_threshold
                     )
 
 

@@ -53,6 +53,7 @@ def fast_rcnn_inference_rotated(
     soft_nms_enabled,
     soft_nms_method,
     soft_nms_sigma,
+    soft_nms_prune,
     topk_per_image,
 ):
     """
@@ -74,6 +75,7 @@ def fast_rcnn_inference_rotated(
         soft_nms_enabled (bool): Indicate to use soft non-maximum suppression.
         soft_nms_method: (str): One of ['gaussian', 'linear', 'hard']
         soft_nms_sigma: (float): Sigma for gaussian soft nms. Value in (0, inf)
+        soft_nms_prune: (float): Threshold for pruning during soft nms. Value in [0, 1]
         topk_per_image (int): The number of top scoring detections to return. Set < 0 to return
             all detections.
 
@@ -93,6 +95,7 @@ def fast_rcnn_inference_rotated(
             soft_nms_enabled,
             soft_nms_method,
             soft_nms_sigma,
+            soft_nms_prune,
             topk_per_image,
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
@@ -109,6 +112,7 @@ def fast_rcnn_inference_single_image_rotated(
     soft_nms_enabled,
     soft_nms_method,
     soft_nms_sigma,
+    soft_nms_prune,
     topk_per_image,
 ):
     """
@@ -150,7 +154,13 @@ def fast_rcnn_inference_single_image_rotated(
         keep = batched_nms_rotated(boxes, scores, filter_inds[:, 1], nms_thresh)
     else:
         keep = batched_soft_nms_rotated(
-            boxes, scores, filter_inds[:, 1], soft_nms_method, soft_nms_sigma, nms_thresh
+            boxes,
+            scores,
+            filter_inds[:, 1],
+            soft_nms_method,
+            soft_nms_sigma,
+            nms_thresh,
+            soft_nms_prune,
         )
     if topk_per_image >= 0:
         keep = keep[:topk_per_image]
@@ -193,6 +203,10 @@ class RotatedFastRCNNOutputLayers(FastRCNNOutputLayers):
             image_shapes,
             self.test_score_thresh,
             self.test_nms_thresh,
+            self.soft_nms_enabled,
+            self.soft_nms_method,
+            self.soft_nms_sigma,
+            self.soft_nms_prune,
             self.test_topk_per_image,
         )
 

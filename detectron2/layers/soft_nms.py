@@ -3,9 +3,9 @@ import torch
 from detectron2.structures import Boxes, RotatedBoxes, pairwise_iou, pairwise_iou_rotated
 
 
-def soft_nms(boxes, scores, method, sigma, threshold):
+def soft_nms(boxes, scores, method, gaussian_sigma, linear_threshold, prune_threshold):
     """
-    Peforms soft non-maximum suppression algorithm on axis aligned boxes
+    Performs soft non-maximum suppression algorithm on axis aligned boxes
 
     Args:
         boxes (Tensor[N, 5]):
@@ -15,20 +15,35 @@ def soft_nms(boxes, scores, method, sigma, threshold):
            scores for each one of the boxes
         method (str):
            one of ['gaussian', 'linear', 'hard']
-        sigma (float):
-           param for gaussian
-        threshold (float):
-           discards all boxes with decayed confidence < threshold
+           see paper for details. users encouraged not to use "hard", as this is the
+           same nms available elsewhere in detectron2
+        gaussian_sigma (float):
+           parameter for Gaussian penalty function
+        linear_threshold (float):
+           iou threshold for applying linear decay. Nt from the paper
+           re-used as threshold for standard "hard" nms
+        prune_threshold (float):
+           boxes with scores below this threshold are pruned at each iteration.
+           Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
 
     Returns:
         Tensor:
             int64 tensor with the indices of the elements that have been kept
             by NMS, sorted in decreasing order of scores
     """
-    return _soft_nms(Boxes, pairwise_iou, boxes, scores, method, sigma, threshold)
+    return _soft_nms(
+        Boxes,
+        pairwise_iou,
+        boxes,
+        scores,
+        method,
+        gaussian_sigma,
+        linear_threshold,
+        prune_threshold,
+    )
 
 
-def soft_nms_rotated(boxes, scores, method, sigma, threshold):
+def soft_nms_rotated(boxes, scores, method, gaussian_sigma, linear_threshold, prune_threshold):
     """
     Performs soft non-maximum suppression algorithm on rotated boxes
 
@@ -40,20 +55,37 @@ def soft_nms_rotated(boxes, scores, method, sigma, threshold):
            scores for each one of the boxes
         method (str):
            one of ['gaussian', 'linear', 'hard']
-        sigma (float):
-           param for gaussian
-        threshold (float):
-           discards all boxes with decayed confidence < threshold
+           see paper for details. users encouraged not to use "hard", as this is the
+           same nms available elsewhere in detectron2
+        gaussian_sigma (float):
+           parameter for Gaussian penalty function
+        linear_threshold (float):
+           iou threshold for applying linear decay. Nt from the paper
+           re-used as threshold for standard "hard" nms
+        prune_threshold (float):
+           boxes with scores below this threshold are pruned at each iteration.
+           Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
 
     Returns:
         Tensor:
             int64 tensor with the indices of the elements that have been kept
             by NMS, sorted in decreasing order of scores
     """
-    return _soft_nms(RotatedBoxes, pairwise_iou_rotated, boxes, scores, method, sigma, threshold)
+    return _soft_nms(
+        RotatedBoxes,
+        pairwise_iou_rotated,
+        boxes,
+        scores,
+        method,
+        gaussian_sigma,
+        linear_threshold,
+        prune_threshold,
+    )
 
 
-def batched_soft_nms(boxes, scores, idxs, method, sigma, threshold):
+def batched_soft_nms(
+    boxes, scores, idxs, method, gaussian_sigma, linear_threshold, prune_threshold
+):
     """
     Performs soft non-maximum suppression in a batched fashion.
 
@@ -70,11 +102,16 @@ def batched_soft_nms(boxes, scores, idxs, method, sigma, threshold):
            indices of the categories for each one of the boxes.
         method (str):
            one of ['gaussian', 'linear', 'hard']
-        sigma (float):
-           param for gaussian
-        threshold (float):
-           discards all boxes with decayed confidence < threshold
-
+           see paper for details. users encouraged not to use "hard", as this is the
+           same nms available elsewhere in detectron2
+        gaussian_sigma (float):
+           parameter for Gaussian penalty function
+        linear_threshold (float):
+           iou threshold for applying linear decay. Nt from the paper
+           re-used as threshold for standard "hard" nms
+        prune_threshold (float):
+           boxes with scores below this threshold are pruned at each iteration.
+           Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
     Returns:
         Tensor:
             int64 tensor with the indices of the elements that have been kept
@@ -89,16 +126,21 @@ def batched_soft_nms(boxes, scores, idxs, method, sigma, threshold):
     max_coordinate = boxes.max()
     offsets = idxs.to(boxes) * (max_coordinate + 1)
     boxes_for_nms = boxes + offsets[:, None]
-    keep = soft_nms(boxes_for_nms, scores, method, sigma, threshold)
+    keep = soft_nms(
+        boxes_for_nms, scores, method, gaussian_sigma, linear_threshold, prune_threshold
+    )
     return keep
 
 
-def batched_soft_nms_rotated(boxes, scores, idxs, method, sigma, threshold):
+def batched_soft_nms_rotated(
+    boxes, scores, idxs, method, gaussian_sigma, linear_threshold, prune_threshold
+):
     """
     Performs soft non-maximum suppression in a batched fashion on rotated bounding boxes.
 
     Each index value correspond to a category, and NMS
     will not be applied between elements of different categories.
+
 
     Args:
         boxes (Tensor[N, 5]):
@@ -110,11 +152,16 @@ def batched_soft_nms_rotated(boxes, scores, idxs, method, sigma, threshold):
            indices of the categories for each one of the boxes.
         method (str):
            one of ['gaussian', 'linear', 'hard']
-        sigma (float):
-           param for gaussian
-        threshold (float):
-           discards all boxes with decayed confidence < threshold
-
+           see paper for details. users encouraged not to use "hard", as this is the
+           same nms available elsewhere in detectron2
+        gaussian_sigma (float):
+           parameter for Gaussian penalty function
+        linear_threshold (float):
+           iou threshold for applying linear decay. Nt from the paper
+           re-used as threshold for standard "hard" nms
+        prune_threshold (float):
+           boxes with scores below this threshold are pruned at each iteration.
+           Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
     Returns:
         Tensor:
             int64 tensor with the indices of the elements that have been kept
@@ -130,11 +177,22 @@ def batched_soft_nms_rotated(boxes, scores, idxs, method, sigma, threshold):
     offsets = idxs.to(boxes) * (max_coordinate + 1)
     boxes_for_nms = boxes.clone()
     boxes_for_nms[:, :2] += offsets[:, None]
-    keep = soft_nms_rotated(boxes_for_nms, scores, method, sigma, threshold)
+    keep = soft_nms_rotated(
+        boxes_for_nms, scores, method, gaussian_sigma, linear_threshold, prune_threshold
+    )
     return keep
 
 
-def _soft_nms(box_class, pairwise_iou_func, boxes, scores, method, sigma, threshold):
+def _soft_nms(
+    box_class,
+    pairwise_iou_func,
+    boxes,
+    scores,
+    method,
+    gaussian_sigma,
+    linear_threshold,
+    prune_threshold,
+):
     """
     Soft non-max suppression algorithm.
 
@@ -155,10 +213,16 @@ def _soft_nms(box_class, pairwise_iou_func, boxes, scores, method, sigma, thresh
            scores for each one of the boxes
         method (str):
            one of ['gaussian', 'linear', 'hard']
-        sigma (float):
-           param for gaussian
-        threshold (float):
-           discards all boxes with decayed confidence < threshold
+           see paper for details. users encouraged not to use "hard", as this is the
+           same nms available elsewhere in detectron2
+        gaussian_sigma (float):
+           parameter for Gaussian penalty function
+        linear_threshold (float):
+           iou threshold for applying linear decay. Nt from the paper
+           re-used as threshold for standard "hard" nms
+        prune_threshold (float):
+           boxes with scores below this threshold are pruned at each iteration.
+           Dramatically reduces computation time. Authors use values in [10e-4, 10e-2]
 
     Returns:
         Tensor:
@@ -179,17 +243,17 @@ def _soft_nms(box_class, pairwise_iou_func, boxes, scores, method, sigma, thresh
 
         if method == "linear":
             decay = torch.ones_like(ious)
-            decay_mask = ious > threshold
+            decay_mask = ious > linear_threshold
             decay[decay_mask] = 1 - ious[decay_mask]
         elif method == "gaussian":
-            decay = torch.exp(-torch.pow(ious, 2) / sigma)
+            decay = torch.exp(-torch.pow(ious, 2) / gaussian_sigma)
         elif method == "hard":  # standard NMS
-            decay = (ious < threshold).float()
+            decay = (ious < linear_threshold).float()
         else:
             raise NotImplementedError("{} soft nms method not implemented.".format(method))
 
         scores *= decay
-        keep = scores > threshold
+        keep = scores > prune_threshold
         keep[top_idx] = False
 
         out.append(idxs[top_idx])

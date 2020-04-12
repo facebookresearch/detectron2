@@ -279,7 +279,8 @@ _C.MODEL.ROI_HEADS.SOFT_NMS_ENABLED = False
 # See soft NMS paper for definition of these options
 _C.MODEL.ROI_HEADS.SOFT_NMS_METHOD = "linear"
 _C.MODEL.ROI_HEADS.SOFT_NMS_SIGMA = 0.5
-# For the threshold we use NMS_THRESH_TEST
+# For the linear_threshold we use NMS_THRESH_TEST
+_C.MODEL.ROI_HEADS.SOFT_NMS_PRUNE = 0.001
 
 # ---------------------------------------------------------------------------- #
 # Box Head
@@ -445,7 +446,8 @@ _C.MODEL.RETINANET.SOFT_NMS_ENABLED = False
 # See soft NMS paper for definition of these options
 _C.MODEL.RETINANET.SOFT_NMS_METHOD = "linear"
 _C.MODEL.RETINANET.SOFT_NMS_SIGMA = 0.5
-# For the threshold we use NMS_THRESH_TEST
+# For the linear_threshold we use NMS_THRESH_TEST
+_C.MODEL.RETINANET.SOFT_NMS_PRUNE = 0.001
 
 # Weights on (dx, dy, dw, dh) for normalizing Retinanet anchor regression targets
 _C.MODEL.RETINANET.BBOX_REG_WEIGHTS = (1.0, 1.0, 1.0, 1.0)

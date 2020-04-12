@@ -81,6 +81,7 @@ class RetinaNet(nn.Module):
         self.soft_nms_enabled         = cfg.MODEL.RETINANET.SOFT_NMS_ENABLED
         self.soft_nms_method          = cfg.MODEL.RETINANET.SOFT_NMS_METHOD
         self.soft_nms_sigma           = cfg.MODEL.RETINANET.SOFT_NMS_SIGMA
+        self.soft_nms_prune           = cfg.MODEL.RETINANET.SOFT_NMS_PRUNE
         self.max_detections_per_image = cfg.TEST.DETECTIONS_PER_IMAGE
         # Vis parameters
         self.vis_period               = cfg.VIS_PERIOD
@@ -418,6 +419,7 @@ class RetinaNet(nn.Module):
                 self.soft_nms_method,
                 self.soft_nms_sigma,
                 self.soft_nms_threshold,
+                self.soft_nms_prune,
             )
         keep = keep[: self.max_detections_per_image]
 

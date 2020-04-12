@@ -49,6 +49,7 @@ def fast_rcnn_inference(
     soft_nms_enabled,
     soft_nms_method,
     soft_nms_sigma,
+    soft_nms_prune,
     topk_per_image,
 ):
     """
@@ -70,6 +71,7 @@ def fast_rcnn_inference(
         soft_nms_enabled (bool): Indicate to use soft non-maximum suppression.
         soft_nms_method: (str): One of ['gaussian', 'linear', 'hard']
         soft_nms_sigma: (float): Sigma for gaussian soft nms. Value in (0, inf)
+        soft_nms_prune: (float): Threshold for pruning during soft nms. Value in [0, 1]
         topk_per_image (int): The number of top scoring detections to return. Set < 0 to return
             all detections.
 
@@ -89,6 +91,7 @@ def fast_rcnn_inference(
             soft_nms_enabled,
             soft_nms_method,
             soft_nms_sigma,
+            soft_nms_prune,
             topk_per_image,
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
@@ -105,6 +108,7 @@ def fast_rcnn_inference_single_image(
     soft_nms_enabled,
     soft_nms_method,
     soft_nms_sigma,
+    soft_nms_prune,
     topk_per_image,
 ):
     """
@@ -146,7 +150,13 @@ def fast_rcnn_inference_single_image(
         keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
     else:
         keep = batched_soft_nms(
-            boxes, scores, filter_inds[:, 1], soft_nms_method, soft_nms_sigma, nms_thresh
+            boxes,
+            scores,
+            filter_inds[:, 1],
+            soft_nms_method,
+            soft_nms_sigma,
+            nms_thresh,
+            soft_nms_prune,
         )
     if topk_per_image >= 0:
         keep = keep[:topk_per_image]
@@ -404,6 +414,7 @@ class FastRCNNOutputs(object):
         soft_nms_enabled,
         soft_nms_method,
         soft_nms_sigma,
+        soft_nms_prune,
         topk_per_image,
     ):
         """
@@ -413,6 +424,7 @@ class FastRCNNOutputs(object):
             soft_nms_enabled (bool): same as fast_rcnn_inference.
             soft_nms_method: (str): same as fast_rcnn_inference.
             soft_nms_sigma: (float): same as fast_rcnn_inference.
+            soft_nms_prune: (float): same as fast-rcnn_inference
             topk_per_image (int): same as fast_rcnn_inference.
         Returns:
             list[Instances]: same as fast_rcnn_inference.
@@ -431,6 +443,7 @@ class FastRCNNOutputs(object):
             soft_nms_enabled,
             soft_nms_method,
             soft_nms_sigma,
+            soft_nms_prune,
             topk_per_image,
         )
 
@@ -455,6 +468,7 @@ class FastRCNNOutputLayers(nn.Module):
         soft_nms_enabled=False,
         soft_nms_method="gaussian",
         soft_nms_sigma=0.5,
+        soft_nms_prune=0.001,
         test_topk_per_image=100,
     ):
         """
@@ -491,6 +505,7 @@ class FastRCNNOutputLayers(nn.Module):
         self.soft_nms_enabled = soft_nms_enabled
         self.soft_nms_method = soft_nms_method
         self.soft_nms_sigma = soft_nms_sigma
+        self.soft_nms_prune = soft_nms_prune
         self.test_topk_per_image = test_topk_per_image
 
     @classmethod
@@ -507,6 +522,7 @@ class FastRCNNOutputLayers(nn.Module):
             "soft_nms_enabled"      : cfg.MODEL.ROI_HEADS.SOFT_NMS_ENABLED,
             "soft_nms_method"       : cfg.MODEL.ROI_HEADS.SOFT_NMS_METHOD,
             "soft_nms_sigma"        : cfg.MODEL.ROI_HEADS.SOFT_NMS_SIGMA,
+            "soft_nms_prune"        : cfg.MODEL.ROI_HEADS.SOFT_NMS_PRUNE,
             "test_topk_per_image"   : cfg.TEST.DETECTIONS_PER_IMAGE
             # fmt: on
         }
@@ -546,6 +562,7 @@ class FastRCNNOutputLayers(nn.Module):
             self.soft_nms_enabled,
             self.soft_nms_method,
             self.soft_nms_sigma,
+            self.soft_nms_prune,
             self.test_topk_per_image,
         )
 
