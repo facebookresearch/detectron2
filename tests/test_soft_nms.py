@@ -120,6 +120,17 @@ class TestSoftNMS(unittest.TestCase):
                 new_scores, scores[[0, 2]]
             ), "Scores not kept correctly for soft nms method {}".format(method)
 
+    def test_batched_no_boxes(self):
+        boxes = torch.tensor([], dtype=torch.float).reshape(0, 4)
+        scores = torch.tensor(([]))
+        category_idxs = torch.tensor([], dtype=torch.int)
+        for method in self.methods:
+            keep, new_scores = batched_soft_nms(
+                boxes, scores, category_idxs, method, 0.5, 0.3, 0.001
+            )
+            assert keep.size()[0] == 0, "Soft nms failed for method {}".format(method)
+            assert new_scores.size()[0] == 0, "Soft nms failed for method {}".format(method)
+
 
 class TestSoftNMSRotated(unittest.TestCase):
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -229,6 +240,17 @@ class TestSoftNMSRotated(unittest.TestCase):
             assert torch.equal(
                 new_scores, scores[[0, 2]]
             ), "Scores not kept correctly for soft nms method {}".format(method)
+
+    def test_batched_no_boxes(self):
+        boxes = torch.tensor([], dtype=torch.float).reshape(0, 4)
+        scores = torch.tensor(([]))
+        category_idxs = torch.tensor([], dtype=torch.int)
+        for method in self.methods:
+            keep, new_scores = batched_soft_nms_rotated(
+                boxes, scores, category_idxs, method, 0.5, 0.3, 0.001
+            )
+            assert keep.size()[0] == 0, "Soft nms failed for method {}".format(method)
+            assert new_scores.size()[0] == 0, "Soft nms failed for method {}".format(method)
 
     def test_batched_nms_rotated_0_degree(self):
         # torch.manual_seed(0)

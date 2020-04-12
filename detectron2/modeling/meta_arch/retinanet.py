@@ -418,7 +418,7 @@ class RetinaNet(nn.Module):
                 class_idxs_all,
                 self.soft_nms_method,
                 self.soft_nms_sigma,
-                self.soft_nms_threshold,
+                self.nms_threshold,
                 self.soft_nms_prune,
             )
             scores_all[keep] = soft_nms_scores
