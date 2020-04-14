@@ -392,6 +392,7 @@ class FastRCNNOutputLayers(nn.Module):
     def __init__(
         self,
         input_shape,
+        *,
         box2box_transform,
         num_classes,
         cls_agnostic_bbox_reg=False,

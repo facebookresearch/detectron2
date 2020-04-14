@@ -122,7 +122,7 @@ class BaseKeypointRCNNHead(nn.Module):
     """
 
     @configurable
-    def __init__(self, num_keypoints, loss_weight, loss_normalizer):
+    def __init__(self, *, num_keypoints, loss_weight, loss_normalizer):
         """
         NOTE: this interface is experimental.
 
@@ -211,7 +211,7 @@ class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead):
             conv_dims: an iterable of output channel counts for each conv in the head
                          e.g. (512, 512, 512) for three convs outputting 512 channels.
         """
-        super().__init__(num_keypoints, **kwargs)
+        super().__init__(num_keypoints=num_keypoints, **kwargs)
 
         # default up_scale to 2 (this can be made an option)
         up_scale = 2

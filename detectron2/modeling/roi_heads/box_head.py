@@ -27,7 +27,7 @@ class FastRCNNConvFCHead(nn.Module):
 
     @configurable
     def __init__(
-        self, input_shape: ShapeSpec, conv_dims: List[int], fc_dims: List[int], conv_norm=""
+        self, input_shape: ShapeSpec, *, conv_dims: List[int], fc_dims: List[int], conv_norm=""
     ):
         """
         NOTE: this interface is experimental.

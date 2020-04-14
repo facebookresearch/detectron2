@@ -20,7 +20,9 @@ class FastRCNNTest(unittest.TestCase):
         box_head_output_size = 8
 
         box_predictor = FastRCNNOutputLayers(
-            ShapeSpec(channels=box_head_output_size), Box2BoxTransform(weights=(10, 10, 5, 5)), 5
+            ShapeSpec(channels=box_head_output_size),
+            box2box_transform=Box2BoxTransform(weights=(10, 10, 5, 5)),
+            num_classes=5,
         )
         feature_pooled = torch.rand(2, box_head_output_size)
         predictions = box_predictor(feature_pooled)
@@ -44,7 +46,9 @@ class FastRCNNTest(unittest.TestCase):
 
     def test_fast_rcnn_empty_batch(self):
         box_predictor = FastRCNNOutputLayers(
-            ShapeSpec(channels=10), Box2BoxTransform(weights=(10, 10, 5, 5)), 8
+            ShapeSpec(channels=10),
+            box2box_transform=Box2BoxTransform(weights=(10, 10, 5, 5)),
+            num_classes=8,
         )
 
         logits = torch.randn(0, 100, requires_grad=True)
@@ -65,8 +69,8 @@ class FastRCNNTest(unittest.TestCase):
 
         box_predictor = RotatedFastRCNNOutputLayers(
             ShapeSpec(channels=box_head_output_size),
-            Box2BoxTransformRotated(weights=(10, 10, 5, 5, 1)),
-            5,
+            box2box_transform=Box2BoxTransformRotated(weights=(10, 10, 5, 5, 1)),
+            num_classes=5,
         )
         feature_pooled = torch.rand(2, box_head_output_size)
         predictions = box_predictor(feature_pooled)
