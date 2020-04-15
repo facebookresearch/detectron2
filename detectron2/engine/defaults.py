@@ -297,7 +297,7 @@ class DefaultTrainer(SimpleTrainer):
     def resume_or_load(self, resume=True):
         """
         If `resume==True`, and last checkpoint exists, resume from it and load all
-        checkpointables (eg. optimizer and scheduler).
+        checkpointables (eg. optimizer and scheduler), i.e. the config will not be used.
 
         Otherwise, load the model specified by the config (skip all checkpointables).
 
