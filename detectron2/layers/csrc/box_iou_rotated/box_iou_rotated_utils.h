@@ -63,9 +63,9 @@ HOST_DEVICE_INLINE void get_rotated_vertices(
   T sinTheta2 = (T)sin(theta) * 0.5f;
 
   // y: top --> down; x: left --> right
-  pts[0].x = box.x_ctr - sinTheta2 * box.h - cosTheta2 * box.w;
+  pts[0].x = box.x_ctr + sinTheta2 * box.h + cosTheta2 * box.w;
   pts[0].y = box.y_ctr + cosTheta2 * box.h - sinTheta2 * box.w;
-  pts[1].x = box.x_ctr + sinTheta2 * box.h - cosTheta2 * box.w;
+  pts[1].x = box.x_ctr - sinTheta2 * box.h + cosTheta2 * box.w;
   pts[1].y = box.y_ctr - cosTheta2 * box.h - sinTheta2 * box.w;
   pts[2].x = 2 * box.x_ctr - pts[0].x;
   pts[2].y = 2 * box.y_ctr - pts[0].y;

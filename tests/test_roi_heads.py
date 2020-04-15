@@ -94,8 +94,8 @@ class ROIHeadsTest(unittest.TestCase):
             _, detector_losses = roi_heads(images, features, proposals, gt_instances)
 
         expected_losses = {
-            "loss_cls": torch.tensor(4.381443977355957),
-            "loss_box_reg": torch.tensor(0.0011560433777049184),
+            "loss_cls": torch.tensor(4.381618499755859),
+            "loss_box_reg": torch.tensor(0.0011829272843897343),
         }
         for name in expected_losses.keys():
             err_msg = "detector_losses[{}] = {}, expected losses = {}".format(

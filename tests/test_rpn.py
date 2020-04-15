@@ -42,7 +42,10 @@ class RPNTest(unittest.TestCase):
             "loss_rpn_loc": torch.tensor(0.0990132466),
         }
         for name in expected_losses.keys():
-            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]))
+            err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
+                name, proposal_losses[name], expected_losses[name]
+            )
+            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
 
         expected_proposal_boxes = [
             Boxes(torch.tensor([[0, 0, 10, 10], [7.3365392685, 0, 10, 10]])),
@@ -102,11 +105,14 @@ class RPNTest(unittest.TestCase):
             )
 
         expected_losses = {
-            "loss_rpn_cls": torch.tensor(0.0432923734),
-            "loss_rpn_loc": torch.tensor(0.1552739739),
+            "loss_rpn_cls": torch.tensor(0.043263837695121765),
+            "loss_rpn_loc": torch.tensor(0.14432406425476074),
         }
         for name in expected_losses.keys():
-            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]))
+            err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
+                name, proposal_losses[name], expected_losses[name]
+            )
+            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
 
         expected_proposal_boxes = [
             RotatedBoxes(
