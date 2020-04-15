@@ -46,7 +46,10 @@ def read_image(file_name, format=None):
         image (np.ndarray): an HWC image in the given format.
     """
     with PathManager.open(file_name, "rb") as f:
+        pil_max_px = Image.MAX_IMAGE_PIXELS
+        Image.MAX_IMAGE_PIXELS = None
         image = Image.open(f)
+        Image.MAX_IMAGE_PIXELS = pil_max_px
 
         # capture and ignore this bug: https://github.com/python-pillow/Pillow/issues/3973
         try:
