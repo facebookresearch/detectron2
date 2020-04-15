@@ -298,7 +298,7 @@ class RotatedBoxes(Boxes):
         self.tensor[idx, 2] = torch.min(self.tensor[idx, 2], x2 - x1)
         self.tensor[idx, 3] = torch.min(self.tensor[idx, 3], y2 - y1)
 
-    def nonempty(self, threshold: int = 0) -> torch.Tensor:
+    def nonempty(self, threshold: float = 0.0) -> torch.Tensor:
         """
         Find boxes that are non-empty.
         A box is considered empty, if either of its side is no larger than threshold.
