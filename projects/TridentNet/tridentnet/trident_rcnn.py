@@ -5,7 +5,7 @@ from detectron2.modeling.roi_heads.roi_heads import Res5ROIHeads
 from detectron2.structures import Instances
 
 
-def merge_branch_instances(instances, num_branch, nms_thrsh, topk_per_image):
+def merge_branch_instances(instances, num_branch, nms_thresh, topk_per_image):
     """
     Merge detection results from different branches of TridentNet.
     Return detection results by applying non-maximum suppression (NMS) on bounding boxes
@@ -34,7 +34,7 @@ def merge_branch_instances(instances, num_branch, nms_thrsh, topk_per_image):
 
         # Apply per-class NMS
         keep = batched_nms(
-            instance.pred_boxes.tensor, instance.scores, instance.pred_classes, nms_thrsh
+            instance.pred_boxes.tensor, instance.scores, instance.pred_classes, nms_thresh
         )
         keep = keep[:topk_per_image]
         result = instance[keep]
@@ -70,7 +70,10 @@ class TridentRes5ROIHeads(Res5ROIHeads):
             return pred_instances, losses
         else:
             pred_instances = merge_branch_instances(
-                pred_instances, num_branch, self.test_nms_thresh, self.test_detections_per_img
+                pred_instances,
+                num_branch,
+                self.box_predictor.test_nms_thresh,
+                self.box_predictor.test_topk_per_image,
             )
 
             return pred_instances, {}
@@ -104,7 +107,10 @@ class TridentStandardROIHeads(StandardROIHeads):
             return pred_instances, losses
         else:
             pred_instances = merge_branch_instances(
-                pred_instances, num_branch, self.test_nms_thresh, self.test_detections_per_img
+                pred_instances,
+                num_branch,
+                self.box_predictor.test_nms_thresh,
+                self.box_predictor.test_topk_per_image,
             )
 
             return pred_instances, {}

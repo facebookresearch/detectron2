@@ -22,7 +22,7 @@ This file contains functions to parse COCO-format annotations into dicts in "Det
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["load_coco_json", "load_sem_seg"]
+__all__ = ["load_coco_json", "load_sem_seg", "convert_to_coco_json"]
 
 
 def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None):

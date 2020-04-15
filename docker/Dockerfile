@@ -2,8 +2,10 @@ FROM nvidia/cuda:10.1-cudnn7-devel
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y \
-	python3-opencv ca-certificates python3-dev git wget sudo && \
+	python3-opencv ca-certificates python3-dev git wget sudo  \
+	cmake protobuf-compiler libprotobuf-dev && \
   rm -rf /var/lib/apt/lists/*
+RUN ln -sv /usr/bin/python3 /usr/bin/python
 
 # create a non-root user
 ARG USER_ID=1000

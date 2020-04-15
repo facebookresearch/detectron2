@@ -62,7 +62,7 @@ The C++ code needs to be built with:
 
 As an example, the following works inside [official detectron2 docker](../../docker/):
 ```
-apt install libgflags-dev libgoogle-glog-dev
+sudo apt update && sudo apt install libgflags-dev libgoogle-glog-dev libopencv-dev
 pip install mkl-include
 wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz
 tar xf protobuf-cpp-3.6.1.tar.gz
