@@ -117,18 +117,21 @@ class TestTransformAnnotations(unittest.TestCase):
         with self.assertRaises(AssertionError):
             detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
 
-    def test_imagelist_padding_shape(self):
-        class TensorToImageList(torch.nn.Module):
-            def forward(self, tensors: Sequence[torch.Tensor]):
-                return ImageList.from_tensors(tensors, 4).tensor
 
+class TestInputShapeInferencing(unittest.TestCase):
+    class TensorsToImageList(torch.nn.Module):
+        def forward(self, tensors: Sequence[torch.Tensor]):
+            return ImageList.from_tensors(tensors, 4).tensor
+
+    def test_imagelist_single_padding_shape(self):
         func = torch.jit.trace(
-            TensorToImageList(), ([torch.ones((3, 10, 10), dtype=torch.float32)],)
+            self.TensorsToImageList(), ([torch.ones((3, 10, 10), dtype=torch.float32)],)
         )
         func([torch.ones((3, 15, 20), dtype=torch.float32)])
 
+    def test_imagelist_multi_padding_shape(self):
         func = torch.jit.trace(
-            TensorToImageList(),
+            self.TensorsToImageList(),
             (
                 [
                     torch.ones((3, 16, 10), dtype=torch.float32),
