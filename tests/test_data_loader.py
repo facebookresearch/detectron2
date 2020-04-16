@@ -7,7 +7,9 @@ import pycocotools.mask as mask_util
 
 from detectron2.data import detection_utils
 from detectron2.data import transforms as T
-from detectron2.structures import BitMasks, BoxMode
+from detectron2.structures import BitMasks, BoxMode, ImageList
+
+import torch
 
 
 class TestTransformAnnotations(unittest.TestCase):
@@ -114,3 +116,10 @@ class TestTransformAnnotations(unittest.TestCase):
         instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
         with self.assertRaises(AssertionError):
             detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
+
+    def test_imagelist_padding_shape(self):
+        class TensorToImageList(torch.nn.Module):
+            def forward(self, tensor: torch.Tensor):
+                return ImageList.from_tensors([torch.ones((3, 10, 10))], 4).tensor
+        func = torch.jit.trace(TensorToImageList(), torch.ones((3, 10, 10), dtype=torch.float32))
+        func(torch.ones((3, 15, 20), dtype=torch.float32))
