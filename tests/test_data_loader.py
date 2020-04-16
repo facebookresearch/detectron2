@@ -3,6 +3,7 @@
 import copy
 import numpy as np
 import unittest
+from typing import Sequence
 import pycocotools.mask as mask_util
 import torch
 
@@ -118,8 +119,26 @@ class TestTransformAnnotations(unittest.TestCase):
 
     def test_imagelist_padding_shape(self):
         class TensorToImageList(torch.nn.Module):
-            def forward(self, tensor: torch.Tensor):
-                return ImageList.from_tensors([torch.ones((3, 10, 10))], 4).tensor
+            def forward(self, tensors: Sequence[torch.Tensor]):
+                return ImageList.from_tensors(tensors, 4).tensor
 
-        func = torch.jit.trace(TensorToImageList(), torch.ones((3, 10, 10), dtype=torch.float32))
-        func(torch.ones((3, 15, 20), dtype=torch.float32))
+        func = torch.jit.trace(
+            TensorToImageList(), ([torch.ones((3, 10, 10), dtype=torch.float32)],)
+        )
+        func([torch.ones((3, 15, 20), dtype=torch.float32)])
+
+        func = torch.jit.trace(
+            TensorToImageList(),
+            (
+                [
+                    torch.ones((3, 16, 10), dtype=torch.float32),
+                    torch.ones((3, 13, 11), dtype=torch.float32),
+                ],
+            ),
+        )
+        func(
+            [
+                torch.ones((3, 25, 20), dtype=torch.float32),
+                torch.ones((3, 10, 10), dtype=torch.float32),
+            ]
+        )
