@@ -10,6 +10,8 @@ from detectron2.utils import comm
 
 from .wrappers import BatchNorm2d
 
+TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
+
 
 class FrozenBatchNorm2d(nn.Module):
     """
@@ -139,10 +141,13 @@ def get_norm(norm, out_channels):
             return None
         norm = {
             "BN": BatchNorm2d,
-            "SyncBN": NaiveSyncBatchNorm,
+            # Fixed in https://github.com/pytorch/pytorch/pull/36382
+            "SyncBN": NaiveSyncBatchNorm if TORCH_VERSION <= (1, 5) else nn.SyncBatchNorm,
             "FrozenBN": FrozenBatchNorm2d,
             "GN": lambda channels: nn.GroupNorm(32, channels),
-            "nnSyncBN": nn.SyncBatchNorm,  # keep for debugging
+            # for debugging:
+            "nnSyncBN": nn.SyncBatchNorm,
+            "naiveSyncBN": NaiveSyncBatchNorm,
         }[norm]
     return norm(out_channels)
 
@@ -164,13 +169,11 @@ class AllReduce(Function):
 
 class NaiveSyncBatchNorm(BatchNorm2d):
     """
-    `torch.nn.SyncBatchNorm` has known unknown bugs.
-    It produces significantly worse AP (and sometimes goes NaN)
-    when the batch size on each worker is quite different
+    In PyTorch<=1.5, `nn.SyncBatchNorm` has incorrect gradient
+    when the batch size on each worker is different.
     (e.g., when scale augmentation is used, or when it is applied to mask head).
 
-    Use this implementation before `nn.SyncBatchNorm` is fixed.
-    It is slower than `nn.SyncBatchNorm`.
+    This is a slower but correct alternative to `nn.SyncBatchNorm`.
 
     Note:
         There isn't a single definition of Sync BatchNorm.
