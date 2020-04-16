@@ -74,7 +74,7 @@ class ImageList(object):
             torch.stack(
                 [
                     # Keep original tensor for tracing.
-                    torch.stack(size) if torch.is_tensor(size[0]) else torch.tensor(size)
+                    torch.stack([torch.as_tensor(dim) for dim in size])
                     for size in [tuple(img.shape) for img in tensors]
                 ]
             )
@@ -100,8 +100,7 @@ class ImageList(object):
                 batched_imgs = padded.unsqueeze_(0)
         else:
             # Keep original tensor for tracing.
-            num_imgs = len(tensors) if torch.is_tensor(len(tensors)) else torch.tensor(len(tensors))
-            batch_shape = torch.cat([num_imgs[None], max_size])
+            batch_shape = torch.cat([torch.as_tensor(len(tensors))[None], max_size])
             batched_imgs = tensors[0].new_full(tuple(batch_shape), pad_value)
             for img, pad_img in zip(tensors, batched_imgs):
                 pad_img[..., : img.shape[-2], : img.shape[-1]].copy_(img)
