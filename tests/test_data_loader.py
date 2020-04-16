@@ -4,12 +4,11 @@ import copy
 import numpy as np
 import unittest
 import pycocotools.mask as mask_util
+import torch
 
 from detectron2.data import detection_utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, BoxMode, ImageList
-
-import torch
 
 
 class TestTransformAnnotations(unittest.TestCase):
@@ -121,5 +120,6 @@ class TestTransformAnnotations(unittest.TestCase):
         class TensorToImageList(torch.nn.Module):
             def forward(self, tensor: torch.Tensor):
                 return ImageList.from_tensors([torch.ones((3, 10, 10))], 4).tensor
+
         func = torch.jit.trace(TensorToImageList(), torch.ones((3, 10, 10), dtype=torch.float32))
         func(torch.ones((3, 15, 20), dtype=torch.float32))
