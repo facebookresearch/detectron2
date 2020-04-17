@@ -7,3 +7,4 @@ MODEL:
     STRIDE_IN_1X1: False
     DEEP_STEM: True
     AVD: True
+    AVG_DOWN: True

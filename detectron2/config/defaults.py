@@ -489,6 +489,8 @@ _C.MODEL.RESNETS.DEEP_STEM = False
 # Apply avg after conv2 in the BottleBlock
 # When AVD=True, the STRIDE_IN_1X1 should be False
 _C.MODEL.RESNETS.AVD = False
+# Apply avg_down to the downsampling layer for residual path 
+_C.MODEL.RESNETS.AVG_DOWN = False
 
 
 # ---------------------------------------------------------------------------- #
