@@ -484,6 +484,10 @@ _C.MODEL.RESNETS.DEFORM_MODULATED = False
 _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 
 
+# apply deep stem  
+_C.MODEL.RESNETS.DEEP_STEM = False
+
+
 # ---------------------------------------------------------------------------- #
 # Solver
 # ---------------------------------------------------------------------------- #
