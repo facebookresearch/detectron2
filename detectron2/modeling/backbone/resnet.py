@@ -605,6 +605,8 @@ def build_resnet_backbone(cfg, input_shape):
         50: [3, 4, 6, 3],
         101: [3, 4, 23, 3],
         152: [3, 8, 36, 3],
+        200: [3, 24, 36, 3],
+        269: [3, 30, 48, 8],
     }[depth]
 
     if depth in [18, 34]:
