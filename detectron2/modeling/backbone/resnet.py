@@ -129,6 +129,7 @@ class BottleneckBlock(ResNetBlockBase):
         norm="BN",
         stride_in_1x1=False,
         dilation=1,
+        avd=False,
     ):
         """
         Args:
@@ -139,6 +140,8 @@ class BottleneckBlock(ResNetBlockBase):
                 first 1x1 convolution or the bottleneck 3x3 convolution.
         """
         super().__init__(in_channels, out_channels, stride)
+
+        self.avd = avd and (stride>1)
 
         if in_channels != out_channels:
             self.shortcut = Conv2d(
@@ -170,13 +173,16 @@ class BottleneckBlock(ResNetBlockBase):
             bottleneck_channels,
             bottleneck_channels,
             kernel_size=3,
-            stride=stride_3x3,
+            stride=1 if self.avd else stride_3x3,
             padding=1 * dilation,
             bias=False,
             groups=num_groups,
             dilation=dilation,
             norm=get_norm(norm, bottleneck_channels),
         )
+
+        if self.avd:
+            self.avd_layer = nn.AvgPool2d(3, stride, padding=1)
 
         self.conv3 = Conv2d(
             bottleneck_channels,
@@ -208,6 +214,9 @@ class BottleneckBlock(ResNetBlockBase):
 
         out = self.conv2(out)
         out = F.relu_(out)
+
+        if self.avd:
+            out = self.avd_layer(out)
 
         out = self.conv3(out)
 
@@ -542,6 +551,7 @@ def build_resnet_backbone(cfg, input_shape):
     deform_on_per_stage = cfg.MODEL.RESNETS.DEFORM_ON_PER_STAGE
     deform_modulated    = cfg.MODEL.RESNETS.DEFORM_MODULATED
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
+    avd                 = cfg.MODEL.RESNETS.AVD
     # fmt: on
     assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
 
@@ -577,6 +587,7 @@ def build_resnet_backbone(cfg, input_shape):
             "in_channels": in_channels,
             "out_channels": out_channels,
             "norm": norm,
+            "avd": avd,
         }
         # Use BasicBlock for R18 and R34.
         if depth in [18, 34]:

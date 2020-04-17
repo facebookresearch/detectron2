@@ -4,4 +4,6 @@ MODEL:
   MASK_ON: False
   RESNETS:
     DEPTH: 50
+    STRIDE_IN_1X1: False
     DEEP_STEM: True
+    AVD: True
