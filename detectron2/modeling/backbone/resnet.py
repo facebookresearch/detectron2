@@ -131,6 +131,8 @@ class BottleneckBlock(ResNetBlockBase):
         dilation=1,
         avd=False,
         avg_down=False,
+        radix=2,
+        bottleneck_width=64,
     ):
         """
         Args:
@@ -144,6 +146,10 @@ class BottleneckBlock(ResNetBlockBase):
 
         self.avd = avd and (stride>1)
         self.avg_down = avg_down
+        self.radix = radix
+
+        cardinality = num_groups
+        group_width = int(bottleneck_channels * (bottleneck_width / 64.)) * cardinality 
 
         if in_channels != out_channels:
             if self.avg_down:
@@ -176,39 +182,55 @@ class BottleneckBlock(ResNetBlockBase):
 
         self.conv1 = Conv2d(
             in_channels,
-            bottleneck_channels,
+            group_width,
             kernel_size=1,
             stride=stride_1x1,
             bias=False,
-            norm=get_norm(norm, bottleneck_channels),
+            norm=get_norm(norm, group_width),
         )
 
-        self.conv2 = Conv2d(
-            bottleneck_channels,
-            bottleneck_channels,
-            kernel_size=3,
-            stride=1 if self.avd else stride_3x3,
-            padding=1 * dilation,
-            bias=False,
-            groups=num_groups,
-            dilation=dilation,
-            norm=get_norm(norm, bottleneck_channels),
-        )
+        if self.radix>1:
+            from .splat import SplAtConv2d
+            self.conv2 = SplAtConv2d(
+                            group_width, group_width, kernel_size=3, 
+                            stride = 1 if self.avd else stride_3x3,
+                            padding=dilation, dilation=dilation, 
+                            groups=cardinality, bias=False,
+                            radix=self.radix, 
+                            norm=norm,
+                         )
+        else:
+            self.conv2 = Conv2d(
+                group_width,
+                group_width,
+                kernel_size=3,
+                stride=1 if self.avd else stride_3x3,
+                padding=1 * dilation,
+                bias=False,
+                groups=num_groups,
+                dilation=dilation,
+                norm=get_norm(norm, group_width),
+            )
 
         if self.avd:
             self.avd_layer = nn.AvgPool2d(3, stride, padding=1)
 
         self.conv3 = Conv2d(
-            bottleneck_channels,
+            group_width,
             out_channels,
             kernel_size=1,
             bias=False,
             norm=get_norm(norm, out_channels),
         )
 
-        for layer in [self.conv1, self.conv2, self.conv3, self.shortcut]:
-            if layer is not None:  # shortcut can be None
-                weight_init.c2_msra_fill(layer)
+        if self.radix>1:
+            for layer in [self.conv1, self.conv3, self.shortcut]:
+                if layer is not None:  # shortcut can be None
+                    weight_init.c2_msra_fill(layer)
+        else:
+            for layer in [self.conv1, self.conv2, self.conv3, self.shortcut]:
+                if layer is not None:  # shortcut can be None
+                    weight_init.c2_msra_fill(layer)
 
         # Zero-initialize the last normalization in each residual branch,
         # so that at the beginning, the residual branch starts with zeros,
@@ -226,8 +248,11 @@ class BottleneckBlock(ResNetBlockBase):
         out = self.conv1(x)
         out = F.relu_(out)
 
-        out = self.conv2(out)
-        out = F.relu_(out)
+        if self.radix>1:
+            out = self.conv2(out)
+        else:
+            out = self.conv2(out)
+            out = F.relu_(out)
 
         if self.avd:
             out = self.avd_layer(out)
@@ -569,6 +594,8 @@ def build_resnet_backbone(cfg, input_shape):
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
     avd                 = cfg.MODEL.RESNETS.AVD
     avg_down            = cfg.MODEL.RESNETS.AVG_DOWN
+    radix               = cfg.MODEL.RESNETS.RADIX
+    bottleneck_width    = cfg.MODEL.RESNETS.BOTTLENECK_WIDTH
     # fmt: on
     assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
 
@@ -606,6 +633,8 @@ def build_resnet_backbone(cfg, input_shape):
             "norm": norm,
             "avd": avd,
             "avg_down": avg_down,
+            "radix": radix,
+            "bottleneck_width": bottleneck_width,
         }
         # Use BasicBlock for R18 and R34.
         if depth in [18, 34]:

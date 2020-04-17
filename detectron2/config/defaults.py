@@ -492,6 +492,11 @@ _C.MODEL.RESNETS.AVD = False
 # Apply avg_down to the downsampling layer for residual path 
 _C.MODEL.RESNETS.AVG_DOWN = False
 
+# Radix in ResNeSt
+_C.MODEL.RESNETS.RADIX = 1
+# Bottleneck_width in ResNeSt
+_C.MODEL.RESNETS.BOTTLENECK_WIDTH = 64
+
 
 # ---------------------------------------------------------------------------- #
 # Solver

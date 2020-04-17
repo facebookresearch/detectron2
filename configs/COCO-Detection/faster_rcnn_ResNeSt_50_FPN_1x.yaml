@@ -5,6 +5,7 @@ MODEL:
   RESNETS:
     DEPTH: 50
     STRIDE_IN_1X1: False
+    RADIX: 2
     DEEP_STEM: True
     AVD: True
     AVG_DOWN: True
