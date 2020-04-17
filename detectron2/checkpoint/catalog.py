@@ -17,6 +17,8 @@ class ModelCatalog(object):
     # Even when loaded to FrozenBN, it is still different from affine by an epsilon,
     # which should be negligible for training.
     # NOTE: all models here uses PIXEL_STD=[1,1,1]
+    # NOTE: Most of the BN models here are no longer used. We use the
+    # re-converted pre-trained models under detectron2 model zoo instead.
     C2_IMAGENET_MODELS = {
         "MSRA/R-50": "ImageNetPretrained/MSRA/R-50.pkl",
         "MSRA/R-101": "ImageNetPretrained/MSRA/R-101.pkl",

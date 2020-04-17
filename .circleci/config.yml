@@ -153,6 +153,7 @@ jobs:
             # This will build d2 for the target GPU arch only
             docker exec -it d2 pip install -e /detectron2
             docker exec -it d2 python3 -m detectron2.utils.collect_env
+            docker exec -it d2 python3 -c 'import torch; assert(torch.cuda.is_available())'
 
       - run:
           name: Run Unit Tests

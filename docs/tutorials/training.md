@@ -17,15 +17,16 @@ which provides minimal abstraction for single-cost single-optimizer single-data-
 The builtin `train_net.py` script uses
 [DefaultTrainer().train()](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
 which includes more standard default behavior that one might want to opt in,
-including default configurations for logging, evaluation, checkpointing etc.
+including default configurations for learning rate schedule,
+logging, evaluation, checkpointing etc.
 This also means that it's less likely to support some non-standard behavior
 you might want during research.
 
 To customize the training loops, you can:
 
 1. If your customization is similar to what `DefaultTrainer` is already doing,
-you can look at the source code of [DefaultTrainer](../../detectron2/engine/defaults.py)
-and overwrite some of its behaviors with new parameters or new hooks.
+you can change behavior of `DefaultTrainer` by overwriting [its methods](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer)
+in a subclass, like what [tools/train_net.py](../../tools/train_net.py) does.
 2. If you need something very novel, you can start from [tools/plain_train_net.py](../../tools/plain_train_net.py) to implement them yourself.
 
 ### Logging of Metrics

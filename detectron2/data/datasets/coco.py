@@ -364,7 +364,7 @@ def convert_to_coco_dict(dataset_name):
             coco_annotation["id"] = len(coco_annotations) + 1
             coco_annotation["image_id"] = coco_image["id"]
             coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
-            coco_annotation["area"] = area
+            coco_annotation["area"] = float(area)
             coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
             coco_annotation["category_id"] = reverse_id_mapper(annotation["category_id"])
 

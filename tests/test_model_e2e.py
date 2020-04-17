@@ -88,19 +88,20 @@ class MaskRCNNE2ETest(ModelE2ETest):
         instances = [get_empty_instance(200, 250), get_regular_bitmask_instances(200, 249)]
         self._test_train([(200, 250), (200, 249)], instances)
 
-    def test_rpn_inf_nan_data(self):
-        self.model.eval()
-        for tensor in [self._inf_tensor, self._nan_tensor]:
-            images = ImageList(tensor(1, 3, 512, 512), [(510, 510)])
-            features = {
-                "p2": tensor(1, 256, 256, 256),
-                "p3": tensor(1, 256, 128, 128),
-                "p4": tensor(1, 256, 64, 64),
-                "p5": tensor(1, 256, 32, 32),
-                "p6": tensor(1, 256, 16, 16),
-            }
-            props, _ = self.model.proposal_generator(images, features)
-            self.assertEqual(len(props[0]), 0)
+    # This test is flaky because in some environment the output features are zero due to relu
+    # def test_rpn_inf_nan_data(self):
+    #     self.model.eval()
+    #     for tensor in [self._inf_tensor, self._nan_tensor]:
+    #         images = ImageList(tensor(1, 3, 512, 512), [(510, 510)])
+    #         features = {
+    #             "p2": tensor(1, 256, 256, 256),
+    #             "p3": tensor(1, 256, 128, 128),
+    #             "p4": tensor(1, 256, 64, 64),
+    #             "p5": tensor(1, 256, 32, 32),
+    #             "p6": tensor(1, 256, 16, 16),
+    #         }
+    #         props, _ = self.model.proposal_generator(images, features)
+    #         self.assertEqual(len(props[0]), 0)
 
     def test_roiheads_inf_nan_data(self):
         self.model.eval()

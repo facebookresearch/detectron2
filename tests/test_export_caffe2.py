@@ -22,7 +22,7 @@ class TestCaffe2Export(unittest.TestCase):
     def setUp(self):
         setup_logger()
         if os.environ.get("CIRCLECI"):
-            unittest.skipTest("Require COCO data and model zoo.")
+            self.skipTest("Require COCO data and model zoo.")
 
     def _test_model(self, config_path, device="cpu"):
         # requires extra dependencies
@@ -50,7 +50,7 @@ class TestCaffe2Export(unittest.TestCase):
             file_name = DatasetCatalog.get("coco_2017_train")[0]["file_name"]
             assert PathManager.exists(file_name)
         except Exception:
-            unittest.SkipTest("COCO dataset not available.")
+            self.SkipTest("COCO dataset not available.")
 
         with PathManager.open(file_name, "rb") as f:
             buf = f.read()
