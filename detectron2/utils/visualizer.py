@@ -10,7 +10,9 @@ import matplotlib.colors as mplc
 import matplotlib.figure as mplfigure
 import pycocotools.mask as mask_util
 import torch
+from fvcore.common.file_io import PathManager
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from PIL import Image
 
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 
@@ -508,7 +510,9 @@ class Visualizer:
 
         sem_seg = dic.get("sem_seg", None)
         if sem_seg is None and "sem_seg_file_name" in dic:
-            sem_seg = cv2.imread(dic["sem_seg_file_name"], cv2.IMREAD_GRAYSCALE)
+            with PathManager.open(dic["sem_seg_file_name"], "rb") as f:
+                sem_seg = Image.open(f)
+                sem_seg = np.asarray(sem_seg, dtype="uint8")
         if sem_seg is not None:
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
         return self.output
