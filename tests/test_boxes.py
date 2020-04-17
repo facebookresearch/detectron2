@@ -172,5 +172,11 @@ class TestBoxIOU(unittest.TestCase):
         self.assertTrue(torch.allclose(ious, expected_ious))
 
 
+class TestBoxes(unittest.TestCase):
+    def test_empty_cat(self):
+        x = Boxes.cat([])
+        self.assertTrue(x.tensor.shape, (0, 4))
+
+
 if __name__ == "__main__":
     unittest.main()

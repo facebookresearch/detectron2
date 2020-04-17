@@ -298,6 +298,10 @@ class TestRotatedBoxesStructure(unittest.TestCase):
             ious = pairwise_iou(RotatedBoxes(boxes1), RotatedBoxes(boxes2))
             self.assertTrue(torch.allclose(ious, expected_ious))
 
+    def test_empty_cat(self):
+        x = RotatedBoxes.cat([])
+        self.assertTrue(x.tensor.shape, (0, 5))
+
 
 def benchmark_rotated_iou():
     num_boxes1 = 200

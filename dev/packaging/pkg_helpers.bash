@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 # Function to retry functions that sometimes timeout or have flaky failures
 retry () {

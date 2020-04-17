@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 set -ex
 
 ldconfig  # https://github.com/NVIDIA/nvidia-docker/issues/854
