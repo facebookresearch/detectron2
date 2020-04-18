@@ -562,7 +562,8 @@ def build_resnet_backbone(cfg, input_shape):
 
     depth = cfg.MODEL.RESNETS.DEPTH
     stem_width = {50: 32, 101: 64, 152: 64, 200: 64, 269: 64}[depth] 
-    deep_stem = cfg.MODEL.RESNETS.DEEP_STEM
+    radix = cfg.MODEL.RESNETS.RADIX 
+    deep_stem = cfg.MODEL.RESNETS.DEEP_STEM or (radix > 1)
 
     # need registration of new blocks/stems?
     norm = cfg.MODEL.RESNETS.NORM
@@ -592,9 +593,8 @@ def build_resnet_backbone(cfg, input_shape):
     deform_on_per_stage = cfg.MODEL.RESNETS.DEFORM_ON_PER_STAGE
     deform_modulated    = cfg.MODEL.RESNETS.DEFORM_MODULATED
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
-    avd                 = cfg.MODEL.RESNETS.AVD
-    avg_down            = cfg.MODEL.RESNETS.AVG_DOWN
-    radix               = cfg.MODEL.RESNETS.RADIX
+    avd                 = cfg.MODEL.RESNETS.AVD or (radix > 1)
+    avg_down            = cfg.MODEL.RESNETS.AVG_DOWN or (radix > 1)
     bottleneck_width    = cfg.MODEL.RESNETS.BOTTLENECK_WIDTH
     # fmt: on
     assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)

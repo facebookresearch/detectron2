@@ -1,6 +1,7 @@
 _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "https://hangzh.s3-us-west-1.amazonaws.com/encoding/models/resnest50_detectron-255b5649.pth"
+        #"detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   MASK_ON: False
   RESNETS:
     DEPTH: 50
@@ -9,3 +10,30 @@ MODEL:
     DEEP_STEM: True
     AVD: True
     AVG_DOWN: True
+    NORM: "SyncBN"
+  FPN:
+    NORM: "SyncBN"
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_CONV: 4
+    NUM_FC: 1
+    NORM: "SyncBN"
+  PIXEL_MEAN: [123.68, 116.779, 103.939]
+  PIXEL_STD: [58.393, 57.12, 57.375]
+SOLVER:
+  IMS_PER_BATCH: 16  #16
+  BASE_LR: 0.02    #original:0.02
+INPUT:
+  MIN_SIZE_TRAIN: (640, 800)
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MAX_SIZE_TRAIN: 1333
+  FORMAT: "RGB"
+TEST:
+  PRECISE_BN:
+    ENABLED: True
+
+
+
+
+
+
