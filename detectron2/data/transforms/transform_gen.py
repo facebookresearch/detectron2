@@ -220,7 +220,9 @@ class RandomRotation(TransformGen):
     number of degrees counter clockwise around the given center.
     """
 
-    def __init__(self, angle, expand=True, center=None, sample_style="range", interp=None):
+    def __init__(
+        self, angle, expand=True, center=None, sample_style="range", interp=None, prob=1.0
+    ):
         """
         Args:
             angle (list[float]): If ``sample_style=="range"``,
@@ -234,9 +236,14 @@ class RandomRotation(TransformGen):
                 If ``sample_style=="choice"``, a list of centers to sample from
                 Default: None, which means that the center of rotation is the center of the image
                 center has no effect if expand=True because it only affects shifting
+            prob (float): probability of rotation
+                The sampled rotation `angle` is applied in `prob * 100` percent of the time
         """
         super().__init__()
         assert sample_style in ["range", "choice"], sample_style
+        assert (
+            0.0 <= prob <= 1.0
+        ), f"Rotation probablity must be between 0.0 and 1.0 (given: {prob})"
         self.is_range = sample_style == "range"
         if isinstance(angle, (float, int)):
             angle = (angle, angle)
@@ -245,6 +252,10 @@ class RandomRotation(TransformGen):
         self._init(locals())
 
     def get_transform(self, img):
+        do = self._rand_range() < self.prob
+        if not do:
+            return NoOpTransform()
+
         h, w = img.shape[:2]
         center = None
         if self.is_range:

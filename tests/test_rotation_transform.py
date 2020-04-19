@@ -1,7 +1,9 @@
 import numpy as np
 import unittest
+from unittest import mock
 
-from detectron2.data.transforms.transform import RotationTransform
+from detectron2.data.transforms.transform import NoOpTransform, RotationTransform
+from detectron2.data.transforms.transform_gen import RandomRotation
 
 
 class TestRotationTransform(unittest.TestCase):
@@ -55,6 +57,49 @@ class TestRotationTransform(unittest.TestCase):
             for r2 in [rot1, rot2, rot3, rot4]:
                 self.assertEqualsArrays(r1.apply_image(image), r2.apply_image(image))
                 self.assertEqualsArrays(r1.apply_coords(coords), r2.apply_coords(coords))
+
+    def test_random_transform_prob_out_of_range_check(self):
+        # GIVEN
+        test_probabilities = {0.0: True, 0.5: True, 1.0: True, -0.01: False, 1.01: False}
+
+        # WHEN
+        for given_probability, is_valid in test_probabilities.items():
+            # THEN
+            if not is_valid:
+                self.assertRaises(AssertionError, RandomRotation, angle=42, prob=given_probability)
+            else:
+                RandomRotation(angle=42, prob=given_probability)
+
+    def test_random_transform_probability_occured_evaluation(self):
+        # GIVEN
+        test_probability = 0.001
+        test_image, *_ = self.randomData()
+        test_angle = 42
+        random_rotation = RandomRotation(
+            angle=[test_angle], sample_style="choice", prob=test_probability
+        )
+
+        # WHEN
+        with mock.patch.object(random_rotation, "_rand_range") as rand_range_mock:
+            rand_range_mock.return_value = 0.0001
+            rotation_transform = random_rotation.get_transform(test_image)
+
+        # THEN
+        assert rotation_transform.angle == test_angle
+
+    def test_random_transform_probability_not_occured_evaluation(self):
+        # GIVEN
+        test_probability = 0.001
+        test_image, *_ = self.randomData()
+        random_rotation = RandomRotation(angle=[42], sample_style="choice", prob=test_probability)
+
+        # WHEN
+        with mock.patch.object(random_rotation, "_rand_range") as rand_range_mock:
+            rand_range_mock.return_value = 0.9
+            rotation_transform = random_rotation.get_transform(test_image)
+
+        # THEN
+        assert isinstance(rotation_transform, NoOpTransform)
 
 
 if __name__ == "__main__":
