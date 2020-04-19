@@ -1,0 +1,21 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    STRIDE_IN_1X1: True
+    DEPTH: 50
+    NORM: "SyncBN"
+  FPN:
+    NORM: "SyncBN"
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_CONV: 4
+    NUM_FC: 1
+    NORM: "SyncBN"
+INPUT:
+  MIN_SIZE_TRAIN: (640, 800)
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MAX_SIZE_TRAIN: 1333
+TEST:
+  PRECISE_BN:
+    ENABLED: True
