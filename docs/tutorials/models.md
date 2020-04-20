@@ -43,9 +43,6 @@ with EventStorage() as storage:
   losses = model(inputs)
 ```
 
-Note that detectron2 models do not currently support `model.to(device)` or `model.cpu()`.
-The device is defined in `cfg.MODEL.DEVICE` and cannot be changed afterwards.
-
 If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
 is a wrapper around model that provides such basic functionality.

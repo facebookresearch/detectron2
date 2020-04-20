@@ -47,7 +47,7 @@ def get_regular_bitmask_instances(h, w):
     return inst
 
 
-class ModelE2ETest(unittest.TestCase):
+class ModelE2ETest:
     def setUp(self):
         torch.manual_seed(43)
         self.model = get_model_zoo(self.CONFIG_PATH)
@@ -75,14 +75,22 @@ class ModelE2ETest(unittest.TestCase):
     def _nan_tensor(self, *shape):
         return torch.zeros(*shape, device=self.model.device).fill_(float("nan"))
 
-
-class MaskRCNNE2ETest(ModelE2ETest):
-    CONFIG_PATH = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
-
     def test_empty_data(self):
         instances = [get_empty_instance(200, 250), get_empty_instance(200, 249)]
         self._test_eval([(200, 250), (200, 249)])
         self._test_train([(200, 250), (200, 249)], instances)
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA unavailable")
+    def test_eval_tocpu(self):
+        model = get_model_zoo(self.CONFIG_PATH).cpu()
+        model.eval()
+        input_sizes = [(200, 250), (200, 249)]
+        inputs = [create_model_input(torch.rand(3, s[0], s[1])) for s in input_sizes]
+        model(inputs)
+
+
+class MaskRCNNE2ETest(ModelE2ETest, unittest.TestCase):
+    CONFIG_PATH = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
 
     def test_half_empty_data(self):
         instances = [get_empty_instance(200, 250), get_regular_bitmask_instances(200, 249)]
@@ -121,13 +129,8 @@ class MaskRCNNE2ETest(ModelE2ETest):
             self.assertEqual(len(det[0]), 0)
 
 
-class RetinaNetE2ETest(ModelE2ETest):
+class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
     CONFIG_PATH = "COCO-Detection/retinanet_R_50_FPN_1x.yaml"
-
-    def test_empty_data(self):
-        instances = [get_empty_instance(200, 250), get_empty_instance(200, 249)]
-        self._test_eval([(200, 250), (200, 249)])
-        self._test_train([(200, 250), (200, 249)], instances)
 
     def test_inf_nan_data(self):
         self.model.eval()

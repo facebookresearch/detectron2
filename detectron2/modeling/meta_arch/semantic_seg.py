@@ -32,17 +32,14 @@ class SemanticSegmentor(nn.Module):
 
     def __init__(self, cfg):
         super().__init__()
-
-        self.device = torch.device(cfg.MODEL.DEVICE)
-
         self.backbone = build_backbone(cfg)
         self.sem_seg_head = build_sem_seg_head(cfg, self.backbone.output_shape())
+        self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1))
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(-1, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(-1, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-
-        self.to(self.device)
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     def forward(self, batched_inputs):
         """
@@ -66,7 +63,7 @@ class SemanticSegmentor(nn.Module):
               per-pixel segmentation prediction.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
 
         features = self.backbone(images.tensor)
