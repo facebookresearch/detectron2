@@ -12,7 +12,7 @@ from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
 from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
 
-from .structures import DensePoseOutput
+from .data.structures import DensePoseOutput
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
 

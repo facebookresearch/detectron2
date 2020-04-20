@@ -23,7 +23,7 @@ from pycocotools import mask as maskUtils
 from scipy.io import loadmat
 from scipy.ndimage import zoom as spzoom
 
-from .structures import DensePoseDataRelative, DensePoseResult
+from .data.structures import DensePoseDataRelative, DensePoseResult
 
 logger = logging.getLogger(__name__)
 
