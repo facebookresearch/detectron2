@@ -18,7 +18,7 @@ For example, custom backbones and heads are often supported out of the box.
 
 ### Usage
 
-The conversion APIs are documented at [the API documentation](../modules/export.html).
+The conversion APIs are documented at [the API documentation](../modules/export).
 We provide a tool, `caffe2_converter.py` as an example that uses
 these APIs to convert a standard model.
 
@@ -89,6 +89,6 @@ Note that:
 
 We also provide a python wrapper around the converted model, in the
 [Caffe2Model.__call__](../modules/export.html#detectron2.export.Caffe2Model.__call__) method.
-This method has an interface that's identical to the [pytorch versions of models](models.html),
+This method has an interface that's identical to the [pytorch versions of models](./models.md),
 and it internally applies pre/post-processing code to match the formats.
 They can serve as a reference for pre/post-processing in actual deployment.

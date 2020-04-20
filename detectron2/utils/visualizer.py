@@ -36,19 +36,23 @@ _KEYPOINT_THRESHOLD = 0.05
 class ColorMode(Enum):
     """
     Enum of different color modes to use for instance visualizations.
-
-    Attributes:
-        IMAGE: Picks a random color for every instance and overlay segmentations with low opacity.
-        SEGMENTATION: Let instances of the same category have similar colors
-            (from metadata.thing_colors), and overlay them with
-            high opacity. This provides more attention on the quality of segmentation.
-        IMAGE_BW: same as IMAGE, but convert all areas without masks to gray-scale.
-            Only available for drawing per-instance mask predictions.
     """
 
     IMAGE = 0
+    """
+    Picks a random color for every instance and overlay segmentations with low opacity.
+    """
     SEGMENTATION = 1
+    """
+    Let instances of the same category have similar colors
+    (from metadata.thing_colors), and overlay them with
+    high opacity. This provides more attention on the quality of segmentation.
+    """
     IMAGE_BW = 2
+    """
+    Same as IMAGE, but convert all areas without masks to gray-scale.
+    Only available for drawing per-instance mask predictions.
+    """
 
 
 class GenericMask:
@@ -266,8 +270,9 @@ class VisImage:
     def get_image(self):
         """
         Returns:
-            ndarray: the visualized image of shape (H, W, 3) (RGB) in uint8 type.
-              The shape is scaled w.r.t the input image using the given `scale` argument.
+            ndarray:
+                the visualized image of shape (H, W, 3) (RGB) in uint8 type.
+                The shape is scaled w.r.t the input image using the given `scale` argument.
         """
         canvas = self.canvas
         s, (width, height) = canvas.print_to_buffer()
@@ -537,12 +542,13 @@ class Visualizer:
             labels (list[str]): the text to be displayed for each instance.
             masks (masks-like object): Supported types are:
 
-                * `structures.masks.PolygonMasks`, `structures.masks.BitMasks`.
+                * :class:`detectron2.structures.PolygonMasks`,
+                  :class:`detectron2.structures.BitMasks`.
                 * list[list[ndarray]]: contains the segmentation masks for all objects in one image.
-                    The first level of the list corresponds to individual instances. The second
-                    level to all the polygon that compose the instance, and the third level
-                    to the polygon coordinates. The third level should have the format of
-                    [x0, y0, x1, y1, ..., xn, yn] (n >= 3).
+                  The first level of the list corresponds to individual instances. The second
+                  level to all the polygon that compose the instance, and the third level
+                  to the polygon coordinates. The third level should have the format of
+                  [x0, y0, x1, y1, ..., xn, yn] (n >= 3).
                 * list[ndarray]: each ndarray is a binary mask of shape (H, W).
                 * list[dict]: each dict is a COCO-style RLE.
             keypoints (Keypoint or array like): an array-like object of shape (N, K, 3),

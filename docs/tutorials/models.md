@@ -7,19 +7,50 @@ from detectron2.modeling import build_model
 model = build_model(cfg)  # returns a torch.nn.Module
 ```
 
-Note that `build_model` only builds the model structure, and fill it with random parameters.
-To load an existing checkpoint to the model, use
-`DetectionCheckpointer(model).load(file_path)`.
-Detectron2 recognizes models in pytorch's `.pth` format, as well as the `.pkl` files
+`build_model` only builds the model structure, and fill it with random parameters.
+See below for how to load an existing checkpoint to the model,
+and how to use the `model` object.
+
+### Load/Save a Checkpoint
+```python
+from detectron2.checkpoint import DetectionCheckpointer
+DetectionCheckpointer(model).load(file_path)   # load a file to model
+
+checkpointer = DetectionCheckpointer(model, save_dir="output")
+checkpointer.save("model_999")  # save to output/model_999.pth
+```
+
+Detectron2's checkpointer recognizes models in pytorch's `.pth` format, as well as the `.pkl` files
 in our model zoo.
+See [API doc](../modules/checkpoint.html#detectron2.checkpoint.DetectionCheckpointer)
+for more details about its usage.
 
-You can use a model by just `outputs = model(inputs)`.
-Next, we explain the inputs/outputs format used by the builtin models in detectron2.
 
+### Use a Model
+
+A model can be called by `outputs = model(inputs)`, where `inputs` is a `list[dict]`.
+Each dict corresponds to one image and the required keys
+depend on the type of model, and whether the model is in training or evaluation mode.
+For example, in order to do inference,
+all existing models expect the "image" key, and optionally "height" and "width".
+The detailed format of inputs and outputs are explained below.
+
+When in training mode, all models are required to be used under an `EventStorage`.
+The training statistics will be put into the storage:
+```python
+from detectron2.utils.events import EventStorage
+with EventStorage() as storage:
+  losses = model(inputs)
+```
+
+Note that detectron2 models do not currently support `model.to(device)` or `model.cpu()`.
+The device is defined in `cfg.MODEL.DEVICE` and cannot be changed afterwards.
+
+If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
-is a wrapper around model that provides the default behavior for regular inference. It includes model loading as
-well as preprocessing, and operates on single image rather than batches.
-
+is a wrapper around model that provides such basic functionality.
+It includes default behavior including model loading, preprocessing,
+and operates on single image rather than batches.
 
 ### Model Input Format
 
@@ -89,23 +120,6 @@ Based on the tasks the model is doing, each dict may contain the following field
        class id when `isthing==True`, and the stuff class id otherwise.
 
 
-### How to use a model in your code:
-
-Construct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
-For example, in order to do inference, provide dicts with "image", and optionally "height" and "width".
-
-Note that when in training mode, all models are required to be used under an `EventStorage`.
-The training statistics will be put into the storage:
-```python
-from detectron2.utils.events import EventStorage
-with EventStorage() as storage:
-  losses = model(inputs)
-```
-
-Another small thing to remember: detectron2 models do not support `model.to(device)` or `model.cpu()`.
-The device is defined in `cfg.MODEL.DEVICE` and cannot be changed afterwards.
-
-
 ### Partially execute a model:
 
 Sometimes you may want to obtain an intermediate tensor inside a model.
@@ -113,7 +127,7 @@ Since there are typically hundreds of intermediate tensors, there isn't an API t
 the intermediate result you need.
 You have the following options:
 
-1. Write a (sub)model. Following the [tutorial](write-models.html), you can
+1. Write a (sub)model. Following the [tutorial](./write-models.md), you can
    rewrite a model component (e.g. a head of a model), such that it
    does the same thing as the existing component, but returns the output
    you need.

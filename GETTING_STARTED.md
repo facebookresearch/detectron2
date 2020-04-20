@@ -1,4 +1,3 @@
-
 ## Getting Started with Detectron2
 
 This document provides a brief intro of the usage of builtin command-line tools in detectron2.
@@ -43,7 +42,7 @@ You may want to use it as a reference to write your own training script for a ne
 
 To train a model with "train_net.py", first
 setup the corresponding datasets following
-[datasets/README.md](https://github.com/facebookresearch/detectron2/blob/master/datasets/README.md),
+[datasets/README.md](./datasets/README.md),
 then run:
 ```
 cd tools/

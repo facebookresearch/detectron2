@@ -2,7 +2,7 @@
 
 Our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
 has step-by-step instructions that install detectron2.
-The [Dockerfile](https://github.com/facebookresearch/detectron2/blob/master/docker/Dockerfile)
+The [Dockerfile](docker/Dockerfile)
 also installs detectron2 with a few simple commands.
 
 ### Requirements
@@ -44,7 +44,7 @@ Note that:
    It will not work with your custom build of PyTorch.
 2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
 	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
-	 [projects](./projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
+	 [projects](projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
 
 ### Common Installation Issues
 

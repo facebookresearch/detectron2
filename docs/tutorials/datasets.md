@@ -114,7 +114,7 @@ the [load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_jso
 In the `list[dict]` that your dataset function returns, the dictionary can also have arbitrary custom data.
 This can be useful when you're doing a new task that needs extra information not supported
 by the standard dataset dicts. In this case, you need to make sure the downstream code can handle your data
-correctly. Usually this requires writing a new `mapper` for the dataloader (see [Use Custom Dataloaders](data_loading.html))
+correctly. Usually this requires writing a new `mapper` for the dataloader (see [Use Custom Dataloaders](./data_loading.md))
 
 When designing your custom format, note that all dicts are stored in memory
 (sometimes serialized and with multiple copies).
@@ -212,3 +212,8 @@ There are other configs you might want to change to train or evaluate on new dat
 * If you're training Fast R-CNN (with precomputed proposals), `DATASETS.PROPOSAL_FILES_{TRAIN,TEST}`
 	need to match the datasets. The format of proposal files are documented
 	[here](../modules/data.html#detectron2.data.load_proposals_into_dataset).
+
+New models
+(e.g. [TensorMask](../../projects/TensorMask),
+[PointRend](../../projects/PointRend))
+often have their own configs that need to be changed as well.
