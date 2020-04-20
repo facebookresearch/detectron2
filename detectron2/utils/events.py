@@ -304,7 +304,8 @@ class EventStorage:
 
     def put_histogram(self, hist_name, hist_tensor, bins=1000):
         """
-        Create an histogram of a numpy array, calculate its parameters and add them to `_histograms`.
+        Create an histogram of a numpy array, calculate its parameters and add them
+        to self `_histograms`.
 
         Args:
             hist_name (str): The name of the histogram to put into tensorboard.
