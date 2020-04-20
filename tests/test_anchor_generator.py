@@ -43,12 +43,10 @@ class TestAnchorGenerator(unittest.TestCase):
             assert torch.allclose(anchors[i][0].tensor, expected_anchor_tensor)
 
     def test_default_anchor_generator_centered(self):
-        cfg = get_cfg()
-        cfg.MODEL.ANCHOR_GENERATOR.SIZES = [[32, 64]]
-        cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.25, 1, 4]]
-        cfg.MODEL.ANCHOR_GENERATOR.OFFSET = 0.5
-
-        anchor_generator = DefaultAnchorGenerator(cfg, [ShapeSpec(stride=4)])
+        # test explicit args
+        anchor_generator = DefaultAnchorGenerator(
+            sizes=[32, 64], aspect_ratios=[0.25, 1, 4], strides=[4]
+        )
 
         # only the last two dimensions of features matter here
         num_images = 2
@@ -78,7 +76,7 @@ class TestAnchorGenerator(unittest.TestCase):
         cfg = get_cfg()
         cfg.MODEL.ANCHOR_GENERATOR.SIZES = [[32, 64]]
         cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.25, 1, 4]]
-        cfg.MODEL.ANCHOR_GENERATOR.ANGLES = [[0, 45]]
+        cfg.MODEL.ANCHOR_GENERATOR.ANGLES = [0, 45]  # test single list[float]
         anchor_generator = RotatedAnchorGenerator(cfg, [ShapeSpec(stride=4)])
 
         # only the last two dimensions of features matter here

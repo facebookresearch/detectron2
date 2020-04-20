@@ -18,11 +18,10 @@ from detectron2.modeling import build_model
 from detectron2.utils.logger import setup_logger
 
 
+@unittest.skipIf(os.environ.get("CIRCLECI"), "Require COCO data and model zoo.")
 class TestCaffe2Export(unittest.TestCase):
     def setUp(self):
         setup_logger()
-        if os.environ.get("CIRCLECI"):
-            self.skipTest("Require COCO data and model zoo.")
 
     def _test_model(self, config_path, device="cpu"):
         # requires extra dependencies

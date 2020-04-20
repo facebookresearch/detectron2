@@ -38,7 +38,7 @@ to understand its behavior. Some common arguments are:
 
 We provide a script in "tools/{,plain_}train_net.py", that is made to train
 all the configs provided in detectron2.
-You may want to use it as a reference to write your own training script for a new research.
+You may want to use it as a reference to write your own training script.
 
 To train a model with "train_net.py", first
 setup the corresponding datasets following

@@ -1,5 +1,6 @@
 # Use Custom Datasets
 
+Datasets that have builtin support in detectron2 are listed in [datasets](../../datasets).
 If you want to use a custom dataset while also reusing detectron2's data loaders,
 you will need to
 
@@ -45,15 +46,12 @@ we load the original dataset into `list[dict]` with a specification similar to C
 This is our standard representation for a dataset.
 
 Each dict contains information about one image.
-The dict may have the following fields.
-The fields are often optional, and some functions may be able to
-infer certain fields from others if needed, e.g., the data loader
-will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name".
+The dict may have the following fields,
+and the required fields vary based on what the dataloader needs,
+which are often different between among different tasks.
 
 + `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
-+ `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
-   category labels starting from 0.
 + `height`, `width`: integer. The shape of image.
 + `image_id` (str or int): a unique id that identifies this image. Used
 	during evaluation to identify the images, but a dataset may use it for different purposes.
