@@ -7,6 +7,7 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 import torch
+import numpy as np
 from fvcore.common.file_io import PathManager
 from fvcore.common.history_buffer import HistoryBuffer
 
@@ -136,6 +137,11 @@ class TensorboardXWriter(EventWriter):
                 self._writer.add_image(img_name, img, step_num)
             storage.clear_images()
 
+        if len(storage.hist_data) >= 1:
+            for params in storage.hist_data:
+                self._writer.add_histogram_raw(**params)
+            storage.clear_histograms()
+
     def close(self):
         if hasattr(self, "_writer"):  # doesn't exist when the code fails at import
             self._writer.close()
@@ -181,7 +187,7 @@ class CommonMetricPrinter(EventWriter):
             # estimate eta on our own - more noisy
             if self._last_write is not None:
                 estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
-                    iteration - self._last_write[0]
+                        iteration - self._last_write[0]
                 )
                 eta_seconds = estimate_iter_time * (self._max_iter - iteration)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -235,6 +241,7 @@ class EventStorage:
         self._iter = start_iter
         self._current_prefix = ""
         self._vis_data = []
+        self._histograms = []
 
     def put_image(self, img_name, img_tensor):
         """
@@ -279,7 +286,7 @@ class EventStorage:
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
             assert (
-                existing_hint == smoothing_hint
+                    existing_hint == smoothing_hint
             ), "Scalar {} was put with a different smoothing_hint!".format(name)
         else:
             self._smoothing_hints[name] = smoothing_hint
@@ -294,6 +301,41 @@ class EventStorage:
         """
         for k, v in kwargs.items():
             self.put_scalar(k, v, smoothing_hint=smoothing_hint)
+
+    def put_histogram(self, hist_name, hist_tensor, bins=1000):
+        """
+        Create an histogram of a numpy array, calculate its parameters and add them to `_histograms`.
+
+        Args:
+            hist_name (str): The name of the histogram to put into tensorboard.
+            hist_tensor (numpy.array): An `uint8` or `float` array
+            bins (int): Number of histogram bins
+        """
+
+        # Create a histogram with numpy
+        counts, limits = np.histogram(hist_tensor, bins=bins)
+
+        # Parameter for the add_histogram_raw function of the PyTorch SummaryWriter
+        hist_params = dict(
+            tag=hist_name,
+            min=hist_tensor.min(),
+            max=hist_tensor.max(),
+            num=len(hist_tensor),
+            sum=hist_tensor.sum(),
+            sum_squares=float(np.sum(hist_tensor ** 2)),
+            bucket_limits=limits[1:].tolist(),
+            bucket_counts=counts.tolist(),
+            global_step=self._iter
+        )
+
+        self._histograms.append(hist_params)
+
+    def clear_histograms(self):
+        """
+        Delete all the stored histograms for visualization.
+        This should be called after histograms are written to tensorboard.
+        """
+        self._histograms = []
 
     def history(self, name):
         """
@@ -354,6 +396,10 @@ class EventStorage:
     @property
     def vis_data(self):
         return self._vis_data
+
+    @property
+    def hist_data(self):
+        return self._histograms
 
     @property
     def iter(self):
