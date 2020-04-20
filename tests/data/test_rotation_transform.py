@@ -56,6 +56,19 @@ class TestRotationTransform(unittest.TestCase):
                 self.assertEqualsArrays(r1.apply_image(image), r2.apply_image(image))
                 self.assertEqualsArrays(r1.apply_coords(coords), r2.apply_coords(coords))
 
+    def test_crop90(self):
+        image = np.array(
+            [[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3], [4, 4, 4, 4, 4, 4]],
+            dtype=np.float,
+        )
+        # there is no center pixel with 6 -> therefore 4 is completly cut
+        expected_cropped_rotation_image = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]])
+        rot = RotationTransform(
+            image.shape[0], image.shape[1], 90, expand=False, center=None, crop=True
+        )
+        rotated_image = rot.apply_image(image)
+        self.assertEqualsArrays(rotated_image, expected_cropped_rotation_image)
+
 
 if __name__ == "__main__":
     unittest.main()

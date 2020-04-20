@@ -3,7 +3,7 @@
 # File: transform.py
 
 import numpy as np
-from fvcore.transforms.transform import HFlipTransform, NoOpTransform, Transform
+from fvcore.transforms.transform import CropTransform, HFlipTransform, NoOpTransform, Transform
 from PIL import Image
 
 try:
@@ -106,7 +106,7 @@ class RotationTransform(Transform):
     number of degrees counter clockwise around its center.
     """
 
-    def __init__(self, h, w, angle, expand=True, center=None, interp=None):
+    def __init__(self, h, w, angle, expand=True, center=None, interp=None, crop=False):
         """
         Args:
             h, w (int): original image size
@@ -117,6 +117,9 @@ class RotationTransform(Transform):
                 if left to None, the center will be fit to the center of each image
                 center has no effect if expand=True because it only affects shifting
             interp: cv2 interpolation method, default cv2.INTER_LINEAR
+            crop (bool): crop rotated image to the largest possible
+                         axis-aligned rectangle with maximal area within the rotated image.
+                         Enabling this will remove empty borders after the rotation.
         """
         super().__init__()
         image_center = np.array((w / 2, h / 2))
@@ -138,6 +141,11 @@ class RotationTransform(Transform):
         # Needed because of this problem https://github.com/opencv/opencv/issues/11784
         self.rm_image = self.create_rotation_matrix(offset=-0.5)
 
+        if self.crop:
+            self.crop_transform = self.create_crop_transform()
+        else:
+            self.crop_transform = NoOpTransform()
+
     def apply_image(self, img, interp=None):
         """
         img should be a numpy array, formatted as Height * Width * Nchannels
@@ -146,7 +154,10 @@ class RotationTransform(Transform):
             return img
         assert img.shape[:2] == (self.h, self.w)
         interp = interp if interp is not None else self.interp
-        return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp)
+        rotated_image = cv2.warpAffine(
+            img, self.rm_image, (self.bound_w, self.bound_h), flags=interp
+        )
+        return self.crop_transform.apply_image(rotated_image)
 
     def apply_coords(self, coords):
         """
@@ -155,7 +166,8 @@ class RotationTransform(Transform):
         if len(coords) == 0:
             return coords
         coords = np.asarray(coords, dtype=float)
-        return cv2.transform(coords[:, np.newaxis, :], self.rm_coords)[:, 0, :]
+        rotated_coords = cv2.transform(coords[:, np.newaxis, :], self.rm_coords)[:, 0, :]
+        return self.crop_transform.apply_coords(rotated_coords)
 
     def apply_segmentation(self, segmentation):
         segmentation = self.apply_image(segmentation, interp=cv2.INTER_NEAREST)
@@ -172,6 +184,54 @@ class RotationTransform(Transform):
             # shift the rotation center to the new coordinates
             rm[:, 2] += new_center
         return rm
+
+    def create_crop_transform(self):
+        """
+        Create a CropTransform for the largest possible
+        axis-aligned rectangle (maximal area) within the rotated rectangle.
+        """
+
+        def _find_max_area_rect(width, height, angle):
+            """
+            Given a rectangle of size `width` x `height` that has been rotated by `angle` (in
+            radians), computes the width and height of the largest possible
+            axis-aligned rectangle (maximal area) within the rotated rectangle.
+
+            See: https://stackoverflow.com/a/16770343/1336014
+            """
+            quadrant = int(np.floor(angle / (np.pi / 2))) & 3
+            sign_alpha = angle if ((quadrant & 1) == 0) else np.pi - angle
+            alpha = (sign_alpha % np.pi + np.pi) % np.pi
+
+            bb_w = width * np.cos(alpha) + height * np.sin(alpha)
+            bb_h = width * np.sin(alpha) + height * np.cos(alpha)
+
+            gamma = np.arctan2(bb_w, bb_w) if (width < height) else np.arctan2(bb_w, bb_w)
+
+            delta = np.pi - alpha - gamma
+
+            length = height if (width < height) else width
+
+            d = length * np.cos(alpha)
+            a = d * np.sin(alpha) / np.sin(delta)
+
+            y = a * np.cos(gamma)
+            x = y * np.tan(gamma)
+
+            wr, hr = bb_w - 2 * x, bb_h - 2 * y
+            return wr, hr
+
+        cropped_w, cropped_h = _find_max_area_rect(self.w, self.h, np.radians(self.angle))
+
+        # clip the coordinates to the image size
+        cropped_w = self.w if cropped_w > self.w else cropped_w
+        cropped_h = self.h if cropped_h > self.h else cropped_h
+
+        # create crop transformation from center
+        x0 = int(self.image_center[0] - cropped_w * 0.5)
+        y0 = int(self.image_center[1] - cropped_h * 0.5)
+        crop_transform = CropTransform(x0, y0, int(cropped_w), int(cropped_h))
+        return crop_transform
 
 
 def HFlip_rotated_box(transform, rotated_boxes):

@@ -220,7 +220,9 @@ class RandomRotation(TransformGen):
     number of degrees counter clockwise around the given center.
     """
 
-    def __init__(self, angle, expand=True, center=None, sample_style="range", interp=None):
+    def __init__(
+        self, angle, expand=True, center=None, sample_style="range", interp=None, crop=False
+    ):
         """
         Args:
             angle (list[float]): If ``sample_style=="range"``,
@@ -234,6 +236,9 @@ class RandomRotation(TransformGen):
                 If ``sample_style=="choice"``, a list of centers to sample from
                 Default: None, which means that the center of rotation is the center of the image
                 center has no effect if expand=True because it only affects shifting
+            crop (bool): crop rotated image to the largest possible
+                         axis-aligned rectangle with maximal area within the rotated image.
+                         Enabling this will remove empty borders after the rotation.
         """
         super().__init__()
         assert sample_style in ["range", "choice"], sample_style
@@ -262,7 +267,9 @@ class RandomRotation(TransformGen):
         if center is not None:
             center = (w * center[0], h * center[1])  # Convert to absolute coordinates
 
-        return RotationTransform(h, w, angle, expand=self.expand, center=center, interp=self.interp)
+        return RotationTransform(
+            h, w, angle, expand=self.expand, center=center, interp=self.interp, crop=self.crop
+        )
 
 
 class RandomCrop(TransformGen):
