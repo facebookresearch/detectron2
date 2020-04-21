@@ -57,6 +57,8 @@ class DetectionCheckpointer(Checkpointer):
             checkpoint["model"] = model_state_dict
         # for non-caffe2 models, use standard ways to load it
         incompatible = super()._load_model(checkpoint)
+        if incompatible is None:  # support older versions of fvcore
+            return None
 
         model_buffers = dict(self.model.named_buffers(recurse=False))
         for k in ["pixel_mean", "pixel_std"]:

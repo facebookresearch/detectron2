@@ -117,6 +117,8 @@ class AspectRatioGroupedDataset(data.IterableDataset):
     Batch data that have similar aspect ratio together.
     In this implementation, images whose aspect ratio < (or >) 1 will
     be batched together.
+    This improves training speed because the images then need less padding
+    to form a batch.
 
     It assumes the underlying dataset produces dicts with "width" and "height" keys.
     It will then produce a list of original dicts with length = batch_size,

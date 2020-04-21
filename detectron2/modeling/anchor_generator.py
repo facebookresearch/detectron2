@@ -41,7 +41,7 @@ class BufferList(nn.Module):
         return iter(self._buffers.values())
 
 
-def _create_grid_offsets(size, stride, offset, device):
+def _create_grid_offsets(size: List[int], stride: int, offset: float, device: torch.device):
     grid_height, grid_width = size
     shifts_x = torch.arange(
         offset * stride, grid_width * stride, step=stride, dtype=torch.float32, device=device
@@ -154,7 +154,7 @@ class DefaultAnchorGenerator(nn.Module):
         """
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
-    def _grid_anchors(self, grid_sizes):
+    def _grid_anchors(self, grid_sizes: List[List[int]]):
         anchors = []
         for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
             shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors.device)
