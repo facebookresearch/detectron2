@@ -7,6 +7,8 @@ import torch
 from fvcore.nn import activation_count, flop_count, parameter_count, parameter_count_table
 from torch import nn
 
+from detectron2.structures import BitMasks, Boxes, ImageList, Instances
+
 from .logger import log_first_n
 
 __all__ = [
@@ -18,6 +20,34 @@ __all__ = [
 
 FLOPS_MODE = "flops"
 ACTIVATIONS_MODE = "activations"
+
+
+# some extra ops to ignore from counting.
+_IGNORED_OPS = [
+    "aten::batch_norm",
+    "aten::div",
+    "aten::div_",
+    "aten::rsub",
+    "aten::sub",
+    "aten::relu_",
+    "aten::add_",
+    "aten::mul",
+    "aten::add",
+    "aten::relu",
+    "aten::sigmoid",
+    "aten::sigmoid_",
+    "aten::sort",
+    "aten::exp",
+    "aten::mul_",
+    "aten::max_pool2d",
+    "aten::constant_pad_nd",
+    "aten::sqrt",
+    "aten::softmax",
+    "aten::log2",
+    "aten::nonzero_numpy",
+    "prim::PythonOp",
+    "torchvision::nms",
+]
 
 
 def flop_count_operators(
@@ -64,9 +94,37 @@ def activation_count_operators(
     return _wrapper_count_operators(model=model, inputs=inputs, mode=ACTIVATIONS_MODE, **kwargs)
 
 
+def _flatten_to_tuple(outputs):
+    result = []
+    if isinstance(outputs, torch.Tensor):
+        result.append(outputs)
+    elif isinstance(outputs, (list, tuple)):
+        for v in outputs:
+            result.extend(_flatten_to_tuple(v))
+    elif isinstance(outputs, dict):
+        for _, v in outputs.items():
+            result.extend(_flatten_to_tuple(v))
+    elif isinstance(outputs, Instances):
+        result.extend(_flatten_to_tuple(outputs.get_fields()))
+    elif isinstance(outputs, (Boxes, BitMasks, ImageList)):
+        result.append(outputs.tensor)
+    else:
+        log_first_n(
+            logging.WARN,
+            f"Output of type {type(outputs)} not included in flops/activations count.",
+            n=10,
+        )
+    return tuple(result)
+
+
 def _wrapper_count_operators(
     model: nn.Module, inputs: list, mode: str, **kwargs
 ) -> typing.DefaultDict[str, float]:
+
+    # ignore some ops
+    supported_ops = {k: lambda *args, **kwargs: {} for k in _IGNORED_OPS}
+    supported_ops.update(kwargs.pop("supported_ops", {}))
+    kwargs["supported_ops"] = supported_ops
 
     assert len(inputs) == 1, "Please use batch size=1"
     tensor_input = inputs[0]["image"]
@@ -84,25 +142,10 @@ def _wrapper_count_operators(
         def forward(self, image):
             # jit requires the input/output to be Tensors
             inputs = [{"image": image}]
-            outputs = self.model.forward(inputs)[0]
-            if isinstance(outputs, dict) and "instances" in outputs:
-                # Only the subgraph that computes the returned tensor will be
-                # counted. So we return everything we found in Instances.
-                inst = outputs["instances"]
-                ret = [inst.pred_boxes.tensor]
-                inst.remove("pred_boxes")
-                for k, v in inst.get_fields().items():
-                    if isinstance(v, torch.Tensor):
-                        ret.append(v)
-                    else:
-                        log_first_n(
-                            logging.WARN,
-                            f"Field '{k}' in output instances is not included"
-                            " in flops/activations count.",
-                            n=10,
-                        )
-                return tuple(ret)
-            raise NotImplementedError("Count for segmentation models is not supported yet.")
+            outputs = self.model.forward(inputs)
+            # Only the subgraph that computes the returned tuple of tensor will be
+            # counted. So we flatten everything we found to tuple of tensors.
+            return _flatten_to_tuple(outputs)
 
     old_train = model.training
     with torch.no_grad():
