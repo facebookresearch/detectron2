@@ -149,6 +149,10 @@ class CascadeROIHeads(StandardROIHeads):
                 image_sizes,
                 predictor.test_score_thresh,
                 predictor.test_nms_thresh,
+                predictor.soft_nms_enabled,
+                predictor.soft_nms_method,
+                predictor.soft_nms_sigma,
+                predictor.soft_nms_prune,
                 predictor.test_topk_per_image,
             )
             return pred_instances

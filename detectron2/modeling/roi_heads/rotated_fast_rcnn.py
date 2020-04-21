@@ -5,6 +5,7 @@ from typing import Dict
 import torch
 
 from detectron2.layers import ShapeSpec, batched_nms_rotated
+from detectron2.layers.soft_nms import batched_soft_nms_rotated
 from detectron2.structures import Instances, RotatedBoxes, pairwise_iou_rotated
 from detectron2.utils.events import get_event_storage
 
@@ -44,7 +45,16 @@ Naming convention:
 
 
 def fast_rcnn_inference_rotated(
-    boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image
+    boxes,
+    scores,
+    image_shapes,
+    score_thresh,
+    nms_thresh,
+    soft_nms_enabled,
+    soft_nms_method,
+    soft_nms_sigma,
+    soft_nms_prune,
+    topk_per_image,
 ):
     """
     Call `fast_rcnn_inference_single_image_rotated` for all images.
@@ -62,6 +72,10 @@ def fast_rcnn_inference_rotated(
         score_thresh (float): Only return detections with a confidence score exceeding this
             threshold.
         nms_thresh (float):  The threshold to use for box non-maximum suppression. Value in [0, 1].
+        soft_nms_enabled (bool): Indicate to use soft non-maximum suppression.
+        soft_nms_method: (str): One of ['gaussian', 'linear', 'hard']
+        soft_nms_sigma: (float): Sigma for gaussian soft nms. Value in (0, inf)
+        soft_nms_prune: (float): Threshold for pruning during soft nms. Value in [0, 1]
         topk_per_image (int): The number of top scoring detections to return. Set < 0 to return
             all detections.
 
@@ -73,7 +87,16 @@ def fast_rcnn_inference_rotated(
     """
     result_per_image = [
         fast_rcnn_inference_single_image_rotated(
-            boxes_per_image, scores_per_image, image_shape, score_thresh, nms_thresh, topk_per_image
+            boxes_per_image,
+            scores_per_image,
+            image_shape,
+            score_thresh,
+            nms_thresh,
+            soft_nms_enabled,
+            soft_nms_method,
+            soft_nms_sigma,
+            soft_nms_prune,
+            topk_per_image,
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
@@ -81,7 +104,16 @@ def fast_rcnn_inference_rotated(
 
 
 def fast_rcnn_inference_single_image_rotated(
-    boxes, scores, image_shape, score_thresh, nms_thresh, topk_per_image
+    boxes,
+    scores,
+    image_shape,
+    score_thresh,
+    nms_thresh,
+    soft_nms_enabled,
+    soft_nms_method,
+    soft_nms_sigma,
+    soft_nms_prune,
+    topk_per_image,
 ):
     """
     Single-image inference. Return rotated bounding-box detection results by thresholding
@@ -118,7 +150,19 @@ def fast_rcnn_inference_single_image_rotated(
     scores = scores[filter_mask]
 
     # Apply per-class Rotated NMS
-    keep = batched_nms_rotated(boxes, scores, filter_inds[:, 1], nms_thresh)
+    if not soft_nms_enabled:
+        keep = batched_nms_rotated(boxes, scores, filter_inds[:, 1], nms_thresh)
+    else:
+        keep, soft_nms_scores = batched_soft_nms_rotated(
+            boxes,
+            scores,
+            filter_inds[:, 1],
+            soft_nms_method,
+            soft_nms_sigma,
+            nms_thresh,
+            soft_nms_prune,
+        )
+        scores[keep] = soft_nms_scores
     if topk_per_image >= 0:
         keep = keep[:topk_per_image]
     boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
@@ -160,6 +204,10 @@ class RotatedFastRCNNOutputLayers(FastRCNNOutputLayers):
             image_shapes,
             self.test_score_thresh,
             self.test_nms_thresh,
+            self.soft_nms_enabled,
+            self.soft_nms_method,
+            self.soft_nms_sigma,
+            self.soft_nms_prune,
             self.test_topk_per_image,
         )
 
