@@ -2,7 +2,6 @@
 import datetime
 import json
 import logging
-import numpy as np
 import os
 import time
 from collections import defaultdict
@@ -187,7 +186,7 @@ class CommonMetricPrinter(EventWriter):
             # estimate eta on our own - more noisy
             if self._last_write is not None:
                 estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
-                        iteration - self._last_write[0]
+                    iteration - self._last_write[0]
                 )
                 eta_seconds = estimate_iter_time * (self._max_iter - iteration)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -286,7 +285,7 @@ class EventStorage:
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
             assert (
-                    existing_hint == smoothing_hint
+                existing_hint == smoothing_hint
             ), "Scalar {} was put with a different smoothing_hint!".format(name)
         else:
             self._smoothing_hints[name] = smoothing_hint
@@ -314,22 +313,17 @@ class EventStorage:
             bins (int): Number of histogram bins.
         """
 
-        val_min, val_max = hist_tensor.min().item(), hist_tensor.max().item()
+        ht_min, ht_max = hist_tensor.min().item(), hist_tensor.max().item()
 
         # Create a histogram with PyTorch
         hist_counts = torch.histc(hist_tensor, bins=bins)
-        hist_edges = torch.linspace(
-            start=val_min,
-            end=val_max,
-            steps=bins + 1,
-            dtype=torch.float32
-        )
+        hist_edges = torch.linspace(start=ht_min, end=ht_max, steps=bins + 1, dtype=torch.float32)
 
         # Parameter for the add_histogram_raw function of the PyTorch SummaryWriter
         hist_params = dict(
             tag=hist_name,
-            min=val_min,
-            max=val_max,
+            min=ht_min,
+            max=ht_max,
             num=len(hist_tensor),
             sum=float(hist_tensor.sum()),
             sum_squares=float(torch.sum(hist_tensor ** 2)),
