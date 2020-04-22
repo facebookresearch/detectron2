@@ -142,7 +142,7 @@ class RotationTransform(Transform):
         """
         img should be a numpy array, formatted as Height * Width * Nchannels
         """
-        if len(img) == 0:
+        if len(img) == 0 or self.angle % 360 == 0:
             return img
         assert img.shape[:2] == (self.h, self.w)
         interp = interp if interp is not None else self.interp
@@ -152,9 +152,9 @@ class RotationTransform(Transform):
         """
         coords should be a N * 2 array-like, containing N couples of (x, y) points
         """
-        if len(coords) == 0:
-            return coords
         coords = np.asarray(coords, dtype=float)
+        if len(coords) == 0 or self.angle % 360 == 0:
+            return coords
         return cv2.transform(coords[:, np.newaxis, :], self.rm_coords)[:, 0, :]
 
     def apply_segmentation(self, segmentation):
