@@ -34,7 +34,7 @@ cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-Insta
 Note that:
 1. The conversion needs valid sample inputs & weights to trace the model. That's why the script requires the dataset.
 	 You can modify the script to obtain sample inputs in other ways.
-2. GPU conversion is supported only with Pytorch's master. So we use `MODEL.DEVICE cpu`.
+2. GPU conversion is supported only with Pytorch ≥ 1.5. So we use `MODEL.DEVICE cpu`.
 3. With the `--run-eval` flag, it will evaluate the converted models to verify its accuracy.
    The accuracy is typically slightly different (within 0.1 AP) from PyTorch due to
 	 numerical precisions between different implementations.

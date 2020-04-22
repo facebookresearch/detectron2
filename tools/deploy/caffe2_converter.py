@@ -2,6 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import argparse
 import os
+import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -20,6 +21,9 @@ def setup_cfg(args):
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
+    if cfg.MODEL.DEVICE != "cpu":
+        TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
+        assert TORCH_VERSION >= (1, 5), "PyTorch>=1.5 required!"
     return cfg
 
 
