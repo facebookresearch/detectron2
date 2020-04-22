@@ -187,7 +187,7 @@ class CommonMetricPrinter(EventWriter):
             # estimate eta on our own - more noisy
             if self._last_write is not None:
                 estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
-                    iteration - self._last_write[0]
+                        iteration - self._last_write[0]
                 )
                 eta_seconds = estimate_iter_time * (self._max_iter - iteration)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -286,7 +286,7 @@ class EventStorage:
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
             assert (
-                existing_hint == smoothing_hint
+                    existing_hint == smoothing_hint
             ), "Scalar {} was put with a different smoothing_hint!".format(name)
         else:
             self._smoothing_hints[name] = smoothing_hint
@@ -309,23 +309,32 @@ class EventStorage:
 
         Args:
             hist_name (str): The name of the histogram to put into tensorboard.
-            hist_tensor (numpy.array): An `uint8` or `float` array
-            bins (int): Number of histogram bins
+            hist_tensor (torch.Tensor): An `uint8` or `float` Tensor of arbitrary shape
+            to be converted into a histogram.
+            bins (int): Number of histogram bins.
         """
 
-        # Create a histogram with numpy
-        counts, limits = np.histogram(hist_tensor, bins=bins)
+        val_min, val_max = hist_tensor.min().item(), hist_tensor.max().item()
+
+        # Create a histogram with PyTorch
+        hist_counts = torch.histc(hist_tensor, bins=bins)
+        hist_edges = torch.linspace(
+            start=val_min,
+            end=val_max,
+            steps=bins + 1,
+            dtype=torch.float32
+        )
 
         # Parameter for the add_histogram_raw function of the PyTorch SummaryWriter
         hist_params = dict(
             tag=hist_name,
-            min=hist_tensor.min(),
-            max=hist_tensor.max(),
+            min=val_min,
+            max=val_max,
             num=len(hist_tensor),
-            sum=hist_tensor.sum(),
-            sum_squares=float(np.sum(hist_tensor ** 2)),
-            bucket_limits=limits[1:].tolist(),
-            bucket_counts=counts.tolist(),
+            sum=float(hist_tensor.sum()),
+            sum_squares=float(torch.sum(hist_tensor ** 2)),
+            bucket_limits=hist_edges[1:].tolist(),
+            bucket_counts=hist_counts.tolist(),
             global_step=self._iter,
         )
 
