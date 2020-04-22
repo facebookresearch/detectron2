@@ -268,8 +268,9 @@ class DensePoseCocoEval(object):
             if _checkIgnore(gt, self._igrgns[iid]):
                 self._gts[iid, gt["category_id"]].append(gt)
         for dt in dts:
-            if _checkIgnore(dt, self._igrgns[dt["image_id"]]):
-                self._dts[dt["image_id"], dt["category_id"]].append(dt)
+            iid = dt["image_id"]
+            if (iid not in self._igrgns) or _checkIgnore(dt, self._igrgns[iid]):
+                self._dts[iid, dt["category_id"]].append(dt)
 
         self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
         self.eval = {}  # accumulated evaluation results
@@ -367,16 +368,18 @@ class DensePoseCocoEval(object):
 
         gtmasks = []
         for g in gt:
-            if DensePoseDataRelative.S_KEY in g.keys():
+            if DensePoseDataRelative.S_KEY in g:
                 mask = self.getDensePoseMask(g[DensePoseDataRelative.S_KEY])
                 _, _, w, h = g["bbox"]
                 scale_x = float(max(w, 1)) / mask.shape[1]
                 scale_y = float(max(h, 1)) / mask.shape[0]
                 mask = spzoom(mask, (scale_y, scale_x), order=1, prefilter=False)
                 mask = np.array(mask > 0.5, dtype=np.uint8)
+                rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
+            elif "segmentation" in g:
+                rle_mask = g["segmentation"]
             else:
-                mask = None
-            rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
+                rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             gtmasks.append(rle_mask)
 
         dtmasks = []
@@ -1061,7 +1064,7 @@ class DensePoseCocoEval(object):
                         dists.append(self.Pdist_matrix[int(k)][0])
                 else:
                     dists.append(np.inf)
-        return np.array(dists).squeeze()
+        return np.atleast_1d(np.array(dists).squeeze())
 
 
 class Params:

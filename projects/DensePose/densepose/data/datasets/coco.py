@@ -38,6 +38,11 @@ DATASETS = [
         images_root="coco/val2014",
         annotations_fpath="coco/annotations/densepose_valminusminival2014.json",
     ),
+    CocoDatasetInfo(
+        name="densepose_chimps",
+        images_root="densepose_evolution/densepose_chimps",
+        annotations_fpath="densepose_evolution/annotations/densepose_chimps_densepose.json",
+    ),
 ]
 
 
@@ -72,7 +77,6 @@ def get_metadata(base_path: Optional[os.PathLike]) -> Dict[str, Any]:
         Metadata in the form of a dictionary
     """
     meta = {
-        "thing_classes": ["person"],
         "densepose_transform_src": _maybe_prepend_base_path(
             base_path, "UV_symmetry_transforms.mat"
         ),
