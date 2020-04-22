@@ -151,7 +151,7 @@ else:
             return _NewEmptyTensorOp.apply(x, output_shape)
 
 
-if False:  # not yet fixed in pytorch
+if TORCH_VERSION > (1, 5):
     Linear = torch.nn.Linear
 else:
 
@@ -182,7 +182,7 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     """
     A wrapper around :func:`torch.nn.functional.interpolate` to support zero-size tensor.
     """
-    if input.numel() > 0:
+    if TORCH_VERSION > (1, 4) or input.numel() > 0:
         return torch.nn.functional.interpolate(
             input, size, scale_factor, mode, align_corners=align_corners
         )

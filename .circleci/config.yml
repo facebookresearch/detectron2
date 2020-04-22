@@ -158,7 +158,7 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
-            docker exec -it d2 python3 -m unittest discover -v -s /detectron2/tests
+            docker exec -e CIRCLECI=true -it d2 python3 -m unittest discover -v -s /detectron2/tests
 
 workflows:
   version: 2

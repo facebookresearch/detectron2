@@ -46,15 +46,19 @@ from .train_loop import SimpleTrainer
 __all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
 
 
-def default_argument_parser():
+def default_argument_parser(epilog=None):
     """
     Create a parser with some common arguments used by detectron2 users.
+
+    Args:
+        epilog (str): epilog passed to ArgumentParser describing the usage.
 
     Returns:
         argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
-        epilog=f"""
+        epilog=epilog
+        or f"""
 Examples:
 
 Run on single machine:

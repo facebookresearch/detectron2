@@ -4,7 +4,6 @@ import copy
 import numpy as np
 import unittest
 import pycocotools.mask as mask_util
-import torch
 
 from detectron2.data import detection_utils
 from detectron2.data import transforms as T

@@ -4,7 +4,7 @@ import numpy as np
 from typing import Iterable, Optional, Tuple
 import cv2
 
-from ..structures import DensePoseDataRelative, DensePoseOutput, DensePoseResult
+from ..data.structures import DensePoseDataRelative, DensePoseOutput, DensePoseResult
 from .base import Boxes, Image, MatrixVisualizer, PointsVisualizer
 
 

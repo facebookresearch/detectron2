@@ -57,22 +57,14 @@ class TestRotatedBoxesLayer(unittest.TestCase):
         ious_cuda = pairwise_iou_rotated(boxes1.cuda(), boxes2.cuda())
         self.assertTrue(torch.allclose(ious_cuda.cpu(), expected_ious))
 
-    def test_iou_precision_cpu(self):
-        boxes1 = torch.tensor([[565, 565, 10, 10, 0]], dtype=torch.float32)
-        boxes2 = torch.tensor([[565, 565, 10, 8.3, 0]], dtype=torch.float32)
-        iou = 8.3 / 10.0
-        expected_ious = torch.tensor([[iou]], dtype=torch.float32)
-        ious = pairwise_iou_rotated(boxes1, boxes2)
-        self.assertTrue(torch.allclose(ious, expected_ious))
-
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    def test_iou_precision_cuda(self):
-        boxes1 = torch.tensor([[565, 565, 10, 10, 0]], dtype=torch.float32)
-        boxes2 = torch.tensor([[565, 565, 10, 8.3, 0]], dtype=torch.float32)
-        iou = 8.3 / 10.0
-        expected_ious = torch.tensor([[iou]], dtype=torch.float32)
-        ious_cuda = pairwise_iou_rotated(boxes1.cuda(), boxes2.cuda())
-        self.assertTrue(torch.allclose(ious_cuda.cpu(), expected_ious))
+    def test_iou_precision(self):
+        for device in ["cpu"] + ["cuda"] if torch.cuda.is_available() else []:
+            boxes1 = torch.tensor([[565, 565, 10, 10.0, 0]], dtype=torch.float32, device=device)
+            boxes2 = torch.tensor([[565, 565, 10, 8.3, 0]], dtype=torch.float32, device=device)
+            iou = 8.3 / 10.0
+            expected_ious = torch.tensor([[iou]], dtype=torch.float32)
+            ious = pairwise_iou_rotated(boxes1, boxes2)
+            self.assertTrue(torch.allclose(ious.cpu(), expected_ious))
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_iou_too_many_boxes_cuda(self):
@@ -81,6 +73,25 @@ class TestRotatedBoxesLayer(unittest.TestCase):
         boxes2 = torch.zeros(s2, 5)
         ious_cuda = pairwise_iou_rotated(boxes1.cuda(), boxes2.cuda())
         self.assertTupleEqual(tuple(ious_cuda.shape), (s1, s2))
+
+    def test_iou_extreme(self):
+        # Cause floating point issues in cuda kernels (#1266)
+        for device in ["cpu"] + ["cuda"] if torch.cuda.is_available() else []:
+            boxes1 = torch.tensor([[160.0, 153.0, 230.0, 23.0, -37.0]], device=device)
+            boxes2 = torch.tensor(
+                [
+                    [
+                        -1.117407639806935e17,
+                        1.3858420478349148e18,
+                        1000.0000610351562,
+                        1000.0000610351562,
+                        1612.0,
+                    ]
+                ],
+                device=device,
+            )
+            ious = pairwise_iou_rotated(boxes1, boxes2)
+            self.assertTrue(ious.min() >= 0, ious)
 
 
 class TestRotatedBoxesStructure(unittest.TestCase):
