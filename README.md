@@ -1,56 +1,172 @@
-<img src=".github/Detectron2-Logo-Horz.svg" width="300" >
+# ResNeSt (Detectron2)
 
-Detectron2 is Facebook AI Research's next generation software system
-that implements state-of-the-art object detection algorithms.
-It is a ground-up rewrite of the previous version,
-[Detectron](https://github.com/facebookresearch/Detectron/),
-and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/).
+This repo contains an implementation of [ResNeSt](https://hangzhang.org/files/resnest.pdf) on detection and instance segmentation, using [detectron2](https://github.com/facebookresearch/detectron2) framework.
 
-<div align="center">
-  <img src="https://user-images.githubusercontent.com/1381301/66535560-d3422200-eace-11e9-9123-5535d469db19.png"/>
-</div>
-
-### What's New
-* It is powered by the [PyTorch](https://pytorch.org) deep learning framework.
-* Includes more features such as panoptic segmentation, densepose, Cascade R-CNN, rotated bounding boxes, etc.
-* Can be used as a library to support [different projects](projects/) on top of it.
-  We'll open source more research projects in this way.
-* It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
-
-See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
-to see more demos and learn about detectron2.
-
-## Installation
-
-See [INSTALL.md](INSTALL.md).
-
-## Quick Start
-
-See [GETTING_STARTED.md](GETTING_STARTED.md),
-or the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5).
-
-Learn more at our [documentation](https://detectron2.readthedocs.org).
-And see [projects/](projects/) for some projects that are built on top of detectron2.
-
-## Model Zoo and Baselines
-
-We provide a large set of baseline results and trained models available for download in the [Detectron2 Model Zoo](MODEL_ZOO.md).
+<a href="https://arxiv.org/pdf/2004.08955.pdf" rel="Paper"><img src="http://www.arxiv-sanity.com/static/thumbs/2004.08955v1.pdf.jpg" alt="Paper" width="100%"></a>
 
 
-## License
+## Object Detection
+<table class="tg">
+  <tr>
+    <th class="tg-0pky">Method</th>
+    <th class="tg-0pky">Backbone</th>
+    <th class="tg-0pky">mAP%</th>
+    <th class="tg-0pky">download</th>
+  </tr>
+  <tr>
+    <td rowspan="4" class="tg-0pky">Faster R-CNN</td>
+    <td class="tg-0pky">ResNet-50</td>
+    <td class="tg-0pky">39.25</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_rcnn_R_50_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_R_50_FPN_syncbn_range-scale_1x-fde56e2b.pth ">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_R_50_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNet-101</td>
+    <td class="tg-0lax">41.37</td>
+     <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_rcnn_R_101_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_R_101_FPN_syncbn_range-scale_1x-57c73356.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_R_101_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-50 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>42.33</b></td>
+     <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_rcnn_ResNeSt_50_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_50_FPN_syncbn_range-scale_1x-ad123c0b.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_50_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-101 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>44.72</b></td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_rcnn_ResNeSt_101_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_101_FPN_syncbn_range-scale_1x-d8f284b6.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_101_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td rowspan="5" class="tg-0lax">Cascade R-CNN</td>
+    <td class="tg-0lax">ResNet-50</td>
+    <td class="tg-0lax">42.52</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_cascade_rcnn_R_50_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_R_50_FPN_syncbn_range-scale_1x-00dcb96a.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_R_50_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNet-101</td>
+    <td class="tg-0lax">44.03</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_cascade_rcnn_R_101_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_R_101_FPN_syncbn_range-scale_1x-e13a96f7.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_R_101_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-50 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>45.41</b></td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_cascade_rcnn_ResNeSt_50_FPN_syncbn_range-scale-1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_ResNeSt_50_FPN_syncbn_range-scale-1x-e9955232.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_ResNeSt_50_FPN_syncbn_range-scale-1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-101 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>47.50</b></td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_cascade_rcnn_ResNeSt_101_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_ResNeSt_101_FPN_syncbn_range-scale_1x-3627ef78.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_ResNeSt_101_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-200 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>49.03</b></td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-Detection/faster_cascade_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x-1be2a87e.pth .pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+  </tr>
+</table>
 
-Detectron2 is released under the [Apache 2.0 license](LICENSE).
+We train all models with FPN, SyncBN and image scale augmentation (short size of a image is pickedrandomly from 640 to 800). 1x learning rate schedule is used. All of them are reported on COCO-2017 validation dataset.
 
-## Citing Detectron
 
-If you use Detectron2 in your research or wish to refer to the baseline results published in the [Model Zoo](MODEL_ZOO.md), please use the following BibTeX entry.
 
-```BibTeX
-@misc{wu2019detectron2,
-  author =       {Yuxin Wu and Alexander Kirillov and Francisco Massa and
-                  Wan-Yen Lo and Ross Girshick},
-  title =        {Detectron2},
-  howpublished = {\url{https://github.com/facebookresearch/detectron2}},
-  year =         {2019}
+## Instance Segmentation
+<table class="tg">
+  <tr>
+    <th class="tg-0pky">Method</th>
+    <th class="tg-0pky">Backbone</th>
+    <th class="tg-0pky">bbox</th>
+    <th class="tg-0lax">mas</th>
+    <th class="tg-0pky">download</th>
+  </tr>
+  <tr>
+    <td rowspan="4" class="tg-0pky">Mask R-CNN</td>
+    <td class="tg-0pky">ResNet-50</td>
+    <td class="tg-0pky">39.97</td>
+    <td class="tg-0lax">36.05</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_syncbn_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_R_50_FPN_syncbn_1x-4939bd58.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_R_50_FPN_syncbn_1x.txt">log</a> </td>
+</tr>
+  <tr>
+    <td class="tg-0lax">ResNet-101</td>
+    <td class="tg-0lax">41.78</td>
+    <td class="tg-0lax">37.51</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_rcnn_R_101_FPN_syncbn_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_R_101_FPN_syncbn_1x-55493cc2.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_R_101_FPN_syncbn_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-50 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>42.81</b></td>
+    <td class="tg-0lax"><b>38.14</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_rcnn_ResNeSt_50_FPN_syncBN_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_50_FPN_syncBN_1x-f442d863.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_50_FPN_syncBN_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-101 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>45.75</b></td>
+    <td class="tg-0lax"><b>40.65</b></td>
+     <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_rcnn_ResNeSt_101_FPN_syncBN_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_101_FPN_syncBN_1x-528502c6.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_101_FPN_syncBN_1x.txt">log</a> </td>   
+  </tr>
+  <tr>
+    <td rowspan="4" class="tg-0lax">Cascade R-CNN</td>
+    <td class="tg-0lax">ResNet-50</td>
+    <td class="tg-0lax">43.06</td>
+    <td class="tg-0lax">37.19</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_cascade_rcnn_R_50_FPN_syncbn_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_R_50_FPN_syncbn_1x-03310c9b.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_R_50_FPN_syncbn_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNet-101</td>
+    <td class="tg-0lax">44.79</td>
+    <td class="tg-0lax">38.52</td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_cascade_rcnn_R_101_FPN_syncbn_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_R_101_FPN_syncbn_1x-8cec1631.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_R_101_FPN_syncbn_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-50 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>46.19</b></td>
+    <td class="tg-0lax"><b>39.55</b></td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_cascade_rcnn_ResNeSt_50_FPN_syncBN_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_50_FPN_syncBN_1x-f442d863.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_ResNeSt_50_FPN_syncBN_1x.txt">log</a> </td>
+  </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-101 (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>48.30</b></td>
+    <td class="tg-0lax"><b>41.56</b></td>
+     <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/model_zoo/configs/COCO-InstanceSegmentation/mask_cascade_rcnn_ResNeSt_101_FPN_syncBN_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_101_FPN_syncBN_1x-528502c6.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_ResNeSt_101_FPN_syncBN_1x.txt">log</a> </td>
+  </tr>
+</table>
+
+All models are trained along with FPN and SyncBN. For data augmentation,input images’ shorter side are randomly scaled to one of (640, 672, 704, 736, 768, 800). All of them are reported on COCO-2017 validation dataset.
+
+
+
+
+## Training and Inference
+Please follow [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md) to install detecron2. 
+
+To train a model with 8 gpus, please run
+```shell
+python tools/train_net.py  --num-gpus 8 --config-file your_config.yaml
+```
+
+For inference
+```shell
+python tools/train_net.py  \
+                --config-file your_config.yaml
+                --eval-only MODEL.WEIGHTS /path/to/checkpoint_file
+```
+
+
+## Reference
+
+**ResNeSt: Split-Attention Networks** [[arXiv](https://arxiv.org/pdf/2004.08955.pdf)]
+
+Hang Zhang, Chongruo Wu, Zhongyue Zhang, Yi Zhu, Zhi Zhang, Haibin Lin, Yue Sun, Tong He, Jonas Muller, R. Manmatha, Mu Li and Alex Smola
+
+```
+@article{zhang2020resnest,
+title={ResNeSt: Split-Attention Networks},
+author={Zhang, Hang and Wu, Chongruo and Zhang, Zhongyue and Zhu, Yi and Zhang, Zhi and Lin, Haibin and Sun, Yue and He, Tong and Muller, Jonas and Manmatha, R. and Li, Mu and Smola, Alexander},
+journal={arXiv preprint arXiv:2004.08955},
+year={2020}
 }
 ```
+
+## Related Repo
+* [ResNeSt (main)](https://github.com/zhanghang1989/ResNeSt)
+* ResNeSt on ImageNet ([Gluon](https://gluon-cv.mxnet.io/model_zoo/classification.html), [pytorch](https://hangzhang.org/PyTorch-Encoding/model_zoo/imagenet.html))
+* ResNeSt on Semantic Segmentation ([Gluon](https://gluon-cv.mxnet.io/model_zoo/segmentation.html), [pytorch](https://hangzhang.org/PyTorch-Encoding/model_zoo/segmentation.html))
+
+### Contributors
+[Hang Zhang](https://hangzhang.org/), [Chongruo Wu](https://github.com/chongruo), [Zhongyue Zhang](http://zhongyuezhang.com/) 
