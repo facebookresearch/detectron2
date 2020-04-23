@@ -78,7 +78,7 @@ def _broadcast_params(params, num_features, name):
         return list(params) * num_features
     assert len(params) == num_features, (
         f"Got {name} of length {len(params)} in anchor generator, "
-        "but the number of input features is {num_features}!"
+        f"but the number of input features is {num_features}!"
     )
     return params
 
