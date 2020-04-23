@@ -65,7 +65,7 @@ class TestRLEToJson(unittest.TestCase):
         json_dict = convert_to_coco_dict("test_dataset")
         with tempfile.TemporaryDirectory() as tmpdir:
             json_file_name = os.path.join(tmpdir, "test.json")
-            with open(os.path.join(tmpdir, "test.json"), "w") as f:
+            with open(json_file_name, "w") as f:
                 json.dump(json_dict, f)
             # Load from json.
             dicts = load_coco_json(json_file_name, "")
