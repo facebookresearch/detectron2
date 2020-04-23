@@ -1,6 +1,6 @@
 # ResNeSt (Detectron2)
 
-This repo contains an implementation of [ResNeSt](https://hangzhang.org/files/resnest.pdf) on detection and instance segmentation, using [detectron2](https://github.com/facebookresearch/detectron2) framework.
+A fork of [detectron2](https://github.com/facebookresearch/detectron2) contains the code implementation of detection and instance segmentation experiments in [ResNeSt](https://hangzhang.org/files/resnest.pdf).
 
 <a href="https://arxiv.org/pdf/2004.08955.pdf" rel="Paper"><img src="http://www.arxiv-sanity.com/static/thumbs/2004.08955v1.pdf.jpg" alt="Paper" width="100%"></a>
 
@@ -133,7 +133,7 @@ All models are trained along with FPN and SyncBN. For data augmentation,input im
 
 
 ## Training and Inference
-Please follow [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md) to install detecron2. 
+Please follow [INSTALL.md](./INSTALL.md) to install detecron2. 
 
 To train a model with 8 gpus, please run
 ```shell
@@ -165,8 +165,8 @@ year={2020}
 
 ## Related Repo
 * [ResNeSt (main)](https://github.com/zhanghang1989/ResNeSt)
-* ResNeSt on ImageNet ([Gluon](https://gluon-cv.mxnet.io/model_zoo/classification.html), [pytorch](https://hangzhang.org/PyTorch-Encoding/model_zoo/imagenet.html))
-* ResNeSt on Semantic Segmentation ([Gluon](https://gluon-cv.mxnet.io/model_zoo/segmentation.html), [pytorch](https://hangzhang.org/PyTorch-Encoding/model_zoo/segmentation.html))
+* ResNeSt on ImageNet ([Gluon](https://gluon-cv.mxnet.io/model_zoo/classification.html), [PyTorch](https://hangzhang.org/PyTorch-Encoding/model_zoo/imagenet.html))
+* ResNeSt on Semantic Segmentation ([Gluon](https://gluon-cv.mxnet.io/model_zoo/segmentation.html), [PyTorch](https://hangzhang.org/PyTorch-Encoding/model_zoo/segmentation.html))
 
 ### Contributors
-[Hang Zhang](https://hangzhang.org/), [Chongruo Wu](https://github.com/chongruo), [Zhongyue Zhang](http://zhongyuezhang.com/) 
+[Chongruo Wu](https://github.com/chongruo), [Zhongyue Zhang](http://zhongyuezhang.com/), [Hang Zhang](https://hangzhang.org/)
