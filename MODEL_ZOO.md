@@ -829,7 +829,7 @@ Ablations for normalization methods:
 
 
 
-A few very large models trained for a long time, for demo purposes:
+A few very large models trained for a long time, for demo purposes. They are trained using multiple machines:
 
 <!--
 ./gen_html_table.py --config 'Misc/panoptic_*dconv*' 'Misc/cascade_*152*' --name "Panoptic FPN R101" "Mask R-CNN X152" --fields inference_speed mem box_AP mask_AP PQ
