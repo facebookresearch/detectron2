@@ -63,6 +63,7 @@ __global__ void box_iou_rotated_cuda_kernel(
 }
 
 at::Tensor box_iou_rotated_cuda(
+    // input must be contiguous
     const at::Tensor& boxes1,
     const at::Tensor& boxes2) {
   using scalar_t = float;

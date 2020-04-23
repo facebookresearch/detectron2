@@ -72,6 +72,7 @@ __global__ void nms_rotated_cuda_kernel(
 namespace detectron2 {
 
 at::Tensor nms_rotated_cuda(
+    // input must be contiguous
     const at::Tensor& dets,
     const at::Tensor& scores,
     float iou_threshold) {

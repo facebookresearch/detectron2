@@ -59,6 +59,7 @@ at::Tensor nms_rotated_cpu_kernel(
 }
 
 at::Tensor nms_rotated_cpu(
+    // input must be contiguous
     const at::Tensor& dets,
     const at::Tensor& scores,
     const float iou_threshold) {
