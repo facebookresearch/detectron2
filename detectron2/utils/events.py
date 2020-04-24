@@ -131,13 +131,20 @@ class TensorboardXWriter(EventWriter):
         for k, v in storage.latest_with_smoothing_hint(self._window_size).items():
             self._writer.add_scalar(k, v, storage.iter)
 
-        if len(storage.vis_data) >= 1:
-            for img_name, img, step_num in storage.vis_data:
+        # storage.put_{image,histogram} is only meant to be used by
+        # tensorboard writer. So we access its internal fields directly from here.
+        if len(storage._vis_data) >= 1:
+            for img_name, img, step_num in storage._vis_data:
                 self._writer.add_image(img_name, img, step_num)
+            # Storage stores all image data and rely on this writer to clear them.
+            # As a result it assumes only one writer will use its image data.
+            # An alternative design is to let storage store limited recent
+            # data (e.g. only the most recent image) that all writers can access.
+            # In that case a writer may not see all image data if its period is long.
             storage.clear_images()
 
-        if len(storage.hist_data) >= 1:
-            for params in storage.hist_data:
+        if len(storage._histograms) >= 1:
+            for params in storage._histograms:
                 self._writer.add_histogram_raw(**params)
             storage.clear_histograms()
 
@@ -244,7 +251,8 @@ class EventStorage:
 
     def put_image(self, img_name, img_tensor):
         """
-        Add an `img_tensor` to the `_vis_data` associated with `img_name`.
+        Add an `img_tensor` associated with `img_name`, to be shown on
+        tensorboard.
 
         Args:
             img_name (str): The name of the image to put into tensorboard.
@@ -255,13 +263,6 @@ class EventStorage:
                 The `img_tensor` will be visualized in tensorboard.
         """
         self._vis_data.append((img_name, img_tensor, self._iter))
-
-    def clear_images(self):
-        """
-        Delete all the stored images for visualization. This should be called
-        after images are written to tensorboard.
-        """
-        self._vis_data = []
 
     def put_scalar(self, name, value, smoothing_hint=True):
         """
@@ -331,13 +332,6 @@ class EventStorage:
         )
         self._histograms.append(hist_params)
 
-    def clear_histograms(self):
-        """
-        Delete all the stored histograms for visualization.
-        This should be called after histograms are written to tensorboard.
-        """
-        self._histograms = []
-
     def history(self, name):
         """
         Returns:
@@ -395,14 +389,6 @@ class EventStorage:
         self._latest_scalars = {}
 
     @property
-    def vis_data(self):
-        return self._vis_data
-
-    @property
-    def hist_data(self):
-        return self._histograms
-
-    @property
     def iter(self):
         return self._iter
 
@@ -430,3 +416,17 @@ class EventStorage:
         self._current_prefix = name.rstrip("/") + "/"
         yield
         self._current_prefix = old_prefix
+
+    def clear_images(self):
+        """
+        Delete all the stored images for visualization. This should be called
+        after images are written to tensorboard.
+        """
+        self._vis_data = []
+
+    def clear_histograms(self):
+        """
+        Delete all the stored histograms for visualization.
+        This should be called after histograms are written to tensorboard.
+        """
+        self._histograms = []
