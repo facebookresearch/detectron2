@@ -18,11 +18,11 @@ also installs detectron2 with a few simple commands.
 
 After having the above dependencies and gcc & g++ ≥ 5, run:
 ```
-python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
+python -m pip install 'git+https://github.com/zhanghang1989/detectron2-ResNeSt.git'
 # (add --user if you don't have permission)
 
 # Or, to install it from a local clone:
-git clone https://github.com/facebookresearch/detectron2.git
+git clone https://github.com/zhanghang1989/detectron2-ResNeSt.git
 cd detectron2 && python -m pip install -e .
 
 # Or if you are on macOS
@@ -32,19 +32,6 @@ cd detectron2 && python -m pip install -e .
 To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
 old build first. You often need to rebuild detectron2 after reinstalling PyTorch.
 
-### Install Pre-Built Detectron2
-```
-# for CUDA 10.1:
-python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
-```
-You can replace cu101 with "cu{100,92}" or "cpu".
-
-Note that:
-1. Such installation has to be used with the latest official PyTorch release (currently 1.4).
-   It will not work with your custom build of PyTorch.
-2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
-	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
-	 [projects](./projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
 
 ### Common Installation Issues
 
