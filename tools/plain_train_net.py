@@ -3,7 +3,7 @@
 """
 Detectron2 training script with a plain training loop.
 
-This scripts reads a given config file and runs the training or evaluation.
+This script reads a given config file and runs the training or evaluation.
 It is an entry point that is able to train standard models in detectron2.
 
 In order to let one script support training of many models,
@@ -11,7 +11,7 @@ this script contains logic that are specific to these built-in models and theref
 may not be suitable for your own project.
 For example, your research project perhaps only needs a single "evaluator".
 
-Therefore, we recommend you to use detectron2 as an library and take
+Therefore, we recommend you to use detectron2 as a library and take
 this file as an example of how to use the library.
 You may want to write your own script with your datasets and other customizations.
 
