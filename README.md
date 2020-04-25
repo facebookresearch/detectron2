@@ -58,7 +58,7 @@ A fork of [detectron2](https://github.com/facebookresearch/detectron2) contains 
   <tr>
     <td class="tg-0lax">ResNeSt-200 (<span style="color:red">ours</span>)</td>
     <td class="tg-0lax"><b>49.03</b></td>
-    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/resnest/configs/COCO-Detection/faster_cascade_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x-1be2a87e.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x.txt">log</a> </td>
+    <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/resnest/configs/COCO-Detection/faster_cascade_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x-1be2a87e.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/faster_cascade_rcnn_ResNeSt_200_FPN_syncbn_range-scale_1x.txt">log</a> </td>
   </tr>
 </table>
 
