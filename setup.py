@@ -136,7 +136,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
-        "fvcore",
+        "fvcore==0.1.dev200407",
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
     ],
