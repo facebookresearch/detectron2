@@ -27,6 +27,7 @@ cd detectron2 && python -m pip install -e .
 
 # Or if you are on macOS
 # CC=clang CXX=clang++ python -m pip install -e .
+# Add NO_CUDA=1 CFLAGS='-stdlib=libc++' if installing without CUDA
 ```
 
 To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
