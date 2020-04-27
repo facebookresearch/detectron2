@@ -24,6 +24,7 @@ from detectron2.utils.logger import setup_logger
 from densepose import (
     DensePoseCOCOEvaluator,
     DensePoseGeneralizedRCNNWithTTA,
+    add_dataset_category_config,
     add_densepose_config,
     load_from_cfg,
 )
@@ -69,6 +70,7 @@ class Trainer(DefaultTrainer):
 
 def setup(args):
     cfg = get_cfg()
+    add_dataset_category_config(cfg)
     add_densepose_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)

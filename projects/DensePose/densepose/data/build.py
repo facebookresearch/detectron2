@@ -177,6 +177,51 @@ def _get_keep_instance_predicate(cfg: CfgNode):
     return combined_general_specific_keep_predicate
 
 
+def _maybe_filter_and_map_categories(
+    dataset_name: str, dataset_dicts: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    meta = MetadataCatalog.get(dataset_name)
+    whitelisted_categories = meta.get("whitelisted_categories")
+    category_map = meta.get("category_map", {})
+    if whitelisted_categories is None and not category_map:
+        return dataset_dicts
+    filtered_dataset_dicts = []
+    for dataset_dict in dataset_dicts:
+        anns = []
+        for ann in dataset_dict["annotations"]:
+            cat_id = ann["category_id"]
+            if whitelisted_categories is not None and cat_id not in whitelisted_categories:
+                continue
+            ann["category_id"] = category_map.get(cat_id, cat_id)
+            anns.append(ann)
+        dataset_dict["annotations"] = anns
+        filtered_dataset_dicts.append(dataset_dict)
+    return filtered_dataset_dicts
+
+
+def _add_category_whitelists_to_metadata(cfg: CfgNode):
+    for dataset_name, whitelisted_cat_ids in cfg.DATASETS.WHITELISTED_CATEGORIES.items():
+        meta = MetadataCatalog.get(dataset_name)
+        meta.whitelisted_categories = whitelisted_cat_ids
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "Whitelisted categories for dataset {}: {}".format(
+                dataset_name, meta.whitelisted_categories
+            )
+        )
+
+
+def _add_category_maps_to_metadata(cfg: CfgNode):
+    for dataset_name, category_map in cfg.DATASETS.CATEGORY_MAPS.items():
+        category_map = {
+            int(cat_id_src): int(cat_id_dst) for cat_id_src, cat_id_dst in category_map.items()
+        }
+        meta = MetadataCatalog.get(dataset_name)
+        meta.category_map = category_map
+        logger = logging.getLogger(__name__)
+        logger.info("Category maps for dataset {}: {}".format(dataset_name, meta.category_map))
+
+
 def combine_detection_dataset_dicts(
     dataset_names: Collection[str],
     keep_instance_predicate: Optional[Callable[[Dict[str, Any]], bool]] = None,
@@ -210,6 +255,7 @@ def combine_detection_dataset_dicts(
         assert len(dataset_dicts), f"Dataset '{dataset_name}' is empty!"
         if proposal_file is not None:
             dataset_dicts = load_proposals_into_dataset(dataset_dicts, proposal_file)
+        dataset_dicts = _maybe_filter_and_map_categories(dataset_name, dataset_dicts)
         _map_category_id_to_contiguous_id(dataset_name, dataset_dicts)
         print_instances_class_histogram(
             dataset_dicts, MetadataCatalog.get(dataset_name).thing_classes
@@ -251,6 +297,8 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     """
     images_per_worker = _compute_num_images_per_worker(cfg)
 
+    _add_category_whitelists_to_metadata(cfg)
+    _add_category_maps_to_metadata(cfg)
     dataset_dicts = combine_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
         keep_instance_predicate=_get_keep_instance_predicate(cfg),
@@ -317,6 +365,8 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         DataLoader: a torch DataLoader, that loads the given detection
             dataset, with test-time transformation and batching.
     """
+    _add_category_whitelists_to_metadata(cfg)
+    _add_category_maps_to_metadata(cfg)
     dataset_dicts = combine_detection_dataset_dicts(
         [dataset_name],
         keep_instance_predicate=_get_keep_instance_predicate(cfg),

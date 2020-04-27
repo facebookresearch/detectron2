@@ -4,7 +4,18 @@
 from detectron2.config import CfgNode as CN
 
 
-def add_densepose_config(cfg):
+def add_dataset_category_config(cfg: CN):
+    """
+    Add config for additional category-related dataset options
+     - category whitelisting
+     - category mapping
+    """
+    _C = cfg
+    _C.DATASETS.CATEGORY_MAPS = CN(new_allowed=True)
+    _C.DATASETS.WHITELISTED_CATEGORIES = CN(new_allowed=True)
+
+
+def add_densepose_config(cfg: CN):
     """
     Add config for densepose head.
     """
