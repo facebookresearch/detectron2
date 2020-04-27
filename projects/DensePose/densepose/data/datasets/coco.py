@@ -51,6 +51,25 @@ DATASETS = [
 ]
 
 
+BASE_DATASETS = [
+    CocoDatasetInfo(
+        name="base_coco_2017_train",
+        images_root="coco/train2017",
+        annotations_fpath="coco/annotations/instances_train2017.json",
+    ),
+    CocoDatasetInfo(
+        name="base_coco_2017_val",
+        images_root="coco/val2017",
+        annotations_fpath="coco/annotations/instances_val2017.json",
+    ),
+    CocoDatasetInfo(
+        name="base_coco_2017_val_100",
+        images_root="coco/val2017",
+        annotations_fpath="coco/annotations/instances_val2017_100.json",
+    ),
+]
+
+
 def _is_relative_local_path(path: os.PathLike):
     path_str = os.fsdecode(path)
     return ("://" not in path_str) and not os.path.isabs(path)
