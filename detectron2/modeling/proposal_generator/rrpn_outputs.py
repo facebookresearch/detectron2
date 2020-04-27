@@ -174,10 +174,8 @@ class RRPNOutputs(RPNOutputs):
             pred_anchor_deltas (list[Tensor]): A list of L elements. Element i is a tensor of shape
                 (N, A*5, Hi, Wi) representing the predicted "deltas" used to transform anchors
                 to proposals.
-            anchors (list[list[RotatedBoxes]]): A list of N elements. Each element is a list of L
-                RotatedBoxes. The RotatedBoxes at (n, l) stores the entire anchor array for
-                feature map l in image n (i.e. the cell anchors repeated over all locations in
-                feature map (n, l)).
+            anchors (list[RotatedBoxes]): A list of Boxes storing the all the anchors
+                for each feature map. See :meth:`RotatedAnchorGenerator.forward`.
             boundary_threshold (int): if >= 0, then anchors that extend beyond the image
                 boundary by more than boundary_thresh are not used in training. Set to a very large
                 number or < 0 to disable this behavior. Only needed in training.
@@ -205,37 +203,36 @@ class RRPNOutputs(RPNOutputs):
         """
         Returns:
             gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-                total number of anchors in image i (i.e., len(anchors[i])). Label values are
+                total number of anchors across feature maps. Label values are
                 in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
-            gt_anchor_deltas: list of N tensors. Tensor i has shape (len(anchors[i]), 5).
+            gt_anchor_deltas: list of N tensors. Each has shape (total #anchors, 5)
         """
         gt_objectness_logits = []
         gt_anchor_deltas = []
-        # Concatenate anchors from all feature maps into a single RotatedBoxes per image
-        anchors = [RotatedBoxes.cat(anchors_i) for anchors_i in self.anchors]
-        for image_size_i, anchors_i, gt_boxes_i in zip(self.image_sizes, anchors, self.gt_boxes):
+        # Concatenate anchors from all feature maps into a single RotatedBoxes
+        anchors = RotatedBoxes.cat(self.anchors)
+        for image_size_i, gt_boxes_i in zip(self.image_sizes, self.gt_boxes):
             """
             image_size_i: (h, w) for the i-th image
-            anchors_i: anchors for i-th image
             gt_boxes_i: ground-truth boxes for i-th image
             """
-            match_quality_matrix = pairwise_iou_rotated(gt_boxes_i, anchors_i)
+            match_quality_matrix = pairwise_iou_rotated(gt_boxes_i, anchors)
             matched_idxs, gt_objectness_logits_i = self.anchor_matcher(match_quality_matrix)
 
             if self.boundary_threshold >= 0:
                 # Discard anchors that go out of the boundaries of the image
                 # NOTE: This is legacy functionality that is turned off by default in Detectron2
-                anchors_inside_image = anchors_i.inside_box(image_size_i, self.boundary_threshold)
+                anchors_inside_image = anchors.inside_box(image_size_i, self.boundary_threshold)
                 gt_objectness_logits_i[~anchors_inside_image] = -1
 
             if len(gt_boxes_i) == 0:
                 # These values won't be used anyway since the anchor is labeled as background
-                gt_anchor_deltas_i = torch.zeros_like(anchors_i.tensor)
+                gt_anchor_deltas_i = torch.zeros_like(anchors.tensor)
             else:
                 # TODO wasted computation for ignored boxes
                 matched_gt_boxes = gt_boxes_i[matched_idxs]
                 gt_anchor_deltas_i = self.box2box_transform.get_deltas(
-                    anchors_i.tensor, matched_gt_boxes.tensor
+                    anchors.tensor, matched_gt_boxes.tensor
                 )
 
             gt_objectness_logits.append(gt_objectness_logits_i)

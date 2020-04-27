@@ -231,9 +231,8 @@ class RPNOutputs(object):
             pred_anchor_deltas (list[Tensor]): A list of L elements. Element i is a tensor of shape
                 (N, A*4, Hi, Wi) representing the predicted "deltas" used to transform anchors
                 to proposals.
-            anchors (list[list[Boxes]]): A list of N elements. Each element is a list of L
-                Boxes. The Boxes at (n, l) stores the entire anchor array for feature map l in image
-                n (i.e. the cell anchors repeated over all locations in feature map (n, l)).
+            anchors (list[Boxes]): A list of Boxes storing the all the anchors
+                for each feature map. See :meth:`AnchorGenerator.forward`.
             boundary_threshold (int): if >= 0, then anchors that extend beyond the image
                 boundary by more than boundary_thresh are not used in training. Set to a very large
                 number or < 0 to disable this behavior. Only needed in training.
@@ -262,21 +261,20 @@ class RPNOutputs(object):
         """
         Returns:
             gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-                total number of anchors in image i (i.e., len(anchors[i])). Label values are
+                total number of anchors across feature maps. Label values are
                 in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
-            gt_anchor_deltas: list of N tensors. Tensor i has shape (len(anchors[i]), 4).
+            gt_anchor_deltas: list of N tensors. Each has shape (total #anchors, 4)
         """
         gt_objectness_logits = []
         gt_anchor_deltas = []
-        # Concatenate anchors from all feature maps into a single Boxes per image
-        anchors = [Boxes.cat(anchors_i) for anchors_i in self.anchors]
-        for image_size_i, anchors_i, gt_boxes_i in zip(self.image_sizes, anchors, self.gt_boxes):
+        # Concatenate anchors from all feature maps into a single Boxes
+        anchors = Boxes.cat(self.anchors)
+        for image_size_i, gt_boxes_i in zip(self.image_sizes, self.gt_boxes):
             """
             image_size_i: (h, w) for the i-th image
-            anchors_i: anchors for i-th image
             gt_boxes_i: ground-truth boxes for i-th image
             """
-            match_quality_matrix = retry_if_cuda_oom(pairwise_iou)(gt_boxes_i, anchors_i)
+            match_quality_matrix = retry_if_cuda_oom(pairwise_iou)(gt_boxes_i, anchors)
             matched_idxs, gt_objectness_logits_i = retry_if_cuda_oom(self.anchor_matcher)(
                 match_quality_matrix
             )
@@ -287,17 +285,17 @@ class RPNOutputs(object):
             if self.boundary_threshold >= 0:
                 # Discard anchors that go out of the boundaries of the image
                 # NOTE: This is legacy functionality that is turned off by default in Detectron2
-                anchors_inside_image = anchors_i.inside_box(image_size_i, self.boundary_threshold)
+                anchors_inside_image = anchors.inside_box(image_size_i, self.boundary_threshold)
                 gt_objectness_logits_i[~anchors_inside_image] = -1
 
             if len(gt_boxes_i) == 0:
                 # These values won't be used anyway since the anchor is labeled as background
-                gt_anchor_deltas_i = torch.zeros_like(anchors_i.tensor)
+                gt_anchor_deltas_i = torch.zeros_like(anchors.tensor)
             else:
                 # TODO wasted computation for ignored boxes
                 matched_gt_boxes = gt_boxes_i[matched_idxs]
                 gt_anchor_deltas_i = self.box2box_transform.get_deltas(
-                    anchors_i.tensor, matched_gt_boxes.tensor
+                    anchors.tensor, matched_gt_boxes.tensor
                 )
 
             gt_objectness_logits.append(gt_objectness_logits_i)
@@ -333,14 +331,14 @@ class RPNOutputs(object):
         gt_objectness_logits, gt_anchor_deltas = self._get_ground_truth()
         """
         gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-            total number of anchors in image i (i.e., len(anchors[i]))
-        gt_anchor_deltas: list of N tensors. Tensor i has shape (len(anchors[i]), B),
+            total number of anchors in all feature maps.
+        gt_anchor_deltas: list of N tensors. Tensor i has shape (total #anchors, B),
             where B is the box dimension
         """
         # Collect all objectness labels and delta targets over feature maps and images
         # The final ordering is L, N, H, W, A from slowest to fastest axis.
         num_anchors_per_map = [np.prod(x.shape[1:]) for x in self.pred_objectness_logits]
-        num_anchors_per_image = sum(num_anchors_per_map)
+        num_anchors_per_image = sum(num_anchors_per_map)  # total #anchors in all feature maps
 
         # Stack to: (N, num_anchors_per_image)
         gt_objectness_logits = torch.stack(
@@ -416,22 +414,17 @@ class RPNOutputs(object):
                 (N, Hi*Wi*A, B), where B is box dimension (4 or 5).
         """
         proposals = []
-        # Transpose anchors from images-by-feature-maps (N, L) to feature-maps-by-images (L, N)
-        anchors = list(zip(*self.anchors))
         # For each feature map
-        for anchors_i, pred_anchor_deltas_i in zip(anchors, self.pred_anchor_deltas):
-            B = anchors_i[0].tensor.size(1)
+        for anchors_i, pred_anchor_deltas_i in zip(self.anchors, self.pred_anchor_deltas):
+            B = anchors_i.tensor.size(1)
             N, _, Hi, Wi = pred_anchor_deltas_i.shape
             # Reshape: (N, A*B, Hi, Wi) -> (N, A, B, Hi, Wi) -> (N, Hi, Wi, A, B) -> (N*Hi*Wi*A, B)
             pred_anchor_deltas_i = (
                 pred_anchor_deltas_i.view(N, -1, B, Hi, Wi).permute(0, 3, 4, 1, 2).reshape(-1, B)
             )
             # Concatenate all anchors to shape (N*Hi*Wi*A, B)
-            # type(anchors_i[0]) is Boxes (B = 4) or RotatedBoxes (B = 5)
-            anchors_i = type(anchors_i[0]).cat(anchors_i)
-            proposals_i = self.box2box_transform.apply_deltas(
-                pred_anchor_deltas_i, anchors_i.tensor
-            )
+            anchors_i = cat([anchors_i.tensor] * N, dim=0)
+            proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
             # Append feature map proposals with shape (N, Hi*Wi*A, B)
             proposals.append(proposals_i.view(N, -1, B))
         return proposals

@@ -274,6 +274,8 @@ class TensorMaskAnchorGenerator(DefaultAnchorGenerator):
         # Convert anchors from Tensor to Boxes
         anchors_per_im = [Boxes(x) for x in anchors_list]
 
+        # TODO it can be simplified to not return duplicated information for
+        # each image, just like detectron2's own AnchorGenerator
         anchors = [copy.deepcopy(anchors_per_im) for _ in range(num_images)]
         unit_lengths = [copy.deepcopy(lengths_list) for _ in range(num_images)]
         indexes = [copy.deepcopy(indexes_list) for _ in range(num_images)]
