@@ -4,7 +4,7 @@ import itertools
 import logging
 import numpy as np
 import operator
-from typing import Any, Callable, Collection, Dict, List, Optional
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional
 import torch
 
 from detectron2.config import CfgNode
@@ -25,6 +25,10 @@ from .datasets.coco import DENSEPOSE_KEYS as DENSEPOSE_COCO_KEYS
 __all__ = ["build_detection_train_loader", "build_detection_test_loader"]
 
 
+Instance = Dict[str, Any]
+InstancePredicate = Callable[[Instance], bool]
+
+
 def _compute_num_images_per_worker(cfg: CfgNode):
     num_workers = get_world_size()
     images_per_batch = cfg.SOLVER.IMS_PER_BATCH
@@ -42,14 +46,14 @@ def _compute_num_images_per_worker(cfg: CfgNode):
     return images_per_worker
 
 
-def _map_category_id_to_contiguous_id(dataset_name: str, dataset_dicts: Dict[str, Any]):
+def _map_category_id_to_contiguous_id(dataset_name: str, dataset_dicts: Iterable[Instance]):
     meta = MetadataCatalog.get(dataset_name)
     for dataset_dict in dataset_dicts:
         for ann in dataset_dict["annotations"]:
             ann["category_id"] = meta.thing_dataset_id_to_contiguous_id[ann["category_id"]]
 
 
-def _add_category_id_to_contiguous_id_maps_to_metadata(dataset_names: Collection[str]):
+def _add_category_id_to_contiguous_id_maps_to_metadata(dataset_names: Iterable[str]):
     # merge categories for all datasets
     merged_categories = {}
     for dataset_name in dataset_names:
@@ -83,20 +87,17 @@ def _add_category_id_to_contiguous_id_maps_to_metadata(dataset_names: Collection
         }
 
 
-InstancePredicate = Callable[[Dict[str, Any]], bool]
-
-
 def _maybe_create_general_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
-    def has_annotations(instance: Dict[str, Any]) -> bool:
+    def has_annotations(instance: Instance) -> bool:
         return "annotations" in instance
 
-    def has_only_crowd_anotations(instance: Dict[str, Any]) -> bool:
+    def has_only_crowd_anotations(instance: Instance) -> bool:
         for ann in instance["annotations"]:
             if ann.get("is_crowd", 0) == 0:
                 return False
         return True
 
-    def general_keep_instance_predicate(instance: Dict[str, Any]) -> bool:
+    def general_keep_instance_predicate(instance: Instance) -> bool:
         return has_annotations(instance) and not has_only_crowd_anotations(instance)
 
     if not cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS:
@@ -108,7 +109,7 @@ def _maybe_create_keypoints_keep_instance_predicate(cfg: CfgNode) -> Optional[In
 
     min_num_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
 
-    def has_sufficient_num_keypoints(instance: Dict[str, Any]) -> bool:
+    def has_sufficient_num_keypoints(instance: Instance) -> bool:
         num_kpts = sum(
             (np.array(ann["keypoints"][2::3]) > 0).sum()
             for ann in instance["annotations"]
@@ -125,7 +126,7 @@ def _maybe_create_mask_keep_instance_predicate(cfg: CfgNode) -> Optional[Instanc
     if not cfg.MODEL.MASK_ON:
         return None
 
-    def has_mask_annotations(instance: Dict[str, Any]) -> bool:
+    def has_mask_annotations(instance: Instance) -> bool:
         return any("segmentation" in ann for ann in instance["annotations"])
 
     return has_mask_annotations
@@ -135,7 +136,7 @@ def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[In
     if not cfg.MODEL.DENSEPOSE_ON:
         return None
 
-    def has_densepose_annotations(instance: Dict[str, Any]) -> bool:
+    def has_densepose_annotations(instance: Instance) -> bool:
         for ann in instance["annotations"]:
             if all(key in ann for key in DENSEPOSE_COCO_KEYS):
                 return True
@@ -155,7 +156,7 @@ def _maybe_create_specific_keep_instance_predicate(cfg: CfgNode) -> Optional[Ins
     if not predicates:
         return None
 
-    def combined_predicate(instance: Dict[str, Any]) -> bool:
+    def combined_predicate(instance: Instance) -> bool:
         return any(p(instance) for p in predicates)
 
     return combined_predicate
@@ -165,7 +166,7 @@ def _get_keep_instance_predicate(cfg: CfgNode):
     general_keep_predicate = _maybe_create_general_keep_instance_predicate(cfg)
     combined_specific_keep_predicate = _maybe_create_specific_keep_instance_predicate(cfg)
 
-    def combined_general_specific_keep_predicate(instance: Dict[str, Any]) -> bool:
+    def combined_general_specific_keep_predicate(instance: Instance) -> bool:
         return general_keep_predicate(instance) and combined_specific_keep_predicate(instance)
 
     if (general_keep_predicate is None) and (combined_specific_keep_predicate is None):
@@ -178,8 +179,8 @@ def _get_keep_instance_predicate(cfg: CfgNode):
 
 
 def _maybe_filter_and_map_categories(
-    dataset_name: str, dataset_dicts: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+    dataset_name: str, dataset_dicts: List[Instance]
+) -> List[Instance]:
     meta = MetadataCatalog.get(dataset_name)
     whitelisted_categories = meta.get("whitelisted_categories")
     category_map = meta.get("category_map", {})
@@ -224,17 +225,17 @@ def _add_category_maps_to_metadata(cfg: CfgNode):
 
 def combine_detection_dataset_dicts(
     dataset_names: Collection[str],
-    keep_instance_predicate: Optional[Callable[[Dict[str, Any]], bool]] = None,
+    keep_instance_predicate: Optional[InstancePredicate] = None,
     proposal_files: Optional[Collection[str]] = None,
-) -> List[Dict[str, Any]]:
+) -> List[Instance]:
     """
     Load and prepare dataset dicts for training / testing
 
     Args:
-        dataset_names (list[str]): a list of dataset names
+        dataset_names (Collection[str]): a list of dataset names
         keep_instance_predicate (Callable: Dict[str, Any] -> bool): predicate
             applied to instance dicts which defines whether to keep the instance
-        proposal_files (list[str]): if given, a list of object proposal files
+        proposal_files (Collection[str]): if given, a list of object proposal files
             that match each dataset in `dataset_names`.
     """
     assert len(dataset_names)
