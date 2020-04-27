@@ -33,7 +33,7 @@ Each dict corresponds to one image and the required keys
 depend on the type of model, and whether the model is in training or evaluation mode.
 For example, in order to do inference,
 all existing models expect the "image" key, and optionally "height" and "width".
-The detailed format of inputs and outputs are explained below.
+The detailed format of inputs and outputs of existing models are explained below.
 
 When in training mode, all models are required to be used under an `EventStorage`.
 The training statistics will be put into the storage:
@@ -51,13 +51,16 @@ and operates on single image rather than batches.
 
 ### Model Input Format
 
-All builtin models take a `list[dict]` as the inputs. Each dict
+Users can implement custom models that support any arbitrary input format.
+Here we describe the standard input format that all builtin models support in detectron2.
+They all take a `list[dict]` as the inputs. Each dict
 corresponds to information about one image.
 
 The dict may contain the following keys:
 
 * "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
-  Image normalization, if any, will be performed inside the model.
+  Image normalization, if any, will be performed inside the model using
+	`cfg.MODEL.PIXEL_{MEAN,STD}`.
 * "instances": an [Instances](../modules/structures.html#detectron2.structures.Instances)
   object, with the following fields:
   + "gt_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing N boxes, one for each instance.

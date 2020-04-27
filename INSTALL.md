@@ -16,14 +16,15 @@ also installs detectron2 with a few simple commands.
 
 ### Build Detectron2 from Source
 
-After having the above dependencies and gcc & g++ ≥ 5, run:
+gcc & g++ ≥ 5 are required. [ninja](https://ninja-build.org/) is recommended for faster build.
+After having them, run:
 ```
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # (add --user if you don't have permission)
 
 # Or, to install it from a local clone:
 git clone https://github.com/facebookresearch/detectron2.git
-cd detectron2 && python -m pip install -e .
+python -m pip install -e detectron2
 
 # Or if you are on macOS
 # CC=clang CXX=clang++ python -m pip install -e .
@@ -40,7 +41,8 @@ python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wh
 You can replace cu101 with "cu{100,92}" or "cpu".
 
 Note that:
-1. Such installation has to be used with the latest official PyTorch release (currently 1.4).
+1. Such installation has to be used with certain version of official PyTorch release.
+   See [releases](https://github.com/facebookresearch/detectron2/releases) for requirements.
    It will not work with your custom build of PyTorch.
 2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
 	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
