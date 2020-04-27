@@ -377,7 +377,22 @@ class DensePoseCocoEval(object):
                 mask = np.array(mask > 0.5, dtype=np.uint8)
                 rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
             elif "segmentation" in g:
-                rle_mask = g["segmentation"]
+                segmentation = g["segmentation"]
+                if isinstance(segmentation, list) and segmentation:
+                    # polygons
+                    im_h, im_w = self.size_mapping[imgId]
+                    rles = maskUtils.frPyObjects(segmentation, im_h, im_w)
+                    rle_mask = maskUtils.merge(rles)
+                elif isinstance(segmentation, dict):
+                    if isinstance(segmentation["counts"], list):
+                        # uncompressed RLE
+                        im_h, im_w = self.size_mapping[imgId]
+                        rle_mask = maskUtils.frPyObjects(segmentation, im_h, im_w)
+                    else:
+                        # compressed RLE
+                        rle_mask = segmentation
+                else:
+                    rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             else:
                 rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             gtmasks.append(rle_mask)
