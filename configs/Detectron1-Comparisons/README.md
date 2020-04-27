@@ -1,18 +1,19 @@
 
-Detectron2's default settings and a few implementation details are different from Detectron.
+Detectron2 model zoo's experimental settings and a few implementation details are different from Detectron.
 
 The differences in implementation details are shared in
 [Compatibility with Other Libraries](../../docs/notes/compatibility.md).
 
-The differences in default config includes:
+The differences in model zoo's experimental settings include:
 * Use scale augmentation during training. This improves AP with lower training cost.
 * Use L1 loss instead of smooth L1 loss for simplicity. This sometimes improves box AP but may
   affect other AP.
 * Use `POOLER_SAMPLING_RATIO=0` instead of 2. This does not significantly affect AP.
 * Use `ROIAlignV2`. This does not significantly affect AP.
 
-In this directory, we provide a few configs that mimic Detectron's behavior as close as possible.
-This provides a fair comparison of accuracy and speed against Detectron.
+In this directory, we provide a few configs that __do not__ have the above changes.
+They mimic Detectron's behavior as close as possible,
+and provide a fair comparison of accuracy and speed against Detectron.
 
 <!--
 ./gen_html_table.py --config 'Detectron1-Comparisons/*.yaml' --name "Faster R-CNN" "Keypoint R-CNN" "Mask R-CNN" --fields lr_sched train_speed inference_speed mem box_AP mask_AP keypoint_AP --base-dir ../../../configs/Detectron1-Comparisons
