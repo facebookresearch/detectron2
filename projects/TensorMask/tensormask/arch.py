@@ -309,8 +309,7 @@ class TensorMask(nn.Module):
         self.mask_on                  = cfg.MODEL.MASK_ON
         self.mask_loss_weight         = cfg.MODEL.TENSOR_MASK.MASK_LOSS_WEIGHT
         self.mask_pos_weight          = torch.tensor(cfg.MODEL.TENSOR_MASK.POSITIVE_WEIGHT,
-                                                     dtype=torch.float32,
-                                                     device=self.device)
+                                                     dtype=torch.float32)
         self.bipyramid_on             = cfg.MODEL.TENSOR_MASK.BIPYRAMID_ON
         # fmt: on
 

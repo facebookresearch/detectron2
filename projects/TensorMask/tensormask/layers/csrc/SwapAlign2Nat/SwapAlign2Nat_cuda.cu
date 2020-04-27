@@ -443,10 +443,11 @@ at::Tensor SwapAlign2Nat_forward_cuda(
     return Y;
   }
 
+  auto X_ = X.contiguous();
   AT_DISPATCH_FLOATING_TYPES(X.scalar_type(), "SwapAlign2Nat_forward", [&] {
     SwapAlign2NatForwardFeat<scalar_t><<<grid, block, 0, stream>>>(
         Y.numel(),
-        X.contiguous().data_ptr<scalar_t>(),
+        X_.data_ptr<scalar_t>(),
         Vout,
         Uout,
         hVout,
@@ -500,10 +501,11 @@ at::Tensor SwapAlign2Nat_backward_cuda(
     return gX;
   }
 
+  auto gY_ = gY.contiguous();
   AT_DISPATCH_FLOATING_TYPES(gY.scalar_type(), "SwapAlign2Nat_backward", [&] {
     SwapAlign2NatBackwardFeat<scalar_t><<<grid, block, 0, stream>>>(
         gY.numel(),
-        gY.contiguous().data_ptr<scalar_t>(),
+        gY_.data_ptr<scalar_t>(),
         Vout,
         Uout,
         hVout,
