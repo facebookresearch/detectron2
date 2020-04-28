@@ -419,7 +419,7 @@ class DefaultTrainer(SimpleTrainer):
         return build_lr_scheduler(cfg, optimizer)
 
     @classmethod
-    def build_train_loader(cls, cfg):
+    def build_train_loader(cls, cfg, mapper=None):
         """
         Returns:
             iterable
@@ -427,7 +427,7 @@ class DefaultTrainer(SimpleTrainer):
         It now calls :func:`detectron2.data.build_detection_train_loader`.
         Overwrite it if you'd like a different data loader.
         """
-        return build_detection_train_loader(cfg)
+        return build_detection_train_loader(cfg, mapper)
 
     @classmethod
     def build_test_loader(cls, cfg, dataset_name):
