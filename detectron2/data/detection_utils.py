@@ -10,7 +10,7 @@ import numpy as np
 import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
-from PIL import Image, ImageOps
+from PIL import ExifTags, Image, ImageOps
 
 from detectron2.structures import (
     BitMasks,
@@ -33,6 +33,50 @@ class SizeMismatchError(ValueError):
     """
 
 
+def apply_exif_orientation(image):
+    """
+    Handle pillow EXIF Orientation flag, see discussion at:https://stackoverflow.com/a/6218425/4999289
+    This function is copied from: https://github.com/wkentaro/labelme/blob/master/labelme/utils/image.py#L46
+    """
+    exif = image._getexif()
+    if exif is None:
+        return image
+
+    exif = {
+        ExifTags.TAGS[k]: v
+        for k, v in exif.items()
+        if k in ExifTags.TAGS
+    }
+
+    orientation = exif.get('Orientation', None)
+    if orientation == 1:
+        # do nothing
+        return image
+    elif orientation == 2:
+        # left-to-right mirror
+        return ImageOps.mirror(image)
+    elif orientation == 3:
+        # rotate 180
+        return image.transpose(Image.ROTATE_180)
+    elif orientation == 4:
+        # top-to-bottom mirror
+        return ImageOps.flip(image)
+    elif orientation == 5:
+        # top-to-left mirror
+        return ImageOps.mirror(image.transpose(Image.ROTATE_270))
+    elif orientation == 6:
+        # rotate 270
+        return image.transpose(Image.ROTATE_270)
+    elif orientation == 7:
+        # top-to-right mirror
+        return ImageOps.mirror(image.transpose(Image.ROTATE_90))
+    elif orientation == 8:
+        # rotate 90
+        return image.transpose(Image.ROTATE_90)
+    else:
+        return image
+
+
 def read_image(file_name, format=None):
     """
     Read an image into the given format.
@@ -50,7 +94,7 @@ def read_image(file_name, format=None):
 
         # capture and ignore this bug: https://github.com/python-pillow/Pillow/issues/3973
         try:
-            image = ImageOps.exif_transpose(image)
+            image = apply_exif_orientation(image)
         except Exception:
             pass
 
