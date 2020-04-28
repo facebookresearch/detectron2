@@ -42,13 +42,8 @@ def apply_exif_orientation(image):
     if exif is None:
         return image
 
-    exif = {
-        ExifTags.TAGS[k]: v
-        for k, v in exif.items()
-        if k in ExifTags.TAGS
-    }
-
-    orientation = exif.get('Orientation', None)
+    exif = {ExifTags.TAGS[k]: v for k, v in exif.items() if k in ExifTags.TAGS}
+    orientation = exif.get("Orientation", None)
     if orientation == 1:
         # do nothing
         return image
