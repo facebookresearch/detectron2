@@ -84,9 +84,10 @@ at::Tensor nms_rotated_cuda(
   auto order_t = std::get<1>(scores.sort(0, /* descending=*/true));
   auto dets_sorted = dets.index_select(0, order_t);
 
-  int dets_num = dets.size(0);
+  auto dets_num = dets.size(0);
 
-  const int col_blocks = at::cuda::ATenCeilDiv(dets_num, threadsPerBlock);
+  const int col_blocks =
+      at::cuda::ATenCeilDiv(static_cast<int>(dets_num), threadsPerBlock);
 
   at::Tensor mask =
       at::empty({dets_num * col_blocks}, dets.options().dtype(at::kLong));
