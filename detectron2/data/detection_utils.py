@@ -35,8 +35,8 @@ class SizeMismatchError(ValueError):
 
 def apply_exif_orientation(image):
     """
-    Handle pillow EXIF Orientation flag, see discussion at:https://stackoverflow.com/a/6218425/4999289
-    This function is copied from: https://github.com/wkentaro/labelme/blob/master/labelme/utils/image.py#L46
+    Handle pillow EXIF Orientation flag, see: https://stackoverflow.com/a/6218425/4999289
+    Grab from: https://github.com/wkentaro/labelme/blob/master/labelme/utils/image.py#L46
     """
     exif = image._getexif()
     if exif is None:
