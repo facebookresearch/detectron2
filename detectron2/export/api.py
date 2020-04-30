@@ -173,8 +173,11 @@ class Caffe2Model(nn.Module):
     def __call__(self, inputs):
         """
         An interface that wraps around a caffe2 model and mimics detectron2's models'
-        input & output format. This is used to compare the caffe2 model
+        input & output format. This is used to compare the outputs of caffe2 model
         with its original torch model.
+
+        Due to the extra conversion between torch/caffe2,
+        this method is not meant for benchmark.
         """
         if self._predictor is None:
             self._predictor = ProtobufDetectionModel(self._predict_net, self._init_net)

@@ -23,7 +23,7 @@ def setup_cfg(args):
     cfg.freeze()
     if cfg.MODEL.DEVICE != "cpu":
         TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
-        assert TORCH_VERSION >= (1, 5), "PyTorch>=1.5 required!"
+        assert TORCH_VERSION >= (1, 5), "PyTorch>=1.5 required for GPU conversion!"
     return cfg
 
 
