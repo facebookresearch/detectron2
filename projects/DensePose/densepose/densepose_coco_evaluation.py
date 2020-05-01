@@ -500,7 +500,7 @@ class DensePoseCocoEval(object):
                     dy = yd - yg
                 else:
                     # measure minimum distance to keypoints in (x0,y0) & (x1,y1)
-                    z = np.zeros((k))
+                    z = np.zeros(k)
                     dx = np.max((z, x0 - xd), axis=0) + np.max((z, xd - x1), axis=0)
                     dy = np.max((z, y0 - yd), axis=0) + np.max((z, yd - y1), axis=0)
                 e = (dx ** 2 + dy ** 2) / vars / (gt["area"] + np.spacing(1)) / 2
@@ -796,8 +796,8 @@ class DensePoseCocoEval(object):
         K = len(p.catIds) if p.useCats else 1
         A = len(p.areaRng)
         M = len(p.maxDets)
-        precision = -np.ones((T, R, K, A, M))  # -1 for the precision of absent categories
-        recall = -np.ones((T, K, A, M))
+        precision = -(np.ones((T, R, K, A, M)))  # -1 for the precision of absent categories
+        recall = -(np.ones((T, K, A, M)))
 
         # create dictionary for future indexing
         logger.info("Categories: {}".format(p.catIds))

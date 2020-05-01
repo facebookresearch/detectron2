@@ -842,7 +842,7 @@ class TensorMaskHead(nn.Module):
                     torch.nn.init.constant_(layer.bias, 0)
 
         # Use prior in model initialization to improve stability
-        bias_value = -math.log((1 - 0.01) / 0.01)
+        bias_value = -(math.log((1 - 0.01) / 0.01))
         torch.nn.init.constant_(self.cls_score.bias, bias_value)
 
     def forward(self, features):

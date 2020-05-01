@@ -44,7 +44,7 @@ def calculate_uncertainty(logits, classes):
         gt_class_logits = logits[
             torch.arange(logits.shape[0], device=logits.device), classes
         ].unsqueeze(1)
-    return -torch.abs(gt_class_logits)
+    return -(torch.abs(gt_class_logits))
 
 
 @ROI_HEADS_REGISTRY.register()

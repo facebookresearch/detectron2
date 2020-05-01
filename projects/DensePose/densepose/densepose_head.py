@@ -230,7 +230,7 @@ class _NonLocalBlockND(nn.Module):
             bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm2d
         else:
             conv_nd = nn.Conv1d
-            max_pool_layer = nn.MaxPool1d(kernel_size=(2))
+            max_pool_layer = nn.MaxPool1d(kernel_size=2)
             bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm1d
 
         self.g = conv_nd(
@@ -831,7 +831,18 @@ def _extract_single_tensors_from_matches(proposals_with_targets):
         n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)
         if not n_i:
             continue
-        i_gt_img, x_norm_img, y_norm_img, u_gt_img, v_gt_img, s_gt_img, bbox_xywh_gt_img, bbox_xywh_est_img, i_bbox_img, i_with_dp_img = _extract_single_tensors_from_matches_one_image(  # noqa
+        (
+            i_gt_img,
+            x_norm_img,
+            y_norm_img,
+            u_gt_img,
+            v_gt_img,
+            s_gt_img,
+            bbox_xywh_gt_img,
+            bbox_xywh_est_img,
+            i_bbox_img,
+            i_with_dp_img,
+        ) = _extract_single_tensors_from_matches_one_image(  # noqa
             proposals_targets_per_image, len(i_with_dp_all), n
         )
         i_gt_all.extend(i_gt_img)
@@ -1004,7 +1015,19 @@ class DensePoseLosses(object):
         assert u.size(3) == index_uv.size(3)
 
         with torch.no_grad():
-            index_uv_img, i_with_dp, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, u_gt_all, v_gt_all, s_gt, index_bbox = _extract_single_tensors_from_matches(  # noqa
+            (
+                index_uv_img,
+                i_with_dp,
+                bbox_xywh_est,
+                bbox_xywh_gt,
+                index_gt_all,
+                x_norm,
+                y_norm,
+                u_gt_all,
+                v_gt_all,
+                s_gt,
+                index_bbox,
+            ) = _extract_single_tensors_from_matches(  # noqa
                 proposals_with_gt
             )
         n_batch = len(i_with_dp)
@@ -1032,7 +1055,17 @@ class DensePoseLosses(object):
         zh = u.size(2)
         zw = u.size(3)
 
-        j_valid, y_lo, y_hi, x_lo, x_hi, w_ylo_xlo, w_ylo_xhi, w_yhi_xlo, w_yhi_xhi = _grid_sampling_utilities(  # noqa
+        (
+            j_valid,
+            y_lo,
+            y_hi,
+            x_lo,
+            x_hi,
+            w_ylo_xlo,
+            w_ylo_xhi,
+            w_yhi_xlo,
+            w_yhi_xhi,
+        ) = _grid_sampling_utilities(  # noqa
             zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, index_bbox
         )
 
