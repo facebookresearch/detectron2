@@ -75,8 +75,7 @@ int main(int argc, char** argv) {
     CAFFE_ENFORCE(workSpace.RunNet(predictNet_.name()));
   }
   auto end_time = chrono::high_resolution_clock::now();
-  auto ms = std::chrono::duration_cast<std::chrono::microseconds>(
-                end_time - start_time)
+  auto ms = chrono::duration_cast<chrono::microseconds>(end_time - start_time)
                 .count();
   cout << "Latency (should vary with different inputs): "
        << ms * 1.0 / 1e6 / N_benchmark << " seconds" << endl;

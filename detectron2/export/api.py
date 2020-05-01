@@ -2,6 +2,7 @@
 import copy
 import logging
 import os
+import torch
 from caffe2.proto import caffe2_pb2
 from torch import nn
 
@@ -23,7 +24,8 @@ def add_export_config(cfg):
         cfg (CfgNode): a detectron2 config
 
     Returns:
-        CfgNode: an updated config with new options that :func:`export_caffe2_model` will need.
+        CfgNode: an updated config with new options that will be used
+            by :class:`Caffe2Tracer`.
     """
     is_frozen = cfg.is_frozen()
     cfg.defrost()
@@ -32,6 +34,100 @@ def add_export_config(cfg):
     if is_frozen:
         cfg.freeze()
     return cfg
+
+
+class Caffe2Tracer:
+    """
+    Make a detectron2 model traceable with caffe2 style.
+
+    An original detectron2 model may not be traceable, or
+    cannot be deployed directly after being traced, due to some reasons:
+    1. control flow in some ops
+    2. custom ops
+    3. complicated pre/post processing
+
+    This class provides a traceable version of a detectron2 model by:
+    1. Rewrite parts of the model using ops in caffe2
+    2. Define the inputs "after pre-processing" as inputs to the model
+    3. Remove post-processing and produce raw layer outputs
+
+    More specifically about inputs: all builtin models take two input tensors.
+    (1) NCHW float "data" which is an image (usually in [0, 255])
+    (2) Nx3 float "im_info", each row of which is (height, width, 1.0)
+
+    After making a traceable model, the class provide methods to export such a
+    model to different deployment formats.
+
+    The class currently only supports models using builtin meta architectures.
+
+    Experimental. Don't use.
+    """
+
+    def __init__(self, cfg, model, inputs):
+        """
+        Args:
+            cfg (CfgNode): a detectron2 config, with extra export-related options
+                added by :func:`add_export_config`.
+            model (nn.Module): a model built by
+                :func:`detectron2.modeling.build_model`.
+            inputs: sample inputs that the given model takes for inference.
+                Will be used to trace the model.
+        """
+        assert isinstance(cfg, CN), cfg
+        assert isinstance(model, torch.nn.Module), type(model)
+        if "EXPORT_CAFFE2" not in cfg:
+            cfg = add_export_config(cfg)  # will just the defaults
+
+        self.cfg = cfg
+        self.model = model
+        self.inputs = inputs
+
+    def _get_traceable(self):
+        # TODO how to make it extensible to support custom models
+        C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[self.cfg.MODEL.META_ARCHITECTURE]
+        traceable_model = C2MetaArch(self.cfg, copy.deepcopy(self.model))
+        traceable_inputs = traceable_model.get_caffe2_inputs(self.inputs)
+        return traceable_model, traceable_inputs
+
+    def export_caffe2(self):
+        """
+        Export the model to Caffe2's protobuf format.
+        The returned object can be saved with `.save_protobuf()` method.
+        The result can be loaded and executed using Caffe2 runtime.
+
+        Returns:
+            Caffe2Model
+        """
+        model, inputs = self._get_traceable()
+        predict_net, init_net = export_caffe2_detection_model(model, inputs)
+        return Caffe2Model(predict_net, init_net)
+
+    def export_onnx(self):
+        """
+        Export the model to ONNX format.
+        Note that the exported model contains custom ops only available in caffe2, therefore it
+        cannot be directly executed by other runtime. Post-processing or transformation passes
+        may be applied on the model to accommodate different runtimes.
+
+        Returns:
+            onnx.ModelProto: an onnx model.
+        """
+        model, inputs = self._get_traceable()
+        return export_onnx_model_impl(model, (inputs,))
+
+    def export_torchscript(self):
+        """
+        Export the model to a `torch.jit.TracedModule` by tracing.
+        The returned object can be saved to a file by ".save()".
+
+        Returns:
+            torch.jit.TracedModule: a torch TracedModule
+        """
+        model, inputs = self._get_traceable()
+        logger = logging.getLogger(__name__)
+        logger.info("Tracing the model with torch.jit.trace ...")
+        with torch.no_grad():
+            return torch.jit.trace(model, (inputs,))
 
 
 def export_caffe2_model(cfg, model, inputs):
@@ -50,12 +146,7 @@ def export_caffe2_model(cfg, model, inputs):
     Returns:
         Caffe2Model
     """
-    assert isinstance(cfg, CN), cfg
-    C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[cfg.MODEL.META_ARCHITECTURE]
-    c2_compatible_model = C2MetaArch(cfg, model)
-    c2_format_input = c2_compatible_model.get_caffe2_inputs(inputs)
-    predict_net, init_net = export_caffe2_detection_model(c2_compatible_model, c2_format_input)
-    return Caffe2Model(predict_net, init_net)
+    return Caffe2Tracer(cfg, model, inputs).export_caffe2()
 
 
 def export_onnx_model(cfg, model, inputs):
@@ -64,7 +155,6 @@ def export_onnx_model(cfg, model, inputs):
     Note that the exported model contains custom ops only available in caffe2, therefore it
     cannot be directly executed by other runtime. Post-processing or transformation passes
     may be applied on the model to accommodate different runtimes.
-
     Args:
         cfg (CfgNode): a detectron2 config, with extra export-related options
             added by :func:`add_export_config`.
@@ -73,19 +163,17 @@ def export_onnx_model(cfg, model, inputs):
             It will be modified by this function.
         inputs: sample inputs that the given model takes for inference.
             Will be used to trace the model.
-
     Returns:
         onnx.ModelProto: an onnx model.
     """
-    model = copy.deepcopy(model)
-    assert isinstance(cfg, CN), cfg
-    C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[cfg.MODEL.META_ARCHITECTURE]
-    c2_compatible_model = C2MetaArch(cfg, model)
-    c2_format_input = c2_compatible_model.get_caffe2_inputs(inputs)
-    return export_onnx_model_impl(c2_compatible_model, (c2_format_input,))
+    return Caffe2Tracer(cfg, model, inputs).export_onnx()
 
 
 class Caffe2Model(nn.Module):
+    """
+    A wrapper around the traced model in caffe2's pb format.
+    """
+
     def __init__(self, predict_net, init_net):
         super().__init__()
         self.eval()  # always in eval mode
