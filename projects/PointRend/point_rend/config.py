@@ -8,6 +8,10 @@ def add_pointrend_config(cfg):
     """
     Add config for PointRend.
     """
+    # We retry random cropping until no single category in semantic segmentation GT occupies more
+    # than `SINGLE_CATEGORY_MAX_AREA` part of the crop.
+    cfg.INPUT.CROP.SINGLE_CATEGORY_MAX_AREA = 1.0
+
     # Names of the input feature maps to be used by a coarse mask head.
     cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES = ("p2",)
     cfg.MODEL.ROI_MASK_HEAD.FC_DIM = 1024
