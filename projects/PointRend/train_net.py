@@ -21,6 +21,7 @@ from detectron2.evaluation import (
     COCOEvaluator,
     DatasetEvaluators,
     LVISEvaluator,
+    SemSegEvaluator,
     verify_results,
 )
 
@@ -51,6 +52,14 @@ class Trainer(DefaultTrainer):
             return LVISEvaluator(dataset_name, cfg, True, output_folder)
         if evaluator_type == "coco":
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
+        if evaluator_type == "sem_seg":
+            return SemSegEvaluator(
+                dataset_name,
+                distributed=True,
+                num_classes=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES,
+                ignore_label=cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
+                output_dir=output_folder,
+            )
         if evaluator_type == "cityscapes_instance":
             assert (
                 torch.cuda.device_count() >= comm.get_rank()
