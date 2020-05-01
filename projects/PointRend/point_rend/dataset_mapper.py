@@ -10,6 +10,8 @@ from PIL import Image
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 
+from .color_augmentation import ColorAugSSD
+
 """
 This file contains the mapping that's applied to "dataset dicts" for semantic segmentation models.
 Unlike the default DatasetMapper this mapper uses cropping as the last transformation.
@@ -39,6 +41,12 @@ class SemSegDatasetMapper:
             self.crop_gen = None
 
         self.tfm_gens = utils.build_transform_gen(cfg, is_train)
+
+        if cfg.INPUT.COLOR_AUG_SSD:
+            self.tfm_gens.append(ColorAugSSD())
+            logging.getLogger(__name__).info(
+                "Color augmnetation used in training: " + str(self.tfm_gens[-1])
+            )
 
         # fmt: off
         self.img_format               = cfg.INPUT.FORMAT

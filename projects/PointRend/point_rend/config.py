@@ -11,6 +11,8 @@ def add_pointrend_config(cfg):
     # We retry random cropping until no single category in semantic segmentation GT occupies more
     # than `SINGLE_CATEGORY_MAX_AREA` part of the crop.
     cfg.INPUT.CROP.SINGLE_CATEGORY_MAX_AREA = 1.0
+    # Color augmentatition from SSD paper for semantic segmentation model during training.
+    cfg.INPUT.COLOR_AUG_SSD = False
 
     # Names of the input feature maps to be used by a coarse mask head.
     cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES = ("p2",)
