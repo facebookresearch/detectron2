@@ -1,3 +1,5 @@
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/resnest-split-attention-networks/instance-segmentation-on-coco-minival)](https://paperswithcode.com/sota/instance-segmentation-on-coco-minival?p=resnest-split-attention-networks)
+
 # ResNeSt (Detectron2)
 
 A fork of [detectron2](https://github.com/facebookresearch/detectron2) contains the code implementation of detection and instance segmentation experiments in [ResNeSt](https://hangzhang.org/files/resnest.pdf).
