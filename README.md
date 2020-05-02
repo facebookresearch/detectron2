@@ -106,7 +106,7 @@ We train all models with FPN, SyncBN and image scale augmentation (short size of
      <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/resnest/configs/COCO-InstanceSegmentation/mask_rcnn_ResNeSt_101_FPN_syncBN_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_101_FPN_syncBN_1x-528502c6.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_rcnn_ResNeSt_101_FPN_syncBN_1x.txt">log</a> </td>   
   </tr>
   <tr>
-    <td rowspan="4" class="tg-0lax">Cascade R-CNN</td>
+    <td rowspan="5" class="tg-0lax">Cascade R-CNN</td>
     <td class="tg-0lax">ResNet-50</td>
     <td class="tg-0lax">43.06</td>
     <td class="tg-0lax">37.19</td>
@@ -130,9 +130,15 @@ We train all models with FPN, SyncBN and image scale augmentation (short size of
     <td class="tg-0lax"><b>41.56</b></td>
      <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/resnest/configs/COCO-InstanceSegmentation/mask_cascade_rcnn_ResNeSt_101_FPN_syncBN_1x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_ResNeSt_101_FPN_syncBN_1x-62448b9c.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_ResNeSt_101_FPN_syncBN_1x.txt">log</a> </td>
   </tr>
+  <tr>
+    <td class="tg-0lax">ResNeSt-200-tricks-3x (<span style="color:red">ours</span>)</td>
+    <td class="tg-0lax"><b>50.54</b></td>
+    <td class="tg-0lax"><b>44.21</b></td>
+     <td class="tg-0lax"><a href="https://github.com/zhanghang1989/detectron2-ResNeSt/blob/resnest/configs/COCO-InstanceSegmentation/mask_cascade_rcnn_ResNeSt_200_FPN_syncBN_all_tricks_3x.yaml">config</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_ResNeSt_200_FPN_syncBN_all_tricks_3x.pth">model</a> | <a href="https://hangzh.s3.amazonaws.com/detectron/mask_cascade_rcnn_ResNeSt_200_FPN_syncBN_all_tricks_3x.txt">log</a> </td>
+  </tr>
 </table>
 
-All models are trained along with FPN and SyncBN. For data augmentation,input images’ shorter side are randomly scaled to one of (640, 672, 704, 736, 768, 800). All of them are reported on COCO-2017 validation dataset.
+All models are trained along with FPN and SyncBN. For data augmentation,input images’ shorter side are randomly scaled to one of (640, 672, 704, 736, 768, 800). 1x learning rate schedule is used, if not otherwise specified. All of them are reported on COCO-2017 validation dataset.
 
 
 
