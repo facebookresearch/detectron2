@@ -20,8 +20,8 @@ def apply_deltas_broadcast(box2box_transform, deltas, boxes):
 
     Args:
         box2box_transform (Box2BoxTransform or Box2BoxTransformRotated): the transform to apply
-        deltas (Tensor): NxB or Nx(KxB)
-        boxes (Tensor): NxB
+        deltas (Tensor): tensor of shape (N,B) or (N,KxB)
+        boxes (Tensor): tensor of shape (N,B)
 
     Returns:
         Tensor: same shape as deltas.

@@ -1,17 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import itertools
 import logging
-import numpy as np
 import torch
 import torch.nn.functional as F
 from fvcore.nn import smooth_l1_loss
 
 from detectron2.layers import batched_nms, cat
-from detectron2.structures import Boxes, Instances, pairwise_iou
+from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
-from detectron2.utils.memory import retry_if_cuda_oom
-
-from ..sampling import subsample_labels
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +37,7 @@ Naming convention:
     pred_objectness_logits: predicted objectness scores in [-inf, +inf]; use
         sigmoid(pred_objectness_logits) to estimate P(object).
 
-    gt_objectness_logits: ground-truth binary classification labels for objectness
+    gt_labels: ground-truth binary classification labels for objectness
 
     pred_anchor_deltas: predicted box2box transform deltas
 
@@ -163,15 +159,11 @@ def find_top_rpn_proposals(
 
 
 def rpn_losses(
-    gt_objectness_logits,
-    gt_anchor_deltas,
-    pred_objectness_logits,
-    pred_anchor_deltas,
-    smooth_l1_beta,
+    gt_labels, gt_anchor_deltas, pred_objectness_logits, pred_anchor_deltas, smooth_l1_beta
 ):
     """
     Args:
-        gt_objectness_logits (Tensor): shape (N,), each element in {-1, 0, 1} representing
+        gt_labels (Tensor): shape (N,), each element in {-1, 0, 1} representing
             ground-truth objectness labels with: -1 = ignore; 0 = not object; 1 = object.
         gt_anchor_deltas (Tensor): shape (N, box_dim), row i represents ground-truth
             box2box transform targets (dx, dy, dw, dh) or (dx, dy, dw, dh, da) that map anchor i to
@@ -187,15 +179,15 @@ def rpn_losses(
     Returns:
         objectness_loss, localization_loss, both unnormalized (summed over samples).
     """
-    pos_masks = gt_objectness_logits == 1
+    pos_masks = gt_labels == 1
     localization_loss = smooth_l1_loss(
         pred_anchor_deltas[pos_masks], gt_anchor_deltas[pos_masks], smooth_l1_beta, reduction="sum"
     )
 
-    valid_masks = gt_objectness_logits >= 0
+    valid_masks = gt_labels >= 0
     objectness_loss = F.binary_cross_entropy_with_logits(
         pred_objectness_logits[valid_masks],
-        gt_objectness_logits[valid_masks].to(torch.float32),
+        gt_labels[valid_masks].to(torch.float32),
         reduction="sum",
     )
     return objectness_loss, localization_loss
@@ -205,14 +197,12 @@ class RPNOutputs(object):
     def __init__(
         self,
         box2box_transform,
-        anchor_matcher,
         batch_size_per_image,
-        positive_fraction,
         images,
         pred_objectness_logits,
         pred_anchor_deltas,
         anchors,
-        boundary_threshold=0,
+        gt_labels=None,
         gt_boxes=None,
         smooth_l1_beta=0.0,
     ):
@@ -220,88 +210,37 @@ class RPNOutputs(object):
         Args:
             box2box_transform (Box2BoxTransform): :class:`Box2BoxTransform` instance for
                 anchor-proposal transformations.
-            anchor_matcher (Matcher): :class:`Matcher` instance for matching anchors to
-                ground-truth boxes; used to determine training labels.
-            batch_size_per_image (int): number of proposals to sample when training
-            positive_fraction (float): target fraction of sampled proposals that should be positive
             images (ImageList): :class:`ImageList` instance representing N input images
+            batch_size_per_image (int): number of proposals to sample when training
             pred_objectness_logits (list[Tensor]): A list of L elements.
                 Element i is a tensor of shape (N, A, Hi, Wi) representing
                 the predicted objectness logits for anchors.
             pred_anchor_deltas (list[Tensor]): A list of L elements. Element i is a tensor of shape
-                (N, A*4, Hi, Wi) representing the predicted "deltas" used to transform anchors
+                (N, A*4 or 5, Hi, Wi) representing the predicted "deltas" used to transform anchors
                 to proposals.
-            anchors (list[Boxes]): A list of Boxes storing the all the anchors
-                for each feature map. See :meth:`AnchorGenerator.forward`.
-            boundary_threshold (int): if >= 0, then anchors that extend beyond the image
-                boundary by more than boundary_thresh are not used in training. Set to a very large
-                number or < 0 to disable this behavior. Only needed in training.
-            gt_boxes (list[Boxes], optional): A list of N elements. Element i a Boxes storing
-                the ground-truth ("gt") boxes for image i.
+            anchors (list[Boxes or RotatedBoxes]): A list of Boxes/RotatedBoxes storing the all
+                the anchors for each feature map. See :meth:`AnchorGenerator.forward`.
+            gt_labels (list[Tensor]): Available on in training.
+                See :meth:`RPN.label_and_sample_anchors`.
+            gt_boxes (list[Boxes or RotatedBoxes]): Available on in training.
+                See :meth:`RPN.label_and_sample_anchors`.
             smooth_l1_beta (float): The transition point between L1 and L2 loss in
                 the smooth L1 loss function. When set to 0, the loss becomes L1. When
                 set to +inf, the loss becomes constant 0.
         """
         self.box2box_transform = box2box_transform
-        self.anchor_matcher = anchor_matcher
         self.batch_size_per_image = batch_size_per_image
-        self.positive_fraction = positive_fraction
         self.pred_objectness_logits = pred_objectness_logits
         self.pred_anchor_deltas = pred_anchor_deltas
-
         self.anchors = anchors
+
         self.gt_boxes = gt_boxes
+        self.gt_labels = gt_labels
+
         self.num_feature_maps = len(pred_objectness_logits)
         self.num_images = len(images)
         self.image_sizes = images.image_sizes
-        self.boundary_threshold = boundary_threshold
         self.smooth_l1_beta = smooth_l1_beta
-
-    def _get_ground_truth(self):
-        """
-        Returns:
-            gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-                total number of anchors across feature maps. Label values are
-                in {-1, 0, 1}, with meanings: -1 = ignore; 0 = negative class; 1 = positive class.
-            gt_anchor_deltas: list of N tensors. Each has shape (total #anchors, 4)
-        """
-        gt_objectness_logits = []
-        gt_anchor_deltas = []
-        # Concatenate anchors from all feature maps into a single Boxes
-        anchors = Boxes.cat(self.anchors)
-        for image_size_i, gt_boxes_i in zip(self.image_sizes, self.gt_boxes):
-            """
-            image_size_i: (h, w) for the i-th image
-            gt_boxes_i: ground-truth boxes for i-th image
-            """
-            match_quality_matrix = retry_if_cuda_oom(pairwise_iou)(gt_boxes_i, anchors)
-            matched_idxs, gt_objectness_logits_i = retry_if_cuda_oom(self.anchor_matcher)(
-                match_quality_matrix
-            )
-            # Matching is memory-expensive and may result in CPU tensors. But the result is small
-            gt_objectness_logits_i = gt_objectness_logits_i.to(device=gt_boxes_i.device)
-            del match_quality_matrix
-
-            if self.boundary_threshold >= 0:
-                # Discard anchors that go out of the boundaries of the image
-                # NOTE: This is legacy functionality that is turned off by default in Detectron2
-                anchors_inside_image = anchors.inside_box(image_size_i, self.boundary_threshold)
-                gt_objectness_logits_i[~anchors_inside_image] = -1
-
-            if len(gt_boxes_i) == 0:
-                # These values won't be used anyway since the anchor is labeled as background
-                gt_anchor_deltas_i = torch.zeros_like(anchors.tensor)
-            else:
-                # TODO wasted computation for ignored boxes
-                matched_gt_boxes = gt_boxes_i[matched_idxs]
-                gt_anchor_deltas_i = self.box2box_transform.get_deltas(
-                    anchors.tensor, matched_gt_boxes.tensor
-                )
-
-            gt_objectness_logits.append(gt_objectness_logits_i)
-            gt_anchor_deltas.append(gt_anchor_deltas_i)
-
-        return gt_objectness_logits, gt_anchor_deltas
 
     def losses(self):
         """
@@ -312,96 +251,54 @@ class RPNOutputs(object):
                 Loss names are: `loss_rpn_cls` for objectness classification and
                 `loss_rpn_loc` for proposal localization.
         """
-
-        def resample(label):
-            """
-            Randomly sample a subset of positive and negative examples by overwriting
-            the label vector to the ignore value (-1) for all elements that are not
-            included in the sample.
-            """
-            pos_idx, neg_idx = subsample_labels(
-                label, self.batch_size_per_image, self.positive_fraction, 0
-            )
-            # Fill with the ignore label (-1), then set positive and negative labels
-            label.fill_(-1)
-            label.scatter_(0, pos_idx, 1)
-            label.scatter_(0, neg_idx, 0)
-            return label
-
-        gt_objectness_logits, gt_anchor_deltas = self._get_ground_truth()
-        """
-        gt_objectness_logits: list of N tensors. Tensor i is a vector whose length is the
-            total number of anchors in all feature maps.
-        gt_anchor_deltas: list of N tensors. Tensor i has shape (total #anchors, B),
-            where B is the box dimension
-        """
-        # Collect all objectness labels and delta targets over feature maps and images
-        # The final ordering is L, N, H, W, A from slowest to fastest axis.
-        num_anchors_per_map = [np.prod(x.shape[1:]) for x in self.pred_objectness_logits]
-        num_anchors_per_image = sum(num_anchors_per_map)  # total #anchors in all feature maps
-
-        # Stack to: (N, num_anchors_per_image)
-        gt_objectness_logits = torch.stack(
-            [resample(label) for label in gt_objectness_logits], dim=0
-        )
+        gt_labels = torch.stack(self.gt_labels)
+        anchors = self.anchors[0].cat(self.anchors).tensor  # Ax(4 or 5)
+        gt_anchor_deltas = [self.box2box_transform.get_deltas(anchors, k) for k in self.gt_boxes]
+        gt_anchor_deltas = torch.stack(gt_anchor_deltas)
 
         # Log the number of positive/negative anchors per-image that's used in training
-        num_pos_anchors = (gt_objectness_logits == 1).sum().item()
-        num_neg_anchors = (gt_objectness_logits == 0).sum().item()
+        num_pos_anchors = (gt_labels == 1).sum().item()
+        num_neg_anchors = (gt_labels == 0).sum().item()
         storage = get_event_storage()
         storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / self.num_images)
         storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / self.num_images)
 
-        assert gt_objectness_logits.shape[1] == num_anchors_per_image
-        # Split to tuple of L tensors, each with shape (N, num_anchors_per_map)
-        gt_objectness_logits = torch.split(gt_objectness_logits, num_anchors_per_map, dim=1)
-        # Concat from all feature maps
-        gt_objectness_logits = cat([x.flatten() for x in gt_objectness_logits], dim=0)
-
-        # Stack to: (N, num_anchors_per_image, B)
-        gt_anchor_deltas = torch.stack(gt_anchor_deltas, dim=0)
-        assert gt_anchor_deltas.shape[1] == num_anchors_per_image
         B = gt_anchor_deltas.shape[2]  # box dimension (4 or 5)
-
-        # Split to tuple of L tensors, each with shape (N, num_anchors_per_image)
-        gt_anchor_deltas = torch.split(gt_anchor_deltas, num_anchors_per_map, dim=1)
-        # Concat from all feature maps
-        gt_anchor_deltas = cat([x.reshape(-1, B) for x in gt_anchor_deltas], dim=0)
 
         # Collect all objectness logits and delta predictions over feature maps
         # and images to arrive at the same shape as the labels and targets
-        # The final ordering is L, N, H, W, A from slowest to fastest axis.
         pred_objectness_logits = cat(
             [
-                # Reshape: (N, A, Hi, Wi) -> (N, Hi, Wi, A) -> (N*Hi*Wi*A, )
-                x.permute(0, 2, 3, 1).flatten()
+                # Reshape: (N, A, Hi, Wi) -> (N, Hi, Wi, A) -> (N, Hi*Wi*A)
+                x.permute(0, 2, 3, 1).flatten(1)
                 for x in self.pred_objectness_logits
             ],
-            dim=0,
+            dim=1,  # concat on the Hi*Wi*A dimension
         )
         pred_anchor_deltas = cat(
             [
                 # Reshape: (N, A*B, Hi, Wi) -> (N, A, B, Hi, Wi) -> (N, Hi, Wi, A, B)
-                #          -> (N*Hi*Wi*A, B)
+                #          -> (N, Hi*Wi*A, B)
                 x.view(x.shape[0], -1, B, x.shape[-2], x.shape[-1])
                 .permute(0, 3, 4, 1, 2)
-                .reshape(-1, B)
+                .flatten(1, -2)
                 for x in self.pred_anchor_deltas
             ],
-            dim=0,
+            dim=1,
         )
 
         objectness_loss, localization_loss = rpn_losses(
-            gt_objectness_logits,
+            gt_labels,
             gt_anchor_deltas,
             pred_objectness_logits,
             pred_anchor_deltas,
             self.smooth_l1_beta,
         )
-        normalizer = 1.0 / (self.batch_size_per_image * self.num_images)
-        loss_cls = objectness_loss * normalizer  # cls: classification loss
-        loss_loc = localization_loss * normalizer  # loc: localization loss
-        losses = {"loss_rpn_cls": loss_cls, "loss_rpn_loc": loss_loc}
+        normalizer = self.batch_size_per_image * self.num_images
+        losses = {
+            "loss_rpn_cls": objectness_loss / normalizer,
+            "loss_rpn_loc": localization_loss / normalizer,
+        }
 
         return losses
 
@@ -423,7 +320,7 @@ class RPNOutputs(object):
                 pred_anchor_deltas_i.view(N, -1, B, Hi, Wi).permute(0, 3, 4, 1, 2).reshape(-1, B)
             )
             # Concatenate all anchors to shape (N*Hi*Wi*A, B)
-            anchors_i = cat([anchors_i.tensor] * N, dim=0)
+            anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
             proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
             # Append feature map proposals with shape (N, Hi*Wi*A, B)
             proposals.append(proposals_i.view(N, -1, B))

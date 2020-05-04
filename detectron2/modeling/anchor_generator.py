@@ -154,6 +154,10 @@ class DefaultAnchorGenerator(nn.Module):
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
     def _grid_anchors(self, grid_sizes: List[List[int]]):
+        """
+        Returns:
+            list[Tensor]: #featuremap tensors, each is (#locations x #cell_anchors) x 4
+        """
         anchors = []
         for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
             shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors.device)
