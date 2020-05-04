@@ -15,7 +15,13 @@ from .caffe2_inference import ProtobufDetectionModel
 from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format
 from .shared import get_pb_arg_vali, get_pb_arg_vals, save_graph
 
-__all__ = ["add_export_config", "export_caffe2_model", "Caffe2Model", "export_onnx_model"]
+__all__ = [
+    "add_export_config",
+    "export_caffe2_model",
+    "Caffe2Model",
+    "export_onnx_model",
+    "Caffe2Tracer",
+]
 
 
 def add_export_config(cfg):
@@ -47,7 +53,8 @@ class Caffe2Tracer:
     3. complicated pre/post processing
 
     This class provides a traceable version of a detectron2 model by:
-    1. Rewrite parts of the model using ops in caffe2
+    1. Rewrite parts of the model using ops in caffe2. Note that some ops do
+       not have GPU implementation.
     2. Define the inputs "after pre-processing" as inputs to the model
     3. Remove post-processing and produce raw layer outputs
 
@@ -59,8 +66,6 @@ class Caffe2Tracer:
     model to different deployment formats.
 
     The class currently only supports models using builtin meta architectures.
-
-    Experimental. Don't use.
     """
 
     def __init__(self, cfg, model, inputs):
@@ -127,7 +132,7 @@ class Caffe2Tracer:
         logger = logging.getLogger(__name__)
         logger.info("Tracing the model with torch.jit.trace ...")
         with torch.no_grad():
-            return torch.jit.trace(model, (inputs,))
+            return torch.jit.trace(model, (inputs,), optimize=True)
 
 
 def export_caffe2_model(cfg, model, inputs):

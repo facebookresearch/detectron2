@@ -164,9 +164,6 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
         features = [features[f] for f in self.in_features]
         objectness_logits_pred, anchor_deltas_pred = self.rpn_head(features)
 
-        # TODO is the needed?
-        # objectness_logits_pred = [t.sigmoid() for t in objectness_logits_pred]
-
         assert isinstance(images, ImageList)
         if self.tensor_mode:
             im_info = images.image_sizes

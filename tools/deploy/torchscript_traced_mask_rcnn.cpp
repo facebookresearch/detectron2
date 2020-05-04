@@ -9,7 +9,7 @@
 
 using namespace std;
 
-// Experimental. Don't use.
+// experimental. don't use
 int main(int argc, const char* argv[]) {
   if (argc != 3) {
     return 1;
@@ -19,26 +19,25 @@ int main(int argc, const char* argv[]) {
   torch::autograd::AutoGradMode guard(false);
   auto module = torch::jit::load(argv[1]);
 
+  assert(module.buffers().size() > 0);
+  // Assume that the entire model is on the same device.
+  // We just put input to this device.
+  auto device = (*begin(module.buffers())).device();
+
   cv::Mat input_img = cv::imread(image_file, cv::IMREAD_COLOR);
   const int height = input_img.rows;
   const int width = input_img.cols;
   // FPN models require divisibility of 32
   assert(height % 32 == 0 && width % 32 == 0);
-  const int batch = 1;
   const int channels = 3;
 
-  auto input = torch::empty({1, channels, height, width});
-  float* ptr = input.data_ptr<float>();
-  // HWC to CHW
-  for (int c = 0; c < 3; ++c) {
-    for (int i = 0; i < height * width; ++i) {
-      ptr[c * height * width + i] =
-          static_cast<float>(input_img.data[3 * i + c]);
-    }
-  }
+  auto input = torch::from_blob(
+      input_img.data, {1, height, width, channels}, torch::kUInt8);
+  // NHWC to NCHW
+  input = input.to(device, torch::kFloat).permute({0, 3, 1, 2}).contiguous();
 
-  float im_info_data[] = {height * 1.0f, width * 1.0f, 1.0f};
-  auto im_info = torch::from_blob(im_info_data, {1, 3});
+  std::array<float, 3> im_info_data{height * 1.0f, width * 1.0f, 1.0f};
+  auto im_info = torch::from_blob(im_info_data.data(), {1, 3}).to(device);
 
   // run the network
   auto output = module.forward({std::make_tuple(input, im_info)});

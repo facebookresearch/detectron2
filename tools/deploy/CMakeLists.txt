@@ -12,3 +12,10 @@ target_link_libraries(
   caffe2_mask_rcnn
   "${TORCH_LIBRARIES}" gflags glog ${OpenCV_LIBS})
 set_property(TARGET caffe2_mask_rcnn PROPERTY CXX_STANDARD 14)
+
+
+add_executable(torchscript_traced_mask_rcnn torchscript_traced_mask_rcnn.cpp)
+target_link_libraries(
+  torchscript_traced_mask_rcnn
+  "${TORCH_LIBRARIES}" ${OpenCV_LIBS})
+set_property(TARGET torchscript_traced_mask_rcnn PROPERTY CXX_STANDARD 14)
