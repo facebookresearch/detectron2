@@ -106,8 +106,8 @@ class Matcher(object):
         maximum overlap with it (including ties); for each prediction in that set, if
         it is unmatched, then match it to the ground-truth G.
 
-        This function implements the RPN assignment case (i) in Sec. 3.1.2 of the
-        Faster R-CNN paper: https://arxiv.org/pdf/1506.01497v3.pdf.
+        This function implements the RPN assignment case (i) in Sec. 3.1.2 of
+        :paper:`Faster R-CNN`.
         """
         # For each gt, find the prediction with which it has highest quality
         highest_quality_foreach_gt, _ = match_quality_matrix.max(dim=1)

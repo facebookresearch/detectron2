@@ -125,11 +125,7 @@ def find_top_rrpn_proposals(
 @PROPOSAL_GENERATOR_REGISTRY.register()
 class RRPN(RPN):
     """
-    Rotated RPN subnetwork.
-    Please refer to https://arxiv.org/pdf/1703.01086.pdf for the original RRPN paper:
-    Ma, J., Shao, W., Ye, H., Wang, L., Wang, H., Zheng, Y., & Xue, X. (2018).
-    Arbitrary-oriented scene text detection via rotation proposals.
-    IEEE Transactions on Multimedia, 20(11), 3111-3122.
+    Rotated Region Proposal Network described in :paper:`RRPN`.
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):

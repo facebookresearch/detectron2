@@ -58,7 +58,7 @@ def permute_all_cls_and_box_to_N_HWA_K_and_concat(box_cls, box_delta, num_classe
 @META_ARCH_REGISTRY.register()
 class RetinaNet(nn.Module):
     """
-    Implement RetinaNet (https://arxiv.org/abs/1708.02002).
+    Implement RetinaNet in :paper:`RetinaNet`.
     """
 
     def __init__(self, cfg):
@@ -218,7 +218,7 @@ class RetinaNet(nn.Module):
                 :meth:`RetinaNetHead.forward`.
 
         Returns:
-            dict[str: Tensor]:
+            dict[str, Tensor]:
                 mapping from a named loss to a scalar tensor
                 storing the loss. Used during training only. The dict keys are:
                 "loss_cls" and "loss_box_reg"
@@ -273,8 +273,7 @@ class RetinaNet(nn.Module):
 
         Returns:
             gt_classes (Tensor):
-                An integer tensor of shape (N, R) storing ground-truth
-                labels for each anchor.
+                An integer tensor of shape (N, R) storing ground-truth labels for each anchor.
                 R is the total number of anchors, i.e. the sum of Hi x Wi x A for all levels.
                 Anchors with an IoU with some target higher than the foreground threshold
                 are assigned their corresponding label in the [0, K-1] range.

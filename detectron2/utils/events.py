@@ -182,7 +182,7 @@ class CommonMetricPrinter(EventWriter):
             # or when SimpleTrainer is not used
             data_time = None
 
-        eta_string = "N/A"
+        eta_string = None
         try:
             iter_time = storage.history("time").global_avg()
             eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
@@ -211,8 +211,8 @@ class CommonMetricPrinter(EventWriter):
 
         # NOTE: max_mem is parsed by grep in "dev/parse_results.sh"
         self.logger.info(
-            " eta: {eta}  iter: {iter}  {losses}  {time}{data_time}lr: {lr}  {memory}".format(
-                eta=eta_string,
+            " {eta}iter: {iter}  {losses}  {time}{data_time}lr: {lr}  {memory}".format(
+                eta=f"eta: {eta_string}  " if eta_string else "",
                 iter=iteration,
                 losses="  ".join(
                     [

@@ -28,6 +28,10 @@ class _ScaleGradient(Function):
 
 @ROI_HEADS_REGISTRY.register()
 class CascadeROIHeads(StandardROIHeads):
+    """
+    Implement :paper:`Cascade R-CNN`.
+    """
+
     def _init_box_head(self, cfg, input_shape):
         # fmt: off
         pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION

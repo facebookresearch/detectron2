@@ -205,6 +205,10 @@ class GeneralizedRCNN(nn.Module):
 
 @META_ARCH_REGISTRY.register()
 class ProposalNetwork(nn.Module):
+    """
+    A meta architecture that only predicts object proposals.
+    """
+
     def __init__(self, cfg):
         super().__init__()
         self.backbone = build_backbone(cfg)

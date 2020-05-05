@@ -202,7 +202,7 @@ example above) in `DATASETS.{TRAIN,TEST}`.
 There are other configs you might want to change to train or evaluate on new datasets:
 
 * `MODEL.ROI_HEADS.NUM_CLASSES` and `MODEL.RETINANET.NUM_CLASSES` are the number of thing classes
-	for R-CNN and RetinaNet models.
+	for R-CNN and RetinaNet models, respectively.
 * `MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS` sets the number of keypoints for Keypoint R-CNN.
   You'll also need to set [Keypoint OKS](http://cocodataset.org/#keypoints-eval)
 	with `TEST.KEYPOINT_OKS_SIGMAS` for evaluation.

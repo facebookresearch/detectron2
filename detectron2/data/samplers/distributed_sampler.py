@@ -63,7 +63,7 @@ class RepeatFactorTrainingSampler(Sampler):
     as the fraction of images in the training set (without repeats) in which category c
     appears.
 
-    See https://arxiv.org/abs/1908.03195 (>= v2) Appendix B.2.
+    See :paper:`lvis` (>= v2) Appendix B.2.
     """
 
     def __init__(self, dataset_dicts, repeat_thresh, shuffle=True, seed=None):

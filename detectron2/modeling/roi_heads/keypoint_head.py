@@ -118,7 +118,7 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
 
 class BaseKeypointRCNNHead(nn.Module):
     """
-    Implement the basic Keypoint R-CNN losses and inference logic.
+    Implement the basic Keypoint R-CNN losses and inference logic described in :paper:`Mask R-CNN`.
     """
 
     @configurable

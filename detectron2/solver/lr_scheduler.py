@@ -92,7 +92,7 @@ def _get_warmup_factor_at_iter(
 ) -> float:
     """
     Return the learning rate warmup factor at a specific iteration.
-    See https://arxiv.org/abs/1706.02677 for more details.
+    See :paper:`in1k1h` for more details.
 
     Args:
         method (str): warmup method; either "constant" or "linear".

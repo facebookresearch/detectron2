@@ -44,7 +44,7 @@ class SemanticSegmentor(nn.Module):
     def forward(self, batched_inputs):
         """
         Args:
-            batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
+            batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
                 Each item in the list contains the inputs for one image.
 
                 For now, each item in the list is a dict that contains:
@@ -100,9 +100,9 @@ def build_sem_seg_head(cfg, input_shape):
 @SEM_SEG_HEADS_REGISTRY.register()
 class SemSegFPNHead(nn.Module):
     """
-    A semantic segmentation head described in detail in the Panoptic Feature Pyramid Networks paper
-    (https://arxiv.org/abs/1901.02446). It takes FPN features as input and merges information from
-    all levels of the FPN into single output.
+    A semantic segmentation head described in :paper:`PanopticFPN`.
+    It takes FPN features as input and merges information from all
+    levels of the FPN into single output.
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):

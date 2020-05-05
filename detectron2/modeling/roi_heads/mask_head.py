@@ -145,7 +145,7 @@ def mask_rcnn_inference(pred_mask_logits, pred_instances):
 
 class BaseMaskRCNNHead(nn.Module):
     """
-    Implement the basic Mask R-CNN losses and inference logic.
+    Implement the basic Mask R-CNN losses and inference logic described in :paper:`Mask R-CNN`
     """
 
     @configurable

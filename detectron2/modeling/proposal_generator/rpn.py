@@ -37,10 +37,10 @@ def build_rpn_head(cfg, input_shape):
 @RPN_HEAD_REGISTRY.register()
 class StandardRPNHead(nn.Module):
     """
-    RPN classification and regression heads. Uses a 3x3 conv to produce a shared
-    hidden state from which one 1x1 conv predicts objectness logits for each anchor
-    and a second 1x1 conv predicts bounding-box deltas specifying how to deform
-    each anchor into an object proposal.
+    Standard RPN classification and regression heads described in :paper:`Faster R-CNN`.
+    Uses a 3x3 conv to produce a shared hidden state from which one 1x1 conv predicts
+    objectness logits for each anchor and a second 1x1 conv predicts bounding-box deltas
+    specifying how to deform each anchor into an object proposal.
     """
 
     def __init__(self, cfg, input_shape: List[ShapeSpec]):
@@ -91,7 +91,7 @@ class StandardRPNHead(nn.Module):
 @PROPOSAL_GENERATOR_REGISTRY.register()
 class RPN(nn.Module):
     """
-    Region Proposal Network, introduced by the Faster R-CNN paper.
+    Region Proposal Network, introduced by :paper:`Faster R-CNN`.
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
