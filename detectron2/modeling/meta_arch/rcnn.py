@@ -81,7 +81,7 @@ class GeneralizedRCNN(nn.Module):
             storage.put_image(vis_name, vis_img)
             break  # only visualize one image in a batch
 
-    def forward(self, batched_inputs):
+    def forward(self, batched_inputs, do_postprocess=True):
         """
         Args:
             batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
@@ -105,7 +105,7 @@ class GeneralizedRCNN(nn.Module):
                 "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
         """
         if not self.training:
-            return self.inference(batched_inputs)
+            return self.inference(batched_inputs, do_postprocess=do_postprocess)
 
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:
