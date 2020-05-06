@@ -42,4 +42,4 @@ wget -nc -q https://github.com/facebookresearch/detectron2/raw/master/detectron2
 
 If your issue looks like an installation issue / environment issue,
 please first try to solve it yourself with the instructions in
-https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md#common-installation-issues
+https://detectron2.readthedocs.io/tutorials/install.html#common-installation-issues

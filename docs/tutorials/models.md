@@ -25,6 +25,8 @@ in our model zoo.
 See [API doc](../modules/checkpoint.html#detectron2.checkpoint.DetectionCheckpointer)
 for more details about its usage.
 
+The model files can be arbitrarily manipulated using `torch.{load,save}` for `.pth` files or
+`pickle.{dump,load}` for `.pkl` files.
 
 ### Use a Model
 

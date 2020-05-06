@@ -44,15 +44,15 @@ class FastRCNNTest(unittest.TestCase):
         for name in expected_losses.keys():
             assert torch.allclose(losses[name], expected_losses[name])
 
-    def test_fast_rcnn_empty_batch(self):
+    def test_fast_rcnn_empty_batch(self, device="cpu"):
         box_predictor = FastRCNNOutputLayers(
             ShapeSpec(channels=10),
             box2box_transform=Box2BoxTransform(weights=(10, 10, 5, 5)),
             num_classes=8,
-        )
+        ).to(device=device)
 
-        logits = torch.randn(0, 100, requires_grad=True)
-        deltas = torch.randn(0, 4, requires_grad=True)
+        logits = torch.randn(0, 100, requires_grad=True, device=device)
+        deltas = torch.randn(0, 4, requires_grad=True, device=device)
         losses = box_predictor.losses([logits, deltas], [])
         for value in losses.values():
             self.assertTrue(torch.allclose(value, torch.zeros_like(value)))
@@ -62,6 +62,10 @@ class FastRCNNTest(unittest.TestCase):
 
         predictions, _ = box_predictor.inference([logits, deltas], [])
         self.assertEqual(len(predictions), 0)
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def test_fast_rcnn_empty_batch_cuda(self):
+        self.test_fast_rcnn_empty_batch(device=torch.device("cuda"))
 
     def test_fast_rcnn_rotated(self):
         torch.manual_seed(132)
