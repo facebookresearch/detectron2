@@ -7,7 +7,6 @@ from torch import nn
 from detectron2.structures import ImageList
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
-from detectron2.utils.memory import retry_if_cuda_oom
 
 from ..backbone import build_backbone
 from ..postprocessing import detector_postprocess
@@ -199,7 +198,7 @@ class GeneralizedRCNN(nn.Module):
         ):
             height = input_per_image.get("height", image_size[0])
             width = input_per_image.get("width", image_size[1])
-            r = retry_if_cuda_oom(detector_postprocess)(results_per_image, height, width)
+            r = detector_postprocess(results_per_image, height, width)
             processed_results.append({"instances": r})
         return processed_results
 
