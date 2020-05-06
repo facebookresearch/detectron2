@@ -122,7 +122,7 @@ class BaseKeypointRCNNHead(nn.Module):
     """
 
     @configurable
-    def __init__(self, *, num_keypoints, loss_weight, loss_normalizer):
+    def __init__(self, *, num_keypoints, loss_weight=1.0, loss_normalizer=1.0):
         """
         NOTE: this interface is experimental.
 
