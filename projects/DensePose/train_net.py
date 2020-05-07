@@ -12,6 +12,7 @@ It is an example of how a user might use detectron2 for a new project.
 import logging
 import os
 from collections import OrderedDict
+from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
@@ -83,6 +84,9 @@ def setup(args):
 
 def main(args):
     cfg = setup(args)
+    # disable strict kwargs checking: allow one to specify path handle
+    # hints through kwargs, like timeout in DP evaluation
+    PathManager.set_strict_kwargs_checking(False)
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
