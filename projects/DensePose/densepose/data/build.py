@@ -20,7 +20,8 @@ from detectron2.data.common import AspectRatioGroupedDataset, DatasetFromList, M
 from detectron2.utils.comm import get_world_size
 
 from .dataset_mapper import DatasetMapper
-from .datasets.coco import DENSEPOSE_KEYS as DENSEPOSE_COCO_KEYS
+from .datasets.coco import DENSEPOSE_KEYS_WITHOUT_MASK as DENSEPOSE_COCO_KEYS_WITHOUT_MASK
+from .datasets.coco import DENSEPOSE_MASK_KEY as DENSEPOSE_COCO_MASK_KEY
 
 __all__ = ["build_detection_train_loader", "build_detection_test_loader"]
 
@@ -138,7 +139,9 @@ def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[In
 
     def has_densepose_annotations(instance: Instance) -> bool:
         for ann in instance["annotations"]:
-            if all(key in ann for key in DENSEPOSE_COCO_KEYS):
+            if all(key in ann for key in DENSEPOSE_COCO_KEYS_WITHOUT_MASK) and (
+                (DENSEPOSE_COCO_MASK_KEY in ann) or ("segmentation" in ann)
+            ):
                 return True
         return False
 
@@ -162,7 +165,7 @@ def _maybe_create_specific_keep_instance_predicate(cfg: CfgNode) -> Optional[Ins
     return combined_predicate
 
 
-def _get_keep_instance_predicate(cfg: CfgNode):
+def _get_train_keep_instance_predicate(cfg: CfgNode):
     general_keep_predicate = _maybe_create_general_keep_instance_predicate(cfg)
     combined_specific_keep_predicate = _maybe_create_specific_keep_instance_predicate(cfg)
 
@@ -176,6 +179,11 @@ def _get_keep_instance_predicate(cfg: CfgNode):
     if combined_specific_keep_predicate is None:
         return general_keep_predicate
     return combined_general_specific_keep_predicate
+
+
+def _get_test_keep_instance_predicate(cfg: CfgNode):
+    general_keep_predicate = _maybe_create_general_keep_instance_predicate(cfg)
+    return general_keep_predicate
 
 
 def _maybe_filter_and_map_categories(
@@ -302,7 +310,7 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     _add_category_maps_to_metadata(cfg)
     dataset_dicts = combine_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
-        keep_instance_predicate=_get_keep_instance_predicate(cfg),
+        keep_instance_predicate=_get_train_keep_instance_predicate(cfg),
         proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
     )
     dataset = DatasetFromList(dataset_dicts, copy=False)
@@ -370,7 +378,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     _add_category_maps_to_metadata(cfg)
     dataset_dicts = combine_detection_dataset_dicts(
         [dataset_name],
-        keep_instance_predicate=_get_keep_instance_predicate(cfg),
+        keep_instance_predicate=_get_test_keep_instance_predicate(cfg),
         proposal_files=[
             cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]
         ]
