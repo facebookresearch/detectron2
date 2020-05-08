@@ -142,6 +142,13 @@ class DefaultAnchorGenerator(nn.Module):
     @property
     def num_cell_anchors(self):
         """
+        Alias of `num_anchors`.
+        """
+        return self.num_anchors
+
+    @property
+    def num_anchors(self):
+        """
         Returns:
             list[int]: Each int is the number of anchors at every pixel
                 location, on that feature map.
@@ -149,7 +156,7 @@ class DefaultAnchorGenerator(nn.Module):
                 ratios and 5 sizes, the number of anchors is 15.
                 (See also ANCHOR_GENERATOR.SIZES and ANCHOR_GENERATOR.ASPECT_RATIOS in config)
 
-                In standard RPN models, `num_cell_anchors` on every feature map is the same.
+                In standard RPN models, `num_anchors` on every feature map is the same.
         """
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
@@ -285,6 +292,13 @@ class RotatedAnchorGenerator(nn.Module):
     @property
     def num_cell_anchors(self):
         """
+        Alias of `num_anchors`.
+        """
+        return self.num_anchors
+
+    @property
+    def num_anchors(self):
+        """
         Returns:
             list[int]: Each int is the number of anchors at every pixel
                 location, on that feature map.
@@ -293,7 +307,7 @@ class RotatedAnchorGenerator(nn.Module):
                 (See also ANCHOR_GENERATOR.SIZES, ANCHOR_GENERATOR.ASPECT_RATIOS
                 and ANCHOR_GENERATOR.ANGLES in config)
 
-                In standard RRPN models, `num_cell_anchors` on every feature map is the same.
+                In standard RRPN models, `num_anchors` on every feature map is the same.
         """
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
