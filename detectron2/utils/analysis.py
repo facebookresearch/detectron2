@@ -27,6 +27,7 @@ _IGNORED_OPS = [
     "aten::batch_norm",
     "aten::div",
     "aten::div_",
+    "aten::meshgrid",
     "aten::rsub",
     "aten::sub",
     "aten::relu_",
