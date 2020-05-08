@@ -230,16 +230,29 @@ class RPNOutputs(object):
         """
         self.box2box_transform = box2box_transform
         self.batch_size_per_image = batch_size_per_image
-        self.pred_objectness_logits = pred_objectness_logits
-        self.pred_anchor_deltas = pred_anchor_deltas
+
+        B = anchors[0].tensor.size(1)  # box dimension (4 or 5)
+        self.pred_objectness_logits = [
+            # Reshape: (N, A, Hi, Wi) -> (N, Hi, Wi, A) -> (N, Hi*Wi*A)
+            score.permute(0, 2, 3, 1).flatten(1)
+            for score in pred_objectness_logits
+        ]
+
+        self.pred_anchor_deltas = [
+            # Reshape: (N, A*B, Hi, Wi) -> (N, A, B, Hi, Wi) -> (N, Hi, Wi, A, B)
+            #          -> (N, Hi*Wi*A, B)
+            x.view(x.shape[0], -1, B, x.shape[-2], x.shape[-1])
+            .permute(0, 3, 4, 1, 2)
+            .flatten(1, -2)
+            for x in pred_anchor_deltas
+        ]
+
         self.anchors = anchors
 
         self.gt_boxes = gt_boxes
         self.gt_labels = gt_labels
 
-        self.num_feature_maps = len(pred_objectness_logits)
         self.num_images = len(images)
-        self.image_sizes = images.image_sizes
         self.smooth_l1_beta = smooth_l1_beta
 
     def losses(self):
@@ -263,44 +276,19 @@ class RPNOutputs(object):
         storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / self.num_images)
         storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / self.num_images)
 
-        B = gt_anchor_deltas.shape[2]  # box dimension (4 or 5)
-
-        # Collect all objectness logits and delta predictions over feature maps
-        # and images to arrive at the same shape as the labels and targets
-        pred_objectness_logits = cat(
-            [
-                # Reshape: (N, A, Hi, Wi) -> (N, Hi, Wi, A) -> (N, Hi*Wi*A)
-                x.permute(0, 2, 3, 1).flatten(1)
-                for x in self.pred_objectness_logits
-            ],
-            dim=1,  # concat on the Hi*Wi*A dimension
-        )
-        pred_anchor_deltas = cat(
-            [
-                # Reshape: (N, A*B, Hi, Wi) -> (N, A, B, Hi, Wi) -> (N, Hi, Wi, A, B)
-                #          -> (N, Hi*Wi*A, B)
-                x.view(x.shape[0], -1, B, x.shape[-2], x.shape[-1])
-                .permute(0, 3, 4, 1, 2)
-                .flatten(1, -2)
-                for x in self.pred_anchor_deltas
-            ],
-            dim=1,
-        )
-
         objectness_loss, localization_loss = rpn_losses(
             gt_labels,
             gt_anchor_deltas,
-            pred_objectness_logits,
-            pred_anchor_deltas,
+            # concat on the Hi*Wi*A dimension
+            cat(self.pred_objectness_logits, dim=1),
+            cat(self.pred_anchor_deltas, dim=1),
             self.smooth_l1_beta,
         )
         normalizer = self.batch_size_per_image * self.num_images
-        losses = {
+        return {
             "loss_rpn_cls": objectness_loss / normalizer,
             "loss_rpn_loc": localization_loss / normalizer,
         }
-
-        return losses
 
     def predict_proposals(self):
         """
@@ -314,12 +302,9 @@ class RPNOutputs(object):
         # For each feature map
         for anchors_i, pred_anchor_deltas_i in zip(self.anchors, self.pred_anchor_deltas):
             B = anchors_i.tensor.size(1)
-            N, _, Hi, Wi = pred_anchor_deltas_i.shape
-            # Reshape: (N, A*B, Hi, Wi) -> (N, A, B, Hi, Wi) -> (N, Hi, Wi, A, B) -> (N*Hi*Wi*A, B)
-            pred_anchor_deltas_i = (
-                pred_anchor_deltas_i.view(N, -1, B, Hi, Wi).permute(0, 3, 4, 1, 2).reshape(-1, B)
-            )
-            # Concatenate all anchors to shape (N*Hi*Wi*A, B)
+            N = self.num_images
+            pred_anchor_deltas_i = pred_anchor_deltas_i.reshape(-1, B)
+            # Expand anchors to shape (N*Hi*Wi*A, B)
             anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
             proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
             # Append feature map proposals with shape (N, Hi*Wi*A, B)
@@ -335,9 +320,4 @@ class RPNOutputs(object):
             pred_objectness_logits (list[Tensor]): A list of L tensors. Tensor i has shape
                 (N, Hi*Wi*A).
         """
-        pred_objectness_logits = [
-            # Reshape: (N, A, Hi, Wi) -> (N, Hi, Wi, A) -> (N, Hi*Wi*A)
-            score.permute(0, 2, 3, 1).reshape(self.num_images, -1)
-            for score in self.pred_objectness_logits
-        ]
-        return pred_objectness_logits
+        return self.pred_objectness_logits

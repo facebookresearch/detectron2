@@ -92,6 +92,14 @@ class StandardRPNHead(nn.Module):
         """
         Args:
             features (list[Tensor]): list of feature maps
+
+        Returns:
+            list[Tensor]: A list of L elements.
+                Element i is a tensor of shape (N, A, Hi, Wi) representing
+                the predicted objectness logits for all anchors. A is the number of cell anchors.
+            list[Tensor]: A list of L elements. Element i is a tensor of shape
+                (N, A*box_dim, Hi, Wi) representing the predicted "deltas" used to transform anchors
+                to proposals.
         """
         pred_objectness_logits = []
         pred_anchor_deltas = []
