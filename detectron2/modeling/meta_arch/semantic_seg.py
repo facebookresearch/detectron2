@@ -59,8 +59,10 @@ class SemanticSegmentor(nn.Module):
             list[dict]:
               Each dict is the output for one input image.
               The dict contains one key "sem_seg" whose value is a
-              Tensor of the output resolution that represents the
-              per-pixel segmentation prediction.
+              Tensor that represents the
+              per-pixel segmentation prediced by the head.
+              The prediction has shape KxHxW that represents the logits of
+              each class for each pixel.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
@@ -153,7 +155,7 @@ class SemSegFPNHead(nn.Module):
         """
         Returns:
             In training, returns (None, dict of losses)
-            In inference, returns (predictions, {})
+            In inference, returns (CxHxW logits, {})
         """
         x = self.layers(features)
         if self.training:

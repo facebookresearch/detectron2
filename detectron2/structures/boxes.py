@@ -25,10 +25,12 @@ class BoxMode(IntEnum):
     """
     XYXY_REL = 2
     """
+    Not yet supported!
     (x0, y0, x1, y1) in range [0, 1]. They are relative to the size of the image.
     """
     XYWH_REL = 3
     """
+    Not yet supported!
     (x0, y0, w, h) in range [0, 1]. They are relative to the size of the image.
     """
     XYWHA_ABS = 4

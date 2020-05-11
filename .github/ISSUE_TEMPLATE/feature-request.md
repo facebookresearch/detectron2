@@ -27,6 +27,5 @@ because they are research code release that is mainly for other researchers to r
 
 Instead of adding features inside detectron2,
 you can implement many features by [extending detectron2](https://detectron2.readthedocs.io/tutorials/extend.html).
-The [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/) directory
-contains many of such examples.
+The [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/) directory contains many of such examples.
 

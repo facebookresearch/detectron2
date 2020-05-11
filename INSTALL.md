@@ -2,7 +2,7 @@
 
 Our [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
 has step-by-step instructions that install detectron2.
-The [Dockerfile](docker/Dockerfile)
+The [Dockerfile](docker)
 also installs detectron2 with a few simple commands.
 
 ### Requirements
@@ -144,7 +144,7 @@ Two possibilities:
 
 <details>
 <summary>
-Undefined CUDA symbols or cannot open libcudart.so.
+Undefined CUDA symbols; cannot open libcudart.so; other nvcc failures.
 </summary>
 <br/>
 The version of NVCC you use to build detectron2 or torchvision does

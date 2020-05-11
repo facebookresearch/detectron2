@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# noqa: B950
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import logging
 import numpy as np
