@@ -73,15 +73,17 @@ class ResizeTransform(Transform):
     Resize the image to a target size.
     """
 
-    def __init__(self, h, w, new_h, new_w, interp):
+    def __init__(self, h, w, new_h, new_w, interp=None):
         """
         Args:
             h, w (int): original image size
             new_h, new_w (int): new image size
-            interp: PIL interpolation methods
+            interp: PIL interpolation methods, defaults to bilinear.
         """
         # TODO decide on PIL vs opencv
         super().__init__()
+        if interp is None:
+            interp = Image.BILINEAR
         self._set_attributes(locals())
 
     def apply_image(self, img, interp=None):
@@ -115,6 +117,9 @@ class ResizeTransform(Transform):
     def apply_segmentation(self, segmentation):
         segmentation = self.apply_image(segmentation, interp=Image.NEAREST)
         return segmentation
+
+    def inverse(self):
+        return ResizeTransform(self.new_h, self.new_w, self.h, self.w, self.interp)
 
 
 class RotationTransform(Transform):
