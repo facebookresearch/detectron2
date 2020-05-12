@@ -119,6 +119,7 @@ if __name__ == "__main__":
             cv2.imshow(WINDOW_NAME, vis)
             if cv2.waitKey(1) == 27:
                 break  # esc to quit
+        cam.release()
         cv2.destroyAllWindows()
     elif args.video_input:
         video = cv2.VideoCapture(args.video_input)
