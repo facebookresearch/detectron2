@@ -146,7 +146,8 @@ def main(args):
 
     """
     If you'd like to do anything fancier than the standard training logic,
-    consider writing your own training loop or subclassing the trainer.
+    consider writing your own training loop (see plain_train_net.py) or
+    subclassing the trainer.
     """
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)

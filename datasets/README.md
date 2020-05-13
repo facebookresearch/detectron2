@@ -80,8 +80,10 @@ Install cityscapes scripts by:
 pip install git+https://github.com/mcordts/cityscapesScripts.git
 ```
 
-Note:
-labelTrainIds.png are created by `cityscapesscripts/preparation/createTrainIdLabelImgs.py`.
+Note: labelTrainIds.png are created using cityscapesescript with:
+```
+CITYSCAPES_DATASET=$DETECTRON2_DATASETS/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
+```
 They are not needed for instance segmentation.
 
 ## Expected dataset structure for Pascal VOC:

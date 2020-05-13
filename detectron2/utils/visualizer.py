@@ -361,7 +361,6 @@ class Visualizer:
             alpha = 0.5
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            assert predictions.has("pred_masks"), "ColorMode.IMAGE_BW requires segmentations"
             self.output.img = self._create_grayscale_image(
                 (predictions.pred_masks.any(dim=0) > 0).numpy()
             )

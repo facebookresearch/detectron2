@@ -63,6 +63,17 @@ def _configure_libraries():
         except ImportError:
             pass
 
+    def get_version(module, digit=2):
+        return tuple(map(int, module.__version__.split(".")[:digit]))
+
+    # fmt: off
+    assert get_version(torch) >= (1, 4), "Requires torch>=1.4"
+    import fvcore
+    assert get_version(fvcore, 3) >= (0, 1, 1), "Requires fvcore>=0.1.1"
+    import yaml
+    assert get_version(yaml) >= (5, 1), "Requires pyyaml>=5.1"
+    # fmt: on
+
 
 _ENV_SETUP_DONE = False
 

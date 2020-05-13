@@ -1,11 +1,11 @@
 ---
-name: "Bugs"
+name: "🐛 Bugs"
 about: Report bugs in detectron2
 title: Please read & provide the following
 
 ---
 
-## Instructions To Reproduce the Bug:
+## Instructions To Reproduce the 🐛 Bug:
 
 1. what changes you made (`git diff`) or what code you wrote
 ```

@@ -57,9 +57,6 @@ class GithubURLDomain(Domain):
             return []
 
 
-# The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-#
 # to support markdown
 from recommonmark.parser import CommonMarkParser
 

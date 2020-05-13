@@ -137,14 +137,14 @@ setup(
         "mock",
         "tqdm>4.29.0",
         "tensorboard",
-        "fvcore",
+        "fvcore>=0.1.1",
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
     ],
     extras_require={
         "all": ["shapely", "psutil"],
         "dev": [
-            "flake8",
+            "flake8==3.7.9",
             "isort",
             "black @ git+https://github.com/psf/black@673327449f86fce558adde153bb6cbe54bfebad2",
             "flake8-bugbear",
