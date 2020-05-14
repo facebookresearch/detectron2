@@ -4,16 +4,6 @@ import random
 import cv2
 from fvcore.transforms.transform import Transform
 
-from detectron2.data.transforms import TransformGen
-
-
-class ColorAugSSD(TransformGen):
-    def __init__(self):
-        super().__init__()
-
-    def get_transform(self, img):
-        return ColorAugSSDTransform()
-
 
 class ColorAugSSDTransform(Transform):
     """
@@ -36,6 +26,7 @@ class ColorAugSSDTransform(Transform):
 
     def __init__(
         self,
+        img_format,
         brightness_delta=32,
         contrast_low=0.5,
         contrast_high=1.5,
@@ -44,6 +35,9 @@ class ColorAugSSDTransform(Transform):
         hue_delta=18,
     ):
         super().__init__()
+        assert img_format in ["BGR", "RGB"]
+        self.is_rgb = img_format == "RGB"
+        del img_format
         self._set_attributes(locals())
 
     def apply_coords(self, coords):
@@ -53,6 +47,8 @@ class ColorAugSSDTransform(Transform):
         return segmentation
 
     def apply_image(self, img, interp=None):
+        if self.is_rgb:
+            img = img[:, :, [2, 1, 0]]
         img = self.brightness(img)
         if random.randrange(2):
             img = self.contrast(img)
@@ -62,6 +58,8 @@ class ColorAugSSDTransform(Transform):
             img = self.saturation(img)
             img = self.hue(img)
             img = self.contrast(img)
+        if self.is_rgb:
+            img = img[:, :, [2, 1, 0]]
         return img
 
     def convert(self, img, alpha=1, beta=0):

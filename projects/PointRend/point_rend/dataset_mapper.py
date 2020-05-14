@@ -10,7 +10,7 @@ from PIL import Image
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
 
-from .color_augmentation import ColorAugSSD
+from .color_augmentation import ColorAugSSDTransform
 
 """
 This file contains the mapping that's applied to "dataset dicts" for semantic segmentation models.
@@ -43,7 +43,7 @@ class SemSegDatasetMapper:
         self.tfm_gens = utils.build_transform_gen(cfg, is_train)
 
         if cfg.INPUT.COLOR_AUG_SSD:
-            self.tfm_gens.append(ColorAugSSD())
+            self.tfm_gens.append(ColorAugSSDTransform(img_format=cfg.INPUT.FORMAT))
             logging.getLogger(__name__).info(
                 "Color augmnetation used in training: " + str(self.tfm_gens[-1])
             )
