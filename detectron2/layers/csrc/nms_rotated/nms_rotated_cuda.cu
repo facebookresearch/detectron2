@@ -77,8 +77,8 @@ at::Tensor nms_rotated_cuda(
     const at::Tensor& scores,
     float iou_threshold) {
   // using scalar_t = float;
-  AT_ASSERTM(dets.type().is_cuda(), "dets must be a CUDA tensor");
-  AT_ASSERTM(scores.type().is_cuda(), "scores must be a CUDA tensor");
+  AT_ASSERTM(dets.is_cuda(), "dets must be a CUDA tensor");
+  AT_ASSERTM(scores.is_cuda(), "scores must be a CUDA tensor");
   at::cuda::CUDAGuard device_guard(dets.device());
 
   auto order_t = std::get<1>(scores.sort(0, /* descending=*/true));
@@ -97,23 +97,24 @@ at::Tensor nms_rotated_cuda(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES(
-      dets_sorted.type(), "nms_rotated_kernel_cuda", [&] {
+      dets_sorted.scalar_type(), "nms_rotated_kernel_cuda", [&] {
         nms_rotated_cuda_kernel<scalar_t><<<blocks, threads, 0, stream>>>(
             dets_num,
             iou_threshold,
-            dets_sorted.data<scalar_t>(),
-            (unsigned long long*)mask.data<int64_t>());
+            dets_sorted.data_ptr<scalar_t>(),
+            (unsigned long long*)mask.data_ptr<int64_t>());
       });
 
   at::Tensor mask_cpu = mask.to(at::kCPU);
-  unsigned long long* mask_host = (unsigned long long*)mask_cpu.data<int64_t>();
+  unsigned long long* mask_host =
+      (unsigned long long*)mask_cpu.data_ptr<int64_t>();
 
   std::vector<unsigned long long> remv(col_blocks);
   memset(&remv[0], 0, sizeof(unsigned long long) * col_blocks);
 
   at::Tensor keep =
       at::empty({dets_num}, dets.options().dtype(at::kLong).device(at::kCPU));
-  int64_t* keep_out = keep.data<int64_t>();
+  int64_t* keep_out = keep.data_ptr<int64_t>();
 
   int num_to_keep = 0;
   for (int i = 0; i < dets_num; i++) {

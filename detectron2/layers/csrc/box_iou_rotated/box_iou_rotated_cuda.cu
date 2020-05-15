@@ -71,8 +71,8 @@ at::Tensor box_iou_rotated_cuda(
       boxes1.scalar_type() == at::kFloat, "boxes1 must be a float tensor");
   AT_ASSERTM(
       boxes2.scalar_type() == at::kFloat, "boxes2 must be a float tensor");
-  AT_ASSERTM(boxes1.type().is_cuda(), "boxes1 must be a CUDA tensor");
-  AT_ASSERTM(boxes2.type().is_cuda(), "boxes2 must be a CUDA tensor");
+  AT_ASSERTM(boxes1.is_cuda(), "boxes1 must be a CUDA tensor");
+  AT_ASSERTM(boxes2.is_cuda(), "boxes2 must be a CUDA tensor");
   at::cuda::CUDAGuard device_guard(boxes1.device());
 
   auto num_boxes1 = boxes1.size(0);
