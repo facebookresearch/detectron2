@@ -137,7 +137,7 @@ setup(
         "mock",
         "tqdm>4.29.0",
         "tensorboard",
-        "fvcore",
+        "fvcore>=1.1",
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
     ],

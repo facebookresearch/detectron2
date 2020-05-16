@@ -57,6 +57,11 @@ class PointRendROIHeads(StandardROIHeads):
     variables that correspond to the mask head in the class's namespace.
     """
 
+    def __init__(self, cfg, input_shape):
+        # TODO use explicit args style
+        super().__init__(cfg, input_shape)
+        self._init_mask_head(cfg, input_shape)
+
     def _init_mask_head(self, cfg, input_shape):
         # fmt: off
         self.mask_on                 = cfg.MODEL.MASK_ON

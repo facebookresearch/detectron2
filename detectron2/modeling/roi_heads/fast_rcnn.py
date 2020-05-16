@@ -295,7 +295,7 @@ class FastRCNNOutputs(object):
 
     """
     A subclass is expected to have the following methods because
-    they are used to query information about the head predictions.0
+    they are used to query information about the head predictions.
     """
 
     def losses(self):
@@ -370,7 +370,7 @@ class FastRCNNOutputLayers(nn.Module):
             test_topk_per_image (int): number of top predictions to produce per image.
         """
         super().__init__()
-        if isinstance(input_shape, int):  # some backward compatbility
+        if isinstance(input_shape, int):  # some backward compatibility
             input_shape = ShapeSpec(channels=input_shape)
         input_size = input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
         # The prediction layer for num_classes foreground classes and one background class
