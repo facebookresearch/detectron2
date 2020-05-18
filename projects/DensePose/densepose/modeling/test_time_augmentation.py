@@ -1,4 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import torch
+from fvcore.transforms import HFlipTransform
+
+from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.modeling.test_time_augmentation import GeneralizedRCNNWithTTA
 
 
@@ -22,49 +26,46 @@ class DensePoseGeneralizedRCNNWithTTA(GeneralizedRCNNWithTTA):
     def _inference_one_image(self, input):
         """
         Args:
-            input (dict): one dataset dict
+            input (dict): one dataset dict with "image" field being a CHW tensor
 
         Returns:
             dict: one output dict
         """
-
-        augmented_inputs, aug_vars = self._get_augmented_inputs(input)
+        orig_shape = (input["height"], input["width"])
+        # For some reason, resize with uint8 slightly increases box AP but decreases densepose AP
+        input["image"] = input["image"].to(torch.uint8)
+        augmented_inputs, tfms = self._get_augmented_inputs(input)
         # Detect boxes from all augmented versions
         with self._turn_off_roi_heads(["mask_on", "keypoint_on", "densepose_on"]):
             # temporarily disable roi heads
-            all_boxes, all_scores, all_classes = self._get_augmented_boxes(
-                augmented_inputs, aug_vars
-            )
-        merged_instances = self._merge_detections(
-            all_boxes, all_scores, all_classes, (aug_vars["height"], aug_vars["width"])
-        )
+            all_boxes, all_scores, all_classes = self._get_augmented_boxes(augmented_inputs, tfms)
+        merged_instances = self._merge_detections(all_boxes, all_scores, all_classes, orig_shape)
 
         if self.cfg.MODEL.MASK_ON or self.cfg.MODEL.DENSEPOSE_ON:
             # Use the detected boxes to obtain new fields
             augmented_instances = self._rescale_detected_boxes(
-                augmented_inputs, merged_instances, aug_vars
+                augmented_inputs, merged_instances, tfms
             )
             # run forward on the detected boxes
-            outputs = self._batch_inference(
-                augmented_inputs, augmented_instances, do_postprocess=False
-            )
+            outputs = self._batch_inference(augmented_inputs, augmented_instances)
             # Delete now useless variables to avoid being out of memory
-            del augmented_inputs, augmented_instances, merged_instances
+            del augmented_inputs, augmented_instances
             # average the predictions
             if self.cfg.MODEL.MASK_ON:
-                outputs[0].pred_masks = self._reduce_pred_masks(outputs, aug_vars)
+                merged_instances.pred_masks = self._reduce_pred_masks(outputs, tfms)
             if self.cfg.MODEL.DENSEPOSE_ON:
-                outputs[0].pred_densepose = self._reduce_pred_densepose(outputs, aug_vars)
+                merged_instances.pred_densepose = self._reduce_pred_densepose(outputs, tfms)
             # postprocess
-            output = self._detector_postprocess(outputs[0], aug_vars)
-            return {"instances": output}
+            merged_instances = detector_postprocess(merged_instances, *orig_shape)
+            return {"instances": merged_instances}
         else:
             return {"instances": merged_instances}
 
-    def _reduce_pred_densepose(self, outputs, aug_vars):
-        for idx, output in enumerate(outputs):
-            if aug_vars["do_hflip"][idx]:
+    def _reduce_pred_densepose(self, outputs, tfms):
+        for output, tfm in zip(outputs, tfms):
+            if any(isinstance(t, HFlipTransform) for t in tfm.transforms):
                 output.pred_densepose.hflip(self._transform_data)
+
         # Less memory-intensive averaging
         for attr in "SIUV":
             setattr(
