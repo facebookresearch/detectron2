@@ -6,7 +6,7 @@ from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
 
-def batched_nms(boxes, scores, idxs, iou_threshold):
+def batched_nms(boxes, scores, idxs, iou_threshold: float):
     """
     Same as torchvision.ops.boxes.batched_nms, but safer.
     """

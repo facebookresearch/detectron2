@@ -1,12 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import itertools
 import logging
+from typing import List, Optional
 import torch
 import torch.nn.functional as F
 from fvcore.nn import smooth_l1_loss
 
 from detectron2.layers import batched_nms, cat
-from detectron2.structures import Boxes, Instances
+from detectron2.modeling.box_regression import Box2BoxTransform
+from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
 
 logger = logging.getLogger(__name__)
@@ -46,14 +48,14 @@ Naming convention:
 
 
 def find_top_rpn_proposals(
-    proposals,
-    pred_objectness_logits,
-    images,
-    nms_thresh,
-    pre_nms_topk,
-    post_nms_topk,
-    min_box_side_len,
-    training,
+    proposals: List[torch.Tensor],
+    pred_objectness_logits: List[torch.Tensor],
+    images: ImageList,
+    nms_thresh: float,
+    pre_nms_topk: int,
+    post_nms_topk: int,
+    min_box_side_len: int,
+    training: bool,
 ):
     """
     For each feature map, select the `pre_nms_topk` highest scoring proposals,
@@ -159,7 +161,7 @@ def find_top_rpn_proposals(
 
 
 def rpn_losses(
-    gt_labels, gt_anchor_deltas, pred_objectness_logits, pred_anchor_deltas, smooth_l1_beta
+    gt_labels, gt_anchor_deltas, pred_objectness_logits, pred_anchor_deltas, smooth_l1_beta: float
 ):
     """
     Args:
@@ -196,15 +198,15 @@ def rpn_losses(
 class RPNOutputs(object):
     def __init__(
         self,
-        box2box_transform,
-        batch_size_per_image,
-        images,
-        pred_objectness_logits,
-        pred_anchor_deltas,
+        box2box_transform: Box2BoxTransform,
+        batch_size_per_image: int,
+        images: ImageList,
+        pred_objectness_logits: List[torch.Tensor],
+        pred_anchor_deltas: List[torch.Tensor],
         anchors,
-        gt_labels=None,
-        gt_boxes=None,
-        smooth_l1_beta=0.0,
+        gt_labels: Optional[List[torch.Tensor]] = None,
+        gt_boxes: Optional[List[torch.Tensor]] = None,
+        smooth_l1_beta: float = 0.0,
     ):
         """
         Args:

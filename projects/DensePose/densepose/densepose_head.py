@@ -2,6 +2,7 @@
 import math
 from dataclasses import dataclass
 from enum import Enum
+from typing import List, Tuple
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -9,6 +10,7 @@ from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
+from detectron2.structures import Instances
 from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
 
@@ -128,7 +130,7 @@ class DensePoseDeepLabHead(nn.Module):
             output = x
         return output
 
-    def _get_layer_name(self, i):
+    def _get_layer_name(self, i: int):
         layer_name = "body_conv_fcn{}".format(i + 1)
         return layer_name
 
@@ -516,7 +518,11 @@ def build_densepose_data_filter(cfg):
     return dp_filter
 
 
-def densepose_inference(densepose_outputs, densepose_confidences, detections):
+def densepose_inference(
+    densepose_outputs: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    densepose_confidences: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    detections: List[Instances],
+):
     """
     Infer dense pose estimate based on outputs from the DensePose head
     and detections. The estimate for each detection instance is stored in its

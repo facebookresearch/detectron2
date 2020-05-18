@@ -9,13 +9,14 @@ is implemented
 """
 
 import math
+from typing import List
 import torch
 from torch.nn.modules.utils import _ntuple
 
 TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
 
 
-def cat(tensors, dim=0):
+def cat(tensors: List[torch.Tensor], dim: int = 0):
     """
     Efficient version of torch.cat that avoids a copy if there is only a single element in a list
     """

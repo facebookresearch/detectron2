@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import numpy as np
-from typing import Dict
+from typing import Dict, List, Optional
 import fvcore.nn.weight_init as weight_init
 import torch
 import torch.nn as nn
@@ -12,6 +12,7 @@ from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.modeling import ROI_HEADS_REGISTRY, StandardROIHeads
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.roi_heads import select_foreground_proposals
+from detectron2.structures import ImageList, Instances
 
 from .densepose_head import (
     build_densepose_data_filter,
@@ -70,7 +71,7 @@ class Decoder(nn.Module):
         self.predictor = Conv2d(conv_dims, num_classes, kernel_size=1, stride=1, padding=0)
         weight_init.c2_msra_fill(self.predictor)
 
-    def forward(self, features):
+    def forward(self, features: List[torch.Tensor]):
         for i, _ in enumerate(self.in_features):
             if i == 0:
                 x = self.scale_heads[i](features[i])
@@ -122,7 +123,7 @@ class DensePoseROIHeads(StandardROIHeads):
         )
         self.densepose_losses = build_densepose_losses(cfg)
 
-    def _forward_densepose(self, features, instances):
+    def _forward_densepose(self, features: List[torch.Tensor], instances: List[Instances]):
         """
         Forward logic of the densepose prediction branch.
 
@@ -181,7 +182,13 @@ class DensePoseROIHeads(StandardROIHeads):
             densepose_inference(densepose_outputs, confidences, instances)
             return instances
 
-    def forward(self, images, features, proposals, targets=None):
+    def forward(
+        self,
+        images: ImageList,
+        features: Dict[str, torch.Tensor],
+        proposals: List[Instances],
+        targets: Optional[List[Instances]] = None,
+    ):
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
 
@@ -189,7 +196,9 @@ class DensePoseROIHeads(StandardROIHeads):
             losses.update(self._forward_densepose(features, instances))
         return instances, losses
 
-    def forward_with_given_boxes(self, features, instances):
+    def forward_with_given_boxes(
+        self, features: Dict[str, torch.Tensor], instances: List[Instances]
+    ):
         """
         Use the given boxes in `instances` to produce other (non-box) per-ROI outputs.
 

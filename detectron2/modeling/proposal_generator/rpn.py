@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from typing import Dict, List
+from typing import Dict, List, Optional
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec
-from detectron2.structures import Boxes, Instances, pairwise_iou
+from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
 
@@ -88,7 +88,7 @@ class StandardRPNHead(nn.Module):
         ), "Each level must have the same number of anchors per spatial position"
         return {"in_channels": in_channels, "num_anchors": num_anchors[0], "box_dim": box_dim}
 
-    def forward(self, features):
+    def forward(self, features: List[torch.Tensor]):
         """
         Args:
             features (list[Tensor]): list of feature maps
@@ -224,7 +224,12 @@ class RPN(nn.Module):
             matched_gt_boxes.append(matched_gt_boxes_i)
         return gt_labels, matched_gt_boxes
 
-    def forward(self, images, features, gt_instances=None):
+    def forward(
+        self,
+        images: ImageList,
+        features: Dict[str, torch.Tensor],
+        gt_instances: Optional[Instances] = None,
+    ):
         """
         Args:
             images (ImageList): input images of length `N`
