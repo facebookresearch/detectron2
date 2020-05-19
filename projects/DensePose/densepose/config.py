@@ -45,6 +45,8 @@ def add_densepose_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.PART_WEIGHTS = 1.0
     # Loss weights for UV regression.
     _C.MODEL.ROI_DENSEPOSE_HEAD.POINT_REGRESSION_WEIGHTS = 0.01
+    # Coarse segmentation is trained using instance segmentation task data
+    _C.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS = False
     # For Decoder
     _C.MODEL.ROI_DENSEPOSE_HEAD.DECODER_ON = True
     _C.MODEL.ROI_DENSEPOSE_HEAD.DECODER_NUM_CLASSES = 256

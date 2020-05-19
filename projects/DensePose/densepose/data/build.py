@@ -137,11 +137,15 @@ def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[In
     if not cfg.MODEL.DENSEPOSE_ON:
         return None
 
+    use_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
+
     def has_densepose_annotations(instance: Instance) -> bool:
         for ann in instance["annotations"]:
             if all(key in ann for key in DENSEPOSE_COCO_KEYS_WITHOUT_MASK) and (
                 (DENSEPOSE_COCO_MASK_KEY in ann) or ("segmentation" in ann)
             ):
+                return True
+            if use_masks and "segmentation" in ann:
                 return True
         return False
 
