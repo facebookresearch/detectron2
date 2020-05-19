@@ -202,7 +202,6 @@ All models available for download through this document are licensed under the
 ./gen_html_table.py --config 'COCO-Detection/retina*50*' 'COCO-Detection/retina*101*' --name R50 R50 R101 --fields lr_sched train_speed inference_speed mem box_AP
 -->
 
-
 <table><tbody>
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
@@ -218,34 +217,35 @@ All models available for download through this document are licensed under the
 <!-- ROW: retinanet_R_50_FPN_1x -->
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml">R50</a></td>
 <td align="center">1x</td>
-<td align="center">0.200</td>
-<td align="center">0.055</td>
-<td align="center">3.9</td>
-<td align="center">36.5</td>
-<td align="center">137593951</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_1x/137593951/model_final_b796dc.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_1x/137593951/metrics.json">metrics</a></td>
+<td align="center">0.205</td>
+<td align="center">0.056</td>
+<td align="center">4.1</td>
+<td align="center">37.4</td>
+<td align="center">190397773</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_1x/190397773/model_final_bfca0b.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_1x/190397773/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: retinanet_R_50_FPN_3x -->
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_3x.yaml">R50</a></td>
 <td align="center">3x</td>
-<td align="center">0.201</td>
-<td align="center">0.055</td>
-<td align="center">3.9</td>
-<td align="center">37.9</td>
-<td align="center">137849486</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_3x/137849486/model_final_4cafe0.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_3x/137849486/metrics.json">metrics</a></td>
+<td align="center">0.205</td>
+<td align="center">0.056</td>
+<td align="center">4.1</td>
+<td align="center">38.7</td>
+<td align="center">190397829</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_3x/190397829/model_final_5bd44e.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_50_FPN_3x/190397829/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: retinanet_R_101_FPN_3x -->
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml">R101</a></td>
 <td align="center">3x</td>
-<td align="center">0.280</td>
-<td align="center">0.068</td>
-<td align="center">5.1</td>
-<td align="center">39.9</td>
-<td align="center">138363263</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/138363263/model_final_59f53c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/138363263/metrics.json">metrics</a></td>
+<td align="center">0.291</td>
+<td align="center">0.069</td>
+<td align="center">5.2</td>
+<td align="center">40.4</td>
+<td align="center">190397697</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/190397697/model_final_971ab9.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-Detection/retinanet_R_101_FPN_3x/190397697/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
+
 
 #### RPN & Fast R-CNN:
 <!--
