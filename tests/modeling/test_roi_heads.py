@@ -5,7 +5,6 @@ import torch
 
 from detectron2.config import get_cfg
 from detectron2.layers import ShapeSpec
-from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.roi_heads import StandardROIHeads, build_roi_heads
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes

@@ -2,7 +2,7 @@
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional, Tuple
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -130,7 +130,7 @@ class DensePoseDeepLabHead(nn.Module):
             output = x
         return output
 
-    def _get_layer_name(self, i):
+    def _get_layer_name(self, i: int):
         layer_name = "body_conv_fcn{}".format(i + 1)
         return layer_name
 
@@ -540,7 +540,11 @@ def build_densepose_data_filter(cfg):
     return dp_filter
 
 
-def densepose_inference(densepose_outputs, densepose_confidences, detections):
+def densepose_inference(
+    densepose_outputs: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    densepose_confidences: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    detections: List[Instances],
+):
     """
     Infer dense pose estimate based on outputs from the DensePose head
     and detections. The estimate for each detection instance is stored in its

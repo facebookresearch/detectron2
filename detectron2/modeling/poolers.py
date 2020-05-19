@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import math
 import sys
+from typing import List
 import torch
 from torch import nn
 from torchvision.ops import RoIPool
@@ -10,7 +11,9 @@ from detectron2.layers import ROIAlign, ROIAlignRotated, cat
 __all__ = ["ROIPooler"]
 
 
-def assign_boxes_to_levels(box_lists, min_level, max_level, canonical_box_size, canonical_level):
+def assign_boxes_to_levels(
+    box_lists, min_level: int, max_level: int, canonical_box_size: int, canonical_level: int
+):
     """
     Map each box in `box_lists` to a feature map level index and return the assignment
     vector.
@@ -173,7 +176,7 @@ class ROIPooler(nn.Module):
         assert canonical_box_size > 0
         self.canonical_box_size = canonical_box_size
 
-    def forward(self, x, box_lists):
+    def forward(self, x: List[torch.Tensor], box_lists):
         """
         Args:
             x (list[Tensor]): A list of feature maps of NCHW shape, with scales matching those
