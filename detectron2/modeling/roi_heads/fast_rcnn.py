@@ -7,7 +7,7 @@ from torch.nn import functional as F
 
 from detectron2.config import configurable
 from detectron2.layers import Linear, ShapeSpec, batched_nms, cat
-from detectron2.modeling.box_regression import Box2BoxTransform, apply_deltas_broadcast
+from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
@@ -289,9 +289,7 @@ class FastRCNNOutputs(object):
                 for all images in a batch. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
                 the number of predicted objects for image i and B is the box dimension (4 or 5)
         """
-        return apply_deltas_broadcast(
-            self.box2box_transform, self.pred_proposal_deltas, self.proposals.tensor
-        )
+        return self.box2box_transform.apply_deltas(self.pred_proposal_deltas, self.proposals.tensor)
 
     """
     A subclass is expected to have the following methods because
@@ -462,8 +460,8 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_boxes = [p.proposal_boxes for p in proposals]
         proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
         N, B = proposal_boxes.shape
-        predict_boxes = apply_deltas_broadcast(
-            self.box2box_transform, proposal_deltas, proposal_boxes
+        predict_boxes = self.box2box_transform.apply_deltas(
+            proposal_deltas, proposal_boxes
         )  # Nx(KxB)
 
         K = predict_boxes.shape[1] // B
@@ -492,8 +490,8 @@ class FastRCNNOutputLayers(nn.Module):
         num_prop_per_image = [len(p) for p in proposals]
         proposal_boxes = [p.proposal_boxes for p in proposals]
         proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
-        predict_boxes = apply_deltas_broadcast(
-            self.box2box_transform, proposal_deltas, proposal_boxes
+        predict_boxes = self.box2box_transform.apply_deltas(
+            proposal_deltas, proposal_boxes
         )  # Nx(KxB)
         return predict_boxes.split(num_prop_per_image)
 
