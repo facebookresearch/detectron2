@@ -11,7 +11,7 @@ Alexander Kirillov, Yuxin Wu, Kaiming He, Ross Girshick
 In this repository, we release code for PointRend in Detectron2. PointRend can be flexibly applied to both instance and semantic segmentation tasks by building on top of existing state-of-the-art models.
 
 ## Installation
-Install Detectron 2 following [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). You are ready to go!
+Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html). You are ready to go!
 
 ## Quick start and visualization
 

@@ -14,7 +14,7 @@ and how to use the `model` object.
 ### Load/Save a Checkpoint
 ```python
 from detectron2.checkpoint import DetectionCheckpointer
-DetectionCheckpointer(model).load(file_path)   # load a file to model
+DetectionCheckpointer(model).load(file_path_or_url)  # load a file, usually from cfg.MODEL.WEIGHTS
 
 checkpointer = DetectionCheckpointer(model, save_dir="output")
 checkpointer.save("model_999")  # save to output/model_999.pth
@@ -76,9 +76,9 @@ The dict may contain the following keys:
   + "proposal_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing P proposal boxes.
   + "objectness_logits": `Tensor`, a vector of P scores, one for each proposal.
 * "height", "width": the **desired** output height and width, which is not necessarily the same
-  as the height or width of the `image` input field.
-  For example, the `image` input field might be a resized image,
-  but you may want the outputs to be in **original** resolution.
+  as the height or width of the `image` field.
+  For example, the `image` field contains the resized image, if resize is used as a preprocessing step.
+  But you may want the outputs to be in **original** resolution.
 
   If provided, the model will produce output in this resolution,
   rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.

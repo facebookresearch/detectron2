@@ -35,28 +35,27 @@ old build first. You often need to rebuild detectron2 after reinstalling PyTorch
 
 ### Install Pre-Built Detectron2 (Linux only)
 ```
-# for CUDA 10.1:
-python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/index.html
+# for CUDA 10.2:
+python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/index.html
 ```
-You can replace cu101 with "cu{100,92}" or "cpu".
+For other cuda versions, replace cu102 with "cu{101,92}" or "cpu".
 
 Note that:
 1. Such installation has to be used with certain version of official PyTorch release.
    See [releases](https://github.com/facebookresearch/detectron2/releases) for requirements.
    It will not work with a different version of PyTorch or a non-official build of PyTorch.
+	 The CUDA version used by PyTorch and detectron2 has to match as well.
 2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
 	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
 	 [projects](projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
 
 ### Common Installation Issues
 
-If you met issues using the pre-built detectron2, please uninstall it and try building it from source.
-
 Click each issue for its solutions:
 
 <details>
 <summary>
-Undefined torch/aten/caffe2 symbols, or segmentation fault immediately when running the library.
+Undefined torch/aten/caffe2 symbols; missing torch dynamic libraries; segmentation fault immediately when using detectron2.
 </summary>
 <br/>
 
@@ -144,7 +143,7 @@ Two possibilities:
 
 <details>
 <summary>
-Undefined CUDA symbols; cannot open libcudart.so; other nvcc failures.
+Undefined CUDA symbols; cannot open libcudart.so
 </summary>
 <br/>
 The version of NVCC you use to build detectron2 or torchvision does
@@ -158,6 +157,18 @@ to contain cuda libraries of the same version.
 When they are inconsistent,
 you need to either install a different build of PyTorch (or build by yourself)
 to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
+</details>
+
+
+<details>
+<summary>
+C++ compilation errors from NVCC
+</summary>
+<br/>
+1. NVCC version has to match the CUDA version of your PyTorch.
+
+2. NVCC has compatibility issues with certain versions of gcc. You may need a different
+	 version of gcc. The version used by PyTorch can be found by `print(torch.__config__.show())`.
 </details>
 
 
