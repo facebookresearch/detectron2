@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-# noqa: B950
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import logging
+import numpy as np
 from collections import Counter
 import tqdm
 
@@ -37,11 +38,15 @@ def do_flop(cfg):
     model.eval()
 
     counts = Counter()
+    total_flops = []
     for idx, data in zip(tqdm.trange(args.num_inputs), data_loader):  # noqa
-        counts += flop_count_operators(model, data)
+        count = flop_count_operators(model, data)
+        counts += count
+        total_flops.append(sum(count.values()))
     logger.info(
         "(G)Flops for Each Type of Operators:\n" + str([(k, v / idx) for k, v in counts.items()])
     )
+    logger.info("Total (G)Flops: {}±{}".format(np.mean(total_flops), np.std(total_flops)))
 
 
 def do_activation(cfg):
@@ -51,11 +56,19 @@ def do_activation(cfg):
     model.eval()
 
     counts = Counter()
+    total_activations = []
     for idx, data in zip(tqdm.trange(args.num_inputs), data_loader):  # noqa
-        counts += activation_count_operators(model, data)
+        count = activation_count_operators(model, data)
+        counts += count
+        total_activations.append(sum(count.values()))
     logger.info(
         "(Million) Activations for Each Type of Operators:\n"
         + str([(k, v / idx) for k, v in counts.items()])
+    )
+    logger.info(
+        "Total (Million) Activations: {}±{}".format(
+            np.mean(total_activations), np.std(total_activations)
+        )
     )
 
 

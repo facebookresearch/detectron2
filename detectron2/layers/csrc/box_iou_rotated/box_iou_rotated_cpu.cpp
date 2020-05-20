@@ -21,6 +21,7 @@ void box_iou_rotated_cpu_kernel(
 }
 
 at::Tensor box_iou_rotated_cpu(
+    // input must be contiguous:
     const at::Tensor& boxes1,
     const at::Tensor& boxes2) {
   auto num_boxes1 = boxes1.size(0);

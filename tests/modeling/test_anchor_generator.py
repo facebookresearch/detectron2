@@ -39,8 +39,7 @@ class TestAnchorGenerator(unittest.TestCase):
             ]
         )
 
-        for i in range(num_images):
-            assert torch.allclose(anchors[i][0].tensor, expected_anchor_tensor)
+        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
 
     def test_default_anchor_generator_centered(self):
         # test explicit args
@@ -69,13 +68,11 @@ class TestAnchorGenerator(unittest.TestCase):
         )
 
         anchors = anchor_generator([features["stage3"]])
-        for i in range(num_images):
-            assert torch.allclose(anchors[i][0].tensor, expected_anchor_tensor)
+        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
 
         # doesn't work yet
         # anchors = torch.jit.script(anchor_generator)([features["stage3"]])
-        # for i in range(num_images):
-        #     assert torch.allclose(anchors[i][0].tensor, expected_anchor_tensor)
+        # assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
 
     def test_rrpn_anchor_generator(self):
         cfg = get_cfg()
@@ -117,8 +114,7 @@ class TestAnchorGenerator(unittest.TestCase):
             ]
         )
 
-        for i in range(num_images):
-            assert torch.allclose(anchors[i][0].tensor, expected_anchor_tensor)
+        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
 
 
 if __name__ == "__main__":

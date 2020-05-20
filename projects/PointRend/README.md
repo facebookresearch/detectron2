@@ -8,7 +8,7 @@ Alexander Kirillov, Yuxin Wu, Kaiming He, Ross Girshick
   <img src="https://alexander-kirillov.github.io/images/kirillov2019pointrend.jpg"/>
 </div><br/>
 
-In this repository, we release code for PointRend in Detectron2. PointRend can be flexibly applied to both instance and semantic (**comming soon**) segmentation tasks by building on top of existing state-of-the-art models.
+In this repository, we release code for PointRend in Detectron2. PointRend can be flexibly applied to both instance and semantic segmentation tasks by building on top of existing state-of-the-art models.
 
 ## Installation
 Install Detectron 2 following [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). You are ready to go!
@@ -86,7 +86,7 @@ Cityscapes model is trained with ImageNet pretraining.
 <th valign="bottom">model id</th>
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
- <tr><td align="left"><a href="configs/InstanceSegmentation/pointrend_rcnn_R_50_FPN_1x_cs.yaml">PointRend</a></td>
+ <tr><td align="left"><a href="configs/InstanceSegmentation/pointrend_rcnn_R_50_FPN_1x_cityscapes.yaml">PointRend</a></td>
 <td align="center">R50-FPN</td>
 <td align="center">1&times;</td>
 <td align="center">224&times;224</td>
@@ -99,7 +99,27 @@ Cityscapes model is trained with ImageNet pretraining.
 
 ## Semantic Segmentation
 
-**[comming soon]**
+#### Cityscapes
+Cityscapes model is trained with ImageNet pretraining.
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Method</th>
+<th valign="bottom">Backbone</th>
+<th valign="bottom">Output<br/>resolution</th>
+<th valign="bottom">mIoU</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+ <tr><td align="left"><a href="configs/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes.yaml">SemanticFPN + PointRend</a></td>
+<td align="center">R101-FPN</td>
+<td align="center">1024&times;2048</td>
+<td align="center">78.6</td>
+<td align="center">186480235</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes/186480235/model_final_5f3665.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes/186480235/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
 
 ## <a name="CitingPointRend"></a>Citing PointRend
 

@@ -4,12 +4,12 @@
 import contextlib
 import io
 import numpy as np
-import os
 import unittest
 from collections import defaultdict
 import torch
 import tqdm
 from fvcore.common.benchmark import benchmark
+from fvcore.common.file_io import PathManager
 from pycocotools.coco import COCO
 from tabulate import tabulate
 from torch.nn import functional as F
@@ -38,8 +38,8 @@ def rasterize_polygons_with_grid_sample(full_image_bit_mask, box, mask_size, thr
 
     mask_y = np.arange(0.0, mask_size) + 0.5  # mask y sample coords in [0.5, mask_size - 0.5]
     mask_x = np.arange(0.0, mask_size) + 0.5  # mask x sample coords in [0.5, mask_size - 0.5]
-    mask_y = (mask_y) / (mask_size) * (y1 - y0) + y0
-    mask_x = (mask_x) / (mask_size) * (x1 - x0) + x0
+    mask_y = mask_y / mask_size * (y1 - y0) + y0
+    mask_x = mask_x / mask_size * (x1 - x0) + x0
 
     mask_x = (mask_x - 0.5) / (img_w - 1) * 2 + -1
     mask_y = (mask_y - 0.5) / (img_h - 1) * 2 + -1
@@ -59,9 +59,10 @@ def rasterize_polygons_with_grid_sample(full_image_bit_mask, box, mask_size, thr
 class TestMaskCropPaste(unittest.TestCase):
     def setUp(self):
         json_file = MetadataCatalog.get("coco_2017_val_100").json_file
-        if not os.path.isfile(json_file):
+        if not PathManager.isfile(json_file):
             raise unittest.SkipTest("{} not found".format(json_file))
         with contextlib.redirect_stdout(io.StringIO()):
+            json_file = PathManager.get_local_path(json_file)
             self.coco = COCO(json_file)
 
     def test_crop_paste_consistency(self):

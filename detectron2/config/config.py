@@ -135,7 +135,7 @@ def configurable(init_func):
     assert init_func.__name__ == "__init__", "@configurable should only be used for __init__!"
     if init_func.__module__.startswith("detectron2."):
         assert (
-            "experimental" in init_func.__doc__
+            init_func.__doc__ is not None and "experimental" in init_func.__doc__
         ), f"configurable {init_func} should be marked experimental"
 
     @functools.wraps(init_func)

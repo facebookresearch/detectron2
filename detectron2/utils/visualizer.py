@@ -361,7 +361,6 @@ class Visualizer:
             alpha = 0.5
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            assert predictions.has("pred_masks"), "ColorMode.IMAGE_BW requires segmentations"
             self.output.img = self._create_grayscale_image(
                 (predictions.pred_masks.any(dim=0) > 0).numpy()
             )
@@ -383,6 +382,7 @@ class Visualizer:
 
         Args:
             sem_seg (Tensor or ndarray): the segmentation of shape (H, W).
+                Each value is the integer label of the pixel.
             area_threshold (int): segments with less than `area_threshold` are not drawn.
             alpha (float): the larger it is, the more opaque the segmentations are.
 

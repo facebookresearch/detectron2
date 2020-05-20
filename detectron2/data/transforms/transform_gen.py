@@ -21,6 +21,7 @@ from PIL import Image
 from .transform import ExtentTransform, ResizeTransform, RotationTransform
 
 __all__ = [
+    "RandomApply",
     "RandomBrightness",
     "RandomContrast",
     "RandomCrop",
@@ -111,6 +112,40 @@ class TransformGen(metaclass=ABCMeta):
             return super().__repr__()
 
     __str__ = __repr__
+
+
+class RandomApply(TransformGen):
+    """
+    Randomly apply the wrapper transformation with a given probability.
+    """
+
+    def __init__(self, transform, prob=0.5):
+        """
+        Args:
+            transform (Transform, TransformGen): the transform to be wrapped
+                by the `RandomApply`. The `transform` can either be a
+                `Transform` or `TransformGen` instance.
+            prob (float): probability between 0.0 and 1.0 that
+                the wrapper transformation is applied
+        """
+        super().__init__()
+        assert isinstance(transform, (Transform, TransformGen)), (
+            f"The given transform must either be a Transform or TransformGen instance. "
+            f"Not {type(transform)}"
+        )
+        assert 0.0 <= prob <= 1.0, f"Probablity must be between 0.0 and 1.0 (given: {prob})"
+        self.prob = prob
+        self.transform = transform
+
+    def get_transform(self, img):
+        do = self._rand_range() < self.prob
+        if do:
+            if isinstance(self.transform, TransformGen):
+                return self.transform.get_transform(img)
+            else:
+                return self.transform
+        else:
+            return NoOpTransform()
 
 
 class RandomFlip(TransformGen):
@@ -314,7 +349,7 @@ class RandomCrop(TransformGen):
             ch, cw = crop_size + np.random.rand(2) * (1 - crop_size)
             return int(h * ch + 0.5), int(w * cw + 0.5)
         elif self.crop_type == "absolute":
-            return self.crop_size
+            return (min(self.crop_size[0], h), min(self.crop_size[1], w))
         else:
             NotImplementedError("Unknown crop type {}".format(self.crop_type))
 
@@ -474,7 +509,7 @@ class RandomLighting(TransformGen):
 
 def apply_transform_gens(transform_gens, img):
     """
-    Apply a list of :class:`TransformGen` on the input image, and
+    Apply a list of :class:`TransformGen` or :class:`Transform` on the input image, and
     returns the transformed image and a list of transforms.
 
     We cannot simply create and return all transforms without
@@ -482,7 +517,7 @@ def apply_transform_gens(transform_gens, img):
     need the output of the previous one.
 
     Args:
-        transform_gens (list): list of :class:`TransformGen` instance to
+        transform_gens (list): list of :class:`TransformGen` or :class:`Transform` instance to
             be applied.
         img (ndarray): uint8 or floating point images with 1 or 3 channels.
 
@@ -491,13 +526,13 @@ def apply_transform_gens(transform_gens, img):
         TransformList: contain the transforms that's used.
     """
     for g in transform_gens:
-        assert isinstance(g, TransformGen), g
+        assert isinstance(g, (Transform, TransformGen)), g
 
     check_dtype(img)
 
     tfms = []
     for g in transform_gens:
-        tfm = g.get_transform(img)
+        tfm = g.get_transform(img) if isinstance(g, TransformGen) else g
         assert isinstance(
             tfm, Transform
         ), "TransformGen {} must return an instance of Transform! Got {} instead".format(g, tfm)

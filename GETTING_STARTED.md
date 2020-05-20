@@ -13,7 +13,7 @@ For more advanced tutorials, refer to our [documentation](https://detectron2.rea
 ### Inference Demo with Pre-trained Models
 
 1. Pick a model and its config file from
-	[model zoo](https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md),
+	[model zoo](MODEL_ZOO.md),
 	for example, `mask_rcnn_R_50_FPN_3x.yaml`.
 2. We provide `demo.py` that is able to run builtin standard models. Run it with:
 ```

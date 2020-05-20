@@ -1,0 +1,19 @@
+_BASE_: "mask_rcnn_R_50_FPN_3x_syncbn.yaml"
+MODEL:
+  PIXEL_STD: [57.375, 57.12, 58.395]
+  WEIGHTS: ""
+  MASK_ON: True
+  RESNETS:
+    STRIDE_IN_1X1: False
+  BACKBONE:
+    FREEZE_AT: 0
+SOLVER:
+  # 9x schedule
+  IMS_PER_BATCH: 64  # 4x the standard
+  STEPS: (187500, 197500)  # last 60/4==15k and last 20/4==5k
+  MAX_ITER: 202500   # 90k * 9 / 4
+  BASE_LR: 0.08
+TEST:
+  EVAL_PERIOD: 2500
+# NOTE: Please refer to Rethinking ImageNet Pre-training https://arxiv.org/abs/1811.08883
+# to learn what you need for training from scratch.

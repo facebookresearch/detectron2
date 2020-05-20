@@ -1,0 +1,6 @@
+_BASE_: "./mask_rcnn_R_50_FPN_training_acc_test.yaml"
+MODEL:
+  ROI_BOX_HEAD:
+    TRAIN_ON_PRED_BOXES: True
+TEST:
+  EXPECTED_RESULTS: [["bbox", "AP", 42.6, 1.0], ["segm", "AP", 35.8, 0.8]]

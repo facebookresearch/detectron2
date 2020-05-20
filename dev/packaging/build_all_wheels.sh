@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-PYTORCH_VERSION=1.4
+PYTORCH_VERSION=1.5
 
 build_for_one_cuda() {
   cu=$1
@@ -33,14 +33,14 @@ build_for_one_cuda() {
       cd /detectron2 && ./dev/packaging/build_wheel.sh
 EOF
 
-    if [[ "$cu" == "cu101" ]]; then
-      # build wheel without local version
-      cat <<EOF | docker exec -i $container_name sh
-        export CU_VERSION=$cu D2_VERSION_SUFFIX= PYTHON_VERSION=$py
-        export PYTORCH_VERSION=$PYTORCH_VERSION
-        cd /detectron2 && ./dev/packaging/build_wheel.sh
-EOF
-    fi
+#     if [[ "$cu" == "cu101" ]]; then
+#       # build wheel without local version
+#       cat <<EOF | docker exec -i $container_name sh
+#         export CU_VERSION=$cu D2_VERSION_SUFFIX= PYTHON_VERSION=$py
+#         export PYTORCH_VERSION=$PYTORCH_VERSION
+#         cd /detectron2 && ./dev/packaging/build_wheel.sh
+# EOF
+#     fi
 
     docker exec -i $container_name rm -rf /detectron2/build/$cu
     docker container stop $container_name
@@ -51,7 +51,7 @@ EOF
 if [[ -n "$1" ]]; then
   build_for_one_cuda "$1"
 else
-  for cu in cu101 cu100 cu92 cpu; do
+  for cu in cu102 cu101 cu92 cpu; do
     build_for_one_cuda "$cu"
   done
 fi

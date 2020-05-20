@@ -25,10 +25,12 @@ class BoxMode(IntEnum):
     """
     XYXY_REL = 2
     """
+    Not yet supported!
     (x0, y0, x1, y1) in range [0, 1]. They are relative to the size of the image.
     """
     XYWH_REL = 3
     """
+    Not yet supported!
     (x0, y0, w, h) in range [0, 1]. They are relative to the size of the image.
     """
     XYWHA_ABS = 4
@@ -349,9 +351,10 @@ def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     Returns:
         (tensor) iou, sized [N].
     """
-    assert len(boxes1) == len(boxes2), (
-        "boxlists should have the same"
-        "number of entries, got {}, {}".format(len(boxes1), len(boxes2))
+    assert len(boxes1) == len(
+        boxes2
+    ), "boxlists should have the same" "number of entries, got {}, {}".format(
+        len(boxes1), len(boxes2)
     )
     area1 = boxes1.area()  # [N]
     area2 = boxes2.area()  # [N]

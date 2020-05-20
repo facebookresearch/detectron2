@@ -2,12 +2,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import copy
+from typing import Any, Dict, Tuple
 import torch
 from fvcore.common.file_io import PathManager
 
 from detectron2.data import MetadataCatalog
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
+from detectron2.layers import ROIAlign
+from detectron2.structures import BoxMode
 
 from .structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
 
@@ -22,7 +25,11 @@ class DatasetMapper:
 
         # fmt: off
         self.img_format     = cfg.INPUT.FORMAT
-        self.mask_on        = cfg.MODEL.MASK_ON
+        self.mask_on        = (
+            cfg.MODEL.MASK_ON or (
+                cfg.MODEL.DENSEPOSE_ON
+                and cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS)
+        )
         self.keypoint_on    = cfg.MODEL.KEYPOINT_ON
         self.densepose_on   = cfg.MODEL.DENSEPOSE_ON
         assert not cfg.MODEL.LOAD_PROPOSALS, "not supported yet"
@@ -89,11 +96,16 @@ class DatasetMapper:
             for obj in dataset_dict.pop("annotations")
             if obj.get("iscrowd", 0) == 0
         ]
-        instances = utils.annotations_to_instances(annos, image_shape)
 
-        if len(annos) and "densepose" in annos[0]:
-            gt_densepose = [obj["densepose"] for obj in annos]
-            instances.gt_densepose = DensePoseList(gt_densepose, instances.gt_boxes, image_shape)
+        if self.mask_on:
+            self._add_densepose_masks_as_segmentation(annos, image_shape)
+
+        instances = utils.annotations_to_instances(annos, image_shape, mask_format="bitmask")
+        densepose_annotations = [obj.get("densepose") for obj in annos]
+        if densepose_annotations and not all(v is None for v in densepose_annotations):
+            instances.gt_densepose = DensePoseList(
+                densepose_annotations, instances.gt_boxes, image_shape
+            )
 
         dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
         return dataset_dict
@@ -116,3 +128,28 @@ class DatasetMapper:
             # 'None' is accepted by the DensePostList data structure.
             annotation["densepose"] = None
         return annotation
+
+    def _add_densepose_masks_as_segmentation(
+        self, annotations: Dict[str, Any], image_shape_hw: Tuple[int, int]
+    ):
+        for obj in annotations:
+            if ("densepose" not in obj) or ("segmentation" in obj):
+                continue
+            # DP segmentation: torch.Tensor [S, S] of float32, S=256
+            segm_dp = torch.zeros_like(obj["densepose"].segm)
+            segm_dp[obj["densepose"].segm > 0] = 1
+            segm_h, segm_w = segm_dp.shape
+            bbox_segm_dp = torch.tensor((0, 0, segm_h - 1, segm_w - 1), dtype=torch.float32)
+            # image bbox
+            x0, y0, x1, y1 = (
+                v.item() for v in BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS)
+            )
+            segm_aligned = (
+                ROIAlign((y1 - y0, x1 - x0), 1.0, 0, aligned=True)
+                .forward(segm_dp.view(1, 1, *segm_dp.shape), bbox_segm_dp)
+                .squeeze()
+            )
+            image_mask = torch.zeros(*image_shape_hw, dtype=torch.float32)
+            image_mask[y0:y1, x0:x1] = segm_aligned
+            # segmentation for BitMask: np.array [H, W] of np.bool
+            obj["segmentation"] = image_mask >= 0.5

@@ -37,8 +37,8 @@ Alias for backward compatibiltiy.
 
 class BasicBlock(CNNBlockBase):
     """
-    The basic residual block for ResNet-18 and ResNet-34, with two 3x3 conv layers
-    and a projection shortcut if needed.
+    The basic residual block for ResNet-18 and ResNet-34 defined in :paper:`ResNet`,
+    with two 3x3 conv layers and a projection shortcut if needed.
     """
 
     def __init__(self, in_channels, out_channels, *, stride=1, norm="BN"):
@@ -105,9 +105,9 @@ class BasicBlock(CNNBlockBase):
 
 class BottleneckBlock(CNNBlockBase):
     """
-    The standard bottleneck residual block used by ResNet-50, 101 and 152.
-    It contains 3 conv layers with kernels 1x1, 3x3, 1x1, and a projection
-    shortcut if needed.
+    The standard bottleneck residual block used by ResNet-50, 101 and 152
+    defined in :paper:`ResNet`.  It contains 3 conv layers with kernels
+    1x1, 3x3, 1x1, and a projection shortcut if needed.
     """
 
     def __init__(
@@ -218,7 +218,8 @@ class BottleneckBlock(CNNBlockBase):
 
 class DeformBottleneckBlock(ResNetBlockBase):
     """
-    Similar to :class:`BottleneckBlock`, but with deformable conv in the 3x3 convolution.
+    Similar to :class:`BottleneckBlock`, but with :paper:`deformable conv <deformconv>`
+    in the 3x3 convolution.
     """
 
     def __init__(
@@ -394,6 +395,10 @@ class BasicStem(CNNBlockBase):
 
 
 class ResNet(Backbone):
+    """
+    Implement :paper:`ResNet`.
+    """
+
     def __init__(self, stem, stages, num_classes=None, out_features=None):
         """
         Args:
@@ -479,10 +484,13 @@ class ResNet(Backbone):
         Freeze the first several stages of the ResNet. Commonly used in
         fine-tuning.
 
+        Layers that produce the same feature map spatial size are defined as one
+        "stage" by :paper:`FPN`.
+
         Args:
-            freeze_at (int): number of stem and stages to freeze.
+            freeze_at (int): number of stages to freeze.
                 `1` means freezing the stem. `2` means freezing the stem and
-                the first stage, etc.
+                one residual stage, etc.
 
         Returns:
             nn.Module: this ResNet itself

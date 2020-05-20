@@ -141,7 +141,7 @@ class DensePoseCocoEval(object):
             "https://dl.fbaipublicfiles.com/densepose/data/SMPL_SUBDIV_TRANSFORM.mat"
         )
         pdist_matrix_fpath = PathManager.get_local_path(
-            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl"
+            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl", timeout_sec=120
         )
         SMPL_subdiv = loadmat(smpl_subdiv_fpath)
         self.PDIST_transform = loadmat(pdist_transform_fpath)
@@ -377,7 +377,22 @@ class DensePoseCocoEval(object):
                 mask = np.array(mask > 0.5, dtype=np.uint8)
                 rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
             elif "segmentation" in g:
-                rle_mask = g["segmentation"]
+                segmentation = g["segmentation"]
+                if isinstance(segmentation, list) and segmentation:
+                    # polygons
+                    im_h, im_w = self.size_mapping[imgId]
+                    rles = maskUtils.frPyObjects(segmentation, im_h, im_w)
+                    rle_mask = maskUtils.merge(rles)
+                elif isinstance(segmentation, dict):
+                    if isinstance(segmentation["counts"], list):
+                        # uncompressed RLE
+                        im_h, im_w = self.size_mapping[imgId]
+                        rle_mask = maskUtils.frPyObjects(segmentation, im_h, im_w)
+                    else:
+                        # compressed RLE
+                        rle_mask = segmentation
+                else:
+                    rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             else:
                 rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             gtmasks.append(rle_mask)
@@ -485,7 +500,7 @@ class DensePoseCocoEval(object):
                     dy = yd - yg
                 else:
                     # measure minimum distance to keypoints in (x0,y0) & (x1,y1)
-                    z = np.zeros((k))
+                    z = np.zeros(k)
                     dx = np.max((z, x0 - xd), axis=0) + np.max((z, xd - x1), axis=0)
                     dy = np.max((z, y0 - yd), axis=0) + np.max((z, yd - y1), axis=0)
                 e = (dx ** 2 + dy ** 2) / vars / (gt["area"] + np.spacing(1)) / 2
@@ -781,8 +796,8 @@ class DensePoseCocoEval(object):
         K = len(p.catIds) if p.useCats else 1
         A = len(p.areaRng)
         M = len(p.maxDets)
-        precision = -np.ones((T, R, K, A, M))  # -1 for the precision of absent categories
-        recall = -np.ones((T, K, A, M))
+        precision = -(np.ones((T, R, K, A, M)))  # -1 for the precision of absent categories
+        recall = -(np.ones((T, K, A, M)))
 
         # create dictionary for future indexing
         logger.info("Categories: {}".format(p.catIds))

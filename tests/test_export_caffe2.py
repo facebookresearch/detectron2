@@ -49,7 +49,7 @@ class TestCaffe2Export(unittest.TestCase):
             file_name = DatasetCatalog.get("coco_2017_train")[0]["file_name"]
             assert PathManager.exists(file_name)
         except Exception:
-            self.SkipTest("COCO dataset not available.")
+            self.skipTest("COCO dataset not available.")
 
         with PathManager.open(file_name, "rb") as f:
             buf = f.read()

@@ -44,7 +44,7 @@ def calculate_uncertainty(logits, classes):
         gt_class_logits = logits[
             torch.arange(logits.shape[0], device=logits.device), classes
         ].unsqueeze(1)
-    return -torch.abs(gt_class_logits)
+    return -(torch.abs(gt_class_logits))
 
 
 @ROI_HEADS_REGISTRY.register()
@@ -56,6 +56,11 @@ class PointRendROIHeads(StandardROIHeads):
     To avoid namespace conflict with other heads we use names starting from `mask_` for all
     variables that correspond to the mask head in the class's namespace.
     """
+
+    def __init__(self, cfg, input_shape):
+        # TODO use explicit args style
+        super().__init__(cfg, input_shape)
+        self._init_mask_head(cfg, input_shape)
 
     def _init_mask_head(self, cfg, input_shape):
         # fmt: off

@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import inspect
 import logging
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 from torch import nn
 
+from detectron2.config import configurable
 from detectron2.layers import ShapeSpec
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
@@ -122,28 +124,58 @@ class ROIHeads(torch.nn.Module):
     """
     ROIHeads perform all per-region computation in an R-CNN.
 
-    It contains logic of cropping the regions, extract per-region features,
-    and make per-region predictions.
+    It typically contains logic to
+    1. (in training only) match proposals with ground truth and sample them
+    2. crop the regions and extract per-region features using proposals
+    3. make per-region predictions with different heads
 
     It can have many variants, implemented as subclasses of this class.
+    This base class contains the logic to match/sample proposals.
+    But it is not necessary to inherit this class if the sampling logic is not needed.
     """
 
-    def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
-        super(ROIHeads, self).__init__()
-        # fmt: off
-        self.batch_size_per_image     = cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
-        self.positive_sample_fraction = cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
-        self.in_features              = cfg.MODEL.ROI_HEADS.IN_FEATURES
-        self.num_classes              = cfg.MODEL.ROI_HEADS.NUM_CLASSES
-        self.proposal_append_gt       = cfg.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT
-        # fmt: on
+    @configurable
+    def __init__(
+        self,
+        *,
+        num_classes,
+        batch_size_per_image,
+        positive_sample_fraction,
+        proposal_matcher,
+        proposal_append_gt=True
+    ):
+        """
+        NOTE: this interface is experimental.
 
-        # Matcher to assign box proposals to gt boxes
-        self.proposal_matcher = Matcher(
-            cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS,
-            cfg.MODEL.ROI_HEADS.IOU_LABELS,
-            allow_low_quality_matches=False,
-        )
+        Args:
+            num_classes (int): number of classes. Used to label background proposals.
+            batch_size_per_image (int): number of proposals to use for training
+            positive_sample_fraction (float): fraction of positive (foreground) proposals
+                to use for training.
+            proposal_matcher (Matcher): matcher that matches proposals and ground truth
+            proposal_append_gt (bool): whether to include ground truth as proposals as well
+        """
+        super().__init__()
+        self.batch_size_per_image = batch_size_per_image
+        self.positive_sample_fraction = positive_sample_fraction
+        self.num_classes = num_classes
+        self.proposal_matcher = proposal_matcher
+        self.proposal_append_gt = proposal_append_gt
+
+    @classmethod
+    def from_config(cls, cfg):
+        return {
+            "batch_size_per_image": cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE,
+            "positive_sample_fraction": cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION,
+            "num_classes": cfg.MODEL.ROI_HEADS.NUM_CLASSES,
+            "proposal_append_gt": cfg.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT,
+            # Matcher to assign box proposals to gt boxes
+            "proposal_matcher": Matcher(
+                cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS,
+                cfg.MODEL.ROI_HEADS.IOU_LABELS,
+                allow_low_quality_matches=False,
+            ),
+        }
 
     def _sample_proposals(
         self, matched_idxs: torch.Tensor, matched_labels: torch.Tensor, gt_classes: torch.Tensor
@@ -317,11 +349,10 @@ class Res5ROIHeads(ROIHeads):
     """
 
     def __init__(self, cfg, input_shape):
-        super().__init__(cfg, input_shape)
-
-        assert len(self.in_features) == 1
+        super().__init__(cfg)
 
         # fmt: off
+        self.in_features  = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         pooler_scales     = (1.0 / input_shape[self.in_features[0]].stride, )
@@ -329,6 +360,7 @@ class Res5ROIHeads(ROIHeads):
         self.mask_on      = cfg.MODEL.MASK_ON
         # fmt: on
         assert not cfg.MODEL.KEYPOINT_ON
+        assert len(self.in_features) == 1
 
         self.pooler = ROIPooler(
             output_size=pooler_resolution,
@@ -445,37 +477,103 @@ class StandardROIHeads(ROIHeads):
     """
     It's "standard" in a sense that there is no ROI transform sharing
     or feature sharing between tasks.
-    The cropped rois go to separate branches (boxes and masks) directly.
-    This way, it is easier to make separate abstractions for different branches.
+    Each head independently processes the input features by each head's
+    own pooler and head.
 
     This class is used by most models, such as FPN and C5.
     To implement more models, you can subclass it and implement a different
     :meth:`forward()` or a head.
     """
 
-    def __init__(self, cfg, input_shape):
-        super(StandardROIHeads, self).__init__(cfg, input_shape)
-        self._init_box_head(cfg, input_shape)
-        self._init_mask_head(cfg, input_shape)
-        self._init_keypoint_head(cfg, input_shape)
+    @configurable
+    def __init__(
+        self,
+        *,
+        box_in_features: List[str],
+        box_pooler: ROIPooler,
+        box_head: nn.Module,
+        box_predictor: nn.Module,
+        mask_in_features: Optional[List[str]] = None,
+        mask_pooler: Optional[ROIPooler] = None,
+        mask_head: Optional[nn.Module] = None,
+        keypoint_in_features: Optional[List[str]] = None,
+        keypoint_pooler: Optional[ROIPooler] = None,
+        keypoint_head: Optional[nn.Module] = None,
+        train_on_pred_boxes: bool = False,
+        **kwargs
+    ):
+        """
+        NOTE: this interface is experimental.
 
-    def _init_box_head(self, cfg, input_shape):
+        Args:
+            box_in_features (list[str]): list of feature names to use for the box head.
+            box_pooler (ROIPooler): pooler to extra region features for box head
+            box_head (nn.Module): transform features to make box predictions
+            box_predictor (nn.Module): make box predictions from the feature.
+                Should have the same interface as :class:`FastRCNNOutputLayers`.
+            mask_in_features (list[str]): list of feature names to use for the mask head.
+                None if not using mask head.
+            mask_pooler (ROIPooler): pooler to extra region features for mask head
+            mask_head (nn.Module): transform features to make mask predictions
+            keypoint_in_features, keypoint_pooler, keypoint_head: similar to ``mask*``.
+            train_on_pred_boxes (bool): whether to use proposal boxes or
+                predicted boxes from the box head to train other heads.
+        """
+        super().__init__(**kwargs)
+        # keep self.in_features for backward compatibility
+        self.in_features = self.box_in_features = box_in_features
+        self.box_pooler = box_pooler
+        self.box_head = box_head
+        self.box_predictor = box_predictor
+
+        self.mask_on = mask_in_features is not None
+        if self.mask_on:
+            self.mask_in_features = mask_in_features
+            self.mask_pooler = mask_pooler
+            self.mask_head = mask_head
+        self.keypoint_on = keypoint_in_features is not None
+        if self.keypoint_on:
+            self.keypoint_in_features = keypoint_in_features
+            self.keypoint_pooler = keypoint_pooler
+            self.keypoint_head = keypoint_head
+
+        self.train_on_pred_boxes = train_on_pred_boxes
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        ret = super().from_config(cfg)
+        ret["train_on_pred_boxes"] = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
+        # Subclasses that have not been updated to use from_config style construction
+        # may have overridden _init_*_head methods. In this case, those overridden methods
+        # will not be classmethods and we need to avoid trying to call them here.
+        # We test for this with ismethod which only returns True for bound methods of cls.
+        # Such subclasses will need to handle calling their overridden _init_*_head methods.
+        if inspect.ismethod(cls._init_box_head):
+            ret.update(cls._init_box_head(cfg, input_shape))
+        if inspect.ismethod(cls._init_mask_head):
+            ret.update(cls._init_mask_head(cfg, input_shape))
+        if inspect.ismethod(cls._init_keypoint_head):
+            ret.update(cls._init_keypoint_head(cfg, input_shape))
+        return ret
+
+    @classmethod
+    def _init_box_head(cls, cfg, input_shape):
         # fmt: off
-        pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales            = tuple(1.0 / input_shape[k].stride for k in self.in_features)
-        sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
-        self.train_on_pred_boxes = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
+        in_features       = cfg.MODEL.ROI_HEADS.IN_FEATURES
+        pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in in_features)
+        sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
+        pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         # fmt: on
 
         # If StandardROIHeads is applied on multiple feature maps (as in FPN),
         # then we share the same predictors and therefore the channel counts must be the same
-        in_channels = [input_shape[f].channels for f in self.in_features]
+        in_channels = [input_shape[f].channels for f in in_features]
         # Check all channel counts are equal
         assert len(set(in_channels)) == 1, in_channels
         in_channels = in_channels[0]
 
-        self.box_pooler = ROIPooler(
+        box_pooler = ROIPooler(
             output_size=pooler_resolution,
             scales=pooler_scales,
             sampling_ratio=sampling_ratio,
@@ -484,56 +582,68 @@ class StandardROIHeads(ROIHeads):
         # Here we split "box head" and "box predictor", which is mainly due to historical reasons.
         # They are used together so the "box predictor" layers should be part of the "box head".
         # New subclasses of ROIHeads do not need "box predictor"s.
-        self.box_head = build_box_head(
+        box_head = build_box_head(
             cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
         )
-        self.box_predictor = FastRCNNOutputLayers(cfg, self.box_head.output_shape)
+        box_predictor = FastRCNNOutputLayers(cfg, box_head.output_shape)
+        return {
+            "box_in_features": in_features,
+            "box_pooler": box_pooler,
+            "box_head": box_head,
+            "box_predictor": box_predictor,
+        }
 
-    def _init_mask_head(self, cfg, input_shape):
+    @classmethod
+    def _init_mask_head(cls, cfg, input_shape):
+        if not cfg.MODEL.MASK_ON:
+            return {}
         # fmt: off
-        self.mask_on           = cfg.MODEL.MASK_ON
-        if not self.mask_on:
-            return
+        in_features       = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
-        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in self.in_features)
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in in_features)
         sampling_ratio    = cfg.MODEL.ROI_MASK_HEAD.POOLER_SAMPLING_RATIO
         pooler_type       = cfg.MODEL.ROI_MASK_HEAD.POOLER_TYPE
         # fmt: on
 
-        in_channels = [input_shape[f].channels for f in self.in_features][0]
+        in_channels = [input_shape[f].channels for f in in_features][0]
 
-        self.mask_pooler = ROIPooler(
+        ret = {"mask_in_features": in_features}
+        ret["mask_pooler"] = ROIPooler(
             output_size=pooler_resolution,
             scales=pooler_scales,
             sampling_ratio=sampling_ratio,
             pooler_type=pooler_type,
         )
-        self.mask_head = build_mask_head(
+        ret["mask_head"] = build_mask_head(
             cfg, ShapeSpec(channels=in_channels, width=pooler_resolution, height=pooler_resolution)
         )
+        return ret
 
-    def _init_keypoint_head(self, cfg, input_shape):
+    @classmethod
+    def _init_keypoint_head(cls, cfg, input_shape):
+        if not cfg.MODEL.KEYPOINT_ON:
+            return {}
         # fmt: off
-        self.keypoint_on  = cfg.MODEL.KEYPOINT_ON
-        if not self.keypoint_on:
-            return
+        in_features       = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_RESOLUTION
-        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in self.in_features)  # noqa
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in in_features)  # noqa
         sampling_ratio    = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_SAMPLING_RATIO
         pooler_type       = cfg.MODEL.ROI_KEYPOINT_HEAD.POOLER_TYPE
         # fmt: on
 
-        in_channels = [input_shape[f].channels for f in self.in_features][0]
+        in_channels = [input_shape[f].channels for f in in_features][0]
 
-        self.keypoint_pooler = ROIPooler(
+        ret = {"keypoint_in_features": in_features}
+        ret["keypoint_pooler"] = ROIPooler(
             output_size=pooler_resolution,
             scales=pooler_scales,
             sampling_ratio=sampling_ratio,
             pooler_type=pooler_type,
         )
-        self.keypoint_head = build_keypoint_head(
+        ret["keypoint_head"] = build_keypoint_head(
             cfg, ShapeSpec(channels=in_channels, width=pooler_resolution, height=pooler_resolution)
         )
+        return ret
 
     def forward(
         self,
@@ -612,13 +722,15 @@ class StandardROIHeads(ROIHeads):
             In training, a dict of losses.
             In inference, a list of `Instances`, the predicted instances.
         """
-        features = [features[f] for f in self.in_features]
+        features = [features[f] for f in self.box_in_features]
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         box_features = self.box_head(box_features)
         predictions = self.box_predictor(box_features)
         del box_features
 
         if self.training:
+            losses = self.box_predictor.losses(predictions, proposals)
+            # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
                 with torch.no_grad():
                     pred_boxes = self.box_predictor.predict_boxes_for_gt_classes(
@@ -626,7 +738,7 @@ class StandardROIHeads(ROIHeads):
                     )
                     for proposals_per_image, pred_boxes_per_image in zip(proposals, pred_boxes):
                         proposals_per_image.proposal_boxes = Boxes(pred_boxes_per_image)
-            return self.box_predictor.losses(predictions, proposals)
+            return losses
         else:
             pred_instances, _ = self.box_predictor.inference(predictions, proposals)
             return pred_instances
@@ -651,7 +763,7 @@ class StandardROIHeads(ROIHeads):
         if not self.mask_on:
             return {} if self.training else instances
 
-        features = [features[f] for f in self.in_features]
+        features = [features[f] for f in self.mask_in_features]
 
         if self.training:
             # The loss is only defined on positive proposals.
@@ -684,10 +796,10 @@ class StandardROIHeads(ROIHeads):
         if not self.keypoint_on:
             return {} if self.training else instances
 
-        features = [features[f] for f in self.in_features]
+        features = [features[f] for f in self.keypoint_in_features]
 
         if self.training:
-            # The loss is defined on positive proposals with at >=1 visible keypoints.
+            # The loss is defined on positive proposals with >=1 visible keypoints.
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             proposals = select_proposals_with_visible_keypoints(proposals)
             proposal_boxes = [x.proposal_boxes for x in proposals]

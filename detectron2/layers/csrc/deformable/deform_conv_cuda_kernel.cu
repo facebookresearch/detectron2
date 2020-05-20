@@ -484,7 +484,7 @@ void deformable_im2col(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_im.type(), "deformable_im2col_gpu", ([&] {
+      data_im.scalar_type(), "deformable_im2col_gpu", ([&] {
         const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
@@ -553,7 +553,7 @@ void deformable_col2im(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_col.type(), "deformable_col2im_gpu", ([&] {
+      data_col.scalar_type(), "deformable_col2im_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t* grad_im_ = grad_im.data_ptr<scalar_t>();
@@ -623,7 +623,7 @@ void deformable_col2im_coord(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_col.type(), "deformable_col2im_coord_gpu", ([&] {
+      data_col.scalar_type(), "deformable_col2im_coord_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
@@ -1096,7 +1096,7 @@ void modulated_deformable_im2col_cuda(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_im.type(), "modulated_deformable_im2col_gpu", ([&] {
+      data_im.scalar_type(), "modulated_deformable_im2col_gpu", ([&] {
         const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         const scalar_t* data_mask_ = data_mask.data_ptr<scalar_t>();
@@ -1166,7 +1166,7 @@ void modulated_deformable_col2im_cuda(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_col.type(), "modulated_deformable_col2im_gpu", ([&] {
+      data_col.scalar_type(), "modulated_deformable_col2im_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         const scalar_t* data_mask_ = data_mask.data_ptr<scalar_t>();
@@ -1239,7 +1239,7 @@ void modulated_deformable_col2im_coord_cuda(
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      data_col.type(), "modulated_deformable_col2im_coord_gpu", ([&] {
+      data_col.scalar_type(), "modulated_deformable_col2im_coord_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();

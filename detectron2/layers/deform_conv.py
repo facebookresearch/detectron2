@@ -321,7 +321,7 @@ class DeformConv(nn.Module):
         activation=None,
     ):
         """
-        Deformable convolution.
+        Deformable convolution from :paper:`deformconv`.
 
         Arguments are similar to :class:`Conv2D`. Extra arguments:
 
@@ -418,7 +418,7 @@ class ModulatedDeformConv(nn.Module):
         activation=None,
     ):
         """
-        Modulated deformable convolution.
+        Modulated deformable convolution from :paper:`deformconv2`.
 
         Arguments are similar to :class:`Conv2D`. Extra arguments:
 
