@@ -160,7 +160,7 @@ All models are trained along with FPN and SyncBN. For data augmentation,input im
     <th class="tg-0pky">download</th>
   </tr>
   <tr>
-    <td class="tg-0pky">ResNet-200</td>
+    <td class="tg-0pky">ResNeSt-200</td>
     <td class="tg-0pky">51.00</td>
     <td class="tg-0lax">43.68</td>
     <td class="tg-0lax">47.90</td>
