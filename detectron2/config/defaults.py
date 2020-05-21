@@ -46,7 +46,7 @@ _C.MODEL.PIXEL_STD = [1.0, 1.0, 1.0]
 # INPUT
 # -----------------------------------------------------------------------------
 _C.INPUT = CN()
-# Size of the smallest side of the image during training
+# Size of the smallest side of the image during training.  Set to zero to disable resize in training.
 _C.INPUT.MIN_SIZE_TRAIN = (800,)
 # Sample size of smallest side by choice or random selection from range give by
 # INPUT.MIN_SIZE_TRAIN
