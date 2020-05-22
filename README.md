@@ -194,6 +194,7 @@ python tools/train_net.py  \
                 --eval-only MODEL.WEIGHTS /path/to/checkpoint_file
 ```
 
+For the inference demo, please see [GETTING_STARTED.md](https://github.com/zhanghang1989/detectron2-ResNeSt/blob/resnest/GETTING_STARTED.md).
 
 ## Reference
 
