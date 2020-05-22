@@ -52,8 +52,8 @@ class Matcher(object):
         thresholds.insert(0, -float("inf"))
         thresholds.append(float("inf"))
         # Currently torchscript does not support all + generator
-        assert all(
-            [low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:])]  # noqa: C407
+        assert all(  # noqa: C407
+            [low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:])]
         )
         assert all([l in [-1, 0, 1] for l in labels])  # noqa: C407
         assert len(labels) == len(thresholds) - 1
