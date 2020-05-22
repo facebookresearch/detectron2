@@ -1,6 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import torch
 
+from detectron2.layers import nonzero_tuple
+
 __all__ = ["subsample_labels"]
 
 
@@ -33,8 +35,8 @@ def subsample_labels(
         pos_idx, neg_idx (Tensor):
             1D vector of indices. The total length of both is `num_samples` or fewer.
     """
-    positive = torch.nonzero((labels != -1) & (labels != bg_label), as_tuple=True)[0]
-    negative = torch.nonzero(labels == bg_label, as_tuple=True)[0]
+    positive = nonzero_tuple((labels != -1) & (labels != bg_label))[0]
+    negative = nonzero_tuple(labels == bg_label)[0]
 
     num_pos = int(num_samples * positive_fraction)
     # protect against not enough positive examples

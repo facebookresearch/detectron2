@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from detectron2.config import configurable
-from detectron2.layers import ShapeSpec
+from detectron2.layers import ShapeSpec, nonzero_tuple
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
@@ -111,7 +111,7 @@ def select_proposals_with_visible_keypoints(proposals: List[Instances]) -> List[
             & (ys <= proposal_boxes[:, :, 3])
         )
         selection = (kp_in_box & vis_mask).any(dim=1)
-        selection_idxs = torch.nonzero(selection, as_tuple=True)[0]
+        selection_idxs = nonzero_tuple(selection)[0]
         all_num_fg.append(selection_idxs.numel())
         ret.append(proposals_per_image[selection_idxs])
 
