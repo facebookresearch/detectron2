@@ -19,13 +19,13 @@ To add new dataset, refer to the tutorial "docs/DATASETS.md".
 
 import os
 
-from detectron2.data import DatasetCatalog, MetadataCatalog
-
-from .builtin_meta import _get_builtin_metadata
-from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
-from .lvis import get_lvis_instances_meta, register_lvis_instances
-from .pascal_voc import register_pascal_voc
+from detectron2.data import MetadataCatalog, DatasetCatalog
 from .register_coco import register_coco_instances, register_coco_panoptic_separated
+from .lvis import register_lvis_instances, get_lvis_instances_meta
+from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
+from .pascal_voc import register_pascal_voc
+from .builtin_meta import _get_builtin_metadata
+
 
 # ==== Predefined datasets and splits for COCO ==========
 
@@ -41,8 +41,6 @@ _PREDEFINED_SPLITS_COCO["coco"] = {
     ),
     "coco_2017_train": ("coco/train2017", "coco/annotations/instances_train2017.json"),
     "coco_2017_val": ("coco/val2017", "coco/annotations/instances_val2017.json"),
-    "coco_2017_test": ("coco/test2017", "coco/annotations/image_info_test2017.json"),
-    "coco_2017_test-dev": ("coco/test2017", "coco/annotations/image_info_test-dev2017.json"),
     "coco_2017_val_100": ("coco/val2017", "coco/annotations/instances_val2017_100.json"),
 }
 
@@ -101,7 +99,7 @@ _PREDEFINED_SPLITS_COCO_PANOPTIC = {
 }
 
 
-def register_all_coco(root):
+def register_all_coco(root="datasets"):
     for dataset_name, splits_per_dataset in _PREDEFINED_SPLITS_COCO.items():
         for key, (image_root, json_file) in splits_per_dataset.items():
             # Assume pre-defined datasets live in `./datasets`.
@@ -136,18 +134,21 @@ def register_all_coco(root):
 _PREDEFINED_SPLITS_LVIS = {
     "lvis_v0.5": {
         "lvis_v0.5_train": ("coco/train2017", "lvis/lvis_v0.5_train.json"),
+        "lvis_v0.5_train_small": ("coco/train2017", "lvis/lvis_v0.5_train_small.json"),
+        "lvis_v0.5_train_f_part_cr": ("coco/train2017", "lvis/lvis_v0.5_train_f_part_cr.json"),
         "lvis_v0.5_val": ("coco/val2017", "lvis/lvis_v0.5_val.json"),
+        "lvis_v0.5_val_reindex": ("coco/val2017", "lvis/lvis_v0.5_val_reindex.json"),
         "lvis_v0.5_val_rand_100": ("coco/val2017", "lvis/lvis_v0.5_val_rand_100.json"),
         "lvis_v0.5_test": ("coco/test2017", "lvis/lvis_v0.5_image_info_test.json"),
-    },
-    "lvis_v0.5_cocofied": {
-        "lvis_v0.5_train_cocofied": ("coco/train2017", "lvis/lvis_v0.5_train_cocofied.json"),
-        "lvis_v0.5_val_cocofied": ("coco/val2017", "lvis/lvis_v0.5_val_cocofied.json"),
-    },
+        "lvis_v0.5_train_f_only": ("coco/train2017", "lvis/lvis_v0.5_train_f_only.json"),
+        "lvis_v0.5_val_f_only": ("coco/val2017", "lvis/lvis_v0.5_val_f_only.json"),
+        "lvis_v0.5_train_fc_only": ("coco/train2017", "lvis/lvis_v0.5_train_fc_only.json"),
+        "lvis_v0.5_val_fc_only": ("coco/val2017", "lvis/lvis_v0.5_val_fc_only.json"),
+    }
 }
 
 
-def register_all_lvis(root):
+def register_all_lvis(root="datasets"):
     for dataset_name, splits_per_dataset in _PREDEFINED_SPLITS_LVIS.items():
         for key, (image_root, json_file) in splits_per_dataset.items():
             # Assume pre-defined datasets live in `./datasets`.
@@ -169,7 +170,7 @@ _RAW_CITYSCAPES_SPLITS = {
 }
 
 
-def register_all_cityscapes(root):
+def register_all_cityscapes(root="datasets"):
     for key, (image_dir, gt_dir) in _RAW_CITYSCAPES_SPLITS.items():
         meta = _get_builtin_metadata("cityscapes")
         image_dir = os.path.join(root, image_dir)
@@ -183,7 +184,7 @@ def register_all_cityscapes(root):
             ),
         )
         MetadataCatalog.get(inst_key).set(
-            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes_instance", **meta
+            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes", **meta
         )
 
         sem_key = key.format(task="sem_seg")
@@ -191,12 +192,12 @@ def register_all_cityscapes(root):
             sem_key, lambda x=image_dir, y=gt_dir: load_cityscapes_semantic(x, y)
         )
         MetadataCatalog.get(sem_key).set(
-            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes_sem_seg", **meta
+            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="sem_seg", **meta
         )
 
 
 # ==== Predefined splits for PASCAL VOC ===========
-def register_all_pascal_voc(root):
+def register_all_pascal_voc(root="datasets"):
     SPLITS = [
         ("voc_2007_trainval", "VOC2007", "trainval"),
         ("voc_2007_train", "VOC2007", "train"),
@@ -213,8 +214,7 @@ def register_all_pascal_voc(root):
 
 
 # Register them all under "./datasets"
-_root = os.getenv("DETECTRON2_DATASETS", "datasets")
-register_all_coco(_root)
-register_all_lvis(_root)
-register_all_cityscapes(_root)
-register_all_pascal_voc(_root)
+register_all_coco()
+register_all_lvis()
+register_all_cityscapes()
+register_all_pascal_voc()

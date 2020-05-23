@@ -87,7 +87,7 @@ class VideoVisualizer:
         ]
         colors = self._assign_colors(detected)
 
-        labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
+        labels = _create_text_labels(classes, scores, self.metadata.thing_classes)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             # any() returns uint8 tensor

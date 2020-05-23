@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
-import logging
 import numpy as np
 import torch
 from fvcore.common.file_io import PathManager
@@ -22,28 +21,25 @@ class DatasetMapper:
     and map it into a format used by the model.
 
     This is the default callable to be used to map your dataset dict into training data.
-    You may need to follow it to implement your own one for customized logic,
-    such as a different way to read or transform images.
-    See :doc:`/tutorials/data_loading` for details.
+    You may need to follow it to implement your own one for customized logic.
 
     The callable currently does the following:
-
     1. Read the image from "file_name"
     2. Applies cropping/geometric transforms to the image and annotations
     3. Prepare data and annotations to Tensor and :class:`Instances`
     """
 
     def __init__(self, cfg, is_train=True):
+        self.tfm_gens = utils.build_transform_gen(cfg, is_train)
+
         if cfg.INPUT.CROP.ENABLED and is_train:
             self.crop_gen = T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE)
-            logging.getLogger(__name__).info("CropGen used in training: " + str(self.crop_gen))
         else:
             self.crop_gen = None
 
-        self.tfm_gens = utils.build_transform_gen(cfg, is_train)
-
         # fmt: off
         self.img_format     = cfg.INPUT.FORMAT
+        self.keep_ann       = cfg.TEST.KEEP_ANNS
         self.mask_on        = cfg.MODEL.MASK_ON
         self.mask_format    = cfg.INPUT.MASK_FORMAT
         self.keypoint_on    = cfg.MODEL.KEYPOINT_ON
@@ -100,7 +96,8 @@ class DatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
+        # Can use uint8 if it turns out to be slow some day
 
         # USER: Remove if you don't use pre-computed proposals.
         if self.load_proposals:
@@ -108,8 +105,7 @@ class DatasetMapper:
                 dataset_dict, image_shape, transforms, self.min_box_side_len, self.proposal_topk
             )
 
-        if not self.is_train:
-            # USER: Modify this if you want to keep them for some reason.
+        if not self.is_train and not self.keep_ann:
             dataset_dict.pop("annotations", None)
             dataset_dict.pop("sem_seg_file_name", None)
             return dataset_dict
@@ -133,6 +129,7 @@ class DatasetMapper:
             instances = utils.annotations_to_instances(
                 annos, image_shape, mask_format=self.mask_format
             )
+
             # Create a tight bounding box from masks, useful when image is cropped
             if self.crop_gen and instances.has("gt_masks"):
                 instances.gt_boxes = instances.gt_masks.get_bounding_boxes()

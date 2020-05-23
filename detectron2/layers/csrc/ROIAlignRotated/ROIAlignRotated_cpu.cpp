@@ -312,7 +312,6 @@ void ROIAlignRotatedForward(
 template <typename T>
 void ROIAlignRotatedBackward(
     const int nthreads,
-    // may not be contiguous. should index using n_stride, etc
     const T* grad_output,
     const T& spatial_scale,
     const int channels,
@@ -444,12 +443,11 @@ at::Tensor ROIAlignRotated_forward_cpu(
     return output;
   }
 
-  auto input_ = input.contiguous(), rois_ = rois.contiguous();
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      input.scalar_type(), "ROIAlignRotated_forward", [&] {
+      input.type(), "ROIAlignRotated_forward", [&] {
         ROIAlignRotatedForward<scalar_t>(
             output_size,
-            input_.data_ptr<scalar_t>(),
+            input.contiguous().data_ptr<scalar_t>(),
             spatial_scale,
             channels,
             height,
@@ -457,7 +455,7 @@ at::Tensor ROIAlignRotated_forward_cpu(
             pooled_height,
             pooled_width,
             sampling_ratio,
-            rois_.data_ptr<scalar_t>(),
+            rois.contiguous().data_ptr<scalar_t>(),
             output.data_ptr<scalar_t>());
       });
   return output;
@@ -496,12 +494,11 @@ at::Tensor ROIAlignRotated_backward_cpu(
   int h_stride = grad.stride(2);
   int w_stride = grad.stride(3);
 
-  auto rois_ = rois.contiguous();
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      grad.scalar_type(), "ROIAlignRotated_forward", [&] {
+      grad.type(), "ROIAlignRotated_forward", [&] {
         ROIAlignRotatedBackward<scalar_t>(
             grad.numel(),
-            grad.data_ptr<scalar_t>(),
+            grad.contiguous().data_ptr<scalar_t>(),
             spatial_scale,
             channels,
             height,
@@ -510,7 +507,7 @@ at::Tensor ROIAlignRotated_backward_cpu(
             pooled_width,
             sampling_ratio,
             grad_input.data_ptr<scalar_t>(),
-            rois_.data_ptr<scalar_t>(),
+            rois.contiguous().data_ptr<scalar_t>(),
             n_stride,
             c_stride,
             h_stride,
