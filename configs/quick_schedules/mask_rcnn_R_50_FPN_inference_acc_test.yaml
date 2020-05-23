@@ -1,6 +1,6 @@
 _BASE_: "../COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
 MODEL:
-  WEIGHTS: "detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl"
+  WEIGHTS: "../output/model_final.pth"
 DATASETS:
   TEST: ("coco_2017_val_100",)
 TEST:
