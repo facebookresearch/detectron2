@@ -96,6 +96,8 @@ class Matcher(object):
 
         for (l, low, high) in zip(self.labels, self.thresholds[:-1], self.thresholds[1:]):
             low_high = (matched_vals >= low) & (matched_vals < high)
+            # directly assign l to match_labels[low_high] is not supported by torch.jit.
+            # https://github.com/pytorch/pytorch/issues/38962
             match_labels.masked_fill_(low_high, l)
 
         if self.allow_low_quality_matches:
