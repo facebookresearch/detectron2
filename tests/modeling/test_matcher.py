@@ -29,11 +29,11 @@ class TestMatcher(unittest.TestCase):
         # https://github.com/pytorch/pytorch/issues/38964
         from detectron2.layers import nonzero_tuple  # noqa F401
 
-        scrpted_matcher = torch.jit.script(Matcher)
-        scrpted_anchor_matcher = scrpted_matcher(
+        scripted_matcher = torch.jit.script(Matcher)
+        scripted_anchor_matcher = scripted_matcher(
             cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
         )
-        matches, match_labels = scrpted_anchor_matcher(match_quality_matrix)
+        matches, match_labels = scripted_anchor_matcher(match_quality_matrix)
         assert torch.allclose(matches, expected_matches)
         assert torch.allclose(match_labels, expected_match_labels)
 
