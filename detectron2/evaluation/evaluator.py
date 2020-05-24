@@ -6,8 +6,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 import torch
 
-from detectron2.utils.comm import get_world_size, is_main_process
-from detectron2.utils.logger import log_every_n_seconds
+from detectron2.utils.comm import is_main_process
 
 
 class DatasetEvaluator:
@@ -28,20 +27,13 @@ class DatasetEvaluator:
         """
         pass
 
-    def process(self, inputs, outputs):
+    def process(self, input, output):
         """
-        Process the pair of inputs and outputs.
-        If they contain batches, the pairs can be consumed one-by-one using `zip`:
-
-        .. code-block:: python
-
-            for input_, output in zip(inputs, outputs):
-                # do evaluation on single input/output pair
-                ...
+        Process an input/output pair.
 
         Args:
-            inputs (list): the inputs that's used to call the model.
-            outputs (list): the return value of `model(inputs)`
+            input: the input that's used to call the model.
+            output: the return value of `model(output)`
         """
         pass
 
@@ -62,18 +54,8 @@ class DatasetEvaluator:
 
 
 class DatasetEvaluators(DatasetEvaluator):
-    """
-    Wrapper class to combine multiple :class:`DatasetEvaluator` instances.
-
-    This class dispatches every evaluation call to
-    all of its :class:`DatasetEvaluator`.
-    """
-
     def __init__(self, evaluators):
-        """
-        Args:
-            evaluators (list): the evaluators to combine.
-        """
+        assert len(evaluators)
         super().__init__()
         self._evaluators = evaluators
 
@@ -81,15 +63,15 @@ class DatasetEvaluators(DatasetEvaluator):
         for evaluator in self._evaluators:
             evaluator.reset()
 
-    def process(self, inputs, outputs):
+    def process(self, input, output):
         for evaluator in self._evaluators:
-            evaluator.process(inputs, outputs)
+            evaluator.process(input, output)
 
     def evaluate(self):
         results = OrderedDict()
         for evaluator in self._evaluators:
             result = evaluator.evaluate()
-            if is_main_process() and result is not None:
+            if is_main_process():
                 for k, v in result.items():
                     assert (
                         k not in results
@@ -100,9 +82,7 @@ class DatasetEvaluators(DatasetEvaluator):
 
 def inference_on_dataset(model, data_loader, evaluator):
     """
-    Run model on the data_loader and evaluate the metrics with evaluator.
-    Also benchmark the inference speed of `model.forward` accurately.
-    The model will be used in eval mode.
+    Run model (in eval mode) on the data_loader and evaluate the metrics with evaluator.
 
     Args:
         model (nn.Module): a module which accepts an object from
@@ -112,53 +92,48 @@ def inference_on_dataset(model, data_loader, evaluator):
             wrap the given model and override its behavior of `.eval()` and `.train()`.
         data_loader: an iterable object with a length.
             The elements it generates will be the inputs to the model.
-        evaluator (DatasetEvaluator): the evaluator to run. Use `None` if you only want
-            to benchmark, but don't want to do any evaluation.
+        evaluator (DatasetEvaluator): the evaluator to run
 
     Returns:
         The return value of `evaluator.evaluate()`
     """
-    num_devices = get_world_size()
+    num_devices = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
     logger = logging.getLogger(__name__)
     logger.info("Start inference on {} images".format(len(data_loader)))
 
     total = len(data_loader)  # inference data loader must have a fixed length
-    if evaluator is None:
-        # create a no-op evaluator
-        evaluator = DatasetEvaluators([])
     evaluator.reset()
 
-    num_warmup = min(5, total - 1)
-    start_time = time.perf_counter()
+    logging_interval = 50
+    num_warmup = min(5, logging_interval - 1, total - 1)
+    start_time = time.time()
     total_compute_time = 0
     with inference_context(model), torch.no_grad():
         for idx, inputs in enumerate(data_loader):
             if idx == num_warmup:
-                start_time = time.perf_counter()
+                start_time = time.time()
                 total_compute_time = 0
 
-            start_compute_time = time.perf_counter()
+            start_compute_time = time.time()
             outputs = model(inputs)
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            total_compute_time += time.perf_counter() - start_compute_time
+            torch.cuda.synchronize()
+            total_compute_time += time.time() - start_compute_time
             evaluator.process(inputs, outputs)
 
-            iters_after_start = idx + 1 - num_warmup * int(idx >= num_warmup)
-            seconds_per_img = total_compute_time / iters_after_start
-            if idx >= num_warmup * 2 or seconds_per_img > 5:
-                total_seconds_per_img = (time.perf_counter() - start_time) / iters_after_start
-                eta = datetime.timedelta(seconds=int(total_seconds_per_img * (total - idx - 1)))
-                log_every_n_seconds(
-                    logging.INFO,
+            if (idx + 1) % logging_interval == 0:
+                duration = time.time() - start_time
+                seconds_per_img = duration / (idx + 1 - num_warmup)
+                eta = datetime.timedelta(
+                    seconds=int(seconds_per_img * (total - num_warmup) - duration)
+                )
+                logger.info(
                     "Inference done {}/{}. {:.4f} s / img. ETA={}".format(
                         idx + 1, total, seconds_per_img, str(eta)
-                    ),
-                    n=5,
+                    )
                 )
 
     # Measure the time only for this worker (before the synchronization barrier)
-    total_time = time.perf_counter() - start_time
+    total_time = int(time.time() - start_time)
     total_time_str = str(datetime.timedelta(seconds=total_time))
     # NOTE this format is parsed by grep
     logger.info(

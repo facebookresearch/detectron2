@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import numpy as np
-import os
-import xml.etree.ElementTree as ET
 from fvcore.common.file_io import PathManager
+import os
+import numpy as np
+import xml.etree.ElementTree as ET
 
-from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
+from detectron2.data import DatasetCatalog, MetadataCatalog
+
 
 __all__ = ["register_pascal_voc"]
 
@@ -32,15 +33,12 @@ def load_voc_instances(dirname: str, split: str):
     with PathManager.open(os.path.join(dirname, "ImageSets", "Main", split + ".txt")) as f:
         fileids = np.loadtxt(f, dtype=np.str)
 
-    # Needs to read many small annotation files. Makes sense at local
-    annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
     dicts = []
     for fileid in fileids:
-        anno_file = os.path.join(annotation_dirname, fileid + ".xml")
+        anno_file = os.path.join(dirname, "Annotations", fileid + ".xml")
         jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
 
-        with PathManager.open(anno_file) as f:
-            tree = ET.parse(f)
+        tree = ET.parse(anno_file)
 
         r = {
             "file_name": jpeg_file,

@@ -322,9 +322,7 @@ class DeformConv(nn.Module):
     ):
         """
         Deformable convolution from :paper:`deformconv`.
-
         Arguments are similar to :class:`Conv2D`. Extra arguments:
-
         Args:
             deformable_groups (int): number of groups used in deformable convolution.
             norm (nn.Module, optional): a normalization layer
@@ -419,9 +417,7 @@ class ModulatedDeformConv(nn.Module):
     ):
         """
         Modulated deformable convolution from :paper:`deformconv2`.
-
         Arguments are similar to :class:`Conv2D`. Extra arguments:
-
         Args:
             deformable_groups (int): number of groups used in deformable convolution.
             norm (nn.Module, optional): a normalization layer

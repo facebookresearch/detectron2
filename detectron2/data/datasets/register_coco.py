@@ -1,9 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
-import os
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
-
 from .coco import load_coco_json, load_sem_seg
 
 """
@@ -28,11 +26,8 @@ def register_coco_instances(name, metadata, json_file, image_root):
         metadata (dict): extra metadata associated with this dataset.  You can
             leave it as an empty dict.
         json_file (str): path to the json instance annotation file.
-        image_root (str or path-like): directory which contains all the images.
+        image_root (str): directory which contains all the images.
     """
-    assert isinstance(name, str), name
-    assert isinstance(json_file, (str, os.PathLike)), json_file
-    assert isinstance(image_root, (str, os.PathLike)), image_root
     # 1. register a function which returns dicts
     DatasetCatalog.register(name, lambda: load_coco_json(json_file, image_root, name))
 
@@ -72,7 +67,7 @@ def register_coco_panoptic_separated(
     Args:
         name (str): the name that identifies a dataset,
             e.g. "coco_2017_train_panoptic"
-        metadata (dict): extra metadata associated with this dataset.
+        metadata (str): extra metadata associated with this dataset.
         image_root (str): directory which contains all the images
         panoptic_root (str): directory which contains panoptic annotation images
         panoptic_json (str): path to the json panoptic annotation file

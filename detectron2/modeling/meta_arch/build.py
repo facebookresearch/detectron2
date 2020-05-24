@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import torch
-
 from detectron2.utils.registry import Registry
 
 META_ARCH_REGISTRY = Registry("META_ARCH")  # noqa F401 isort:skip
@@ -14,10 +12,7 @@ and expected to return a `nn.Module` object.
 
 def build_model(cfg):
     """
-    Build the whole model architecture, defined by ``cfg.MODEL.META_ARCHITECTURE``.
-    Note that it does not load any weights from ``cfg``.
+    Built the whole model, defined by `cfg.MODEL.META_ARCHITECTURE`.
     """
     meta_arch = cfg.MODEL.META_ARCHITECTURE
-    model = META_ARCH_REGISTRY.get(meta_arch)(cfg)
-    model.to(torch.device(cfg.MODEL.DEVICE))
-    return model
+    return META_ARCH_REGISTRY.get(meta_arch)(cfg)

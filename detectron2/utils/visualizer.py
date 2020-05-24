@@ -10,9 +10,7 @@ import matplotlib.colors as mplc
 import matplotlib.figure as mplfigure
 import pycocotools.mask as mask_util
 import torch
-from fvcore.common.file_io import PathManager
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-from PIL import Image
 
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 
@@ -36,23 +34,17 @@ _KEYPOINT_THRESHOLD = 0.05
 class ColorMode(Enum):
     """
     Enum of different color modes to use for instance visualizations.
+
+    Attributes:
+        IMAGE: Picks a random color for every instance and overlay segmentations with low opacity.
+        SEGMENTATION: Let instances of the same category have similar colors, and overlay them with
+            high opacity. This provides more attention on the quality of segmentation.
+        IMAGE_BW: same as IMAGE, but convert all areas without masks to gray-scale.
     """
 
     IMAGE = 0
-    """
-    Picks a random color for every instance and overlay segmentations with low opacity.
-    """
     SEGMENTATION = 1
-    """
-    Let instances of the same category have similar colors
-    (from metadata.thing_colors), and overlay them with
-    high opacity. This provides more attention on the quality of segmentation.
-    """
     IMAGE_BW = 2
-    """
-    Same as IMAGE, but convert all areas without masks to gray-scale.
-    Only available for drawing per-instance mask predictions.
-    """
 
 
 class GenericMask:
@@ -117,7 +109,6 @@ class GenericMask:
         # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
         # Internal contours (holes) are placed in hierarchy-2.
         # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
-        mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
         res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
@@ -259,7 +250,7 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        if filepath.lower().endswith(".jpg") or filepath.lower().endswith(".png"):
+        if filepath.endswith(".jpg") or filepath.endswith(".png"):
             # faster than matplotlib's imshow
             cv2.imwrite(filepath, self.get_image()[:, :, ::-1])
         else:
@@ -270,9 +261,8 @@ class VisImage:
     def get_image(self):
         """
         Returns:
-            ndarray:
-                the visualized image of shape (H, W, 3) (RGB) in uint8 type.
-                The shape is scaled w.r.t the input image using the given `scale` argument.
+            ndarray: the visualized image of shape (H, W, 3) (RGB) in uint8 type.
+              The shape is scaled w.r.t the input image using the given `scale` argument.
         """
         canvas = self.canvas
         s, (width, height) = canvas.print_to_buffer()
@@ -346,7 +336,7 @@ class Visualizer:
         keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
 
         if predictions.has("pred_masks"):
-            masks = np.asarray(predictions.pred_masks)
+            masks = predictions.pred_masks.numpy()
             masks = [GenericMask(x, self.output.height, self.output.width) for x in masks]
         else:
             masks = None
@@ -382,7 +372,6 @@ class Visualizer:
 
         Args:
             sem_seg (Tensor or ndarray): the segmentation of shape (H, W).
-                Each value is the integer label of the pixel.
             area_threshold (int): segments with less than `area_threshold` are not drawn.
             alpha (float): the larger it is, the more opaque the segmentations are.
 
@@ -394,7 +383,7 @@ class Visualizer:
         labels, areas = np.unique(sem_seg, return_counts=True)
         sorted_idxs = np.argsort(-areas).tolist()
         labels = labels[sorted_idxs]
-        for label in filter(lambda l: l < len(self.metadata.stuff_classes), labels):
+        for label in labels:
             try:
                 mask_color = [x / 255 for x in self.metadata.stuff_colors[label]]
             except (AttributeError, IndexError):
@@ -473,15 +462,6 @@ class Visualizer:
         return self.output
 
     def draw_dataset_dict(self, dic):
-        """
-        Draw annotations/segmentaions in Detectron2 Dataset format.
-
-        Args:
-            dic (dict): annotation/segmentation data of one image, in Detectron2 Dataset format.
-
-        Returns:
-            output (VisImage): image object with visualizations.
-        """
         annos = dic.get("annotations", None)
         if annos:
             if "segmentation" in annos[0]:
@@ -497,27 +477,15 @@ class Visualizer:
             boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
 
             labels = [x["category_id"] for x in annos]
-            colors = None
-            if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
-                colors = [
-                    self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in labels
-                ]
             names = self.metadata.get("thing_classes", None)
             if names:
                 labels = [names[i] for i in labels]
-            labels = [
-                "{}".format(i) + ("|crowd" if a.get("iscrowd", 0) else "")
-                for i, a in zip(labels, annos)
-            ]
-            self.overlay_instances(
-                labels=labels, boxes=boxes, masks=masks, keypoints=keypts, assigned_colors=colors
-            )
+            labels = [i + ("|crowd" if a.get("iscrowd", 0) else "") for i, a in zip(labels, annos)]
+            self.overlay_instances(labels=labels, boxes=boxes, masks=masks, keypoints=keypts)
 
         sem_seg = dic.get("sem_seg", None)
         if sem_seg is None and "sem_seg_file_name" in dic:
-            with PathManager.open(dic["sem_seg_file_name"], "rb") as f:
-                sem_seg = Image.open(f)
-                sem_seg = np.asarray(sem_seg, dtype="uint8")
+            sem_seg = cv2.imread(dic["sem_seg_file_name"], cv2.IMREAD_GRAYSCALE)
         if sem_seg is not None:
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
         return self.output
@@ -542,13 +510,12 @@ class Visualizer:
             labels (list[str]): the text to be displayed for each instance.
             masks (masks-like object): Supported types are:
 
-                * :class:`detectron2.structures.PolygonMasks`,
-                  :class:`detectron2.structures.BitMasks`.
+                * `structures.masks.PolygonMasks`, `structures.masks.BitMasks`.
                 * list[list[ndarray]]: contains the segmentation masks for all objects in one image.
-                  The first level of the list corresponds to individual instances. The second
-                  level to all the polygon that compose the instance, and the third level
-                  to the polygon coordinates. The third level should have the format of
-                  [x0, y0, x1, y1, ..., xn, yn] (n >= 3).
+                    The first level of the list corresponds to individual instances. The second
+                    level to all the polygon that compose the instance, and the third level
+                    to the polygon coordinates. The third level should have the format of
+                    [x0, y0, x1, y1, ..., xn, yn] (n >= 3).
                 * list[ndarray]: each ndarray is a binary mask of shape (H, W).
                 * list[dict]: each dict is a COCO-style RLE.
             keypoints (Keypoint or array like): an array-like object of shape (N, K, 3),
@@ -714,23 +681,20 @@ class Visualizer:
             output (VisImage): image object with visualizations.
         """
         visible = {}
-        keypoint_names = self.metadata.get("keypoint_names")
         for idx, keypoint in enumerate(keypoints):
             # draw keypoint
             x, y, prob = keypoint
             if prob > _KEYPOINT_THRESHOLD:
                 self.draw_circle((x, y), color=_RED)
-                if keypoint_names:
-                    keypoint_name = keypoint_names[idx]
-                    visible[keypoint_name] = (x, y)
+                keypoint_name = self.metadata.keypoint_names[idx]
+                visible[keypoint_name] = (x, y)
 
-        if self.metadata.get("keypoint_connection_rules"):
-            for kp0, kp1, color in self.metadata.keypoint_connection_rules:
-                if kp0 in visible and kp1 in visible:
-                    x0, y0 = visible[kp0]
-                    x1, y1 = visible[kp1]
-                    color = tuple(x / 255.0 for x in color)
-                    self.draw_line([x0, x1], [y0, y1], color=color)
+        for kp0, kp1, color in self.metadata.keypoint_connection_rules:
+            if kp0 in visible and kp1 in visible:
+                x0, y0 = visible[kp0]
+                x1, y1 = visible[kp1]
+                color = tuple(x / 255.0 for x in color)
+                self.draw_line([x0, x1], [y0, y1], color=color)
 
         # draw lines from nose to mid-shoulder and mid-shoulder to mid-hip
         # Note that this strategy is specific to person keypoints.

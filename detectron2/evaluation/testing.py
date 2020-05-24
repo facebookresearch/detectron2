@@ -3,8 +3,7 @@ import logging
 import numpy as np
 import pprint
 import sys
-from collections import OrderedDict
-from collections.abc import Mapping
+from collections import Mapping, OrderedDict
 
 
 def print_csv_format(results):
