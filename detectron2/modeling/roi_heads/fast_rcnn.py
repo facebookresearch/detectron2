@@ -1,14 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
-import numpy as np
 import torch
 from fvcore.nn import smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.layers import batched_nms, cat
+from detectron2.config import configurable
+from detectron2.layers import Linear, ShapeSpec, batched_nms, cat
+from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
+
+__all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +51,10 @@ def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, t
             boxes for each image. Element i has shape (Ri, K * 4) if doing
             class-specific regression, or (Ri, 4) if doing class-agnostic
             regression, where Ri is the number of predicted objects for image i.
-            This is compatible with the output of :meth:`FastRCNNOutputs.predict_boxes`.
+            This is compatible with the output of :meth:`FastRCNNOutputLayers.predict_boxes`.
         scores (list[Tensor]): A list of Tensors of predicted class scores for each image.
             Element i has shape (Ri, K + 1), where Ri is the number of predicted objects
-            for image i. Compatible with the output of :meth:`FastRCNNOutputs.predict_probs`.
+            for image i. Compatible with the output of :meth:`FastRCNNOutputLayers.predict_probs`.
         image_shapes (list[tuple]): A list of (width, height) tuples for each image in the batch.
         score_thresh (float): Only return detections with a confidence score exceeding this
             threshold.
@@ -70,7 +74,7 @@ def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, t
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
-    return tuple(list(x) for x in zip(*result_per_image))
+    return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
 
 
 def fast_rcnn_inference_single_image(
@@ -87,35 +91,32 @@ def fast_rcnn_inference_single_image(
     Returns:
         Same as `fast_rcnn_inference`, but for only one image.
     """
+    valid_mask = torch.isfinite(boxes).all(dim=1) & torch.isfinite(scores).all(dim=1)
+    if not valid_mask.all():
+        boxes = boxes[valid_mask]
+        scores = scores[valid_mask]
+
     scores = scores[:, :-1]
-#     print(scores.shape)
     num_bbox_reg_classes = boxes.shape[1] // 4
     # Convert to Boxes to use the `clip` function ...
     boxes = Boxes(boxes.reshape(-1, 4))
     boxes.clip(image_shape)
     boxes = boxes.tensor.view(-1, num_bbox_reg_classes, 4)  # R x C x 4
-    boxes_ids = torch.arange(boxes.size(0)*boxes.size(1))
 
     # Filter results based on detection scores
-#     highest_scores_idx = scores.argmax(1)
-#     score_list = torch.Tensor([[idx,v] for idx, v in enumerate(highest_scores_idx)])
-#     filter_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
-#     filter_mask[torch.arange(len(highest_scores_idx)),highest_scores_idx] = True
     filter_mask = scores > score_thresh  # R x K
-#     filter_mask = filter_mask * score_mask
     # R' x 2. First column contains indices of the R predictions;
     # Second column contains indices of classes.
     filter_inds = filter_mask.nonzero()
     if num_bbox_reg_classes == 1:
         boxes = boxes[filter_inds[:, 0], 0]
-        boxes_ids = boxes_ids[filter_inds[:, 0]]
     else:
         boxes = boxes[filter_mask]
     scores = scores[filter_mask]
 
     # Apply per-class NMS
-    keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh, boxes_ids)
-    if topk_per_image >= 0: # topk_per_image = 300
+    keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
+    if topk_per_image >= 0:
         keep = keep[:topk_per_image]
     boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
 
@@ -129,10 +130,16 @@ def fast_rcnn_inference_single_image(
 class FastRCNNOutputs(object):
     """
     A class that stores information about outputs of a Fast R-CNN head.
+    It provides methods that are used to decode the outputs of a Fast R-CNN head.
     """
 
     def __init__(
-        self, box2box_transform, pred_class_logits, pred_proposal_deltas, proposals, smooth_l1_beta, class_num_list=None, stage=None, weighted_CE=False, weight=None, KLCE=False, pred_class_logits_0=None
+        self,
+        box2box_transform,
+        pred_class_logits,
+        pred_proposal_deltas,
+        proposals,
+        smooth_l1_beta=0,
     ):
         """
         Args:
@@ -151,95 +158,35 @@ class FastRCNNOutputs(object):
                 proposals for image i, in the field "proposal_boxes".
                 When training, each Instances must have ground-truth labels
                 stored in the field "gt_classes" and "gt_boxes".
+                The total number of all instances must be equal to R.
             smooth_l1_beta (float): The transition point between L1 and L2 loss in
                 the smooth L1 loss function. When set to 0, the loss becomes L1. When
                 set to +inf, the loss becomes constant 0.
         """
-        if class_num_list != None:
-            self.total_class_number = class_num_list[2]
-        self.class_num_list = class_num_list
         self.box2box_transform = box2box_transform
         self.num_preds_per_image = [len(p) for p in proposals]
         self.pred_class_logits = pred_class_logits
-        self.pred_class_logits_0 = pred_class_logits_0
         self.pred_proposal_deltas = pred_proposal_deltas
         self.smooth_l1_beta = smooth_l1_beta
-        self.num_classes = len(self.pred_class_logits[0])
-        box_type = type(proposals[0].proposal_boxes)
-        # cat(..., dim=0) concatenates over all images in the batch
-        self.proposals = box_type.cat([p.proposal_boxes for p in proposals])
-        assert not self.proposals.tensor.requires_grad, "Proposals should not require gradients!"
         self.image_shapes = [x.image_size for x in proposals]
-        self.weighted_CE = weighted_CE
-        self.KLCE = KLCE
-        self.stage = stage
-        self.stage_phase = [0]
-        self.stage_phase_mute = [1,2]
-        self.temperature = torch.Tensor([2.]).to(self.pred_class_logits.device)
-        if weighted_CE:
-            self.weighted_tensor = torch.ones(len(self.pred_class_logits[0]))
-            self.weighted_tensor = self.weighted_tensor.to(self.pred_class_logits.device)
-            if stage == 0:
-                pass
-#                 self.weighted_tensor[class_num_list[0]:class_num_list[2]] /= (class_num_list[2]-class_num_list[0])
-            if stage == 1:
-                self.weighted_tensor[class_num_list[1]:class_num_list[2]] /= (class_num_list[2]-class_num_list[1])
-                self.weighted_tensor[class_num_list[0]:class_num_list[1]] *= 2.
-#                 self.weighted_tensor[class_num_list[1]:class_num_list[2]] *= 3.
-            if stage == 2:
-#                 self.weighted_tensor[class_num_list[1]:class_num_list[2]] /= (class_num_list[2]-class_num_list[1])
-#                 self.weighted_tensor[class_num_list[0]:class_num_list[1]] *= 1.
-                self.weighted_tensor[class_num_list[1]:class_num_list[2]] *= 3.
-            if stage == 3:
-                self.weighted_tensor[class_num_list[1]:class_num_list[2]] /= (class_num_list[2]-class_num_list[1])
-                self.weighted_tensor[class_num_list[0]:class_num_list[1]] *= 2.
-                
-        if proposals[0].has("gt_boxes"):
+
+        if len(proposals):
+            box_type = type(proposals[0].proposal_boxes)
+            # cat(..., dim=0) concatenates over all images in the batch
+            self.proposals = box_type.cat([p.proposal_boxes for p in proposals])
+            assert (
+                not self.proposals.tensor.requires_grad
+            ), "Proposals should not require gradients!"
+
+            # The following fields should exist only when training.
+            if proposals[0].has("gt_boxes"):
                 self.gt_boxes = box_type.cat([p.gt_boxes for p in proposals])
                 assert proposals[0].has("gt_classes")
                 self.gt_classes = cat([p.gt_classes for p in proposals], dim=0)
-        
-        ################### KLCE test mask 
-        if self.KLCE and self.stage_phase == [1] and self.stage == 1 :
-#             zero_cat = -4*torch.ones(self.pred_class_logits.shape[0], 
-#                           self.pred_class_logits_0.shape[1]-class_num_list[0]).to(self.pred_class_logits.device)
-#             self.pred_class_logits_0 = torch.cat((self.pred_class_logits_0[:,:class_num_list[0]],zero_cat),1)
-            self.pred_class_logits_0 = self.pred_class_logits_0.detach()
-            pred_class = self.pred_class_logits_0.argmax(dim=1)
-            if proposals[0].has("gt_boxes"):
-                self.correct_mask = pred_class == self.gt_classes
-                self.incorrect_mask = pred_class != self.gt_classes
-                self.kd_mask = self.gt_classes < (class_num_list[0])
-                self.other_mask = ~self.kd_mask
+        else:
+            self.proposals = Boxes(torch.zeros(0, 4, device=self.pred_proposal_deltas.device))
+        self._no_instances = len(proposals) == 0  # no instances found
 
-        if self.KLCE and self.stage_phase == [2] and self.stage == 2 :
-#             zero_cat = -4*torch.ones(self.pred_class_logits.shape[0], 
-#                           self.pred_class_logits_0.shape[1]-class_num_list[1]).to(self.pred_class_logits.device)
-#             self.pred_class_logits_0 = torch.cat((self.pred_class_logits_0[:,:class_num_list[1]],zero_cat),1)
-            self.pred_class_logits_0 = self.pred_class_logits_0.detach()
-            pred_class = self.pred_class_logits_0.argmax(dim=1)
-            if proposals[0].has("gt_boxes"):
-                self.correct_mask = pred_class == self.gt_classes
-                self.incorrect_mask = pred_class != self.gt_classes
-                self.kd_mask = self.gt_classes < (class_num_list[1])
-                self.kd_f_mask = self.gt_classes < (class_num_list[0])
-                self.kd_c_mask = (self.gt_classes < class_num_list[1]) & (self.gt_classes >= class_num_list[0])
-                self.other_mask = ~self.kd_mask
-                
-        if self.KLCE and self.stage_phase == [3] and self.stage == 3:
-            zero_cat = -4*torch.ones(self.pred_class_logits.shape[0], 
-                          self.pred_class_logits_0.shape[1]-class_num_list[1]).to(self.pred_class_logits.device)
-            self.pred_class_logits_0 = torch.cat((self.pred_class_logits_0[:,:class_num_list[1]],zero_cat),1)
-            self.pred_class_logits_0 = self.pred_class_logits_0.detach()
-            pred_class = self.pred_class_logits_0.argmax(dim=1)
-            if proposals[0].has("gt_boxes"):
-                self.correct_mask = pred_class == self.gt_classes
-                self.incorrect_mask = pred_class != self.gt_classes
-                self.kd_mask = self.gt_classes < (class_num_list[1])
-                self.kd_f_mask = self.gt_classes < (class_num_list[0])
-                self.kd_c_mask = (self.gt_classes < class_num_list[1]) & (self.gt_classes >= class_num_list[0])
-                self.other_mask = ~self.kd_mask
-                
     def _log_accuracy(self):
         """
         Log the accuracy metrics to EventStorage.
@@ -256,26 +203,13 @@ class FastRCNNOutputs(object):
         num_false_negative = (fg_pred_classes == bg_class_ind).nonzero().numel()
         num_accurate = (pred_classes == self.gt_classes).nonzero().numel()
         fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
-        fg_num_accurate_f = ((fg_pred_classes == fg_gt_classes) * (fg_gt_classes < self.class_num_list[0])).nonzero().numel()
-        fg_num_accurate_c = ((fg_pred_classes == fg_gt_classes) * (fg_gt_classes >= self.class_num_list[0]) * (fg_gt_classes < self.class_num_list[1])).nonzero().numel()
-        fg_num_accurate_r = ((fg_pred_classes == fg_gt_classes) * (fg_gt_classes >= self.class_num_list[1]) * (fg_gt_classes < self.class_num_list[2])).nonzero().numel()
-        
-        num_fg_f = (fg_gt_classes < self.class_num_list[0]).nonzero().numel()
-        num_fg_c = ((fg_gt_classes >= self.class_num_list[0]) * (fg_gt_classes < self.class_num_list[1])).nonzero().numel()
-        num_fg_r = ((fg_gt_classes >= self.class_num_list[1]) * (fg_gt_classes < self.class_num_list[2])).nonzero().numel()
 
         storage = get_event_storage()
-        storage.put_scalar("fast_rcnn/cls_accuracy", num_accurate / num_instances)
-        if num_fg > 0:
-            storage.put_scalar("fast_rcnn/fg_cls_accuracy", fg_num_accurate / num_fg)
-            storage.put_scalar("fast_rcnn/false_negative", num_false_negative / num_fg)
-        if num_fg_f > 0:
-            storage.put_scalar("fast_rcnn/fg_cls_accuracy_f", fg_num_accurate_f / num_fg_f)
-        if num_fg_c > 0:
-            storage.put_scalar("fast_rcnn/fg_cls_accuracy_c", fg_num_accurate_c / num_fg_c)
-        if num_fg_r > 0:
-            storage.put_scalar("fast_rcnn/fg_cls_accuracy_r", fg_num_accurate_r / num_fg_r)
-            
+        if num_instances > 0:
+            storage.put_scalar("fast_rcnn/cls_accuracy", num_accurate / num_instances)
+            if num_fg > 0:
+                storage.put_scalar("fast_rcnn/fg_cls_accuracy", fg_num_accurate / num_fg)
+                storage.put_scalar("fast_rcnn/false_negative", num_false_negative / num_fg)
 
     def softmax_cross_entropy_loss(self):
         """
@@ -284,175 +218,21 @@ class FastRCNNOutputs(object):
         Returns:
             scalar Tensor
         """
-        total_size = self.pred_class_logits.size()[0]
-        self._log_accuracy()
-        if self.KLCE and self.stage in self.stage_phase:
-            if self.weighted_CE:
-                if self.kd_mask.sum() > 1:
-                    
-#                     if self.stage_phase == [1]:
-                    CE_c_loss = F.cross_entropy(self.pred_class_logits[self.other_mask], 
-                                            self.gt_classes[self.other_mask], self.weighted_tensor, reduction="sum")
-                    CE_c_loss = CE_c_loss / total_size
-        
-#                     gt_logits = torch.zeros(self.pred_class_logits[self.comm_mask].size()).cuda()
-#                     gt_logits[:,self.gt_classes[self.comm_mask]] = 1.
-#                     CE_c_loss = nn.BCELoss(reduction="sum")(
-#                         nn.Softmax(1)(self.pred_class_logits[self.comm_mask]),
-#                         nn.Softmax(1)(gt_logits))
-                    kd_logp = nn.Softmax(1)(self.pred_class_logits[:,:self.class_num_list[self.stage_phase[0]-1]]/self.temperature).log()
-                    kd_pred_p = nn.Softmax(1)(self.pred_class_logits_0[:,:self.class_num_list[self.stage_phase[0]-1]]/self.temperature)
-                    BCEloss_a = -torch.mean(torch.sum(kd_pred_p * kd_logp, dim=1)) * self.temperature ** 2.
-                    BCEloss_b = torch.Tensor([0]).cuda()
-#                     if self.kd_f_mask.sum() > 0:
-#                         kd_logp = nn.Softmax(1)(self.pred_class_logits[self.kd_f_mask,:self.class_num_list[0]]/self.temperature).log()
-#                         kd_pred_p = nn.Softmax(1)(self.pred_class_logits_0[self.kd_f_mask,:self.class_num_list[0]]/self.temperature)
-#                         BCEloss_b += -torch.mean(torch.sum(kd_pred_p * kd_logp, dim=1)) * self.temperature ** 2.
-#                     if self.kd_c_mask.sum() > 0:
-#                         kd_logp = nn.Softmax(1)(self.pred_class_logits[self.kd_c_mask,self.class_num_list[0]:self.class_num_list[1]]/self.temperature).log()
-#                         kd_pred_p = nn.Softmax(1)(self.pred_class_logits_0[self.kd_c_mask,self.class_num_list[0]:self.class_num_list[1]]/self.temperature)
-#                         BCEloss_b += -torch.mean(torch.sum(kd_pred_p * kd_logp, dim=1)) * self.temperature ** 2.
-                    BCEloss_total = 1.*BCEloss_a + 0*BCEloss_b
-#                     kd_loss = nn.KLDivLoss(reduction='sum')(
-#                         nn.Softmax(1)(self.pred_class_logits[:,:self.class_num_list[0]]/self.temperature).log(),
-#                         nn.Softmax(1)(self.pred_class_logits_0[:,:self.class_num_list[0]]/self.temperature)) * self.temperature ** 2.
-#                     BCEloss_total = kd_loss / total_size
-
-#                     assert self.pred_class_logits.shape == self.pred_class_logits_0.shape
-#                     kd_loss = nn.KLDivLoss()(F.log_softmax(s / T, dim=1), F.softmax(t / T, dim=1)) * (T * T)
-                    
-                    CE_f_loss = F.cross_entropy(self.pred_class_logits[self.kd_mask], 
-                                            self.gt_classes[self.kd_mask], self.weighted_tensor, reduction="sum")
-                    CE_f_loss = CE_f_loss / total_size
-#                     gt_logits = torch.zeros(self.pred_class_logits[self.freq_mask].size()).cuda()
-#                     gt_logits[:,self.gt_classes[self.freq_mask]] = 1.
-#                     CE_f_loss = nn.BCELoss(reduction="sum")(
-#                         nn.Softmax(1)(self.pred_class_logits[self.freq_mask]),
-#                         nn.Softmax(1)(gt_logits))
-
-                    #### 16
-#                     BCEloss_total = 0
-#                     if self.kd_f_mask.sum() >= 1:
-#                         weight = torch.zeros(self.pred_class_logits.size()[1]).cuda()
-#                         weight[:self.class_num_list[0]] = 1.
-#                         BCEloss = nn.BCELoss(reduction="sum")(
-#                             nn.Softmax(1)(self.pred_class_logits[self.kd_f_mask,:self.class_num_list[0]]/self.temperature),
-#                             nn.Softmax(1)(self.pred_class_logits_0[self.kd_f_mask,:self.class_num_list[0]]/self.temperature)
-#                             ) * (self.temperature[0] ** 2.)
-#                         BCEloss_total += BCEloss / (total_size * weight.sum()) 
-                
-#                     if self.kd_c_mask.sum() >= 1:
-#                         len_0 = self.class_num_list[0]
-#                         len_1 = self.class_num_list[1]
-#                         weight = torch.zeros(self.pred_class_logits.size()[1]).cuda()
-#                         weight[len_0:len_1] = 1.
-#                         BCEloss = nn.BCELoss(reduction="sum")(
-#                             nn.Softmax(1)(self.pred_class_logits[self.kd_c_mask,len_0:len_1]/self.temperature),
-#                             nn.Softmax(1)(self.pred_class_logits_0[self.kd_c_mask,len_0:len_1]/self.temperature)
-#                             ) * (self.temperature[0] ** 2.)
-#                         BCEloss_total += BCEloss / (total_size * weight.sum()) 
-                        
-    
-#                     weight = torch.zeros(self.pred_class_logits.size()[1]).cuda()
-#                     weight[:self.class_num_list[self.stage_phase[0]-1]] = 1.
-# #                     weight[self.class_num_list[self.stage_phase[0]-2]:self.class_num_list[self.stage_phase[0]-1]] = 2.
-#                     BCEloss = nn.BCELoss(reduction="sum")(#, weight=weight)(
-#                         nn.Softmax(1)(self.pred_class_logits[self.kd_mask,:self.class_num_list[0]]/self.temperature),
-#                         nn.Softmax(1)(self.pred_class_logits_0[self.kd_mask,:self.class_num_list[0]]/self.temperature)
-#                         ) * (self.temperature[0] ** 2.)
-
-#                     mask_g = torch.zeros(self.pred_class_logits[self.kd_mask].size()).cuda()
-#                     weight_g = torch.zeros(self.pred_class_logits[self.kd_mask].size()).cuda()
-#                     max_value = nn.Softmax(1)(self.pred_class_logits_0[self.kd_mask] / self.temperature).max(1).values
-#                     for i in range(len(weight_g)):
-#                         mask_g[i,self.gt_classes[self.kd_mask][i]] = 1.
-#                         weight_g[i,self.gt_classes[self.kd_mask][i]] = max_value[i]
-#                     BCEloss_guide = nn.BCELoss(reduction="sum", weight=mask_g)(
-#                         nn.Softmax(1)(self.pred_class_logits[self.kd_mask]/self.temperature),weight_g
-#                         ) * (self.temperature[0] ** 2.)
-                    
-#                     #### 20
-#                     weight = torch.zeros(self.pred_class_logits.size()[1]).cuda()
-#                     weight[:self.class_num_list[0]] = 1.
-#                     BCEloss = nn.BCELoss(weight=weight)(
-#                         torch.sigmoid(self.pred_class_logits[(self.freq_mask) * (self.freq_mask)]),
-#                         torch.sigmoid(self.pred_class_logits_0[(self.freq_mask) * (self.freq_mask)])
-#                         )
-                    
-                    
-                    
-                    #### 17
-#                     BCEloss = nn.BCELoss(reduction="sum")(
-#                         nn.Softmax(1)(self.pred_class_logits[(self.correct_mask) * (self.freq_mask)]/self.temperature),
-#                         nn.Softmax(1)(self.pred_class_logits_0[(self.correct_mask) * (self.freq_mask)]/self.temperature)
-#                         ) * (self.temperature[0] ** 2.)
-        
-#                     gt_logits = torch.zeros(self.pred_class_logits[(self.incorrect_mask) * (self.freq_mask)].size()).cuda()
-#                     for i in range(len(self.gt_classes[(self.incorrect_mask) * (self.freq_mask)])):
-#                         gt_logits[i,self.gt_classes[(self.incorrect_mask) * (self.freq_mask)][i]] = 1.
-#                     if ((self.incorrect_mask) * (self.freq_mask)).nonzero().numel():
-#                         BCEloss += nn.BCELoss(reduction="sum")(
-#                         nn.Softmax(1)(self.pred_class_logits[(self.incorrect_mask) * (self.freq_mask)]/self.temperature),
-#                         nn.Softmax(1)(gt_logits/self.temperature)
-#                         ) * (self.temperature[0] ** 2.)
-
-                    
-#                     BCEloss_guide = BCEloss_guide / total_size
-
-#                     cr_mask = (self.gt_classes >= self.class_num_list[1]) & (self.gt_classes < self.class_num_list[2])
-#                     cr_loss = 0
-#                     if cr_mask.sum() > 0:
-#                         cr_loss = torch.sum(-1*torch.log(1-nn.Softmax(1)(self.pred_class_logits[cr_mask])[:,:self.class_num_list[1]]))/cr_mask.sum()
-    
-                    weight_d = float(self.class_num_list[self.stage_phase[0]-1])/self.class_num_list[self.stage_phase[0]]
-                    weight_c = 1. - weight_d
-                    return {'loss_cls_c':  weight_c * CE_c_loss,
-                            'loss_cls_f':  weight_c * CE_f_loss, 
-                            'loss_cls_BCE':weight_d * BCEloss_total, 
-                            'loss_cr': weight_c * 0}
-                else:
-#                     cr_mask = (self.gt_classes >= self.class_num_list[1]) & (self.gt_classes < self.class_num_list[2])
-#                     cr_loss = 0
-#                     if cr_mask.sum() > 0:
-#                         cr_loss = torch.sum(-1*torch.log(1-nn.Softmax(1)(self.pred_class_logits[cr_mask])[:,:self.class_num_list[1]]))/cr_mask.sum()
-                        
-                    weight_d = float(self.class_num_list[self.stage_phase[0]-1])/self.class_num_list[self.stage_phase[0]]
-                    weight_c = 1. - weight_d
-                    loss =  F.cross_entropy(self.pred_class_logits[self.other_mask], self.gt_classes[self.other_mask], self.weighted_tensor, reduction="mean") 
-                    return {'loss_cls_c': weight_c*loss, 
-                            'loss_cls_f': 0, 'loss_cls_BCE': 0, 'loss_cr': weight_c*0}
-            else:
-                loss =  F.cross_entropy(self.pred_class_logits[self.other_mask], self.gt_classes[self.other_mask], reduction="mean") 
-                loss += nn.KLDivLoss(reduction='batchmean')(self.pred_class_logits[self.correct_mask], self.pred_class_logits_0[self.correct_mask])
-                return loss
-
+        if self._no_instances:
+            return 0.0 * self.pred_class_logits.sum()
         else:
-            if self.weighted_CE:
-#                 nn.Softmax(1)(self.pred_class_logits/self.temperature)
-#                 cr_mask = (self.gt_classes >= self.class_num_list[0]) & (self.gt_classes < self.class_num_list[2])
-#                 cr_loss = 0
-#                 if cr_mask.sum() > 0:
-# #                     gt_logits = torch.zeros(self.pred_class_logits[cr_mask].size()).cuda()
-# #                     gt_logits[torch.arange(gt_logits.size(0)),self.gt_classes[cr_mask]] = 1.
-# #                     cr_loss = nn.KLDivLoss(reduction='sum')(
-# #                         nn.Softmax(1)(self.pred_class_logits[cr_mask]/self.temperature).log()[:,:self.class_num_list[0]],
-# #                         nn.Softmax(1)(gt_logits/self.temperature)[:,:self.class_num_list[0]]) * self.temperature ** 2.
-# #                     cr_loss = cr_loss/cr_mask.sum()
-#                     cr_loss = torch.sum(-1*torch.log(1-nn.Softmax(1)(self.pred_class_logits[cr_mask])[:,:self.class_num_list[0]]))/cr_mask.sum()
-                ce_loss = F.cross_entropy(self.pred_class_logits,
-                                       self.gt_classes, self.weighted_tensor, reduction="mean") 
-                
-                return {'loss_cls': 1.*ce_loss, 'loss_cr': 0}
-            else:
-                ce_loss = F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
-                return {'loss_cls': ce_loss}
+            self._log_accuracy()
+            return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
 
     def smooth_l1_loss(self):
         """
         Compute the smooth L1 loss for box regression.
+
         Returns:
             scalar Tensor
         """
+        if self._no_instances:
+            return 0.0 * self.pred_proposal_deltas.sum()
         gt_proposal_deltas = self.box2box_transform.get_deltas(
             self.proposals.tensor, self.gt_boxes.tensor
         )
@@ -468,9 +248,9 @@ class FastRCNNOutputs(object):
         # Empty fg_inds produces a valid loss of zero as long as the size_average
         # arg to smooth_l1_loss is False (otherwise it uses torch.mean internally
         # and would produce a nan loss).
-        fg_inds = torch.nonzero((self.gt_classes >= 0) & (self.gt_classes < bg_class_ind)).squeeze(
-            1
-        )
+        fg_inds = torch.nonzero(
+            (self.gt_classes >= 0) & (self.gt_classes < bg_class_ind), as_tuple=True
+        )[0]
         if cls_agnostic_bbox_reg:
             # pred_proposal_deltas only corresponds to foreground class for agnostic
             gt_class_cols = torch.arange(box_dim, device=device)
@@ -502,7 +282,21 @@ class FastRCNNOutputs(object):
         loss_box_reg = loss_box_reg / self.gt_classes.numel()
         return loss_box_reg
 
-    def losses(self, is_global=False):
+    def _predict_boxes(self):
+        """
+        Returns:
+            Tensor: A Tensors of predicted class-specific or class-agnostic boxes
+                for all images in a batch. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
+                the number of predicted objects for image i and B is the box dimension (4 or 5)
+        """
+        return self.box2box_transform.apply_deltas(self.pred_proposal_deltas, self.proposals.tensor)
+
+    """
+    A subclass is expected to have the following methods because
+    they are used to query information about the head predictions.
+    """
+
+    def losses(self):
         """
         Compute the default losses for box head in Fast(er) R-CNN,
         with softmax cross entropy loss and smooth L1 loss.
@@ -510,66 +304,35 @@ class FastRCNNOutputs(object):
         Returns:
             A dict of losses (scalar tensors) containing keys "loss_cls" and "loss_box_reg".
         """
-        if self.stage in self.stage_phase_mute:
-            return {}
-        if self.stage in self.stage_phase:
-            out = dict()
-            for name, item in self.softmax_cross_entropy_loss().items():
-                out[name] = item
-            out['loss_box_reg'] = self.smooth_l1_loss()
-            return out
-#                 return {
-#                     "loss_cls": self.softmax_cross_entropy_loss(),
-#                     "loss_box_reg": self.smooth_l1_loss(),
-#                 }
-        else:
-            return {
-                "loss_box_reg": self.smooth_l1_loss(),
-            }
-            
+        return {
+            "loss_cls": self.softmax_cross_entropy_loss(),
+            "loss_box_reg": self.smooth_l1_loss(),
+        }
+
     def predict_boxes(self):
         """
-        Returns:
-            list[Tensor]: A list of Tensors of predicted class-specific or class-agnostic boxes
-                for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
-                the number of predicted objects for image i and B is the box dimension (4 or 5)
+        Deprecated
         """
-        num_pred = len(self.proposals)
-        B = self.proposals.tensor.shape[1]
-        K = self.pred_proposal_deltas.shape[1] // B
-        boxes = self.box2box_transform.apply_deltas(
-            self.pred_proposal_deltas.view(num_pred * K, B),
-            self.proposals.tensor.unsqueeze(1).expand(num_pred, K, B).reshape(-1, B),
-        )
-        return boxes.view(num_pred, K * B).split(self.num_preds_per_image, dim=0)
+        return self._predict_boxes().split(self.num_preds_per_image, dim=0)
 
     def predict_probs(self):
         """
-        Returns:
-            list[Tensor]: A list of Tensors of predicted class probabilities for each image.
-                Element i has shape (Ri, K + 1), where Ri is the number of predicted objects
-                for image i.
+        Deprecated
         """
         probs = F.softmax(self.pred_class_logits, dim=-1)
         return probs.split(self.num_preds_per_image, dim=0)
 
     def inference(self, score_thresh, nms_thresh, topk_per_image):
         """
-        Args:
-            score_thresh (float): same as fast_rcnn_inference.
-            nms_thresh (float): same as fast_rcnn_inference.
-            topk_per_image (int): same as fast_rcnn_inference.
-        Returns:
-            list[Instances]: same as fast_rcnn_inference.
-            list[Tensor]: same as fast_rcnn_inference.
+        Deprecated
         """
         boxes = self.predict_boxes()
         scores = self.predict_probs()
         image_shapes = self.image_shapes
-
         return fast_rcnn_inference(
             boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image
         )
+
 
 class FastRCNNOutputLayers(nn.Module):
     """
@@ -578,113 +341,168 @@ class FastRCNNOutputLayers(nn.Module):
       (2) classification scores
     """
 
-    def __init__(self, input_size, num_classes, cls_agnostic_bbox_reg, box_dim=4):
+    @configurable
+    def __init__(
+        self,
+        input_shape,
+        *,
+        box2box_transform,
+        num_classes,
+        cls_agnostic_bbox_reg=False,
+        smooth_l1_beta=0.0,
+        test_score_thresh=0.0,
+        test_nms_thresh=0.5,
+        test_topk_per_image=100,
+    ):
         """
+        NOTE: this interface is experimental.
+
         Args:
-            input_size (int): channels, or (channels, height, width)
+            input_shape (ShapeSpec): shape of the input feature to this module
+            box2box_transform (Box2BoxTransform or Box2BoxTransformRotated):
             num_classes (int): number of foreground classes
             cls_agnostic_bbox_reg (bool): whether to use class agnostic for bbox regression
-            box_dim (int): the dimension of bounding boxes.
-                Example box dimensions: 4 for regular XYXY boxes and 5 for rotated XYWHA boxes
+            smooth_l1_beta (float): transition point from L1 to L2 loss.
+            test_score_thresh (float): threshold to filter predictions results.
+            test_nms_thresh (float): NMS threshold for prediction results.
+            test_topk_per_image (int): number of top predictions to produce per image.
         """
-        super(FastRCNNOutputLayers, self).__init__()
-        
-        if not isinstance(input_size, int):
-            input_size = np.prod(input_size)
-
+        super().__init__()
+        if isinstance(input_shape, int):  # some backward compatibility
+            input_shape = ShapeSpec(channels=input_shape)
+        input_size = input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
         # The prediction layer for num_classes foreground classes and one background class
         # (hence + 1)
-
+        self.cls_score = Linear(input_size, num_classes + 1)
         num_bbox_reg_classes = 1 if cls_agnostic_bbox_reg else num_classes
-        self.bbox_pred = nn.Linear(input_size, num_bbox_reg_classes * box_dim)
-        nn.init.normal_(self.bbox_pred.weight, std=0.001)
-        nn.init.constant_(self.bbox_pred.bias, 0)
-        
-        self.cls_score = nn.Linear(input_size, num_classes + 1)
+        box_dim = len(box2box_transform.weights)
+        self.bbox_pred = Linear(input_size, num_bbox_reg_classes * box_dim)
+
         nn.init.normal_(self.cls_score.weight, std=0.01)
-        for l in [self.cls_score]:
+        nn.init.normal_(self.bbox_pred.weight, std=0.001)
+        for l in [self.cls_score, self.bbox_pred]:
             nn.init.constant_(l.bias, 0)
 
-    def forward(self, x):
+        self.box2box_transform = box2box_transform
+        self.smooth_l1_beta = smooth_l1_beta
+        self.test_score_thresh = test_score_thresh
+        self.test_nms_thresh = test_nms_thresh
+        self.test_topk_per_image = test_topk_per_image
 
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {
+            "input_shape": input_shape,
+            "box2box_transform": Box2BoxTransform(weights=cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS),
+            # fmt: off
+            "num_classes"           : cfg.MODEL.ROI_HEADS.NUM_CLASSES,
+            "cls_agnostic_bbox_reg" : cfg.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG,
+            "smooth_l1_beta"        : cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA,
+            "test_score_thresh"     : cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST,
+            "test_nms_thresh"       : cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
+            "test_topk_per_image"   : cfg.TEST.DETECTIONS_PER_IMAGE
+            # fmt: on
+        }
+
+    def forward(self, x):
+        """
+        Returns:
+            Tensor: Nx(K+1) scores for each box
+            Tensor: Nx4 or Nx(Kx4) bounding box regression deltas.
+        """
         if x.dim() > 2:
             x = torch.flatten(x, start_dim=1)
         scores = self.cls_score(x)
         proposal_deltas = self.bbox_pred(x)
         return scores, proposal_deltas
 
-class FastRCNNOutputLayers_box(nn.Module):
-    """
-    Two linear layers for predicting Fast R-CNN outputs:
-      (1) proposal-to-detection box regression deltas
-      (2) classification scores
-    """
-
-    def __init__(self, input_size, num_classes, cls_agnostic_bbox_reg, box_dim=4):
+    # TODO: move the implementation to this class.
+    def losses(self, predictions, proposals):
         """
         Args:
-            input_size (int): channels, or (channels, height, width)
-            num_classes (int): number of foreground classes
-            cls_agnostic_bbox_reg (bool): whether to use class agnostic for bbox regression
-            box_dim (int): the dimension of bounding boxes.
-                Example box dimensions: 4 for regular XYXY boxes and 5 for rotated XYWHA boxes
+            predictions: return values of :meth:`forward()`.
+            proposals (list[Instances]): proposals that match the features
+                that were used to compute predictions.
         """
-        super(FastRCNNOutputLayers_box, self).__init__()
-        
-        if not isinstance(input_size, int):
-            input_size = np.prod(input_size)
+        scores, proposal_deltas = predictions
+        return FastRCNNOutputs(
+            self.box2box_transform, scores, proposal_deltas, proposals, self.smooth_l1_beta
+        ).losses()
 
-        # The prediction layer for num_classes foreground classes and one background class
-        # (hence + 1)
-
-        num_bbox_reg_classes = 1 if cls_agnostic_bbox_reg else num_classes
-        self.bbox_pred = nn.Linear(input_size, num_bbox_reg_classes * box_dim)
-        nn.init.normal_(self.bbox_pred.weight, std=0.001)
-        nn.init.constant_(self.bbox_pred.bias, 0)
-            
-
-    def forward(self, x):
-
-        if x.dim() > 2:
-            x = torch.flatten(x, start_dim=1)
-#         scores = self.cls_score(x)
-        proposal_deltas = self.bbox_pred(x)
-        return proposal_deltas
-    
-class FastRCNNOutputLayers_class(nn.Module):
-    """
-    Two linear layers for predicting Fast R-CNN outputs:
-      (1) proposal-to-detection box regression deltas
-      (2) classification scores
-    """
-
-    def __init__(self, input_size, num_classes, cls_agnostic_bbox_reg, box_dim=4):
+    def inference(self, predictions, proposals):
         """
-        Args:
-            input_size (int): channels, or (channels, height, width)
-            num_classes (int): number of foreground classes
-            cls_agnostic_bbox_reg (bool): whether to use class agnostic for bbox regression
-            box_dim (int): the dimension of bounding boxes.
-                Example box dimensions: 4 for regular XYXY boxes and 5 for rotated XYWHA boxes
+        Returns:
+            list[Instances]: same as `fast_rcnn_inference`.
+            list[Tensor]: same as `fast_rcnn_inference`.
         """
-        super(FastRCNNOutputLayers_class, self).__init__()
-        
-        if not isinstance(input_size, int):
-            input_size = np.prod(input_size)
+        boxes = self.predict_boxes(predictions, proposals)
+        scores = self.predict_probs(predictions, proposals)
+        image_shapes = [x.image_size for x in proposals]
+        return fast_rcnn_inference(
+            boxes,
+            scores,
+            image_shapes,
+            self.test_score_thresh,
+            self.test_nms_thresh,
+            self.test_topk_per_image,
+        )
 
-        # The prediction layer for num_classes foreground classes and one background class
-        # (hence + 1)
+    def predict_boxes_for_gt_classes(self, predictions, proposals):
+        """
+        Returns:
+            list[Tensor]: A list of Tensors of predicted boxes for GT classes in case of
+                class-specific box head. Element i of the list has shape (Ri, B), where Ri is
+                the number of predicted objects for image i and B is the box dimension (4 or 5)
+        """
+        if not len(proposals):
+            return []
+        scores, proposal_deltas = predictions
+        proposal_boxes = [p.proposal_boxes for p in proposals]
+        proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
+        N, B = proposal_boxes.shape
+        predict_boxes = self.box2box_transform.apply_deltas(
+            proposal_deltas, proposal_boxes
+        )  # Nx(KxB)
 
+        K = predict_boxes.shape[1] // B
+        if K > 1:
+            gt_classes = torch.cat([p.gt_classes for p in proposals], dim=0)
+            # Some proposals are ignored or have a background class. Their gt_classes
+            # cannot be used as index.
+            gt_classes = gt_classes.clamp_(0, K - 1)
 
-        self.cls_score = nn.Linear(input_size, num_classes + 1)
-        nn.init.normal_(self.cls_score.weight, std=0.01)
-        for l in [self.cls_score]:
-            nn.init.constant_(l.bias, 0)
+            predict_boxes = predict_boxes.view(N, K, B)[
+                torch.arange(N, dtype=torch.long, device=predict_boxes.device), gt_classes
+            ]
+        num_prop_per_image = [len(p) for p in proposals]
+        return predict_boxes.split(num_prop_per_image)
 
-    def forward(self, x):
+    def predict_boxes(self, predictions, proposals):
+        """
+        Returns:
+            list[Tensor]: A list of Tensors of predicted class-specific or class-agnostic boxes
+                for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
+                the number of predicted objects for image i and B is the box dimension (4 or 5)
+        """
+        if not len(proposals):
+            return []
+        _, proposal_deltas = predictions
+        num_prop_per_image = [len(p) for p in proposals]
+        proposal_boxes = [p.proposal_boxes for p in proposals]
+        proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
+        predict_boxes = self.box2box_transform.apply_deltas(
+            proposal_deltas, proposal_boxes
+        )  # Nx(KxB)
+        return predict_boxes.split(num_prop_per_image)
 
-        if x.dim() > 2:
-            x = torch.flatten(x, start_dim=1)
-        scores = self.cls_score(x)
-#         proposal_deltas = self.bbox_pred(x)
-        return scores
+    def predict_probs(self, predictions, proposals):
+        """
+        Returns:
+            list[Tensor]: A list of Tensors of predicted class probabilities for each image.
+                Element i has shape (Ri, K + 1), where Ri is the number of predicted objects
+                for image i.
+        """
+        scores, _ = predictions
+        num_inst_per_image = [len(p) for p in proposals]
+        probs = F.softmax(scores, dim=-1)
+        return probs.split(num_inst_per_image, dim=0)

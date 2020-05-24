@@ -2,6 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
+import itertools
 import logging
 import os
 import tempfile
@@ -15,7 +16,7 @@ from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
-from detectron2.utils.events import EventStorage
+from detectron2.utils.events import EventStorage, EventWriter
 
 from .train_loop import HookBase
 
@@ -91,10 +92,12 @@ class IterationTimer(HookBase):
         """
         self._warmup_iter = warmup_iter
         self._step_timer = Timer()
+        self._start_time = time.perf_counter()
+        self._total_timer = Timer()
 
     def before_train(self):
         self._start_time = time.perf_counter()
-        self._total_timer = Timer()
+        self._total_timer.reset()
         self._total_timer.pause()
 
     def after_train(self):
@@ -150,10 +153,12 @@ class PeriodicWriter(HookBase):
     def __init__(self, writers, period=20):
         """
         Args:
-            writers (list): a list of objects with a "write" method.
+            writers (list[EventWriter]): a list of EventWriter objects
             period (int):
         """
         self._writers = writers
+        for w in writers:
+            assert isinstance(w, EventWriter), w
         self._period = period
 
     def after_step(self):
@@ -162,6 +167,10 @@ class PeriodicWriter(HookBase):
         ):
             for writer in self._writers:
                 writer.write()
+
+    def after_train(self):
+        for writer in self._writers:
+            writer.close()
 
 
 class PeriodicCheckpointer(_PeriodicCheckpointer, HookBase):
@@ -227,6 +236,19 @@ class AutogradProfiler(HookBase):
     """
     A hook which runs `torch.autograd.profiler.profile`.
 
+    Examples:
+
+    .. code-block:: python
+
+        hooks.AutogradProfiler(
+             lambda trainer: trainer.iter > 10 and trainer.iter < 20, self.cfg.OUTPUT_DIR
+        )
+
+    The above example will run the profiler for iteration 10~20 and dump
+    results to ``OUTPUT_DIR``. We did not profile the first few iterations
+    because they are typically slower than the rest.
+    The result files can be loaded in the ``chrome://tracing`` page in chrome browser.
+
     Note:
         When used together with NCCL on older version of GPUs,
         autograd profiler may cause deadlock because it unnecessarily allocates
@@ -259,6 +281,7 @@ class AutogradProfiler(HookBase):
         if self._profiler is None:
             return
         self._profiler.__exit__(None, None, None)
+        PathManager.mkdirs(self._output_dir)
         out_file = os.path.join(
             self._output_dir, "profiler-trace-iter{}.json".format(self.trainer.iter)
         )
@@ -297,31 +320,34 @@ class EvalHook(HookBase):
         self._period = eval_period
         self._func = eval_function
 
+    def _do_eval(self):
+        results = self._func()
+
+        if results:
+            assert isinstance(
+                results, dict
+            ), "Eval function must return a dict. Got {} instead.".format(results)
+
+            flattened_results = flatten_results_dict(results)
+            for k, v in flattened_results.items():
+                try:
+                    v = float(v)
+                except Exception:
+                    raise ValueError(
+                        "[EvalHook] eval_function should return a nested dict of float. "
+                        "Got '{}: {}' instead.".format(k, v)
+                    )
+            self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
+
+        # Evaluation may take different time among workers.
+        # A barrier make them start the next iteration together.
+        comm.synchronize()
+
     def after_step(self):
         next_iter = self.trainer.iter + 1
         is_final = next_iter == self.trainer.max_iter
         if is_final or (self._period > 0 and next_iter % self._period == 0):
-            results = self._func()
-
-            if results:
-                assert isinstance(
-                    results, dict
-                ), "Eval function must return a dict. Got {} instead.".format(results)
-
-                flattened_results = flatten_results_dict(results)
-                for k, v in flattened_results.items():
-                    try:
-                        v = float(v)
-                    except Exception:
-                        raise ValueError(
-                            "[EvalHook] eval_function should return a nested dict of float. "
-                            "Got '{}: {}' instead.".format(k, v)
-                        )
-                self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
-
-            # Evaluation may take different time among workers.
-            # A barrier make them start the next iteration together.
-            comm.synchronize()
+            self._do_eval()
 
     def after_train(self):
         # func is likely a closure that holds reference to the trainer
@@ -384,12 +410,8 @@ class PreciseBN(HookBase):
         if self._data_iter is None:
             self._data_iter = iter(self._data_loader)
 
-        num_iter = 0
-
         def data_loader():
-            nonlocal num_iter
-            while True:
-                num_iter += 1
+            for num_iter in itertools.count(1):
                 if num_iter % 100 == 0:
                     self._logger.info(
                         "Running precise-BN ... {}/{} iterations.".format(num_iter, self._num_iter)

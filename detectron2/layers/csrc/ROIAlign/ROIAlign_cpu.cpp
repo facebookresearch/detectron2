@@ -165,7 +165,7 @@ void ROIAlignForward(
         (sampling_ratio > 0) ? sampling_ratio : ceil(roi_width / pooled_width);
 
     // We do average (integral) pooling inside a bin
-    // When the grid is empty, output zeros.
+    // When the grid is empty, output zeros == 0/1, instead of NaN.
     const T count = std::max(roi_bin_grid_h * roi_bin_grid_w, 1); // e.g. = 4
 
     // we want to precalculate indices and weights shared by all channels,
@@ -286,6 +286,7 @@ inline void add(T* address, const T& val) {
 template <typename T>
 void ROIAlignBackward(
     const int nthreads,
+    // may not be contiguous, and should be indexed using n_stride, etc
     const T* grad_output,
     const T& spatial_scale,
     const int channels,
@@ -426,21 +427,23 @@ at::Tensor ROIAlign_forward_cpu(
   if (output.numel() == 0)
     return output;
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(input.type(), "ROIAlign_forward", [&] {
-    ROIAlignForward<scalar_t>(
-        output_size,
-        input.contiguous().data_ptr<scalar_t>(),
-        spatial_scale,
-        channels,
-        height,
-        width,
-        pooled_height,
-        pooled_width,
-        sampling_ratio,
-        rois.contiguous().data_ptr<scalar_t>(),
-        output.data_ptr<scalar_t>(),
-        aligned);
-  });
+  auto input_ = input.contiguous(), rois_ = rois.contiguous();
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
+      input.scalar_type(), "ROIAlign_forward", [&] {
+        ROIAlignForward<scalar_t>(
+            output_size,
+            input_.data_ptr<scalar_t>(),
+            spatial_scale,
+            channels,
+            height,
+            width,
+            pooled_height,
+            pooled_width,
+            sampling_ratio,
+            rois_.data_ptr<scalar_t>(),
+            output.data_ptr<scalar_t>(),
+            aligned);
+      });
   return output;
 }
 
@@ -478,25 +481,27 @@ at::Tensor ROIAlign_backward_cpu(
   int h_stride = grad.stride(2);
   int w_stride = grad.stride(3);
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(grad.type(), "ROIAlign_forward", [&] {
-    ROIAlignBackward<scalar_t>(
-        grad.numel(),
-        grad.contiguous().data_ptr<scalar_t>(),
-        spatial_scale,
-        channels,
-        height,
-        width,
-        pooled_height,
-        pooled_width,
-        sampling_ratio,
-        grad_input.data_ptr<scalar_t>(),
-        rois.contiguous().data_ptr<scalar_t>(),
-        n_stride,
-        c_stride,
-        h_stride,
-        w_stride,
-        aligned);
-  });
+  auto rois_ = rois.contiguous();
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
+      grad.scalar_type(), "ROIAlign_forward", [&] {
+        ROIAlignBackward<scalar_t>(
+            grad.numel(),
+            grad.data_ptr<scalar_t>(),
+            spatial_scale,
+            channels,
+            height,
+            width,
+            pooled_height,
+            pooled_width,
+            sampling_ratio,
+            grad_input.data_ptr<scalar_t>(),
+            rois_.data_ptr<scalar_t>(),
+            n_stride,
+            c_stride,
+            h_stride,
+            w_stride,
+            aligned);
+      });
   return grad_input;
 }
 

@@ -6,30 +6,25 @@ from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
 
-def batched_nms(boxes, scores, idxs, iou_threshold, boxes_ids=None):
+def batched_nms(
+    boxes: torch.Tensor, scores: torch.Tensor, idxs: torch.Tensor, iou_threshold: float
+):
     """
     Same as torchvision.ops.boxes.batched_nms, but safer.
     """
     assert boxes.shape[-1] == 4
     # TODO may need better strategy.
     # Investigate after having a fully-cuda NMS op.
-#     if len(boxes) < 20000:
-#         return box_ops.batched_nms(boxes, scores, idxs, iou_threshold)
+    if len(boxes) < 40000:
+        return box_ops.batched_nms(boxes, scores, idxs, iou_threshold)
 
     result_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
     for id in torch.unique(idxs).cpu().tolist():
         mask = (idxs == id).nonzero().view(-1)
         keep = nms(boxes[mask], scores[mask], iou_threshold)
         result_mask[mask[keep]] = True
-#     print(result_mask.shape)
     keep = result_mask.nonzero().view(-1)
     keep = keep[scores[keep].argsort(descending=True)]
-#     if boxes_ids is not None:
-#         keep_mask = keep.new_ones(keep.size(), dtype=torch.bool)
-#         for id in torch.unique(boxes_ids[keep]).cpu().tolist():
-#             mask = (boxes_ids[keep] == id).nonzero().view(-1)
-#             keep_mask[mask[2:]] = False
-#         keep = keep[keep_mask]
     return keep
 
 
@@ -144,7 +139,7 @@ def batched_nms_rotated(boxes, scores, idxs, iou_threshold):
         torch.max(boxes[:, 0], boxes[:, 1]) + torch.max(boxes[:, 2], boxes[:, 3]) / 2
     ).max()
     min_coordinate = (
-        torch.min(boxes[:, 0], boxes[:, 1]) - torch.min(boxes[:, 2], boxes[:, 3]) / 2
+        torch.min(boxes[:, 0], boxes[:, 1]) - torch.max(boxes[:, 2], boxes[:, 3]) / 2
     ).min()
     offsets = idxs.to(boxes) * (max_coordinate - min_coordinate + 1)
     boxes_for_nms = boxes.clone()  # avoid modifying the original values in boxes

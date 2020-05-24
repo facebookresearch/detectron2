@@ -1,15 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import os
-
-from fvcore.common.timer import Timer
-from detectron2.structures import BoxMode
 from fvcore.common.file_io import PathManager
-from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.engine import default_argument_parser
+from fvcore.common.timer import Timer
 
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.structures import BoxMode
+
+from .builtin_meta import _get_coco_instances_meta
 from .lvis_v0_5_categories import LVIS_CATEGORIES
-from .lvis_categories_mapper import lvis_cate_mapper, cate_id_list
 
 """
 This file contains functions to parse LVIS-format annotations into dicts in the
@@ -29,7 +28,7 @@ def register_lvis_instances(name, metadata, json_file, image_root):
         name (str): a name that identifies the dataset, e.g. "lvis_v0.5_train".
         metadata (dict): extra metadata associated with this dataset. It can be an empty dict.
         json_file (str): path to the json instance annotation file.
-        image_root (str): directory which contains all the images.
+        image_root (str or path-like): directory which contains all the images.
     """
     DatasetCatalog.register(name, lambda: load_lvis_json(json_file, image_root, name))
     MetadataCatalog.get(name).set(
@@ -37,7 +36,7 @@ def register_lvis_instances(name, metadata, json_file, image_root):
     )
 
 
-def load_lvis_json(json_file, image_root, dataset_name=None, freq_reindex = False):
+def load_lvis_json(json_file, image_root, dataset_name=None):
     """
     Load a json file in LVIS's annotation format.
 
@@ -56,11 +55,10 @@ def load_lvis_json(json_file, image_root, dataset_name=None, freq_reindex = Fals
         1. This function does not read the image files.
            The results do not have the "image" field.
     """
-    args = default_argument_parser().parse_args()
     from lvis import LVIS
 
     json_file = PathManager.get_local_path(json_file)
-    fcr_mapper = lvis_cate_mapper()
+
     timer = Timer()
     lvis_api = LVIS(json_file)
     if timer.seconds() > 1:
@@ -71,7 +69,7 @@ def load_lvis_json(json_file, image_root, dataset_name=None, freq_reindex = Fals
         MetadataCatalog.get(dataset_name).set(**meta)
 
     # sort indices for reproducible results
-    img_ids = sorted(list(lvis_api.imgs.keys()))
+    img_ids = sorted(lvis_api.imgs.keys())
     # imgs is a list of dicts, each looks something like:
     # {'license': 4,
     #  'url': 'http://farm6.staticflickr.com/5454/9413846304_881d5e5c3b_z.jpg',
@@ -106,15 +104,9 @@ def load_lvis_json(json_file, image_root, dataset_name=None, freq_reindex = Fals
     imgs_anns = list(zip(imgs, anns))
 
     logger.info("Loaded {} images in the LVIS format from {}".format(len(imgs_anns), json_file))
-    if args.ann_reindex:
-        logger.info("Note!!! Reindex 1230 classes into f, c, r 3 Classes head")
-    f_id_list, c_id_list, r_id_list, _, _ = cate_id_list()
-    
+
     dataset_dicts = []
-#     test_all = set()
-#     test_f = set()
-#     test_c = set()
-#     test_r = set()
+
     for (img_dict, anno_dict_list) in imgs_anns:
         record = {}
         file_name = img_dict["file_name"]
@@ -138,20 +130,6 @@ def load_lvis_json(json_file, image_root, dataset_name=None, freq_reindex = Fals
             assert anno["image_id"] == image_id
             obj = {"bbox": anno["bbox"], "bbox_mode": BoxMode.XYWH_ABS}
             obj["category_id"] = anno["category_id"] - 1  # Convert 1-indexed to 0-indexed
-            obj["frequency"] = fcr_mapper[anno["category_id"]]
-
-#             logger.info("Note!!! split 1230 classes into f, c, r")
-            if args.ann_reindex:
-                if obj["frequency"] == 0:
-                    obj["category_id"] = f_id_list.index(obj["category_id"]+1)
-#                     test_f.add(obj["category_id"])
-                if obj["frequency"] == 1:
-                    obj["category_id"] = c_id_list.index(obj["category_id"]+1)
-#                     test_c.add(obj["category_id"])
-                if obj["frequency"] == 2:
-                    obj["category_id"] = r_id_list.index(obj["category_id"]+1)
-#                     test_r.add(obj["category_id"])
-
             segm = anno["segmentation"]  # list[list[float]]
             # filter out invalid polygons (< 3 points)
             valid_segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
@@ -163,9 +141,6 @@ def load_lvis_json(json_file, image_root, dataset_name=None, freq_reindex = Fals
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)
-    
-    
-
 
     return dataset_dicts
 
@@ -180,6 +155,8 @@ def get_lvis_instances_meta(dataset_name):
     Returns:
         dict: LVIS metadata with keys: thing_classes
     """
+    if "cocofied" in dataset_name:
+        return _get_coco_instances_meta()
     if "v0.5" in dataset_name:
         return _get_lvis_instances_meta_v0_5()
     # There will be a v1 in the future
@@ -195,7 +172,7 @@ def _get_lvis_instances_meta_v0_5():
         cat_ids
     ), "Category ids are not in [1, #categories], as expected"
     # Ensure that the category list is sorted by id
-    lvis_categories = [k for k in sorted(LVIS_CATEGORIES, key=lambda x: x["id"])]
+    lvis_categories = sorted(LVIS_CATEGORIES, key=lambda x: x["id"])
     thing_classes = [k["synonyms"][0] for k in lvis_categories]
     meta = {"thing_classes": thing_classes}
     return meta

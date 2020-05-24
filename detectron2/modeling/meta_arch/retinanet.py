@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import math
+import numpy as np
 from typing import List
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit, smooth_l1_loss
@@ -8,6 +9,7 @@ from torch import nn
 
 from detectron2.layers import ShapeSpec, batched_nms, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
+from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
 
 from ..anchor_generator import build_anchor_generator
@@ -56,13 +58,11 @@ def permute_all_cls_and_box_to_N_HWA_K_and_concat(box_cls, box_delta, num_classe
 @META_ARCH_REGISTRY.register()
 class RetinaNet(nn.Module):
     """
-    Implement RetinaNet (https://arxiv.org/abs/1708.02002).
+    Implement RetinaNet in :paper:`RetinaNet`.
     """
 
     def __init__(self, cfg):
         super().__init__()
-
-        self.device = torch.device(cfg.MODEL.DEVICE)
 
         # fmt: off
         self.num_classes              = cfg.MODEL.RETINANET.NUM_CLASSES
@@ -76,6 +76,9 @@ class RetinaNet(nn.Module):
         self.topk_candidates          = cfg.MODEL.RETINANET.TOPK_CANDIDATES_TEST
         self.nms_threshold            = cfg.MODEL.RETINANET.NMS_THRESH_TEST
         self.max_detections_per_image = cfg.TEST.DETECTIONS_PER_IMAGE
+        # Vis parameters
+        self.vis_period               = cfg.VIS_PERIOD
+        self.input_format             = cfg.INPUT.FORMAT
         # fmt: on
 
         self.backbone = build_backbone(cfg)
@@ -93,10 +96,59 @@ class RetinaNet(nn.Module):
             allow_low_quality_matches=True,
         )
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-        self.to(self.device)
+        self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1))
+
+        """
+        In Detectron1, loss is normalized by number of foreground samples in the batch.
+        When batch size is 1 per GPU, #foreground has a large variance and
+        using it lead to lower performance. Here we maintain an EMA of #foreground to
+        stabilize the normalizer.
+        """
+        self.loss_normalizer = 100  # initialize with any reasonable #fg that's not too small
+        self.loss_normalizer_momentum = 0.9
+
+    @property
+    def device(self):
+        return self.pixel_mean.device
+
+    def visualize_training(self, batched_inputs, results):
+        """
+        A function used to visualize ground truth images and final network predictions.
+        It shows ground truth bounding boxes on the original image and up to 20
+        predicted object bounding boxes on the original image.
+
+        Args:
+            batched_inputs (list): a list that contains input to the model.
+            results (List[Instances]): a list of #images elements.
+        """
+        from detectron2.utils.visualizer import Visualizer
+
+        assert len(batched_inputs) == len(
+            results
+        ), "Cannot visualize inputs and results of different sizes"
+        storage = get_event_storage()
+        max_boxes = 20
+
+        image_index = 0  # only visualize a single image
+        img = batched_inputs[image_index]["image"].cpu().numpy()
+        assert img.shape[0] == 3, "Images should have 3 channels."
+        if self.input_format == "BGR":
+            img = img[::-1, :, :]
+        img = img.transpose(1, 2, 0)
+        v_gt = Visualizer(img, None)
+        v_gt = v_gt.overlay_instances(boxes=batched_inputs[image_index]["instances"].gt_boxes)
+        anno_img = v_gt.get_image()
+        processed_results = detector_postprocess(results[image_index], img.shape[0], img.shape[1])
+        predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
+
+        v_pred = Visualizer(img, None)
+        v_pred = v_pred.overlay_instances(boxes=predicted_boxes[0:max_boxes])
+        prop_img = v_pred.get_image()
+        vis_img = np.vstack((anno_img, prop_img))
+        vis_img = vis_img.transpose(2, 0, 1)
+        vis_name = f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
+        storage.put_image(vis_name, vis_img)
 
     def forward(self, batched_inputs):
         """
@@ -111,7 +163,7 @@ class RetinaNet(nn.Module):
                 Other information that's included in the original dicts, such as:
 
                 * "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                  See :meth:`postprocess` for details.
         Returns:
             dict[str: Tensor]:
                 mapping from a named loss to a tensor storing the loss. Used during training only.
@@ -134,9 +186,17 @@ class RetinaNet(nn.Module):
 
         if self.training:
             gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
-            return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+            losses = self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+
+            if self.vis_period > 0:
+                storage = get_event_storage()
+                if storage.iter % self.vis_period == 0:
+                    results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
+                    self.visualize_training(batched_inputs, results)
+
+            return losses
         else:
-            results = self.inference(box_cls, box_delta, anchors, images)
+            results = self.inference(box_cls, box_delta, anchors, images.image_sizes)
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
                 results, batched_inputs, images.image_sizes
@@ -158,7 +218,7 @@ class RetinaNet(nn.Module):
                 :meth:`RetinaNetHead.forward`.
 
         Returns:
-            dict[str: Tensor]:
+            dict[str, Tensor]:
                 mapping from a named loss to a scalar tensor
                 storing the loss. Used during training only. The dict keys are:
                 "loss_cls" and "loss_box_reg"
@@ -172,7 +232,12 @@ class RetinaNet(nn.Module):
 
         valid_idxs = gt_classes >= 0
         foreground_idxs = (gt_classes >= 0) & (gt_classes != self.num_classes)
-        num_foreground = foreground_idxs.sum()
+        num_foreground = foreground_idxs.sum().item()
+        get_event_storage().put_scalar("num_foreground", num_foreground)
+        self.loss_normalizer = (
+            self.loss_normalizer_momentum * self.loss_normalizer
+            + (1 - self.loss_normalizer_momentum) * num_foreground
+        )
 
         gt_classes_target = torch.zeros_like(pred_class_logits)
         gt_classes_target[foreground_idxs, gt_classes[foreground_idxs]] = 1
@@ -184,7 +249,7 @@ class RetinaNet(nn.Module):
             alpha=self.focal_loss_alpha,
             gamma=self.focal_loss_gamma,
             reduction="sum",
-        ) / max(1, num_foreground)
+        ) / max(1, self.loss_normalizer)
 
         # regression loss
         loss_box_reg = smooth_l1_loss(
@@ -192,7 +257,7 @@ class RetinaNet(nn.Module):
             gt_anchors_deltas[foreground_idxs],
             beta=self.smooth_l1_loss_beta,
             reduction="sum",
-        ) / max(1, num_foreground)
+        ) / max(1, self.loss_normalizer)
 
         return {"loss_cls": loss_cls, "loss_box_reg": loss_box_reg}
 
@@ -200,17 +265,15 @@ class RetinaNet(nn.Module):
     def get_ground_truth(self, anchors, targets):
         """
         Args:
-            anchors (list[list[Boxes]]): a list of N=#image elements. Each is a
-                list of #feature level Boxes. The Boxes contains anchors of
-                this image on the specific feature level.
+            anchors (list[Boxes]): A list of #feature level Boxes.
+                The Boxes contains anchors of this image on the specific feature level.
             targets (list[Instances]): a list of N `Instances`s. The i-th
                 `Instances` contains the ground-truth per-instance annotations
                 for the i-th input image.  Specify `targets` during training only.
 
         Returns:
             gt_classes (Tensor):
-                An integer tensor of shape (N, R) storing ground-truth
-                labels for each anchor.
+                An integer tensor of shape (N, R) storing ground-truth labels for each anchor.
                 R is the total number of anchors, i.e. the sum of Hi x Wi x A for all levels.
                 Anchors with an IoU with some target higher than the foreground threshold
                 are assigned their corresponding label in the [0, K-1] range.
@@ -226,22 +289,20 @@ class RetinaNet(nn.Module):
         """
         gt_classes = []
         gt_anchors_deltas = []
-        anchors = [Boxes.cat(anchors_i) for anchors_i in anchors]
-        # list[Tensor(R, 4)], one for each image
+        anchors = Boxes.cat(anchors)  # Rx4
 
-        for anchors_per_image, targets_per_image in zip(anchors, targets):
-            match_quality_matrix = pairwise_iou(targets_per_image.gt_boxes, anchors_per_image)
+        for targets_per_image in targets:
+            match_quality_matrix = pairwise_iou(targets_per_image.gt_boxes, anchors)
             gt_matched_idxs, anchor_labels = self.matcher(match_quality_matrix)
 
-            # ground truth box regression
-            matched_gt_boxes = targets_per_image[gt_matched_idxs].gt_boxes
-            gt_anchors_reg_deltas_i = self.box2box_transform.get_deltas(
-                anchors_per_image.tensor, matched_gt_boxes.tensor
-            )
-
-            # ground truth classes
             has_gt = len(targets_per_image) > 0
             if has_gt:
+                # ground truth box regression
+                matched_gt_boxes = targets_per_image.gt_boxes[gt_matched_idxs]
+                gt_anchors_reg_deltas_i = self.box2box_transform.get_deltas(
+                    anchors.tensor, matched_gt_boxes.tensor
+                )
+
                 gt_classes_i = targets_per_image.gt_classes[gt_matched_idxs]
                 # Anchors with label 0 are treated as background.
                 gt_classes_i[anchor_labels == 0] = self.num_classes
@@ -249,37 +310,35 @@ class RetinaNet(nn.Module):
                 gt_classes_i[anchor_labels == -1] = -1
             else:
                 gt_classes_i = torch.zeros_like(gt_matched_idxs) + self.num_classes
+                gt_anchors_reg_deltas_i = torch.zeros_like(anchors.tensor)
 
             gt_classes.append(gt_classes_i)
             gt_anchors_deltas.append(gt_anchors_reg_deltas_i)
 
         return torch.stack(gt_classes), torch.stack(gt_anchors_deltas)
 
-    def inference(self, box_cls, box_delta, anchors, images):
+    def inference(self, box_cls, box_delta, anchors, image_sizes):
         """
         Arguments:
             box_cls, box_delta: Same as the output of :meth:`RetinaNetHead.forward`
-            anchors (list[list[Boxes]]): a list of #images elements. Each is a
-                list of #feature level Boxes. The Boxes contain anchors of this
-                image on the specific feature level.
-            images (ImageList): the input images
+            anchors (list[Boxes]): A list of #feature level Boxes.
+                The Boxes contain anchors of this image on the specific feature level.
+            image_sizes (List[torch.Size]): the input image sizes
 
         Returns:
             results (List[Instances]): a list of #images elements.
         """
-        assert len(anchors) == len(images)
         results = []
 
         box_cls = [permute_to_N_HWA_K(x, self.num_classes) for x in box_cls]
         box_delta = [permute_to_N_HWA_K(x, 4) for x in box_delta]
         # list[Tensor], one per level, each has shape (N, Hi x Wi x A, K or 4)
 
-        for img_idx, anchors_per_image in enumerate(anchors):
-            image_size = images.image_sizes[img_idx]
+        for img_idx, image_size in enumerate(image_sizes):
             box_cls_per_image = [box_cls_per_level[img_idx] for box_cls_per_level in box_cls]
             box_reg_per_image = [box_reg_per_level[img_idx] for box_reg_per_level in box_delta]
             results_per_image = self.inference_single_image(
-                box_cls_per_image, box_reg_per_image, anchors_per_image, tuple(image_size)
+                box_cls_per_image, box_reg_per_image, anchors, tuple(image_size)
             )
             results.append(results_per_image)
         return results
@@ -351,7 +410,7 @@ class RetinaNet(nn.Module):
         Normalize, pad and batch the input images.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         return images
 
@@ -403,7 +462,7 @@ class RetinaNetHead(nn.Module):
                     torch.nn.init.constant_(layer.bias, 0)
 
         # Use prior in model initialization to improve stability
-        bias_value = -math.log((1 - prior_prob) / prior_prob)
+        bias_value = -(math.log((1 - prior_prob) / prior_prob))
         torch.nn.init.constant_(self.cls_score.bias, bias_value)
 
     def forward(self, features):

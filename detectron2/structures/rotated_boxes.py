@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import math
-from typing import Iterator, List, Union
+from typing import Iterator, Union
 import torch
 
-from detectron2.layers import cat
 from detectron2.layers.rotated_boxes import pairwise_iou_rotated
 
 from .boxes import Boxes
@@ -25,7 +24,7 @@ class RotatedBoxes(Boxes):
                 (x_center, y_center, width, height, angle),
                 in which angle is represented in degrees.
                 While there's no strict range restriction for it,
-                the recommended principal range is between (-180, 180] degrees.
+                the recommended principal range is between [-180, 180) degrees.
 
         Assume we have a horizontal box B = (x_center, y_center, width, height),
         where width is along the x-axis and height is along the y-axis.
@@ -214,7 +213,9 @@ class RotatedBoxes(Boxes):
         device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
         tensor = torch.as_tensor(tensor, dtype=torch.float32, device=device)
         if tensor.numel() == 0:
-            tensor = torch.zeros(0, 5, dtype=torch.float32, device=device)
+            # Use reshape, so we don't end up creating a new tensor that does not depend on
+            # the inputs (and consequently confuses jit)
+            tensor = tensor.reshape((0, 5)).to(dtype=torch.float32, device=device)
         assert tensor.dim() == 2 and tensor.size(-1) == 5, tensor.size()
 
         self.tensor = tensor
@@ -244,10 +245,9 @@ class RotatedBoxes(Boxes):
 
     def normalize_angles(self) -> None:
         """
-        Restrict angles to the range of (-180, 180] degrees
+        Restrict angles to the range of [-180, 180) degrees
         """
-        self.tensor[:, 4] = self.tensor[:, 4] % 360
-        self.tensor[:, 4][torch.where(self.tensor[:, 4] > 180)] -= 360
+        self.tensor[:, 4] = (self.tensor[:, 4] + 180.0) % 360.0 - 180.0
 
     def clip(self, box_size: Boxes.BoxSizeType, clip_angle_threshold: float = 1.0) -> None:
         """
@@ -299,7 +299,7 @@ class RotatedBoxes(Boxes):
         self.tensor[idx, 2] = torch.min(self.tensor[idx, 2], x2 - x1)
         self.tensor[idx, 3] = torch.min(self.tensor[idx, 3], y2 - y1)
 
-    def nonempty(self, threshold: int = 0) -> torch.Tensor:
+    def nonempty(self, threshold: float = 0.0) -> torch.Tensor:
         """
         Find boxes that are non-empty.
         A box is considered empty, if either of its side is no larger than threshold.
@@ -451,24 +451,6 @@ class RotatedBoxes(Boxes):
         # For example,
         # when sfx == sfy, angle(new) == atan2(s, c) == angle(old)
         self.tensor[:, 4] = torch.atan2(scale_x * s, scale_y * c) * 180 / math.pi
-
-    @staticmethod
-    def cat(boxes_list: List["RotatedBoxes"]) -> "RotatedBoxes":  # type: ignore
-        """
-        Concatenates a list of RotatedBoxes into a single RotatedBoxes
-
-        Arguments:
-            boxes_list (list[RotatedBoxes])
-
-        Returns:
-            RotatedBoxes: the concatenated RotatedBoxes
-        """
-        assert isinstance(boxes_list, (list, tuple))
-        assert len(boxes_list) > 0
-        assert all(isinstance(box, RotatedBoxes) for box in boxes_list)
-
-        cat_boxes = type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
-        return cat_boxes
 
     @property
     def device(self) -> str:

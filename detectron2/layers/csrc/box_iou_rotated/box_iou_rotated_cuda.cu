@@ -63,33 +63,56 @@ __global__ void box_iou_rotated_cuda_kernel(
 }
 
 at::Tensor box_iou_rotated_cuda(
+    // input must be contiguous
     const at::Tensor& boxes1,
     const at::Tensor& boxes2) {
   using scalar_t = float;
-  AT_ASSERTM(boxes1.type().is_cuda(), "boxes1 must be a CUDA tensor");
-  AT_ASSERTM(boxes2.type().is_cuda(), "boxes2 must be a CUDA tensor");
+  AT_ASSERTM(
+      boxes1.scalar_type() == at::kFloat, "boxes1 must be a float tensor");
+  AT_ASSERTM(
+      boxes2.scalar_type() == at::kFloat, "boxes2 must be a float tensor");
+  AT_ASSERTM(boxes1.is_cuda(), "boxes1 must be a CUDA tensor");
+  AT_ASSERTM(boxes2.is_cuda(), "boxes2 must be a CUDA tensor");
   at::cuda::CUDAGuard device_guard(boxes1.device());
 
-  int num_boxes1 = boxes1.size(0);
-  int num_boxes2 = boxes2.size(0);
+  auto num_boxes1 = boxes1.size(0);
+  auto num_boxes2 = boxes2.size(0);
 
   at::Tensor ious =
       at::empty({num_boxes1 * num_boxes2}, boxes1.options().dtype(at::kFloat));
 
+  bool transpose = false;
   if (num_boxes1 > 0 && num_boxes2 > 0) {
-    const int blocks_x = at::cuda::ATenCeilDiv(num_boxes1, BLOCK_DIM_X);
-    const int blocks_y = at::cuda::ATenCeilDiv(num_boxes2, BLOCK_DIM_Y);
+    scalar_t *data1 = boxes1.data_ptr<scalar_t>(),
+             *data2 = boxes2.data_ptr<scalar_t>();
+
+    if (num_boxes2 > 65535 * BLOCK_DIM_Y) {
+      AT_ASSERTM(
+          num_boxes1 <= 65535 * BLOCK_DIM_Y,
+          "Too many boxes for box_iou_rotated_cuda!");
+      // x dim is allowed to be large, but y dim cannot,
+      // so we transpose the two to avoid "invalid configuration argument"
+      // error. We assume one of them is small. Otherwise the result is hard to
+      // fit in memory anyway.
+      std::swap(num_boxes1, num_boxes2);
+      std::swap(data1, data2);
+      transpose = true;
+    }
+
+    const int blocks_x =
+        at::cuda::ATenCeilDiv(static_cast<int>(num_boxes1), BLOCK_DIM_X);
+    const int blocks_y =
+        at::cuda::ATenCeilDiv(static_cast<int>(num_boxes2), BLOCK_DIM_Y);
 
     dim3 blocks(blocks_x, blocks_y);
     dim3 threads(BLOCK_DIM_X, BLOCK_DIM_Y);
-
     cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
     box_iou_rotated_cuda_kernel<scalar_t><<<blocks, threads, 0, stream>>>(
         num_boxes1,
         num_boxes2,
-        boxes1.data_ptr<scalar_t>(),
-        boxes2.data_ptr<scalar_t>(),
+        data1,
+        data2,
         (scalar_t*)ious.data_ptr<scalar_t>());
 
     AT_CUDA_CHECK(cudaGetLastError());
@@ -97,7 +120,11 @@ at::Tensor box_iou_rotated_cuda(
 
   // reshape from 1d array to 2d array
   auto shape = std::vector<int64_t>{num_boxes1, num_boxes2};
-  return ious.reshape(shape);
+  if (transpose) {
+    return ious.view(shape).t();
+  } else {
+    return ious.view(shape);
+  }
 }
 
 } // namespace detectron2

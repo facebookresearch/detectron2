@@ -348,7 +348,10 @@ at::Tensor ROIAlignRotated_forward_cuda(
   auto output_size = num_rois * pooled_height * pooled_width * channels;
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-  dim3 grid(std::min(at::cuda::ATenCeilDiv(output_size, 512L), 4096L));
+  dim3 grid(std::min(
+      at::cuda::ATenCeilDiv(
+          static_cast<int64_t>(output_size), static_cast<int64_t>(512)),
+      static_cast<int64_t>(4096)));
   dim3 block(512);
 
   if (output.numel() == 0) {
@@ -356,11 +359,12 @@ at::Tensor ROIAlignRotated_forward_cuda(
     return output;
   }
 
+  auto input_ = input.contiguous(), rois_ = rois.contiguous();
   AT_DISPATCH_FLOATING_TYPES(
       input.scalar_type(), "ROIAlignRotated_forward", [&] {
         RoIAlignRotatedForward<scalar_t><<<grid, block, 0, stream>>>(
             output_size,
-            input.contiguous().data_ptr<scalar_t>(),
+            input_.data_ptr<scalar_t>(),
             spatial_scale,
             channels,
             height,
@@ -368,7 +372,7 @@ at::Tensor ROIAlignRotated_forward_cuda(
             pooled_height,
             pooled_width,
             sampling_ratio,
-            rois.contiguous().data_ptr<scalar_t>(),
+            rois_.data_ptr<scalar_t>(),
             output.data_ptr<scalar_t>());
       });
   cudaDeviceSynchronize();
@@ -403,7 +407,10 @@ at::Tensor ROIAlignRotated_backward_cuda(
 
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-  dim3 grid(std::min(at::cuda::ATenCeilDiv(grad.numel(), 512L), 4096L));
+  dim3 grid(std::min(
+      at::cuda::ATenCeilDiv(
+          static_cast<int64_t>(grad.numel()), static_cast<int64_t>(512)),
+      static_cast<int64_t>(4096)));
   dim3 block(512);
 
   // handle possibly empty gradients
@@ -412,11 +419,12 @@ at::Tensor ROIAlignRotated_backward_cuda(
     return grad_input;
   }
 
+  auto grad_ = grad.contiguous(), rois_ = rois.contiguous();
   AT_DISPATCH_FLOATING_TYPES(
       grad.scalar_type(), "ROIAlignRotated_backward", [&] {
         RoIAlignRotatedBackwardFeature<scalar_t><<<grid, block, 0, stream>>>(
             grad.numel(),
-            grad.contiguous().data_ptr<scalar_t>(),
+            grad_.data_ptr<scalar_t>(),
             num_rois,
             spatial_scale,
             channels,
@@ -426,7 +434,7 @@ at::Tensor ROIAlignRotated_backward_cuda(
             pooled_width,
             sampling_ratio,
             grad_input.data_ptr<scalar_t>(),
-            rois.contiguous().data_ptr<scalar_t>());
+            rois_.data_ptr<scalar_t>());
       });
   AT_CUDA_CHECK(cudaGetLastError());
   return grad_input;

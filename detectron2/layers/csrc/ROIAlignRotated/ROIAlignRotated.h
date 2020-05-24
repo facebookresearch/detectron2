@@ -1,6 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 #pragma once
-#include <torch/extension.h>
+#include <torch/types.h>
 
 namespace detectron2 {
 
@@ -54,7 +54,7 @@ inline at::Tensor ROIAlignRotated_forward(
     const int pooled_height,
     const int pooled_width,
     const int sampling_ratio) {
-  if (input.type().is_cuda()) {
+  if (input.is_cuda()) {
 #ifdef WITH_CUDA
     return ROIAlignRotated_forward_cuda(
         input,
@@ -82,7 +82,7 @@ inline at::Tensor ROIAlignRotated_backward(
     const int height,
     const int width,
     const int sampling_ratio) {
-  if (grad.type().is_cuda()) {
+  if (grad.is_cuda()) {
 #ifdef WITH_CUDA
     return ROIAlignRotated_backward_cuda(
         grad,

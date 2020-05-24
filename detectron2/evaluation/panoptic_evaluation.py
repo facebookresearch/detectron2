@@ -42,7 +42,6 @@ class COCOPanopticEvaluator(DatasetEvaluator):
         }
 
         self._predictions_json = os.path.join(output_dir, "predictions.json")
-        self._predictions_dir = os.path.join(output_dir, "predictions")
 
     def reset(self):
         self._predictions = []
@@ -91,14 +90,11 @@ class COCOPanopticEvaluator(DatasetEvaluator):
         if not comm.is_main_process():
             return
 
+        # PanopticApi requires local files
         gt_json = PathManager.get_local_path(self._metadata.panoptic_json)
-        gt_folder = self._metadata.panoptic_root
+        gt_folder = PathManager.get_local_path(self._metadata.panoptic_root)
 
         with tempfile.TemporaryDirectory(prefix="panoptic_eval") as pred_dir:
-            if "://" not in self._predictions_dir:
-                pred_dir = self._predictions_dir
-                os.makedirs(pred_dir, exist_ok=True)
-
             logger.info("Writing all panoptic predictions to {} ...".format(pred_dir))
             for p in self._predictions:
                 with open(os.path.join(pred_dir, p["file_name"]), "wb") as f:

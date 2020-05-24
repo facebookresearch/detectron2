@@ -1,5 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+#include <torch/extension.h>
 #include "ROIAlign/ROIAlign.h"
 #include "ROIAlignRotated/ROIAlignRotated.h"
 #include "box_iou_rotated/box_iou_rotated.h"
@@ -37,6 +38,11 @@ std::string get_compiler_version() {
   std::ostringstream ss;
 #if defined(__GNUC__)
 #ifndef __clang__
+
+#if ((__GNUC__ <= 4) && (__GNUC_MINOR__ <= 8))
+#error "GCC >= 4.9 is required!"
+#endif
+
   { ss << "GCC " << __GNUC__ << "." << __GNUC_MINOR__; }
 #endif
 #endif

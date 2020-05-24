@@ -35,6 +35,9 @@ class DatasetCatalog(object):
             func (callable): a callable which takes no arguments and returns a list of dicts.
         """
         assert callable(func), "You must register a function with `DatasetCatalog.register`!"
+        assert name not in DatasetCatalog._REGISTERED, "Dataset '{}' is already registered!".format(
+            name
+        )
         DatasetCatalog._REGISTERED[name] = func
 
     @staticmethod
@@ -206,3 +209,13 @@ metadata to each split (now called dataset) separately!
         else:
             m = MetadataCatalog._NAME_TO_META[name] = Metadata(name=name)
             return m
+
+    @staticmethod
+    def list():
+        """
+        List all registered metadata.
+
+        Returns:
+            list[str]: keys (names of datasets) of all registered metadata
+        """
+        return list(MetadataCatalog._NAME_TO_META.keys())

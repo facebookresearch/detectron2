@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import functools
+import inspect
 import logging
 from fvcore.common.config import CfgNode as _CfgNode
+from fvcore.common.file_io import PathManager
 
 
 class CfgNode(_CfgNode):
@@ -10,20 +13,18 @@ class CfgNode(_CfgNode):
     The same as `fvcore.common.config.CfgNode`, but different in:
 
     1. Use unsafe yaml loading by default.
-      Note that this may lead to arbitrary code execution: you must not
-      load a config file from untrusted sources before manually inspecting
-      the content of the file.
+       Note that this may lead to arbitrary code execution: you must not
+       load a config file from untrusted sources before manually inspecting
+       the content of the file.
     2. Support config versioning.
-      When attempting to merge an old config, it will convert the old config automatically.
-
+       When attempting to merge an old config, it will convert the old config automatically.
     """
 
     # Note that the default value of allow_unsafe is changed to True
     def merge_from_file(self, cfg_filename: str, allow_unsafe: bool = True) -> None:
+        assert PathManager.isfile(cfg_filename), f"Config file '{cfg_filename}' does not exist!"
         loaded_cfg = _CfgNode.load_yaml_with_base(cfg_filename, allow_unsafe=allow_unsafe)
         loaded_cfg = type(self)(loaded_cfg)
-#         ###### _immutable: ON
-#         loaded_cfg.defrost()
 
         # defaults.py needs to import CfgNode
         from .defaults import _C
@@ -31,7 +32,7 @@ class CfgNode(_CfgNode):
         latest_ver = _C.VERSION
         assert (
             latest_ver == self.VERSION
-        ), "CfgNode.merge_from_file is only allowed on a config of latest version!"
+        ), "CfgNode.merge_from_file is only allowed on a config object of latest version!"
 
         logger = logging.getLogger(__name__)
 
@@ -63,6 +64,14 @@ class CfgNode(_CfgNode):
             self.clear()
             self.update(new_config)
 
+    def dump(self, *args, **kwargs):
+        """
+        Returns:
+            str: a yaml string representation of the config
+        """
+        # to make it show up in docs
+        return super().dump(*args, **kwargs)
+
 
 global_cfg = CfgNode()
 
@@ -79,7 +88,6 @@ def get_cfg() -> CfgNode:
     return _C.clone()
 
 
-# +
 def set_global_cfg(cfg: CfgNode) -> None:
     """
     Let the global config point to the given cfg.
@@ -99,21 +107,27 @@ def set_global_cfg(cfg: CfgNode) -> None:
     global global_cfg
     global_cfg.clear()
     global_cfg.update(cfg)
-    
+
+
 def configurable(init_func):
     """
     Decorate a class's __init__ method so that it can be called with a CfgNode
     object using the class's from_config classmethod.
+
     Examples:
+
     .. code-block:: python
+
         class A:
             @configurable
             def __init__(self, a, b=2, c=3):
                 pass
+
             @classmethod
             def from_config(cls, cfg):
                 # Returns kwargs to be passed to __init__
                 return {"a": cfg.A, "b": cfg.B}
+
         a1 = A(a=1, b=2)  # regular construction
         a2 = A(cfg)       # construct with a cfg
         a3 = A(cfg, b=3, c=4)  # construct with extra overwrite
@@ -140,10 +154,12 @@ def configurable(init_func):
             init_func(self, *args, **kwargs)
 
     return wrapped
-    
+
+
 def _get_args_from_config(from_config_func, *args, **kwargs):
     """
     Use `from_config` to obtain explicit arguments.
+
     Returns:
         dict: arguments to be used for cls.__init__
     """

@@ -3,10 +3,18 @@
 # File: transform.py
 
 import numpy as np
+import torch
+import torch.nn.functional as F
 from fvcore.transforms.transform import HFlipTransform, NoOpTransform, Transform
 from PIL import Image
 
-__all__ = ["ExtentTransform", "ResizeTransform"]
+try:
+    import cv2  # noqa
+except ImportError:
+    # OpenCV is an optional dependency at the moment
+    pass
+
+__all__ = ["ExtentTransform", "ResizeTransform", "RotationTransform"]
 
 
 class ExtentTransform(Transform):
@@ -65,23 +73,40 @@ class ResizeTransform(Transform):
     Resize the image to a target size.
     """
 
-    def __init__(self, h, w, new_h, new_w, interp):
+    def __init__(self, h, w, new_h, new_w, interp=None):
         """
         Args:
             h, w (int): original image size
             new_h, new_w (int): new image size
-            interp: PIL interpolation methods
+            interp: PIL interpolation methods, defaults to bilinear.
         """
         # TODO decide on PIL vs opencv
         super().__init__()
+        if interp is None:
+            interp = Image.BILINEAR
         self._set_attributes(locals())
 
     def apply_image(self, img, interp=None):
         assert img.shape[:2] == (self.h, self.w)
-        pil_image = Image.fromarray(img)
-        interp_method = interp if interp is not None else self.interp
-        pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
-        ret = np.asarray(pil_image)
+        assert len(img.shape) <= 4
+
+        if img.dtype == np.uint8:
+            pil_image = Image.fromarray(img)
+            interp_method = interp if interp is not None else self.interp
+            pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
+            ret = np.asarray(pil_image)
+        else:
+            # PIL only supports uint8
+            img = torch.from_numpy(img)
+            shape = list(img.shape)
+            shape_4d = shape[:2] + [1] * (4 - len(shape)) + shape[2:]
+            img = img.view(shape_4d).permute(2, 3, 0, 1)  # hw(c) -> nchw
+            _PIL_RESIZE_TO_INTERPOLATE_MODE = {Image.BILINEAR: "bilinear", Image.BICUBIC: "bicubic"}
+            mode = _PIL_RESIZE_TO_INTERPOLATE_MODE[self.interp]
+            img = F.interpolate(img, (self.new_h, self.new_w), mode=mode, align_corners=False)
+            shape[:2] = (self.new_h, self.new_w)
+            ret = img.permute(2, 3, 0, 1).view(shape).numpy()  # nchw -> hw(c)
+
         return ret
 
     def apply_coords(self, coords):
@@ -92,6 +117,83 @@ class ResizeTransform(Transform):
     def apply_segmentation(self, segmentation):
         segmentation = self.apply_image(segmentation, interp=Image.NEAREST)
         return segmentation
+
+    def inverse(self):
+        return ResizeTransform(self.new_h, self.new_w, self.h, self.w, self.interp)
+
+
+class RotationTransform(Transform):
+    """
+    This method returns a copy of this image, rotated the given
+    number of degrees counter clockwise around its center.
+    """
+
+    def __init__(self, h, w, angle, expand=True, center=None, interp=None):
+        """
+        Args:
+            h, w (int): original image size
+            angle (float): degrees for rotation
+            expand (bool): choose if the image should be resized to fit the whole
+                rotated image (default), or simply cropped
+            center (tuple (width, height)): coordinates of the rotation center
+                if left to None, the center will be fit to the center of each image
+                center has no effect if expand=True because it only affects shifting
+            interp: cv2 interpolation method, default cv2.INTER_LINEAR
+        """
+        super().__init__()
+        image_center = np.array((w / 2, h / 2))
+        if center is None:
+            center = image_center
+        if interp is None:
+            interp = cv2.INTER_LINEAR
+        abs_cos, abs_sin = abs(np.cos(np.deg2rad(angle))), abs(np.sin(np.deg2rad(angle)))
+        if expand:
+            # find the new width and height bounds
+            bound_w, bound_h = np.rint(
+                [h * abs_sin + w * abs_cos, h * abs_cos + w * abs_sin]
+            ).astype(int)
+        else:
+            bound_w, bound_h = w, h
+
+        self._set_attributes(locals())
+        self.rm_coords = self.create_rotation_matrix()
+        # Needed because of this problem https://github.com/opencv/opencv/issues/11784
+        self.rm_image = self.create_rotation_matrix(offset=-0.5)
+
+    def apply_image(self, img, interp=None):
+        """
+        img should be a numpy array, formatted as Height * Width * Nchannels
+        """
+        if len(img) == 0 or self.angle % 360 == 0:
+            return img
+        assert img.shape[:2] == (self.h, self.w)
+        interp = interp if interp is not None else self.interp
+        return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp)
+
+    def apply_coords(self, coords):
+        """
+        coords should be a N * 2 array-like, containing N couples of (x, y) points
+        """
+        coords = np.asarray(coords, dtype=float)
+        if len(coords) == 0 or self.angle % 360 == 0:
+            return coords
+        return cv2.transform(coords[:, np.newaxis, :], self.rm_coords)[:, 0, :]
+
+    def apply_segmentation(self, segmentation):
+        segmentation = self.apply_image(segmentation, interp=cv2.INTER_NEAREST)
+        return segmentation
+
+    def create_rotation_matrix(self, offset=0):
+        center = (self.center[0] + offset, self.center[1] + offset)
+        rm = cv2.getRotationMatrix2D(tuple(center), self.angle, 1)
+        if self.expand:
+            # Find the coordinates of the center of rotation in the new image
+            # The only point for which we know the future coordinates is the center of the image
+            rot_im_center = cv2.transform(self.image_center[None, None, :] + offset, rm)[0, 0, :]
+            new_center = np.array([self.bound_w / 2, self.bound_h / 2]) + offset - rot_im_center
+            # shift the rotation center to the new coordinates
+            rm[:, 2] += new_center
+        return rm
 
 
 def HFlip_rotated_box(transform, rotated_boxes):

@@ -3,11 +3,9 @@ import copy
 import itertools
 import json
 import logging
-import numpy as np
 import os
 import pickle
 from collections import OrderedDict
-import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
 
@@ -15,9 +13,8 @@ import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.logger import create_small_table
-from detectron2.data.datasets.lvis_categories_mapper import cate_id_list
 
-from .coco_evaluation import instances_to_json
+from .coco_evaluation import instances_to_coco_json
 from .evaluator import DatasetEvaluator
 
 
@@ -32,28 +29,22 @@ class LVISEvaluator(DatasetEvaluator):
         Args:
             dataset_name (str): name of the dataset to be evaluated.
                 It must have the following corresponding metadata:
-                    "json_file": the path to the LVIS format annotation
+                "json_file": the path to the LVIS format annotation
             cfg (CfgNode): config instance
             distributed (True): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
             output_dir (str): optional, an output directory to dump results.
         """
         from lvis import LVIS
-        self._logger = logging.getLogger(__name__)
-        
-        self.demapper = False
-        if self.demapper:
-            self._logger.info("Using demapper for frequent dat ...")
-            self.mapper = cate_id_list()[0]
-            print(self.mapper)
+
         self._tasks = self._tasks_from_config(cfg)
         self._distributed = distributed
         self._output_dir = output_dir
 
         self._cpu_device = torch.device("cpu")
+        self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
-
         json_file = PathManager.get_local_path(self._metadata.json_file)
         self._lvis_api = LVIS(json_file)
         # Test set json files do not contain annotations (evaluation must be
@@ -62,7 +53,6 @@ class LVISEvaluator(DatasetEvaluator):
 
     def reset(self):
         self._predictions = []
-        self._lvis_results = []
 
     def _tasks_from_config(self, cfg):
         """
@@ -86,27 +76,9 @@ class LVISEvaluator(DatasetEvaluator):
         for input, output in zip(inputs, outputs):
             prediction = {"image_id": input["image_id"]}
 
-            # TODO this is ugly
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-
-                if instances.has("pred_masks"):
-                    # use RLE to encode the masks, because they are too large and takes memory
-                    # since this evaluator stores outputs of the entire dataset
-                    rles = [
-                        mask_util.encode(np.array(mask[:, :, None], order="F", dtype="uint8"))[0]
-                        for mask in instances.pred_masks
-                    ]
-                    for rle in rles:
-                        # "counts" is an array encoded by mask_util as a byte-stream. Python3's
-                        # json writer which always produces strings cannot serialize a bytestream
-                        # unless you decode it. Thankfully, utf-8 works out (which is also what
-                        # the pycocotools/_mask.pyx does).
-                        rle["counts"] = rle["counts"].decode("utf-8")
-                    instances.pred_masks_rle = rles
-                    instances.remove("pred_masks")
-
-                prediction["instances"] = instances_to_json(instances, input["image_id"])
+                prediction["instances"] = instances_to_coco_json(instances, input["image_id"])
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             self._predictions.append(prediction)
@@ -114,13 +86,15 @@ class LVISEvaluator(DatasetEvaluator):
     def evaluate(self):
         if self._distributed:
             comm.synchronize()
-            self._predictions = comm.gather(self._predictions, dst=0)
-            self._predictions = list(itertools.chain(*self._predictions))
+            predictions = comm.gather(self._predictions, dst=0)
+            predictions = list(itertools.chain(*predictions))
 
             if not comm.is_main_process():
                 return
+        else:
+            predictions = self._predictions
 
-        if len(self._predictions) == 0:
+        if len(predictions) == 0:
             self._logger.warning("[LVISEvaluator] Did not receive valid predictions.")
             return {}
 
@@ -128,39 +102,45 @@ class LVISEvaluator(DatasetEvaluator):
             PathManager.mkdirs(self._output_dir)
             file_path = os.path.join(self._output_dir, "instances_predictions.pth")
             with PathManager.open(file_path, "wb") as f:
-                torch.save(self._predictions, f)
+                torch.save(predictions, f)
 
         self._results = OrderedDict()
-        if "proposals" in self._predictions[0]:
-            self._eval_box_proposals()
-        if "instances" in self._predictions[0]:
-            self._eval_predictions(set(self._tasks))
+        if "proposals" in predictions[0]:
+            self._eval_box_proposals(predictions)
+        if "instances" in predictions[0]:
+            self._eval_predictions(set(self._tasks), predictions)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
-    def _eval_predictions(self, tasks):
+    def _eval_predictions(self, tasks, predictions):
         """
-        Evaluate self._predictions on the given tasks.
+        Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
+
+        Args:
+            predictions (list[dict]): list of outputs from the model
         """
         self._logger.info("Preparing results in the LVIS format ...")
-        self._lvis_results = list(itertools.chain(*[x["instances"] for x in self._predictions]))
+        lvis_results = list(itertools.chain(*[x["instances"] for x in predictions]))
 
-        if self.demapper:
-            self._logger.info("Using Demapper ON!")
-            for i, ann in enumerate(self._lvis_results):
-                tmp_cat_id = self.mapper[ann['category_id']] - 1
-                self._lvis_results[i]['category_id'] = tmp_cat_id
-            
-        # unmap the category ids for LVIS (from 0-indexed to 1-indexed)
-        for result in self._lvis_results:
-            result["category_id"] += 1
+        # LVIS evaluator can be used to evaluate results for COCO dataset categories.
+        # In this case `_metadata` variable will have a field with COCO-specific category mapping.
+        if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
+            reverse_id_mapping = {
+                v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
+            }
+            for result in lvis_results:
+                result["category_id"] = reverse_id_mapping[result["category_id"]]
+        else:
+            # unmap the category ids for LVIS (from 0-indexed to 1-indexed)
+            for result in lvis_results:
+                result["category_id"] += 1
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "lvis_instances_results.json")
             self._logger.info("Saving results to {}".format(file_path))
             with PathManager.open(file_path, "w") as f:
-                f.write(json.dumps(self._lvis_results))
+                f.write(json.dumps(lvis_results))
                 f.flush()
 
         if not self._do_evaluation:
@@ -170,16 +150,13 @@ class LVISEvaluator(DatasetEvaluator):
         self._logger.info("Evaluating predictions ...")
         for task in sorted(tasks):
             res = _evaluate_predictions_on_lvis(
-                self._lvis_api,
-                self._lvis_results,
-                task,
-                class_names=self._metadata.get("thing_classes"),
+                self._lvis_api, lvis_results, task, class_names=self._metadata.get("thing_classes")
             )
             self._results[task] = res
 
-    def _eval_box_proposals(self):
+    def _eval_box_proposals(self, predictions):
         """
-        Evaluate the box proposals in self._predictions.
+        Evaluate the box proposals in predictions.
         Fill self._results with the metrics for "box_proposals" task.
         """
         if self._output_dir:
@@ -187,7 +164,7 @@ class LVISEvaluator(DatasetEvaluator):
             # Predicted box_proposals are in XYXY_ABS mode.
             bbox_mode = BoxMode.XYXY_ABS.value
             ids, boxes, objectness_logits = [], [], []
-            for prediction in self._predictions:
+            for prediction in predictions:
                 ids.append(prediction["image_id"])
                 boxes.append(prediction["proposals"].proposal_boxes.tensor.numpy())
                 objectness_logits.append(prediction["proposals"].objectness_logits.numpy())
@@ -210,9 +187,7 @@ class LVISEvaluator(DatasetEvaluator):
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
         for limit in [100, 1000]:
             for area, suffix in areas.items():
-                stats = _evaluate_box_proposals(
-                    self._predictions, self._lvis_api, area=area, limit=limit
-                )
+                stats = _evaluate_box_proposals(predictions, self._lvis_api, area=area, limit=limit)
                 key = "AR{}@{:d}".format(suffix, limit)
                 res[key] = float(stats["ar"].item() * 100)
         self._logger.info("Proposal metrics: \n" + create_small_table(res))
@@ -307,7 +282,9 @@ def _evaluate_box_proposals(dataset_predictions, lvis_api, thresholds=None, area
 
         # append recorded iou coverage level
         gt_overlaps.append(_gt_overlaps)
-    gt_overlaps = torch.cat(gt_overlaps, dim=0)
+    gt_overlaps = (
+        torch.cat(gt_overlaps, dim=0) if len(gt_overlaps) else torch.zeros(0, dtype=torch.float32)
+    )
     gt_overlaps, _ = torch.sort(gt_overlaps)
 
     if thresholds is None:
@@ -347,8 +324,8 @@ def _evaluate_predictions_on_lvis(lvis_gt, lvis_results, iou_type, class_names=N
     logger = logging.getLogger(__name__)
 
     if len(lvis_results) == 0:  # TODO: check if needed
-        logger.warn("No predictions from the model! Set scores to -1")
-        return {metric: -1 for metric in metrics}
+        logger.warn("No predictions from the model!")
+        return {metric: float("nan") for metric in metrics}
 
     if iou_type == "segm":
         lvis_results = copy.deepcopy(lvis_results)

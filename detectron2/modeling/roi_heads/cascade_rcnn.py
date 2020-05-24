@@ -1,8 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+from typing import List
 import torch
 from torch import nn
 from torch.autograd.function import Function
 
+from detectron2.config import configurable
 from detectron2.layers import ShapeSpec
 from detectron2.structures import Boxes, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
@@ -11,7 +13,7 @@ from ..box_regression import Box2BoxTransform
 from ..matcher import Matcher
 from ..poolers import ROIPooler
 from .box_head import build_box_head
-from .fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs, fast_rcnn_inference
+from .fast_rcnn import FastRCNNOutputLayers, fast_rcnn_inference
 from .roi_heads import ROI_HEADS_REGISTRY, StandardROIHeads
 
 
@@ -28,27 +30,81 @@ class _ScaleGradient(Function):
 
 @ROI_HEADS_REGISTRY.register()
 class CascadeROIHeads(StandardROIHeads):
-    def _init_box_head(self, cfg):
+    """
+    Implement :paper:`Cascade R-CNN`.
+    """
+
+    @configurable
+    def __init__(
+        self,
+        *,
+        box_in_features: List[str],
+        box_pooler: ROIPooler,
+        box_heads: List[nn.Module],
+        box_predictors: List[nn.Module],
+        proposal_matchers: List[Matcher],
+        **kwargs,
+    ):
+        """
+        NOTE: this interface is experimental.
+
+        Args:
+            box_pooler (ROIPooler): pooler that extracts region features from given boxes
+            box_heads (list[nn.Module]): box head for each cascade stage
+            box_predictors (list[nn.Module]): box predictor for each cascade stage
+            proposal_matchers (list[Matcher]): matcher with different IoU thresholds to
+                match boxes with ground truth for each stage. The first matcher matches
+                RPN proposals with ground truth, the other matchers use boxes predicted
+                by the previous stage as proposals and match them with ground truth.
+        """
+        assert "proposal_matcher" not in kwargs, (
+            "CascadeROIHeads takes 'proposal_matchers=' for each stage instead "
+            "of one 'proposal_matcher='."
+        )
+        # The first matcher matches RPN proposals with ground truth, done in the base class
+        kwargs["proposal_matcher"] = proposal_matchers[0]
+        num_stages = self.num_cascade_stages = len(box_heads)
+        box_heads = nn.ModuleList(box_heads)
+        box_predictors = nn.ModuleList(box_predictors)
+        assert len(box_predictors) == num_stages, f"{len(box_predictors)} != {num_stages}!"
+        assert len(proposal_matchers) == num_stages, f"{len(proposal_matchers)} != {num_stages}!"
+        super().__init__(
+            box_in_features=box_in_features,
+            box_pooler=box_pooler,
+            box_head=box_heads,
+            box_predictor=box_predictors,
+            **kwargs,
+        )
+        self.proposal_matchers = proposal_matchers
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        ret = super().from_config(cfg, input_shape)
+        ret.pop("proposal_matcher")
+        return ret
+
+    @classmethod
+    def _init_box_head(cls, cfg, input_shape):
         # fmt: off
-        
+        in_features              = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales            = tuple(1.0 / self.feature_strides[k] for k in self.in_features)
+        pooler_scales            = tuple(1.0 / input_shape[k].stride for k in in_features)
         sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         cascade_bbox_reg_weights = cfg.MODEL.ROI_BOX_CASCADE_HEAD.BBOX_REG_WEIGHTS
         cascade_ious             = cfg.MODEL.ROI_BOX_CASCADE_HEAD.IOUS
-        self.num_cascade_stages  = len(cascade_ious)
-        assert len(cascade_bbox_reg_weights) == self.num_cascade_stages
+        assert len(cascade_bbox_reg_weights) == len(cascade_ious)
         assert cfg.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG,  \
             "CascadeROIHeads only support class-agnostic regression now!"
         assert cascade_ious[0] == cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS[0]
         # fmt: on
-        in_channels = [self.feature_channels[f] for f in self.in_features]
+
+        in_channels = [input_shape[f].channels for f in in_features]
         # Check all channel counts are equal
         assert len(set(in_channels)) == 1, in_channels
         in_channels = in_channels[0]
 
-        self.box_pooler = ROIPooler(
+        box_pooler = ROIPooler(
             output_size=pooler_resolution,
             scales=pooler_scales,
             sampling_ratio=sampling_ratio,
@@ -58,91 +114,94 @@ class CascadeROIHeads(StandardROIHeads):
             channels=in_channels, width=pooler_resolution, height=pooler_resolution
         )
 
-        self.box_head = nn.ModuleList()
-        self.box_predictor = nn.ModuleList()
-        self.box2box_transform = []
-        self.proposal_matchers = []
-        for k in range(self.num_cascade_stages):
+        box_heads, box_predictors, proposal_matchers = [], [], []
+        for match_iou, bbox_reg_weights in zip(cascade_ious, cascade_bbox_reg_weights):
             box_head = build_box_head(cfg, pooled_shape)
-            self.box_head.append(box_head)
-            self.box_predictor.append(
+            box_heads.append(box_head)
+            box_predictors.append(
                 FastRCNNOutputLayers(
-                    box_head.output_size, self.num_classes, cls_agnostic_bbox_reg=True
+                    cfg,
+                    box_head.output_shape,
+                    box2box_transform=Box2BoxTransform(weights=bbox_reg_weights),
                 )
             )
-            self.box2box_transform.append(Box2BoxTransform(weights=cascade_bbox_reg_weights[k]))
-
-            if k == 0:
-                # The first matching is done by the matcher of ROIHeads (self.proposal_matcher).
-                self.proposal_matchers.append(None)
-            else:
-                self.proposal_matchers.append(
-                    Matcher([cascade_ious[k]], [0, 1], allow_low_quality_matches=False)
-                )
+            proposal_matchers.append(Matcher([match_iou], [0, 1], allow_low_quality_matches=False))
+        return {
+            "box_in_features": in_features,
+            "box_pooler": box_pooler,
+            "box_heads": box_heads,
+            "box_predictors": box_predictors,
+            "proposal_matchers": proposal_matchers,
+        }
 
     def forward(self, images, features, proposals, targets=None):
-
         del images
         if self.training:
             proposals = self.label_and_sample_proposals(proposals, targets)
 
-        features_list = [features[f] for f in self.in_features]
-
         if self.training:
             # Need targets to box head
-            losses = self._forward_box(features_list, proposals, targets)
-            losses.update(self._forward_mask(features_list, proposals))
-            losses.update(self._forward_keypoint(features_list, proposals))
+            losses = self._forward_box(features, proposals, targets)
+            losses.update(self._forward_mask(features, proposals))
+            losses.update(self._forward_keypoint(features, proposals))
             return proposals, losses
         else:
-            pred_instances = self._forward_box(features_list, proposals)
+            pred_instances = self._forward_box(features, proposals)
             pred_instances = self.forward_with_given_boxes(features, pred_instances)
             return pred_instances, {}
 
     def _forward_box(self, features, proposals, targets=None):
-        head_outputs = []
+        """
+        Args:
+            features, targets: the same as in
+                Same as in :meth:`ROIHeads.forward`.
+            proposals (list[Instances]): the per-image object proposals with
+                their matching ground truth.
+                Each has fields "proposal_boxes", and "objectness_logits",
+                "gt_classes", "gt_boxes".
+        """
+        features = [features[f] for f in self.box_in_features]
+        head_outputs = []  # (predictor, predictions, proposals)
+        prev_pred_boxes = None
         image_sizes = [x.image_size for x in proposals]
         for k in range(self.num_cascade_stages):
-            
             if k > 0:
-                # The output boxes of the previous stage are the input proposals of the next stage
-                proposals = self._create_proposals_from_boxes(
-                    head_outputs[-1].predict_boxes(), image_sizes
-                )
+                # The output boxes of the previous stage are used to create the input
+                # proposals of the next stage.
+                proposals = self._create_proposals_from_boxes(prev_pred_boxes, image_sizes)
                 if self.training:
                     proposals = self._match_and_label_boxes(proposals, k, targets)
-            head_outputs.append(self._run_stage(features, proposals, k))
+            predictions = self._run_stage(features, proposals, k)
+            prev_pred_boxes = self.box_predictor[k].predict_boxes(predictions, proposals)
+            head_outputs.append((self.box_predictor[k], predictions, proposals))
 
         if self.training:
             losses = {}
             storage = get_event_storage()
-            for stage, output in enumerate(head_outputs):
+            for stage, (predictor, predictions, proposals) in enumerate(head_outputs):
                 with storage.name_scope("stage{}".format(stage)):
-                    stage_losses = output.losses()
+                    stage_losses = predictor.losses(predictions, proposals)
                 losses.update({k + "_stage{}".format(stage): v for k, v in stage_losses.items()})
             return losses
         else:
             # Each is a list[Tensor] of length #image. Each tensor is Ri x (K+1)
-            scores_per_stage = [h.predict_probs() for h in head_outputs]
+            scores_per_stage = [h[0].predict_probs(h[1], h[2]) for h in head_outputs]
 
             # Average the scores across heads
-#             scores = [
-#                 sum(list(scores_per_image)) * (1.0 / self.num_cascade_stages)
-#                 for scores_per_image in zip(*scores_per_stage)
-#             ]
             scores = [
-                scores_per_image[2]
+                sum(list(scores_per_image)) * (1.0 / self.num_cascade_stages)
                 for scores_per_image in zip(*scores_per_stage)
             ]
             # Use the boxes of the last head
-            boxes = head_outputs[-1].predict_boxes()
+            predictor, predictions, proposals = head_outputs[-1]
+            boxes = predictor.predict_boxes(predictions, proposals)
             pred_instances, _ = fast_rcnn_inference(
                 boxes,
                 scores,
                 image_sizes,
-                self.test_score_thresh,
-                self.test_nms_thresh,
-                self.test_detections_per_img,
+                predictor.test_score_thresh,
+                predictor.test_nms_thresh,
+                predictor.test_topk_per_image,
             )
             return pred_instances
 
@@ -204,7 +263,7 @@ class CascadeROIHeads(StandardROIHeads):
             stage (int): the current stage
 
         Returns:
-            FastRCNNOutputs: the output of this stage
+            Same output as `FastRCNNOutputLayers.forward()`.
         """
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         # The original implementation averages the losses among heads,
@@ -213,17 +272,7 @@ class CascadeROIHeads(StandardROIHeads):
         # but scale down the gradients on features.
         box_features = _ScaleGradient.apply(box_features, 1.0 / self.num_cascade_stages)
         box_features = self.box_head[stage](box_features)
-        pred_class_logits, pred_proposal_deltas = self.box_predictor[stage](box_features)
-        del box_features
-
-        outputs = FastRCNNOutputs(
-            self.box2box_transform[stage],
-            pred_class_logits,
-            pred_proposal_deltas,
-            proposals,
-            self.smooth_l1_beta,
-        )
-        return outputs
+        return self.box_predictor[stage](box_features)
 
     def _create_proposals_from_boxes(self, boxes, image_sizes):
         """

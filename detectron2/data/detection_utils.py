@@ -7,9 +7,10 @@ typical object detection data pipeline.
 """
 import logging
 import numpy as np
+import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
-from PIL import Image
+from PIL import Image, ImageOps
 
 from detectron2.structures import (
     BitMasks,
@@ -19,6 +20,7 @@ from detectron2.structures import (
     Keypoints,
     PolygonMasks,
     RotatedBoxes,
+    polygons_to_bitmask,
 )
 
 from . import transforms as T
@@ -31,34 +33,91 @@ class SizeMismatchError(ValueError):
     """
 
 
+# https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
+_M_RGB2YUV = [[0.299, 0.587, 0.114], [-0.14713, -0.28886, 0.436], [0.615, -0.51499, -0.10001]]
+_M_YUV2RGB = [[1.0, 0.0, 1.13983], [1.0, -0.39465, -0.58060], [1.0, 2.03211, 0.0]]
+
+
+def convert_PIL_to_numpy(image, format):
+    """
+    Convert PIL image to numpy array of target format.
+
+    Args:
+        image (PIL.Image): a PIL image
+        format (str): the format of output image
+
+    Returns:
+        (np.ndarray): also see `read_image`
+    """
+    if format is not None:
+        # PIL only supports RGB, so convert to RGB and flip channels over below
+        conversion_format = format
+        if format in ["BGR", "YUV-BT.601"]:
+            conversion_format = "RGB"
+        image = image.convert(conversion_format)
+    image = np.asarray(image)
+    # PIL squeezes out the channel dimension for "L", so make it HWC
+    if format == "L":
+        image = np.expand_dims(image, -1)
+
+    # handle formats not supported by PIL
+    elif format == "BGR":
+        # flip channels if needed
+        image = image[:, :, ::-1]
+    elif format == "YUV-BT.601":
+        image = image / 255.0
+        image = np.dot(image, np.array(_M_RGB2YUV).T)
+
+    return image
+
+
+def convert_image_to_rgb(image, format):
+    """
+    Convert numpy image from given format to RGB.
+
+    Args:
+        image (np.ndarray): a numpy image
+        format (str): the format of input image, also see `read_image`
+
+    Returns:
+        (np.ndarray): HWC RGB image in 0-255 range, can be either float or uint8
+    """
+    if format == "BGR":
+        image = image[:, :, [2, 1, 0]]
+    elif format == "YUV-BT.601":
+        image = np.dot(image, np.array(_M_YUV2RGB).T)
+        image = image * 255.0
+    else:
+        if format == "L":
+            image = image[:, :, 0]
+        image = image.astype(np.uint8)
+        image = np.asarray(Image.fromarray(image, mode=format).convert("RGB"))
+    return image
+
+
 def read_image(file_name, format=None):
     """
     Read an image into the given format.
+    Will apply rotation and flipping if the image has such exif information.
 
     Args:
         file_name (str): image file path
-        format (str): one of the supported image modes in PIL, or "BGR"
+        format (str): one of the supported image modes in PIL, or "BGR" or "YUV-BT.601"
 
     Returns:
-        image (np.ndarray): an HWC image
+        image (np.ndarray): an HWC image in the given format, which is 0-255, uint8 for
+            supported image modes in PIL or "BGR"; float (0-1 for Y) for YUV-BT.601.
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
 
-        if format is not None:
-            # PIL only supports RGB, so convert to RGB and flip channels over below
-            conversion_format = format
-            if format == "BGR":
-                conversion_format = "RGB"
-            image = image.convert(conversion_format)
-        image = np.asarray(image)
-        if format == "BGR":
-            # flip channels if needed
-            image = image[:, :, ::-1]
-        # PIL squeezes out the channel dimension for "L", so make it HWC
-        if format == "L":
-            image = np.expand_dims(image, -1)
-        return image
+        # capture and ignore this bug: https://github.com/python-pillow/Pillow/issues/3973
+        try:
+            image = ImageOps.exif_transpose(image)
+        except Exception:
+            pass
+
+        return convert_PIL_to_numpy(image, format)
 
 
 def check_image_size(dataset_dict, image):
@@ -70,8 +129,20 @@ def check_image_size(dataset_dict, image):
         expected_wh = (dataset_dict["width"], dataset_dict["height"])
         if not image_wh == expected_wh:
             raise SizeMismatchError(
-                "mismatch (W,H), got {}, expect {}".format(image_wh, expected_wh)
+                "Mismatched (W,H){}, got {}, expect {}".format(
+                    " for image " + dataset_dict["file_name"]
+                    if "file_name" in dataset_dict
+                    else "",
+                    image_wh,
+                    expected_wh,
+                )
             )
+
+    # To ensure bbox always remap to original image size
+    if "width" not in dataset_dict:
+        dataset_dict["width"] = image.shape[1]
+    if "height" not in dataset_dict:
+        dataset_dict["height"] = image.shape[0]
 
 
 def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len, proposal_topk):
@@ -120,7 +191,7 @@ def transform_instance_annotations(
     annotation, transforms, image_size, *, keypoint_hflip_indices=None
 ):
     """
-    Apply transforms to box, segmentation and keypoints of annotations of a single instance.
+    Apply transforms to box, segmentation and keypoints annotations of a single instance.
 
     It will use `transforms.apply_box` for the box, and
     `transforms.apply_coords` for segmentation polygons & keypoints.
@@ -129,6 +200,7 @@ def transform_instance_annotations(
 
     Args:
         annotation (dict): dict of instance annotations for a single instance.
+            It will be modified in-place.
         transforms (TransformList):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
@@ -146,8 +218,25 @@ def transform_instance_annotations(
 
     if "segmentation" in annotation:
         # each instance contains 1 or more polygons
-        polygons = [np.asarray(p).reshape(-1, 2) for p in annotation["segmentation"]]
-        annotation["segmentation"] = [p.reshape(-1) for p in transforms.apply_polygons(polygons)]
+        segm = annotation["segmentation"]
+        if isinstance(segm, list):
+            # polygons
+            polygons = [np.asarray(p).reshape(-1, 2) for p in segm]
+            annotation["segmentation"] = [
+                p.reshape(-1) for p in transforms.apply_polygons(polygons)
+            ]
+        elif isinstance(segm, dict):
+            # RLE
+            mask = mask_util.decode(segm)
+            mask = transforms.apply_segmentation(mask)
+            assert tuple(mask.shape[:2]) == image_size
+            annotation["segmentation"] = mask
+        else:
+            raise ValueError(
+                "Cannot transform segmentation of type '{}'!"
+                "Supported types are: polygons as list[list[float] or ndarray],"
+                " COCO-style RLE as a dict.".format(type(segm))
+            )
 
     if "keypoints" in annotation:
         keypoints = transform_keypoint_annotations(
@@ -216,17 +305,38 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
     classes = [obj["category_id"] for obj in annos]
     classes = torch.tensor(classes, dtype=torch.int64)
     target.gt_classes = classes
-    if len(annos) and "frequency" in annos[0]:
-        frequencys = [obj["frequency"] for obj in annos]
-        target.gt_frequencys = torch.tensor(frequencys, dtype=torch.int64)
 
     if len(annos) and "segmentation" in annos[0]:
-        polygons = [obj["segmentation"] for obj in annos]
+        segms = [obj["segmentation"] for obj in annos]
         if mask_format == "polygon":
-            masks = PolygonMasks(polygons)
+            masks = PolygonMasks(segms)
         else:
             assert mask_format == "bitmask", mask_format
-            masks = BitMasks.from_polygon_masks(polygons, *image_size)
+            masks = []
+            for segm in segms:
+                if isinstance(segm, list):
+                    # polygon
+                    masks.append(polygons_to_bitmask(segm, *image_size))
+                elif isinstance(segm, dict):
+                    # COCO RLE
+                    masks.append(mask_util.decode(segm))
+                elif isinstance(segm, np.ndarray):
+                    assert segm.ndim == 2, "Expect segmentation of 2 dimensions, got {}.".format(
+                        segm.ndim
+                    )
+                    # mask array
+                    masks.append(segm)
+                else:
+                    raise ValueError(
+                        "Cannot convert segmentation of type '{}' to BitMasks!"
+                        "Supported types are: polygons as list[list[float] or ndarray],"
+                        " COCO-style RLE as a dict, or a full-image segmentation mask "
+                        "as a 2D ndarray.".format(type(segm))
+                    )
+            # torch.from_numpy does not support array with negative stride.
+            masks = BitMasks(
+                torch.stack([torch.from_numpy(np.ascontiguousarray(x)) for x in masks])
+            )
         target.gt_masks = masks
 
     if len(annos) and "keypoints" in annos[0]:
@@ -265,7 +375,7 @@ def annotations_to_instances_rotated(annos, image_size):
     return target
 
 
-def filter_empty_instances(instances, by_box=True, by_mask=True):
+def filter_empty_instances(instances, by_box=True, by_mask=True, box_threshold=1e-5):
     """
     Filter out empty instances in an `Instances` object.
 
@@ -273,6 +383,7 @@ def filter_empty_instances(instances, by_box=True, by_mask=True):
         instances (Instances):
         by_box (bool): whether to filter out instances with empty boxes
         by_mask (bool): whether to filter out instances with empty masks
+        box_threshold (float): minimum width and height to be considered non-empty
 
     Returns:
         Instances: the filtered instances.
@@ -280,7 +391,7 @@ def filter_empty_instances(instances, by_box=True, by_mask=True):
     assert by_box or by_mask
     r = []
     if by_box:
-        r.append(instances.gt_boxes.nonempty())
+        r.append(instances.gt_boxes.nonempty(threshold=box_threshold))
     if instances.has("gt_masks") and by_mask:
         r.append(instances.gt_masks.nonempty())
 
@@ -330,6 +441,12 @@ def gen_crop_transform_with_instance(crop_size, image_size, instance):
     crop_size = np.asarray(crop_size, dtype=np.int32)
     bbox = BoxMode.convert(instance["bbox"], instance["bbox_mode"], BoxMode.XYXY_ABS)
     center_yx = (bbox[1] + bbox[3]) * 0.5, (bbox[0] + bbox[2]) * 0.5
+    assert (
+        image_size[0] >= center_yx[0] and image_size[1] >= center_yx[1]
+    ), "The annotation bounding box is outside of the image!"
+    assert (
+        image_size[0] >= crop_size[0] and image_size[1] >= crop_size[1]
+    ), "Crop size is larger than image size!"
 
     min_yx = np.maximum(np.floor(center_yx).astype(np.int32) - crop_size, 0)
     max_yx = np.maximum(np.asarray(image_size, dtype=np.int32) - crop_size, 0)

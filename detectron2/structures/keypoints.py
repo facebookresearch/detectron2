@@ -36,6 +36,10 @@ class Keypoints:
     def to(self, *args: Any, **kwargs: Any) -> "Keypoints":
         return type(self)(self.tensor.to(*args, **kwargs))
 
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
+
     def to_heatmap(self, boxes: torch.Tensor, heatmap_size: int) -> torch.Tensor:
         """
         Arguments:
@@ -137,17 +141,20 @@ def _keypoints_to_heatmap(
 @torch.no_grad()
 def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tensor:
     """
+    Extract predicted keypoint locations from heatmaps.
+
     Args:
-        maps (Tensor): (#ROIs, #keypoints, POOL_H, POOL_W)
-        rois (Tensor): (#ROIs, 4)
+        maps (Tensor): (#ROIs, #keypoints, POOL_H, POOL_W). The predicted heatmap of logits for
+            each ROI and each keypoint.
+        rois (Tensor): (#ROIs, 4). The box of each ROI.
 
-    Extract predicted keypoint locations from heatmaps. Output has shape
-    (#rois, #keypoints, 4) with the last dimension corresponding to (x, y, logit, prob)
-    for each keypoint.
+    Returns:
+        Tensor of shape (#ROIs, #keypoints, 4) with the last dimension corresponding to
+        (x, y, logit, score) for each keypoint.
 
-    Converts a discrete image coordinate in an NxN image to a continuous keypoint coordinate. We
-    maintain consistency with keypoints_to_heatmap by using the conversion from Heckbert 1990:
-    c = d + 0.5, where d is a discrete coordinate and c is a continuous coordinate.
+    When converting discrete pixel indices in an NxN image to a continuous keypoint coordinate,
+    we maintain consistency with :meth:`Keypoints.to_heatmap` by using the conversion from
+    Heckbert 1990: c = d + 0.5, where d is a discrete coordinate and c is a continuous coordinate.
     """
     offset_x = rois[:, 0]
     offset_y = rois[:, 1]
@@ -176,9 +183,9 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
         max_score = max_score.view(num_keypoints, 1, 1)
         tmp_full_resolution = (roi_map - max_score).exp_()
         tmp_pool_resolution = (maps[i] - max_score).exp_()
-        # Produce scores over the region H x W, but normalize with POOL_H x POOL_W
-        # So that the scores of objects of different absolute sizes will be more comparable
-        roi_map_probs = tmp_full_resolution / tmp_pool_resolution.sum((1, 2), keepdim=True)
+        # Produce scores over the region H x W, but normalize with POOL_H x POOL_W,
+        # so that the scores of objects of different absolute sizes will be more comparable
+        roi_map_scores = tmp_full_resolution / tmp_pool_resolution.sum((1, 2), keepdim=True)
 
         w = roi_map.shape[2]
         pos = roi_map.view(num_keypoints, -1).argmax(1)
@@ -187,8 +194,8 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
         y_int = (pos - x_int) // w
 
         assert (
-            roi_map_probs[keypoints_idx, y_int, x_int]
-            == roi_map_probs.view(num_keypoints, -1).max(1)[0]
+            roi_map_scores[keypoints_idx, y_int, x_int]
+            == roi_map_scores.view(num_keypoints, -1).max(1)[0]
         ).all()
 
         x = (x_int.float() + 0.5) * width_corrections[i]
@@ -197,6 +204,6 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
         xy_preds[i, :, 0] = x + offset_x[i]
         xy_preds[i, :, 1] = y + offset_y[i]
         xy_preds[i, :, 2] = roi_map[keypoints_idx, y_int, x_int]
-        xy_preds[i, :, 3] = roi_map_probs[keypoints_idx, y_int, x_int]
+        xy_preds[i, :, 3] = roi_map_scores[keypoints_idx, y_int, x_int]
 
     return xy_preds

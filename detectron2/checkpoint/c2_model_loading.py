@@ -228,13 +228,13 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
     we want to match backbone[0].body.conv1.weight to conv1.weight, and
     backbone[0].body.res2.conv1.weight to res2.conv1.weight.
     """
-    model_keys = sorted(list(model_state_dict.keys()))
+    model_keys = sorted(model_state_dict.keys())
     if c2_conversion:
         ckpt_state_dict, original_keys = convert_c2_detectron_names(ckpt_state_dict)
         # original_keys: the name in the original dict (before renaming)
     else:
         original_keys = {x: x for x in ckpt_state_dict.keys()}
-    ckpt_keys = sorted(list(ckpt_state_dict.keys()))
+    ckpt_keys = sorted(ckpt_state_dict.keys())
 
     def match(a, b):
         # Matched ckpt_key should be a complete (starts with '.') suffix.

@@ -18,7 +18,7 @@ __all__ = ["SemanticSegmentor", "SEM_SEG_HEADS_REGISTRY", "SemSegFPNHead", "buil
 
 
 SEM_SEG_HEADS_REGISTRY = Registry("SEM_SEG_HEADS")
-"""
+SEM_SEG_HEADS_REGISTRY.__doc__ = """
 Registry for semantic segmentation heads, which make semantic segmentation predictions
 from feature maps.
 """
@@ -32,39 +32,40 @@ class SemanticSegmentor(nn.Module):
 
     def __init__(self, cfg):
         super().__init__()
-
-        self.device = torch.device(cfg.MODEL.DEVICE)
-
         self.backbone = build_backbone(cfg)
         self.sem_seg_head = build_sem_seg_head(cfg, self.backbone.output_shape())
+        self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1))
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(-1, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(-1, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-
-        self.to(self.device)
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     def forward(self, batched_inputs):
         """
         Args:
-            batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
+            batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
                 Each item in the list contains the inputs for one image.
 
-        For now, each item in the list is a dict that contains:
-            image: Tensor, image in (C, H, W) format.
-            sem_seg: semantic segmentation ground truth
-            Other information that's included in the original dicts, such as:
-                "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                For now, each item in the list is a dict that contains:
+
+                   * "image": Tensor, image in (C, H, W) format.
+                   * "sem_seg": semantic segmentation ground truth
+                   * Other information that's included in the original dicts, such as:
+                     "height", "width" (int): the output resolution of the model, used in inference.
+                     See :meth:`postprocess` for details.
 
         Returns:
-            list[dict]: Each dict is the output for one input image.
-                The dict contains one key "sem_seg" whose value is a
-                Tensor of the output resolution that represents the
-                per-pixel segmentation prediction.
+            list[dict]:
+              Each dict is the output for one input image.
+              The dict contains one key "sem_seg" whose value is a
+              Tensor that represents the
+              per-pixel segmentation prediced by the head.
+              The prediction has shape KxHxW that represents the logits of
+              each class for each pixel.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
 
         features = self.backbone(images.tensor)
@@ -101,9 +102,9 @@ def build_sem_seg_head(cfg, input_shape):
 @SEM_SEG_HEADS_REGISTRY.register()
 class SemSegFPNHead(nn.Module):
     """
-    A semantic segmentation head described in detail in the Panoptic Feature Pyramid Networks paper
-    (https://arxiv.org/abs/1901.02446). It takes FPN features as input and merges information from
-    all levels of the FPN into single output.
+    A semantic segmentation head described in :paper:`PanopticFPN`.
+    It takes FPN features as input and merges information from all
+    levels of the FPN into single output.
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
@@ -151,20 +152,35 @@ class SemSegFPNHead(nn.Module):
         weight_init.c2_msra_fill(self.predictor)
 
     def forward(self, features, targets=None):
+        """
+        Returns:
+            In training, returns (None, dict of losses)
+            In inference, returns (CxHxW logits, {})
+        """
+        x = self.layers(features)
+        if self.training:
+            return None, self.losses(x, targets)
+        else:
+            x = F.interpolate(
+                x, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            )
+            return x, {}
+
+    def layers(self, features):
         for i, f in enumerate(self.in_features):
             if i == 0:
                 x = self.scale_heads[i](features[f])
             else:
                 x = x + self.scale_heads[i](features[f])
         x = self.predictor(x)
-        x = F.interpolate(x, scale_factor=self.common_stride, mode="bilinear", align_corners=False)
+        return x
 
-        if self.training:
-            losses = {}
-            losses["loss_sem_seg"] = (
-                F.cross_entropy(x, targets, reduction="mean", ignore_index=self.ignore_value)
-                * self.loss_weight
-            )
-            return [], losses
-        else:
-            return x, {}
+    def losses(self, predictions, targets):
+        predictions = F.interpolate(
+            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+        )
+        loss = F.cross_entropy(
+            predictions, targets, reduction="mean", ignore_index=self.ignore_value
+        )
+        losses = {"loss_sem_seg": loss * self.loss_weight}
+        return losses

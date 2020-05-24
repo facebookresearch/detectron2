@@ -9,11 +9,14 @@ is implemented
 """
 
 import math
+from typing import List
 import torch
 from torch.nn.modules.utils import _ntuple
 
+TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
 
-def cat(tensors, dim=0):
+
+def cat(tensors: List[torch.Tensor], dim: int = 0):
     """
     Efficient version of torch.cat that avoids a copy if there is only a single element in a list
     """
@@ -37,7 +40,7 @@ class _NewEmptyTensorOp(torch.autograd.Function):
 
 class Conv2d(torch.nn.Conv2d):
     """
-    A wrapper around :class:`torch.nn.Conv2d` to support zero-size tensor and more features.
+    A wrapper around :class:`torch.nn.Conv2d` to support empty inputs and more features.
     """
 
     def __init__(self, *args, **kwargs):
@@ -58,7 +61,16 @@ class Conv2d(torch.nn.Conv2d):
         self.activation = activation
 
     def forward(self, x):
-        if x.numel() == 0:
+        if x.numel() == 0 and self.training:
+            # https://github.com/pytorch/pytorch/issues/12013
+            assert not isinstance(
+                self.norm, torch.nn.SyncBatchNorm
+            ), "SyncBatchNorm does not support empty inputs!"
+
+        if x.numel() == 0 and TORCH_VERSION <= (1, 4):
+            assert not isinstance(
+                self.norm, torch.nn.GroupNorm
+            ), "GroupNorm does not support empty inputs in PyTorch <=1.4!"
             # When input is empty, we want to return a empty tensor with "correct" shape,
             # So that the following operations will not panic
             # if they check for the shape of the tensor.
@@ -72,11 +84,6 @@ class Conv2d(torch.nn.Conv2d):
             output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
             empty = _NewEmptyTensorOp.apply(x, output_shape)
             if self.training:
-                # https://github.com/pytorch/pytorch/issues/12013
-                assert not isinstance(
-                    self.norm, torch.nn.SyncBatchNorm
-                ), "SyncBatchNorm does not support empty inputs!"
-
                 # This is to make DDP happy.
                 # DDP expects all workers to have gradient w.r.t the same set of parameters.
                 _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
@@ -92,52 +99,91 @@ class Conv2d(torch.nn.Conv2d):
         return x
 
 
-class ConvTranspose2d(torch.nn.ConvTranspose2d):
-    """
-    A wrapper around :class:`torch.nn.ConvTranspose2d` to support zero-size tensor.
-    """
+if TORCH_VERSION > (1, 4):
+    ConvTranspose2d = torch.nn.ConvTranspose2d
+else:
 
-    def forward(self, x):
-        if x.numel() > 0:
-            return super(ConvTranspose2d, self).forward(x)
-        # get output shape
+    class ConvTranspose2d(torch.nn.ConvTranspose2d):
+        """
+        A wrapper around :class:`torch.nn.ConvTranspose2d` to support zero-size tensor.
+        """
 
-        output_shape = [
-            (i - 1) * d - 2 * p + (di * (k - 1) + 1) + op
-            for i, p, di, k, d, op in zip(
-                x.shape[-2:],
-                self.padding,
-                self.dilation,
-                self.kernel_size,
-                self.stride,
-                self.output_padding,
-            )
-        ]
-        output_shape = [x.shape[0], self.bias.shape[0]] + output_shape
-        # This is to make DDP happy.
-        # DDP expects all workers to have gradient w.r.t the same set of parameters.
-        _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
-        return _NewEmptyTensorOp.apply(x, output_shape) + _dummy
+        def forward(self, x):
+            if x.numel() > 0:
+                return super(ConvTranspose2d, self).forward(x)
+            # get output shape
+
+            # When input is empty, we want to return a empty tensor with "correct" shape,
+            # So that the following operations will not panic
+            # if they check for the shape of the tensor.
+            # This computes the height and width of the output tensor
+            output_shape = [
+                (i - 1) * d - 2 * p + (di * (k - 1) + 1) + op
+                for i, p, di, k, d, op in zip(
+                    x.shape[-2:],
+                    self.padding,
+                    self.dilation,
+                    self.kernel_size,
+                    self.stride,
+                    self.output_padding,
+                )
+            ]
+            output_shape = [x.shape[0], self.out_channels] + output_shape
+            # This is to make DDP happy.
+            # DDP expects all workers to have gradient w.r.t the same set of parameters.
+            _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
+            return _NewEmptyTensorOp.apply(x, output_shape) + _dummy
 
 
-class BatchNorm2d(torch.nn.BatchNorm2d):
-    """
-    A wrapper around :class:`torch.nn.BatchNorm2d` to support zero-size tensor.
-    """
+if TORCH_VERSION > (1, 4):
+    BatchNorm2d = torch.nn.BatchNorm2d
+else:
 
-    def forward(self, x):
-        if x.numel() > 0:
-            return super(BatchNorm2d, self).forward(x)
-        # get output shape
-        output_shape = x.shape
-        return _NewEmptyTensorOp.apply(x, output_shape)
+    class BatchNorm2d(torch.nn.BatchNorm2d):
+        """
+        A wrapper around :class:`torch.nn.BatchNorm2d` to support zero-size tensor.
+        """
+
+        def forward(self, x):
+            if x.numel() > 0:
+                return super(BatchNorm2d, self).forward(x)
+            # get output shape
+            output_shape = x.shape
+            return _NewEmptyTensorOp.apply(x, output_shape)
+
+
+if TORCH_VERSION > (1, 5):
+    Linear = torch.nn.Linear
+else:
+
+    class Linear(torch.nn.Linear):
+        """
+        A wrapper around :class:`torch.nn.Linear` to support empty inputs and more features.
+        Because of https://github.com/pytorch/pytorch/issues/34202
+        """
+
+        def forward(self, x):
+            if x.numel() == 0:
+                output_shape = [x.shape[0], self.weight.shape[0]]
+
+                empty = _NewEmptyTensorOp.apply(x, output_shape)
+                if self.training:
+                    # This is to make DDP happy.
+                    # DDP expects all workers to have gradient w.r.t the same set of parameters.
+                    _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
+                    return empty + _dummy
+                else:
+                    return empty
+
+            x = super().forward(x)
+            return x
 
 
 def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
     """
     A wrapper around :func:`torch.nn.functional.interpolate` to support zero-size tensor.
     """
-    if input.numel() > 0:
+    if TORCH_VERSION > (1, 4) or input.numel() > 0:
         return torch.nn.functional.interpolate(
             input, size, scale_factor, mode, align_corners=align_corners
         )

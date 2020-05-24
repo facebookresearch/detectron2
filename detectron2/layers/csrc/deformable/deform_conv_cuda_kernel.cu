@@ -515,11 +515,14 @@ void deformable_im2col(
             width_col,
             data_col_);
       }));
+
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("error in deformable_im2col: %s\n", cudaGetErrorString(err));
   }
 }
+
+
 void deformable_col2im(
     const at::Tensor data_col,
     const at::Tensor data_offset,
@@ -545,13 +548,16 @@ void deformable_col2im(
   int num_kernels =
       channels * ksize_h * ksize_w * height_col * width_col * parallel_imgs;
   int channel_per_deformable_group = channels / deformable_group;
+
   at::cuda::CUDAGuard device_guard(data_col.device());
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       data_col.scalar_type(), "deformable_col2im_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t* grad_im_ = grad_im.data_ptr<scalar_t>();
+
         deformable_col2im_gpu_kernel<<<
             GET_BLOCKS(num_kernels),
             CUDA_NUM_THREADS,
@@ -578,11 +584,14 @@ void deformable_col2im(
             width_col,
             grad_im_);
       }));
+
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf("error in deformable_col2im: %s\n", cudaGetErrorString(err));
   }
 }
+
+
 void deformable_col2im_coord(
     const at::Tensor data_col,
     const at::Tensor data_im,
@@ -609,14 +618,17 @@ void deformable_col2im_coord(
       deformable_group * parallel_imgs;
   int channel_per_deformable_group =
       channels * ksize_h * ksize_w / deformable_group;
+
   at::cuda::CUDAGuard device_guard(data_col.device());
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       data_col.scalar_type(), "deformable_col2im_coord_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         scalar_t* grad_offset_ = grad_offset.data_ptr<scalar_t>();
+
         deformable_col2im_coord_gpu_kernel<<<
             GET_BLOCKS(num_kernels),
             CUDA_NUM_THREADS,
@@ -646,7 +658,10 @@ void deformable_col2im_coord(
             grad_offset_);
       }));
 }
+
 } // namespace detectron2
+
+
 template <typename scalar_t>
 __device__ scalar_t dmcn_im2col_bilinear(
     const scalar_t* bottom_data,
@@ -659,9 +674,11 @@ __device__ scalar_t dmcn_im2col_bilinear(
   int w_low = floor(w);
   int h_high = h_low + 1;
   int w_high = w_low + 1;
+
   scalar_t lh = h - h_low;
   scalar_t lw = w - w_low;
   scalar_t hh = 1 - lh, hw = 1 - lw;
+
   scalar_t v1 = 0;
   if (h_low >= 0 && w_low >= 0)
     v1 = bottom_data[h_low * data_width + w_low];
@@ -674,10 +691,13 @@ __device__ scalar_t dmcn_im2col_bilinear(
   scalar_t v4 = 0;
   if (h_high <= height - 1 && w_high <= width - 1)
     v4 = bottom_data[h_high * data_width + w_high];
+
   scalar_t w1 = hh * hw, w2 = hh * lw, w3 = lh * hw, w4 = lh * lw;
+
   scalar_t val = (w1 * v1 + w2 * v2 + w3 * v3 + w4 * v4);
   return val;
 }
+
 template <typename scalar_t>
 __device__ scalar_t dmcn_get_gradient_weight(
     scalar_t argmax_h,
@@ -691,10 +711,12 @@ __device__ scalar_t dmcn_get_gradient_weight(
     // empty
     return 0;
   }
+
   int argmax_h_low = floor(argmax_h);
   int argmax_w_low = floor(argmax_w);
   int argmax_h_high = argmax_h_low + 1;
   int argmax_w_high = argmax_w_low + 1;
+
   scalar_t weight = 0;
   if (h == argmax_h_low && w == argmax_w_low)
     weight = (h + 1 - argmax_h) * (w + 1 - argmax_w);
@@ -706,6 +728,7 @@ __device__ scalar_t dmcn_get_gradient_weight(
     weight = (argmax_h + 1 - h) * (argmax_w + 1 - w);
   return weight;
 }
+
 template <typename scalar_t>
 __device__ scalar_t dmcn_get_coordinate_weight(
     scalar_t argmax_h,
@@ -720,11 +743,14 @@ __device__ scalar_t dmcn_get_coordinate_weight(
     // empty
     return 0;
   }
+
   int argmax_h_low = floor(argmax_h);
   int argmax_w_low = floor(argmax_w);
   int argmax_h_high = argmax_h_low + 1;
   int argmax_w_high = argmax_w_low + 1;
+
   scalar_t weight = 0;
+
   if (bp_dir == 0) {
     if (argmax_h_low >= 0 && argmax_w_low >= 0)
       weight += -1 * (argmax_w_low + 1 - argmax_w) *
@@ -752,8 +778,10 @@ __device__ scalar_t dmcn_get_coordinate_weight(
       weight += (argmax_h - argmax_h_low) *
           im_data[argmax_h_high * data_width + argmax_w_high];
   }
+
   return weight;
 }
+
 template <typename scalar_t>
 __global__ void modulated_deformable_im2col_gpu_kernel(
     const int n,
@@ -784,10 +812,13 @@ __global__ void modulated_deformable_im2col_gpu_kernel(
     const int b_col = (index / width_col / height_col) % batch_size;
     const int c_im = (index / width_col / height_col) / batch_size;
     const int c_col = c_im * kernel_h * kernel_w;
+
     // compute deformable group index
     const int deformable_group_index = c_im / channel_per_deformable_group;
+
     const int h_in = h_col * stride_h - pad_h;
     const int w_in = w_col * stride_w - pad_w;
+
     scalar_t* data_col_ptr = data_col +
         ((c_col * batch_size + b_col) * height_col + h_col) * width_col + w_col;
     // const float* data_im_ptr = data_im + ((b_col * num_channels + c_im) *
@@ -797,9 +828,11 @@ __global__ void modulated_deformable_im2col_gpu_kernel(
     const scalar_t* data_offset_ptr = data_offset +
         (b_col * deformable_group + deformable_group_index) * 2 * kernel_h *
             kernel_w * height_col * width_col;
+
     const scalar_t* data_mask_ptr = data_mask +
         (b_col * deformable_group + deformable_group_index) * kernel_h *
             kernel_w * height_col * width_col;
+
     for (int i = 0; i < kernel_h; ++i) {
       for (int j = 0; j < kernel_w; ++j) {
         const int data_offset_h_ptr =
@@ -833,6 +866,7 @@ __global__ void modulated_deformable_im2col_gpu_kernel(
     }
   }
 }
+
 template <typename scalar_t>
 __global__ void modulated_deformable_col2im_gpu_kernel(
     const int n,
@@ -863,12 +897,15 @@ __global__ void modulated_deformable_col2im_gpu_kernel(
     const int c =
         index / width_col / height_col / batch_size / kernel_w / kernel_h;
     // compute the start and end of the output
+
     const int deformable_group_index = c / channel_per_deformable_group;
+
     int w_out = index % width_col;
     int h_out = (index / width_col) % height_col;
     int b = (index / width_col / height_col) % batch_size;
     int w_in = w_out * stride_w - pad_w;
     int h_in = h_out * stride_h - pad_h;
+
     const scalar_t* data_offset_ptr = data_offset +
         (b * deformable_group + deformable_group_index) * 2 * kernel_h *
             kernel_w * height_col * width_col;
@@ -886,6 +923,7 @@ __global__ void modulated_deformable_col2im_gpu_kernel(
     const scalar_t mask = data_mask_ptr[data_mask_hw_ptr];
     const scalar_t cur_inv_h_data = h_in + i * dilation_h + offset_h;
     const scalar_t cur_inv_w_data = w_in + j * dilation_w + offset_w;
+
     const scalar_t cur_top_grad = data_col[index] * mask;
     const int cur_h = (int)cur_inv_h_data;
     const int cur_w = (int)cur_inv_w_data;
@@ -909,6 +947,7 @@ __global__ void modulated_deformable_col2im_gpu_kernel(
     }
   }
 }
+
 template <typename scalar_t>
 __global__ void modulated_deformable_col2im_coord_gpu_kernel(
     const int n,
@@ -942,6 +981,7 @@ __global__ void modulated_deformable_col2im_coord_gpu_kernel(
     int c = (index / width_col / height_col) % offset_channels;
     int b = (index / width_col / height_col) / offset_channels;
     // compute the start and end of the output
+
     const int deformable_group_index = c / (2 * kernel_h * kernel_w);
     const int col_step = kernel_h * kernel_w;
     int cnt = 0;
@@ -957,12 +997,15 @@ __global__ void modulated_deformable_col2im_coord_gpu_kernel(
     const scalar_t* data_mask_ptr = data_mask +
         (b * deformable_group + deformable_group_index) * kernel_h * kernel_w *
             height_col * width_col;
+
     const int offset_c = c - deformable_group_index * 2 * kernel_h * kernel_w;
+
     for (int col_c = (offset_c / 2); col_c < channel_per_deformable_group;
          col_c += col_step) {
       const int col_pos =
           (((col_c * batch_size + b) * height_col) + h) * width_col + w;
       const int bp_dir = offset_c % 2;
+
       int j = (col_pos / width_col / height_col / batch_size) % kernel_w;
       int i =
           (col_pos / width_col / height_col / batch_size / kernel_w) % kernel_h;
@@ -1021,7 +1064,10 @@ __global__ void modulated_deformable_col2im_coord_gpu_kernel(
            w] = mval;
   }
 }
+
+
 namespace detectron2 {
+
 void modulated_deformable_im2col_cuda(
     const at::Tensor data_im,
     const at::Tensor data_offset,
@@ -1045,14 +1091,17 @@ void modulated_deformable_im2col_cuda(
   // num_axes should be smaller than block size
   const int channel_per_deformable_group = channels / deformable_group;
   const int num_kernels = channels * batch_size * height_col * width_col;
+
   at::cuda::CUDAGuard device_guard(data_im.device());
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       data_im.scalar_type(), "modulated_deformable_im2col_gpu", ([&] {
         const scalar_t* data_im_ = data_im.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         const scalar_t* data_mask_ = data_mask.data_ptr<scalar_t>();
         scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
+
         modulated_deformable_im2col_gpu_kernel<<<
             GET_BLOCKS(num_kernels),
             CUDA_NUM_THREADS,
@@ -1080,6 +1129,7 @@ void modulated_deformable_im2col_cuda(
             width_col,
             data_col_);
       }));
+
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf(
@@ -1087,6 +1137,7 @@ void modulated_deformable_im2col_cuda(
         cudaGetErrorString(err));
   }
 }
+
 void modulated_deformable_col2im_cuda(
     const at::Tensor data_col,
     const at::Tensor data_offset,
@@ -1110,14 +1161,17 @@ void modulated_deformable_col2im_cuda(
   const int channel_per_deformable_group = channels / deformable_group;
   const int num_kernels =
       channels * kernel_h * kernel_w * batch_size * height_col * width_col;
+
   at::cuda::CUDAGuard device_guard(data_col.device());
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       data_col.scalar_type(), "modulated_deformable_col2im_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
         const scalar_t* data_offset_ = data_offset.data_ptr<scalar_t>();
         const scalar_t* data_mask_ = data_mask.data_ptr<scalar_t>();
         scalar_t* grad_im_ = grad_im.data_ptr<scalar_t>();
+
         modulated_deformable_col2im_gpu_kernel<<<
             GET_BLOCKS(num_kernels),
             CUDA_NUM_THREADS,
@@ -1145,6 +1199,7 @@ void modulated_deformable_col2im_cuda(
             width_col,
             grad_im_);
       }));
+
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess) {
     printf(
@@ -1152,6 +1207,7 @@ void modulated_deformable_col2im_cuda(
         cudaGetErrorString(err));
   }
 }
+
 void modulated_deformable_col2im_coord_cuda(
     const at::Tensor data_col,
     const at::Tensor data_im,
@@ -1178,8 +1234,10 @@ void modulated_deformable_col2im_coord_cuda(
       kernel_w * deformable_group;
   const int channel_per_deformable_group =
       channels * kernel_h * kernel_w / deformable_group;
+
   at::cuda::CUDAGuard device_guard(data_col.device());
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(
       data_col.scalar_type(), "modulated_deformable_col2im_coord_gpu", ([&] {
         const scalar_t* data_col_ = data_col.data_ptr<scalar_t>();
@@ -1188,6 +1246,7 @@ void modulated_deformable_col2im_coord_cuda(
         const scalar_t* data_mask_ = data_mask.data_ptr<scalar_t>();
         scalar_t* grad_offset_ = grad_offset.data_ptr<scalar_t>();
         scalar_t* grad_mask_ = grad_mask.data_ptr<scalar_t>();
+
         modulated_deformable_col2im_coord_gpu_kernel<<<
             GET_BLOCKS(num_kernels),
             CUDA_NUM_THREADS,
@@ -1225,4 +1284,5 @@ void modulated_deformable_col2im_coord_cuda(
         cudaGetErrorString(err));
   }
 }
+
 } // namespace detectron2

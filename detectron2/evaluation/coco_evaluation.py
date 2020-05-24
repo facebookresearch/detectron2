@@ -18,6 +18,7 @@ from tabulate import tabulate
 
 import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
+from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.logger import create_small_table
 
@@ -34,12 +35,23 @@ class COCOEvaluator(DatasetEvaluator):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
-                It must have the following corresponding metadata:
+                It must have either the following corresponding metadata:
+
                     "json_file": the path to the COCO format annotation
+
+                Or it must be in detectron2's standard dataset format
+                so it can be converted to COCO format automatically.
             cfg (CfgNode): config instance
-            distributed (True): if True, will collect results from all ranks for evaluation.
+            distributed (True): if True, will collect results from all ranks and run evaluation
+                in the main process.
                 Otherwise, will evaluate the results in the current process.
-            output_dir (str): optional, an output directory to dump results.
+            output_dir (str): optional, an output directory to dump all
+                results predicted on the dataset. The dump contains two files:
+
+                1. "instance_predictions.pth" a file in torch serialization
+                   format that contains all the raw original predictions.
+                2. "coco_instances_results.json" a json file in COCO's result
+                   format.
         """
         self._tasks = self._tasks_from_config(cfg)
         self._distributed = distributed
@@ -49,6 +61,16 @@ class COCOEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
+        if not hasattr(self._metadata, "json_file"):
+            self._logger.warning(
+                f"json_file was not found in MetaDataCatalog for '{dataset_name}'."
+                " Trying to convert it to COCO format ..."
+            )
+
+            cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
+            self._metadata.json_file = cache_path
+            convert_to_coco_json(dataset_name, cache_path)
+
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)
@@ -56,11 +78,10 @@ class COCOEvaluator(DatasetEvaluator):
         self._kpt_oks_sigmas = cfg.TEST.KEYPOINT_OKS_SIGMAS
         # Test set json files do not contain annotations (evaluation must be
         # performed using the COCO evaluation server).
-        self._do_evaluation = len(self._coco_api.getAnnIds()) > 0
+        self._do_evaluation = "annotations" in self._coco_api.dataset
 
     def reset(self):
         self._predictions = []
-        self._coco_results = []
 
     def _tasks_from_config(self, cfg):
         """
@@ -89,25 +110,7 @@ class COCOEvaluator(DatasetEvaluator):
             # TODO this is ugly
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-
-                if instances.has("pred_masks"):
-                    # use RLE to encode the masks, because they are too large and takes memory
-                    # since this evaluator stores outputs of the entire dataset
-                    # Our model may predict bool array, but cocoapi expects uint8
-                    rles = [
-                        mask_util.encode(np.array(mask[:, :, None], order="F", dtype="uint8"))[0]
-                        for mask in instances.pred_masks
-                    ]
-                    for rle in rles:
-                        # "counts" is an array encoded by mask_util as a byte-stream. Python3's
-                        # json writer which always produces strings cannot serialize a bytestream
-                        # unless you decode it. Thankfully, utf-8 works out (which is also what
-                        # the pycocotools/_mask.pyx does).
-                        rle["counts"] = rle["counts"].decode("utf-8")
-                    instances.pred_masks_rle = rles
-                    instances.remove("pred_masks")
-
-                prediction["instances"] = instances_to_json(instances, input["image_id"])
+                prediction["instances"] = instances_to_coco_json(instances, input["image_id"])
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             self._predictions.append(prediction)
@@ -115,13 +118,15 @@ class COCOEvaluator(DatasetEvaluator):
     def evaluate(self):
         if self._distributed:
             comm.synchronize()
-            self._predictions = comm.gather(self._predictions, dst=0)
-            self._predictions = list(itertools.chain(*self._predictions))
+            predictions = comm.gather(self._predictions, dst=0)
+            predictions = list(itertools.chain(*predictions))
 
             if not comm.is_main_process():
                 return {}
+        else:
+            predictions = self._predictions
 
-        if len(self._predictions) == 0:
+        if len(predictions) == 0:
             self._logger.warning("[COCOEvaluator] Did not receive valid predictions.")
             return {}
 
@@ -129,37 +134,43 @@ class COCOEvaluator(DatasetEvaluator):
             PathManager.mkdirs(self._output_dir)
             file_path = os.path.join(self._output_dir, "instances_predictions.pth")
             with PathManager.open(file_path, "wb") as f:
-                torch.save(self._predictions, f)
+                torch.save(predictions, f)
 
         self._results = OrderedDict()
-        if "proposals" in self._predictions[0]:
-            self._eval_box_proposals()
-        if "instances" in self._predictions[0]:
-            self._eval_predictions(set(self._tasks))
+        if "proposals" in predictions[0]:
+            self._eval_box_proposals(predictions)
+        if "instances" in predictions[0]:
+            self._eval_predictions(set(self._tasks), predictions)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
-    def _eval_predictions(self, tasks):
+    def _eval_predictions(self, tasks, predictions):
         """
-        Evaluate self._predictions on the given tasks.
+        Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
         """
         self._logger.info("Preparing results for COCO format ...")
-        self._coco_results = list(itertools.chain(*[x["instances"] for x in self._predictions]))
+        coco_results = list(itertools.chain(*[x["instances"] for x in predictions]))
 
         # unmap the category ids for COCO
         if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
             reverse_id_mapping = {
                 v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
             }
-            for result in self._coco_results:
-                result["category_id"] = reverse_id_mapping[result["category_id"]]
+            for result in coco_results:
+                category_id = result["category_id"]
+                assert (
+                    category_id in reverse_id_mapping
+                ), "A prediction has category_id={}, which is not available in the dataset.".format(
+                    category_id
+                )
+                result["category_id"] = reverse_id_mapping[category_id]
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_instances_results.json")
             self._logger.info("Saving results to {}".format(file_path))
             with PathManager.open(file_path, "w") as f:
-                f.write(json.dumps(self._coco_results))
+                f.write(json.dumps(coco_results))
                 f.flush()
 
         if not self._do_evaluation:
@@ -170,9 +181,9 @@ class COCOEvaluator(DatasetEvaluator):
         for task in sorted(tasks):
             coco_eval = (
                 _evaluate_predictions_on_coco(
-                    self._coco_api, self._coco_results, task, kpt_oks_sigmas=self._kpt_oks_sigmas
+                    self._coco_api, coco_results, task, kpt_oks_sigmas=self._kpt_oks_sigmas
                 )
-                if len(self._coco_results) > 0
+                if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
             )
 
@@ -181,9 +192,9 @@ class COCOEvaluator(DatasetEvaluator):
             )
             self._results[task] = res
 
-    def _eval_box_proposals(self):
+    def _eval_box_proposals(self, predictions):
         """
-        Evaluate the box proposals in self._predictions.
+        Evaluate the box proposals in predictions.
         Fill self._results with the metrics for "box_proposals" task.
         """
         if self._output_dir:
@@ -191,7 +202,7 @@ class COCOEvaluator(DatasetEvaluator):
             # Predicted box_proposals are in XYXY_ABS mode.
             bbox_mode = BoxMode.XYXY_ABS.value
             ids, boxes, objectness_logits = [], [], []
-            for prediction in self._predictions:
+            for prediction in predictions:
                 ids.append(prediction["image_id"])
                 boxes.append(prediction["proposals"].proposal_boxes.tensor.numpy())
                 objectness_logits.append(prediction["proposals"].objectness_logits.numpy())
@@ -214,9 +225,7 @@ class COCOEvaluator(DatasetEvaluator):
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
         for limit in [100, 1000]:
             for area, suffix in areas.items():
-                stats = _evaluate_box_proposals(
-                    self._predictions, self._coco_api, area=area, limit=limit
-                )
+                stats = _evaluate_box_proposals(predictions, self._coco_api, area=area, limit=limit)
                 key = "AR{}@{:d}".format(suffix, limit)
                 res[key] = float(stats["ar"].item() * 100)
         self._logger.info("Proposal metrics: \n" + create_small_table(res))
@@ -243,14 +252,19 @@ class COCOEvaluator(DatasetEvaluator):
         }[iou_type]
 
         if coco_eval is None:
-            self._logger.warn("No predictions from the model! Set scores to -1")
-            return {metric: -1 for metric in metrics}
+            self._logger.warn("No predictions from the model!")
+            return {metric: float("nan") for metric in metrics}
 
         # the standard metrics
-        results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
+        results = {
+            metric: float(coco_eval.stats[idx] * 100 if coco_eval.stats[idx] >= 0 else "nan")
+            for idx, metric in enumerate(metrics)
+        }
         self._logger.info(
             "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
         )
+        if not np.isfinite(sum(results.values())):
+            self._logger.info("Note that some metrics cannot be computed.")
 
         if class_names is None or len(class_names) <= 1:
             return results
@@ -286,7 +300,17 @@ class COCOEvaluator(DatasetEvaluator):
         return results
 
 
-def instances_to_json(instances, img_id):
+def instances_to_coco_json(instances, img_id):
+    """
+    Dump an "Instances" object to a COCO-format json that's used for evaluation.
+
+    Args:
+        instances (Instances):
+        img_id (int): the image id
+
+    Returns:
+        list[dict]: list of json annotations in COCO format.
+    """
     num_instance = len(instances)
     if num_instance == 0:
         return []
@@ -297,9 +321,20 @@ def instances_to_json(instances, img_id):
     scores = instances.scores.tolist()
     classes = instances.pred_classes.tolist()
 
-    has_mask = instances.has("pred_masks_rle")
+    has_mask = instances.has("pred_masks")
     if has_mask:
-        rles = instances.pred_masks_rle
+        # use RLE to encode the masks, because they are too large and takes memory
+        # since this evaluator stores outputs of the entire dataset
+        rles = [
+            mask_util.encode(np.array(mask[:, :, None], order="F", dtype="uint8"))[0]
+            for mask in instances.pred_masks
+        ]
+        for rle in rles:
+            # "counts" is an array encoded by mask_util as a byte-stream. Python3's
+            # json writer which always produces strings cannot serialize a bytestream
+            # unless you decode it. Thankfully, utf-8 works out (which is also what
+            # the pycocotools/_mask.pyx does).
+            rle["counts"] = rle["counts"].decode("utf-8")
 
     has_keypoints = instances.has("pred_keypoints")
     if has_keypoints:
@@ -417,7 +452,9 @@ def _evaluate_box_proposals(dataset_predictions, coco_api, thresholds=None, area
 
         # append recorded iou coverage level
         gt_overlaps.append(_gt_overlaps)
-    gt_overlaps = torch.cat(gt_overlaps, dim=0)
+    gt_overlaps = (
+        torch.cat(gt_overlaps, dim=0) if len(gt_overlaps) else torch.zeros(0, dtype=torch.float32)
+    )
     gt_overlaps, _ = torch.sort(gt_overlaps)
 
     if thresholds is None:
@@ -458,6 +495,16 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, iou_type, kpt_oks_sigma
     # Use the COCO default keypoint OKS sigmas unless overrides are specified
     if kpt_oks_sigmas:
         coco_eval.params.kpt_oks_sigmas = np.array(kpt_oks_sigmas)
+
+    if iou_type == "keypoints":
+        num_keypoints = len(coco_results[0]["keypoints"]) // 3
+        assert len(coco_eval.params.kpt_oks_sigmas) == num_keypoints, (
+            "[COCOEvaluator] The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) "
+            "must be equal to the number of keypoints. However the prediction has {} "
+            "keypoints! For more information please refer to "
+            "http://cocodataset.org/#keypoints-eval.".format(num_keypoints)
+        )
+
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
