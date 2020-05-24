@@ -5,7 +5,6 @@ import torch
 from detectron2.layers import nonzero_tuple
 
 
-@torch.jit.script
 class Matcher(object):
     """
     This class assigns to each predicted "element" (e.g., a box) a ground-truth

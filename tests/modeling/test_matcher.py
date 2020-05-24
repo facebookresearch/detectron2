@@ -1,0 +1,42 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import logging
+import unittest
+import torch
+
+from detectron2.config import get_cfg
+from detectron2.modeling.matcher import Matcher
+
+logger = logging.getLogger(__name__)
+
+
+class TestMatcher(unittest.TestCase):
+    def test_scriptability(self):
+        cfg = get_cfg()
+        anchor_matcher = Matcher(
+            cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
+        )
+        match_quality_matrix = torch.tensor(
+            [[0.15, 0.45, 0.2, 0.6], [0.3, 0.65, 0.05, 0.1], [0.05, 0.4, 0.25, 0.4]]
+        )
+        expected_matches = torch.tensor([1, 1, 2, 0])
+        expected_match_labels = torch.tensor([-1, 1, 0, 1], dtype=torch.int8)
+
+        matches, match_labels = anchor_matcher(match_quality_matrix)
+        assert torch.allclose(matches, expected_matches)
+        assert torch.allclose(match_labels, expected_match_labels)
+
+        # nonzero_tuple must be import explicitly to let jit know what it is.
+        # https://github.com/pytorch/pytorch/issues/38964
+        from detectron2.layers import nonzero_tuple  # noqa F401
+
+        scrpted_matcher = torch.jit.script(Matcher)
+        scrpted_anchor_matcher = scrpted_matcher(
+            cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
+        )
+        matches, match_labels = scrpted_anchor_matcher(match_quality_matrix)
+        assert torch.allclose(matches, expected_matches)
+        assert torch.allclose(match_labels, expected_match_labels)
+
+
+if __name__ == "__main__":
+    unittest.main()
