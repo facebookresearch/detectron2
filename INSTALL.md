@@ -9,7 +9,7 @@ also installs detectron2 with a few simple commands.
 - Linux or macOS with Python ≥ 3.6
 - PyTorch ≥ 1.4
 - [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
-	You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
+  You can install them together at [pytorch.org](https://pytorch.org) to make sure of this.
 - OpenCV, optional, needed by demo and visualization
 - pycocotools: `pip install cython; pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'`
 
@@ -34,20 +34,34 @@ To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **
 old build first. You often need to rebuild detectron2 after reinstalling PyTorch.
 
 ### Install Pre-Built Detectron2 (Linux only)
-```
-# for CUDA 10.2:
-python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/index.html
-```
-For other cuda versions, replace cu102 with "cu{101,92}" or "cpu".
+
+Choose from this table:
+
+<table class="docutils"><tbody><th width="80"> CUDA </th><th valign="bottom" align="left" width="100">torch 1.5</th><th valign="bottom" align="left" width="100">torch 1.4</th> <tr><td align="left">10.2</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/torch1.5/index.html
+</code></pre> </details> </td> <td align="left"> </td> </tr> <tr><td align="left">10.1</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.5/index.html
+</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.4/index.html
+</code></pre> </details> </td> </tr> <tr><td align="left">10.0</td><td align="left"> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu100/torch1.4/index.html
+</code></pre> </details> </td> </tr> <tr><td align="left">9.2</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu92/torch1.5/index.html
+</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu92/torch1.4/index.html
+</code></pre> </details> </td> </tr> <tr><td align="left">cpu</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.5/index.html
+</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.4/index.html
+</code></pre> </details> </td> </tr></tbody></table>
+
 
 Note that:
-1. Such installation has to be used with certain version of official PyTorch release.
-   See [releases](https://github.com/facebookresearch/detectron2/releases) for requirements.
+1. The pre-built package has to be used with corresponding version of CUDA and official PyTorch release.
    It will not work with a different version of PyTorch or a non-official build of PyTorch.
-	 The CUDA version used by PyTorch and detectron2 has to match as well.
 2. Such installation is out-of-date w.r.t. master branch of detectron2. It may not be
-	 compatible with the master branch of a research project that uses detectron2 (e.g. those in
-	 [projects](projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
+   compatible with the master branch of a research project that uses detectron2 (e.g. those in
+   [projects](projects) or [meshrcnn](https://github.com/facebookresearch/meshrcnn/)).
 
 ### Common Installation Issues
 
@@ -119,25 +133,25 @@ Two possibilities:
 
   To check whether it is the case,
   use `python -m detectron2.utils.collect_env` to find out inconsistent CUDA versions.
-	In the output of this command, you should expect "Detectron2 CUDA Compiler", "CUDA_HOME", "PyTorch built with - CUDA"
-	to contain cuda libraries of the same version.
+  In the output of this command, you should expect "Detectron2 CUDA Compiler", "CUDA_HOME", "PyTorch built with - CUDA"
+  to contain cuda libraries of the same version.
 
-	When they are inconsistent,
-	you need to either install a different build of PyTorch (or build by yourself)
-	to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
+  When they are inconsistent,
+  you need to either install a different build of PyTorch (or build by yourself)
+  to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
 * Detectron2 or PyTorch/torchvision is not built for the correct GPU architecture (compute compatibility).
 
-	The GPU architecture for PyTorch/detectron2/torchvision is available in the "architecture flags" in
-	`python -m detectron2.utils.collect_env`.
+  The GPU architecture for PyTorch/detectron2/torchvision is available in the "architecture flags" in
+  `python -m detectron2.utils.collect_env`.
 
-	The GPU architecture flags of detectron2/torchvision by default matches the GPU model detected
-	during compilation. This means the compiled code may not work on a different GPU model.
-	To overwrite the GPU architecture for detectron2/torchvision, use `TORCH_CUDA_ARCH_LIST` environment variable during compilation.
+  The GPU architecture flags of detectron2/torchvision by default matches the GPU model detected
+  during compilation. This means the compiled code may not work on a different GPU model.
+  To overwrite the GPU architecture for detectron2/torchvision, use `TORCH_CUDA_ARCH_LIST` environment variable during compilation.
 
-	For example, `export TORCH_CUDA_ARCH_LIST=6.0,7.0` makes it compile for both P100s and V100s.
-	Visit [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus) to find out
-	the correct compute compatibility number for your device.
+  For example, `export TORCH_CUDA_ARCH_LIST=6.0,7.0` makes it compile for both P100s and V100s.
+  Visit [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus) to find out
+  the correct compute compatibility number for your device.
 
 </details>
 
@@ -165,10 +179,11 @@ to match your local CUDA installation, or install a different version of CUDA to
 C++ compilation errors from NVCC
 </summary>
 <br/>
+
 1. NVCC version has to match the CUDA version of your PyTorch.
 
 2. NVCC has compatibility issues with certain versions of gcc. You may need a different
-	 version of gcc. The version used by PyTorch can be found by `print(torch.__config__.show())`.
+   version of gcc. The version used by PyTorch can be found by `print(torch.__config__.show())`.
 </details>
 
 

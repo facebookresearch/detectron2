@@ -71,18 +71,39 @@ def collect_env_info():
         )
     except ImportError:
         data.append(("detectron2", "failed to import"))
+
+    try:
+        from detectron2 import _C
+    except ImportError:
+        data.append(("detectron2._C", "failed to import"))
+
+        # print system compilers when extension fails to build
+        if sys.platform != "win32":  # don't know what to do for windows
+            try:
+                # this is how torch/utils/cpp_extensions.py choose compiler
+                cxx = os.environ.get("CXX", "c++")
+                cxx = subprocess.check_output("'{}' --version".format(cxx), shell=True)
+                cxx = cxx.decode("utf-8").strip().split("\n")[0]
+            except subprocess.SubprocessError:
+                cxx = "Not found"
+            data.append(("Compiler", cxx))
+
+            if has_cuda and CUDA_HOME is not None:
+                try:
+                    nvcc = os.path.join(CUDA_HOME, "bin", "nvcc")
+                    nvcc = subprocess.check_output("'{}' -V".format(nvcc), shell=True)
+                    nvcc = nvcc.decode("utf-8").strip().split("\n")[-1]
+                except subprocess.SubprocessError:
+                    nvcc = "Not found"
+                data.append(("CUDA compiler", nvcc))
     else:
-        try:
-            from detectron2 import _C
-        except ImportError:
-            data.append(("detectron2._C", "failed to import"))
-        else:
-            data.append(("detectron2 compiler", _C.get_compiler_version()))
-            data.append(("detectron2 CUDA compiler", _C.get_cuda_version()))
-            if has_cuda:
-                data.append(
-                    ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
-                )
+        # print compilers that are used to build extension
+        data.append(("Compiler", _C.get_compiler_version()))
+        data.append(("CUDA compiler", _C.get_cuda_version()))
+        if has_cuda:
+            data.append(
+                ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
+            )
 
     data.append(get_env_module())
     data.append(("PyTorch", torch.__version__ + " @" + os.path.dirname(torch.__file__)))
@@ -99,15 +120,6 @@ def collect_env_info():
         from torch.utils.cpp_extension import CUDA_HOME
 
         data.append(("CUDA_HOME", str(CUDA_HOME)))
-
-        if CUDA_HOME is not None and os.path.isdir(CUDA_HOME):
-            try:
-                nvcc = os.path.join(CUDA_HOME, "bin", "nvcc")
-                nvcc = subprocess.check_output("'{}' -V | tail -n1".format(nvcc), shell=True)
-                nvcc = nvcc.decode("utf-8").strip()
-            except subprocess.SubprocessError:
-                nvcc = "Not Available"
-            data.append(("NVCC", nvcc))
 
         cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
         if cuda_arch_list:

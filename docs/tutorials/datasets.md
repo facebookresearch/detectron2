@@ -64,7 +64,7 @@ and the required fields vary based on what the dataloader or the task needs (see
     It must be a member of
     [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
     Currently supports: `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS`.
-  + `category_id` (int): an integer in the range [0, num_categories) representing the category label.
+  + `category_id` (int): an integer in the range [0, num_categories-1] representing the category label.
     The value num_categories is reserved to represent the "background" category, if applicable.
   + `segmentation` (list[list[float]] or dict): the segmentation mask of the instance.
     + If `list[list[float]]`, it represents a list of polygons, one for each connected component
