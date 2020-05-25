@@ -2,7 +2,7 @@
 # Evaluation
 
 Evaluation is a process that takes a number of inputs/outputs pairs and aggregate them.
-You can always [use the model](models.html) directly and just parse its inputs/outputs manually to perform
+You can always [use the model](./models.md) directly and just parse its inputs/outputs manually to perform
 evaluation.
 Alternatively, evaluation is implemented in detectron2 using the [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator)
 interface.

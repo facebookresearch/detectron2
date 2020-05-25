@@ -1,10 +1,40 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from __future__ import absolute_import, division, print_function, unicode_literals
+import numpy as np
 import unittest
 import torch
 from torchvision import ops
 
 from detectron2.layers import batched_nms, batched_nms_rotated, nms_rotated
+
+
+def nms_edit_distance(keep1, keep2):
+    """
+    Compare the "keep" result of two nms call.
+    They are allowed to be different in terms of edit distance
+    due to floating point precision issues, e.g.,
+    if a box happen to have an IoU of 0.5 with another box,
+    one implentation may choose to keep it while another may discard it.
+    """
+    if torch.equal(keep1, keep2):
+        # they should be equal most of the time
+        return 0
+    keep1, keep2 = tuple(keep1.cpu()), tuple(keep2.cpu())
+    m, n = len(keep1), len(keep2)
+
+    # edit distance with DP
+    f = [np.arange(n + 1), np.arange(n + 1)]
+    for i in range(m):
+        cur_row = i % 2
+        other_row = (i + 1) % 2
+        f[other_row][0] = i + 1
+        for j in range(n):
+            f[other_row][j + 1] = (
+                f[cur_row][j]
+                if keep1[i] == keep2[j]
+                else min(min(f[cur_row][j], f[cur_row][j + 1]), f[other_row][j]) + 1
+            )
+    return f[m % 2][n]
 
 
 class TestNMSRotated(unittest.TestCase):
@@ -43,7 +73,6 @@ class TestNMSRotated(unittest.TestCase):
         return boxes, scores
 
     def test_batched_nms_rotated_0_degree_cpu(self):
-        # torch.manual_seed(0)
         N = 2000
         num_classes = 50
         boxes, scores = self._create_tensors(N)
@@ -63,11 +92,10 @@ class TestNMSRotated(unittest.TestCase):
             assert torch.allclose(
                 rotated_boxes, backup
             ), "rotated_boxes modified by batched_nms_rotated"
-            assert torch.equal(keep, keep_ref), err_msg.format(iou)
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_batched_nms_rotated_0_degree_cuda(self):
-        # torch.manual_seed(0)
         N = 2000
         num_classes = 50
         boxes, scores = self._create_tensors(N)
@@ -81,13 +109,14 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             backup = boxes.clone()
             keep_ref = batched_nms(boxes.cuda(), scores.cuda(), idxs, iou)
-            assert torch.allclose(boxes, backup), "boxes modified by batched_nms"
+            self.assertTrue(torch.allclose(boxes, backup), "boxes modified by batched_nms")
             backup = rotated_boxes.clone()
             keep = batched_nms_rotated(rotated_boxes.cuda(), scores.cuda(), idxs, iou)
-            assert torch.allclose(
-                rotated_boxes, backup
-            ), "rotated_boxes modified by batched_nms_rotated"
-            assert torch.equal(keep, keep_ref), err_msg.format(iou)
+            self.assertTrue(
+                torch.allclose(rotated_boxes, backup),
+                "rotated_boxes modified by batched_nms_rotated",
+            )
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
 
     def test_nms_rotated_0_degree_cpu(self):
         N = 1000
@@ -101,7 +130,7 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.5]:
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
-            assert torch.equal(keep, keep_ref), err_msg.format(iou)
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
 
     def test_nms_rotated_90_degrees_cpu(self):
         N = 1000

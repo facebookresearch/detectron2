@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import functools
-import glob
 import json
 import logging
 import multiprocessing as mp
@@ -104,17 +103,10 @@ def load_cityscapes_semantic(image_dir, gt_dir):
             "sem_seg_file_name".
     """
     ret = []
-    for image_file in glob.glob(os.path.join(image_dir, "**/*.png")):
-        suffix = "leftImg8bit.png"
-        assert image_file.endswith(suffix)
-        prefix = image_dir
-
-        label_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_labelTrainIds.png"
-        assert os.path.isfile(
-            label_file
-        ), "Please generate labelTrainIds.png with cityscapesscripts/preparation/createTrainIdLabelImgs.py"  # noqa
-
-        json_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_polygons.json"
+    # gt_dir is small and contain many small files. make sense to fetch to local first
+    gt_dir = PathManager.get_local_path(gt_dir)
+    for image_file, _, label_file, json_file in get_cityscapes_files(image_dir, gt_dir):
+        label_file = label_file.replace("labelIds", "labelTrainIds")
 
         with PathManager.open(json_file, "r") as f:
             jsonobj = json.load(f)
@@ -126,12 +118,16 @@ def load_cityscapes_semantic(image_dir, gt_dir):
                 "width": jsonobj["imgWidth"],
             }
         )
+    assert len(ret), f"No images found in {image_dir}!"
+    assert PathManager.isfile(
+        ret[0]["sem_seg_file_name"]
+    ), "Please generate labelTrainIds.png with cityscapesscripts/preparation/createTrainIdLabelImgs.py"  # noqa
     return ret
 
 
 def cityscapes_files_to_dict(files, from_json, to_polygons):
     """
-    Parse cityscapes annotation files to a dict.
+    Parse cityscapes annotation files to a instance segmentation dataset dict.
 
     Args:
         files (tuple): consists of (image_file, instance_id_file, label_id_file, json_file)
@@ -324,7 +320,7 @@ if __name__ == "__main__":
         meta = Metadata().set(stuff_names=stuff_names, stuff_colors=stuff_colors)
 
     for d in dicts:
-        img = np.array(Image.open(d["file_name"]))
+        img = np.array(Image.open(PathManager.open(d["file_name"], "rb")))
         visualizer = Visualizer(img, metadata=meta)
         vis = visualizer.draw_dataset_dict(d)
         # cv2.imshow("a", vis.get_image()[:, :, ::-1])

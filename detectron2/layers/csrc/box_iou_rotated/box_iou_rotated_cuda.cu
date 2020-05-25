@@ -63,15 +63,20 @@ __global__ void box_iou_rotated_cuda_kernel(
 }
 
 at::Tensor box_iou_rotated_cuda(
+    // input must be contiguous
     const at::Tensor& boxes1,
     const at::Tensor& boxes2) {
   using scalar_t = float;
-  AT_ASSERTM(boxes1.type().is_cuda(), "boxes1 must be a CUDA tensor");
-  AT_ASSERTM(boxes2.type().is_cuda(), "boxes2 must be a CUDA tensor");
+  AT_ASSERTM(
+      boxes1.scalar_type() == at::kFloat, "boxes1 must be a float tensor");
+  AT_ASSERTM(
+      boxes2.scalar_type() == at::kFloat, "boxes2 must be a float tensor");
+  AT_ASSERTM(boxes1.is_cuda(), "boxes1 must be a CUDA tensor");
+  AT_ASSERTM(boxes2.is_cuda(), "boxes2 must be a CUDA tensor");
   at::cuda::CUDAGuard device_guard(boxes1.device());
 
-  int num_boxes1 = boxes1.size(0);
-  int num_boxes2 = boxes2.size(0);
+  auto num_boxes1 = boxes1.size(0);
+  auto num_boxes2 = boxes2.size(0);
 
   at::Tensor ious =
       at::empty({num_boxes1 * num_boxes2}, boxes1.options().dtype(at::kFloat));
@@ -94,8 +99,10 @@ at::Tensor box_iou_rotated_cuda(
       transpose = true;
     }
 
-    const int blocks_x = at::cuda::ATenCeilDiv(num_boxes1, BLOCK_DIM_X);
-    const int blocks_y = at::cuda::ATenCeilDiv(num_boxes2, BLOCK_DIM_Y);
+    const int blocks_x =
+        at::cuda::ATenCeilDiv(static_cast<int>(num_boxes1), BLOCK_DIM_X);
+    const int blocks_y =
+        at::cuda::ATenCeilDiv(static_cast<int>(num_boxes2), BLOCK_DIM_Y);
 
     dim3 blocks(blocks_x, blocks_y);
     dim3 threads(BLOCK_DIM_X, BLOCK_DIM_Y);

@@ -207,7 +207,8 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
         data, im_info = inputs
         data = alias(data, "data")
         im_info = alias(im_info, "im_info")
-        normalized_data = self._wrapped_model.normalizer(data)
+        mean, std = self._wrapped_model.pixel_mean, self._wrapped_model.pixel_std
+        normalized_data = (data - mean) / std
         normalized_data = alias(normalized_data, "normalized_data")
 
         # Pack (data, im_info) into ImageList which is recognized by self.inference.

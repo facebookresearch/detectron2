@@ -27,9 +27,9 @@ def launch(main_func, num_gpus_per_machine, num_machines=1, machine_rank=0, dist
         main_func: a function that will be called by `main_func(*args)`
         num_machines (int): the total number of machines
         machine_rank (int): the rank of this machine (one per machine)
-        dist_url (str): url to connect to for distributed training, including protocol
+        dist_url (str): url to connect to for distributed jobs, including protocol
                        e.g. "tcp://127.0.0.1:8686".
-                       Can be set to auto to automatically select a free port on localhost
+                       Can be set to "auto" to automatically select a free port on localhost
         args (tuple): arguments passed to main_func
     """
     world_size = num_machines * num_gpus_per_machine
@@ -38,9 +38,14 @@ def launch(main_func, num_gpus_per_machine, num_machines=1, machine_rank=0, dist
         # TODO prctl in spawned processes
 
         if dist_url == "auto":
-            assert num_machines == 1, "dist_url=auto cannot work with distributed training."
+            assert num_machines == 1, "dist_url=auto not supported in multi-machine jobs."
             port = _find_free_port()
             dist_url = f"tcp://127.0.0.1:{port}"
+        if num_machines > 1 and dist_url.startswith("file://"):
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "file:// is not a reliable init_method in multi-machine jobs. Prefer tcp://"
+            )
 
         mp.spawn(
             _distributed_worker,

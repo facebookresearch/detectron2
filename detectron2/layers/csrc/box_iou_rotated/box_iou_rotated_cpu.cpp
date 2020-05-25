@@ -9,14 +9,6 @@ void box_iou_rotated_cpu_kernel(
     const at::Tensor& boxes1,
     const at::Tensor& boxes2,
     at::Tensor& ious) {
-  auto widths1 = boxes1.select(1, 2).contiguous();
-  auto heights1 = boxes1.select(1, 3).contiguous();
-  auto widths2 = boxes2.select(1, 2).contiguous();
-  auto heights2 = boxes2.select(1, 3).contiguous();
-
-  at::Tensor areas1 = widths1 * heights1;
-  at::Tensor areas2 = widths2 * heights2;
-
   auto num_boxes1 = boxes1.size(0);
   auto num_boxes2 = boxes2.size(0);
 
@@ -29,6 +21,7 @@ void box_iou_rotated_cpu_kernel(
 }
 
 at::Tensor box_iou_rotated_cpu(
+    // input must be contiguous:
     const at::Tensor& boxes1,
     const at::Tensor& boxes2) {
   auto num_boxes1 = boxes1.size(0);

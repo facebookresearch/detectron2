@@ -29,9 +29,9 @@ class _ModelZooUrls(object):
         "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml": "137851257/model_final_f6e8b1.pkl",
         "COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml": "139173657/model_final_68b088.pkl",
         # COCO Detection with RetinaNet
-        "COCO-Detection/retinanet_R_50_FPN_1x.yaml": "137593951/model_final_b796dc.pkl",
-        "COCO-Detection/retinanet_R_50_FPN_3x.yaml": "137849486/model_final_4cafe0.pkl",
-        "COCO-Detection/retinanet_R_101_FPN_3x.yaml": "138363263/model_final_59f53c.pkl",
+        "COCO-Detection/retinanet_R_50_FPN_1x.yaml": "190397773/model_final_bfca0b.pkl",
+        "COCO-Detection/retinanet_R_50_FPN_3x.yaml": "190397829/model_final_5bd44e.pkl",
+        "COCO-Detection/retinanet_R_101_FPN_3x.yaml": "190397697/model_final_971ab9.pkl",
         # COCO Detection with RPN and Fast R-CNN
         "COCO-Detection/rpn_R_50_C4_1x.yaml": "137258005/model_final_450694.pkl",
         "COCO-Detection/rpn_R_50_FPN_1x.yaml": "137258492/model_final_02ce48.pkl",

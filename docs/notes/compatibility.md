@@ -73,7 +73,7 @@ about pixels, coordinates, and "+1"s.
 As mentioned above, despite the incompatibilities with Detectron, the relevant
 ops have been implemented in Caffe2.
 Therefore, models trained with detectron2 can be converted in Caffe2.
-See [Deployment](../tutorials/deployment.html) for the tutorial.
+See [Deployment](../tutorials/deployment.md) for the tutorial.
 
 ## Compatibility with TensorFlow
 

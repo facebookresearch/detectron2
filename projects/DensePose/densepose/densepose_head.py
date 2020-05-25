@@ -2,6 +2,7 @@
 import math
 from dataclasses import dataclass
 from enum import Enum
+from typing import Iterable, List, Optional, Tuple
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -9,10 +10,11 @@ from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
+from detectron2.structures import Instances
 from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
 
-from .structures import DensePoseOutput
+from .data.structures import DensePoseOutput
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
 
@@ -128,7 +130,7 @@ class DensePoseDeepLabHead(nn.Module):
             output = x
         return output
 
-    def _get_layer_name(self, i):
+    def _get_layer_name(self, i: int):
         layer_name = "body_conv_fcn{}".format(i + 1)
         return layer_name
 
@@ -230,7 +232,7 @@ class _NonLocalBlockND(nn.Module):
             bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm2d
         else:
             conv_nd = nn.Conv1d
-            max_pool_layer = nn.MaxPool1d(kernel_size=(2))
+            max_pool_layer = nn.MaxPool1d(kernel_size=2)
             bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm1d
 
         self.g = conv_nd(
@@ -464,6 +466,7 @@ class DensePosePredictor(nn.Module):
 class DensePoseDataFilter(object):
     def __init__(self, cfg):
         self.iou_threshold = cfg.MODEL.ROI_DENSEPOSE_HEAD.FG_IOU_THRESHOLD
+        self.keep_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
 
     @torch.no_grad()
     def __call__(self, proposals_with_targets):
@@ -476,7 +479,9 @@ class DensePoseDataFilter(object):
         """
         proposals_filtered = []
         for proposals_per_image in proposals_with_targets:
-            if not hasattr(proposals_per_image, "gt_densepose"):
+            if not hasattr(proposals_per_image, "gt_densepose") and (
+                not hasattr(proposals_per_image, "gt_masks") or not self.keep_masks
+            ):
                 continue
             assert hasattr(proposals_per_image, "gt_boxes")
             assert hasattr(proposals_per_image, "proposal_boxes")
@@ -486,17 +491,36 @@ class DensePoseDataFilter(object):
             iou = matched_boxlist_iou(gt_boxes, est_boxes)
             iou_select = iou > self.iou_threshold
             proposals_per_image = proposals_per_image[iou_select]
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
-            # filter out any target without densepose annotation
-            gt_densepose = proposals_per_image.gt_densepose
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
+
+            N_gt_boxes = len(proposals_per_image.gt_boxes)
+            assert N_gt_boxes == len(proposals_per_image.proposal_boxes), (
+                f"The number of GT boxes {N_gt_boxes} is different from the "
+                f"number of proposal boxes {len(proposals_per_image.proposal_boxes)}"
+            )
+            # filter out any target without suitable annotation
+            if self.keep_masks:
+                gt_masks = (
+                    proposals_per_image.gt_masks
+                    if hasattr(proposals_per_image, "gt_masks")
+                    else [None] * N_gt_boxes
+                )
+            else:
+                gt_masks = [None] * N_gt_boxes
+            gt_densepose = (
+                proposals_per_image.gt_densepose
+                if hasattr(proposals_per_image, "gt_densepose")
+                else [None] * N_gt_boxes
+            )
+            assert len(gt_masks) == N_gt_boxes
+            assert len(gt_densepose) == N_gt_boxes
             selected_indices = [
-                i for i, dp_target in enumerate(gt_densepose) if dp_target is not None
+                i
+                for i, (dp_target, mask_target) in enumerate(zip(gt_densepose, gt_masks))
+                if (dp_target is not None) or (mask_target is not None)
             ]
-            if len(selected_indices) != len(gt_densepose):
+            if len(selected_indices) != N_gt_boxes:
                 proposals_per_image = proposals_per_image[selected_indices]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
             proposals_filtered.append(proposals_per_image)
         return proposals_filtered
 
@@ -516,7 +540,11 @@ def build_densepose_data_filter(cfg):
     return dp_filter
 
 
-def densepose_inference(densepose_outputs, densepose_confidences, detections):
+def densepose_inference(
+    densepose_outputs: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    densepose_confidences: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    detections: List[Instances],
+):
     """
     Infer dense pose estimate based on outputs from the DensePose head
     and detections. The estimate for each detection instance is stored in its
@@ -831,7 +859,18 @@ def _extract_single_tensors_from_matches(proposals_with_targets):
         n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)
         if not n_i:
             continue
-        i_gt_img, x_norm_img, y_norm_img, u_gt_img, v_gt_img, s_gt_img, bbox_xywh_gt_img, bbox_xywh_est_img, i_bbox_img, i_with_dp_img = _extract_single_tensors_from_matches_one_image(  # noqa
+        (
+            i_gt_img,
+            x_norm_img,
+            y_norm_img,
+            u_gt_img,
+            v_gt_img,
+            s_gt_img,
+            bbox_xywh_gt_img,
+            bbox_xywh_est_img,
+            i_bbox_img,
+            i_with_dp_img,
+        ) = _extract_single_tensors_from_matches_one_image(  # noqa
             proposals_targets_per_image, len(i_with_dp_all), n
         )
         i_gt_all.extend(i_gt_img)
@@ -880,6 +919,65 @@ def _extract_single_tensors_from_matches(proposals_with_targets):
         s_gt,
         i_bbox,
     )
+
+
+@dataclass
+class DataForMaskLoss:
+    """
+    Contains mask GT and estimated data for proposals from multiple images:
+    """
+
+    # tensor of size (K, H, W) containing GT labels
+    masks_gt: Optional[torch.Tensor] = None
+    # tensor of size (K, C, H, W) containing estimated scores
+    masks_est: Optional[torch.Tensor] = None
+
+
+def _extract_data_for_mask_loss_from_matches(
+    proposals_targets: Iterable[Instances], estimated_segm: torch.Tensor
+) -> DataForMaskLoss:
+    """
+    Extract data for mask loss from instances that contain matched GT and
+    estimated bounding boxes.
+    Args:
+        proposals_targets: Iterable[Instances]
+            matched GT and estimated results, each item in the iterable
+            corresponds to data in 1 image
+        estimated_segm: torch.Tensor if size
+            size to which GT masks are resized
+    Return:
+        masks_est: tensor(K, C, H, W) of float - class scores
+        masks_gt: tensor(K, H, W) of int64 - labels
+    """
+    data = DataForMaskLoss()
+    masks_gt = []
+    offset = 0
+    assert estimated_segm.shape[2] == estimated_segm.shape[3], (
+        f"Expected estimated segmentation to have a square shape, "
+        f"but the actual shape is {estimated_segm.shape[2:]}"
+    )
+    mask_size = estimated_segm.shape[2]
+    num_proposals = sum(inst.proposal_boxes.tensor.size(0) for inst in proposals_targets)
+    num_estimated = estimated_segm.shape[0]
+    assert (
+        num_proposals == num_estimated
+    ), "The number of proposals {} must be equal to the number of estimates {}".format(
+        num_proposals, num_estimated
+    )
+
+    for proposals_targets_per_image in proposals_targets:
+        n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)
+        if not n_i:
+            continue
+        gt_masks_per_image = proposals_targets_per_image.gt_masks.crop_and_resize(
+            proposals_targets_per_image.proposal_boxes.tensor, mask_size
+        ).to(device=estimated_segm.device)
+        masks_gt.append(gt_masks_per_image)
+        offset += n_i
+    if masks_gt:
+        data.masks_est = estimated_segm
+        data.masks_gt = torch.cat(masks_gt, dim=0)
+    return data
 
 
 class IIDIsotropicGaussianUVLoss(nn.Module):
@@ -980,6 +1078,7 @@ class DensePoseLosses(object):
         self.w_segm       = cfg.MODEL.ROI_DENSEPOSE_HEAD.INDEX_WEIGHTS
         self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # fmt: on
+        self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
         self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
         if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
             self.uv_loss_with_confidences = IIDIsotropicGaussianUVLoss(
@@ -991,6 +1090,41 @@ class DensePoseLosses(object):
             )
 
     def __call__(self, proposals_with_gt, densepose_outputs, densepose_confidences):
+        if not self.segm_trained_by_masks:
+            return self.produce_densepose_losses(
+                proposals_with_gt, densepose_outputs, densepose_confidences
+            )
+        else:
+            losses = {}
+            losses_densepose = self.produce_densepose_losses(
+                proposals_with_gt, densepose_outputs, densepose_confidences
+            )
+            losses.update(losses_densepose)
+            losses_mask = self.produce_mask_losses(
+                proposals_with_gt, densepose_outputs, densepose_confidences
+            )
+            losses.update(losses_mask)
+            return losses
+
+    def produce_mask_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
+        losses = {}
+        # densepose outputs are computed for all images and all bounding boxes;
+        # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
+        # the outputs will have size(0) == 3+1+2+1 == 7
+        segm_scores, _, _, _ = densepose_outputs
+        with torch.no_grad():
+            mask_loss_data = _extract_data_for_mask_loss_from_matches(
+                proposals_with_gt, segm_scores
+            )
+        if (mask_loss_data.masks_gt is None) or (mask_loss_data.masks_est is None):
+            losses["loss_densepose_S"] = segm_scores.sum() * 0
+            return losses
+        losses["loss_densepose_S"] = (
+            F.cross_entropy(mask_loss_data.masks_est, mask_loss_data.masks_gt.long()) * self.w_segm
+        )
+        return losses
+
+    def produce_densepose_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
         losses = {}
         # densepose outputs are computed for all images and all bounding boxes;
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
@@ -1004,7 +1138,19 @@ class DensePoseLosses(object):
         assert u.size(3) == index_uv.size(3)
 
         with torch.no_grad():
-            index_uv_img, i_with_dp, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, u_gt_all, v_gt_all, s_gt, index_bbox = _extract_single_tensors_from_matches(  # noqa
+            (
+                index_uv_img,
+                i_with_dp,
+                bbox_xywh_est,
+                bbox_xywh_gt,
+                index_gt_all,
+                x_norm,
+                y_norm,
+                u_gt_all,
+                v_gt_all,
+                s_gt,
+                index_bbox,
+            ) = _extract_single_tensors_from_matches(  # noqa
                 proposals_with_gt
             )
         n_batch = len(i_with_dp)
@@ -1015,7 +1161,8 @@ class DensePoseLosses(object):
         # Add fake (zero) loss in the form Tensor.sum() * 0
         if not n_batch:
             losses["loss_densepose_I"] = index_uv.sum() * 0
-            losses["loss_densepose_S"] = s.sum() * 0
+            if not self.segm_trained_by_masks:
+                losses["loss_densepose_S"] = s.sum() * 0
             if self.confidence_model_cfg.uv_confidence.enabled:
                 losses["loss_densepose_UV"] = (u.sum() + v.sum()) * 0
                 if conf_type == DensePoseUVConfidenceType.IID_ISO:
@@ -1032,7 +1179,17 @@ class DensePoseLosses(object):
         zh = u.size(2)
         zw = u.size(3)
 
-        j_valid, y_lo, y_hi, x_lo, x_hi, w_ylo_xlo, w_ylo_xhi, w_yhi_xlo, w_yhi_xhi = _grid_sampling_utilities(  # noqa
+        (
+            j_valid,
+            y_lo,
+            y_hi,
+            x_lo,
+            x_hi,
+            w_ylo_xlo,
+            w_ylo_xhi,
+            w_yhi_xlo,
+            w_yhi_xhi,
+        ) = _grid_sampling_utilities(  # noqa
             zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, index_bbox
         )
 
@@ -1133,17 +1290,18 @@ class DensePoseLosses(object):
 
         # Resample everything to the estimated data size, no need to resample
         # S_est then:
-        s_est = s[i_with_dp]
-        with torch.no_grad():
-            s_gt = _resample_data(
-                s_gt.unsqueeze(1),
-                bbox_xywh_gt,
-                bbox_xywh_est,
-                self.heatmap_size,
-                self.heatmap_size,
-                mode="nearest",
-                padding_mode="zeros",
-            ).squeeze(1)
+        if not self.segm_trained_by_masks:
+            s_est = s[i_with_dp]
+            with torch.no_grad():
+                s_gt = _resample_data(
+                    s_gt.unsqueeze(1),
+                    bbox_xywh_gt,
+                    bbox_xywh_est,
+                    self.heatmap_size,
+                    self.heatmap_size,
+                    mode="nearest",
+                    padding_mode="zeros",
+                ).squeeze(1)
 
         # add point-based losses:
         if self.confidence_model_cfg.uv_confidence.enabled:
@@ -1171,10 +1329,11 @@ class DensePoseLosses(object):
         index_uv_loss = F.cross_entropy(index_uv_est, index_uv_gt.long()) * self.w_part
         losses["loss_densepose_I"] = index_uv_loss
 
-        if self.n_segm_chan == 2:
-            s_gt = s_gt > 0
-        s_loss = F.cross_entropy(s_est, s_gt.long()) * self.w_segm
-        losses["loss_densepose_S"] = s_loss
+        if not self.segm_trained_by_masks:
+            if self.n_segm_chan == 2:
+                s_gt = s_gt > 0
+            s_loss = F.cross_entropy(s_est, s_gt.long()) * self.w_segm
+            losses["loss_densepose_S"] = s_loss
         return losses
 
 

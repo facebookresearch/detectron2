@@ -274,6 +274,8 @@ class TensorMaskAnchorGenerator(DefaultAnchorGenerator):
         # Convert anchors from Tensor to Boxes
         anchors_per_im = [Boxes(x) for x in anchors_list]
 
+        # TODO it can be simplified to not return duplicated information for
+        # each image, just like detectron2's own AnchorGenerator
         anchors = [copy.deepcopy(anchors_per_im) for _ in range(num_images)]
         unit_lengths = [copy.deepcopy(lengths_list) for _ in range(num_images)]
         indexes = [copy.deepcopy(indexes_list) for _ in range(num_images)]
@@ -292,9 +294,6 @@ class TensorMask(nn.Module):
     def __init__(self, cfg):
         super().__init__()
 
-        # get the deice of the model
-        self.device = torch.device(cfg.MODEL.DEVICE)
-
         # fmt: off
         self.num_classes              = cfg.MODEL.TENSOR_MASK.NUM_CLASSES
         self.in_features              = cfg.MODEL.TENSOR_MASK.IN_FEATURES
@@ -312,8 +311,7 @@ class TensorMask(nn.Module):
         self.mask_on                  = cfg.MODEL.MASK_ON
         self.mask_loss_weight         = cfg.MODEL.TENSOR_MASK.MASK_LOSS_WEIGHT
         self.mask_pos_weight          = torch.tensor(cfg.MODEL.TENSOR_MASK.POSITIVE_WEIGHT,
-                                                     dtype=torch.float32,
-                                                     device=self.device)
+                                                     dtype=torch.float32)
         self.bipyramid_on             = cfg.MODEL.TENSOR_MASK.BIPYRAMID_ON
         # fmt: on
 
@@ -336,10 +334,12 @@ class TensorMask(nn.Module):
         )
         # box transform
         self.box2box_transform = Box2BoxTransform(weights=cfg.MODEL.TENSOR_MASK.BBOX_REG_WEIGHTS)
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-        self.to(self.device)
+        self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1))
+
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     def forward(self, batched_inputs):
         """
@@ -737,7 +737,7 @@ class TensorMask(nn.Module):
         Normalize, pad and batch the input images.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         return images
 
@@ -842,7 +842,7 @@ class TensorMaskHead(nn.Module):
                     torch.nn.init.constant_(layer.bias, 0)
 
         # Use prior in model initialization to improve stability
-        bias_value = -math.log((1 - 0.01) / 0.01)
+        bias_value = -(math.log((1 - 0.01) / 0.01))
         torch.nn.init.constant_(self.cls_score.bias, bias_value)
 
     def forward(self, features):

@@ -1,8 +1,8 @@
 _BASE_: "../densepose_rcnn_R_50_FPN_s1x.yaml"
 MODEL:
-  WEIGHTS: "https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_s1x/143908701/model_final_dd99d2.pkl"
+  WEIGHTS: "https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_s1x/165712039/model_final_162be9.pkl"
 DATASETS:
   TRAIN: ()
   TEST: ("densepose_coco_2014_minival_100",)
 TEST:
-  EXPECTED_RESULTS: [["bbox", "AP", 56.09, 0.025], ["densepose_gps", "AP",  46.76, 0.02], ["densepose_gpsm", "AP", 51.64, 0.02]]
+  EXPECTED_RESULTS: [["bbox", "AP", 59.27, 0.025], ["densepose_gps", "AP",  60.11, 0.02], ["densepose_gpsm", "AP", 64.20, 0.02]]

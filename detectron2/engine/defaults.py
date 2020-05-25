@@ -56,14 +56,30 @@ except ImportError:
 __all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
 
 
-def default_argument_parser():
+def default_argument_parser(epilog=None):
     """
     Create a parser with some common arguments used by detectron2 users.
+
+    Args:
+        epilog (str): epilog passed to ArgumentParser describing the usage.
 
     Returns:
         argparse.ArgumentParser:
     """
-    parser = argparse.ArgumentParser(description="Detectron2 Training")
+    parser = argparse.ArgumentParser(
+        epilog=epilog
+        or f"""
+Examples:
+
+Run on single machine:
+    $ {sys.argv[0]} --num-gpus 8 --config-file cfg.yaml MODEL.WEIGHTS /path/to/weight.pth
+
+Run on multiple machines:
+    (machine0)$ {sys.argv[0]} --machine-rank 0 --num-machines 2 --dist-url <URL> [--other-flags]
+    (machine1)$ {sys.argv[0]} --machine-rank 1 --num-machines 2 --dist-url <URL> [--other-flags]
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument(
         "--resume",
@@ -72,7 +88,7 @@ def default_argument_parser():
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
-    parser.add_argument("--num-machines", type=int, default=1)
+    parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
     parser.add_argument(
         "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
@@ -81,7 +97,12 @@ def default_argument_parser():
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
     port = 2 ** 15 + 2 ** 14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2 ** 14
-    parser.add_argument("--dist-url", default="tcp://127.0.0.1:{}".format(port))
+    parser.add_argument(
+        "--dist-url",
+        default="tcp://127.0.0.1:{}".format(port),
+        help="initialization URL for pytorch distributed backend. See "
+        "https://pytorch.org/docs/stable/distributed.html for details.",
+    )
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -333,21 +354,20 @@ class DefaultTrainer(SimpleTrainer):
 
     def resume_or_load(self, resume=True):
         """
-        If `resume==True`, and last checkpoint exists, resume from it.
+        If `resume==True`, and last checkpoint exists, resume from it, load all checkpointables
+        (eg. optimizer and scheduler) and update iteration counter.
 
-        Otherwise, load the model specified by the config.
+        Otherwise, load the model specified by the config (skip all checkpointables) and start from
+        the first iteration.
 
         Args:
             resume (bool): whether to do resume or not
         """
-        # The checkpoint stores the training iteration that just finished, thus we start
-        # at the next iteration (or iter zero if there's no checkpoint).
-        self.start_iter = (
-            self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume).get(
-                "iteration", -1
-            )
-            + 1
-        )
+        checkpoint = self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
+        if resume and self.checkpointer.has_checkpoint():
+            self.start_iter = checkpoint.get("iteration", -1) + 1
+            # The checkpoint stores the training iteration that just finished, thus we start
+            # at the next iteration (or iter zero if there's no checkpoint).
 
     def build_hooks(self):
         """

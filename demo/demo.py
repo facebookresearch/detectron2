@@ -112,12 +112,14 @@ if __name__ == "__main__":
                     break  # esc to quit
     elif args.webcam:
         assert args.input is None, "Cannot have both --input and --webcam!"
+        assert args.output is None, "output not yet supported with --webcam!"
         cam = cv2.VideoCapture(0)
         for vis in tqdm.tqdm(demo.run_on_video(cam)):
             cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
             cv2.imshow(WINDOW_NAME, vis)
             if cv2.waitKey(1) == 27:
                 break  # esc to quit
+        cam.release()
         cv2.destroyAllWindows()
     elif args.video_input:
         video = cv2.VideoCapture(args.video_input)

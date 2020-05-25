@@ -183,7 +183,7 @@ def register_all_cityscapes(root):
             ),
         )
         MetadataCatalog.get(inst_key).set(
-            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes", **meta
+            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes_instance", **meta
         )
 
         sem_key = key.format(task="sem_seg")
@@ -191,7 +191,7 @@ def register_all_cityscapes(root):
             sem_key, lambda x=image_dir, y=gt_dir: load_cityscapes_semantic(x, y)
         )
         MetadataCatalog.get(sem_key).set(
-            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="sem_seg", **meta
+            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes_sem_seg", **meta
         )
 
 

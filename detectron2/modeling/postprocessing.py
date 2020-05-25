@@ -3,6 +3,7 @@ from torch.nn import functional as F
 
 from detectron2.layers import paste_masks_in_image
 from detectron2.structures import Instances
+from detectron2.utils.memory import retry_if_cuda_oom
 
 
 def detector_postprocess(results, output_height, output_width, mask_threshold=0.5):
@@ -38,7 +39,7 @@ def detector_postprocess(results, output_height, output_width, mask_threshold=0.
     results = results[output_boxes.nonempty()]
 
     if results.has("pred_masks"):
-        results.pred_masks = paste_masks_in_image(
+        results.pred_masks = retry_if_cuda_oom(paste_masks_in_image)(
             results.pred_masks[:, 0, :, :],  # N, 1, M, M
             results.pred_boxes,
             results.image_size,

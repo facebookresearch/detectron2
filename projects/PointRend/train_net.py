@@ -13,17 +13,19 @@ import torch
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import MetadataCatalog
+from detectron2.data import MetadataCatalog, build_detection_train_loader
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 from detectron2.evaluation import (
-    CityscapesEvaluator,
+    CityscapesInstanceEvaluator,
+    CityscapesSemSegEvaluator,
     COCOEvaluator,
     DatasetEvaluators,
     LVISEvaluator,
+    SemSegEvaluator,
     verify_results,
 )
 
-from point_rend import add_pointrend_config
+from point_rend import SemSegDatasetMapper, add_pointrend_config
 
 
 class Trainer(DefaultTrainer):
@@ -50,11 +52,24 @@ class Trainer(DefaultTrainer):
             return LVISEvaluator(dataset_name, cfg, True, output_folder)
         if evaluator_type == "coco":
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
-        if evaluator_type == "cityscapes":
+        if evaluator_type == "sem_seg":
+            return SemSegEvaluator(
+                dataset_name,
+                distributed=True,
+                num_classes=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES,
+                ignore_label=cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
+                output_dir=output_folder,
+            )
+        if evaluator_type == "cityscapes_instance":
             assert (
                 torch.cuda.device_count() >= comm.get_rank()
             ), "CityscapesEvaluator currently do not work with multiple machines."
-            return CityscapesEvaluator(dataset_name)
+            return CityscapesInstanceEvaluator(dataset_name)
+        if evaluator_type == "cityscapes_sem_seg":
+            assert (
+                torch.cuda.device_count() >= comm.get_rank()
+            ), "CityscapesEvaluator currently do not work with multiple machines."
+            return CityscapesSemSegEvaluator(dataset_name)
         if len(evaluator_list) == 0:
             raise NotImplementedError(
                 "no Evaluator for the dataset {} with the type {}".format(
@@ -64,6 +79,14 @@ class Trainer(DefaultTrainer):
         if len(evaluator_list) == 1:
             return evaluator_list[0]
         return DatasetEvaluators(evaluator_list)
+
+    @classmethod
+    def build_train_loader(cls, cfg):
+        if "SemanticSegmentor" in cfg.MODEL.META_ARCHITECTURE:
+            mapper = SemSegDatasetMapper(cfg, True)
+        else:
+            mapper = None
+        return build_detection_train_loader(cfg, mapper=mapper)
 
 
 def setup(args):

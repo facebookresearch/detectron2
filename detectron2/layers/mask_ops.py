@@ -110,7 +110,8 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
         num_chunks = N
     else:
         # GPU benefits from parallelism for larger chunks, but may have memory issue
-        num_chunks = int(np.ceil(N * img_h * img_w * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
+        # int(img_h) because shape may be tensors in tracing
+        num_chunks = int(np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
         assert (
             num_chunks <= N
         ), "Default GPU_MEM_LIMIT in mask_ops.py is too small; try increasing it"

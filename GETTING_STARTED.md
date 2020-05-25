@@ -1,4 +1,3 @@
-
 ## Getting Started with Detectron2
 
 This document provides a brief intro of the usage of builtin command-line tools in detectron2.
@@ -14,7 +13,7 @@ For more advanced tutorials, refer to our [documentation](https://detectron2.rea
 ### Inference Demo with Pre-trained Models
 
 1. Pick a model and its config file from
-	[model zoo](https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md),
+	[model zoo](MODEL_ZOO.md),
 	for example, `mask_rcnn_R_50_FPN_3x.yaml`.
 2. We provide `demo.py` that is able to run builtin standard models. Run it with:
 ```
@@ -39,11 +38,11 @@ to understand its behavior. Some common arguments are:
 
 We provide a script in "tools/{,plain_}train_net.py", that is made to train
 all the configs provided in detectron2.
-You may want to use it as a reference to write your own training script for a new research.
+You may want to use it as a reference to write your own training script.
 
 To train a model with "train_net.py", first
 setup the corresponding datasets following
-[datasets/README.md](https://github.com/facebookresearch/detectron2/blob/master/datasets/README.md),
+[datasets/README.md](./datasets/README.md),
 then run:
 ```
 cd tools/
@@ -56,7 +55,7 @@ To train on 1 GPU, you may need to [change some parameters](https://arxiv.org/ab
 ```
 ./train_net.py \
 	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
-	SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
+	--num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 ```
 
 For most models, CPU training is not supported.

@@ -4,7 +4,18 @@
 from detectron2.config import CfgNode as CN
 
 
-def add_densepose_config(cfg):
+def add_dataset_category_config(cfg: CN):
+    """
+    Add config for additional category-related dataset options
+     - category whitelisting
+     - category mapping
+    """
+    _C = cfg
+    _C.DATASETS.CATEGORY_MAPS = CN(new_allowed=True)
+    _C.DATASETS.WHITELISTED_CATEGORIES = CN(new_allowed=True)
+
+
+def add_densepose_config(cfg: CN):
     """
     Add config for densepose head.
     """
@@ -34,6 +45,8 @@ def add_densepose_config(cfg):
     _C.MODEL.ROI_DENSEPOSE_HEAD.PART_WEIGHTS = 1.0
     # Loss weights for UV regression.
     _C.MODEL.ROI_DENSEPOSE_HEAD.POINT_REGRESSION_WEIGHTS = 0.01
+    # Coarse segmentation is trained using instance segmentation task data
+    _C.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS = False
     # For Decoder
     _C.MODEL.ROI_DENSEPOSE_HEAD.DECODER_ON = True
     _C.MODEL.ROI_DENSEPOSE_HEAD.DECODER_NUM_CLASSES = 256

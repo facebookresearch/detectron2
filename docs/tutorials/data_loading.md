@@ -15,13 +15,13 @@ Here is how `build_detection_{train,test}_loader` work:
    in a lightweight, canonical format. These dataset items are not yet ready to be used by the model (e.g., images are
    not loaded into memory, random augmentations have not been applied, etc.).
    Details about the dataset format and dataset registration can be found in
-   [datasets](datasets.html).
+   [datasets](./datasets.md).
 2. Each dict in this list is mapped by a function ("mapper"):
    * Users can customize this mapping function by specifying the "mapper" argument in
-        `build_detection_{train,test}_loader`. The default mapper is [DatasetMapper]( ../modules/data.html#detectron2.data.DatasetMapper).
+        `build_detection_{train,test}_loader`. The default mapper is [DatasetMapper](../modules/data.html#detectron2.data.DatasetMapper).
    * The output format of such function can be arbitrary, as long as it is accepted by the consumer of this data loader (usually the model).
      The outputs of the default mapper, after batching, follow the default model input format documented in
-     [Use Models](https://detectron2.readthedocs.io/tutorials/models.html#model-input-format).
+     [Use Models](./models.html#model-input-format).
    * The role of the mapper is to transform the lightweight, canonical representation of a dataset item into a format
      that is ready for the model to consume (including, e.g., read images, perform random data augmentation and convert to torch Tensors).
      If you would like to perform custom transformations to data, you often want a custom mapper.
@@ -60,17 +60,17 @@ def mapper(dataset_dict):
 data_loader = build_detection_train_loader(cfg, mapper=mapper)
 # use this dataloader instead of the default
 ```
-Refer to [API documentation of detectron2.data](../modules/data.html) for details.
+Refer to [API documentation of detectron2.data](../modules/data) for details.
 
 If you want to change not only the mapper (e.g., to write different sampling or batching logic),
 you can write your own data loader. The data loader is simply a
-python iterator that produces [the format](models.html) your model accepts.
+python iterator that produces [the format](./models.md) your model accepts.
 You can implement it using any tools you like.
 
 ## Use a Custom Dataloader
 
 If you use [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
-you can overwrite its `build_{train,test}__loader` method to use your own dataloader.
+you can overwrite its `build_{train,test}_loader` method to use your own dataloader.
 See the [densepose dataloader](../../projects/DensePose/train_net.py)
 for an example.
 

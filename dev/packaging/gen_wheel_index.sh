@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 
 root=$1
@@ -10,7 +11,7 @@ fi
 index=$root/index.html
 
 cd "$root"
-for cu in cpu cu92 cu100 cu101; do
+for cu in cpu cu92 cu100 cu101 cu102; do
   cd $cu
   echo "Creating $PWD/index.html ..."
   for whl in *.whl; do

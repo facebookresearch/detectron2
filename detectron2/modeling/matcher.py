@@ -106,30 +106,18 @@ class Matcher(object):
         maximum overlap with it (including ties); for each prediction in that set, if
         it is unmatched, then match it to the ground-truth G.
 
-        This function implements the RPN assignment case (i) in Sec. 3.1.2 of the
-        Faster R-CNN paper: https://arxiv.org/pdf/1506.01497v3.pdf.
+        This function implements the RPN assignment case (i) in Sec. 3.1.2 of
+        :paper:`Faster R-CNN`.
         """
         # For each gt, find the prediction with which it has highest quality
         highest_quality_foreach_gt, _ = match_quality_matrix.max(dim=1)
         # Find the highest quality match available, even if it is low, including ties.
         # Note that the matches qualities must be positive due to the use of
         # `torch.nonzero`.
-        gt_pred_pairs_of_highest_quality = torch.nonzero(
-            match_quality_matrix == highest_quality_foreach_gt[:, None]
+        _, pred_inds_with_highest_quality = torch.nonzero(
+            match_quality_matrix == highest_quality_foreach_gt[:, None], as_tuple=True
         )
-        # Example gt_pred_pairs_of_highest_quality:
-        #   tensor([[    0, 39796],
-        #           [    1, 32055],
-        #           [    1, 32070],
-        #           [    2, 39190],
-        #           [    2, 40255],
-        #           [    3, 40390],
-        #           [    3, 41455],
-        #           [    4, 45470],
-        #           [    5, 45325],
-        #           [    5, 46390]])
-        # Each row is a (gt index, prediction index)
-        # Note how gt items 1, 2, 3, and 5 each have two ties
-
-        pred_inds_to_update = gt_pred_pairs_of_highest_quality[:, 1]
-        match_labels[pred_inds_to_update] = 1
+        # If an anchor was labeled positive only due to a low-quality match
+        # with gt_A, but it has larger overlap with gt_B, it's matched index will still be gt_B.
+        # This follows the implementation in Detectron, and is found to have no significant impact.
+        match_labels[pred_inds_with_highest_quality] = 1

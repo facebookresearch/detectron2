@@ -8,11 +8,11 @@ with some other popular open source Mask R-CNN implementations.
 ### Settings
 
 * Hardware: 8 NVIDIA V100s with NVLink.
-* Software: Python 3.7, CUDA 10.0, cuDNN 7.6.4, PyTorch 1.3.0 (at
-  [this link](https://download.pytorch.org/whl/nightly/cu100/torch-1.3.0%2Bcu100-cp37-cp37m-linux_x86_64.whl)),
+* Software: Python 3.7, CUDA 10.1, cuDNN 7.6.5, PyTorch 1.5,
   TensorFlow 1.15.0rc2, Keras 2.2.5, MxNet 1.6.0b20190820.
 * Model: an end-to-end R-50-FPN Mask-RCNN model, using the same hyperparameter as the
-  [Detectron baseline config](https://github.com/facebookresearch/Detectron/blob/master/configs/12_2017_baselines/e2e_mask_rcnn_R-50-FPN_1x.yaml).
+  [Detectron baseline config](https://github.com/facebookresearch/Detectron/blob/master/configs/12_2017_baselines/e2e_mask_rcnn_R-50-FPN_1x.yaml)
+	(it does no have scale augmentation).
 * Metrics: We use the average throughput in iterations 100-500 to skip GPU warmup time.
   Note that for R-CNN-style models, the throughput of a model typically changes during training, because
   it depends on the predictions of the model. Therefore this metric is not directly comparable with
@@ -25,13 +25,13 @@ with some other popular open source Mask R-CNN implementations.
 +-------------------------------+--------------------+
 | Implementation                | Throughput (img/s) |
 +===============================+====================+
-| |D2| |PT|                     | 59                 |
+| |D2| |PT|                     | 62                 |
 +-------------------------------+--------------------+
-| maskrcnn-benchmark_  |PT|     | 51                 |
+| mmdetection_  |PT|            | 53                 |
++-------------------------------+--------------------+
+| maskrcnn-benchmark_  |PT|     | 53                 |
 +-------------------------------+--------------------+
 | tensorpack_ |TF|              | 50                 |
-+-------------------------------+--------------------+
-| mmdetection_  |PT|            | 41                 |
 +-------------------------------+--------------------+
 | simpledet_ |mxnet|            | 39                 |
 +-------------------------------+--------------------+
@@ -71,13 +71,18 @@ __ https://github.com/matterport/Mask_RCNN/
 
 Details for each implementation:
 
-* __Detectron2__:
+* __Detectron2__: with release v0.1.2, run:
   ```
   python tools/train_net.py  --config-file configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml --num-gpus 8
   ```
 
-* __maskrcnn-benchmark__: use commit `0ce8f6f` with `sed -i ‘s/torch.uint8/torch.bool/g’ **/*.py` to make it compatible with latest PyTorch.
-  Then, run training with
+* __mmdetection__: at commit `b0d845f`, run
+  ```
+  ./tools/dist_train.sh configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_1x_coco.py 8
+  ```
+
+* __maskrcnn-benchmark__: use commit `0ce8f6f` with `sed -i ‘s/torch.uint8/torch.bool/g’ **/*.py; sed -i 's/AT_CHECK/TORCH_CHECK/g' **/*.cu`
+	to make it compatible with PyTorch 1.5. Then, run training with
   ```
   python -m torch.distributed.launch --nproc_per_node=8 tools/train_net.py --config-file configs/e2e_mask_rcnn_R_50_FPN_1x.yaml
   ```
@@ -87,54 +92,6 @@ Details for each implementation:
   ```
   mpirun -np 8 ./train.py --config DATA.BASEDIR=/data/coco TRAINER=horovod BACKBONE.STRIDE_1X1=True TRAIN.STEPS_PER_EPOCH=50 --load ImageNet-R50-AlignPadding.npz
   ```
-
-* __mmdetection__: at commit `4d9a5f`, apply the following diff, then run
-  ```
-  ./tools/dist_train.sh configs/mask_rcnn_r50_fpn_1x.py 8
-  ```
-
-    The speed we observed is faster than its model zoo, likely due to different software versions.
-
-  <details>
-  <summary>
-  (diff to make it use the same architecture - click to expand)
-  </summary>
-
-  ```diff
-  diff --git i/configs/mask_rcnn_r50_fpn_1x.py w/configs/mask_rcnn_r50_fpn_1x.py
-  index 04f6d22..ed721f2 100644
-  --- i/configs/mask_rcnn_r50_fpn_1x.py
-  +++ w/configs/mask_rcnn_r50_fpn_1x.py
-  @@ -1,14 +1,15 @@
-  # model settings
-  model = dict(
-    type='MaskRCNN',
-  -    pretrained='torchvision://resnet50',
-  +    pretrained='open-mmlab://resnet50_caffe',
-    backbone=dict(
-      type='ResNet',
-      depth=50,
-      num_stages=4,
-      out_indices=(0, 1, 2, 3),
-      frozen_stages=1,
-  -        style='pytorch'),
-  +        norm_cfg=dict(type="BN", requires_grad=False),
-  +        style='caffe'),
-    neck=dict(
-      type='FPN',
-      in_channels=[256, 512, 1024, 2048],
-  @@ -115,7 +116,7 @@ test_cfg = dict(
-  dataset_type = 'CocoDataset'
-  data_root = 'data/coco/'
-  img_norm_cfg = dict(
-  -    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-  +    mean=[123.675, 116.28, 103.53], std=[1.0, 1.0, 1.0], to_rgb=False)
-  train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
-  ```
-
-  </details>
 
 * __SimpleDet__: at commit `9187a1`, run
   ```

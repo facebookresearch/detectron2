@@ -19,13 +19,11 @@ __all__ = ["PanopticFPN"]
 @META_ARCH_REGISTRY.register()
 class PanopticFPN(nn.Module):
     """
-    Main class for Panoptic FPN architectures (see https://arxiv.org/abs/1901.02446).
+    Implement the paper :paper:`PanopticFPN`.
     """
 
     def __init__(self, cfg):
         super().__init__()
-
-        self.device = torch.device(cfg.MODEL.DEVICE)
 
         self.instance_loss_weight = cfg.MODEL.PANOPTIC_FPN.INSTANCE_LOSS_WEIGHT
 
@@ -42,10 +40,12 @@ class PanopticFPN(nn.Module):
         self.roi_heads = build_roi_heads(cfg, self.backbone.output_shape())
         self.sem_seg_head = build_sem_seg_head(cfg, self.backbone.output_shape())
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-        self.to(self.device)
+        self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1))
+
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     def forward(self, batched_inputs):
         """
@@ -73,7 +73,7 @@ class PanopticFPN(nn.Module):
                   :func:`combine_semantic_and_instance_outputs` for its format.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         features = self.backbone(images.tensor)
 

@@ -4,7 +4,9 @@ import torch
 __all__ = ["subsample_labels"]
 
 
-def subsample_labels(labels, num_samples, positive_fraction, bg_label):
+def subsample_labels(
+    labels: torch.Tensor, num_samples: int, positive_fraction: float, bg_label: int
+):
     """
     Return `num_samples` (or fewer, if not enough found)
     random samples from `labels` which is a mixture of positives & negatives.
@@ -31,8 +33,8 @@ def subsample_labels(labels, num_samples, positive_fraction, bg_label):
         pos_idx, neg_idx (Tensor):
             1D vector of indices. The total length of both is `num_samples` or fewer.
     """
-    positive = torch.nonzero((labels != -1) & (labels != bg_label)).squeeze(1)
-    negative = torch.nonzero(labels == bg_label).squeeze(1)
+    positive = torch.nonzero((labels != -1) & (labels != bg_label), as_tuple=True)[0]
+    negative = torch.nonzero(labels == bg_label, as_tuple=True)[0]
 
     num_pos = int(num_samples * positive_fraction)
     # protect against not enough positive examples

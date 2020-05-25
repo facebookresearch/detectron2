@@ -273,9 +273,12 @@ def create_const_fill_op(
     """
 
     tensor_type = type(blob)
-    assert tensor_type in [np.ndarray, workspace.Int8Tensor], (
-        'Error when creating const fill op for "{}", unsupported blob type: {}'
-    ).format(name, type(blob))
+    assert tensor_type in [
+        np.ndarray,
+        workspace.Int8Tensor,
+    ], 'Error when creating const fill op for "{}", unsupported blob type: {}'.format(
+        name, type(blob)
+    )
 
     if tensor_type == np.ndarray:
         return _create_const_fill_op_from_numpy(name, blob, device_option)
@@ -335,7 +338,7 @@ def get_consumer_map(ssa):
 
 
 def get_params_from_init_net(
-    init_net: caffe2_pb2.NetDef
+    init_net: caffe2_pb2.NetDef,
 ) -> [Dict[str, Any], Dict[str, caffe2_pb2.DeviceOption]]:
     """
     Take the output blobs from init_net by running it.
@@ -849,7 +852,7 @@ def _get_dependency_chain(ssa, versioned_target, versioned_source):
     return sorted(set().union(*[set(ops) for ops in ops_in_paths]))
 
 
-def identify_reshape_sub_graph(predict_net: caffe2_pb2.NetDef,) -> List[List[int]]:
+def identify_reshape_sub_graph(predict_net: caffe2_pb2.NetDef) -> List[List[int]]:
     """
     Idenfity the reshape sub-graph in a protobuf.
     The reshape sub-graph is defined as matching the following pattern:

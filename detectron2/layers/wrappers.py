@@ -9,13 +9,14 @@ is implemented
 """
 
 import math
+from typing import List
 import torch
 from torch.nn.modules.utils import _ntuple
 
 TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
 
 
-def cat(tensors, dim=0):
+def cat(tensors: List[torch.Tensor], dim: int = 0):
     """
     Efficient version of torch.cat that avoids a copy if there is only a single element in a list
     """
@@ -151,7 +152,7 @@ else:
             return _NewEmptyTensorOp.apply(x, output_shape)
 
 
-if TORCH_VERSION > (1, 4):
+if TORCH_VERSION > (1, 5):
     Linear = torch.nn.Linear
 else:
 
@@ -182,7 +183,7 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     """
     A wrapper around :func:`torch.nn.functional.interpolate` to support zero-size tensor.
     """
-    if input.numel() > 0:
+    if TORCH_VERSION > (1, 4) or input.numel() > 0:
         return torch.nn.functional.interpolate(
             input, size, scale_factor, mode, align_corners=align_corners
         )
