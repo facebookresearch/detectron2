@@ -178,7 +178,6 @@ to match your local CUDA installation, or install a different version of CUDA to
 <summary>
 C++ compilation errors from NVCC
 </summary>
-<br/>
 
 1. NVCC version has to match the CUDA version of your PyTorch.
 

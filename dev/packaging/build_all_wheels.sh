@@ -37,7 +37,6 @@ build_one() {
       cd /detectron2 && ./dev/packaging/build_wheel.sh
 EOF
 
-    docker exec -i $container_name rm -rf /detectron2/build/$cu
     docker container stop $container_name
     docker container rm $container_name
   done

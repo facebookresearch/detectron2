@@ -1,6 +1,6 @@
 ---
 name: "\U0001F680Feature Request"
-about: Submit a proposal/request for a new detectron2 feature
+about: Suggest an improvement or new feature
 
 ---
 
