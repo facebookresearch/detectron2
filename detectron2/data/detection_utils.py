@@ -73,15 +73,17 @@ def convert_PIL_to_numpy(image, format):
 
 def convert_image_to_rgb(image, format):
     """
-    Convert numpy image from given format to RGB.
+    Convert an image from given format to RGB.
 
     Args:
-        image (np.ndarray): a numpy image
+        image (np.ndarray or Tensor): an HWC image
         format (str): the format of input image, also see `read_image`
 
     Returns:
-        (np.ndarray): HWC RGB image in 0-255 range, can be either float or uint8
+        (np.ndarray): (H,W,3) RGB image in 0-255 range, can be either float or uint8
     """
+    if isinstance(image, torch.Tensor):
+        image = image.cpu().numpy()
     if format == "BGR":
         image = image[:, :, [2, 1, 0]]
     elif format == "YUV-BT.601":

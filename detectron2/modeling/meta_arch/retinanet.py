@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import logging
 import math
 import numpy as np
 from typing import List
@@ -7,10 +6,10 @@ import torch
 from fvcore.nn import sigmoid_focal_loss_jit, smooth_l1_loss
 from torch import nn
 
+from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.layers import ShapeSpec, batched_nms, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
-from detectron2.utils.logger import log_first_n
 
 from ..anchor_generator import build_anchor_generator
 from ..backbone import build_backbone
@@ -131,11 +130,8 @@ class RetinaNet(nn.Module):
         max_boxes = 20
 
         image_index = 0  # only visualize a single image
-        img = batched_inputs[image_index]["image"].cpu().numpy()
-        assert img.shape[0] == 3, "Images should have 3 channels."
-        if self.input_format == "BGR":
-            img = img[::-1, :, :]
-        img = img.transpose(1, 2, 0)
+        img = batched_inputs[image_index]["image"]
+        img = convert_image_to_rgb(img.permute(1, 2, 0), self.input_format)
         v_gt = Visualizer(img, None)
         v_gt = v_gt.overlay_instances(boxes=batched_inputs[image_index]["instances"].gt_boxes)
         anno_img = v_gt.get_image()
@@ -169,22 +165,15 @@ class RetinaNet(nn.Module):
                 mapping from a named loss to a tensor storing the loss. Used during training only.
         """
         images = self.preprocess_image(batched_inputs)
-        if "instances" in batched_inputs[0]:
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        elif "targets" in batched_inputs[0]:
-            log_first_n(
-                logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
-            )
-            gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
-        else:
-            gt_instances = None
-
         features = self.backbone(images.tensor)
         features = [features[f] for f in self.in_features]
         box_cls, box_delta = self.head(features)
         anchors = self.anchor_generator(features)
 
         if self.training:
+            assert "instances" in batched_inputs[0], "Instance annotations are missing in training!"
+            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+
             gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
             losses = self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
 

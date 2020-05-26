@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
-import logging
 import math
 from typing import List
 import torch
@@ -18,7 +17,6 @@ from detectron2.modeling.meta_arch.retinanet import (
     permute_to_N_HWA_K,
 )
 from detectron2.structures import Boxes, ImageList, Instances
-from detectron2.utils.logger import log_first_n
 
 from tensormask.layers import SwapAlign2Nat
 
@@ -359,11 +357,6 @@ class TensorMask(nn.Module):
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        elif "targets" in batched_inputs[0]:
-            log_first_n(
-                logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
-            )
-            gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
 

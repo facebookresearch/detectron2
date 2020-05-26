@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.structures import ImageList
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
@@ -61,11 +62,8 @@ class GeneralizedRCNN(nn.Module):
         max_vis_prop = 20
 
         for input, prop in zip(batched_inputs, proposals):
-            img = input["image"].cpu().numpy()
-            assert img.shape[0] == 3, "Images should have 3 channels."
-            if self.input_format == "BGR":
-                img = img[::-1, :, :]
-            img = img.transpose(1, 2, 0)
+            img = input["image"]
+            img = convert_image_to_rgb(img.permute(1, 2, 0), self.input_format)
             v_gt = Visualizer(img, None)
             v_gt = v_gt.overlay_instances(boxes=input["instances"].gt_boxes)
             anno_img = v_gt.get_image()
@@ -110,11 +108,6 @@ class GeneralizedRCNN(nn.Module):
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        elif "targets" in batched_inputs[0]:
-            log_first_n(
-                logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
-            )
-            gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
 
