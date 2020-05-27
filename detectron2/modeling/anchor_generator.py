@@ -27,6 +27,8 @@ class BufferList(nn.Module):
         if buffers is not None:
             self.extend(buffers)
 
+        self._hack_buffers = list(buffers)
+
     def extend(self, buffers):
         offset = len(self)
         for i, buffer in enumerate(buffers):
@@ -38,6 +40,11 @@ class BufferList(nn.Module):
 
     def __iter__(self):
         return iter(self._buffers.values())
+
+    # torchscript: named_buffers() not available in torchscript:
+    # https://github.com/pytorch/pytorch/issues/36211
+    def _named_buffers(self):
+        return self._hack_buffers
 
 
 def _create_grid_offsets(size: List[int], stride: int, offset: float, device: torch.device):
@@ -166,7 +173,9 @@ class DefaultAnchorGenerator(nn.Module):
             list[Tensor]: #featuremap tensors, each is (#locations x #cell_anchors) x 4
         """
         anchors = []
-        for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
+        for size, stride, base_anchors in zip(
+            grid_sizes, self.strides, self.cell_anchors._named_buffers()
+        ):
             shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors.device)
             shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1)
 

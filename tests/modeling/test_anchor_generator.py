@@ -70,9 +70,11 @@ class TestAnchorGenerator(unittest.TestCase):
         anchors = anchor_generator([features["stage3"]])
         assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
 
-        # doesn't work yet
-        # anchors = torch.jit.script(anchor_generator)([features["stage3"]])
-        # assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
+        torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
+        if torch_ver < [1, 6]:
+            raise unittest.SkipTest("Insufficient torch version")
+        anchors = torch.jit.script(anchor_generator)([features["stage3"]])
+        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
 
     def test_rrpn_anchor_generator(self):
         cfg = get_cfg()
