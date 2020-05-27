@@ -68,3 +68,5 @@ def add_densepose_config(cfg: CN):
     # - "indep_aniso": statistically independent residuals with anisotropic
     #    covariances
     _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE = "iid_iso"
+    # List of angles for rotation in data augmentation during training
+    _C.INPUT.ROTATION_ANGLES = [0]

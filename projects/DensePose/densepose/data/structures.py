@@ -154,6 +154,12 @@ class DensePoseDataRelative(object):
             self.x = self.segm.size(1) - self.x
             self._flip_iuv_semantics(dp_transform_data)
 
+        for t in transforms.transforms:
+            if isinstance(t, T.RotationTransform):
+                xy_scale = np.array((t.w, t.h)) / DensePoseDataRelative.MASK_SIZE
+                xy = t.apply_coords(np.stack((self.x, self.y), axis=1) * xy_scale)
+                self.x, self.y = torch.tensor(xy / xy_scale, dtype=self.x.dtype).T
+
     def _flip_iuv_semantics(self, dp_transform_data: DensePoseTransformData) -> None:
         i_old = self.i.clone()
         uv_symmetries = dp_transform_data.uv_symmetries
@@ -181,12 +187,21 @@ class DensePoseDataRelative(object):
             self.segm = torch.flip(self.segm, [1])
             self._flip_segm_semantics(dp_transform_data)
 
+        for t in transforms.transforms:
+            if isinstance(t, T.RotationTransform):
+                self._transform_segm_rotation(t)
+
     def _flip_segm_semantics(self, dp_transform_data):
         old_segm = self.segm.clone()
         mask_label_symmetries = dp_transform_data.mask_label_symmetries
         for i in range(self.N_BODY_PARTS):
             if mask_label_symmetries[i + 1] != i + 1:
                 self.segm[old_segm == i + 1] = mask_label_symmetries[i + 1]
+
+    def _transform_segm_rotation(self, rotation):
+        self.segm = F.interpolate(self.segm[None, None, :], (rotation.h, rotation.w)).numpy()
+        self.segm = torch.tensor(rotation.apply_segmentation(self.segm[0, 0]))[None, None, :]
+        self.segm = F.interpolate(self.segm, [DensePoseDataRelative.MASK_SIZE] * 2)[0, 0]
 
 
 def normalized_coords_transform(x0, y0, w, h):
