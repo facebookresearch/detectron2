@@ -214,3 +214,13 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     output_shape = tuple(_output_size(2))
     output_shape = input.shape[:-2] + output_shape
     return _NewEmptyTensorOp.apply(input, output_shape)
+
+
+def nonzero_tuple(x):
+    """
+    A 'as_tuple=True' version of torch.nonzero to support torchscript.
+    because of https://github.com/pytorch/pytorch/issues/38718
+    """
+    if x.dim() == 0:
+        return x.unsqueeze(0).nonzero().unbind(1)
+    return x.nonzero().unbind(1)

@@ -2,6 +2,8 @@
 from typing import List
 import torch
 
+from detectron2.layers import nonzero_tuple
+
 
 class Matcher(object):
     """
@@ -48,8 +50,9 @@ class Matcher(object):
         assert thresholds[0] > 0
         thresholds.insert(0, -float("inf"))
         thresholds.append(float("inf"))
-        assert all(low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:]))
-        assert all(l in [-1, 0, 1] for l in labels)
+        # Currently torchscript does not support all + generator
+        assert all([low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:])])
+        assert all([l in [-1, 0, 1] for l in labels])
         assert len(labels) == len(thresholds) - 1
         self.thresholds = thresholds
         self.labels = labels
@@ -114,8 +117,8 @@ class Matcher(object):
         # Find the highest quality match available, even if it is low, including ties.
         # Note that the matches qualities must be positive due to the use of
         # `torch.nonzero`.
-        _, pred_inds_with_highest_quality = torch.nonzero(
-            match_quality_matrix == highest_quality_foreach_gt[:, None], as_tuple=True
+        _, pred_inds_with_highest_quality = nonzero_tuple(
+            match_quality_matrix == highest_quality_foreach_gt[:, None]
         )
         # If an anchor was labeled positive only due to a low-quality match
         # with gt_A, but it has larger overlap with gt_B, it's matched index will still be gt_B.
