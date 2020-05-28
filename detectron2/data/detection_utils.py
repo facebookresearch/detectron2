@@ -31,6 +31,7 @@ class SizeMismatchError(ValueError):
     """
     When loaded image has difference width/height compared with annotation.
     """
+    pass
 
 
 # https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
