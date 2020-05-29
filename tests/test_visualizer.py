@@ -143,6 +143,5 @@ class TestVisualizer(unittest.TestCase):
         v.draw_instance_predictions(inst)
 
 
-
 if __name__ == "__main__":
     unittest.main()

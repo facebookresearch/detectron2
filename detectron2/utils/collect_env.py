@@ -54,15 +54,17 @@ def detect_compute_compatibility(CUDA_HOME, so_file):
 
 def collect_env_info():
 
-    # "has_gpu" really. 
+    # "has_gpu" really.
     has_cuda = torch.cuda.is_available()
-    
+
     # NOTE: the use of CUDA_HOME and ROCM_HOME requires the CUDA/ROCM build deps, though in
     # theory detectron2 should be made runnable with only the corresponding runtimes
     from torch.utils.cpp_extension import CUDA_HOME, ROCM_HOME
 
-    is_rocm_pytorch = True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
-    
+    is_rocm_pytorch = (
+        True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
+    )
+
     data = []
     data.append(("sys.platform", sys.platform))
     data.append(("Python", sys.version.replace("\n", "")))
@@ -122,7 +124,7 @@ def collect_env_info():
             devices[torch.cuda.get_device_name(k)].append(str(k))
         for name, devids in devices.items():
             data.append(("GPU " + ",".join(devids), name))
-        
+
         if is_rocm_pytorch:
             data.append(("ROCM_HOME", str(ROCM_HOME)))
         else:

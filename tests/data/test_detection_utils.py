@@ -115,5 +115,6 @@ class TestTransformAnnotations(unittest.TestCase):
         with self.assertRaises(AssertionError):
             detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
 
+
 if __name__ == "__main__":
     unittest.main()
