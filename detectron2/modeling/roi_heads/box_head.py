@@ -10,6 +10,8 @@ from detectron2.config import configurable
 from detectron2.layers import Conv2d, Linear, ShapeSpec, get_norm
 from detectron2.utils.registry import Registry
 
+__all__ = ["FastRCNNConvFCHead", "build_box_head", "ROI_BOX_HEAD_REGISTRY"]
+
 ROI_BOX_HEAD_REGISTRY = Registry("ROI_BOX_HEAD")
 ROI_BOX_HEAD_REGISTRY.__doc__ = """
 Registry for box heads, which make box predictions from per-region features.
