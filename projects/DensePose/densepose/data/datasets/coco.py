@@ -50,6 +50,16 @@ DATASETS = [
         images_root="densepose_evolution/densepose_chimps",
         annotations_fpath="densepose_evolution/annotations/densepose_chimps_densepose.json",
     ),
+    CocoDatasetInfo(
+        name="posetrack2017_train",
+        images_root="posetrack2017/posetrack_data_2017",
+        annotations_fpath="posetrack2017/densepose_posetrack_train2017.json",
+    ),
+    CocoDatasetInfo(
+        name="posetrack2017_val",
+        images_root="posetrack2017/posetrack_data_2017",
+        annotations_fpath="posetrack2017/densepose_posetrack_val2017.json",
+    ),
 ]
 
 
