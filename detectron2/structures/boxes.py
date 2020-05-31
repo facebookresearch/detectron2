@@ -2,7 +2,7 @@
 import math
 import numpy as np
 from enum import IntEnum, unique
-from typing import Iterator, List, Tuple, Union
+from typing import Any, Iterator, List, Tuple, Union
 import torch
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
@@ -167,8 +167,8 @@ class Boxes:
         """
         return Boxes(self.tensor.clone())
 
-    def to(self, device: str) -> "Boxes":
-        return Boxes(self.tensor.to(device))
+    def to(self, *args: Any, **kwargs: Any) -> "Boxes":
+        return Boxes(self.tensor.to(*args, **kwargs))
 
     def area(self) -> torch.Tensor:
         """
