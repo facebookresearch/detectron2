@@ -966,6 +966,7 @@ class Visualizer:
         """
         if color is None:
             color = random_color(rgb=True, maximum=1)
+        color = mplc.to_rgb(color)
         if area_threshold is None:
             area_threshold = 4096
 
