@@ -259,15 +259,15 @@ texinfo_documents = [
 todo_include_todos = True
 
 
-_DEPRECATED_NAMES = set()
-
-
 def autodoc_skip_member(app, what, name, obj, skip, options):
     # we hide something deliberately
     if getattr(obj, "__HIDE_SPHINX_DOC__", False):
         return True
-    # Hide some names that are deprecated or not intended to be used
-    if name in _DEPRECATED_NAMES:
+
+    # Hide some that are deprecated or not intended to be used
+    _DEPRECATED = set("ResNetBlockBase", detectron2.modeling.backbone.make_stage)
+
+    if name in _DEPRECATED or obj in _DEPRECATED:
         return True
     return None
 
