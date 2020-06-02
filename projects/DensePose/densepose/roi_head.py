@@ -177,7 +177,7 @@ class DensePoseROIHeads(StandardROIHeads):
                 # set densepose_outputs to empty tensors
                 empty_tensor = torch.zeros(size=(0, 0, 0, 0), device=features_dp.device)
                 densepose_outputs = tuple([empty_tensor] * 4)
-                confidences = tuple([empty_tensor] * 4)
+                confidences = tuple([empty_tensor] * 6)
 
             densepose_inference(densepose_outputs, confidences, instances)
             return instances
