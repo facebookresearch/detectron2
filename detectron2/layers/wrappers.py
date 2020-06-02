@@ -13,7 +13,7 @@ from typing import List
 import torch
 from torch.nn.modules.utils import _ntuple
 
-TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
+from detectron2.utils.env import TORCH_VERSION
 
 
 def cat(tensors: List[torch.Tensor], dim: int = 0):

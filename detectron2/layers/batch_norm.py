@@ -6,11 +6,9 @@ from torch import nn
 from torch.autograd.function import Function
 from torch.nn import functional as F
 
-from detectron2.utils import comm
+from detectron2.utils import comm, env
 
 from .wrappers import BatchNorm2d
-
-TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
 
 
 class FrozenBatchNorm2d(nn.Module):
@@ -142,7 +140,7 @@ def get_norm(norm, out_channels):
         norm = {
             "BN": BatchNorm2d,
             # Fixed in https://github.com/pytorch/pytorch/pull/36382
-            "SyncBN": NaiveSyncBatchNorm if TORCH_VERSION <= (1, 5) else nn.SyncBatchNorm,
+            "SyncBN": NaiveSyncBatchNorm if env.TORCH_VERSION <= (1, 5) else nn.SyncBatchNorm,
             "FrozenBN": FrozenBatchNorm2d,
             "GN": lambda channels: nn.GroupNorm(32, channels),
             # for debugging:
