@@ -114,3 +114,7 @@ class TestTransformAnnotations(unittest.TestCase):
         instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
         with self.assertRaises(AssertionError):
             detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
+
+
+if __name__ == "__main__":
+    unittest.main()

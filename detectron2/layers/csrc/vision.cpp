@@ -9,13 +9,19 @@
 
 namespace detectron2 {
 
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
 extern int get_cudart_version();
 #endif
 
 std::string get_cuda_version() {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
   std::ostringstream oss;
+
+#if defined(WITH_CUDA)
+  oss << "CUDA ";
+#else
+  oss << "HIP ";
+#endif
 
   // copied from
   // https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/cuda/detail/CUDAHooks.cpp#L231
@@ -27,7 +33,7 @@ std::string get_cuda_version() {
   };
   printCudaStyleVersion(get_cudart_version());
   return oss.str();
-#else
+#else // neither CUDA nor HIP
   return std::string("not available");
 #endif
 }

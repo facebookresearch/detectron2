@@ -156,3 +156,7 @@ class TestVisualizer(unittest.TestCase):
             o = o.get_image().astype("float32")
             # red color is drawn on the image
             self.assertTrue(o[:, :, 0].sum() > 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

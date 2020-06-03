@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cmath>
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || __HCC__ == 1 || __HIP__ == 1
 // Designates functions callable from the host (CPU) and the device (GPU)
 #define HOST_DEVICE __host__ __device__
 #define HOST_DEVICE_INLINE HOST_DEVICE __forceinline__
@@ -192,7 +192,7 @@ HOST_DEVICE_INLINE int convex_hull_graham(
   // (essentially sorting according to angles)
   // If the angles are the same, sort according to their distance to origin
   T dist[24];
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || __HCC__ == 1 || __HIP__ == 1
   // compute distance to origin before sort, and sort them together with the
   // points
   for (int i = 0; i < num_in; i++) {
