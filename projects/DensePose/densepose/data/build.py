@@ -3,21 +3,19 @@
 import itertools
 import logging
 import numpy as np
-import operator
 from typing import Any, Callable, Collection, Dict, Iterable, List, Optional
 import torch
 
 from detectron2.config import CfgNode
-from detectron2.data import samplers
 from detectron2.data.build import (
+    build_batch_data_loader,
     load_proposals_into_dataset,
     print_instances_class_histogram,
     trivial_batch_collator,
-    worker_init_reset_seed,
 )
 from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
-from detectron2.data.common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
-from detectron2.utils.comm import get_world_size
+from detectron2.data.common import DatasetFromList, MapDataset
+from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
 
 from .dataset_mapper import DatasetMapper
 from .datasets.coco import DENSEPOSE_KEYS_WITHOUT_MASK as DENSEPOSE_COCO_KEYS_WITHOUT_MASK
@@ -28,23 +26,6 @@ __all__ = ["build_detection_train_loader", "build_detection_test_loader"]
 
 Instance = Dict[str, Any]
 InstancePredicate = Callable[[Instance], bool]
-
-
-def _compute_num_images_per_worker(cfg: CfgNode):
-    num_workers = get_world_size()
-    images_per_batch = cfg.SOLVER.IMS_PER_BATCH
-    assert (
-        images_per_batch % num_workers == 0
-    ), "SOLVER.IMS_PER_BATCH ({}) must be divisible by the number of workers ({}).".format(
-        images_per_batch, num_workers
-    )
-    assert (
-        images_per_batch >= num_workers
-    ), "SOLVER.IMS_PER_BATCH ({}) must be larger than the number of workers ({}).".format(
-        images_per_batch, num_workers
-    )
-    images_per_worker = images_per_batch // num_workers
-    return images_per_worker
 
 
 def _map_category_id_to_contiguous_id(dataset_name: str, dataset_dicts: Iterable[Instance]):
@@ -308,7 +289,6 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     Returns:
         an infinite iterator of training data
     """
-    images_per_worker = _compute_num_images_per_worker(cfg)
 
     _add_category_whitelists_to_metadata(cfg)
     _add_category_maps_to_metadata(cfg)
@@ -327,38 +307,22 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     logger = logging.getLogger(__name__)
     logger.info("Using training sampler {}".format(sampler_name))
     if sampler_name == "TrainingSampler":
-        sampler = samplers.TrainingSampler(len(dataset))
+        sampler = TrainingSampler(len(dataset))
     elif sampler_name == "RepeatFactorTrainingSampler":
-        sampler = samplers.RepeatFactorTrainingSampler(
+        repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
             dataset_dicts, cfg.DATALOADER.REPEAT_THRESHOLD
         )
+        sampler = RepeatFactorTrainingSampler(repeat_factors)
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
-    if cfg.DATALOADER.ASPECT_RATIO_GROUPING:
-        data_loader = torch.utils.data.DataLoader(
-            dataset,
-            sampler=sampler,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-            batch_sampler=None,
-            collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
-            worker_init_fn=worker_init_reset_seed,
-        )  # yield individual mapped dict
-        data_loader = AspectRatioGroupedDataset(data_loader, images_per_worker)
-    else:
-        batch_sampler = torch.utils.data.sampler.BatchSampler(
-            sampler, images_per_worker, drop_last=True
-        )
-        # drop_last so the batch always have the same size
-        data_loader = torch.utils.data.DataLoader(
-            dataset,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-            batch_sampler=batch_sampler,
-            collate_fn=trivial_batch_collator,
-            worker_init_fn=worker_init_reset_seed,
-        )
-
-    return data_loader
+    return build_batch_data_loader(
+        dataset,
+        sampler,
+        cfg.SOLVER.IMS_PER_BATCH,
+        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
 
 
 def build_detection_test_loader(cfg, dataset_name, mapper=None):
@@ -395,7 +359,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         mapper = DatasetMapper(cfg, False)
     dataset = MapDataset(dataset, mapper)
 
-    sampler = samplers.InferenceSampler(len(dataset))
+    sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
