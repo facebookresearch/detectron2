@@ -211,7 +211,8 @@ class Boxes:
         keep = (widths > threshold) & (heights > threshold)
         return keep
 
-    def __getitem__(self, item):
+    @torch.jit.unused
+    def __getitem__(self, item: Union[int, slice, torch.BoolTensor]):
         """
         Args:
             item: int, slice, or a BoolTensor
@@ -274,9 +275,10 @@ class Boxes:
         self.tensor[:, 0::2] *= scale_x
         self.tensor[:, 1::2] *= scale_y
 
+    # classmethod not supported by torchscript. TODO try staticmethod
     @classmethod
     @torch.jit.unused
-    def cat(cls, boxes_list: List["Boxes"]):
+    def cat(cls, boxes_list):
         """
         Concatenates a list of Boxes into a single Boxes
 
@@ -289,7 +291,7 @@ class Boxes:
         assert isinstance(boxes_list, (list, tuple))
         if len(boxes_list) == 0:
             return cls(torch.empty(0))
-        assert all(isinstance(box, Boxes) for box in boxes_list)
+        assert all([isinstance(box, Boxes) for box in boxes_list])
 
         # use torch.cat (v.s. layers.cat) so the returned boxes never share storage with input
         cat_boxes = cls(torch.cat([b.tensor for b in boxes_list], dim=0))
@@ -299,6 +301,9 @@ class Boxes:
     def device(self) -> torch.device:
         return self.tensor.device
 
+
+    # type "Iterator[torch.Tensor]", yield, and iter() not supported by torchscript
+    # https://github.com/pytorch/pytorch/issues/18627
     @torch.jit.unused
     def __iter__(self):
         """

@@ -48,19 +48,22 @@ class Caffe2Tracer:
 
     An original detectron2 model may not be traceable, or
     cannot be deployed directly after being traced, due to some reasons:
+
     1. control flow in some ops
     2. custom ops
     3. complicated pre/post processing
 
     This class provides a traceable version of a detectron2 model by:
+
     1. Rewrite parts of the model using ops in caffe2. Note that some ops do
        not have GPU implementation.
     2. Define the inputs "after pre-processing" as inputs to the model
     3. Remove post-processing and produce raw layer outputs
 
     More specifically about inputs: all builtin models take two input tensors.
-    (1) NCHW float "data" which is an image (usually in [0, 255])
-    (2) Nx3 float "im_info", each row of which is (height, width, 1.0)
+
+    1. NCHW float "data" which is an image (usually in [0, 255])
+    2. Nx3 float "im_info", each row of which is (height, width, 1.0)
 
     After making a traceable model, the class provide methods to export such a
     model to different deployment formats.

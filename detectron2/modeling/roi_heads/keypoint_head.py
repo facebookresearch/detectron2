@@ -141,7 +141,7 @@ class BaseKeypointRCNNHead(nn.Module):
             loss_normalizer (float or str):
                 If float, divide the loss by `loss_normalizer * #images`.
                 If 'visible', the loss is normalized by the total number of
-                    visible keypoints across images.
+                visible keypoints across images.
         """
         super().__init__()
         self.num_keypoints = num_keypoints

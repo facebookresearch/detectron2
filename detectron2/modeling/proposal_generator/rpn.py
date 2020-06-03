@@ -145,38 +145,94 @@ class RPN(nn.Module):
     Region Proposal Network, introduced by :paper:`Faster R-CNN`.
     """
 
-    def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
+    @configurable
+    def __init__(
+        self,
+        *,
+        in_features: List[str],
+        head: nn.Module,
+        anchor_generator: nn.Module,
+        anchor_matcher: Matcher,
+        box2box_transform: Box2BoxTransform,
+        batch_size_per_image: int,
+        positive_fraction: float,
+        pre_nms_topk: Tuple[float, float],
+        post_nms_topk: Tuple[float, float],
+        nms_thresh: float = 0.7,
+        min_box_size: float = 0.0,
+        anchor_boundary_thresh: float = -1.0,
+        loss_weight: float = 1.0,
+        smooth_l1_beta: float = 0.0
+    ):
+        """
+        NOTE: this interface is experimental.
+
+        Args:
+            in_features (list[str]): list of names of input features to use
+            head (nn.Module): a module that predicts logits and regression deltas
+                for each level from a list of per-level features
+            anchor_generator (nn.Module): a module that creates anchors from a
+                list of features. Usually an instance of :class:`AnchorGenerator`
+            anchor_matcher (Matcher): label the anchors by matching them with ground truth.
+            box2box_transform (Box2BoxTransform): defines the transform from anchors boxes to
+                instance boxes
+            batch_size_per_image (int): number of anchors per image to sample for training
+            positive_fraction (float): fraction of foreground anchors to sample for training
+            pre_nms_topk (tuple[float]): (train, test) that represents the
+                number of top k proposals to select before NMS, in
+                training and testing.
+            post_nms_topk (tuple[float]): (train, test) that represents the
+                number of top k proposals to select after NMS, in
+                training and testing.
+            nms_thresh (float): NMS threshold used to de-duplicate the predicted proposals
+            min_box_size (float): remove proposal boxes with any side smaller than this threshold,
+                in the unit of input image pixels
+            anchor_boundary_thresh (float): legacy option
+            loss_weight (float): weight to be multiplied to the loss
+            smooth_l1_beta (float): beta parameter for the smooth L1
+                regression loss. Default to use L1 loss.
+        """
         super().__init__()
-
-        # fmt: off
-        self.min_box_side_len     = cfg.MODEL.PROPOSAL_GENERATOR.MIN_SIZE
-        self.in_features          = cfg.MODEL.RPN.IN_FEATURES
-        self.nms_thresh           = cfg.MODEL.RPN.NMS_THRESH
-        self.batch_size_per_image = cfg.MODEL.RPN.BATCH_SIZE_PER_IMAGE
-        self.positive_fraction    = cfg.MODEL.RPN.POSITIVE_FRACTION
-        self.smooth_l1_beta       = cfg.MODEL.RPN.SMOOTH_L1_BETA
-        self.loss_weight          = cfg.MODEL.RPN.LOSS_WEIGHT
-        # fmt: on
-
+        self.in_features = in_features
+        self.rpn_head = head
+        self.anchor_generator = anchor_generator
+        self.anchor_matcher = anchor_matcher
+        self.box2box_transform = box2box_transform
+        self.batch_size_per_image = batch_size_per_image
+        self.positive_fraction = positive_fraction
         # Map from self.training state to train/test settings
-        self.pre_nms_topk = {
-            True: cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN,
-            False: cfg.MODEL.RPN.PRE_NMS_TOPK_TEST,
-        }
-        self.post_nms_topk = {
-            True: cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN,
-            False: cfg.MODEL.RPN.POST_NMS_TOPK_TEST,
-        }
-        self.boundary_threshold = cfg.MODEL.RPN.BOUNDARY_THRESH
+        self.pre_nms_topk = {True: pre_nms_topk[0], False: pre_nms_topk[1]}
+        self.post_nms_topk = {True: post_nms_topk[0], False: post_nms_topk[1]}
+        self.nms_thresh = nms_thresh
+        self.min_box_size = min_box_size
+        self.anchor_boundary_thresh = anchor_boundary_thresh
+        self.loss_weight = loss_weight
+        self.smooth_l1_beta = smooth_l1_beta
 
-        self.anchor_generator = build_anchor_generator(
-            cfg, [input_shape[f] for f in self.in_features]
-        )
-        self.box2box_transform = Box2BoxTransform(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
-        self.anchor_matcher = Matcher(
+    @classmethod
+    def from_config(cls, cfg, input_shape: Dict[str, ShapeSpec]):
+        in_features = cfg.MODEL.RPN.IN_FEATURES
+        ret = {
+            "in_features": in_features,
+            "min_box_size": cfg.MODEL.PROPOSAL_GENERATOR.MIN_SIZE,
+            "nms_thresh": cfg.MODEL.RPN.NMS_THRESH,
+            "batch_size_per_image": cfg.MODEL.RPN.BATCH_SIZE_PER_IMAGE,
+            "positive_fraction": cfg.MODEL.RPN.POSITIVE_FRACTION,
+            "smooth_l1_beta": cfg.MODEL.RPN.SMOOTH_L1_BETA,
+            "loss_weight": cfg.MODEL.RPN.LOSS_WEIGHT,
+            "anchor_boundary_thresh": cfg.MODEL.RPN.BOUNDARY_THRESH,
+            "box2box_transform": Box2BoxTransform(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS),
+        }
+
+        ret["pre_nms_topk"] = (cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN, cfg.MODEL.RPN.PRE_NMS_TOPK_TEST)
+        ret["post_nms_topk"] = (cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN, cfg.MODEL.RPN.POST_NMS_TOPK_TEST)
+
+        ret["anchor_generator"] = build_anchor_generator(cfg, [input_shape[f] for f in in_features])
+        ret["anchor_matcher"] = Matcher(
             cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
         )
-        self.rpn_head = build_rpn_head(cfg, [input_shape[f] for f in self.in_features])
+        ret["head"] = build_rpn_head(cfg, [input_shape[f] for f in in_features])
+        return ret
 
     def _subsample_labels(self, label):
         """
@@ -233,10 +289,10 @@ class RPN(nn.Module):
             gt_labels_i = gt_labels_i.to(device=gt_boxes_i.device)
             del match_quality_matrix
 
-            if self.boundary_threshold >= 0:
+            if self.anchor_boundary_thresh >= 0:
                 # Discard anchors that go out of the boundaries of the image
                 # NOTE: This is legacy functionality that is turned off by default in Detectron2
-                anchors_inside_image = anchors.inside_box(image_size_i, self.boundary_threshold)
+                anchors_inside_image = anchors.inside_box(image_size_i, self.anchor_boundary_thresh)
                 gt_labels_i[~anchors_inside_image] = -1
 
             # A vector of labels (-1, 0, 1) for each anchor
@@ -393,7 +449,7 @@ class RPN(nn.Module):
             self.nms_thresh,
             self.pre_nms_topk[self.training],
             self.post_nms_topk[self.training],
-            self.min_box_side_len,
+            self.min_box_size,
             self.training,
         )
 

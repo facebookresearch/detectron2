@@ -56,7 +56,7 @@ class DatasetMapper:
             self.keypoint_hflip_indices = None
 
         if self.load_proposals:
-            self.min_box_side_len = cfg.MODEL.PROPOSAL_GENERATOR.MIN_SIZE
+            self.proposal_min_box_size = cfg.MODEL.PROPOSAL_GENERATOR.MIN_SIZE
             self.proposal_topk = (
                 cfg.DATASETS.PRECOMPUTED_PROPOSAL_TOPK_TRAIN
                 if is_train
@@ -103,9 +103,14 @@ class DatasetMapper:
         dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
 
         # USER: Remove if you don't use pre-computed proposals.
+        # Most users would not need this feature.
         if self.load_proposals:
             utils.transform_proposals(
-                dataset_dict, image_shape, transforms, self.min_box_side_len, self.proposal_topk
+                dataset_dict,
+                image_shape,
+                transforms,
+                self.proposal_min_box_size,
+                self.proposal_topk,
             )
 
         if not self.is_train:

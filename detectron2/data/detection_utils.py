@@ -147,7 +147,7 @@ def check_image_size(dataset_dict, image):
         dataset_dict["height"] = image.shape[0]
 
 
-def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len, proposal_topk):
+def transform_proposals(dataset_dict, image_shape, transforms, min_box_size, proposal_topk):
     """
     Apply transformations to the proposals in dataset_dict, if any.
 
@@ -156,7 +156,8 @@ def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len,
             contains fields "proposal_boxes", "proposal_objectness_logits", "proposal_bbox_mode"
         image_shape (tuple): height, width
         transforms (TransformList):
-        min_box_side_len (int): keep proposals with at least this size
+        min_box_size(int): proposals with either side smaller than this
+            threshold are removed
         proposal_topk (int): only keep top-K scoring proposals
 
     The input dict is modified in-place, with abovementioned keys removed. A new
@@ -179,7 +180,7 @@ def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len,
         )
 
         boxes.clip(image_shape)
-        keep = boxes.nonempty(threshold=min_box_side_len)
+        keep = boxes.nonempty(threshold=min_box_size)
         boxes = boxes[keep]
         objectness_logits = objectness_logits[keep]
 

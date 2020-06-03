@@ -6,6 +6,7 @@ import unittest
 import torch
 
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
+from detectron2.utils.env import TORCH_VERSION
 
 
 class TestBoxMode(unittest.TestCase):
@@ -176,6 +177,16 @@ class TestBoxes(unittest.TestCase):
     def test_empty_cat(self):
         x = Boxes.cat([])
         self.assertTrue(x.tensor.shape, (0, 4))
+
+    # require https://github.com/pytorch/pytorch/pull/39336
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    def test_scriptability(self):
+        def func(x):
+            boxes = Boxes(x)
+            return boxes.area()
+
+        f = torch.jit.script(func)
+        f(torch.rand((3, 4)))
 
 
 if __name__ == "__main__":
