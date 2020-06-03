@@ -50,6 +50,17 @@ class DensePoseUVConfidenceConfig:
 
 
 @dataclass
+class DensePoseSegmConfidenceConfig:
+    """
+    Configuration options for confidence on segmentation
+    """
+
+    enabled: bool = False
+    # lower bound on confidence values
+    epsilon: float = 0.01
+
+
+@dataclass
 class DensePoseConfidenceModelConfig:
     """
     Configuration options for confidence models
@@ -57,6 +68,8 @@ class DensePoseConfidenceModelConfig:
 
     # confidence for U and V values
     uv_confidence: DensePoseUVConfidenceConfig
+    # segmentation confidence
+    segm_confidence: DensePoseSegmConfidenceConfig
 
     @staticmethod
     def from_cfg(cfg: CfgNode) -> "DensePoseConfidenceModelConfig":
@@ -65,7 +78,11 @@ class DensePoseConfidenceModelConfig:
                 enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED,
                 epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.EPSILON,
                 type=DensePoseUVConfidenceType(cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE),
-            )
+            ),
+            segm_confidence=DensePoseSegmConfidenceConfig(
+                enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.ENABLED,
+                epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.EPSILON,
+            ),
         )
 
 
@@ -398,8 +415,15 @@ class DensePosePredictor(nn.Module):
         u = interp2d(u_lowres)
         v = interp2d(v_lowres)
         (
-            (sigma_1, sigma_2, kappa_u, kappa_v),
-            (sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
             (ann_index, index_uv),
         ) = self._forward_confidence_estimation_layers(
             self.confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
@@ -407,8 +431,15 @@ class DensePosePredictor(nn.Module):
         return (
             (ann_index, index_uv, u, v),
             (ann_index_lowres, index_uv_lowres, u_lowres, v_lowres),
-            (sigma_1, sigma_2, kappa_u, kappa_v),
-            (sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
         )
 
     def _initialize_confidence_estimation_layers(
@@ -435,12 +466,21 @@ class DensePosePredictor(nn.Module):
                 raise ValueError(
                     f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
                 )
+        if confidence_model_cfg.segm_confidence.enabled:
+            self.fine_segm_confidence_lowres = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
+            self.coarse_segm_confidence_lowres = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
 
     def _forward_confidence_estimation_layers(
         self, confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
     ):
         sigma_1, sigma_2, kappa_u, kappa_v = None, None, None, None
         sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres = None, None, None, None
+        fine_segm_confidence_lowres, fine_segm_confidence = None, None
+        coarse_segm_confidence_lowres, coarse_segm_confidence = None, None
         if confidence_model_cfg.uv_confidence.enabled:
             if confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
                 sigma_2_lowres = self.sigma_2_lowres(head_outputs)
@@ -456,9 +496,33 @@ class DensePosePredictor(nn.Module):
                 raise ValueError(
                     f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
                 )
+        if confidence_model_cfg.segm_confidence.enabled:
+            fine_segm_confidence_lowres = self.fine_segm_confidence_lowres(head_outputs)
+            fine_segm_confidence = interp2d(fine_segm_confidence_lowres)
+            fine_segm_confidence = (
+                F.softplus(fine_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
+            )
+            index_uv = index_uv * torch.repeat_interleave(
+                fine_segm_confidence, index_uv.shape[1], dim=1
+            )
+            coarse_segm_confidence_lowres = self.coarse_segm_confidence_lowres(head_outputs)
+            coarse_segm_confidence = interp2d(coarse_segm_confidence_lowres)
+            coarse_segm_confidence = (
+                F.softplus(coarse_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
+            )
+            ann_index = ann_index * torch.repeat_interleave(
+                coarse_segm_confidence, ann_index.shape[1], dim=1
+            )
         return (
-            (sigma_1, sigma_2, kappa_u, kappa_v),
-            (sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
             (ann_index, index_uv),
         )
 
@@ -572,6 +636,10 @@ def densepose_inference(
                 vector of size (N, C, H, W)
             - kappa_v (:obj: `torch.Tensor`): second component of confidence direction
                 vector of size (N, C, H, W)
+            - fine_segm_confidence (:obj: `torch.Tensor`): confidence for fine
+                segmentation of size (N, 1, H, W)
+            - coarse_segm_confidence (:obj: `torch.Tensor`): confidence for coarse
+                segmentation of size (N, 1, H, W)
         detections (list[Instances]): A list of N Instances, where N is the number of images
             in the batch. Instances are modified by this method: "pred_densepose" attribute
             is added to each instance, the attribute contains the corresponding
@@ -579,7 +647,14 @@ def densepose_inference(
     """
     # DensePose outputs: segmentation, body part indices, U, V
     s, index_uv, u, v = densepose_outputs
-    sigma_1, sigma_2, kappa_u, kappa_v = densepose_confidences
+    (
+        sigma_1,
+        sigma_2,
+        kappa_u,
+        kappa_v,
+        fine_segm_confidence,
+        coarse_segm_confidence,
+    ) = densepose_confidences
     k = 0
     for detection in detections:
         n_i = len(detection)
@@ -590,7 +665,14 @@ def densepose_inference(
         _local_vars = locals()
         confidences = {
             name: _local_vars[name]
-            for name in ("sigma_1", "sigma_2", "kappa_u", "kappa_v")
+            for name in (
+                "sigma_1",
+                "sigma_2",
+                "kappa_u",
+                "kappa_v",
+                "fine_segm_confidence",
+                "coarse_segm_confidence",
+            )
             if _local_vars.get(name) is not None
         }
         densepose_output_i = DensePoseOutput(s_i, index_uv_i, u_i, v_i, confidences)
@@ -1130,7 +1212,14 @@ class DensePoseLosses(object):
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
         # the outputs will have size(0) == 3+1+2+1 == 7
         s, index_uv, u, v = densepose_outputs
-        sigma_1, sigma_2, kappa_u, kappa_v = densepose_confidences
+        (
+            sigma_1,
+            sigma_2,
+            kappa_u,
+            kappa_v,
+            fine_segm_confidence,
+            coarse_segm_confidence,
+        ) = densepose_confidences
         conf_type = self.confidence_model_cfg.uv_confidence.type
         assert u.size(2) == v.size(2)
         assert u.size(3) == v.size(3)

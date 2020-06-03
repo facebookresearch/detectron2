@@ -27,6 +27,7 @@ This file contains the default logic to build a dataloader for training or testi
 """
 
 __all__ = [
+    "build_batch_data_loader",
     "build_detection_train_loader",
     "build_detection_test_loader",
     "get_detection_dataset_dicts",

@@ -193,7 +193,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
                 pre_nms_topN=self.pre_nms_topk[self.training],
                 post_nms_topN=self.post_nms_topk[self.training],
                 nms_thresh=self.nms_thresh,
-                min_size=self.min_box_side_len,
+                min_size=self.min_box_size,
                 # correct_transform_coords=True,  # deprecated argument
                 angle_bound_on=True,  # Default
                 angle_bound_lo=-180,

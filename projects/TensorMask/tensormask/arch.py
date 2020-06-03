@@ -12,15 +12,31 @@ from detectron2.modeling.anchor_generator import DefaultAnchorGenerator
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
-from detectron2.modeling.meta_arch.retinanet import (
-    permute_all_cls_and_box_to_N_HWA_K_and_concat,
-    permute_to_N_HWA_K,
-)
+from detectron2.modeling.meta_arch.retinanet import permute_to_N_HWA_K
 from detectron2.structures import Boxes, ImageList, Instances
 
 from tensormask.layers import SwapAlign2Nat
 
 __all__ = ["TensorMask"]
+
+
+def permute_all_cls_and_box_to_N_HWA_K_and_concat(pred_logits, pred_anchor_deltas, num_classes=80):
+    """
+    Rearrange the tensor layout from the network output, i.e.:
+    list[Tensor]: #lvl tensors of shape (N, A x K, Hi, Wi)
+    to per-image predictions, i.e.:
+    Tensor: of shape (N x sum(Hi x Wi x A), K)
+    """
+    # for each feature level, permute the outputs to make them be in the
+    # same format as the labels.
+    pred_logits_flattened = [permute_to_N_HWA_K(x, num_classes) for x in pred_logits]
+    pred_anchor_deltas_flattened = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
+    # concatenate on the first dimension (representing the feature levels), to
+    # take into account the way the labels were generated (with all feature maps
+    # being concatenated as well)
+    pred_logits = cat(pred_logits_flattened, dim=1).view(-1, num_classes)
+    pred_anchor_deltas = cat(pred_anchor_deltas_flattened, dim=1).view(-1, 4)
+    return pred_logits, pred_anchor_deltas
 
 
 def _assignment_rule(

@@ -14,6 +14,7 @@ from fvcore.common.file_io import PathManager
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
 
+from detectron2.data import MetadataCatalog
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 
 from .colormap import random_color
@@ -306,7 +307,7 @@ class VisImage:
 
 
 class Visualizer:
-    def __init__(self, img_rgb, metadata, scale=1.0, instance_mode=ColorMode.IMAGE):
+    def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
         """
         Args:
             img_rgb: a numpy array of shape (H, W, C), where H and W correspond to
@@ -317,6 +318,8 @@ class Visualizer:
             metadata (MetadataCatalog): image metadata.
         """
         self.img = np.asarray(img_rgb).clip(0, 255).astype(np.uint8)
+        if metadata is None:
+            metadata = MetadataCatalog.get("__nonexist__")
         self.metadata = metadata
         self.output = VisImage(self.img, scale=scale)
         self.cpu_device = torch.device("cpu")
@@ -946,7 +949,7 @@ class Visualizer:
         return self.output
 
     def draw_binary_mask(
-        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=4096
+        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=0
     ):
         """
         Args:
@@ -966,8 +969,7 @@ class Visualizer:
         """
         if color is None:
             color = random_color(rgb=True, maximum=1)
-        if area_threshold is None:
-            area_threshold = 4096
+        color = mplc.to_rgb(color)
 
         has_valid_segment = False
         binary_mask = binary_mask.astype("uint8")  # opencv needs uint8
@@ -978,7 +980,7 @@ class Visualizer:
             # draw polygons for regular masks
             for segment in mask.polygons:
                 area = mask_util.area(mask_util.frPyObjects([segment], shape2d[0], shape2d[1]))
-                if area < area_threshold:
+                if area < (area_threshold or 0):
                     continue
                 has_valid_segment = True
                 segment = segment.reshape(-1, 2)

@@ -183,7 +183,7 @@ class Box2BoxTransformRotated(object):
                 deltas[i] represents box transformation for the single box boxes[i].
             boxes (Tensor): boxes to transform, of shape (N, 5)
         """
-        assert deltas.shape[1] == 5 and boxes.shape[1] == 5
+        assert deltas.shape[1] % 5 == 0 and boxes.shape[1] == 5
 
         boxes = boxes.to(deltas.dtype).unsqueeze(2)
 

@@ -2,7 +2,7 @@
 import math
 import numpy as np
 from enum import IntEnum, unique
-from typing import Iterator, List, Tuple, Union
+from typing import Any, List, Tuple, Union
 import torch
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
@@ -141,8 +141,6 @@ class Boxes:
         tensor (torch.Tensor): float matrix of Nx4. Each row is (x1, y1, x2, y2).
     """
 
-    BoxSizeType = Union[List[int], Tuple[int, int]]
-
     def __init__(self, tensor: torch.Tensor):
         """
         Args:
@@ -158,7 +156,7 @@ class Boxes:
 
         self.tensor = tensor
 
-    def clone(self) -> "Boxes":
+    def clone(self):
         """
         Clone the Boxes.
 
@@ -167,8 +165,9 @@ class Boxes:
         """
         return Boxes(self.tensor.clone())
 
-    def to(self, device: str) -> "Boxes":
-        return Boxes(self.tensor.to(device))
+    @torch.jit.unused
+    def to(self, *args: Any, **kwargs: Any):
+        return Boxes(self.tensor.to(*args, **kwargs))
 
     def area(self) -> torch.Tensor:
         """
@@ -181,7 +180,7 @@ class Boxes:
         area = (box[:, 2] - box[:, 0]) * (box[:, 3] - box[:, 1])
         return area
 
-    def clip(self, box_size: BoxSizeType) -> None:
+    def clip(self, box_size: Tuple[int, int]) -> None:
         """
         Clip (in place) the boxes by limiting x coordinates to the range [0, width]
         and y coordinates to the range [0, height].
@@ -212,8 +211,12 @@ class Boxes:
         keep = (widths > threshold) & (heights > threshold)
         return keep
 
-    def __getitem__(self, item: Union[int, slice, torch.BoolTensor]) -> "Boxes":
+    @torch.jit.unused
+    def __getitem__(self, item: Union[int, slice, torch.BoolTensor]):
         """
+        Args:
+            item: int, slice, or a BoolTensor
+
         Returns:
             Boxes: Create a new :class:`Boxes` by indexing.
 
@@ -239,7 +242,7 @@ class Boxes:
     def __repr__(self) -> str:
         return "Boxes(" + str(self.tensor) + ")"
 
-    def inside_box(self, box_size: BoxSizeType, boundary_threshold: int = 0) -> torch.Tensor:
+    def inside_box(self, box_size: Tuple[int, int], boundary_threshold: int = 0) -> torch.Tensor:
         """
         Args:
             box_size (height, width): Size of the reference box.
@@ -272,8 +275,10 @@ class Boxes:
         self.tensor[:, 0::2] *= scale_x
         self.tensor[:, 1::2] *= scale_y
 
+    # classmethod not supported by torchscript. TODO try staticmethod
     @classmethod
-    def cat(cls, boxes_list: List["Boxes"]) -> "Boxes":
+    @torch.jit.unused
+    def cat(cls, boxes_list):
         """
         Concatenates a list of Boxes into a single Boxes
 
@@ -286,7 +291,7 @@ class Boxes:
         assert isinstance(boxes_list, (list, tuple))
         if len(boxes_list) == 0:
             return cls(torch.empty(0))
-        assert all(isinstance(box, Boxes) for box in boxes_list)
+        assert all([isinstance(box, Boxes) for box in boxes_list])
 
         # use torch.cat (v.s. layers.cat) so the returned boxes never share storage with input
         cat_boxes = cls(torch.cat([b.tensor for b in boxes_list], dim=0))
@@ -296,7 +301,10 @@ class Boxes:
     def device(self) -> torch.device:
         return self.tensor.device
 
-    def __iter__(self) -> Iterator[torch.Tensor]:
+    # type "Iterator[torch.Tensor]", yield, and iter() not supported by torchscript
+    # https://github.com/pytorch/pytorch/issues/18627
+    @torch.jit.unused
+    def __iter__(self):
         """
         Yield a box as a Tensor of shape (4,) at a time.
         """

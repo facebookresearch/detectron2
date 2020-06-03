@@ -4,8 +4,7 @@ import torch
 
 from detectron2.config import get_cfg
 from detectron2.modeling.matcher import Matcher
-
-TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
+from detectron2.utils.env import TORCH_VERSION
 
 
 class TestMatcher(unittest.TestCase):

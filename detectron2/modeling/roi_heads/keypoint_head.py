@@ -12,6 +12,15 @@ from detectron2.utils.registry import Registry
 
 _TOTAL_SKIPPED = 0
 
+
+__all__ = [
+    "ROI_KEYPOINT_HEAD_REGISTRY",
+    "build_keypoint_head",
+    "BaseKeypointRCNNHead",
+    "KRCNNConvDeconvUpsampleHead",
+]
+
+
 ROI_KEYPOINT_HEAD_REGISTRY = Registry("ROI_KEYPOINT_HEAD")
 ROI_KEYPOINT_HEAD_REGISTRY.__doc__ = """
 Registry for keypoint heads, which make keypoint predictions from per-region features.
@@ -132,7 +141,7 @@ class BaseKeypointRCNNHead(nn.Module):
             loss_normalizer (float or str):
                 If float, divide the loss by `loss_normalizer * #images`.
                 If 'visible', the loss is normalized by the total number of
-                    visible keypoints across images.
+                visible keypoints across images.
         """
         super().__init__()
         self.num_keypoints = num_keypoints
