@@ -508,10 +508,12 @@ ResNetBlockBase = CNNBlockBase
 Alias for backward compatibiltiy.
 """
 
-make_stage = ResNet.make_stage
-"""
-Alias for backward compatibiltiy.
-"""
+
+def make_stage(*args, **kwargs):
+    """
+    Deprecated alias for backward compatibiltiy.
+    """
+    return ResNet.make_stage(*args, **kwargs)
 
 
 @BACKBONE_REGISTRY.register()

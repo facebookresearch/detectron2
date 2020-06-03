@@ -265,11 +265,14 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         return True
 
     # Hide some that are deprecated or not intended to be used
-    _DEPRECATED = set("ResNetBlockBase", detectron2.modeling.backbone.make_stage)
-
-    if name in _DEPRECATED or obj in _DEPRECATED:
-        return True
-    return None
+    _DEPRECATED = {"ResNetBlockBase"}
+    try:
+        if obj.__doc__.lower().strip().startswith("deprecated") or name in _DEPRECATED:
+            print("Skipping deprecated object: {}".format(name))
+            return True
+    except:
+        pass
+    return skip
 
 
 _PAPER_DATA = {
