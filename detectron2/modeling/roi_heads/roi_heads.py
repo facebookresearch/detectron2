@@ -206,7 +206,7 @@ class ROIHeads(torch.nn.Module):
             # Label ignore proposals (-1 label)
             gt_classes[matched_labels == -1] = -1
         else:
-            gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
+            gt_classes = torch.zeros_like(matched_idxs, device=gt_classes.device) + self.num_classes
 
         sampled_fg_idxs, sampled_bg_idxs = subsample_labels(
             gt_classes, self.batch_size_per_image, self.positive_fraction, self.num_classes
