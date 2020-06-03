@@ -301,7 +301,6 @@ class Boxes:
     def device(self) -> torch.device:
         return self.tensor.device
 
-
     # type "Iterator[torch.Tensor]", yield, and iter() not supported by torchscript
     # https://github.com/pytorch/pytorch/issues/18627
     @torch.jit.unused
