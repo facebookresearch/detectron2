@@ -7,9 +7,8 @@ from detectron2.modeling import build_model
 model = build_model(cfg)  # returns a torch.nn.Module
 ```
 
-`build_model` only builds the model structure, and fill it with random parameters.
-See below for how to load an existing checkpoint to the model,
-and how to use the `model` object.
+`build_model` only builds the model structure and fills it with random parameters.
+See below for how to load an existing checkpoint to the model and how to use the `model` object.
 
 ### Load/Save a Checkpoint
 ```python
