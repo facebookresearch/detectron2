@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from .build import build_detection_test_loader, build_detection_train_loader
+from .build import build_detection_test_loader, build_detection_train_loader, build_frame_selector
 from .dataset_mapper import DatasetMapper
 
 # ensure the builtin datasets are registered

@@ -20,6 +20,12 @@ from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampl
 from .dataset_mapper import DatasetMapper
 from .datasets.coco import DENSEPOSE_KEYS_WITHOUT_MASK as DENSEPOSE_COCO_KEYS_WITHOUT_MASK
 from .datasets.coco import DENSEPOSE_MASK_KEY as DENSEPOSE_COCO_MASK_KEY
+from .video import (
+    FirstKFramesSelector,
+    FrameSelectionStrategy,
+    LastKFramesSelector,
+    RandomKFramesSelector,
+)
 
 __all__ = ["build_detection_train_loader", "build_detection_test_loader"]
 
@@ -371,3 +377,16 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         collate_fn=trivial_batch_collator,
     )
     return data_loader
+
+
+def build_frame_selector(cfg: CfgNode):
+    strategy = FrameSelectionStrategy(cfg.STRATEGY)
+    if strategy == FrameSelectionStrategy.RANDOM_K:
+        frame_selector = RandomKFramesSelector(cfg.NUM_IMAGES)
+    elif strategy == FrameSelectionStrategy.FIRST_K:
+        frame_selector = FirstKFramesSelector(cfg.NUM_IMAGES)
+    elif strategy == FrameSelectionStrategy.LAST_K:
+        frame_selector = LastKFramesSelector(cfg.NUM_IMAGES)
+    elif strategy == FrameSelectionStrategy.ALL:
+        frame_selector = None
+    return frame_selector
