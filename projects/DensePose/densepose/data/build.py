@@ -20,6 +20,7 @@ from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampl
 from .dataset_mapper import DatasetMapper
 from .datasets.coco import DENSEPOSE_KEYS_WITHOUT_MASK as DENSEPOSE_COCO_KEYS_WITHOUT_MASK
 from .datasets.coco import DENSEPOSE_MASK_KEY as DENSEPOSE_COCO_MASK_KEY
+from .transform import ImageResizeTransform
 from .video import (
     FirstKFramesSelector,
     FrameSelectionStrategy,
@@ -390,3 +391,10 @@ def build_frame_selector(cfg: CfgNode):
     elif strategy == FrameSelectionStrategy.ALL:
         frame_selector = None
     return frame_selector
+
+
+def build_transform(cfg: CfgNode, data_type: str):
+    if cfg.TYPE == "resize":
+        if data_type == "image":
+            return ImageResizeTransform(cfg.MIN_SIZE, cfg.MAX_SIZE)
+    raise ValueError(f"Unknown transform {cfg.TYPE} for data type {data_type}")
