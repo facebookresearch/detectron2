@@ -3,7 +3,7 @@
 import itertools
 import logging
 import numpy as np
-from typing import Any, Callable, Collection, Dict, Iterable, List, Optional
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence
 import torch
 
 from detectron2.config import CfgNode
@@ -16,7 +16,9 @@ from detectron2.data.build import (
 from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
 from detectron2.data.common import DatasetFromList, MapDataset
 from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
+from detectron2.utils.comm import get_world_size
 
+from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper
 from .datasets.coco import DENSEPOSE_KEYS_WITHOUT_MASK as DENSEPOSE_COCO_KEYS_WITHOUT_MASK
 from .datasets.coco import DENSEPOSE_MASK_KEY as DENSEPOSE_COCO_MASK_KEY
@@ -33,6 +35,23 @@ __all__ = ["build_detection_train_loader", "build_detection_test_loader"]
 
 Instance = Dict[str, Any]
 InstancePredicate = Callable[[Instance], bool]
+
+
+def _compute_num_images_per_worker(cfg: CfgNode):
+    num_workers = get_world_size()
+    images_per_batch = cfg.SOLVER.IMS_PER_BATCH
+    assert (
+        images_per_batch % num_workers == 0
+    ), "SOLVER.IMS_PER_BATCH ({}) must be divisible by the number of workers ({}).".format(
+        images_per_batch, num_workers
+    )
+    assert (
+        images_per_batch >= num_workers
+    ), "SOLVER.IMS_PER_BATCH ({}) must be larger than the number of workers ({}).".format(
+        images_per_batch, num_workers
+    )
+    images_per_worker = images_per_batch // num_workers
+    return images_per_worker
 
 
 def _map_category_id_to_contiguous_id(dataset_name: str, dataset_dicts: Iterable[Instance]):
@@ -398,3 +417,8 @@ def build_transform(cfg: CfgNode, data_type: str):
         if data_type == "image":
             return ImageResizeTransform(cfg.MIN_SIZE, cfg.MAX_SIZE)
     raise ValueError(f"Unknown transform {cfg.TYPE} for data type {data_type}")
+
+
+def build_combined_loader(cfg: CfgNode, loaders: Collection[Loader], ratios: Sequence[float]):
+    images_per_worker = _compute_num_images_per_worker(cfg)
+    return CombinedDataLoader(loaders, images_per_worker, ratios)
