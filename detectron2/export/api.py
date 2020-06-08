@@ -77,9 +77,11 @@ class Caffe2Tracer:
             cfg (CfgNode): a detectron2 config, with extra export-related options
                 added by :func:`add_export_config`.
             model (nn.Module): a model built by
-                :func:`detectron2.modeling.build_model`.
+                :func:`detectron2.modeling.build_model`. Weights have to be already
+                loaded to this model.
             inputs: sample inputs that the given model takes for inference.
-                Will be used to trace the model.
+                Will be used to trace the model. Random input with no detected objects
+                will not work if the model has data-dependent control flow (e.g., R-CNN).
         """
         assert isinstance(cfg, CN), cfg
         assert isinstance(model, torch.nn.Module), type(model)

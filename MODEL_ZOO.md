@@ -19,7 +19,7 @@ In addition to these official baseline models, you can find more models in [proj
 	Training speed for multi-machine jobs is not provided.
 * Inference speed is measured by `tools/train_net.py --eval-only`, or [inference_on_dataset()](https://detectron2.readthedocs.io/modules/evaluation.html#detectron2.evaluation.inference_on_dataset),
   with batch size 1 in detectron2 directly.
-	Measuring it with your own code will likely introduce other overhead.
+	Measuring it with custom code may introduce other overhead.
   Actual deployment in production should in general be faster than the given inference
   speed due to more optimizations.
 * The *model id* column is provided for ease of reference.

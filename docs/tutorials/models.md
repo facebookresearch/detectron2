@@ -48,7 +48,14 @@ If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
 is a wrapper around model that provides such basic functionality.
 It includes default behavior including model loading, preprocessing,
-and operates on single image rather than batches.
+and operates on single image rather than batches. See its documentation for usage.
+
+A model can also be used directly like this:
+```
+model.eval()
+with torch.no_grad():
+  outputs = model(inputs)
+```
 
 ### Model Input Format
 
@@ -61,7 +68,7 @@ The dict may contain the following keys:
 
 * "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
   Image normalization, if any, will be performed inside the model using
-	`cfg.MODEL.PIXEL_{MEAN,STD}`.
+  `cfg.MODEL.PIXEL_{MEAN,STD}`.
 * "instances": an [Instances](../modules/structures.html#detectron2.structures.Instances)
   object, with the following fields:
   + "gt_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing N boxes, one for each instance.

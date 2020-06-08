@@ -320,6 +320,7 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
     if len(annos) and "segmentation" in annos[0]:
         segms = [obj["segmentation"] for obj in annos]
         if mask_format == "polygon":
+            # TODO check type and provide better error
             masks = PolygonMasks(segms)
         else:
             assert mask_format == "bitmask", mask_format

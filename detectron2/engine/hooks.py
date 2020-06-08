@@ -145,9 +145,10 @@ class IterationTimer(HookBase):
 
 class PeriodicWriter(HookBase):
     """
-    Write events to EventStorage periodically.
+    Write events to EventStorage (by calling ``writer.write()``) periodically.
 
     It is executed every ``period`` iterations and after the last iteration.
+    Note that ``period`` does not affect how data is smoothed by each writer.
     """
 
     def __init__(self, writers, period=20):

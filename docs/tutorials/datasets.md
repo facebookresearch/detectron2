@@ -73,7 +73,8 @@ and the required fields vary based on what the dataloader or the task needs (see
       depend on whether "bbox_mode" is relative.
     + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format. The dict should have
 			keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and 1s into
-			RLE format by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
+			such dict by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
+      `cfg.INPUT.MASK_FORMAT` must be set to `bitmask` if using the default data loader with such format.
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
     v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
     `n` must be equal to the number of keypoint categories.

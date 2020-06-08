@@ -157,8 +157,10 @@ class CommonMetricPrinter(EventWriter):
     """
     Print **common** metrics to the terminal, including
     iteration time, ETA, memory, all losses, and the learning rate.
+    It also applies smoothing using a window of 20 elements.
 
-    To print something different, please implement a similar printer by yourself.
+    It's meant to print common metrics in common ways.
+    To print something in more customized ways, please implement a similar printer by yourself.
     """
 
     def __init__(self, max_iter):

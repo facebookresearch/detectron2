@@ -307,6 +307,23 @@ class VisImage:
 
 
 class Visualizer:
+    """
+    Visualizer that draws data about detection/segmentation on images.
+
+    It contains methods like `draw_{text,box,circle,line,binary_mask,polygon}`
+    that draw primitive objects to images, as well as high-level wrappers like
+    `draw_{instance_predictions,sem_seg,panoptic_seg_predictions,dataset_dict}`
+    that draw composite data in some pre-defined style.
+
+    Note that the exact visualization style for the high-level wrappers are subject to change.
+    Style such as color, opacity, label contents, visibility of labels, or even the visibility
+    of objects themselves (e.g. when the object is too small) may change according
+    to different heuristics, as long as the results still look visually reasonable.
+    For example, we currently do not draw class names if there is only one class.
+    To obtain a consistent style, implement custom drawing functions with the primitive
+    methods instead.
+    """
+
     def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
         """
         Args:
@@ -316,6 +333,8 @@ class Visualizer:
                 is a requirement of the Matplotlib library. The image is also expected
                 to be in the range [0, 255].
             metadata (MetadataCatalog): image metadata.
+            instance_mode (ColorMode): defines one of the pre-defined style for drawing
+                instances on an image.
         """
         self.img = np.asarray(img_rgb).clip(0, 255).astype(np.uint8)
         if metadata is None:
@@ -678,7 +697,6 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
-
         num_instances = len(boxes)
 
         if assigned_colors is None:
@@ -850,6 +868,8 @@ class Visualizer:
         self, rotated_box, alpha=0.5, edge_color="g", line_style="-", label=None
     ):
         """
+        Draw a rotated box with label on its top-left corner.
+
         Args:
             rotated_box (tuple): a tuple containing (cnt_x, cnt_y, w, h, angle),
                 where cnt_x and cnt_y are the center coordinates of the box.
