@@ -253,16 +253,26 @@ def transform_instance_annotations(
 def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_hflip_indices=None):
     """
     Transform keypoint annotations of an image.
+    If a keypoint is transformed out of image boundary, it will be marked "unlabeled" (visibility=0)
 
     Args:
-        keypoints (list[float]): Nx3 float in Detectron2 Dataset format.
+        keypoints (list[float]): Nx3 float in Detectron2's Dataset format.
+            Each point is represented by (x, y, visibility).
         transforms (TransformList):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
+            When `transforms` includes horizontal flip, will use the index
+            mapping to flip keypoints.
     """
     # (N*3,) -> (N, 3)
     keypoints = np.asarray(keypoints, dtype="float64").reshape(-1, 3)
-    keypoints[:, :2] = transforms.apply_coords(keypoints[:, :2])
+    keypoints_xy = transforms.apply_coords(keypoints[:, :2])
+
+    # Set all out-of-boundary points to "unlabeled"
+    inside = (keypoints_xy >= np.array([0, 0])) & (keypoints_xy <= np.array(image_size[::-1]))
+    inside = inside.all(axis=1)
+    keypoints[:, :2] = keypoints_xy
+    keypoints[:, 2][~inside] = 0
 
     # This assumes that HorizFlipTransform is the only one that does flip
     do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
@@ -277,9 +287,7 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
         assert keypoint_hflip_indices is not None
         keypoints = keypoints[keypoint_hflip_indices, :]
 
-    # Maintain COCO convention that if visibility == 0, then x, y = 0
-    # TODO may need to reset visibility for cropped keypoints,
-    # but it does not matter for our existing algorithms
+    # Maintain COCO convention that if visibility == 0 (unlabeled), then x, y = 0
     keypoints[keypoints[:, 2] == 0] = 0
     return keypoints
 

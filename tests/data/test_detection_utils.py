@@ -59,6 +59,23 @@ class TestTransformAnnotations(unittest.TestCase):
             )
         )
 
+    def test_crop(self):
+        transforms = T.TransformList([T.CropTransform(300, 300, 10, 10)])
+        keypoints = np.random.rand(17, 3) * 50 + 15
+        keypoints[:, 2] = 2
+        anno = {
+            "bbox": np.asarray([10, 10, 200, 300]),
+            "bbox_mode": BoxMode.XYXY_ABS,
+            "keypoints": keypoints,
+        }
+
+        output = detection_utils.transform_instance_annotations(
+            copy.deepcopy(anno), transforms, (400, 400)
+        )
+        self.assertTrue((output["bbox"] == np.asarray([-290, -290, -100, 0])).all())
+        # keypoints are no longer visible
+        self.assertTrue((output["keypoints"][:, 2] == 0).all())
+
     def test_transform_RLE(self):
         transforms = T.TransformList([T.HFlipTransform(400)])
         mask = np.zeros((300, 400), order="F").astype("uint8")
