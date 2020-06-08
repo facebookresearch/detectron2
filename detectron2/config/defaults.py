@@ -21,6 +21,25 @@ _C = CN()
 # changes happen. It's recommended to keep a VERSION in your config file.
 _C.VERSION = 2
 
+
+# -----------------------------------------------------------------------------
+# TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
+# -----------------------------------------------------------------------------
+# Configure the classes for the current training/test run.
+_C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'liftarea', 'fork', 'frontofpallet', 'rackface', 'rackupright']
+
+_C.TWA = CN()
+_C.TWA.DATASET = CN()
+# If using a TWA dataset, configure the TWA.DATASET_DIRECTORY. This is a path relative to the directory on columbia where our datasets are stored: /columbia/MachineLearningAssets/labelbox/
+_C.TWA.DATASET.DIRECTORY = ""
+_C.TWA.DATASET.DEBUG: True
+_C.TWA.DATASET.USE_BGR: True
+_C.TWA.DATASET.USE_DEPTH: True
+
+# -----------------------------------------------------------------------------
+# END TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
+# -----------------------------------------------------------------------------
+
 _C.MODEL = CN()
 _C.MODEL.LOAD_PROPOSALS = False
 _C.MODEL.MASK_ON = False
@@ -240,7 +259,7 @@ _C.MODEL.RPN.NMS_THRESH = 0.7
 _C.MODEL.ROI_HEADS = CN()
 _C.MODEL.ROI_HEADS.NAME = "Res5ROIHeads"
 # Number of foreground classes
-_C.MODEL.ROI_HEADS.NUM_CLASSES = 80
+_C.MODEL.ROI_HEADS.NUM_CLASSES = 10
 # Names of the input feature maps to be used by ROI heads
 # Currently all heads (box, mask, ...) use the same input feature map list
 # e.g., ["p2", "p3", "p4", "p5"] is commonly used for FPN
@@ -380,7 +399,7 @@ _C.MODEL.SEM_SEG_HEAD.IN_FEATURES = ["p2", "p3", "p4", "p5"]
 # the correposnding pixel.
 _C.MODEL.SEM_SEG_HEAD.IGNORE_VALUE = 255
 # Number of classes in the semantic segmentation head
-_C.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 54
+_C.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 10
 # Number of channels in the 3x3 convs inside semantic-FPN heads.
 _C.MODEL.SEM_SEG_HEAD.CONVS_DIM = 128
 # Outputs from semantic-FPN heads are up-scaled to the COMMON_STRIDE stride.
@@ -406,7 +425,7 @@ _C.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
 _C.MODEL.RETINANET = CN()
 
 # This is the number of foreground classes.
-_C.MODEL.RETINANET.NUM_CLASSES = 80
+_C.MODEL.RETINANET.NUM_CLASSES = 10
 
 _C.MODEL.RETINANET.IN_FEATURES = ["p3", "p4", "p5", "p6", "p7"]
 
