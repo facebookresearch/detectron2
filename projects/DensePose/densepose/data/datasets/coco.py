@@ -3,6 +3,7 @@ import contextlib
 import io
 import logging
 import os
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional
 from fvcore.common.file_io import PathManager
@@ -195,6 +196,7 @@ def _combine_images_with_annotations(
 
     ann_keys = ["iscrowd", "category_id"]
     dataset_dicts = []
+    contains_video_frame_info = False
 
     for img_dict, ann_dicts in zip(img_datas, ann_datas):
         record = {}
@@ -203,6 +205,10 @@ def _combine_images_with_annotations(
         record["width"] = img_dict["width"]
         record["image_id"] = img_dict["id"]
         record["dataset"] = dataset_name
+        if "frame_id" in img_dict:
+            record["frame_id"] = img_dict["frame_id"]
+            record["video_id"] = img_dict.get("vid_id", None)
+            contains_video_frame_info = True
         objs = []
         for ann_dict in ann_dicts:
             assert ann_dict["image_id"] == record["image_id"]
@@ -215,7 +221,19 @@ def _combine_images_with_annotations(
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)
+    if contains_video_frame_info:
+        create_video_frame_mapping(dataset_name, dataset_dicts)
     return dataset_dicts
+
+
+def create_video_frame_mapping(dataset_name, dataset_dicts):
+    mapping = defaultdict(dict)
+    for d in dataset_dicts:
+        video_id = d.get("video_id")
+        if video_id is None:
+            continue
+        mapping[video_id].update({d["frame_id"]: d["file_name"]})
+    MetadataCatalog.get(dataset_name).set(video_frame_mapping=mapping)
 
 
 def load_coco_json(annotations_json_file: str, image_root: str, dataset_name: str):
