@@ -27,6 +27,7 @@ DatasetCatalog.register("my_dataset", my_dataset_function)
 ```
 
 Here, the snippet associates a dataset "my_dataset" with a function that returns the data.
+The function must return the same data if called multiple times.
 The registration stays effective until the process exits.
 
 The function can process data from its original format into either one of the following:

@@ -42,11 +42,11 @@ class DatasetMapperTTA:
     def __call__(self, dataset_dict):
         """
         Args:
-            dict: a detection dataset dict in standard format
+            dict: a dict in standard model input format. See tutorials for details.
 
         Returns:
             list[dict]:
-                a list of dataset dicts, which contain augmented version of the input image.
+                a list of dicts, which contain augmented version of the input image.
                 The total number of dicts is ``len(min_sizes) * (2 if flip else 1)``.
                 Each dict has field "transforms" which is a TransformList,
                 containing the transforms that are used to generate this image.

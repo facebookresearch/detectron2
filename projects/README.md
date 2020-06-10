@@ -26,6 +26,7 @@ External projects in the community that use detectron2:
  -  2. the project must provide models trained on standard datasets
  -->
 
-+ [VoVNet backbones](https://github.com/youngwanLEE/vovnet-detectron2).
-+ [AdelaiDet](https://github.com/aim-uofa/adet), a detection toolbox from the Universtiy of Adelaide.
-+ [CenterMask : Real-Time Anchor-Free Instance Segmentation](https://github.com/youngwanLEE/centermask2)
++ [VoVNet backbones](https://github.com/youngwanLEE/vovnet-detectron2)
++ [AdelaiDet](https://github.com/aim-uofa/adet), a detection toolbox from the Universtiy of Adelaide
++ [CenterMask](https://github.com/youngwanLEE/centermask2)
++ [Res2Net backbones](https://github.com/Res2Net/Res2Net-detectron2)
