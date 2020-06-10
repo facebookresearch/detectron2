@@ -31,10 +31,18 @@ _C.CLASSES = ['__background__', 'pallet', 'payload', 'person', 'forklift', 'lift
 _C.TWA = CN()
 _C.TWA.DATASET = CN()
 # If using a TWA dataset, configure the TWA.DATASET_DIRECTORY. This is a path relative to the directory on columbia where our datasets are stored: /columbia/MachineLearningAssets/labelbox/
+_C.TWA.MAX_DEPTH_MM = 30000
+
+# Dataset Parameters
 _C.TWA.DATASET.DIRECTORY = ""
 _C.TWA.DATASET.DEBUG = True
 _C.TWA.DATASET.USE_BGR = True
 _C.TWA.DATASET.USE_DEPTH = True
+
+# Data augmentation parameters
+_C.TWA.DATASET.AUGMENTATION = CN()
+_C.TWA.DATASET.AUGMENTATION.ROTATION = 20
+
 
 # -----------------------------------------------------------------------------
 # END TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
