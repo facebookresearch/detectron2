@@ -515,6 +515,21 @@ _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 
 
 # ---------------------------------------------------------------------------- #
+# VGG Settings
+# ---------------------------------------------------------------------------- #
+_C.MODEL.VGG = CN()
+
+_C.MODEL.VGG.DEPTH = 16
+_C.MODEL.VGG.OUT_FEATURES = ["vgg_block5"]
+
+# Options: FrozenBN, GN, "SyncBN", "BN"
+_C.MODEL.VGG.NORM = "FrozenBN"
+
+# Output channels of conv5 block
+_C.MODEL.VGG.CONV5_OUT_CHANNELS = 512
+
+
+# ---------------------------------------------------------------------------- #
 # Solver
 # ---------------------------------------------------------------------------- #
 _C.SOLVER = CN()
