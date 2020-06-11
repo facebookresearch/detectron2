@@ -32,7 +32,7 @@ cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values f
 print(cfg.dump())  # print formatted configs
 ```
 
-Many builtin tools in detectron2 accepts command line config overwrite:
+Many builtin tools in detectron2 accept command line config overwrite:
 Key-value pairs provided in the command line will overwrite the existing values in the config file.
 For example, [demo.py](../../demo/demo.py) can be used with
 ```
