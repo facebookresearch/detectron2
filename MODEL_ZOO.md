@@ -795,9 +795,9 @@ Ablations for normalization methods, and a few models trained from scratch follo
 <!-- ROW: mask_rcnn_R_50_FPN_3x_gn -->
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_gn.yaml">GN</a></td>
 <td align="center">3x</td>
-<td align="center">0.356</td>
-<td align="center">0.069</td>
-<td align="center">7.3</td>
+<td align="center">0.309</td>
+<td align="center">0.060</td>
+<td align="center">5.6</td>
 <td align="center">42.6</td>
 <td align="center">38.6</td>
 <td align="center">138602888</td>
@@ -806,7 +806,7 @@ Ablations for normalization methods, and a few models trained from scratch follo
 <!-- ROW: mask_rcnn_R_50_FPN_3x_syncbn -->
  <tr><td align="left"><a href="configs/Misc/mask_rcnn_R_50_FPN_3x_syncbn.yaml">SyncBN</a></td>
 <td align="center">3x</td>
-<td align="center">0.371</td>
+<td align="center">0.345</td>
 <td align="center">0.053</td>
 <td align="center">5.5</td>
 <td align="center">41.9</td>
@@ -817,9 +817,9 @@ Ablations for normalization methods, and a few models trained from scratch follo
 <!-- ROW: scratch_mask_rcnn_R_50_FPN_3x_gn -->
  <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml">GN (from scratch)</a></td>
 <td align="center">3x</td>
-<td align="center">0.400</td>
-<td align="center">0.069</td>
-<td align="center">9.8</td>
+<td align="center">0.338</td>
+<td align="center">0.061</td>
+<td align="center">7.2</td>
 <td align="center">39.9</td>
 <td align="center">36.6</td>
 <td align="center">138602908</td>
@@ -829,8 +829,8 @@ Ablations for normalization methods, and a few models trained from scratch follo
  <tr><td align="left"><a href="configs/Misc/scratch_mask_rcnn_R_50_FPN_9x_gn.yaml">GN (from scratch)</a></td>
 <td align="center">9x</td>
 <td align="center">N/A</td>
-<td align="center">0.070</td>
-<td align="center">9.8</td>
+<td align="center">0.061</td>
+<td align="center">7.2</td>
 <td align="center">43.7</td>
 <td align="center">39.6</td>
 <td align="center">183808979</td>
@@ -872,7 +872,7 @@ A few very large models trained for a long time, for demo purposes. They are tra
 <!-- TABLE BODY -->
 <!-- ROW: panoptic_fpn_R_101_dconv_cascade_gn_3x -->
  <tr><td align="left"><a href="configs/Misc/panoptic_fpn_R_101_dconv_cascade_gn_3x.yaml">Panoptic FPN R101</a></td>
-<td align="center">0.107</td>
+<td align="center">0.098</td>
 <td align="center">11.4</td>
 <td align="center">47.4</td>
 <td align="center">41.3</td>
@@ -882,7 +882,7 @@ A few very large models trained for a long time, for demo purposes. They are tra
 </tr>
 <!-- ROW: cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv -->
  <tr><td align="left"><a href="configs/Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml">Mask R-CNN X152</a></td>
-<td align="center">0.242</td>
+<td align="center">0.234</td>
 <td align="center">15.1</td>
 <td align="center">50.2</td>
 <td align="center">44.0</td>
