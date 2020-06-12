@@ -156,7 +156,7 @@ class Boxes:
 
         self.tensor = tensor
 
-    def clone(self):
+    def clone(self) -> "Boxes":
         """
         Clone the Boxes.
 
