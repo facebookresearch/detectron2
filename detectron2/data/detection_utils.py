@@ -104,7 +104,7 @@ def read_image(file_name, format=None):
 
     Args:
         file_name (str): image file path
-        format (str): one of the supported image modes in PIL, or "BGR" or "YUV-BT.601"
+        format (str): one of the supported image modes in PIL, or "BGR" or "YUV-BT.601".
 
     Returns:
         image (np.ndarray): an HWC image in the given format, which is 0-255, uint8 for
