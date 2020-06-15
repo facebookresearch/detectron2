@@ -208,7 +208,7 @@ def register_all_pascal_voc(root):
     ]
     for name, dirname, split in SPLITS:
         year = 2007 if "2007" in name else 2012
-        register_pascal_voc(name, os.path.join(root, dirname), split, year)
+        register_pascal_voc(name, os.path.join(root, dirname), split, year=year)
         MetadataCatalog.get(name).evaluator_type = "pascal_voc"
 
 

@@ -21,7 +21,7 @@ CLASS_NAMES = [
 # fmt: on
 
 
-def load_voc_instances(dirname: str, split: str):
+def load_voc_instances(dirname: str, split: str, class_names: list):
     """
     Load Pascal VOC detection annotations to Detectron2 format.
 
@@ -66,15 +66,13 @@ def load_voc_instances(dirname: str, split: str):
             bbox[0] -= 1.0
             bbox[1] -= 1.0
             instances.append(
-                {"category_id": CLASS_NAMES.index(cls), "bbox": bbox, "bbox_mode": BoxMode.XYXY_ABS}
+                {"category_id": class_names.index(cls), "bbox": bbox, "bbox_mode": BoxMode.XYXY_ABS}
             )
         r["annotations"] = instances
         dicts.append(r)
     return dicts
 
 
-def register_pascal_voc(name, dirname, split, year):
-    DatasetCatalog.register(name, lambda: load_voc_instances(dirname, split))
-    MetadataCatalog.get(name).set(
-        thing_classes=CLASS_NAMES, dirname=dirname, year=year, split=split
-    )
+def register_pascal_voc(name, dirname, split, class_names=CLASS_NAMES, **kwargs):
+    DatasetCatalog.register(name, lambda: load_voc_instances(dirname, split, class_names))
+    MetadataCatalog.get(name).set(thing_classes=class_names, dirname=dirname, split=split, **kwargs)
