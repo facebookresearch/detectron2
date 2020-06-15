@@ -245,7 +245,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
     tp = np.zeros(nd)
     fp = np.zeros(nd)
     for d in range(nd):
-        R = class_recs[image_ids[d]]
+        R = class_recs[imagenames[int(image_ids[d])]]
         bb = BB[d, :].astype(float)
         ovmax = -np.inf
         BBGT = R["bbox"].astype(float)
