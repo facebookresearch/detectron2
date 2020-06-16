@@ -19,9 +19,7 @@ class HookBase:
 
     Each hook can implement 4 methods. The way they are called is demonstrated
     in the following snippet:
-
-    .. code-block:: python
-
+    ::
         hook.before_train()
         for iter in range(start_iter, max_iter):
             hook.before_step()

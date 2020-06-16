@@ -171,9 +171,7 @@ class DefaultPredictor:
             cfg.DATASETS.TEST.
 
     Examples:
-
-    .. code-block:: python
-
+    ::
         pred = DefaultPredictor(cfg)
         inputs = cv2.imread("input.jpg")
         outputs = pred(inputs)
@@ -249,9 +247,7 @@ class DefaultTrainer(SimpleTrainer):
     To obtain more stable behavior, write your own training logic with other public APIs.
 
     Examples:
-
-    .. code-block:: python
-
+    ::
         trainer = DefaultTrainer(cfg)
         trainer.resume_or_load()  # load last checkpoint or MODEL.WEIGHTS
         trainer.train()
@@ -374,9 +370,7 @@ class DefaultTrainer(SimpleTrainer):
             list[EventWriter]: a list of :class:`EventWriter` objects.
 
         It is now implemented by:
-
-        .. code-block:: python
-
+        ::
             return [
                 CommonMetricPrinter(self.max_iter),
                 JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),

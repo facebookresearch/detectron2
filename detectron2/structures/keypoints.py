@@ -8,7 +8,7 @@ from detectron2.layers import interpolate
 
 class Keypoints:
     """
-    Stores keypoint annotation data. GT Instances have a `gt_keypoints` property
+    Stores keypoint **annotation** data. GT Instances have a `gt_keypoints` property
     containing the x,y location and visibility flag of each keypoint. This tensor has shape
     (N, K, 3) where N is the number of instances and K is the number of keypoints per instance.
 
@@ -42,12 +42,15 @@ class Keypoints:
 
     def to_heatmap(self, boxes: torch.Tensor, heatmap_size: int) -> torch.Tensor:
         """
+        Convert keypoint annotations to a heatmap of one-hot labels for training,
+        as described in :paper:`Mask R-CNN`.
+
         Arguments:
             boxes: Nx4 tensor, the boxes to draw the keypoints to
 
         Returns:
             heatmaps:
-                A tensor of shape (N, K) containing an integer spatial label
+                A tensor of shape (N, K), each element is integer spatial label
                 in the range [0, heatmap_size**2 - 1] for each keypoint in the input.
             valid:
                 A tensor of shape (N, K) containing whether each keypoint is in the roi or not.
