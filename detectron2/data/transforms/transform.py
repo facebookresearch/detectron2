@@ -257,5 +257,7 @@ def Resize_rotated_box(transform, rotated_boxes):
 
 
 HFlipTransform.register_type("rotated_box", HFlip_rotated_box)
-NoOpTransform.register_type("rotated_box", lambda t, x: x)
 ResizeTransform.register_type("rotated_box", Resize_rotated_box)
+
+# not necessary any more with latest fvcore
+NoOpTransform.register_type("rotated_box", lambda t, x: x)
