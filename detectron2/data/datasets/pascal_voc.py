@@ -4,30 +4,32 @@
 import numpy as np
 import os
 import xml.etree.ElementTree as ET
+from typing import List, Tuple, Union
 from fvcore.common.file_io import PathManager
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
 
-__all__ = ["register_pascal_voc"]
+__all__ = ["load_voc_instances", "register_pascal_voc"]
 
 
 # fmt: off
-CLASS_NAMES = [
+CLASS_NAMES = (
     "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
     "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
-    "pottedplant", "sheep", "sofa", "train", "tvmonitor",
-]
+    "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+)
 # fmt: on
 
 
-def load_voc_instances(dirname: str, split: str, class_names: list):
+def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], Tuple[str, ...]]):
     """
     Load Pascal VOC detection annotations to Detectron2 format.
 
     Args:
         dirname: Contain "Annotations", "ImageSets", "JPEGImages"
         split (str): one of "train", "test", "val", "trainval"
+        class_names: list or tuple of class names
     """
     with PathManager.open(os.path.join(dirname, "ImageSets", "Main", split + ".txt")) as f:
         fileids = np.loadtxt(f, dtype=np.str)
@@ -73,6 +75,8 @@ def load_voc_instances(dirname: str, split: str, class_names: list):
     return dicts
 
 
-def register_pascal_voc(name, dirname, split, class_names=CLASS_NAMES, **kwargs):
+def register_pascal_voc(name, dirname, split, year, class_names=CLASS_NAMES):
     DatasetCatalog.register(name, lambda: load_voc_instances(dirname, split, class_names))
-    MetadataCatalog.get(name).set(thing_classes=class_names, dirname=dirname, split=split, **kwargs)
+    MetadataCatalog.get(name).set(
+        thing_classes=class_names, dirname=dirname, year=year, split=split
+    )
