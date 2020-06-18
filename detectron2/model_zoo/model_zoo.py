@@ -129,6 +129,9 @@ def get(config_path, trained: bool = False):
             instead; this will typically (though not always) initialize a subset of weights using
             an ImageNet pre-trained model, while randomly initializing the other weights.
 
+    Returns:
+        nn.Module: a detectron2 model
+
     Example:
     ::
         from detectron2 import model_zoo

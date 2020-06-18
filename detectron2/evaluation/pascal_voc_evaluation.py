@@ -19,12 +19,13 @@ from .evaluator import DatasetEvaluator
 
 class PascalVOCDetectionEvaluator(DatasetEvaluator):
     """
-    Evaluate Pascal VOC AP.
+    Evaluate Pascal VOC style AP for Pascal VOC dataset.
     It contains a synchronization, therefore has to be called from all ranks.
 
-    Note that this is a rewrite of the official Matlab API.
-    The results should be similar, but not identical to the one produced by
-    the official API.
+    Note that the concept of AP can be implemented in different ways and may not
+    produce identical results. This class mimics the implementation of the official
+    Pascal VOC Matlab API, and should produce similar but not identical results to the
+    official API.
     """
 
     def __init__(self, dataset_name):

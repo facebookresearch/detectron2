@@ -22,11 +22,15 @@ External projects in the community that use detectron2:
 
 <!--
  - If you want to contribute, note that:
- -  1. please add your project to the end of the list and try to use only one line
+ -  1. please add your project to the list and try to use only one line
  -  2. the project must provide models trained on standard datasets
+
+ Projects are *roughly sorted* by: "score = PaperCitation * 5 + Stars",
+ where PaperCitation equals the citation count of the paper, if the project is an *official* implementation of the paper.
+ PaperCitation equals 0 otherwise.
  -->
 
-+ [VoVNet backbones](https://github.com/youngwanLEE/vovnet-detectron2)
-+ [AdelaiDet](https://github.com/aim-uofa/adet), a detection toolbox from the Universtiy of Adelaide
++ [AdelaiDet](https://github.com/aim-uofa/adet), a detection toolbox including FCOS, BlendMask, etc.
 + [CenterMask](https://github.com/youngwanLEE/centermask2)
 + [Res2Net backbones](https://github.com/Res2Net/Res2Net-detectron2)
++ [VoVNet backbones](https://github.com/youngwanLEE/vovnet-detectron2)

@@ -219,13 +219,14 @@ class DefaultPredictor:
 
 class DefaultTrainer(SimpleTrainer):
     """
-    A trainer with default training logic. Compared to `SimpleTrainer`, it
-    contains the following logic in addition:
+    A trainer with default training logic.
+    It is a subclass of `SimpleTrainer` which instantiates everything needed from the
+    config. It does the following:
 
     1. Create model, optimizer, scheduler, dataloader from the given config.
     2. Load a checkpoint or `cfg.MODEL.WEIGHTS`, if exists, when
        `resume_or_load` is called.
-    3. Register a few common hooks.
+    3. Register a few common hooks defined by the config.
 
     It is created to simplify the **standard model training workflow** and reduce code boilerplate
     for users who only need the standard training workflow, with standard features.

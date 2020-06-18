@@ -26,7 +26,7 @@ git clone https://github.com/facebookresearch/detectron2.git
 python -m pip install -e detectron2
 
 # Or if you are on macOS
-# CC=clang CXX=clang++ python -m pip install -e .
+CC=clang CXX=clang++ python -m pip install ......
 ```
 
 To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
@@ -68,19 +68,19 @@ Click each issue for its solutions:
 
 <details>
 <summary>
-Undefined TH,torch,aten,caffe2 symbols; missing torch dynamic libraries; segmentation fault immediately when using detectron2.
+Undefined symbols that contains TH,aten,torch,caffe2; missing torch dynamic libraries; segmentation fault immediately when using detectron2.
 </summary>
 <br/>
 
 This usually happens when detectron2 or torchvision is not
 compiled with the version of PyTorch you're running.
 
-Pre-built torchvision or detectron2 has to work with the corresponding official release of pytorch.
 If the error comes from a pre-built torchvision, uninstall torchvision and pytorch and reinstall them
 following [pytorch.org](http://pytorch.org). So the versions will match.
 
 If the error comes from a pre-built detectron2, check [release notes](https://github.com/facebookresearch/detectron2/releases)
 to see the corresponding pytorch version required for each pre-built detectron2.
+Or uninstall and reinstall the correct pre-built detectron2.
 
 If the error comes from detectron2 or torchvision that you built manually from source,
 remove files you built (`build/`, `**/*.so`) and rebuild it so it can pick up the version of pytorch currently in your environment.
@@ -139,19 +139,20 @@ Two possibilities:
   you need to either install a different build of PyTorch (or build by yourself)
   to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
-* Detectron2 or PyTorch/torchvision is not built for the correct GPU architecture (aka. compute compatibility).
+* PyTorch/torchvision/Detectron2 is not built for the correct GPU architecture (aka. compute compatibility).
 
-  The GPU architecture for PyTorch/detectron2/torchvision is available in the "architecture flags" in
-  `python -m detectron2.utils.collect_env`.
+  The compute compatibility included by PyTorch/detectron2/torchvision is available in the "architecture flags" in
+  `python -m detectron2.utils.collect_env`. It must include
+  the compute compatibility of your GPU, which can be found at [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus).
 
-  The GPU architecture flags of detectron2/torchvision by default matches the GPU model detected
-  during compilation. This means the compiled code may not work on a different GPU model.
-  To overwrite the GPU architecture for detectron2/torchvision, use `TORCH_CUDA_ARCH_LIST` environment variable during compilation.
+  If you're using pre-built PyTorch/detectron2/torchvision, they have included support for most popular GPUs already.
+  If not supported, you need to build them from source.
 
+  When building detectron2/torchvision from source, they detect the GPU device and build for only the device.
+  This means the compiled code may not work on a different GPU device.
+  To recompile them for the correct compatiblity, remove all installed/compiled files,
+  and rebuild them with the `TORCH_CUDA_ARCH_LIST` environment variable set properly.
   For example, `export TORCH_CUDA_ARCH_LIST=6.0,7.0` makes it compile for both P100s and V100s.
-  Visit [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus) to find out
-  the correct compute compatibility number for your device.
-
 </details>
 
 <details>
@@ -180,7 +181,7 @@ C++ compilation errors from NVCC
 
 1. NVCC version has to match the CUDA version of your PyTorch.
 
-2. NVCC has compatibility issues with certain versions of gcc. You may need a different
+2. NVCC has compatibility issues with certain versions of gcc. You sometimes need a different
    version of gcc. The version used by PyTorch can be found by `print(torch.__config__.show())`.
 </details>
 
@@ -214,7 +215,7 @@ PRs that improves code compatibility on windows are welcome.
 ONNX conversion segfault after some "TraceWarning".
 </summary>
 <br/>
-The ONNX package is compiled with too old compiler.
+The ONNX package is compiled with a too old compiler.
 
 Please build and install ONNX from its source code using a compiler
 whose version is closer to what's used by PyTorch (available in `torch.__config__.show()`).

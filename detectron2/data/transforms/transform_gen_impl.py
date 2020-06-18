@@ -369,6 +369,7 @@ class RandomBrightness(TransformGen):
 class RandomSaturation(TransformGen):
     """
     Randomly transforms saturation of an RGB image.
+    Input images are assumed to have 'RGB' channel order.
 
     Saturation intensity is uniformly sampled in (intensity_min, intensity_max).
     - intensity < 1 will reduce saturation (make the image more grayscale)
@@ -397,7 +398,7 @@ class RandomSaturation(TransformGen):
 class RandomLighting(TransformGen):
     """
     The "lighting" augmentation described in AlexNet, using fixed PCA over ImageNet.
-    Inputs are assumed to be RGB images.
+    Input images are assumed to have 'RGB' channel order.
 
     The degree of color jittering is randomly sampled via a normal distribution,
     with standard deviation given by the scale parameter.

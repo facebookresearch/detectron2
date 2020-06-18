@@ -151,7 +151,7 @@ def do_train(cfg, model, resume=False):
     )
 
     # compared to "train_net.py", we do not support accurate timing and
-    # precise BN here, because they are not trivial to implement
+    # precise BN here, because they are not trivial to implement in a small training loop
     data_loader = build_detection_train_loader(cfg)
     logger.info("Starting training from iteration {}".format(start_iter))
     with EventStorage(start_iter) as storage:
