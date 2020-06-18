@@ -377,9 +377,10 @@ def convert_to_coco_dict(dataset_name):
             if "segmentation" in annotation:
                 coco_annotation["segmentation"] = annotation["segmentation"]
                 if isinstance(coco_annotation["segmentation"], dict):  # RLE
-                    coco_annotation["segmentation"]["counts"] = coco_annotation["segmentation"][
-                        "counts"
-                    ].decode("ascii")
+                    if not isinstance(coco_annotation["segmentation"]["counts"], str):
+                        coco_annotation["segmentation"]["counts"] = coco_annotation["segmentation"][
+                            "counts"
+                        ].decode("ascii")
 
             coco_annotations.append(coco_annotation)
 
