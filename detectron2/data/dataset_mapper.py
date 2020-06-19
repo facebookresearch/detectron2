@@ -84,7 +84,8 @@ class DatasetMapper:
         else:
             # Crop around an instance if there are instances in the image.
             # USER: Remove if you don't use cropping
-            if self.crop_gen:
+            crop_around_instance = self.crop_gen and dataset_dict["annotations"]
+            if crop_around_instance:
                 crop_tfm = utils.gen_crop_transform_with_instance(
                     self.crop_gen.get_crop_size(image.shape[:2]),
                     image.shape[:2],
@@ -92,7 +93,7 @@ class DatasetMapper:
                 )
                 image = crop_tfm.apply_image(image)
             image, transforms = T.apply_transform_gens(self.tfm_gens, image)
-            if self.crop_gen:
+            if crop_around_instance:
                 transforms = crop_tfm + transforms
 
         image_shape = image.shape[:2]  # h, w
