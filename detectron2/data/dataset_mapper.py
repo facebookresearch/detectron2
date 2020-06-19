@@ -136,7 +136,12 @@ class DatasetMapper:
             instances = utils.annotations_to_instances(
                 annos, image_shape, mask_format=self.mask_format
             )
-            # Create a tight bounding box from masks, useful when image is cropped
+
+            # After transforms such as cropping are applied, the bounding box may no longer
+            # tightly bound the object. As an example, imagine a triangle object
+            # [(0,0), (2,0), (0,2)] cropped by a box [(1,0),(2,2)] (XYXY format). The tight
+            # bounding box of the cropped triangle should be [(1,0),(2,1)], which is not equal to
+            # the intersection of original bounding box and the cropping box.
             if self.crop_gen and instances.has("gt_masks"):
                 instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
             dataset_dict["instances"] = utils.filter_empty_instances(instances)

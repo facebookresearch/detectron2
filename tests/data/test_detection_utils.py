@@ -66,15 +66,16 @@ class TestTransformAnnotations(unittest.TestCase):
         keypoints = np.random.rand(17, 3) * 50 + 15
         keypoints[:, 2] = 2
         anno = {
-            "bbox": np.asarray([10, 10, 200, 300]),
+            "bbox": np.asarray([10, 10, 200, 400]),
             "bbox_mode": BoxMode.XYXY_ABS,
             "keypoints": keypoints,
         }
 
         output = detection_utils.transform_instance_annotations(
-            copy.deepcopy(anno), transforms, (400, 400)
+            copy.deepcopy(anno), transforms, (10, 10)
         )
-        self.assertTrue((output["bbox"] == np.asarray([-290, -290, -100, 0])).all())
+        # box is shifted and cropped
+        self.assertTrue((output["bbox"] == np.asarray([0, 0, 0, 10])).all())
         # keypoints are no longer visible
         self.assertTrue((output["keypoints"][:, 2] == 0).all())
 
