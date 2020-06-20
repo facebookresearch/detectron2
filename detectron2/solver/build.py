@@ -107,32 +107,56 @@ def build_optimizer(cfg: CfgNode, model: torch.nn.Module) -> torch.optim.Optimiz
         torch.nn.LayerNorm,
         torch.nn.LocalResponseNorm,
     )
-    params: List[Dict[str, Any]] = []
-    memo: Set[torch.nn.parameter.Parameter] = set()
-    for module in model.modules():
-        for key, value in module.named_parameters(recurse=False):
-            if not value.requires_grad:
-                continue
-            # Avoid duplicating parameters
-            if value in memo:
-                continue
-            memo.add(value)
-            lr = cfg.SOLVER.BASE_LR
-            weight_decay = cfg.SOLVER.WEIGHT_DECAY
-            if isinstance(module, norm_module_types):
-                weight_decay = cfg.SOLVER.WEIGHT_DECAY_NORM
-            elif key == "bias":
-                # NOTE: unlike Detectron v1, we now default BIAS_LR_FACTOR to 1.0
-                # and WEIGHT_DECAY_BIAS to WEIGHT_DECAY so that bias optimizer
-                # hyperparameters are by default exactly the same as for regular
-                # weights.
-                lr = cfg.SOLVER.BASE_LR * cfg.SOLVER.BIAS_LR_FACTOR
-                weight_decay = cfg.SOLVER.WEIGHT_DECAY_BIAS
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+    if cfg.SOLVER.OPTIMIZER.NAME == "SGD":
+        params: List[Dict[str, Any]] = []
+        memo: Set[torch.nn.parameter.Parameter] = set()
+        for module in model.modules():
+            for key, value in module.named_parameters(recurse=False):
+                if not value.requires_grad:
+                    continue
+                # Avoid duplicating parameters
+                if value in memo:
+                    continue
+                memo.add(value)
+                lr = cfg.SOLVER.BASE_LR
+                weight_decay = cfg.SOLVER.WEIGHT_DECAY
+                if isinstance(module, norm_module_types):
+                    weight_decay = cfg.SOLVER.WEIGHT_DECAY_NORM
+                elif key == "bias":
+                    # NOTE: unlike Detectron v1, we now default BIAS_LR_FACTOR to 1.0
+                    # and WEIGHT_DECAY_BIAS to WEIGHT_DECAY so that bias optimizer
+                    # hyperparameters are by default exactly the same as for regular
+                    # weights.
+                    lr = cfg.SOLVER.BASE_LR * cfg.SOLVER.BIAS_LR_FACTOR
+                    weight_decay = cfg.SOLVER.WEIGHT_DECAY_BIAS
+                params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
-    optimizer = torch.optim.SGD(
-        params, cfg.SOLVER.BASE_LR, momentum=cfg.SOLVER.MOMENTUM, nesterov=cfg.SOLVER.NESTEROV
-    )
+        optimizer = torch.optim.SGD(
+            params, cfg.SOLVER.BASE_LR, momentum=cfg.SOLVER.MOMENTUM, nesterov=cfg.SOLVER.NESTEROV
+        )
+    elif cfg.SOLVER.OPTIMIZER.NAME == "AdamW":
+        lr = cfg.SOLVER.BASE_LR
+        weight_decay = cfg.SOLVER.WEIGHT_DECAY
+        optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=lr,
+            betas=cfg.SOLVER.OPTIMIZER.BETAS,
+            weight_decay=weight_decay,
+            amsgrad=cfg.SOLVER.OPTIMIZER.AMSGRAD
+        )
+    elif cfg.SOLVER.OPTIMIZER.NAME == "Adam":
+        lr = cfg.SOLVER.BASE_LR
+        weight_decay = cfg.SOLVER.WEIGHT_DECAY
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=lr,
+            weight_decay=weight_decay,
+            amsgrad=cfg.SOLVER.OPTIMIZER.AMSGRAD
+        )
+    else:
+        raise NotImplementedError(
+            "Not support {} optimizer now.".format(cfg.SOLVER.OPTIMIZER.NAME)
+        )
     optimizer = maybe_add_gradient_clipping(cfg, optimizer)
     return optimizer
 

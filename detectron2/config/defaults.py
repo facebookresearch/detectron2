@@ -545,6 +545,17 @@ _C.SOLVER.CLIP_GRADIENTS.CLIP_VALUE = 1.0
 # gradient clipping type; for L-inf, please specify .inf
 _C.SOLVER.CLIP_GRADIENTS.NORM_TYPE = 2.0
 
+# Optimizer
+# - "SGD"
+# - "Adam"
+# - "AdamW"
+_C.SOLVER.OPTIMIZER = CN()
+_C.SOLVER.OPTIMIZER.NAME = "SGD"
+# For "AdamW" optimizer
+_C.SOLVER.OPTIMIZER.BETAS = (0.9, 0.999)
+# For "Adam" and "AdamW" optimizer
+_C.SOLVER.OPTIMIZER.AMSGRAD = False
+
 # ---------------------------------------------------------------------------- #
 # Specific test options
 # ---------------------------------------------------------------------------- #
