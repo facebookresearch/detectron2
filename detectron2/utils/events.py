@@ -211,9 +211,10 @@ class CommonMetricPrinter(EventWriter):
 
         # NOTE: max_mem is parsed by grep in "dev/parse_results.sh"
         self.logger.info(
-            " {eta}iter: {iter}  {losses}  {time}{data_time}lr: {lr}  {memory}".format(
-                eta=f"eta: {eta_string}  " if eta_string else "",
-                iter=iteration,
+            " eta: {eta}  iter: {iter}  {losses}  {other_metrics}  time: {time}  "
+            "data_time: {data_time}  lr: {lr}  max_mem: {memory}".format(
+                eta=f"{eta_string}" if eta_string else "",
+                iter="{}/{}".format(iteration, self._max_iter),
                 losses="  ".join(
                     [
                         "{}: {:.3f}".format(k, v.median(20))
@@ -221,10 +222,17 @@ class CommonMetricPrinter(EventWriter):
                         if "loss" in k
                     ]
                 ),
-                time="time: {:.4f}  ".format(iter_time) if iter_time is not None else "",
-                data_time="data_time: {:.4f}  ".format(data_time) if data_time is not None else "",
+                other_metrics="  ".join(
+                    [
+                        "{}: {:.3f}".format(k, v.median(20))
+                        for k, v in storage.histories().items()
+                        if "loss" not in k and k not in ["data_time", "time", "lr", "eta_seconds"]
+                    ]
+                ),
+                time="{:.4f}".format(iter_time) if iter_time is not None else "",
+                data_time="{:.4f}".format(data_time) if data_time is not None else "",
                 lr=lr,
-                memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
+                memory="{:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
             )
         )
 
