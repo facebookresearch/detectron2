@@ -322,6 +322,9 @@ class Visualizer:
     For example, we currently do not draw class names if there is only one class.
     To obtain a consistent style, implement custom drawing functions with the primitive
     methods instead.
+
+    This visualizer focuses on high rendering quality rather than performance. It is not
+    designed to be used for real-time applications.
     """
 
     def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):

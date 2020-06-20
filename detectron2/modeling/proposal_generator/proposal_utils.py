@@ -159,13 +159,13 @@ def add_ground_truth_to_proposals_single_image(gt_boxes, proposals):
         Same as `add_ground_truth_to_proposals`, but for only one image.
     """
     device = proposals.objectness_logits.device
-    # Concatenating gt_boxes with proposals requires them to have the same fields
-    # Assign all ground-truth boxes an objectness logit corresponding to P(object) \approx 1.
+    # Assign all ground-truth boxes an objectness logit corresponding to
+    # P(object) = sigmoid(logit) =~ 1.
     gt_logit_value = math.log((1.0 - 1e-10) / (1 - (1.0 - 1e-10)))
-
     gt_logits = gt_logit_value * torch.ones(len(gt_boxes), device=device)
-    gt_proposal = Instances(proposals.image_size)
 
+    # Concatenating gt_boxes with proposals requires them to have the same fields
+    gt_proposal = Instances(proposals.image_size)
     gt_proposal.proposal_boxes = gt_boxes
     gt_proposal.objectness_logits = gt_logits
     new_proposals = Instances.cat([proposals, gt_proposal])

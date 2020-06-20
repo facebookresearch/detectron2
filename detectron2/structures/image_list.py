@@ -86,7 +86,7 @@ class ImageList(object):
             .values
         )
 
-        if size_divisibility > 0:
+        if size_divisibility > 1:
             stride = size_divisibility
             # the last two dims are H,W, both subject to divisibility requirement
             max_size = torch.cat([max_size[:-2], (max_size[-2:] + (stride - 1)) // stride * stride])

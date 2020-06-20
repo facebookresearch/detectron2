@@ -27,8 +27,10 @@ from .evaluator import DatasetEvaluator
 
 class COCOEvaluator(DatasetEvaluator):
     """
-    Evaluate object proposal, instance detection/segmentation, keypoint detection
-    outputs using COCO's metrics and APIs.
+    Evaluate AR for object proposals, AP for instance detection/segmentation, AP
+    for keypoint detection outputs using COCO's metrics.
+    See http://cocodataset.org/#detection-eval and
+    http://cocodataset.org/#keypoints-eval to understand its metrics.
     """
 
     def __init__(self, dataset_name, cfg, distributed, output_dir=None):

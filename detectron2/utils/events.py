@@ -44,9 +44,7 @@ class JSONWriter(EventWriter):
     It saves scalars as one json per line (instead of a big json) for easy parsing.
 
     Examples parsing such a json file:
-
-    .. code-block:: none
-
+    ::
         $ cat metrics.json | jq -s '.[0:2]'
         [
           {

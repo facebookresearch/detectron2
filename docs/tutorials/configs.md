@@ -14,7 +14,7 @@ that access and update a config, we provide the following extra functionalities:
    If your config file is versioned with a config line like `VERSION: 2`,
    detectron2 will still recognize it even if we change some keys in the future.
 
-"Config" is a very limited abstraction.
+Config file is a very limited language.
 We do not expect all features in detectron2 to be available through configs.
 If you need something that's not available in the config space,
 please write code using detectron2's API.

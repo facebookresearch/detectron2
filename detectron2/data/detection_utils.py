@@ -104,7 +104,7 @@ def read_image(file_name, format=None):
 
     Args:
         file_name (str): image file path
-        format (str): one of the supported image modes in PIL, or "BGR" or "YUV-BT.601"
+        format (str): one of the supported image modes in PIL, or "BGR" or "YUV-BT.601".
 
     Returns:
         image (np.ndarray): an HWC image in the given format, which is 0-255, uint8 for
@@ -147,7 +147,7 @@ def check_image_size(dataset_dict, image):
         dataset_dict["height"] = image.shape[0]
 
 
-def transform_proposals(dataset_dict, image_shape, transforms, min_box_size, proposal_topk):
+def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk, min_box_size=0):
     """
     Apply transformations to the proposals in dataset_dict, if any.
 
@@ -156,9 +156,9 @@ def transform_proposals(dataset_dict, image_shape, transforms, min_box_size, pro
             contains fields "proposal_boxes", "proposal_objectness_logits", "proposal_bbox_mode"
         image_shape (tuple): height, width
         transforms (TransformList):
-        min_box_size(int): proposals with either side smaller than this
-            threshold are removed
         proposal_topk (int): only keep top-K scoring proposals
+        min_box_size (int): proposals with either side smaller than this
+            threshold are removed
 
     The input dict is modified in-place, with abovementioned keys removed. A new
     key "proposals" will be added. Its value is an `Instances`
@@ -214,9 +214,11 @@ def transform_instance_annotations(
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
+    # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
-    # Note that bbox is 1d (per-instance bounding box)
-    annotation["bbox"] = transforms.apply_box([bbox])[0]
+    # clip transformed bbox to image size
+    bbox = transforms.apply_box([bbox])[0].clip(min=0)
+    annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
     if "segmentation" in annotation:
@@ -310,8 +312,7 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
     """
     boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
     target = Instances(image_size)
-    boxes = target.gt_boxes = Boxes(boxes)
-    boxes.clip(image_size)
+    target.gt_boxes = Boxes(boxes)
 
     classes = [obj["category_id"] for obj in annos]
     classes = torch.tensor(classes, dtype=torch.int64)
