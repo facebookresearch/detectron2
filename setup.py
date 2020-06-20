@@ -190,7 +190,7 @@ setup(
     extras_require={
         "all": ["shapely", "psutil"],
         "dev": [
-            "flake8==3.7.9",
+            "flake8==3.8.1",
             "isort",
             "black @ git+https://github.com/psf/black@673327449f86fce558adde153bb6cbe54bfebad2",
             "flake8-bugbear",
