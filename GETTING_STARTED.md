@@ -45,16 +45,15 @@ setup the corresponding datasets following
 [datasets/README.md](./datasets/README.md),
 then run:
 ```
-cd tools/
-./train_net.py --num-gpus 8 \
-  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
+./tools/train_net.py --num-gpus 8 \
+  --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
 ```
 
 The configs are made for 8-GPU training.
 To train on 1 GPU, you may need to [change some parameters](https://arxiv.org/abs/1706.02677), e.g.:
 ```
-./train_net.py \
-  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+./tools/train_net.py \
+  --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
   --num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 ```
 
@@ -62,8 +61,8 @@ For most models, CPU training is not supported.
 
 To evaluate a model's performance, use
 ```
-./train_net.py \
-  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+./tools/train_net.py \
+  --config-file configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
   --eval-only MODEL.WEIGHTS /path/to/checkpoint_file
 ```
 For more options, see `./train_net.py -h`.
