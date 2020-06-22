@@ -17,6 +17,8 @@ class ModelCatalog(object):
     # Even when loaded to FrozenBN, it is still different from affine by an epsilon,
     # which should be negligible for training.
     # NOTE: all models here uses PIXEL_STD=[1,1,1]
+    # NOTE: Most of the BN models here are no longer used. We use the
+    # re-converted pre-trained models under detectron2 model zoo instead.
     C2_IMAGENET_MODELS = {
         "MSRA/R-50": "ImageNetPretrained/MSRA/R-50.pkl",
         "MSRA/R-101": "ImageNetPretrained/MSRA/R-101.pkl",
@@ -28,8 +30,8 @@ class ModelCatalog(object):
     }
 
     C2_DETECTRON_PATH_FORMAT = (
-        "{prefix}/{url}/output/train/{dataset}/{type}/model_final.pkl"
-    )  # noqa B950
+        "{prefix}/{url}/output/train/{dataset}/{type}/model_final.pkl"  # noqa B950
+    )
 
     C2_DATASET_COCO = "coco_2014_train%3Acoco_2014_valminusminival"
     C2_DATASET_COCO_KEYPOINTS = "keypoints_coco_2014_train%3Akeypoints_coco_2014_valminusminival"

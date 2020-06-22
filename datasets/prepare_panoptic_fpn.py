@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import time
 import functools
 import json
 import multiprocessing as mp
 import numpy as np
 import os
+import time
+from fvcore.common.download import download
 from PIL import Image
 
 from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
-from fvcore.common.download import download
 
 from panopticapi.utils import rgb2id
 

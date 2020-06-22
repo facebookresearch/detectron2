@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import json
 import copy
+import json
 import os
 from collections import defaultdict
-
 
 # This mapping is extracted from the official LVIS mapping:
 # https://github.com/lvis-dataset/lvis-api/blob/master/data/coco_to_synset.json

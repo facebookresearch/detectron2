@@ -1,8 +1,15 @@
+# Setup Builtin Datasets
 
-For a few datasets that detectron2 natively supports,
-the datasets are assumed to exist in a directory called
-"datasets/", under the directory where you launch the program.
-They need to have the following directory structure:
+Detectron2 has builtin support for a few datasets.
+The datasets are assumed to exist in a directory specified by the environment variable
+`DETECTRON2_DATASETS`.
+Under this directory, detectron2 expects to find datasets in the structure described below.
+
+You can set the location for builtin datasets by `export DETECTRON2_DATASETS=/path/to/datasets`.
+If left unset, the default is `./datasets` relative to your current working directory.
+
+The [model zoo](https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md)
+contains configs and models that use these builtin datasets.
 
 ## Expected dataset structure for COCO instance/keypoint detection:
 
@@ -73,8 +80,10 @@ Install cityscapes scripts by:
 pip install git+https://github.com/mcordts/cityscapesScripts.git
 ```
 
-Note:
-labelTrainIds.png are created by `cityscapesscripts/preparation/createTrainIdLabelImgs.py`.
+Note: labelTrainIds.png are created using cityscapesescript with:
+```
+CITYSCAPES_DATASET=$DETECTRON2_DATASETS/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
+```
 They are not needed for instance segmentation.
 
 ## Expected dataset structure for Pascal VOC:

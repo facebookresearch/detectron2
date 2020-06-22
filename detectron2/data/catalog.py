@@ -6,7 +6,7 @@ from typing import List
 
 from detectron2.utils.logger import log_first_n
 
-__all__ = ["DatasetCatalog", "MetadataCatalog"]
+__all__ = ["DatasetCatalog", "MetadataCatalog", "Metadata"]
 
 
 class DatasetCatalog(object):
@@ -33,6 +33,7 @@ class DatasetCatalog(object):
         Args:
             name (str): the name that identifies a dataset, e.g. "coco_2014_train".
             func (callable): a callable which takes no arguments and returns a list of dicts.
+                It must return the same results if called multiple times.
         """
         assert callable(func), "You must register a function with `DatasetCatalog.register`!"
         assert name not in DatasetCatalog._REGISTERED, "Dataset '{}' is already registered!".format(
@@ -85,9 +86,7 @@ class Metadata(types.SimpleNamespace):
     It is intended for storing metadata of a dataset and make it accessible globally.
 
     Examples:
-
-    .. code-block:: python
-
+    ::
         # somewhere when you load the data:
         MetadataCatalog.get("mydataset").thing_classes = ["person", "dog"]
 

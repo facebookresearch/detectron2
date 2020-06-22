@@ -17,4 +17,4 @@ SOLVER:
   STEPS: (5500,)
   MAX_ITER: 7000
 TEST:
-  EXPECTED_RESULTS: [["bbox", "AP", 46.80, 1.1], ["segm", "AP", 38.93, 0.7], ["sem_seg", "mIoU", 64.53, 1.0], ["panoptic_seg", "PQ", 48.23, 0.8]]
+  EXPECTED_RESULTS: [["bbox", "AP", 46.70, 1.1], ["segm", "AP", 38.73, 0.7], ["sem_seg", "mIoU", 64.73, 1.2], ["panoptic_seg", "PQ", 48.13, 0.8]]

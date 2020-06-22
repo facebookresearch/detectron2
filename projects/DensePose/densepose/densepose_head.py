@@ -1,16 +1,89 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import math
+from dataclasses import dataclass
+from enum import Enum
+from typing import Iterable, List, Optional, Tuple
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
 from torch.nn import functional as F
 
+from detectron2.config import CfgNode
 from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
+from detectron2.structures import Instances
 from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
 
-from .structures import DensePoseOutput
+from .data.structures import DensePoseOutput
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
+
+
+class DensePoseUVConfidenceType(Enum):
+    """
+    Statistical model type for confidence learning, possible values:
+     - "iid_iso": statistically independent identically distributed residuals
+         with anisotropic covariance
+     - "indep_aniso": statistically independent residuals with anisotropic
+         covariances
+    For details, see:
+    N. Neverova, D. Novotny, A. Vedaldi "Correlated Uncertainty for Learning
+    Dense Correspondences from Noisy Labels", p. 918--926, in Proc. NIPS 2019
+    """
+
+    # fmt: off
+    IID_ISO     = "iid_iso"
+    INDEP_ANISO = "indep_aniso"
+    # fmt: on
+
+
+@dataclass
+class DensePoseUVConfidenceConfig:
+    """
+    Configuration options for confidence on UV data
+    """
+
+    enabled: bool = False
+    # lower bound on UV confidences
+    epsilon: float = 0.01
+    type: DensePoseUVConfidenceType = DensePoseUVConfidenceType.IID_ISO
+
+
+@dataclass
+class DensePoseSegmConfidenceConfig:
+    """
+    Configuration options for confidence on segmentation
+    """
+
+    enabled: bool = False
+    # lower bound on confidence values
+    epsilon: float = 0.01
+
+
+@dataclass
+class DensePoseConfidenceModelConfig:
+    """
+    Configuration options for confidence models
+    """
+
+    # confidence for U and V values
+    uv_confidence: DensePoseUVConfidenceConfig
+    # segmentation confidence
+    segm_confidence: DensePoseSegmConfidenceConfig
+
+    @staticmethod
+    def from_cfg(cfg: CfgNode) -> "DensePoseConfidenceModelConfig":
+        return DensePoseConfidenceModelConfig(
+            uv_confidence=DensePoseUVConfidenceConfig(
+                enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED,
+                epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.EPSILON,
+                type=DensePoseUVConfidenceType(cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE),
+            ),
+            segm_confidence=DensePoseSegmConfidenceConfig(
+                enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.ENABLED,
+                epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.EPSILON,
+            ),
+        )
 
 
 def initialize_module_params(module):
@@ -74,7 +147,7 @@ class DensePoseDeepLabHead(nn.Module):
             output = x
         return output
 
-    def _get_layer_name(self, i):
+    def _get_layer_name(self, i: int):
         layer_name = "body_conv_fcn{}".format(i + 1)
         return layer_name
 
@@ -176,7 +249,7 @@ class _NonLocalBlockND(nn.Module):
             bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm2d
         else:
             conv_nd = nn.Conv1d
-            max_pool_layer = nn.MaxPool1d(kernel_size=(2))
+            max_pool_layer = nn.MaxPool1d(kernel_size=2)
             bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm1d
 
         self.g = conv_nd(
@@ -322,6 +395,8 @@ class DensePosePredictor(nn.Module):
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
+        self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
+        self._initialize_confidence_estimation_layers(cfg, self.confidence_model_cfg, dim_in)
         initialize_module_params(self)
 
     def forward(self, head_outputs):
@@ -339,15 +414,123 @@ class DensePosePredictor(nn.Module):
         index_uv = interp2d(index_uv_lowres)
         u = interp2d(u_lowres)
         v = interp2d(v_lowres)
+        (
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
+            (ann_index, index_uv),
+        ) = self._forward_confidence_estimation_layers(
+            self.confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
+        )
         return (
             (ann_index, index_uv, u, v),
             (ann_index_lowres, index_uv_lowres, u_lowres, v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
+        )
+
+    def _initialize_confidence_estimation_layers(
+        self, cfg: CfgNode, confidence_model_cfg: DensePoseConfidenceModelConfig, dim_in: int
+    ):
+        dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
+        kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
+        if confidence_model_cfg.uv_confidence.enabled:
+            if confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
+                self.sigma_2_lowres = ConvTranspose2d(
+                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                )
+            elif confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
+                self.sigma_2_lowres = ConvTranspose2d(
+                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                )
+                self.kappa_u_lowres = ConvTranspose2d(
+                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                )
+                self.kappa_v_lowres = ConvTranspose2d(
+                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                )
+            else:
+                raise ValueError(
+                    f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
+                )
+        if confidence_model_cfg.segm_confidence.enabled:
+            self.fine_segm_confidence_lowres = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
+            self.coarse_segm_confidence_lowres = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
+
+    def _forward_confidence_estimation_layers(
+        self, confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
+    ):
+        sigma_1, sigma_2, kappa_u, kappa_v = None, None, None, None
+        sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres = None, None, None, None
+        fine_segm_confidence_lowres, fine_segm_confidence = None, None
+        coarse_segm_confidence_lowres, coarse_segm_confidence = None, None
+        if confidence_model_cfg.uv_confidence.enabled:
+            if confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
+                sigma_2_lowres = self.sigma_2_lowres(head_outputs)
+                sigma_2 = interp2d(sigma_2_lowres)
+            elif confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
+                sigma_2_lowres = self.sigma_2_lowres(head_outputs)
+                kappa_u_lowres = self.kappa_u_lowres(head_outputs)
+                kappa_v_lowres = self.kappa_v_lowres(head_outputs)
+                sigma_2 = interp2d(sigma_2_lowres)
+                kappa_u = interp2d(kappa_u_lowres)
+                kappa_v = interp2d(kappa_v_lowres)
+            else:
+                raise ValueError(
+                    f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
+                )
+        if confidence_model_cfg.segm_confidence.enabled:
+            fine_segm_confidence_lowres = self.fine_segm_confidence_lowres(head_outputs)
+            fine_segm_confidence = interp2d(fine_segm_confidence_lowres)
+            fine_segm_confidence = (
+                F.softplus(fine_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
+            )
+            index_uv = index_uv * torch.repeat_interleave(
+                fine_segm_confidence, index_uv.shape[1], dim=1
+            )
+            coarse_segm_confidence_lowres = self.coarse_segm_confidence_lowres(head_outputs)
+            coarse_segm_confidence = interp2d(coarse_segm_confidence_lowres)
+            coarse_segm_confidence = (
+                F.softplus(coarse_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
+            )
+            ann_index = ann_index * torch.repeat_interleave(
+                coarse_segm_confidence, ann_index.shape[1], dim=1
+            )
+        return (
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
+            (ann_index, index_uv),
         )
 
 
 class DensePoseDataFilter(object):
     def __init__(self, cfg):
         self.iou_threshold = cfg.MODEL.ROI_DENSEPOSE_HEAD.FG_IOU_THRESHOLD
+        self.keep_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
 
     @torch.no_grad()
     def __call__(self, proposals_with_targets):
@@ -360,7 +543,9 @@ class DensePoseDataFilter(object):
         """
         proposals_filtered = []
         for proposals_per_image in proposals_with_targets:
-            if not hasattr(proposals_per_image, "gt_densepose"):
+            if not hasattr(proposals_per_image, "gt_densepose") and (
+                not hasattr(proposals_per_image, "gt_masks") or not self.keep_masks
+            ):
                 continue
             assert hasattr(proposals_per_image, "gt_boxes")
             assert hasattr(proposals_per_image, "proposal_boxes")
@@ -370,17 +555,36 @@ class DensePoseDataFilter(object):
             iou = matched_boxlist_iou(gt_boxes, est_boxes)
             iou_select = iou > self.iou_threshold
             proposals_per_image = proposals_per_image[iou_select]
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
-            # filter out any target without densepose annotation
-            gt_densepose = proposals_per_image.gt_densepose
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
+
+            N_gt_boxes = len(proposals_per_image.gt_boxes)
+            assert N_gt_boxes == len(proposals_per_image.proposal_boxes), (
+                f"The number of GT boxes {N_gt_boxes} is different from the "
+                f"number of proposal boxes {len(proposals_per_image.proposal_boxes)}"
+            )
+            # filter out any target without suitable annotation
+            if self.keep_masks:
+                gt_masks = (
+                    proposals_per_image.gt_masks
+                    if hasattr(proposals_per_image, "gt_masks")
+                    else [None] * N_gt_boxes
+                )
+            else:
+                gt_masks = [None] * N_gt_boxes
+            gt_densepose = (
+                proposals_per_image.gt_densepose
+                if hasattr(proposals_per_image, "gt_densepose")
+                else [None] * N_gt_boxes
+            )
+            assert len(gt_masks) == N_gt_boxes
+            assert len(gt_densepose) == N_gt_boxes
             selected_indices = [
-                i for i, dp_target in enumerate(gt_densepose) if dp_target is not None
+                i
+                for i, (dp_target, mask_target) in enumerate(zip(gt_densepose, gt_masks))
+                if (dp_target is not None) or (mask_target is not None)
             ]
-            if len(selected_indices) != len(gt_densepose):
+            if len(selected_indices) != N_gt_boxes:
                 proposals_per_image = proposals_per_image[selected_indices]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
-            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.gt_densepose)
             proposals_filtered.append(proposals_per_image)
         return proposals_filtered
 
@@ -400,7 +604,11 @@ def build_densepose_data_filter(cfg):
     return dp_filter
 
 
-def densepose_inference(densepose_outputs, detections):
+def densepose_inference(
+    densepose_outputs: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    densepose_confidences: Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+    detections: List[Instances],
+):
     """
     Infer dense pose estimate based on outputs from the DensePose head
     and detections. The estimate for each detection instance is stored in its
@@ -408,23 +616,45 @@ def densepose_inference(densepose_outputs, detections):
 
     Args:
         densepose_outputs (tuple(`torch.Tensor`)): iterable containing 4 elements:
-            - s (:obj: `torch.Tensor`): segmentation tensor of size (N, A, H, W),
-            - i (:obj: `torch.Tensor`): classification tensor of size (N, C, H, W),
+            - s (:obj: `torch.Tensor`): coarse segmentation tensor of size (N, A, H, W),
+            - i (:obj: `torch.Tensor`): fine segmentation tensor of size (N, C, H, W),
             - u (:obj: `torch.Tensor`): U coordinates for each class of size (N, C, H, W),
             - v (:obj: `torch.Tensor`): V coordinates for each class of size (N, C, H, W),
             where N is the total number of detections in a batch,
-                  A is the number of segmentations classes (e.g. 15 for coarse body parts),
-                  C is the number of labels (e.g. 25 for fine body parts),
+                  A is the number of coarse segmentations labels
+                      (e.g. 15 for coarse body parts + background),
+                  C is the number of fine segmentation labels
+                      (e.g. 25 for fine body parts + background),
                   W is the resolution along the X axis
                   H is the resolution along the Y axis
+        densepose_confidences (tuple(`torch.Tensor`)): iterable containing 4 elements:
+            - sigma_1 (:obj: `torch.Tensor`): global confidences for UV coordinates
+                of size (N, C, H, W)
+            - sigma_2 (:obj: `torch.Tensor`): individual confidences for UV coordinates
+                of size (N, C, H, W)
+            - kappa_u (:obj: `torch.Tensor`): first component of confidence direction
+                vector of size (N, C, H, W)
+            - kappa_v (:obj: `torch.Tensor`): second component of confidence direction
+                vector of size (N, C, H, W)
+            - fine_segm_confidence (:obj: `torch.Tensor`): confidence for fine
+                segmentation of size (N, 1, H, W)
+            - coarse_segm_confidence (:obj: `torch.Tensor`): confidence for coarse
+                segmentation of size (N, 1, H, W)
         detections (list[Instances]): A list of N Instances, where N is the number of images
             in the batch. Instances are modified by this method: "pred_densepose" attribute
             is added to each instance, the attribute contains the corresponding
             DensePoseOutput object.
     """
-
     # DensePose outputs: segmentation, body part indices, U, V
     s, index_uv, u, v = densepose_outputs
+    (
+        sigma_1,
+        sigma_2,
+        kappa_u,
+        kappa_v,
+        fine_segm_confidence,
+        coarse_segm_confidence,
+    ) = densepose_confidences
     k = 0
     for detection in detections:
         n_i = len(detection)
@@ -432,7 +662,20 @@ def densepose_inference(densepose_outputs, detections):
         index_uv_i = index_uv[k : k + n_i]
         u_i = u[k : k + n_i]
         v_i = v[k : k + n_i]
-        densepose_output_i = DensePoseOutput(s_i, index_uv_i, u_i, v_i)
+        _local_vars = locals()
+        confidences = {
+            name: _local_vars[name]
+            for name in (
+                "sigma_1",
+                "sigma_2",
+                "kappa_u",
+                "kappa_v",
+                "fine_segm_confidence",
+                "coarse_segm_confidence",
+            )
+            if _local_vars.get(name) is not None
+        }
+        densepose_output_i = DensePoseOutput(s_i, index_uv_i, u_i, v_i, confidences)
         detection.pred_densepose = densepose_output_i
         k += n_i
 
@@ -698,7 +941,18 @@ def _extract_single_tensors_from_matches(proposals_with_targets):
         n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)
         if not n_i:
             continue
-        i_gt_img, x_norm_img, y_norm_img, u_gt_img, v_gt_img, s_gt_img, bbox_xywh_gt_img, bbox_xywh_est_img, i_bbox_img, i_with_dp_img = _extract_single_tensors_from_matches_one_image(  # noqa
+        (
+            i_gt_img,
+            x_norm_img,
+            y_norm_img,
+            u_gt_img,
+            v_gt_img,
+            s_gt_img,
+            bbox_xywh_gt_img,
+            bbox_xywh_est_img,
+            i_bbox_img,
+            i_with_dp_img,
+        ) = _extract_single_tensors_from_matches_one_image(  # noqa
             proposals_targets_per_image, len(i_with_dp_all), n
         )
         i_gt_all.extend(i_gt_img)
@@ -749,6 +1003,154 @@ def _extract_single_tensors_from_matches(proposals_with_targets):
     )
 
 
+@dataclass
+class DataForMaskLoss:
+    """
+    Contains mask GT and estimated data for proposals from multiple images:
+    """
+
+    # tensor of size (K, H, W) containing GT labels
+    masks_gt: Optional[torch.Tensor] = None
+    # tensor of size (K, C, H, W) containing estimated scores
+    masks_est: Optional[torch.Tensor] = None
+
+
+def _extract_data_for_mask_loss_from_matches(
+    proposals_targets: Iterable[Instances], estimated_segm: torch.Tensor
+) -> DataForMaskLoss:
+    """
+    Extract data for mask loss from instances that contain matched GT and
+    estimated bounding boxes.
+    Args:
+        proposals_targets: Iterable[Instances]
+            matched GT and estimated results, each item in the iterable
+            corresponds to data in 1 image
+        estimated_segm: torch.Tensor if size
+            size to which GT masks are resized
+    Return:
+        masks_est: tensor(K, C, H, W) of float - class scores
+        masks_gt: tensor(K, H, W) of int64 - labels
+    """
+    data = DataForMaskLoss()
+    masks_gt = []
+    offset = 0
+    assert estimated_segm.shape[2] == estimated_segm.shape[3], (
+        f"Expected estimated segmentation to have a square shape, "
+        f"but the actual shape is {estimated_segm.shape[2:]}"
+    )
+    mask_size = estimated_segm.shape[2]
+    num_proposals = sum(inst.proposal_boxes.tensor.size(0) for inst in proposals_targets)
+    num_estimated = estimated_segm.shape[0]
+    assert (
+        num_proposals == num_estimated
+    ), "The number of proposals {} must be equal to the number of estimates {}".format(
+        num_proposals, num_estimated
+    )
+
+    for proposals_targets_per_image in proposals_targets:
+        n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)
+        if not n_i:
+            continue
+        gt_masks_per_image = proposals_targets_per_image.gt_masks.crop_and_resize(
+            proposals_targets_per_image.proposal_boxes.tensor, mask_size
+        ).to(device=estimated_segm.device)
+        masks_gt.append(gt_masks_per_image)
+        offset += n_i
+    if masks_gt:
+        data.masks_est = estimated_segm
+        data.masks_gt = torch.cat(masks_gt, dim=0)
+    return data
+
+
+class IIDIsotropicGaussianUVLoss(nn.Module):
+    """
+    Loss for the case of iid residuals with isotropic covariance:
+    $Sigma_i = sigma_i^2 I$
+    The loss (negative log likelihood) is then:
+    $1/2 sum_{i=1}^n (log(2 pi) + 2 log sigma_i^2 + ||delta_i||^2 / sigma_i^2)$,
+    where $delta_i=(u - u', v - v')$ is a 2D vector containing UV coordinates
+    difference between estimated and ground truth UV values
+    For details, see:
+    N. Neverova, D. Novotny, A. Vedaldi "Correlated Uncertainty for Learning
+    Dense Correspondences from Noisy Labels", p. 918--926, in Proc. NIPS 2019
+    """
+
+    def __init__(self, sigma_lower_bound: float):
+        super(IIDIsotropicGaussianUVLoss, self).__init__()
+        self.sigma_lower_bound = sigma_lower_bound
+        self.log2pi = math.log(2 * math.pi)
+
+    def forward(
+        self,
+        u: torch.Tensor,
+        v: torch.Tensor,
+        sigma_u: torch.Tensor,
+        target_u: torch.Tensor,
+        target_v: torch.Tensor,
+    ):
+        # compute $\sigma_i^2$
+        # use sigma_lower_bound to avoid degenerate solution for variance
+        # (sigma -> 0)
+        sigma2 = F.softplus(sigma_u) + self.sigma_lower_bound
+        # compute \|delta_i\|^2
+        delta_t_delta = (u - target_u) ** 2 + (v - target_v) ** 2
+        # the total loss from the formula above:
+        loss = 0.5 * (self.log2pi + 2 * torch.log(sigma2) + delta_t_delta / sigma2)
+        return loss.sum()
+
+
+class IndepAnisotropicGaussianUVLoss(nn.Module):
+    """
+    Loss for the case of independent residuals with anisotropic covariances:
+    $Sigma_i = sigma_i^2 I + r_i r_i^T$
+    The loss (negative log likelihood) is then:
+    $1/2 sum_{i=1}^n (log(2 pi)
+      + log sigma_i^2 (sigma_i^2 + ||r_i||^2)
+      + ||delta_i||^2 / sigma_i^2
+      - <delta_i, r_i>^2 / (sigma_i^2 * (sigma_i^2 + ||r_i||^2)))$,
+    where $delta_i=(u - u', v - v')$ is a 2D vector containing UV coordinates
+    difference between estimated and ground truth UV values
+    For details, see:
+    N. Neverova, D. Novotny, A. Vedaldi "Correlated Uncertainty for Learning
+    Dense Correspondences from Noisy Labels", p. 918--926, in Proc. NIPS 2019
+    """
+
+    def __init__(self, sigma_lower_bound: float):
+        super(IndepAnisotropicGaussianUVLoss, self).__init__()
+        self.sigma_lower_bound = sigma_lower_bound
+        self.log2pi = math.log(2 * math.pi)
+
+    def forward(
+        self,
+        u: torch.Tensor,
+        v: torch.Tensor,
+        sigma_u: torch.Tensor,
+        kappa_u_est: torch.Tensor,
+        kappa_v_est: torch.Tensor,
+        target_u: torch.Tensor,
+        target_v: torch.Tensor,
+    ):
+        # compute $\sigma_i^2$
+        sigma2 = F.softplus(sigma_u) + self.sigma_lower_bound
+        # compute \|r_i\|^2
+        r_sqnorm2 = kappa_u_est ** 2 + kappa_v_est ** 2
+        delta_u = u - target_u
+        delta_v = v - target_v
+        # compute \|delta_i\|^2
+        delta_sqnorm = delta_u ** 2 + delta_v ** 2
+        delta_u_r_u = delta_u * kappa_u_est
+        delta_v_r_v = delta_v * kappa_v_est
+        # compute the scalar product <delta_i, r_i>
+        delta_r = delta_u_r_u + delta_v_r_v
+        # compute squared scalar product <delta_i, r_i>^2
+        delta_r_sqnorm = delta_r ** 2
+        denom2 = sigma2 * (sigma2 + r_sqnorm2)
+        loss = 0.5 * (
+            self.log2pi + torch.log(denom2) + delta_sqnorm / sigma2 - delta_r_sqnorm / denom2
+        )
+        return loss.sum()
+
+
 class DensePoseLosses(object):
     def __init__(self, cfg):
         # fmt: off
@@ -758,20 +1160,86 @@ class DensePoseLosses(object):
         self.w_segm       = cfg.MODEL.ROI_DENSEPOSE_HEAD.INDEX_WEIGHTS
         self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # fmt: on
+        self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
+        self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
+        if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
+            self.uv_loss_with_confidences = IIDIsotropicGaussianUVLoss(
+                self.confidence_model_cfg.uv_confidence.epsilon
+            )
+        elif self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
+            self.uv_loss_with_confidences = IndepAnisotropicGaussianUVLoss(
+                self.confidence_model_cfg.uv_confidence.epsilon
+            )
 
-    def __call__(self, proposals_with_gt, densepose_outputs):
+    def __call__(self, proposals_with_gt, densepose_outputs, densepose_confidences):
+        if not self.segm_trained_by_masks:
+            return self.produce_densepose_losses(
+                proposals_with_gt, densepose_outputs, densepose_confidences
+            )
+        else:
+            losses = {}
+            losses_densepose = self.produce_densepose_losses(
+                proposals_with_gt, densepose_outputs, densepose_confidences
+            )
+            losses.update(losses_densepose)
+            losses_mask = self.produce_mask_losses(
+                proposals_with_gt, densepose_outputs, densepose_confidences
+            )
+            losses.update(losses_mask)
+            return losses
+
+    def produce_mask_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
+        losses = {}
+        # densepose outputs are computed for all images and all bounding boxes;
+        # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
+        # the outputs will have size(0) == 3+1+2+1 == 7
+        segm_scores, _, _, _ = densepose_outputs
+        with torch.no_grad():
+            mask_loss_data = _extract_data_for_mask_loss_from_matches(
+                proposals_with_gt, segm_scores
+            )
+        if (mask_loss_data.masks_gt is None) or (mask_loss_data.masks_est is None):
+            losses["loss_densepose_S"] = segm_scores.sum() * 0
+            return losses
+        losses["loss_densepose_S"] = (
+            F.cross_entropy(mask_loss_data.masks_est, mask_loss_data.masks_gt.long()) * self.w_segm
+        )
+        return losses
+
+    def produce_densepose_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
         losses = {}
         # densepose outputs are computed for all images and all bounding boxes;
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
         # the outputs will have size(0) == 3+1+2+1 == 7
         s, index_uv, u, v = densepose_outputs
+        (
+            sigma_1,
+            sigma_2,
+            kappa_u,
+            kappa_v,
+            fine_segm_confidence,
+            coarse_segm_confidence,
+        ) = densepose_confidences
+        conf_type = self.confidence_model_cfg.uv_confidence.type
         assert u.size(2) == v.size(2)
         assert u.size(3) == v.size(3)
         assert u.size(2) == index_uv.size(2)
         assert u.size(3) == index_uv.size(3)
 
         with torch.no_grad():
-            index_uv_img, i_with_dp, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, u_gt_all, v_gt_all, s_gt, index_bbox = _extract_single_tensors_from_matches(  # noqa
+            (
+                index_uv_img,
+                i_with_dp,
+                bbox_xywh_est,
+                bbox_xywh_gt,
+                index_gt_all,
+                x_norm,
+                y_norm,
+                u_gt_all,
+                v_gt_all,
+                s_gt,
+                index_bbox,
+            ) = _extract_single_tensors_from_matches(  # noqa
                 proposals_with_gt
             )
         n_batch = len(i_with_dp)
@@ -781,16 +1249,36 @@ class DensePoseLosses(object):
         # of the GPUs, we still need to generate the computation graph.
         # Add fake (zero) loss in the form Tensor.sum() * 0
         if not n_batch:
-            losses["loss_densepose_U"] = u.sum() * 0
-            losses["loss_densepose_V"] = v.sum() * 0
             losses["loss_densepose_I"] = index_uv.sum() * 0
-            losses["loss_densepose_S"] = s.sum() * 0
+            if not self.segm_trained_by_masks:
+                losses["loss_densepose_S"] = s.sum() * 0
+            if self.confidence_model_cfg.uv_confidence.enabled:
+                losses["loss_densepose_UV"] = (u.sum() + v.sum()) * 0
+                if conf_type == DensePoseUVConfidenceType.IID_ISO:
+                    losses["loss_densepose_UV"] += sigma_2.sum() * 0
+                elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
+                    losses["loss_densepose_UV"] += (
+                        sigma_2.sum() + kappa_u.sum() + kappa_v.sum()
+                    ) * 0
+            else:
+                losses["loss_densepose_U"] = u.sum() * 0
+                losses["loss_densepose_V"] = v.sum() * 0
             return losses
 
         zh = u.size(2)
         zw = u.size(3)
 
-        j_valid, y_lo, y_hi, x_lo, x_hi, w_ylo_xlo, w_ylo_xhi, w_yhi_xlo, w_yhi_xhi = _grid_sampling_utilities(  # noqa
+        (
+            j_valid,
+            y_lo,
+            y_hi,
+            x_lo,
+            x_hi,
+            w_ylo_xlo,
+            w_ylo_xhi,
+            w_yhi_xlo,
+            w_yhi_xhi,
+        ) = _grid_sampling_utilities(  # noqa
             zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, index_bbox
         )
 
@@ -844,32 +1332,97 @@ class DensePoseLosses(object):
         )
         index_uv_est = index_uv_est_all[j_valid, :]
 
+        if self.confidence_model_cfg.uv_confidence.enabled:
+            sigma_2_est_all = _extract_at_points_packed(
+                sigma_2[i_with_dp],
+                index_bbox,
+                index_gt_all,
+                y_lo,
+                y_hi,
+                x_lo,
+                x_hi,
+                w_ylo_xlo,
+                w_ylo_xhi,
+                w_yhi_xlo,
+                w_yhi_xhi,
+            )
+            sigma_2_est = sigma_2_est_all[j_valid_fg]
+            if conf_type in [DensePoseUVConfidenceType.INDEP_ANISO]:
+                kappa_u_est_all = _extract_at_points_packed(
+                    kappa_u[i_with_dp],
+                    index_bbox,
+                    index_gt_all,
+                    y_lo,
+                    y_hi,
+                    x_lo,
+                    x_hi,
+                    w_ylo_xlo,
+                    w_ylo_xhi,
+                    w_yhi_xlo,
+                    w_yhi_xhi,
+                )
+                kappa_u_est = kappa_u_est_all[j_valid_fg]
+                kappa_v_est_all = _extract_at_points_packed(
+                    kappa_v[i_with_dp],
+                    index_bbox,
+                    index_gt_all,
+                    y_lo,
+                    y_hi,
+                    x_lo,
+                    x_hi,
+                    w_ylo_xlo,
+                    w_ylo_xhi,
+                    w_yhi_xlo,
+                    w_yhi_xhi,
+                )
+                kappa_v_est = kappa_v_est_all[j_valid_fg]
+
         # Resample everything to the estimated data size, no need to resample
         # S_est then:
-        s_est = s[i_with_dp]
-        with torch.no_grad():
-            s_gt = _resample_data(
-                s_gt.unsqueeze(1),
-                bbox_xywh_gt,
-                bbox_xywh_est,
-                self.heatmap_size,
-                self.heatmap_size,
-                mode="nearest",
-                padding_mode="zeros",
-            ).squeeze(1)
+        if not self.segm_trained_by_masks:
+            s_est = s[i_with_dp]
+            with torch.no_grad():
+                s_gt = _resample_data(
+                    s_gt.unsqueeze(1),
+                    bbox_xywh_gt,
+                    bbox_xywh_est,
+                    self.heatmap_size,
+                    self.heatmap_size,
+                    mode="nearest",
+                    padding_mode="zeros",
+                ).squeeze(1)
 
         # add point-based losses:
-        u_loss = F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points
-        losses["loss_densepose_U"] = u_loss
-        v_loss = F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points
-        losses["loss_densepose_V"] = v_loss
+        if self.confidence_model_cfg.uv_confidence.enabled:
+            if conf_type == DensePoseUVConfidenceType.IID_ISO:
+                uv_loss = (
+                    self.uv_loss_with_confidences(u_est, v_est, sigma_2_est, u_gt, v_gt)
+                    * self.w_points
+                )
+                losses["loss_densepose_UV"] = uv_loss
+            elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
+                uv_loss = (
+                    self.uv_loss_with_confidences(
+                        u_est, v_est, sigma_2_est, kappa_u_est, kappa_v_est, u_gt, v_gt
+                    )
+                    * self.w_points
+                )
+                losses["loss_densepose_UV"] = uv_loss
+            else:
+                raise ValueError(f"Unknown confidence model type: {conf_type}")
+        else:
+            u_loss = F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points
+            losses["loss_densepose_U"] = u_loss
+            v_loss = F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points
+            losses["loss_densepose_V"] = v_loss
         index_uv_loss = F.cross_entropy(index_uv_est, index_uv_gt.long()) * self.w_part
         losses["loss_densepose_I"] = index_uv_loss
 
-        if self.n_segm_chan == 2:
-            s_gt = s_gt > 0
-        s_loss = F.cross_entropy(s_est, s_gt.long()) * self.w_segm
-        losses["loss_densepose_S"] = s_loss
+        if not self.segm_trained_by_masks:
+            if self.n_segm_chan == 2:
+                s_gt = s_gt > 0
+            s_loss = F.cross_entropy(s_est, s_gt.long()) * self.w_segm
+            losses["loss_densepose_S"] = s_loss
         return losses
 
 

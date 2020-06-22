@@ -13,6 +13,7 @@ from detectron2.modeling import BACKBONE_REGISTRY, Backbone, ShapeSpec
 @BACKBONE_REGISTRY.register()
 class ToyBackBone(Backbone):
   def __init__(self, cfg, input_shape):
+    super().__init__()
     # create your own backbone
     self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=16, padding=3)
 

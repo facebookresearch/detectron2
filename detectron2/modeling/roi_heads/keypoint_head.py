@@ -4,12 +4,22 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.layers import Conv2d, ConvTranspose2d, ShapeSpec, cat, interpolate
+from detectron2.config import configurable
+from detectron2.layers import Conv2d, ConvTranspose2d, cat, interpolate
 from detectron2.structures import Instances, heatmaps_to_keypoints
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
 _TOTAL_SKIPPED = 0
+
+
+__all__ = [
+    "ROI_KEYPOINT_HEAD_REGISTRY",
+    "build_keypoint_head",
+    "BaseKeypointRCNNHead",
+    "KRCNNConvDeconvUpsampleHead",
+]
+
 
 ROI_KEYPOINT_HEAD_REGISTRY = Registry("ROI_KEYPOINT_HEAD")
 ROI_KEYPOINT_HEAD_REGISTRY.__doc__ = """
@@ -117,21 +127,46 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
 
 class BaseKeypointRCNNHead(nn.Module):
     """
-    Implement the basic Keypoint R-CNN losses and inference logic.
+    Implement the basic Keypoint R-CNN losses and inference logic described in :paper:`Mask R-CNN`.
     """
 
-    def __init__(self, cfg, input_shape):
+    @configurable
+    def __init__(self, *, num_keypoints, loss_weight=1.0, loss_normalizer=1.0):
+        """
+        NOTE: this interface is experimental.
+
+        Args:
+            num_keypoints (int): number of keypoints to predict
+            loss_weight (float): weight to multiple on the keypoint loss
+            loss_normalizer (float or str):
+                If float, divide the loss by `loss_normalizer * #images`.
+                If 'visible', the loss is normalized by the total number of
+                visible keypoints across images.
+        """
         super().__init__()
-        # fmt: off
-        self.loss_weight                    = cfg.MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT
-        self.normalize_by_visible_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.NORMALIZE_LOSS_BY_VISIBLE_KEYPOINTS  # noqa
-        self.num_keypoints                  = cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
-        batch_size_per_image                = cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
-        positive_sample_fraction            = cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
-        # fmt: on
-        self.normalizer_per_img = (
-            self.num_keypoints * batch_size_per_image * positive_sample_fraction
-        )
+        self.num_keypoints = num_keypoints
+        self.loss_weight = loss_weight
+        assert loss_normalizer == "visible" or isinstance(loss_normalizer, float), loss_normalizer
+        self.loss_normalizer = loss_normalizer
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        ret = {
+            "loss_weight": cfg.MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT,
+            "num_keypoints": cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS,
+        }
+        normalize_by_visible = (
+            cfg.MODEL.ROI_KEYPOINT_HEAD.NORMALIZE_LOSS_BY_VISIBLE_KEYPOINTS
+        )  # noqa
+        if not normalize_by_visible:
+            batch_size_per_image = cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
+            positive_sample_fraction = cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION
+            ret["loss_normalizer"] = (
+                ret["num_keypoints"] * batch_size_per_image * positive_sample_fraction
+            )
+        else:
+            ret["loss_normalizer"] = "visible"
+        return ret
 
     def forward(self, x, instances: List[Instances]):
         """
@@ -151,9 +186,7 @@ class BaseKeypointRCNNHead(nn.Module):
         if self.training:
             num_images = len(instances)
             normalizer = (
-                None
-                if self.normalize_by_visible_keypoints
-                else num_images * self.normalizer_per_img
+                None if self.loss_normalizer == "visible" else num_images * self.loss_normalizer
             )
             return {
                 "loss_keypoint": keypoint_rcnn_loss(x, instances, normalizer=normalizer)
@@ -177,23 +210,21 @@ class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead):
     a transpose convolution and bilinear interpolation for upsampling.
     """
 
-    def __init__(self, cfg, input_shape: ShapeSpec):
+    @configurable
+    def __init__(self, input_shape, *, num_keypoints, conv_dims, **kwargs):
         """
-        The following attributes are parsed from config:
+        NOTE: this interface is experimental.
+
+        Args:
+            input_shape (ShapeSpec): shape of the input feature
             conv_dims: an iterable of output channel counts for each conv in the head
                          e.g. (512, 512, 512) for three convs outputting 512 channels.
-            num_keypoints: number of keypoint heatmaps to predicts, determines the number of
-                           channels in the final output.
         """
-        super().__init__(cfg, input_shape)
+        super().__init__(num_keypoints=num_keypoints, **kwargs)
 
-        # fmt: off
-        # default up_scale to 2 (this can eventually be moved to config)
-        up_scale      = 2
-        conv_dims     = cfg.MODEL.ROI_KEYPOINT_HEAD.CONV_DIMS
-        num_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
-        in_channels   = input_shape.channels
-        # fmt: on
+        # default up_scale to 2 (this can be made an option)
+        up_scale = 2
+        in_channels = input_shape.channels
 
         self.blocks = []
         for idx, layer_channels in enumerate(conv_dims, 1):
@@ -215,6 +246,13 @@ class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead):
                 # Caffe2 implementation uses MSRAFill, which in fact
                 # corresponds to kaiming_normal_ in PyTorch
                 nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        ret = super().from_config(cfg, input_shape)
+        ret["input_shape"] = input_shape
+        ret["conv_dims"] = cfg.MODEL.ROI_KEYPOINT_HEAD.CONV_DIMS
+        return ret
 
     def layers(self, x):
         for layer in self.blocks:

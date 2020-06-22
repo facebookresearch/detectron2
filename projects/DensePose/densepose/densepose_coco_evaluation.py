@@ -9,7 +9,6 @@ __author__ = "tsungyi"
 
 import copy
 import datetime
-import itertools
 import logging
 import numpy as np
 import pickle
@@ -23,7 +22,7 @@ from pycocotools import mask as maskUtils
 from scipy.io import loadmat
 from scipy.ndimage import zoom as spzoom
 
-from .structures import DensePoseDataRelative, DensePoseResult
+from .data.structures import DensePoseDataRelative, DensePoseResult
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +140,7 @@ class DensePoseCocoEval(object):
             "https://dl.fbaipublicfiles.com/densepose/data/SMPL_SUBDIV_TRANSFORM.mat"
         )
         pdist_matrix_fpath = PathManager.get_local_path(
-            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl"
+            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl", timeout_sec=120
         )
         SMPL_subdiv = loadmat(smpl_subdiv_fpath)
         self.PDIST_transform = loadmat(pdist_transform_fpath)
@@ -188,10 +187,10 @@ class DensePoseCocoEval(object):
             if len(img["ignore_regions_x"]) == 0:
                 return None
 
-            rgns_merged = []
-            for region_x, region_y in zip(img["ignore_regions_x"], img["ignore_regions_y"]):
-                rgns = [iter(region_x), iter(region_y)]
-                rgns_merged.append([next(it) for it in itertools.cycle(rgns)])
+            rgns_merged = [
+                [v for xy in zip(region_x, region_y) for v in xy]
+                for region_x, region_y in zip(img["ignore_regions_x"], img["ignore_regions_y"])
+            ]
             rles = maskUtils.frPyObjects(rgns_merged, img["height"], img["width"])
             rle = maskUtils.merge(rles)
             return maskUtils.decode(rle)
@@ -268,8 +267,9 @@ class DensePoseCocoEval(object):
             if _checkIgnore(gt, self._igrgns[iid]):
                 self._gts[iid, gt["category_id"]].append(gt)
         for dt in dts:
-            if _checkIgnore(dt, self._igrgns[dt["image_id"]]):
-                self._dts[dt["image_id"], dt["category_id"]].append(dt)
+            iid = dt["image_id"]
+            if (iid not in self._igrgns) or _checkIgnore(dt, self._igrgns[iid]):
+                self._dts[iid, dt["category_id"]].append(dt)
 
         self.evalImgs = defaultdict(list)  # per-image per-category evaluation results
         self.eval = {}  # accumulated evaluation results
@@ -367,16 +367,33 @@ class DensePoseCocoEval(object):
 
         gtmasks = []
         for g in gt:
-            if DensePoseDataRelative.S_KEY in g.keys():
+            if DensePoseDataRelative.S_KEY in g:
                 mask = self.getDensePoseMask(g[DensePoseDataRelative.S_KEY])
                 _, _, w, h = g["bbox"]
                 scale_x = float(max(w, 1)) / mask.shape[1]
                 scale_y = float(max(h, 1)) / mask.shape[0]
                 mask = spzoom(mask, (scale_y, scale_x), order=1, prefilter=False)
                 mask = np.array(mask > 0.5, dtype=np.uint8)
+                rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
+            elif "segmentation" in g:
+                segmentation = g["segmentation"]
+                if isinstance(segmentation, list) and segmentation:
+                    # polygons
+                    im_h, im_w = self.size_mapping[imgId]
+                    rles = maskUtils.frPyObjects(segmentation, im_h, im_w)
+                    rle_mask = maskUtils.merge(rles)
+                elif isinstance(segmentation, dict):
+                    if isinstance(segmentation["counts"], list):
+                        # uncompressed RLE
+                        im_h, im_w = self.size_mapping[imgId]
+                        rle_mask = maskUtils.frPyObjects(segmentation, im_h, im_w)
+                    else:
+                        # compressed RLE
+                        rle_mask = segmentation
+                else:
+                    rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             else:
-                mask = None
-            rle_mask = self._generate_rlemask_on_image(mask, imgId, g)
+                rle_mask = self._generate_rlemask_on_image(None, imgId, g)
             gtmasks.append(rle_mask)
 
         dtmasks = []
@@ -482,7 +499,7 @@ class DensePoseCocoEval(object):
                     dy = yd - yg
                 else:
                     # measure minimum distance to keypoints in (x0,y0) & (x1,y1)
-                    z = np.zeros((k))
+                    z = np.zeros(k)
                     dx = np.max((z, x0 - xd), axis=0) + np.max((z, xd - x1), axis=0)
                     dy = np.max((z, y0 - yd), axis=0) + np.max((z, yd - y1), axis=0)
                 e = (dx ** 2 + dy ** 2) / vars / (gt["area"] + np.spacing(1)) / 2
@@ -778,8 +795,8 @@ class DensePoseCocoEval(object):
         K = len(p.catIds) if p.useCats else 1
         A = len(p.areaRng)
         M = len(p.maxDets)
-        precision = -np.ones((T, R, K, A, M))  # -1 for the precision of absent categories
-        recall = -np.ones((T, K, A, M))
+        precision = -(np.ones((T, R, K, A, M)))  # -1 for the precision of absent categories
+        recall = -(np.ones((T, K, A, M)))
 
         # create dictionary for future indexing
         logger.info("Categories: {}".format(p.catIds))
@@ -1061,7 +1078,7 @@ class DensePoseCocoEval(object):
                         dists.append(self.Pdist_matrix[int(k)][0])
                 else:
                     dists.append(np.inf)
-        return np.array(dists).squeeze()
+        return np.atleast_1d(np.array(dists).squeeze())
 
 
 class Params:

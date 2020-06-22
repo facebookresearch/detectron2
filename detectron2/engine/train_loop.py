@@ -19,9 +19,7 @@ class HookBase:
 
     Each hook can implement 4 methods. The way they are called is demonstrated
     in the following snippet:
-
-    .. code-block:: python
-
+    ::
         hook.before_train()
         for iter in range(start_iter, max_iter):
             hook.before_step()
@@ -169,6 +167,9 @@ class SimpleTrainer(TrainerBase):
     2. Compute the gradients with the above loss.
     3. Update the model with the optimizer.
 
+    All other tasks during training (checkpointing, logging, evaluation, LR schedule)
+    are maintained by hooks, which can be registered by :meth:`TrainerBase.register_hooks`.
+
     If you want to do anything fancier than this,
     either subclass TrainerBase and implement your own `run_step`,
     or write your own training loop.
@@ -221,7 +222,7 @@ class SimpleTrainer(TrainerBase):
         self._write_metrics(metrics_dict)
 
         """
-        If you need to accumulate gradients or something similar, you can
+        If you need to accumulate gradients or do something similar, you can
         wrap the optimizer with your custom `zero_grad()` method.
         """
         self.optimizer.zero_grad()

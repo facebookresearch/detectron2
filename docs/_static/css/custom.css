@@ -1,0 +1,19 @@
+/*
+ * some extra css to make markdown look similar between github/sphinx
+ */
+
+/*
+ * Below is for install.md:
+ */
+.rst-content code {
+  white-space: pre;
+  border: 0px;
+}
+
+th {
+  border: 1px solid #e1e4e5;
+}
+
+div.section > details {
+  padding-bottom: 1em;
+}

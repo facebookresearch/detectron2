@@ -2,7 +2,7 @@
 # Evaluation
 
 Evaluation is a process that takes a number of inputs/outputs pairs and aggregate them.
-You can always [use the model](models.html) directly and just parse its inputs/outputs manually to perform
+You can always [use the model](./models.md) directly and just parse its inputs/outputs manually to perform
 evaluation.
 Alternatively, evaluation is implemented in detectron2 using the [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator)
 interface.
@@ -25,19 +25,32 @@ class Counter(DatasetEvaluator):
     return {"count": self.count}
 ```
 
-Once you have some `DatasetEvaluator`, you can run it with
-[inference_on_dataset](../modules/evaluation.html#detectron2.evaluation.inference_on_dataset).
+## Use evaluators
+
+To evaluate using the methods of evaluators manually:
+```
+def get_all_inputs_outputs():
+  for data in data_loader:
+    yield data, model(data)
+
+evaluator.reset()
+for inputs, outputs in get_all_inputs_outputs():
+  evaluator.process(inputs, outputs)
+eval_results = evaluator.evaluate()
+```
+
+Evaluators can also be used with [inference_on_dataset](../modules/evaluation.html#detectron2.evaluation.inference_on_dataset).
 For example,
 
 ```python
-val_results = inference_on_dataset(
+eval_results = inference_on_dataset(
     model,
-    val_data_loader,
+    data_loader,
     DatasetEvaluators([COCOEvaluator(...), Counter()]))
 ```
-Compared to running the evaluation manually using the model, the benefit of this function is that
-you can merge evaluators together using [DatasetEvaluators](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluators).
-In this way you can run all evaluations without having to go through the dataset multiple times.
+This will execute `model` on all inputs from `data_loader`, and call evaluator to process them.
 
-The `inference_on_dataset` function also provides accurate speed benchmarks for the
-given model and dataset.
+Compared to running the evaluation manually using the model, the benefit of this function is that
+evaluators can be merged together using [DatasetEvaluators](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluators),
+and all the evaluation can fininsh in one forward pass over the dataset.
+This function also provides accurate speed benchmarks for the given model and dataset.

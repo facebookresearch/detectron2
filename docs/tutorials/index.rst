@@ -6,6 +6,7 @@ Tutorials
 
    install
    getting_started
+   builtin_datasets
    extend
    datasets
    data_loading

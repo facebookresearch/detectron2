@@ -1,0 +1,19 @@
+_BASE_: "../../../../configs/Base-RCNN-FPN.yaml"
+MODEL:
+  META_ARCHITECTURE: "SemanticSegmentor"
+  BACKBONE:
+    FREEZE_AT: 0
+  SEM_SEG_HEAD:
+    NAME: "PointRendSemSegHead"
+  POINT_HEAD:
+    NUM_CLASSES: 54
+    FC_DIM: 256
+    NUM_FC: 3
+    IN_FEATURES: ["p2"]
+    TRAIN_NUM_POINTS: 1024
+    SUBDIVISION_STEPS: 2
+    SUBDIVISION_NUM_POINTS: 8192
+    COARSE_SEM_SEG_HEAD_NAME: "SemSegFPNHead"
+DATASETS:
+  TRAIN: ("coco_2017_train_panoptic_stuffonly",)
+  TEST: ("coco_2017_val_panoptic_stuffonly",)

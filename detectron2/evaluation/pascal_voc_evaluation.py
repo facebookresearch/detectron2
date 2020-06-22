@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
 from functools import lru_cache
 import torch
+from fvcore.common.file_io import PathManager
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
@@ -18,12 +19,13 @@ from .evaluator import DatasetEvaluator
 
 class PascalVOCDetectionEvaluator(DatasetEvaluator):
     """
-    Evaluate Pascal VOC AP.
+    Evaluate Pascal VOC style AP for Pascal VOC dataset.
     It contains a synchronization, therefore has to be called from all ranks.
 
-    Note that this is a rewrite of the official Matlab API.
-    The results should be similar, but not identical to the one produced by
-    the official API.
+    Note that the concept of AP can be implemented in different ways and may not
+    produce identical results. This class mimics the implementation of the official
+    Pascal VOC Matlab API, and should produce similar but not identical results to the
+    official API.
     """
 
     def __init__(self, dataset_name):
@@ -124,7 +126,8 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 @lru_cache(maxsize=None)
 def parse_rec(filename):
     """Parse a PASCAL VOC xml file."""
-    tree = ET.parse(filename)
+    with PathManager.open(filename) as f:
+        tree = ET.parse(f)
     objects = []
     for obj in tree.findall("object"):
         obj_struct = {}
@@ -202,7 +205,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
 
     # first load gt
     # read list of images
-    with open(imagesetfile, "r") as f:
+    with PathManager.open(imagesetfile, "r") as f:
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
 

@@ -1,0 +1,19 @@
+_BASE_: "Base-RCNN-FPN-MC.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  DENSEPOSE_ON: True
+  ROI_HEADS:
+    NAME: "DensePoseROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NUM_CLASSES: 1
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseV1ConvXHead"
+    POOLER_TYPE: "ROIAlign"
+    NUM_COARSE_SEGM_CHANNELS: 2
+    COARSE_SEGM_TRAINED_BY_MASKS: True
+    INDEX_WEIGHTS: 1.0
+DATASETS:
+  TRAIN: ("base_coco_2017_train", "densepose_coco_2014_train")
+  TEST: ("densepose_chimps",)

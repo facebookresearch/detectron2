@@ -176,9 +176,10 @@ class CompoundVisualizer(object):
         self.visualizers = visualizers
 
     def visualize(self, image_bgr, data):
-        assert len(data) == len(self.visualizers), (
-            "The number of datas {} should match the number of visualizers"
-            " {}".format(len(data), len(self.visualizers))
+        assert len(data) == len(
+            self.visualizers
+        ), "The number of datas {} should match the number of visualizers" " {}".format(
+            len(data), len(self.visualizers)
         )
         image = image_bgr
         for i, visualizer in enumerate(self.visualizers):

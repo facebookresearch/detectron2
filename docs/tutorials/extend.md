@@ -14,32 +14,40 @@ which is a challenge for any research engineering project of a significant size:
 
 In detectron2, there are two types of interfaces that address this tension together:
 
-1. Functions and classes that take only a "config" argument (optionally with a minimal
-   set of extra arguments in cases of mature interfaces).
+1. Functions and classes that take a config (`cfg`) argument
+   (sometimes with only a few extra arguments).
 
    Such functions and classes implement
    the "standard default" behavior: it will read what it needs from the
    config and do the "standard" thing.
-   Users only need to load a standard config and pass it around, without having to worry about
+   Users only need to load a given config and pass it around, without having to worry about
    which arguments are used and what they all mean.
 
 2. Functions and classes that have well-defined explicit arguments.
 
    Each of these is a small building block of the entire system.
-   They require users' effort to stitch together, but can be stitched together in more flexible ways.
-   When you need to implement something different from the "standard defaults"
+   They require users' expertise to understand what each argument should be,
+   and require more effort to stitch together to a larger system.
+   But they can be stitched together in more flexible ways.
+
+   When you need to implement something not supported by the "standard defaults"
    included in detectron2, these well-defined components can be reused.
 
+3. (experimental) A few classes are implemented with the
+   [@configurable](../../modules/config.html#detectron2.config.configurable)
+   decorator - they can be called with either a config, or with explicit arguments.
+   Their explicit argument interfaces are currently __experimental__ and subject to change.
 
-If you only need the standard behavior, the [Beginner's Tutorial](getting_started.html)
+
+If you only need the standard behavior, the [Beginner's Tutorial](./getting_started.md)
 should suffice. If you need to extend detectron2 to your own needs,
 see the following tutorials for more details:
 
-* Detectron2 includes a few standard datasets, but you can use custom ones. See
-  [Use Custom Datasets](datasets.html).
-* Detectron2 contains the standard logic that creates a data loader from a
-  dataset, but you can write your own as well. See [Use Custom Data Loaders](data_loading.html).
+* Detectron2 includes a few standard datasets. To use custom ones, see
+  [Use Custom Datasets](./datasets.md).
+* Detectron2 contains the standard logic that creates a data loader for training/testing from a
+  dataset, but you can write your own as well. See [Use Custom Data Loaders](./data_loading.md).
 * Detectron2 implements many standard detection models, and provide ways for you
-  to overwrite its behaviors. See [Use Models](models.html) and [Write Models](write-models.html).
+  to overwrite their behaviors. See [Use Models](./models.md) and [Write Models](./write-models.md).
 * Detectron2 provides a default training loop that is good for common training tasks.
-  You can customize it with hooks, or write your own loop instead. See [training](training.html).
+  You can customize it with hooks, or write your own loop instead. See [training](./training.md).

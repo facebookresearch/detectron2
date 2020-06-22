@@ -9,13 +9,14 @@ is implemented
 """
 
 import math
+from typing import List
 import torch
 from torch.nn.modules.utils import _ntuple
 
-TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
+from detectron2.utils.env import TORCH_VERSION
 
 
-def cat(tensors, dim=0):
+def cat(tensors: List[torch.Tensor], dim: int = 0):
     """
     Efficient version of torch.cat that avoids a copy if there is only a single element in a list
     """
@@ -151,11 +152,38 @@ else:
             return _NewEmptyTensorOp.apply(x, output_shape)
 
 
+if TORCH_VERSION > (1, 5):
+    Linear = torch.nn.Linear
+else:
+
+    class Linear(torch.nn.Linear):
+        """
+        A wrapper around :class:`torch.nn.Linear` to support empty inputs and more features.
+        Because of https://github.com/pytorch/pytorch/issues/34202
+        """
+
+        def forward(self, x):
+            if x.numel() == 0:
+                output_shape = [x.shape[0], self.weight.shape[0]]
+
+                empty = _NewEmptyTensorOp.apply(x, output_shape)
+                if self.training:
+                    # This is to make DDP happy.
+                    # DDP expects all workers to have gradient w.r.t the same set of parameters.
+                    _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
+                    return empty + _dummy
+                else:
+                    return empty
+
+            x = super().forward(x)
+            return x
+
+
 def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
     """
     A wrapper around :func:`torch.nn.functional.interpolate` to support zero-size tensor.
     """
-    if input.numel() > 0:
+    if TORCH_VERSION > (1, 4) or input.numel() > 0:
         return torch.nn.functional.interpolate(
             input, size, scale_factor, mode, align_corners=align_corners
         )
@@ -186,3 +214,13 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     output_shape = tuple(_output_size(2))
     output_shape = input.shape[:-2] + output_shape
     return _NewEmptyTensorOp.apply(input, output_shape)
+
+
+def nonzero_tuple(x):
+    """
+    A 'as_tuple=True' version of torch.nonzero to support torchscript.
+    because of https://github.com/pytorch/pytorch/issues/38718
+    """
+    if x.dim() == 0:
+        return x.unsqueeze(0).nonzero().unbind(1)
+    return x.nonzero().unbind(1)

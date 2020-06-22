@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 """
 DensePose Training Script.
 
@@ -7,39 +9,22 @@ This script is similar to the training script in detectron2/tools.
 It is an example of how a user might use detectron2 for a new project.
 """
 
-import os
+from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import build_detection_test_loader, build_detection_train_loader
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
-from detectron2.evaluation import COCOEvaluator, DatasetEvaluators, verify_results
+from detectron2.engine import default_argument_parser, default_setup, hooks, launch
+from detectron2.evaluation import verify_results
 from detectron2.utils.logger import setup_logger
 
-from densepose import DatasetMapper, DensePoseCOCOEvaluator, add_densepose_config
-
-
-class Trainer(DefaultTrainer):
-    @classmethod
-    def build_evaluator(cls, cfg, dataset_name):
-        output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        evaluators = [COCOEvaluator(dataset_name, cfg, True, output_folder)]
-        if cfg.MODEL.DENSEPOSE_ON:
-            evaluators.append(DensePoseCOCOEvaluator(dataset_name, True, output_folder))
-        return DatasetEvaluators(evaluators)
-
-    @classmethod
-    def build_test_loader(cls, cfg, dataset_name):
-        return build_detection_test_loader(cfg, dataset_name, mapper=DatasetMapper(cfg, False))
-
-    @classmethod
-    def build_train_loader(cls, cfg):
-        return build_detection_train_loader(cfg, mapper=DatasetMapper(cfg, True))
+from densepose import add_dataset_category_config, add_densepose_config
+from densepose.engine import Trainer
 
 
 def setup(args):
     cfg = get_cfg()
+    add_dataset_category_config(cfg)
     add_densepose_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
@@ -52,6 +37,9 @@ def setup(args):
 
 def main(args):
     cfg = setup(args)
+    # disable strict kwargs checking: allow one to specify path handle
+    # hints through kwargs, like timeout in DP evaluation
+    PathManager.set_strict_kwargs_checking(False)
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
@@ -59,12 +47,18 @@ def main(args):
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)
+        if cfg.TEST.AUG.ENABLED:
+            res.update(Trainer.test_with_TTA(cfg, model))
         if comm.is_main_process():
             verify_results(cfg, res)
         return res
 
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)
+    if cfg.TEST.AUG.ENABLED:
+        trainer.register_hooks(
+            [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
+        )
     return trainer.train()
 
 

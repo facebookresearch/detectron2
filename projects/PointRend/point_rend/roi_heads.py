@@ -44,7 +44,7 @@ def calculate_uncertainty(logits, classes):
         gt_class_logits = logits[
             torch.arange(logits.shape[0], device=logits.device), classes
         ].unsqueeze(1)
-    return -torch.abs(gt_class_logits)
+    return -(torch.abs(gt_class_logits))
 
 
 @ROI_HEADS_REGISTRY.register()
@@ -57,6 +57,11 @@ class PointRendROIHeads(StandardROIHeads):
     variables that correspond to the mask head in the class's namespace.
     """
 
+    def __init__(self, cfg, input_shape):
+        # TODO use explicit args style
+        super().__init__(cfg, input_shape)
+        self._init_mask_head(cfg, input_shape)
+
     def _init_mask_head(self, cfg, input_shape):
         # fmt: off
         self.mask_on                 = cfg.MODEL.MASK_ON
@@ -64,7 +69,7 @@ class PointRendROIHeads(StandardROIHeads):
             return
         self.mask_coarse_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
         self.mask_coarse_side_size   = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
-        self._feature_scales          = {k: 1.0 / v.stride for k, v in input_shape.items()}
+        self._feature_scales         = {k: 1.0 / v.stride for k, v in input_shape.items()}
         # fmt: on
 
         in_channels = np.sum([input_shape[f].channels for f in self.mask_coarse_in_features])

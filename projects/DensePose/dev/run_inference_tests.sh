@@ -4,6 +4,8 @@
 BIN="python train_net.py"
 OUTPUT="inference_test_output"
 NUM_GPUS=2
+IMS_PER_GPU=2
+IMS_PER_BATCH=$(( NUM_GPUS * IMS_PER_GPU ))
 
 CFG_LIST=( "${@:1}" )
 
@@ -24,7 +26,8 @@ for cfg in "${CFG_LIST[@]}"; do
       --eval-only \
       --num-gpus $NUM_GPUS \
       --config-file "$cfg" \
-      OUTPUT_DIR $OUTPUT
-      rm -rf $OUTPUT
+      OUTPUT_DIR "$OUTPUT" \
+      SOLVER.IMS_PER_BATCH $IMS_PER_BATCH
+    rm -rf $OUTPUT
 done
 

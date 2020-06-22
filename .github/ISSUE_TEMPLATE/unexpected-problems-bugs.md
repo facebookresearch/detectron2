@@ -1,26 +1,27 @@
 ---
-name: "Unexpected behaviors / Bugs"
-about: Report unexpected behaviors or bugs in detectron2
+name: "Unexpected behaviors"
+about: Run into unexpected behaviors when using detectron2
 title: Please read & provide the following
 
 ---
 
-If you do not know the root cause of the problem / bug, and wish someone to help you, please
+If you do not know the root cause of the problem, and wish someone to help you, please
 post according to this template:
 
 ## Instructions To Reproduce the Issue:
 
-1. what changes you made (`git diff`) or what code you wrote
+Check https://stackoverflow.com/help/minimal-reproducible-example for how to ask good questions.
+Simplify the steps to reproduce the issue using suggestions from the above link, and provide them below:
+
+1. full code you wrote or full changes you made (`git diff`)
 ```
-<put diff or code here>
+<put code or diff here>
 ```
 2. what exact command you run:
-3. what you observed (including the full logs):
+3. __full logs__ you observed:
 ```
 <put logs here>
 ```
-4. please also simplify the steps as much as possible so they do not require additional resources to
-	 run, such as a private dataset.
 
 ## Expected behavior:
 
@@ -35,9 +36,11 @@ Only in one of the two conditions we will help with it:
 
 ## Environment:
 
-Run `python -m detectron2.utils.collect_env` in the environment where you observerd the issue, and paste the output.
-If detectron2 hasn't been successfully installed, use `python detectron2/utils/collect_env.py`.
+Provide your environment information using the following command:
+```
+wget -nc -q https://github.com/facebookresearch/detectron2/raw/master/detectron2/utils/collect_env.py && python collect_env.py
+```
 
 If your issue looks like an installation issue / environment issue,
-please first try to solve it yourself with the instructions in
-https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md#common-installation-issues
+please first try to solve it with the instructions in
+https://detectron2.readthedocs.io/tutorials/install.html#common-installation-issues

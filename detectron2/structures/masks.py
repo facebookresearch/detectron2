@@ -6,7 +6,6 @@ from typing import Any, Iterator, List, Union
 import pycocotools.mask as mask_utils
 import torch
 
-from detectron2.layers import cat
 from detectron2.layers.roi_align import ROIAlign
 
 from .boxes import Boxes
@@ -64,6 +63,7 @@ def rasterize_polygons_within_box(
         p[1::2] = p[1::2] - box[1]
 
     # 2. Rescale the polygons to the new box size
+    # max() to avoid division by small number
     ratio_h = mask_size / max(h, 0.1)
     ratio_w = mask_size / max(w, 0.1)
 
@@ -101,8 +101,8 @@ class BitMasks:
         self.image_size = tensor.shape[1:]
         self.tensor = tensor
 
-    def to(self, device: str) -> "BitMasks":
-        return BitMasks(self.tensor.to(device))
+    def to(self, *args: Any, **kwargs: Any) -> "BitMasks":
+        return BitMasks(self.tensor.to(*args, **kwargs))
 
     @property
     def device(self) -> torch.device:
@@ -218,7 +218,7 @@ class BitMasks:
         assert len(bitmasks_list) > 0
         assert all(isinstance(bitmask, BitMasks) for bitmask in bitmasks_list)
 
-        cat_bitmasks = type(bitmasks_list[0])(cat([bm.tensor for bm in bitmasks_list], dim=0))
+        cat_bitmasks = type(bitmasks_list[0])(torch.cat([bm.tensor for bm in bitmasks_list], dim=0))
         return cat_bitmasks
 
 

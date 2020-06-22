@@ -1,0 +1,13 @@
+_BASE_: "../densepose_rcnn_R_50_FPN_s1x.yaml"
+MODEL:
+  WEIGHTS: "https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_s1x/165712039/model_final_162be9.pkl"
+DATASETS:
+  TRAIN: ()
+  TEST: ("densepose_coco_2014_minival_100",)
+TEST:
+  AUG:
+    ENABLED: True
+    MIN_SIZES: (400, 500, 600, 700, 800, 900, 1000, 1100, 1200)
+    MAX_SIZE: 4000
+    FLIP: True
+  EXPECTED_RESULTS: [["bbox_TTA", "AP", 61.74, 0.03], ["densepose_gps_TTA", "AP",  60.22, 0.03], ["densepose_gpsm_TTA", "AP", 63.85, 0.03]]

@@ -1,30 +1,30 @@
 ---
 name: "\U0001F680Feature Request"
-about: Submit a proposal/request for a new detectron2 feature
+about: Suggest an improvement or new feature
 
 ---
 
 ## 🚀 Feature
-<!-- A clear and concise description of the feature proposal -->
+A clear and concise description of the feature proposal.
 
-## Motivation
+## Motivation & Examples
 
-<!-- Please outline the motivation for the proposal. Is your feature request related to a problem?
-e.g., I'm always frustrated when [...]. If this is related to another GitHub issue, please link here too -->
+Tell us why the feature is useful.
 
-## Pitch
+Describe what the feature would look like, if it is implemented.
+Best demonstrated using **code examples** in addition to words.
 
-<!-- A clear and concise description, e.g., with code examples showing what you want to happen. -->
+## Note
 
-Note that we only consider adding new features if they are relevant to many users.
-We do not take requests to implement recent research papers --
-we only consider papers that have enough significance and prevalance.
+We only consider adding new features if they are relevant to many users.
 
-We don't take feature requests for most projects in the `projects/` directory,
-because they are research code release that is mainly for other researchers to reproduce results.
+If you request implementation of research papers -- we only consider papers that have enough significance and prevalance in the object detection field.
+
+We do not take requests for most projects in the `projects/` directory, because they are research code release that is mainly for other researchers to reproduce results.
+
+"Make A faster" is not a valid feature request. "Implement a concrete feature that can make A faster" can be a valid feature request.
 
 Instead of adding features inside detectron2,
 you can implement many features by [extending detectron2](https://detectron2.readthedocs.io/tutorials/extend.html).
-The [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/) directory
-contains many of such examples.
+The [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/) directory contains many of such examples.
 

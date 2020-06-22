@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 A script to benchmark builtin models.
@@ -43,9 +44,11 @@ def setup(args):
 def benchmark_data(args):
     cfg = setup(args)
 
-    dataloader = build_detection_train_loader(cfg)
-
     timer = Timer()
+    dataloader = build_detection_train_loader(cfg)
+    logger.info("Initialize loader using {} seconds.".format(timer.seconds()))
+
+    timer.reset()
     itr = iter(dataloader)
     for i in range(10):  # warmup
         next(itr)
@@ -99,8 +102,9 @@ def benchmark_train(args):
     dummy_data = list(itertools.islice(data_loader, 100))
 
     def f():
+        data = DatasetFromList(dummy_data, copy=False)
         while True:
-            yield from DatasetFromList(dummy_data, copy=False)
+            yield from data
 
     max_iter = 400
     trainer = SimpleTrainer(model, f(), optimizer)

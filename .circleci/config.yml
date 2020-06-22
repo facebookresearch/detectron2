@@ -90,14 +90,14 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200124
+            - cache-key-{{ .Branch }}-ID-20200425
 
       - <<: *install_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-key-{{ .Branch }}-ID-20200124
+          key: cache-key-{{ .Branch }}-ID-20200425
 
       - <<: *install_detectron2
 
@@ -153,11 +153,12 @@ jobs:
             # This will build d2 for the target GPU arch only
             docker exec -it d2 pip install -e /detectron2
             docker exec -it d2 python3 -m detectron2.utils.collect_env
+            docker exec -it d2 python3 -c 'import torch; assert(torch.cuda.is_available())'
 
       - run:
           name: Run Unit Tests
           command: |
-            docker exec -it d2 python3 -m unittest discover -v -s /detectron2/tests
+            docker exec -e CIRCLECI=true -it d2 python3 -m unittest discover -v -s /detectron2/tests
 
 workflows:
   version: 2

@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 class EntrySelector(object):
@@ -91,7 +91,7 @@ class FieldEntrySelector(EntrySelector):
                 return False
         return True
 
-    def _parse_specifier_into_predicates(self, spec: str) -> List["_FieldEntryPredicate"]:
+    def _parse_specifier_into_predicates(self, spec: str):
         predicates = []
         specs = spec.split(self._SPEC_DELIM)
         for subspec in specs:

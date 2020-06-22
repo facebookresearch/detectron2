@@ -70,6 +70,11 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
     The location, height, and width for pasting each mask is determined by their
     corresponding bounding boxes in boxes.
 
+    Note:
+        This is a complicated but more accurate implementation. In actual deployment, it is
+        often enough to use a faster but less accurate implementation.
+        See :func:`paste_mask_in_image_old` in this file for an alternative implementation.
+
     Args:
         masks (tensor): Tensor of shape (Bimg, Hmask, Wmask), where Bimg is the number of
             detected object instances in the image and Hmask, Wmask are the mask width and mask
@@ -85,6 +90,7 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
         number of detected object instances and Himage, Wimage are the image width
         and height. img_masks[i] is a binary mask for object instance i.
     """
+
     assert masks.shape[-1] == masks.shape[-2], "Only square mask predictions are supported"
     N = len(masks)
     if N == 0:
@@ -104,7 +110,8 @@ def paste_masks_in_image(masks, boxes, image_shape, threshold=0.5):
         num_chunks = N
     else:
         # GPU benefits from parallelism for larger chunks, but may have memory issue
-        num_chunks = int(np.ceil(N * img_h * img_w * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
+        # int(img_h) because shape may be tensors in tracing
+        num_chunks = int(np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
         assert (
             num_chunks <= N
         ), "Default GPU_MEM_LIMIT in mask_ops.py is too small; try increasing it"
