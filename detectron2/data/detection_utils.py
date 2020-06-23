@@ -120,16 +120,16 @@ def apply_exif_orientation(image):
     Returns:
         (PIL.Image): the PIL image with exif orientation applied, if applicable
     """
-    if not hasattr(image, 'getexif'):
+    if not hasattr(image, "getexif"):
         return image
-    
+
     exif = image.getexif()
-    
+
     if exif is None:
         return image
 
     orientation = exif.get(_EXIF_ORIENT)
-    
+
     method = {
         2: Image.FLIP_LEFT_RIGHT,
         3: Image.ROTATE_180,
@@ -139,7 +139,7 @@ def apply_exif_orientation(image):
         7: Image.TRANSVERSE,
         8: Image.ROTATE_90,
     }.get(orientation)
-    
+
     if method is not None:
         return image.transpose(method)
     return image
