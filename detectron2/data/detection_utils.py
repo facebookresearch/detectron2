@@ -10,7 +10,7 @@ import numpy as np
 import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
-from PIL import Image, ImageOps
+from PIL import Image
 
 from detectron2.structures import (
     BitMasks,
@@ -103,17 +103,17 @@ def convert_image_to_rgb(image, format):
 def apply_exif_orientation(image):
     """
     Applies the exif orientation correctly.
-    
+
     This code exists per the bug:
       https://github.com/python-pillow/Pillow/issues/3973
     with the function `ImageOps.exif_transpose`
-    
+
     Modified from:
       https://github.com/wkentaro/labelme/blob/v4.5.4/labelme/utils/image.py#L59
       https://github.com/python-pillow/Pillow/blob/7.1.2/src/PIL/ImageOps.py#L527
-      
+
     The Pillow source raises errors with various methods, especially `tobytes`
-    
+
     Args:
         image (PIL.Image): a PIL image
 
