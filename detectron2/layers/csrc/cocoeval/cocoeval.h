@@ -15,12 +15,17 @@ namespace COCOeval {
 
 // Annotation data for a single object instance in an image
 struct InstanceAnnotation {
-  int64_t id;
-  int64_t image_id;
-  int64_t category_id = 0;
+  InstanceAnnotation(
+      uint64_t id,
+      double score,
+      double area,
+      bool is_crowd,
+      bool ignore)
+      : id{id}, score{score}, area{area}, is_crowd{is_crowd}, ignore{ignore} {}
+  uint64_t id;
   double score = 0.;
   double area = 0.;
-  unsigned char is_crowd = 0;
+  bool is_crowd = false;
   bool ignore = false;
 };
 

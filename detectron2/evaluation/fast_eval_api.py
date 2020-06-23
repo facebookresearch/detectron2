@@ -59,12 +59,10 @@ class COCOeval_opt(COCOeval):
             for instance in instances:
                 instance_cpp = _C.InstanceAnnotation(
                     instance["id"],
-                    instance["image_id"],
-                    instance["category_id"],
                     instance["score"] if is_det else instance.get("score", 0.0),
                     instance["area"],
-                    instance.get("iscrowd", 0),
-                    instance.get("ignore", False),
+                    bool(instance.get("iscrowd", 0)),
+                    bool(instance.get("ignore", 0)),
                 )
                 instances_cpp.append(instance_cpp)
             return instances_cpp

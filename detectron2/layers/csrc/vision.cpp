@@ -111,14 +111,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       &COCOeval::EvaluateImages,
       "COCOeval::EvaluateImages");
   pybind11::class_<COCOeval::InstanceAnnotation>(m, "InstanceAnnotation")
-      .def(pybind11::init<
-           uint64_t,
-           uint64_t,
-           uint64_t,
-           double,
-           double,
-           unsigned char,
-           bool>());
+      .def(pybind11::init<uint64_t, double, double, bool, bool>());
   pybind11::class_<COCOeval::ImageEvaluation>(m, "ImageEvaluation")
       .def(pybind11::init<>());
 }
