@@ -3,7 +3,14 @@
 Detectron2 has builtin support for a few datasets.
 The datasets are assumed to exist in a directory specified by the environment variable
 `DETECTRON2_DATASETS`.
-Under this directory, detectron2 expects to find datasets in the structure described below.
+Under this directory, detectron2 will look for datasets in the structure described below, if needed.
+```
+$DETECTRON2_DATASETS/
+  coco/
+  lvis/
+  cityscapes/
+  VOC20{07,12}/
+```
 
 You can set the location for builtin datasets by `export DETECTRON2_DATASETS=/path/to/datasets`.
 If left unset, the default is `./datasets` relative to your current working directory.
@@ -57,7 +64,7 @@ Install lvis-api by:
 pip install git+https://github.com/lvis-dataset/lvis-api.git
 ```
 
-Run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations for evaluation of models trained on the COCO dataset.
+Run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations, which can be used to evaluate models trained on the COCO dataset.
 
 ## Expected dataset structure for cityscapes:
 ```
@@ -80,11 +87,11 @@ Install cityscapes scripts by:
 pip install git+https://github.com/mcordts/cityscapesScripts.git
 ```
 
-Note: labelTrainIds.png are created using cityscapesescript with:
+Note: to create labelTrainIds.png, first prepare the above structure, then run cityscapesescript with:
 ```
-CITYSCAPES_DATASET=$DETECTRON2_DATASETS/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
+CITYSCAPES_DATASET=/path/to/abovementioned/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
 ```
-They are not needed for instance segmentation.
+These files are not needed for instance segmentation.
 
 ## Expected dataset structure for Pascal VOC:
 ```

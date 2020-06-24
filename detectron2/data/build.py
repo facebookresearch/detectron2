@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import bisect
-import copy
 import itertools
 import logging
 import numpy as np
@@ -153,13 +151,6 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
         record["proposal_bbox_mode"] = bbox_mode
 
     return dataset_dicts
-
-
-def _quantize(x, bin_edges):
-    bin_edges = copy.copy(bin_edges)
-    bin_edges = sorted(bin_edges)
-    quantized = list(map(lambda y: bisect.bisect_right(bin_edges, y), x))
-    return quantized
 
 
 def print_instances_class_histogram(dataset_dicts, class_names):

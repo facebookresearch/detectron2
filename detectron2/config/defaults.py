@@ -567,8 +567,8 @@ _C.TEST.EXPECTED_RESULTS = []
 # Set to 0 to disable.
 _C.TEST.EVAL_PERIOD = 0
 # The sigmas used to calculate keypoint OKS. See http://cocodataset.org/#keypoints-eval
-# When empty it will use the defaults in COCO.
-# Otherwise it should have the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
+# When empty, it will use the defaults in COCO.
+# Otherwise it should be a list[float] with the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
 _C.TEST.KEYPOINT_OKS_SIGMAS = []
 # Maximum number of detections to return per image during inference (100 is
 # based on the limit established for the COCO dataset).
