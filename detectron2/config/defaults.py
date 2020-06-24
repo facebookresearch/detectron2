@@ -525,7 +525,15 @@ _C.SOLVER.CHECKPOINT_PERIOD = 5000
 # Number of images per batch across all machines.
 # If we have 16 GPUs and IMS_PER_BATCH = 32,
 # each GPU will see 2 images per batch.
+# May be adjusted automatically if REFERENCE_WORLD_SIZE is set.
 _C.SOLVER.IMS_PER_BATCH = 16
+
+# The reference number of workers (GPUs) this config is meant to train with.
+# With a non-zero value, it will be used by DefaultTrainer to compute a desired
+# per-worker batch size, and then scale the other related configs (total batch size,
+# learning rate, etc) to match the per-worker batch size if the actual number
+# of workers during training is different from this reference.
+_C.SOLVER.REFERENCE_WORLD_SIZE = 0
 
 # Detectron v1 (and previous detection code) used a 2x higher LR and 0 WD for
 # biases. This is not useful (at least for recent models). You should avoid
