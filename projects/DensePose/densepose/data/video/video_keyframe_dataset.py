@@ -3,7 +3,7 @@
 
 import logging
 import numpy as np
-from typing import IO, Callable, List, Optional
+from typing import Callable, List, Optional
 import torch
 from fvcore.common.file_io import PathManager
 from torch.utils.data.dataset import Dataset
@@ -17,64 +17,92 @@ FrameList = List[av.frame.Frame]
 FrameTransform = Callable[[torch.Tensor], torch.Tensor]
 
 
-def _list_keyframes(
-    video_fpath: str, video_file: IO[bytes], video_stream_idx: int = 0
-) -> FrameTsList:
+def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
     """
     Traverses all keyframes of a video file. Returns a list of keyframe
     timestamps. Timestamps are counts in timebase units.
 
     Args:
        video_fpath (str): Video file path
-       video_file (IO[bytes]): Video file input stream
        video_stream_idx (int): Video stream index (default: 0)
     Returns:
        List[int]: list of keyframe timestaps (timestamp is a count in timebase
            units)
     """
-    container = av.open(video_file)
-    s = container.streams[video_stream_idx]
-    keyframes = []
-    pts = -1
-    while True:
-        try:
-            container.seek(pts + 1, backward=False, any_frame=False, stream=s)
-        except av.AVError:
-            break
-        packet = next(container.demux(video=video_stream_idx))
-        if packet.pts is not None and packet.pts <= pts:
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                f"Video file {video_fpath}, stream {video_stream_idx}: "
-                f"bad seek for packet {pts} (got packet {packet.pts}), "
-                f"returning empty keyframes."
-            )
-            return []
-        pts = packet.pts
-        if pts is None:
-            return keyframes
-        if packet.is_keyframe:
-            keyframes.append(pts)
-    return keyframes
+    with PathManager.open(video_fpath, "rb") as io:
+        container = av.open(io, mode="r")
+        stream = container.streams.video[video_stream_idx]
+        keyframes = []
+        pts = -1
+        # Note: even though we request forward seeks for keyframes, sometimes
+        # a keyframe in backwards direction is returned. We introduce tolerance
+        # as a max count of ignored backward seeks
+        tolerance_backward_seeks = 2
+        while True:
+            try:
+                container.seek(pts + 1, backward=False, any_frame=False, stream=stream)
+            except av.AVError as e:
+                # the exception occurs when the video length is exceeded,
+                # we then return whatever data we've already collected
+                logger = logging.getLogger(__name__)
+                logger.debug(
+                    f"List keyframes: Error seeking video file {video_fpath}, "
+                    f"video stream {video_stream_idx}, pts {pts + 1}, AV error: {e}"
+                )
+                return keyframes
+            except OSError as e:
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f"List keyframes: Error seeking video file {video_fpath}, "
+                    f"video stream {video_stream_idx}, pts {pts + 1}, OS error: {e}"
+                )
+                return []
+            packet = next(container.demux(video=video_stream_idx))
+            if packet.pts is not None and packet.pts <= pts:
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f"Video file {video_fpath}, stream {video_stream_idx}: "
+                    f"bad seek for packet {pts + 1} (got packet {packet.pts}), "
+                    f"tolerance {tolerance_backward_seeks}."
+                )
+                tolerance_backward_seeks -= 1
+                if tolerance_backward_seeks == 0:
+                    return []
+                pts += 1
+                continue
+            pts = packet.pts
+            if pts is None:
+                return keyframes
+            if packet.is_keyframe:
+                keyframes.append(pts)
+        return keyframes
+    return []
 
 
-def _read_keyframes(video_file: IO[bytes], keyframes: FrameTsList) -> FrameList:
+def read_keyframes(
+    video_fpath: str, keyframes: FrameTsList, video_stream_idx: int = 0
+) -> FrameList:
     """
     Reads keyframe data from a video file.
 
     Args:
-        video_file (IO[bytes]): Opened file in binary mode
+        video_fpath (str): Video file path
         keyframes (List[int]): List of keyframe timestamps (as counts in
             timebase units to be used in container seek operations)
+        video_stream_idx (int): Video stream index (default: 0)
+    Returns:
+        List[Frame]: list of frames that correspond to the specified timestamps
     """
-    container = av.open(video_file)
-    frames = []
-    for pts in keyframes:
-        container.seek(pts, any_frame=False, stream=container.streams[0])
-        frame = next(container.decode(video=0))
-        frames.append(frame)
-    container.close()
-    return frames
+    with PathManager.open(video_fpath, "rb") as io:
+        container = av.open(io)
+        stream = container.streams.video[video_stream_idx]
+        frames = []
+        for pts in keyframes:
+            container.seek(pts, any_frame=False, stream=stream)
+            frame = next(container.decode(video=0))
+            frames.append(frame)
+        container.close()
+        return frames
 
 
 def video_list_from_file(video_list_fpath: str, base_path: Optional[str] = None):
@@ -88,7 +116,7 @@ def video_list_from_file(video_list_fpath: str, base_path: Optional[str] = None)
     video_list = []
     with PathManager.open(video_list_fpath, "r") as io:
         for line in io:
-            video_list.append(maybe_prepend_base_path(line, base_path))
+            video_list.append(maybe_prepend_base_path(base_path, line.strip()))
     return video_list
 
 
@@ -135,14 +163,12 @@ class VideoKeyframeDataset(Dataset):
                 defined by the transform that contains keyframes data
         """
         fpath = self.video_list[idx]
-        with PathManager.open(fpath, "rb") as hFile:
-            keyframes = _list_keyframes(fpath, hFile)
+        keyframes = list_keyframes(fpath)
         if not keyframes:
             return self.EMPTY_FRAMES
         if self.frame_selector is not None:
             keyframes = self.frame_selector(keyframes)
-        with PathManager.open(fpath, "rb") as hFile:
-            frames = _read_keyframes(hFile, keyframes)
+        frames = read_keyframes(fpath, keyframes)
         if not frames:
             return self.EMPTY_FRAMES
         frames = np.stack([frame.to_rgb().to_ndarray() for frame in frames])

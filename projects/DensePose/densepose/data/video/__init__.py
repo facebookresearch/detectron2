@@ -8,3 +8,10 @@ from .frame_selector import (
     FrameTsList,
     FrameSelector,
 )
+
+from .video_keyframe_dataset import (
+    VideoKeyframeDataset,
+    video_list_from_file,
+    list_keyframes,
+    read_keyframes,
+)
