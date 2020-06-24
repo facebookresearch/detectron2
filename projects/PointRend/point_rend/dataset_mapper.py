@@ -35,17 +35,17 @@ class SemSegDatasetMapper:
 
     def __init__(self, cfg, is_train=True):
         if cfg.INPUT.CROP.ENABLED and is_train:
-            self.crop_gen = T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE)
-            logging.getLogger(__name__).info("CropGen used in training: " + str(self.crop_gen))
+            self.crop_aug = T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE)
+            logging.getLogger(__name__).info("CropGen used in training: " + str(self.crop_aug))
         else:
-            self.crop_gen = None
+            self.crop_aug = None
 
-        self.tfm_gens = utils.build_transform_gen(cfg, is_train)
+        self.augmentation = utils.build_augmentation(cfg, is_train)
 
         if cfg.INPUT.COLOR_AUG_SSD:
-            self.tfm_gens.append(ColorAugSSDTransform(img_format=cfg.INPUT.FORMAT))
+            self.augmentation.append(ColorAugSSDTransform(img_format=cfg.INPUT.FORMAT))
             logging.getLogger(__name__).info(
-                "Color augmnetation used in training: " + str(self.tfm_gens[-1])
+                "Color augmnetation used in training: " + str(self.augmentation[-1])
             )
 
         # fmt: off
@@ -69,17 +69,17 @@ class SemSegDatasetMapper:
         utils.check_image_size(dataset_dict, image)
         assert "sem_seg_file_name" in dataset_dict
 
-        image, transforms = T.apply_transform_gens(self.tfm_gens, image)
+        image, transforms = T.apply_transform_gens(self.augmentation, image)
         if self.is_train:
             with PathManager.open(dataset_dict.pop("sem_seg_file_name"), "rb") as f:
                 sem_seg_gt = Image.open(f)
                 sem_seg_gt = np.asarray(sem_seg_gt, dtype="uint8")
             sem_seg_gt = transforms.apply_segmentation(sem_seg_gt)
-            if self.crop_gen:
+            if self.crop_aug:
                 image, sem_seg_gt = crop_transform(
                     image,
                     sem_seg_gt,
-                    self.crop_gen,
+                    self.crop_aug,
                     self.single_category_max_area,
                     self.ignore_value,
                 )
@@ -97,17 +97,17 @@ class SemSegDatasetMapper:
         return dataset_dict
 
 
-def crop_transform(image, sem_seg, crop_gen, single_category_max_area, ignore_value):
+def crop_transform(image, sem_seg, crop_aug, single_category_max_area, ignore_value):
     """
     Find a cropping window such that no single category occupies more than
         `single_category_max_area` in `sem_seg`. The function retries random cropping 10 times max.
     """
     if single_category_max_area >= 1.0:
-        crop_tfm = crop_gen.get_transform(image)
+        crop_tfm = crop_aug.get_transform(image)
         sem_seg_temp = crop_tfm.apply_segmentation(sem_seg)
     else:
         h, w = sem_seg.shape
-        crop_size = crop_gen.get_crop_size((h, w))
+        crop_size = crop_aug.get_crop_size((h, w))
         for _ in range(10):
             y0 = np.random.randint(h - crop_size[0] + 1)
             x0 = np.random.randint(w - crop_size[1] + 1)

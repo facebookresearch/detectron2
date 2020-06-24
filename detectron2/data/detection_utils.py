@@ -499,13 +499,13 @@ def check_metadata_consistency(key, dataset_names):
             raise ValueError("Datasets have different metadata '{}'!".format(key))
 
 
-def build_transform_gen(cfg, is_train):
+def build_augmentation(cfg, is_train):
     """
-    Create a list of :class:`TransformGen` from config.
+    Create a list of :class:`Augmentation` from config.
     Now it includes resizing and flipping.
 
     Returns:
-        list[TransformGen]
+        list[Augmentation]
     """
     if is_train:
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
@@ -521,9 +521,15 @@ def build_transform_gen(cfg, is_train):
         )
 
     logger = logging.getLogger(__name__)
-    tfm_gens = []
-    tfm_gens.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
+    augmentation = []
+    augmentation.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
     if is_train:
-        tfm_gens.append(T.RandomFlip())
-        logger.info("TransformGens used in training: " + str(tfm_gens))
-    return tfm_gens
+        augmentation.append(T.RandomFlip())
+        logger.info("Augmentations used in training: " + str(augmentation))
+    return augmentation
+
+
+build_transform_gen = build_augmentation
+"""
+Alias for backward-compatibility.
+"""

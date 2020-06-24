@@ -7,24 +7,24 @@ import pprint
 from abc import ABCMeta, abstractmethod
 from fvcore.transforms.transform import Transform, TransformList
 
-__all__ = ["TransformGen", "apply_transform_gens"]
+__all__ = ["Augmentation", "TransformGen", "apply_transform_gens", "apply_augmentations"]
 
 
 def check_dtype(img):
-    assert isinstance(img, np.ndarray), "[TransformGen] Needs an numpy array, but got a {}!".format(
+    assert isinstance(img, np.ndarray), "[Augmentation] Needs an numpy array, but got a {}!".format(
         type(img)
     )
     assert not isinstance(img.dtype, np.integer) or (
         img.dtype == np.uint8
-    ), "[TransformGen] Got image of type {}, use uint8 or floating points instead!".format(
+    ), "[Augmentation] Got image of type {}, use uint8 or floating points instead!".format(
         img.dtype
     )
     assert img.ndim in [2, 3], img.ndim
 
 
-class TransformGen(metaclass=ABCMeta):
+class Augmentation(metaclass=ABCMeta):
     """
-    TransformGen takes an image of type uint8 in range [0, 255], or
+    Augmentation takes an image of type uint8 in range [0, 255], or
     floating point in range [0, 1] or [0, 255] as input.
 
     It creates a :class:`Transform` based on the given image, sometimes with randomness.
@@ -35,7 +35,7 @@ class TransformGen(metaclass=ABCMeta):
     is that the image itself is sufficient to instantiate a transform.
     When this assumption is not true, you need to create the transforms by your own.
 
-    A list of `TransformGen` can be applied with :func:`apply_transform_gens`.
+    A list of `Augmentation` can be applied with :func:`apply_augmentations`.
     """
 
     def _init(self, params=None):
@@ -61,7 +61,7 @@ class TransformGen(metaclass=ABCMeta):
     def __repr__(self):
         """
         Produce something like:
-        "MyTransformGen(field1={self.field1}, field2={self.field2})"
+        "MyAugmentation(field1={self.field1}, field2={self.field2})"
         """
         try:
             sig = inspect.signature(self.__init__)
@@ -87,9 +87,15 @@ class TransformGen(metaclass=ABCMeta):
     __str__ = __repr__
 
 
-def apply_transform_gens(transform_gens, img):
+TransformGen = Augmentation
+"""
+Alias for Augmentation, since it is something that generates :class:`Transform`s
+"""
+
+
+def apply_augmentations(augmentations, img):
     """
-    Apply a list of :class:`TransformGen` or :class:`Transform` on the input image, and
+    Apply a list of :class:`Augmentation` or :class:`Transform` on the input image, and
     returns the transformed image and a list of transforms.
 
     We cannot simply create and return all transforms without
@@ -97,7 +103,7 @@ def apply_transform_gens(transform_gens, img):
     need the output of the previous one.
 
     Args:
-        transform_gens (list): list of :class:`TransformGen` or :class:`Transform` instance to
+        augmentations (list): list of :class:`Augmentation` or :class:`Transform` instance to
             be applied.
         img (ndarray): uint8 or floating point images with 1 or 3 channels.
 
@@ -105,17 +111,23 @@ def apply_transform_gens(transform_gens, img):
         ndarray: the transformed image
         TransformList: contain the transforms that's used.
     """
-    for g in transform_gens:
-        assert isinstance(g, (Transform, TransformGen)), g
+    for aug in augmentations:
+        assert isinstance(aug, (Transform, Augmentation)), aug
 
     check_dtype(img)
 
     tfms = []
-    for g in transform_gens:
-        tfm = g.get_transform(img) if isinstance(g, TransformGen) else g
+    for aug in augmentations:
+        tfm = aug.get_transform(img) if isinstance(aug, Augmentation) else aug
         assert isinstance(
             tfm, Transform
-        ), "TransformGen {} must return an instance of Transform! Got {} instead".format(g, tfm)
+        ), f"Augmentation {aug} must return an instance of Transform! Got {tfm} instead."
         img = tfm.apply_image(img)
         tfms.append(tfm)
     return img, TransformList(tfms)
+
+
+apply_transform_gens = apply_augmentations
+"""
+Alias for backward-compatibility.
+"""

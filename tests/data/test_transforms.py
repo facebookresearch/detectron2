@@ -22,7 +22,7 @@ class TestTransforms(unittest.TestCase):
         np.random.seed(125)
         cfg = get_cfg()
         is_train = True
-        transform_gen = detection_utils.build_transform_gen(cfg, is_train)
+        transform_gen = detection_utils.build_augmentation(cfg, is_train)
         image = np.random.rand(200, 300)
         image, transforms = T.apply_transform_gens(transform_gen, image)
         image_shape = image.shape[:2]  # h, w
@@ -70,7 +70,7 @@ class TestTransforms(unittest.TestCase):
         err_msg = "transformed_boxes = {}, expected {}".format(transformed_boxes, expected_bboxes)
         assert np.allclose(transformed_boxes, expected_bboxes), err_msg
 
-    def test_print_transform_gen(self):
+    def test_print_augmentation(self):
         t = T.RandomCrop("relative", (100, 100))
         self.assertTrue(str(t) == "RandomCrop(crop_type='relative', crop_size=(100, 100))")
 
@@ -92,7 +92,7 @@ class TestTransforms(unittest.TestCase):
             else:
                 T.RandomApply(T.NoOpTransform(), prob=given_probability)
 
-    def test_random_apply_wrapping_transform_gen_probability_occured_evaluation(self):
+    def test_random_apply_wrapping_aug_probability_occured_evaluation(self):
         # GIVEN
         transform_mock = mock.MagicMock(name="MockTransform", spec=T.TransformGen)
         image_mock = mock.MagicMock(name="MockImage")
