@@ -100,19 +100,18 @@ def convert_image_to_rgb(image, format):
     return image
 
 
-def apply_exif_orientation(image):
+def _apply_exif_orientation(image):
     """
     Applies the exif orientation correctly.
 
     This code exists per the bug:
       https://github.com/python-pillow/Pillow/issues/3973
-    with the function `ImageOps.exif_transpose`
+    with the function `ImageOps.exif_transpose`. The Pillow source raises errors with
+    various methods, especially `tobytes`
 
-    Modified from:
+    Function based on:
       https://github.com/wkentaro/labelme/blob/v4.5.4/labelme/utils/image.py#L59
       https://github.com/python-pillow/Pillow/blob/7.1.2/src/PIL/ImageOps.py#L527
-
-    The Pillow source raises errors with various methods, especially `tobytes`
 
     Args:
         image (PIL.Image): a PIL image
@@ -162,7 +161,7 @@ def read_image(file_name, format=None):
         image = Image.open(f)
 
         # work around this bug: https://github.com/python-pillow/Pillow/issues/3973
-        image = apply_exif_orientation(image)
+        image = _apply_exif_orientation(image)
 
         return convert_PIL_to_numpy(image, format)
 
