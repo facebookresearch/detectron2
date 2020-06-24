@@ -65,6 +65,8 @@ _C.INPUT.CROP = CN({"ENABLED": False})
 # - "relative_range" uniformly sample relative crop size from between [CROP.SIZE[0], [CROP.SIZE[1]].
 #   and  [1, 1] and use it as in "relative" scenario.
 # - "absolute" crop part of an input with absolute size: (CROP.SIZE[0], CROP.SIZE[1]).
+# - "absolute_range", for an input of size (H, W), uniformly sample H_crop in
+#   [CROP.SIZE[0], min(H, CROP.SIZE[1])] and W_crop in [CROP.SIZE[0], min(W, CROP.SIZE[1])]
 _C.INPUT.CROP.TYPE = "relative_range"
 # Size of crop in range (0, 1] if CROP.TYPE is "relative" or "relative_range" and in number of
 # pixels if CROP.TYPE is "absolute"
