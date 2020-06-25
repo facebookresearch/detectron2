@@ -117,9 +117,12 @@ jobs:
     parameters:
       pytorch_version:
         type: string
+      torchvision_version:
+        type: string
 
     environment:
       PYTORCH_VERSION: << parameters.pytorch_version >>
+      TORCHVISION_VERSION: << parameters.torchvision_version >>
 
     working_directory: ~/detectron2
 
@@ -143,9 +146,6 @@ jobs:
           name: Launch docker
           working_directory: ~/detectron2/docker
           command: |
-            echo "PyTorch Version:, $PYTORCH_VERSION"
-            TORCHVISION_VERSION=$(python -c "print($PYTORCH_VERSION - 0.9)")
-            echo "Torchvision Version:, $TORCHVISION_VERSION"
             nvidia-docker build -t detectron2:v0 -f Dockerfile-circleci --build-arg PYTORCH_VERSION=$PYTORCH_VERSION --build-arg TORCHVISION_VERSION=$TORCHVISION_VERSION .
             nvidia-docker run -itd --name d2 detectron2:v0
             docker exec -it d2 nvidia-smi
@@ -173,6 +173,8 @@ workflows:
       - gpu_tests:
           name: gpu_tests_pytorch1.4
           pytorch_version: '1.4'
+          torchvision_version: '0.5'
       - gpu_tests:
           name: gpu_tests_pytorch1.5
           pytorch_version: '1.5'
+          torchvision_version: '0.6'

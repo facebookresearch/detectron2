@@ -3,7 +3,7 @@ FROM nvidia/cuda:10.1-cudnn7-devel
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y \
-	python3-opencv ca-certificates python3-dev git wget sudo ninja-build && \
+	ca-certificates python3-dev git wget sudo ninja-build libglib2.0-0 && \
   rm -rf /var/lib/apt/lists/*
 
 RUN wget -q https://bootstrap.pypa.io/get-pip.py && \
@@ -11,7 +11,7 @@ RUN wget -q https://bootstrap.pypa.io/get-pip.py && \
 	rm get-pip.py
 
 # install dependencies
-RUN pip install tensorboard
-ARG PYTORCH_VERSION=1.5
-ARG TORCHVISION_VERSION=0.6
+RUN pip install tensorboard opencv-python-headless
+ARG PYTORCH_VERSION
+ARG TORCHVISION_VERSION
 RUN pip install torch==${PYTORCH_VERSION} torchvision==${TORCHVISION_VERSION} -f https://download.pytorch.org/whl/cu101/torch_stable.html
