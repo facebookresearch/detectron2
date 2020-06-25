@@ -265,9 +265,14 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         return True
 
     # Hide some that are deprecated or not intended to be used
-    _DEPRECATED = {"ResNetBlockBase", "GroupedBatchSampler", "build_transform_gen"}
+    HIDDEN = {
+        "ResNetBlockBase",
+        "GroupedBatchSampler",
+        "build_transform_gen",
+        "apply_transform_gens",
+    }
     try:
-        if obj.__doc__.lower().strip().startswith("deprecated") or name in _DEPRECATED:
+        if obj.__doc__.lower().strip().startswith("deprecated") or name in HIDDEN:
             print("Skipping deprecated object: {}".format(name))
             return True
     except:

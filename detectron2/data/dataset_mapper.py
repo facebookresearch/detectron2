@@ -76,7 +76,7 @@ class DatasetMapper:
         utils.check_image_size(dataset_dict, image)
 
         if not dataset_dict.get("annotations", []):
-            image, transforms = T.apply_transform_gens(
+            image, transforms = T.apply_augmentations(
                 ([self.crop] if self.crop else []) + self.augmentation, image
             )
         else:
@@ -89,7 +89,7 @@ class DatasetMapper:
                     np.random.choice(dataset_dict["annotations"]),
                 )
                 image = crop_tfm.apply_image(image)
-            image, transforms = T.apply_transform_gens(self.augmentation, image)
+            image, transforms = T.apply_augmentations(self.augmentation, image)
             if self.crop:
                 transforms = crop_tfm + transforms
 

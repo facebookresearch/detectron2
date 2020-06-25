@@ -15,8 +15,8 @@ from fvcore.transforms.transform import (
 )
 from PIL import Image
 
+from .augmentation import Augmentation
 from .transform import ExtentTransform, ResizeTransform, RotationTransform
-from .transform_gen import Augmentation
 
 __all__ = [
     "RandomApply",

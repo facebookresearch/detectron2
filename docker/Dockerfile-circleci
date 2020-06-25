@@ -12,4 +12,4 @@ RUN wget -q https://bootstrap.pypa.io/get-pip.py && \
 
 # install dependencies
 RUN pip install tensorboard
-RUN pip install torch==1.5 torchvision==0.6 --no-index -f https://download.pytorch.org/whl/cu101/torch_stable.html
+RUN pip install torch==1.5 torchvision==0.6 -f https://download.pytorch.org/whl/cu101/torch_stable.html

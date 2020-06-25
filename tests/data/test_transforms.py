@@ -22,9 +22,9 @@ class TestTransforms(unittest.TestCase):
         np.random.seed(125)
         cfg = get_cfg()
         is_train = True
-        transform_gen = detection_utils.build_augmentation(cfg, is_train)
+        augs = detection_utils.build_augmentation(cfg, is_train)
         image = np.random.rand(200, 300)
-        image, transforms = T.apply_transform_gens(transform_gen, image)
+        image, transforms = T.apply_augmentations(augs, image)
         image_shape = image.shape[:2]  # h, w
         assert image_shape == (800, 1200)
         annotation = {"bbox": [179, 97, 62, 40, -56]}
@@ -41,9 +41,9 @@ class TestTransforms(unittest.TestCase):
         h, w = 400, 200
         newh, neww = 800, 800
         image = np.random.rand(h, w)
-        transform_gen = []
-        transform_gen.append(T.Resize(shape=(newh, neww)))
-        image, transforms = T.apply_transform_gens(transform_gen, image)
+        augs = []
+        augs.append(T.Resize(shape=(newh, neww)))
+        image, transforms = T.apply_augmentations(augs, image)
         image_shape = image.shape[:2]  # h, w
         assert image_shape == (newh, neww)
 

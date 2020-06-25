@@ -13,7 +13,7 @@ from detectron2.data.transforms import (
     RandomFlip,
     ResizeShortestEdge,
     ResizeTransform,
-    apply_transform_gens,
+    apply_augmentations,
 )
 from detectron2.structures import Boxes, Instances
 
@@ -72,7 +72,7 @@ class DatasetMapperTTA:
         # Apply all the augmentations
         ret = []
         for aug in aug_candidates:
-            new_image, tfms = apply_transform_gens(aug, np.copy(numpy_image))
+            new_image, tfms = apply_augmentations(aug, np.copy(numpy_image))
             torch_image = torch.from_numpy(np.ascontiguousarray(new_image.transpose(2, 0, 1)))
 
             dic = copy.deepcopy(dataset_dict)
