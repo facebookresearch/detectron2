@@ -2,6 +2,7 @@
 import base64
 import numpy as np
 from io import BytesIO
+from typing import BinaryIO, Dict, Union
 import torch
 from PIL import Image
 from torch.nn import functional as F
@@ -15,16 +16,41 @@ class DensePoseTransformData(object):
     POINT_LABEL_SYMMETRIES = [ 0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23]  # noqa
     # fmt: on
 
-    def __init__(self, uv_symmetries):
+    def __init__(self, uv_symmetries: Dict[str, torch.Tensor], device: torch.device):
         self.mask_label_symmetries = DensePoseTransformData.MASK_LABEL_SYMMETRIES
         self.point_label_symmetries = DensePoseTransformData.POINT_LABEL_SYMMETRIES
         self.uv_symmetries = uv_symmetries
+        self.device = torch.device("cpu")
+
+    def to(self, device: torch.device, copy: bool = False) -> "DensePoseTransformData":
+        """
+        Convert transform data to the specified device
+
+        Args:
+            device (torch.device): device to convert the data to
+            copy (bool): flag that specifies whether to copy or to reference the data
+                in case the device is the same
+        Return:
+            An instance of `DensePoseTransformData` with data stored on the specified device
+        """
+        if self.device == device and not copy:
+            return self
+        uv_symmetry_map = {}
+        for key in self.uv_symmetries:
+            uv_symmetry_map[key] = self.uv_symmetries[key].to(device=device, copy=copy)
+        return DensePoseTransformData(uv_symmetry_map, device)
 
     @staticmethod
-    def load(fpath):
+    def load(io: Union[str, BinaryIO]):
+        """
+        Args:
+            io: (str or binary file-like object): input file to load data from
+        Returns:
+            An instance of `DensePoseTransformData` with transforms loaded from the file
+        """
         import scipy.io
 
-        uv_symmetry_map = scipy.io.loadmat(fpath)
+        uv_symmetry_map = scipy.io.loadmat(io)
         uv_symmetry_map_torch = {}
         for key in ["U_transforms", "V_transforms"]:
             uv_symmetry_map_torch[key] = []
@@ -32,10 +58,8 @@ class DensePoseTransformData(object):
             map_dst = uv_symmetry_map_torch[key]
             for i in range(map_src.shape[1]):
                 map_dst.append(torch.from_numpy(map_src[0, i]).to(dtype=torch.float))
-            uv_symmetry_map_torch[key] = torch.stack(map_dst, dim=0).to(
-                device=torch.cuda.current_device()
-            )
-        transform_data = DensePoseTransformData(uv_symmetry_map_torch)
+            uv_symmetry_map_torch[key] = torch.stack(map_dst, dim=0)
+        transform_data = DensePoseTransformData(uv_symmetry_map_torch, device=torch.device("cpu"))
         return transform_data
 
 
@@ -371,12 +395,8 @@ class DensePoseOutput(object):
         Iindex = torch.arange(C - 1, device=self.U.device)[None, :, None, None].expand(
             N, C - 1, H, W
         )
-        self.U[:, 1:, :, :] = uv_symmetries["U_transforms"][Iindex, v_loc, u_loc].to(
-            device=self.U.device
-        )
-        self.V[:, 1:, :, :] = uv_symmetries["V_transforms"][Iindex, v_loc, u_loc].to(
-            device=self.V.device
-        )
+        self.U[:, 1:, :, :] = uv_symmetries["U_transforms"][Iindex, v_loc, u_loc]
+        self.V[:, 1:, :, :] = uv_symmetries["V_transforms"][Iindex, v_loc, u_loc]
 
         for el in "IUV":
             self.__dict__[el] = self.__dict__[el][:, point_label_symmetries, :, :]
