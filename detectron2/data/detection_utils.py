@@ -26,6 +26,21 @@ from detectron2.structures import (
 from . import transforms as T
 from .catalog import MetadataCatalog
 
+__all__ = [
+    "SizeMismatchError",
+    "convert_image_to_rgb",
+    "check_image_size",
+    "transform_proposals",
+    "transform_instance_annotations",
+    "annotations_to_instances",
+    "annotations_to_instances_rotated",
+    "build_augmentation",
+    "build_transform_gen",
+    "create_keypoint_hflip_indices",
+    "filter_empty_instances",
+    "read_image",
+]
+
 
 class SizeMismatchError(ValueError):
     """
