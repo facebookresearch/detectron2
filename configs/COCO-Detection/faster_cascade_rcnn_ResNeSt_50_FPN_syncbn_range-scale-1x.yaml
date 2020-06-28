@@ -1,6 +1,6 @@
 _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
-  WEIGHTS: "https://hangzh.s3-us-west-1.amazonaws.com/encoding/models/resnest50_detectron-255b5649.pth"
+  WEIGHTS: "https://s3.us-west-1.wasabisys.com/resnest/detectron/resnest50_detectron-255b5649.pth"
   MASK_ON: False
   RESNETS:
     DEPTH: 50

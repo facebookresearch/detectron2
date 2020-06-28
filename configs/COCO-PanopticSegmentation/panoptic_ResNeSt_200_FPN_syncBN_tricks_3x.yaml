@@ -1,6 +1,6 @@
 _BASE_: "Base-Panoptic-FPN.yaml"
 MODEL:
-  WEIGHTS: "https://hangzh.s3-us-west-1.amazonaws.com/encoding/models/resnest200_detectron-02644020.pth"
+  WEIGHTS: "https://s3.us-west-1.wasabisys.com/resnest/detectron/resnest200_detectron-02644020.pth"
   RESNETS:
     DEPTH: 200
     STRIDE_IN_1X1: False
