@@ -216,6 +216,9 @@ _C.MODEL.RPN.IOU_LABELS = [0, -1, 1]
 _C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
 # Target fraction of foreground (positive) examples per RPN minibatch
 _C.MODEL.RPN.POSITIVE_FRACTION = 0.5
+# Options are: "smooth_l1", "giou"
+_C.MODEL.RPN.BBOX_REG_LOSS_TYPE = "smooth_l1"
+_C.MODEL.RPN.BBOX_REG_LOSS_WEIGHT = 1.0
 # Weights on (dx, dy, dw, dh) for normalizing RPN anchor regression targets
 _C.MODEL.RPN.BBOX_REG_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # The transition point from L1 to L2 loss. Set to 0.0 to make the loss simply L1.
