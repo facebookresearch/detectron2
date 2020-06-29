@@ -290,6 +290,10 @@ def transform_instance_annotations(
                 p.reshape(-1) for p in transforms.apply_polygons(polygons)
             ]
         elif isinstance(segm, dict):
+            if "counts" in segm and isinstance(segm["counts"], list):
+                # uncompressed RLE
+                height, width = image_size
+                segm = mask_util.frPyObjects(segm, height, width)
             # RLE
             mask = mask_util.decode(segm)
             mask = transforms.apply_segmentation(mask)
