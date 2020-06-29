@@ -127,14 +127,14 @@ class DensePoseDataRelative(object):
 
     @staticmethod
     def extract_segmentation_mask(annotation):
-        import pycocotools.mask as mask_utils
+        import pycocotools.mask as mask_util
 
         poly_specs = annotation[DensePoseDataRelative.S_KEY]
         segm = torch.zeros((DensePoseDataRelative.MASK_SIZE,) * 2, dtype=torch.float32)
         for i in range(DensePoseDataRelative.N_BODY_PARTS):
             poly_i = poly_specs[i]
             if poly_i:
-                mask_i = mask_utils.decode(poly_i)
+                mask_i = mask_util.decode(poly_i)
                 segm[mask_i > 0] = i + 1
         return segm
 

@@ -36,7 +36,7 @@ def get_cityscapes_files(image_dir, gt_dir):
             image_file = os.path.join(city_img_dir, basename)
 
             suffix = "leftImg8bit.png"
-            assert basename.endswith(suffix)
+            assert basename.endswith(suffix), basename
             basename = basename[: -len(suffix)]
 
             instance_file = os.path.join(city_gt_dir, basename + "gtFine_instanceIds.png")

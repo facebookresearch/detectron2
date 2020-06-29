@@ -71,9 +71,9 @@ and the required fields vary based on what the dataloader or the task needs (see
     + If `list[list[float]]`, it represents a list of polygons, one for each connected component
       of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]`.
       The Xs and Ys are absolute coordinates in unit of pixels.
-    + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format. The dict should have
-			keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and 1s into
-			such dict by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
+    + If `dict`, it represents the per-pixel segmentation mask in COCO's compressed RLE format.
+      The dict should have keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and
+      1s into such dict by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
       `cfg.INPUT.MASK_FORMAT` must be set to `bitmask` if using the default data loader with such format.
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
     v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.

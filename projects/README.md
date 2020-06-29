@@ -14,6 +14,7 @@ of support or stability of detectron2.
 + [Mesh R-CNN](https://github.com/facebookresearch/meshrcnn)
 + [PointRend: Image Segmentation as Rendering](PointRend)
 + [Momentum Contrast for Unsupervised Visual Representation Learning](https://github.com/facebookresearch/moco/tree/master/detection)
++ [DETR: End-to-End Object Detection with Transformers](https://github.com/facebookresearch/detr/tree/master/d2)
 
 
 ## External Projects

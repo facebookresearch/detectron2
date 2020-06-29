@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import contextlib
 import copy
+import io
 import json
 import numpy as np
 import os
@@ -68,7 +70,8 @@ class TestCOCOeval(unittest.TestCase):
                     json_file_name = os.path.join(tmpdir, "gt_" + name + ".json")
                     with open(json_file_name, "w") as f:
                         json.dump(gt, f)
-                    coco_api = COCO(json_file_name)
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        coco_api = COCO(json_file_name)
             except Exception:
                 pass
 
@@ -76,26 +79,28 @@ class TestCOCOeval(unittest.TestCase):
                 # Run original COCOeval PythonAPI
                 api_exception = None
                 try:
-                    coco_dt = coco_api.loadRes(dt)
-                    coco_eval = COCOeval(coco_api, coco_dt, iou_type)
-                    for p, v in params.items():
-                        setattr(coco_eval.params, p, v)
-                    coco_eval.evaluate()
-                    coco_eval.accumulate()
-                    coco_eval.summarize()
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        coco_dt = coco_api.loadRes(dt)
+                        coco_eval = COCOeval(coco_api, coco_dt, iou_type)
+                        for p, v in params.items():
+                            setattr(coco_eval.params, p, v)
+                        coco_eval.evaluate()
+                        coco_eval.accumulate()
+                        coco_eval.summarize()
                 except Exception as ex:
                     api_exception = ex
 
                 # Run optimized COCOeval_opt API
                 opt_exception = None
                 try:
-                    coco_dt = coco_api.loadRes(dt)
-                    coco_eval_opt = COCOeval_opt(coco_api, coco_dt, iou_type)
-                    for p, v in params.items():
-                        setattr(coco_eval_opt.params, p, v)
-                    coco_eval_opt.evaluate()
-                    coco_eval_opt.accumulate()
-                    coco_eval_opt.summarize()
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        coco_dt = coco_api.loadRes(dt)
+                        coco_eval_opt = COCOeval_opt(coco_api, coco_dt, iou_type)
+                        for p, v in params.items():
+                            setattr(coco_eval_opt.params, p, v)
+                        coco_eval_opt.evaluate()
+                        coco_eval_opt.accumulate()
+                        coco_eval_opt.summarize()
                 except Exception as ex:
                     opt_exception = ex
 
