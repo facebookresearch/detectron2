@@ -81,54 +81,75 @@ class TestTransforms(unittest.TestCase):
         self.assertTrue(str(t) == "RandomFlip()")
 
     def test_random_apply_prob_out_of_range_check(self):
-        # GIVEN
         test_probabilities = {0.0: True, 0.5: True, 1.0: True, -0.01: False, 1.01: False}
 
-        # WHEN
         for given_probability, is_valid in test_probabilities.items():
-            # THEN
             if not is_valid:
                 self.assertRaises(AssertionError, T.RandomApply, None, prob=given_probability)
             else:
                 T.RandomApply(T.NoOpTransform(), prob=given_probability)
 
     def test_random_apply_wrapping_aug_probability_occured_evaluation(self):
-        # GIVEN
-        transform_mock = mock.MagicMock(name="MockTransform", spec=T.TransformGen)
+        transform_mock = mock.MagicMock(name="MockTransform", spec=T.Augmentation)
         image_mock = mock.MagicMock(name="MockImage")
         random_apply = T.RandomApply(transform_mock, prob=0.001)
 
-        # WHEN
         with mock.patch.object(random_apply, "_rand_range", return_value=0.0001):
             transform = random_apply.get_transform(image_mock)
-
-        # THEN
         transform_mock.get_transform.assert_called_once_with(image_mock)
         self.assertIsNot(transform, transform_mock)
 
     def test_random_apply_wrapping_std_transform_probability_occured_evaluation(self):
-        # GIVEN
         transform_mock = mock.MagicMock(name="MockTransform", spec=T.Transform)
         image_mock = mock.MagicMock(name="MockImage")
         random_apply = T.RandomApply(transform_mock, prob=0.001)
 
-        # WHEN
         with mock.patch.object(random_apply, "_rand_range", return_value=0.0001):
             transform = random_apply.get_transform(image_mock)
-
-        # THEN
         self.assertIs(transform, transform_mock)
 
     def test_random_apply_probability_not_occured_evaluation(self):
-        # GIVEN
-        transform_mock = mock.MagicMock(name="MockTransform", spec=T.TransformGen)
+        transform_mock = mock.MagicMock(name="MockTransform", spec=T.Augmentation)
         image_mock = mock.MagicMock(name="MockImage")
         random_apply = T.RandomApply(transform_mock, prob=0.001)
 
-        # WHEN
         with mock.patch.object(random_apply, "_rand_range", return_value=0.9):
             transform = random_apply.get_transform(image_mock)
-
-        # THEN
         transform_mock.get_transform.assert_not_called()
         self.assertIsInstance(transform, T.NoOpTransform)
+
+    def test_augmentation_input_args(self):
+        input_shape = (100, 100)
+        output_shape = (50, 50)
+
+        # define two augmentations with different args
+        class TG1(T.Augmentation):
+            input_args = ("image", "sem_seg")
+
+            def get_transform(self, image, sem_seg):
+                return T.ResizeTransform(
+                    input_shape[0], input_shape[1], output_shape[0], output_shape[1]
+                )
+
+        class TG2(T.Augmentation):
+            def get_transform(self, image):
+                assert image.shape[:2] == output_shape  # check that TG1 is applied
+                return T.HFlipTransform(output_shape[1])
+
+        image = np.random.rand(*input_shape).astype("float32")
+        sem_seg = (np.random.rand(*input_shape) < 0.5).astype("uint8")
+        inputs = T.StandardAugInput(image, sem_seg=sem_seg)  # provide two args
+        tfms = inputs.apply_augmentations([TG1(), TG2()])
+        self.assertIsInstance(tfms[0], T.ResizeTransform)
+        self.assertIsInstance(tfms[1], T.HFlipTransform)
+        self.assertTrue(inputs.image.shape[:2] == output_shape)
+        self.assertTrue(inputs.sem_seg.shape[:2] == output_shape)
+
+        class TG3(T.Augmentation):
+            input_args = ("image", "nonexist")
+
+            def get_transform(self, image, nonexist):
+                pass
+
+        with self.assertRaises(AttributeError):
+            inputs.apply_augmentations([TG3()])

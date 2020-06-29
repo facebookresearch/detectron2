@@ -55,6 +55,8 @@ class RandomApply(Augmentation):
         assert 0.0 <= prob <= 1.0, f"Probablity must be between 0.0 and 1.0 (given: {prob})"
         self.prob = prob
         self.transform = transform
+        if isinstance(transform, Augmentation):
+            self.input_args = transform.input_args
 
     def get_transform(self, img):
         do = self._rand_range() < self.prob
@@ -100,7 +102,7 @@ class RandomFlip(Augmentation):
 
 
 class Resize(Augmentation):
-    """ Resize image to a target size"""
+    """ Resize image to a fixed target size"""
 
     def __init__(self, shape, interp=Image.BILINEAR):
         """
@@ -146,7 +148,6 @@ class ResizeShortestEdge(Augmentation):
 
     def get_transform(self, img):
         h, w = img.shape[:2]
-
         if self.is_range:
             size = np.random.randint(self.short_edge_length[0], self.short_edge_length[1] + 1)
         else:

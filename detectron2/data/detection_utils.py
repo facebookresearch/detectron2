@@ -560,7 +560,7 @@ def check_metadata_consistency(key, dataset_names):
 
 def build_augmentation(cfg, is_train):
     """
-    Create a list of :class:`Augmentation` from config.
+    Create a list of default :class:`Augmentation` from config.
     Now it includes resizing and flipping.
 
     Returns:
