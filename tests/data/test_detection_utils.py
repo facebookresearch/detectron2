@@ -4,12 +4,24 @@ import copy
 import numpy as np
 import os
 import unittest
+from itertools import groupby
 import pycocotools.mask as mask_util
 from fvcore.common.file_io import PathManager
 
 from detectron2.data import MetadataCatalog, detection_utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, BoxMode
+
+
+def binary_mask_to_uncompressed_rle(mask):
+    mask = mask.astype(np.uint8)
+    rle = {"counts": [], "size": list(mask.shape)}
+    counts = rle.get("counts")
+    for i, (value, elements) in enumerate(groupby(mask.ravel(order="F"))):  # noqa: E501
+        if i == 0 and value == 1:
+            counts.append(0)
+        counts.append(len(list(elements)))
+    return rle
 
 
 class TestTransformAnnotations(unittest.TestCase):
@@ -113,6 +125,51 @@ class TestTransformAnnotations(unittest.TestCase):
             "bbox": np.asarray([10, 10, 200, 300]),
             "bbox_mode": BoxMode.XYXY_ABS,
             "segmentation": mask_util.encode(mask[:, :, None])[0],
+            "category_id": 3,
+        }
+        output = detection_utils.transform_instance_annotations(
+            copy.deepcopy(anno), transforms, (400, 400)
+        )
+
+        inst = detection_utils.annotations_to_instances(
+            [output, output], (400, 400), mask_format="bitmask"
+        )
+        self.assertTrue(isinstance(inst.gt_masks, BitMasks))
+
+    def test_transform_uncompressed_RLE(self):
+        transforms = T.TransformList([T.HFlipTransform(400)])
+        mask = np.zeros((300, 400)).astype("uint8")
+        mask[:, :200] = 1
+
+        anno = {
+            "bbox": np.asarray([10, 10, 200, 300]),
+            "bbox_mode": BoxMode.XYXY_ABS,
+            "segmentation": binary_mask_to_uncompressed_rle(mask),
+            "category_id": 3,
+        }
+        output = detection_utils.transform_instance_annotations(
+            copy.deepcopy(anno), transforms, (300, 400)
+        )
+        mask = output["segmentation"]
+        self.assertTrue((mask[:, 200:] == 1).all())
+        self.assertTrue((mask[:, :200] == 0).all())
+
+        inst = detection_utils.annotations_to_instances(
+            [output, output], (400, 400), mask_format="bitmask"
+        )
+        self.assertTrue(isinstance(inst.gt_masks, BitMasks))
+
+    def test_transform_uncompressed_RLE_resize(self):
+        transforms = T.TransformList(
+            [T.HFlipTransform(400), T.ScaleTransform(300, 400, 400, 400, "bilinear")]
+        )
+        mask = np.zeros((300, 400)).astype("uint8")
+        mask[:, :200] = 1
+
+        anno = {
+            "bbox": np.asarray([10, 10, 200, 300]),
+            "bbox_mode": BoxMode.XYXY_ABS,
+            "segmentation": binary_mask_to_uncompressed_rle(mask),
             "category_id": 3,
         }
         output = detection_utils.transform_instance_annotations(
