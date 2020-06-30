@@ -7,9 +7,13 @@ from collections import OrderedDict
 from detectron2.config import CfgNode
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import COCOEvaluator, DatasetEvaluators
-from detectron2.modeling import DatasetMapperTTA
 
-from densepose import DensePoseCOCOEvaluator, DensePoseGeneralizedRCNNWithTTA, load_from_cfg
+from densepose import (
+    DensePoseCOCOEvaluator,
+    DensePoseDatasetMapperTTA,
+    DensePoseGeneralizedRCNNWithTTA,
+    load_from_cfg,
+)
 from densepose.data import DatasetMapper, build_detection_test_loader, build_detection_train_loader
 
 
@@ -38,7 +42,9 @@ class Trainer(DefaultTrainer):
         # Only support some R-CNN models.
         logger.info("Running inference with test-time augmentation ...")
         transform_data = load_from_cfg(cfg)
-        model = DensePoseGeneralizedRCNNWithTTA(cfg, model, transform_data, DatasetMapperTTA(cfg))
+        model = DensePoseGeneralizedRCNNWithTTA(
+            cfg, model, transform_data, DensePoseDatasetMapperTTA(cfg)
+        )
         evaluators = [
             cls.build_evaluator(
                 cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference_TTA")
