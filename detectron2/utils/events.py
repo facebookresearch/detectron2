@@ -226,7 +226,8 @@ class CommonMetricPrinter(EventWriter):
                     [
                         "{}: {:.3f}".format(k, v.median(20))
                         for k, v in storage.histories().items()
-                        if "loss" not in k and k not in ["data_time", "time", "lr", "eta_seconds"]
+                        if "loss" not in k and "/" not in k
+                        and k not in ["data_time", "time", "lr", "eta_seconds"]
                     ]
                 ),
                 time="{:.4f}".format(iter_time) if iter_time is not None else "",
