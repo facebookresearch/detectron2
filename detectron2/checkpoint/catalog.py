@@ -130,5 +130,27 @@ class Detectron2Handler(PathHandler):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
 
 
+class KODOHandler(PathHandler):
+    """
+    Resolve anything that's in KODO. (URL like KODO://)
+
+    See: https://www.qiniu.com/products/kodo for more usage details.
+    """
+
+    PREFIX = "KODO://"
+    KODO_PREFIX = "http://d2.cjh.zone/"
+
+    def _get_supported_prefixes(self):
+        return [self.PREFIX]
+
+    def _get_local_path(self, path):
+        name = path[len(self.PREFIX) :]
+        return PathManager.get_local_path(self.KODO_PREFIX + name)
+
+    def _open(self, path, mode="r", **kwargs):
+        return PathManager.open(self._get_local_path(path), mode, **kwargs)
+
+
 PathManager.register_handler(ModelCatalogHandler())
 PathManager.register_handler(Detectron2Handler())
+PathManager.register_handler(KODOHandler())
