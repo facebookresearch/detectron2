@@ -1,4 +1,14 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# -*- encoding: utf-8 -*-
+"""
+@File          :   defaults.py
+@Time          :   2020/07/02 22:53:06
+@Author        :   Facebook, Inc. and its affiliates.
+@Modified By   :   Jianhu Chen (jhchen.mail@gmail.com)
+@Last Modified :   2020/07/02 22:53:44
+@License       :   Copyright(C), USTC
+@Desc          :   None
+"""
+
 from .config import CfgNode as CN
 
 # -----------------------------------------------------------------------------
@@ -588,6 +598,15 @@ _C.TEST.PRECISE_BN.NUM_ITER = 200
 # ---------------------------------------------------------------------------- #
 # Directory where output files are written
 _C.OUTPUT_DIR = "./output"
+# Periodic dump the logs generated during the model training process to the OSS
+_C.OUTPUT_DUMP = CN({"ENABLED": False})
+# Options are:
+# - "KODO": https://www.qiniu.com/products/kodo
+# - (will support more)
+_C.OUTPUT_DUMP.PLATFORMS = []
+_C.OUTPUT_DUMP.BUCKETS = []
+_C.OUTPUT_DUMP.PERIOD = _C.SOLVER.CHECKPOINT_PERIOD
+
 # Set seed to negative to fully randomize everything.
 # Set seed to positive to use a fixed seed. Note that a fixed seed increases
 # reproducibility but does not guarantee fully deterministic behavior.

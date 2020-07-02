@@ -1,6 +1,15 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# -*- encoding: utf-8 -*-
+"""
+@File          :   hooks.py
+@Time          :   2020/06/20 17:52:20
+@Author        :   Facebook, Inc. and its affiliates.
+@Modified By   :   Jianhu Chen (jhchen.mail@gmail.com)
+@Last Modified :   2020/07/02 22:56:43
+@License       :   Copyright(C), USTC
+@Desc          :   None
+"""
 
+import re
 import datetime
 import itertools
 import logging
@@ -10,13 +19,14 @@ import time
 from collections import Counter
 import torch
 from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
-from fvcore.common.file_io import PathManager
 from fvcore.common.timer import Timer
 from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
+import detectron2.utils.file_io as F
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.utils.events import EventStorage, EventWriter
+from detectron2.utils import PathManager
 
 from .train_loop import HookBase
 
@@ -424,3 +434,58 @@ class PreciseBN(HookBase):
                 + "Note that this could produce different statistics every time."
             )
             update_bn_stats(self._model, data_loader(), self._num_iter)
+
+
+class PeriodicDump(HookBase):
+    """
+    Periodic dump the logs generated during the model training process to the OSS.
+    """
+
+    def __init__(self, output_dir, period, platforms, buckets):
+        assert len(platforms) == len(buckets)
+        prefix_mapper = {
+            "KODO": getattr(F, "KODOHandler").PREFIX,
+        }
+        self._output_dir = os.path.abspath(output_dir)
+        self._period = period
+        self.prefixes = [prefix_mapper[p] for p in platforms]
+        self.buckets = buckets
+        self.logger = logging.getLogger(__name__)
+
+    def after_step(self):
+        if len(self.prefixes) == 0:
+            return
+
+        if (self.trainer.iter + 1) % self._period == 0 or (
+            self.trainer.iter >= self.trainer.max_iter - 1
+        ):
+            # Get latest ckpt file name
+            latest_ckpt_path = os.path.join(self._output_dir, "last_checkpoint")
+            assert os.path.exists(latest_ckpt_path), (
+                f"File: {latest_ckpt_path} not found!"
+            )
+
+            with open(latest_ckpt_path) as fp:
+                latest_ckpt = fp.read().strip()
+
+            # Dump all log files
+            # Some log files may have been uploaded before, but we need to update them
+            for dir_path, dir_names, file_names in os.walk(self._output_dir):
+                for file_name in sorted(file_names):
+                    local = os.path.join(dir_path, file_name)
+                    if re.match(r"model_\d*\.pth", file_name) and file_name != latest_ckpt:
+                        self.logger.info("Remove local log file: {}.".format(local))
+                        os.remove(local)
+                        continue
+
+                    for prefix, bucket in zip(self.prefixes, self.buckets):
+                        remote = os.path.join(
+                            prefix, "detectron2", dir_path.split("/detectron2/")[1], file_name)
+                        upload_result = PathManager.upload(local, remote, bucket=bucket)
+
+                        if upload_result:
+                            self.logger.info(
+                                "Dump output file from {} to {}.".format(local, remote))
+                        else:
+                            self.logger.warning(
+                                "Failed to dump output file from {} to {}.".format(local, remote))
