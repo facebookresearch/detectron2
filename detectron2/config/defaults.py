@@ -117,8 +117,8 @@ _C.DATALOADER.ASPECT_RATIO_GROUPING = True
 _C.DATALOADER.SAMPLER_TRAIN = "TrainingSampler"
 # Repeat threshold for RepeatFactorTrainingSampler
 _C.DATALOADER.REPEAT_THRESHOLD = 0.0
-# if True, the dataloader will filter out images that have no associated
-# annotations at train time.
+# Tf True, when working on datasets that have instance annotations, the
+# training dataloader will filter out images without associated annotations
 _C.DATALOADER.FILTER_EMPTY_ANNOTATIONS = True
 
 # ---------------------------------------------------------------------------- #

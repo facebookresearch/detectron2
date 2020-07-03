@@ -211,6 +211,9 @@ def get_detection_dataset_dicts(
             `min_keypoints`. Set to 0 to do nothing.
         proposal_files (list[str]): if given, a list of object proposal files
             that match each dataset in `dataset_names`.
+
+    Returns:
+        list[dict]: a list of dicts following the standard dataset dict format.
     """
     assert len(dataset_names)
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
@@ -228,10 +231,8 @@ def get_detection_dataset_dicts(
     dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))
 
     has_instances = "annotations" in dataset_dicts[0]
-    # Keep images without instance-level GT if the dataset has semantic labels.
-    if filter_empty and has_instances and "sem_seg_file_name" not in dataset_dicts[0]:
+    if filter_empty and has_instances:
         dataset_dicts = filter_images_with_only_crowd_annotations(dataset_dicts)
-
     if min_keypoints > 0 and has_instances:
         dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
 
