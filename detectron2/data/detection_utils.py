@@ -579,12 +579,10 @@ def build_augmentation(cfg, is_train):
             len(min_size)
         )
 
-    logger = logging.getLogger(__name__)
     augmentation = []
     augmentation.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
     if is_train:
         augmentation.append(T.RandomFlip())
-        logger.info("Augmentations used in training: " + str(augmentation))
     return augmentation
 
 
