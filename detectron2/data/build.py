@@ -312,7 +312,7 @@ def build_detection_train_loader(cfg, mapper=None):
         cfg (CfgNode): the config
         mapper (callable): a callable which takes a sample (dict) from dataset and
             returns the format to be consumed by the model.
-            By default it will be `DatasetMapper(cfg, True)`.
+            By default it will be ``DatasetMapper(cfg, True)``.
 
     Returns:
         an infinite iterator of training data

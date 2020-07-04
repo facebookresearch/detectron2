@@ -181,8 +181,8 @@ class MetadataCatalog:
     """
     MetadataCatalog provides access to "Metadata" of a given dataset.
 
-    The metadata associated with a certain name is a singleton: once created,
-    the metadata will stay alive and will be returned by future calls to `get(name)`.
+    The metadata associated with a certain name is a singleton: once created, the
+    metadata will stay alive and will be returned by future calls to ``get(name)``.
 
     It's like global variables, so don't abuse it.
     It's meant for storing knowledge that's constant and shared across the execution
@@ -203,21 +203,7 @@ class MetadataCatalog:
         """
         assert len(name)
         if name in MetadataCatalog._NAME_TO_META:
-            ret = MetadataCatalog._NAME_TO_META[name]
-            # TODO this is for the BC breaking change in D15247032.
-            # Remove this in the future.
-            if hasattr(ret, "dataset_name"):
-                logger = logging.getLogger()
-                logger.warning(
-                    """
-The 'dataset_name' key in metadata is no longer used for
-sharing metadata among splits after D15247032! Add
-metadata to each split (now called dataset) separately!
-                    """
-                )
-                parent_meta = MetadataCatalog.get(ret.dataset_name).as_dict()
-                ret.set(**parent_meta)
-            return ret
+            return MetadataCatalog._NAME_TO_META[name]
         else:
             m = MetadataCatalog._NAME_TO_META[name] = Metadata(name=name)
             return m

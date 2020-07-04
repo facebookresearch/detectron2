@@ -6,7 +6,7 @@ maintainable.
 ## Projects by Facebook
 
 Note that these are research projects, and therefore may not have the same level
-of support or stability of detectron2.
+of support or stability as detectron2.
 
 + [DensePose: Dense Human Pose Estimation In The Wild](DensePose)
 + [Scale-Aware Trident Networks for Object Detection](TridentNet)

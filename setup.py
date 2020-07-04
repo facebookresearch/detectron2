@@ -102,6 +102,7 @@ def get_extensions():
         if not is_rocm_pytorch:
             define_macros += [("WITH_CUDA", None)]
             extra_compile_args["nvcc"] = [
+                "-O3",
                 "-DCUDA_HAS_FP16=1",
                 "-D__CUDA_NO_HALF_OPERATORS__",
                 "-D__CUDA_NO_HALF_CONVERSIONS__",

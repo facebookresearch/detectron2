@@ -102,7 +102,7 @@ class Caffe2Tracer:
     def export_caffe2(self):
         """
         Export the model to Caffe2's protobuf format.
-        The returned object can be saved with `.save_protobuf()` method.
+        The returned object can be saved with ``.save_protobuf()`` method.
         The result can be loaded and executed using Caffe2 runtime.
 
         Returns:
@@ -127,8 +127,8 @@ class Caffe2Tracer:
 
     def export_torchscript(self):
         """
-        Export the model to a `torch.jit.TracedModule` by tracing.
-        The returned object can be saved to a file by ".save()".
+        Export the model to a ``torch.jit.TracedModule`` by tracing.
+        The returned object can be saved to a file by ``.save()``.
 
         Returns:
             torch.jit.TracedModule: a torch TracedModule
@@ -165,6 +165,7 @@ def export_onnx_model(cfg, model, inputs):
     Note that the exported model contains custom ops only available in caffe2, therefore it
     cannot be directly executed by other runtime. Post-processing or transformation passes
     may be applied on the model to accommodate different runtimes.
+
     Args:
         cfg (CfgNode): a detectron2 config, with extra export-related options
             added by :func:`add_export_config`.

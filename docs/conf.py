@@ -269,6 +269,8 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "ResNetBlockBase",
         "GroupedBatchSampler",
         "build_transform_gen",
+        "export_caffe2_model",
+        "export_onnx_model",
         "apply_transform_gens",
     }
     try:

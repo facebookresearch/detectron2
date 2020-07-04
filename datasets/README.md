@@ -1,4 +1,10 @@
-# Setup Builtin Datasets
+# Use Builtin Datasets
+
+A dataset can be used by accessing [DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog)
+for its data, or [MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog) for its metadata (class names, etc).
+This document explains how to setup the builtin datasets so they can be used by the above APIs.
+[Use Custom Datasets](datasets.md) gives a deeper dive on how to use `DatasetCatalog` and `MetadataCatalog`,
+and how to add new datasets to them.
 
 Detectron2 has builtin support for a few datasets.
 The datasets are assumed to exist in a directory specified by the environment variable
@@ -57,6 +63,8 @@ coco/
 lvis/
   lvis_v0.5_{train,val}.json
   lvis_v0.5_image_info_test.json
+  lvis_v1_{train,val}.json
+  lvis_v1_image_info_test{,_challenge}.json
 ```
 
 Install lvis-api by:
@@ -64,7 +72,8 @@ Install lvis-api by:
 pip install git+https://github.com/lvis-dataset/lvis-api.git
 ```
 
-Run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations, which can be used to evaluate models trained on the COCO dataset.
+To evaluate models trained on the COCO dataset using LVIS annotations,
+run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations.
 
 ## Expected dataset structure for cityscapes:
 ```

@@ -15,7 +15,7 @@ class Instances:
 
     Some basic usage:
 
-    1. Set/Get a field:
+    1. Set/get/check a field:
 
        .. code-block:: python
 
@@ -27,7 +27,7 @@ class Instances:
     3. Indexing: ``instances[indices]`` will apply the indexing on all the fields
        and returns a new :class:`Instances`.
        Typically, ``indices`` is a integer vector of indices,
-       or a binary mask of length ``num_instances``,
+       or a binary mask of length ``num_instances``
     """
 
     def __init__(self, image_size: Tuple[int, int], **kwargs: Any):
