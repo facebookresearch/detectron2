@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import unittest
 from unittest import mock
+from PIL import Image, ImageOps
 
 from detectron2.config import get_cfg
 from detectron2.data import detection_utils
@@ -153,3 +154,17 @@ class TestTransforms(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             inputs.apply_augmentations([TG3()])
+
+    def test_color_transforms(self):
+        rand_img = np.random.random((100, 100, 3)) * 255
+        rand_img = rand_img.astype("uint8")
+
+        # Test no-op
+        noop_transform = T.ColorTransform(lambda img: img)
+        self.assertTrue(np.array_equal(rand_img, noop_transform.apply_image(rand_img)))
+
+        # Test a ImageOps operation
+        magnitude = np.random.randint(0, 256)
+        solarize_transform = T.PILColorTransform(lambda img: ImageOps.solarize(img, magnitude))
+        expected_img = ImageOps.solarize(Image.fromarray(rand_img), magnitude)
+        self.assertTrue(np.array_equal(expected_img, solarize_transform.apply_image(rand_img)))
