@@ -30,6 +30,7 @@ __all__ = [
     "RandomRotation",
     "Resize",
     "ResizeShortestEdge",
+    "RandomCrop_CategoryAreaConstraint",
 ]
 
 
@@ -144,6 +145,11 @@ class ResizeShortestEdge(Augmentation):
         self.is_range = sample_style == "range"
         if isinstance(short_edge_length, int):
             short_edge_length = (short_edge_length, short_edge_length)
+        if self.is_range:
+            assert len(short_edge_length) == 2, (
+                "short_edge_length must be two values using 'range' sample style."
+                f" Got {short_edge_length}!"
+            )
         self._init(locals())
 
     def get_transform(self, img):
@@ -273,6 +279,54 @@ class RandomCrop(Augmentation):
             return ch, cw
         else:
             NotImplementedError("Unknown crop type {}".format(self.crop_type))
+
+
+class RandomCrop_CategoryAreaConstraint(Augmentation):
+    """
+    Similar to :class:`RandomCrop`, but find a cropping window such that no single category
+    occupies a ratio of more than `single_category_max_area` in semantic segmentation ground
+    truth, which can cause unstability in training. The function attempts to find such a valid
+    cropping window for at most 10 times.
+    """
+
+    input_args = ("image", "sem_seg")
+
+    def __init__(
+        self,
+        crop_type: str,
+        crop_size,
+        single_category_max_area: float = 1.0,
+        ignored_category: int = None,
+    ):
+        """
+        Args:
+            crop_type, crop_size: same as in :class:`RandomCrop`
+            single_category_max_area: the maximum allowed area ratio of a
+                category. Set to 1.0 to disable
+            ignored_category: allow this category in the semantic segmentation
+                ground truth to exceed the area ratio. Usually set to the category
+                that's ignored in training.
+        """
+        self.crop_aug = RandomCrop(crop_type, crop_size)
+        self._init(locals())
+
+    def get_transform(self, image, sem_seg):
+        if self.single_category_max_area >= 1.0:
+            return self.crop_aug.get_transform(image)
+        else:
+            h, w = sem_seg.shape
+            for _ in range(10):
+                crop_size = self.crop_aug.get_crop_size((h, w))
+                y0 = np.random.randint(h - crop_size[0] + 1)
+                x0 = np.random.randint(w - crop_size[1] + 1)
+                sem_seg_temp = sem_seg[y0 : y0 + crop_size[0], x0 : x0 + crop_size[1]]
+                labels, cnt = np.unique(sem_seg_temp, return_counts=True)
+                if self.ignored_category is not None:
+                    cnt = cnt[labels != self.ignored_category]
+                if len(cnt) > 1 and np.max(cnt) < np.sum(cnt) * self.single_category_max_area:
+                    break
+            crop_tfm = CropTransform(x0, y0, crop_size[1], crop_size[0])
+            return crop_tfm
 
 
 class RandomExtent(Augmentation):

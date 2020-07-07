@@ -85,7 +85,8 @@ class PointRendSemSegHead(nn.Module):
                 [
                     point_sample(features[in_feature], point_coords, align_corners=False)
                     for in_feature in self.in_features
-                ]
+                ],
+                dim=1,
             )
             point_logits = self.point_head(fine_grained_features, coarse_features)
             point_targets = (
