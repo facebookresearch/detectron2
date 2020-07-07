@@ -36,7 +36,7 @@ For example, in order to do inference,
 all existing models expect the "image" key, and optionally "height" and "width".
 The detailed format of inputs and outputs of existing models are explained below.
 
-When in training mode, all models are required to be used under an `EventStorage`.
+__Training__: When in training mode, all models are required to be used under an `EventStorage`.
 The training statistics will be put into the storage:
 ```python
 from detectron2.utils.events import EventStorage
@@ -44,13 +44,13 @@ with EventStorage() as storage:
   losses = model(inputs)
 ```
 
-If you only want to do simple inference using an existing model,
+__Inference__: If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
 is a wrapper around model that provides such basic functionality.
 It includes default behavior including model loading, preprocessing,
 and operates on single image rather than batches. See its documentation for usage.
 
-A model can also be used directly like this:
+You can also run inference directly like this:
 ```
 model.eval()
 with torch.no_grad():

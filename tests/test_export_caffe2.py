@@ -32,10 +32,9 @@ class TestCaffe2Export(unittest.TestCase):
         cfg = add_export_config(cfg)
         cfg.MODEL.DEVICE = device
 
+        inputs = [{"image": self._get_test_image()}]
         model = build_model(cfg)
         DetectionCheckpointer(model).load(model_zoo.get_checkpoint_url(config_path))
-
-        inputs = [{"image": self._get_test_image()}]
         c2_model = export_caffe2_model(cfg, model, copy.deepcopy(inputs))
 
         with tempfile.TemporaryDirectory(prefix="detectron2_unittest") as d:

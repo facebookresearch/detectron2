@@ -95,20 +95,6 @@ jobs:
           key: cache-key-{{ .Branch }}-ID-20200425
 
       - <<: *install_detectron2
-
-      - run:
-          name: isort
-          command: |
-            isort -c -sp .
-      - run:
-          name: black
-          command: |
-            black --check -l 100 .
-      - run:
-          name: flake8
-          command: |
-            flake8 .
-
       - <<: *run_unittests
 
   gpu_tests:

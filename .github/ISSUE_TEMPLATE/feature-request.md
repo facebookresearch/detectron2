@@ -22,7 +22,7 @@ If you request implementation of research papers -- we only consider papers that
 
 We do not take requests for most projects in the `projects/` directory, because they are research code release that is mainly for other researchers to reproduce results.
 
-"Make A faster" is not a valid feature request. "Implement a concrete feature that can make A faster" can be a valid feature request.
+"Make X faster/accurate" is not a valid feature request. "Implement a concrete feature that can make X faster/accurate" can be a valid feature request.
 
 Instead of adding features inside detectron2,
 you can implement many features by [extending detectron2](https://detectron2.readthedocs.io/tutorials/extend.html).
