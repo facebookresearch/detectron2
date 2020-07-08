@@ -276,7 +276,7 @@ def transform_instance_annotations(
     # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
     # clip transformed bbox to image size
-    bbox = transforms.apply_box([bbox])[0].clip(min=0)
+    bbox = np.array(transforms.apply_box([bbox])[0]).clip(min=0)
     annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
