@@ -12,7 +12,6 @@ It is an example of how a user might use detectron2 for a new project.
 from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
-from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, hooks, launch
 from detectron2.evaluation import verify_results
@@ -20,6 +19,7 @@ from detectron2.utils.logger import setup_logger
 
 from densepose import add_dataset_category_config, add_densepose_config
 from densepose.engine import Trainer
+from densepose.modeling.densepose_checkpoint import DensePoseCheckpointer
 
 
 def setup(args):
@@ -43,7 +43,7 @@ def main(args):
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
-        DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
+        DensePoseCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)
