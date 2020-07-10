@@ -202,7 +202,7 @@ class BitMasks:
     def get_bounding_boxes(self) -> Boxes:
         """
         Returns:
-            Boxes: tight bounding boxes around polygon masks.
+            Boxes: tight bounding boxes around bit masks.
         """
         boxes = torch.zeros(self.tensor.shape[0], 4, dtype=torch.float32)
         for idx in range(self.tensor.shape[0]):
