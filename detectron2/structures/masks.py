@@ -211,7 +211,6 @@ class BitMasks:
             boxes[idx, :] = torch.as_tensor([x[0], y[0], x[-1], y[-1]], dtype=torch.float32)
         return Boxes(boxes)
 
-
     @staticmethod
     def cat(bitmasks_list: List["BitMasks"]) -> "BitMasks":
         """
