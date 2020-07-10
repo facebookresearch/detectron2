@@ -199,9 +199,18 @@ class BitMasks:
         output = output >= 0.5
         return output
 
-    def get_bounding_boxes(self) -> None:
-        # not needed now
-        raise NotImplementedError
+    def get_bounding_boxes(self) -> Boxes:
+        """
+        Returns:
+            Boxes: tight bounding boxes around polygon masks.
+        """
+        boxes = torch.zeros(self.tensor.shape[0], 4, dtype=torch.float32)
+        for idx in range(self.tensor.shape[0]):
+            x = torch.where(torch.any(self.tensor[idx, :], dim=0))[0]
+            y = torch.where(torch.any(self.tensor[idx, :], dim=1))[0]
+            boxes[idx, :] = torch.as_tensor([x[0], y[0], x[-1], y[-1]], dtype=torch.float32)
+        return Boxes(boxes)
+
 
     @staticmethod
     def cat(bitmasks_list: List["BitMasks"]) -> "BitMasks":
