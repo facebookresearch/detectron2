@@ -130,7 +130,8 @@ Based on the tasks the model is doing, each dict may contain the following field
 
 ### Partially execute a model:
 
-Sometimes you may want to obtain an intermediate tensor inside a model.
+Sometimes you may want to obtain an intermediate tensor inside a model,
+such as the input of certain layer, the output before post-processing.
 Since there are typically hundreds of intermediate tensors, there isn't an API that provides you
 the intermediate result you need.
 You have the following options:
@@ -153,5 +154,10 @@ mask_features = [features[f] for f in model.roi_heads.in_features]
 mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
 ```
 
-Note that both options require you to read the existing forward code to understand
-how to write code to obtain the outputs you need.
+3. Use [forward hooks](https://pytorch.org/tutorials/beginner/former_torchies/nnft_tutorial.html#forward-and-backward-function-hooks).
+   Forward hooks can help you obtain inputs or outputs of a certain module.
+   If they are not exactly what you want, they can at least be used together with partial execution
+   to obtain other tensors.
+
+All options require you to read the existing forward code to understand the internal logic,
+in order to write code to obtain the internal tensors.

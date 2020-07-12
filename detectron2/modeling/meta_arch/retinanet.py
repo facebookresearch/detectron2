@@ -188,8 +188,9 @@ class RetinaNet(nn.Module):
             gt_labels, gt_boxes: see output of :meth:`RetinaNet.label_anchors`.
                 Their shapes are (N, R) and (N, R, 4), respectively, where R is
                 the total number of anchors across levels, i.e. sum(Hi x Wi x Ai)
-            pred_logits, pred_anchor_deltas: list[Tensor], one per level. Each
-                has shape (N, Hi * Wi * Ai, K or 4)
+            pred_logits, pred_anchor_deltas: both are list[Tensor]. Each element in the
+                list corresponds to one level and has shape (N, Hi * Wi * Ai, K or 4).
+                Where K is the number of classes used in `pred_logits`.
 
         Returns:
             dict[str, Tensor]:

@@ -92,7 +92,7 @@ and the required fields vary based on what the dataloader or the task needs (see
     region". Don't include this field if you don't know what it means.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 	Required by semantic segmentation task.
-	It should be an image whose pixel values are integer labels.
+	It should be a grayscale image whose pixel values are integer labels.
 
 
 Fast R-CNN (with precomputed proposals) is rarely used today.
