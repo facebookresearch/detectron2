@@ -82,7 +82,7 @@ def find_top_rpn_proposals(
     level_ids = cat(level_ids, dim=0)
 
     # 3. For each image, run a per-level NMS, and choose topk results.
-    results = []
+    results: List[Instances] = []
     for n, image_size in enumerate(image_sizes):
         boxes = Boxes(topk_proposals[n])
         scores_per_img = topk_scores[n]
@@ -100,7 +100,7 @@ def find_top_rpn_proposals(
         boxes.clip(image_size)
 
         # filter empty boxes
-        keep = boxes.nonempty(threshold=min_box_size)
+        keep = boxes.nonempty(threshold=float(min_box_size))
         if keep.sum().item() != len(boxes):
             boxes, scores_per_img, lvl = boxes[keep], scores_per_img[keep], lvl[keep]
 

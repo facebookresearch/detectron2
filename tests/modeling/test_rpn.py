@@ -4,10 +4,12 @@ import unittest
 import torch
 
 from detectron2.config import get_cfg
+from detectron2.export.torchscript_export import export_torchscript_model
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,68 @@ class RPNTest(unittest.TestCase):
                 name, proposal_losses[name], expected_losses[name]
             )
             self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
+
+        expected_proposal_boxes = [
+            Boxes(torch.tensor([[0, 0, 10, 10], [7.3365392685, 0, 10, 10]])),
+            Boxes(
+                torch.tensor(
+                    [
+                        [0, 0, 30, 20],
+                        [0, 0, 16.7862777710, 13.1362524033],
+                        [0, 0, 30, 13.3173446655],
+                        [0, 0, 10.8602609634, 20],
+                        [7.7165775299, 0, 27.3875980377, 20],
+                    ]
+                )
+            ),
+        ]
+
+        expected_objectness_logits = [
+            torch.tensor([0.1225359365, -0.0133192837]),
+            torch.tensor([0.1415634006, 0.0989848152, 0.0565387346, -0.0072308783, -0.0428492837]),
+        ]
+
+        for proposal, expected_proposal_box, im_size, expected_objectness_logit in zip(
+            proposals, expected_proposal_boxes, image_sizes, expected_objectness_logits
+        ):
+            self.assertEqual(len(proposal), len(expected_proposal_box))
+            self.assertEqual(proposal.image_size, im_size)
+            self.assertTrue(
+                torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor)
+            )
+            self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
+
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    def test_rpn_scriptability(self):
+        torch.manual_seed(121)
+        cfg = get_cfg()
+        cfg.MODEL.PROPOSAL_GENERATOR.NAME = "RPN"
+        cfg.MODEL.ANCHOR_GENERATOR.NAME = "DefaultAnchorGenerator"
+        cfg.MODEL.RPN.BBOX_REG_WEIGHTS = (1, 1, 1, 1)
+        backbone = build_backbone(cfg)
+        proposal_generator = build_proposal_generator(cfg, backbone.output_shape()).eval()
+        num_images = 2
+        images_tensor = torch.rand(num_images, 20, 30)
+        image_sizes = [(10, 10), (20, 30)]
+        images = ImageList(images_tensor, image_sizes)
+        image_shape = (15, 15)
+        num_channels = 1024
+        features = {"res4": torch.rand(num_images, num_channels, 1, 2)}
+
+        fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+        proposal_generator_script, new_instance = export_torchscript_model(
+            proposal_generator, fields
+        )
+
+        box_data = [[1, 1, 3, 3], [2, 2, 6, 6]]
+        all_gt_instances = []
+        for t in box_data:
+            gt_boxes = torch.tensor([t], dtype=torch.float32)
+            gt_instance = new_instance(image_shape)
+            gt_instance.gt_boxes = Boxes(gt_boxes)
+            all_gt_instances.append(gt_instance)
+        with EventStorage():  # capture events in a new storage to discard them
+            proposals, _ = proposal_generator(images, features, all_gt_instances)
 
         expected_proposal_boxes = [
             Boxes(torch.tensor([[0, 0, 10, 10], [7.3365392685, 0, 10, 10]])),

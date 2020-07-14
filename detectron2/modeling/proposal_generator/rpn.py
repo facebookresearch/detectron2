@@ -206,8 +206,8 @@ class RPN(nn.Module):
         self.batch_size_per_image = batch_size_per_image
         self.positive_fraction = positive_fraction
         # Map from self.training state to train/test settings
-        self.pre_nms_topk = {True: pre_nms_topk[0], False: pre_nms_topk[1]}
-        self.post_nms_topk = {True: post_nms_topk[0], False: post_nms_topk[1]}
+        self.pre_nms_topk = {1: pre_nms_topk[0], 0: pre_nms_topk[1]}
+        self.post_nms_topk = {1: post_nms_topk[0], 0: post_nms_topk[1]}
         self.nms_thresh = nms_thresh
         self.min_box_size = min_box_size
         self.anchor_boundary_thresh = anchor_boundary_thresh
@@ -431,24 +431,25 @@ class RPN(nn.Module):
             for x in pred_anchor_deltas
         ]
 
-        if self.training:
+        if self.training and not torch.jit.is_scripting():
             gt_labels, gt_boxes = self.label_and_sample_anchors(anchors, gt_instances)
             losses = self.losses(
                 anchors, pred_objectness_logits, gt_labels, pred_anchor_deltas, gt_boxes
             )
-            losses = {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
+            for k, v in losses.items():
+                losses[k] = v * self.loss_weight.get(k, 1.0)
         else:
             losses = {}
-
+        pred_objectness_logits = [t.detach() for t in pred_objectness_logits]
+        pred_anchor_deltas = [t.detach() for t in pred_anchor_deltas]
         proposals = self.predict_proposals(
             anchors, pred_objectness_logits, pred_anchor_deltas, images.image_sizes
         )
         return proposals, losses
 
-    @torch.no_grad()
     def predict_proposals(
         self,
-        anchors,
+        anchors: List[Boxes],
         pred_objectness_logits: List[torch.Tensor],
         pred_anchor_deltas: List[torch.Tensor],
         image_sizes: List[Tuple[int, int]],
@@ -471,13 +472,13 @@ class RPN(nn.Module):
             pred_objectness_logits,
             image_sizes,
             self.nms_thresh,
-            self.pre_nms_topk[self.training],
-            self.post_nms_topk[self.training],
+            self.pre_nms_topk[int(self.training)],
+            self.post_nms_topk[int(self.training)],
             self.min_box_size,
             self.training,
         )
 
-    def _decode_proposals(self, anchors, pred_anchor_deltas: List[torch.Tensor]):
+    def _decode_proposals(self, anchors: List[Boxes], pred_anchor_deltas: List[torch.Tensor]):
         """
         Transform anchors into proposals by applying the predicted anchor deltas.
 

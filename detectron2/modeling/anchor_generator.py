@@ -83,11 +83,6 @@ class DefaultAnchorGenerator(nn.Module):
     "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks".
     """
 
-    box_dim: int = 4
-    """
-    the dimension of each anchor box.
-    """
-
     @configurable
     def __init__(self, *, sizes, aspect_ratios, strides, offset=0.5):
         """
@@ -109,6 +104,7 @@ class DefaultAnchorGenerator(nn.Module):
         """
         super().__init__()
 
+        self.box_dim = 4  # the dimension of each anchor box.
         self.strides = strides
         self.num_features = len(self.strides)
         sizes = _broadcast_params(sizes, self.num_features, "sizes")

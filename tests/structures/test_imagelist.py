@@ -44,7 +44,10 @@ class TestImageList(unittest.TestCase):
         image_tensor = torch.randn((image_nums, 10, 20), dtype=torch.float32)
         image_shape = [(10, 20)] * image_nums
 
-        ImageList_script = torch.jit.script(ImageList)
+        qualified_name = torch._jit_internal._qualified_name(ImageList)
+        ImageList_script = torch.jit._state._get_script_class(qualified_name)
+        if not ImageList_script:
+            ImageList_script = torch.jit.script(ImageList)
 
         ret = ImageList(image_tensor, image_shape)
         ret_script = ImageList_script(image_tensor, image_shape)
