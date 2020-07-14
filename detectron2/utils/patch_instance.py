@@ -9,7 +9,7 @@ import torch
 from detectron2.structures import Boxes, Instances  # noqa F401
 
 
-def export_torchscript_model(model, fields):
+def export_torchscript_with_patch_instance(model, fields):
     with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".py", delete=False) as f:
         cls_name, s = gen_class(fields)
         f.write(s)

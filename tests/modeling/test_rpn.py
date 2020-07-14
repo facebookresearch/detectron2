@@ -4,13 +4,13 @@ import unittest
 import torch
 
 from detectron2.config import get_cfg
-from detectron2.export.torchscript_export import export_torchscript_model
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
+from detectron2.utils.patch_instance import export_torchscript_with_patch_instance
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class RPNTest(unittest.TestCase):
         features = {"res4": torch.rand(num_images, num_channels, 1, 2)}
 
         fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
-        proposal_generator_script, new_instance = export_torchscript_model(
+        proposal_generator_script, new_instance = export_torchscript_with_patch_instance(
             proposal_generator, fields
         )
 
