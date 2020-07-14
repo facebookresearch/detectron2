@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import logging
 import numpy as np
 import fvcore.nn.weight_init as weight_init
 import torch
@@ -476,36 +477,67 @@ class ResNet(Backbone):
         return self
 
     @staticmethod
-    def make_stage(block_class, num_blocks, first_stride, *, in_channels, out_channels, **kwargs):
+    def make_stage(
+        block_class, num_blocks, first_stride=None, *, in_channels, out_channels, **kwargs
+    ):
         """
         Create a list of blocks of the same type that forms one ResNet stage.
-        Layers that produce the same feature map spatial size are defined as one
-        "stage" by :paper:`FPN`.
 
         Args:
             block_class (type): a subclass of CNNBlockBase that's used to create all blocks in this
                 stage. A module of this type must not change spatial resolution of inputs unless its
                 stride != 1.
             num_blocks (int): number of blocks in this stage
-            first_stride (int): the stride of the first block. The other blocks will have stride=1.
-                Therefore this is also the stride of the entire stage.
+            first_stride (int): deprecated
             in_channels (int): input channels of the entire stage.
             out_channels (int): output channels of **every block** in the stage.
-            kwargs: other arguments passed to the constructor of `block_class`.
+            kwargs: other arguments passed to the constructor of
+                `block_class`. If the argument name is "xx_per_block", the
+                argument is a list of values to be passed to each block in the
+                stage. Otherwise, the same argument is passed to every block
+                in the stage.
 
         Returns:
             list[nn.Module]: a list of block module.
+
+        Examples:
+        ::
+            stages = ResNet.make_stage(
+                BottleneckBlock, 3, in_channels=16, out_channels=64,
+                bottleneck_channels=16, num_groups=1,
+                stride_per_block=[2, 1, 1],
+                dilations_per_block=[1, 1, 2]
+            )
+
+        Usually, layers that produce the same feature map spatial size are defined as one
+        "stage" (in :paper:`FPN`). In this case ``stride_per_block[1:]`` should all be 1.
         """
-        assert "stride" not in kwargs, "Stride of blocks in make_stage cannot be changed."
+        if first_stride is not None:
+            assert "stride" not in kwargs and "stride_per_block" not in kwargs
+            kwargs["stride_per_block"] = [first_stride] + [1] * (num_blocks - 1)
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "ResNet.make_stage(first_stride=) is deprecated!  "
+                "Use 'stride_per_block' or 'stride' instead."
+            )
+
         blocks = []
         for i in range(num_blocks):
+            curr_kwargs = {}
+            for k, v in kwargs.items():
+                if k.endswith("_per_block"):
+                    assert len(v) == num_blocks, (
+                        f"Argument '{k}' of make_stage should have the "
+                        f"same length as num_blocks={num_blocks}."
+                    )
+                    newk = k[: -len("_per_block")]
+                    assert newk not in kwargs, f"Cannot call make_stage with both {k} and {newk}!"
+                    curr_kwargs[newk] = v[i]
+                else:
+                    curr_kwargs[k] = v
+
             blocks.append(
-                block_class(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    stride=first_stride if i == 0 else 1,
-                    **kwargs,
-                )
+                block_class(in_channels=in_channels, out_channels=out_channels, **curr_kwargs)
             )
             in_channels = out_channels
         return blocks
@@ -584,7 +616,7 @@ def build_resnet_backbone(cfg, input_shape):
         first_stride = 1 if idx == 0 or (stage_idx == 5 and dilation == 2) else 2
         stage_kargs = {
             "num_blocks": num_blocks_per_stage[idx],
-            "first_stride": first_stride,
+            "stride_per_block": [first_stride] + [1] * (num_blocks_per_stage[idx] - 1),
             "in_channels": in_channels,
             "out_channels": out_channels,
             "norm": norm,
