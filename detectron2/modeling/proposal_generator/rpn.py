@@ -206,6 +206,8 @@ class RPN(nn.Module):
         self.batch_size_per_image = batch_size_per_image
         self.positive_fraction = positive_fraction
         # Map from self.training state to train/test settings
+        # Currently JIT does not support the case where boolean value is used as the dict key.
+        # https://github.com/pytorch/pytorch/issues/41449
         self.pre_nms_topk = {1: pre_nms_topk[0], 0: pre_nms_topk[1]}
         self.post_nms_topk = {1: post_nms_topk[0], 0: post_nms_topk[1]}
         self.nms_thresh = nms_thresh
@@ -436,17 +438,19 @@ class RPN(nn.Module):
             losses = self.losses(
                 anchors, pred_objectness_logits, gt_labels, pred_anchor_deltas, gt_boxes
             )
+            # Currently dict comprehension is not supported by JIT.
+            # https://github.com/pytorch/pytorch/issues/41448
             for k, v in losses.items():
                 losses[k] = v * self.loss_weight.get(k, 1.0)
         else:
             losses = {}
-        pred_objectness_logits = [t.detach() for t in pred_objectness_logits]
-        pred_anchor_deltas = [t.detach() for t in pred_anchor_deltas]
         proposals = self.predict_proposals(
             anchors, pred_objectness_logits, pred_anchor_deltas, images.image_sizes
         )
         return proposals, losses
 
+    # TODO: use torch.no_grad when torchscript support it.
+    # https://github.com/pytorch/pytorch/pull/41371
     def predict_proposals(
         self,
         anchors: List[Boxes],
@@ -466,6 +470,8 @@ class RPN(nn.Module):
         # The proposals are treated as fixed for approximate joint training with roi heads.
         # This approach ignores the derivative w.r.t. the proposal boxes’ coordinates that
         # are also network responses, so is approximate.
+        pred_objectness_logits = [t.detach() for t in pred_objectness_logits]
+        pred_anchor_deltas = [t.detach() for t in pred_anchor_deltas]
         pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
         return find_top_rpn_proposals(
             pred_proposals,
