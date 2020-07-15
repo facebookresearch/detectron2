@@ -108,38 +108,19 @@ class RPNTest(unittest.TestCase):
             gt_instance = new_instance(image_shape)
             gt_instance.gt_boxes = Boxes(gt_boxes)
             all_gt_instances.append(gt_instance)
+
         with EventStorage():  # capture events in a new storage to discard them
             proposals, _ = proposal_generator(images, features, all_gt_instances)
+            proposals_script, _ = proposal_generator_script(images, features, all_gt_instances)
 
-        expected_proposal_boxes = [
-            Boxes(torch.tensor([[0, 0, 10, 10], [7.3365392685, 0, 10, 10]])),
-            Boxes(
-                torch.tensor(
-                    [
-                        [0, 0, 30, 20],
-                        [0, 0, 16.7862777710, 13.1362524033],
-                        [0, 0, 30, 13.3173446655],
-                        [0, 0, 10.8602609634, 20],
-                        [7.7165775299, 0, 27.3875980377, 20],
-                    ]
-                )
-            ),
-        ]
-
-        expected_objectness_logits = [
-            torch.tensor([0.1225359365, -0.0133192837]),
-            torch.tensor([0.1415634006, 0.0989848152, 0.0565387346, -0.0072308783, -0.0428492837]),
-        ]
-
-        for proposal, expected_proposal_box, im_size, expected_objectness_logit in zip(
-            proposals, expected_proposal_boxes, image_sizes, expected_objectness_logits
-        ):
-            self.assertEqual(len(proposal), len(expected_proposal_box))
-            self.assertEqual(proposal.image_size, im_size)
+        for proposal, proposal_script in zip(proposals, proposals_script):
+            self.assertEqual(proposal.image_size, proposal_script.image_size)
             self.assertTrue(
-                torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor)
+                torch.equal(proposal.proposal_boxes.tensor, proposal_script.proposal_boxes.tensor)
             )
-            self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
+            self.assertTrue(
+                torch.equal(proposal.objectness_logits, proposal_script.objectness_logits)
+            )
 
     def test_rrpn(self):
         torch.manual_seed(121)

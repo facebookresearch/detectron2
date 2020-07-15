@@ -399,7 +399,7 @@ class RPN(nn.Module):
         self,
         images: ImageList,
         features: Dict[str, torch.Tensor],
-        gt_instances: Optional[Instances] = None,
+        gt_instances: Optional[List[Instances]] = None,
     ):
         """
         Args:
