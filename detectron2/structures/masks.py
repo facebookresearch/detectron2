@@ -208,7 +208,10 @@ class BitMasks:
         for idx in range(self.tensor.shape[0]):
             x = torch.where(torch.any(self.tensor[idx, :], dim=0))[0]
             y = torch.where(torch.any(self.tensor[idx, :], dim=1))[0]
-            boxes[idx, :] = torch.as_tensor([x[0], y[0], x[-1], y[-1]], dtype=torch.float32)
+            if len(x) > 0 and len(y) > 0:
+                boxes[idx, :] = torch.as_tensor([x[0], y[0], x[-1], y[-1]], dtype=torch.float32)
+            else:
+                print('t')
         return Boxes(boxes)
 
     @staticmethod
