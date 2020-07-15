@@ -1,26 +1,27 @@
 import unittest
-from detectron2.structures.masks import BitMasks
 import torch
+
+from detectron2.structures.masks import BitMasks
 
 
 class TestBitMask(unittest.TestCase):
-
     def test_get_bounding_box(self):
-        mask = torch.tensor([
+        mask = torch.tensor(
+            [
                 [
                     [False, False, False, True],
-                    [False, False, True,  True],
-                    [False, True,  True,  False],
-                    [False, True,  True,  False],
-                    [False, False, False, False]
+                    [False, False, True, True],
+                    [False, True, True, False],
+                    [False, True, True, False],
+                    [False, False, False, False],
                 ],
                 [
                     [False, False, False, False],
                     [False, False, False, False],
                     [False, False, False, False],
                     [False, False, False, False],
-                    [False, False, False, False]
-                ]
+                    [False, False, False, False],
+                ],
             ]
         )
         bitmask = BitMasks(mask)
@@ -31,5 +32,3 @@ class TestBitMask(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
