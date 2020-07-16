@@ -41,8 +41,8 @@ def detector_postprocess(results, output_height, output_width, mask_threshold=0.
         output_height_tmp = output_height
 
     scale_x, scale_y = (
-        output_width_tmp / results.image_size[1],
-        output_height_tmp / results.image_size[0],
+        output_width_tmp.true_divide(results.image_size[1]),
+        output_height_tmp.true_divide(results.image_size[0]),
     )
     results = Instances((output_height, output_width), **results.get_fields())
 
