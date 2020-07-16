@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import contextlib
 import logging
 import numpy as np
 import time
@@ -11,6 +12,15 @@ import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage
 
 __all__ = ["HookBase", "TrainerBase", "SimpleTrainer"]
+
+
+try:
+    _nullcontext = contextlib.nullcontext  # python 3.7+
+except AttributeError:
+
+    @contextlib.contextmanager
+    def _nullcontext(enter_result=None):
+        yield enter_result
 
 
 class HookBase:
@@ -224,7 +234,9 @@ class SimpleTrainer(TrainerBase):
         losses.backward()
 
         # use a new stream so the ops don't wait for DDP
-        with torch.cuda.stream(torch.cuda.Stream()):
+        with torch.cuda.stream(
+            torch.cuda.Stream()
+        ) if losses.device.type == "cuda" else _nullcontext():
             metrics_dict = loss_dict
             metrics_dict["data_time"] = data_time
             self._write_metrics(metrics_dict)
