@@ -157,10 +157,10 @@ workflows:
     jobs:
       - cpu_tests
       - gpu_tests:
-          name: gpu_tests_pytorch1.4
-          pytorch_version: '1.4'
-          torchvision_version: '0.5'
-      - gpu_tests:
           name: gpu_tests_pytorch1.5
           pytorch_version: '1.5'
           torchvision_version: '0.6'
+      - gpu_tests:
+          name: gpu_tests_pytorch1.6
+          pytorch_version: '1.6'
+          torchvision_version: '0.7'
