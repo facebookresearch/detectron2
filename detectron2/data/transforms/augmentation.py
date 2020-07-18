@@ -17,25 +17,30 @@ We have a design goal that aims at allowing:
         (rotated boxes, 3D meshes, densepose, etc)
     (2) A list of augmentation to be applied sequentially
 
-`Augmentation` defines policies to create deterministic transforms from input data.
-An augmentation policy may need to access arbitrary input data, so it declares the input
-data needed, to be provided by users when calling its `get_transform` method.
+`Augmentation` defines policies to create a `Transform` object from input data by
+`get_transform` method.
+A `Transform` object usually describes deterministic transformation, in the sense that it can
+be re-applied on associated data, e.g. the geometry of an image and its segmentation masks need
+to be transformed in the same way, instead of both being randomly augmented in inconsistent ways.
+(If you're sure such re-application is not needed, then determinism is not a crucial requirement.)
+An augmentation policy may need to access arbitrary input data to create a `Transform`, so it
+declares the needed input data by its `input_args` attribute. Users are expected to provide them
+when calling its `get_transform` method.
 
-`Augmentation` is not able to apply transforms to data: data associated with
-one sample may be much more than what `Augmentation` gets. For example, most
-augmentation policies only need an image, but the actual input samples can be
-much more complicated.
+`Augmentation` is not able to apply transforms to data: data associated with one sample may be
+much more than what `Augmentation` gets. For example, >90% of the common augmentation policies
+only need an image, but the actual input samples can be much more complicated.
 
 `AugInput` manages all inputs needed by `Augmentation` and implements the logic
-to apply a sequence of augmentation. It has to define how the inputs are transformed,
-because arguments needed by one `Augmentation` needs to be transformed to become arguments
-of the next `Augmentation` in the sequence.
+to apply a sequence of augmentation. It defines how the inputs should be modified by a `Transform`,
+because inputs needed by one `Augmentation` needs to be transformed to become arguments of the
+next `Augmentation` in the sequence.
 
 `AugInput` does not need to contain all input data, because most augmentation policies
-only need very few fields (e.g., most only need "image"). We provide `StandardAugInput`
+only need very few fields (e.g., >90% only need "image"). We provide `StandardAugInput`
 that only contains "images", "boxes", "sem_seg", that are enough to create transforms
-for most cases. In this way, users keep the responsibility to apply transforms to other
-potentially new data types and structures, e.g. keypoints, proposals boxes.
+for most cases. In this way, users keep the responsibility and flexibility to apply transforms
+to other (potentially new) data types and structures, e.g. keypoints, proposals boxes.
 
 To extend the system, one can do:
 1. To add a new augmentation policy that only needs to use standard inputs
@@ -44,8 +49,9 @@ To extend the system, one can do:
    as the new data types or custom data structures are not needed by any augmentation policy.
    The new data types or data structures can be transformed using the
    transforms returned by `AugInput.apply_augmentations`.
-3. To add new augmentation policies that need new data types or data structures, in addition to
-   implementing new `Augmentation`, a new `AugInput` is needed as well.
+   The way new data types are transformed may need to declared using `Transform.register_type`.
+3. (rare) To add new augmentation policies that need new data types or data structures, in
+   addition to implementing new `Augmentation`, a new `AugInput` is needed as well.
 """
 
 

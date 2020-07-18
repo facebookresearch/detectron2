@@ -263,7 +263,7 @@ def transform_instance_annotations(
     Args:
         annotation (dict): dict of instance annotations for a single instance.
             It will be modified in-place.
-        transforms (TransformList):
+        transforms (TransformList or list[Transform]):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
 
@@ -273,6 +273,8 @@ def transform_instance_annotations(
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
+    if isinstance(transforms, (tuple, list)):
+        transforms = T.TransformList(transforms)
     # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
     # clip transformed bbox to image size
