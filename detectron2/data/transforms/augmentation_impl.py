@@ -18,7 +18,16 @@ from PIL import Image
 from .augmentation import Augmentation
 from .transform import ExtentTransform, ResizeTransform, RotationTransform
 
+from detectron2.utils.registry import Registry
+
+AUGMENTATION_REGISTRY = Registry("AUGMENTATION")
+AUGMENTATION_REGISTRY.__doc__ = """
+Registry for augmentation.
+"""
+
+
 __all__ = [
+    "AUGMENTATION_REGISTRY",
     "RandomApply",
     "RandomBrightness",
     "RandomContrast",
@@ -70,6 +79,7 @@ class RandomApply(Augmentation):
             return NoOpTransform()
 
 
+@AUGMENTATION_REGISTRY.register()
 class RandomFlip(Augmentation):
     """
     Flip the image horizontally or vertically with the given probability.
@@ -102,6 +112,7 @@ class RandomFlip(Augmentation):
             return NoOpTransform()
 
 
+@AUGMENTATION_REGISTRY.register()
 class Resize(Augmentation):
     """ Resize image to a fixed target size"""
 
@@ -175,6 +186,7 @@ class ResizeShortestEdge(Augmentation):
         return ResizeTransform(h, w, newh, neww, self.interp)
 
 
+@AUGMENTATION_REGISTRY.register()
 class RandomRotation(Augmentation):
     """
     This method returns a copy of this image, rotated the given
@@ -229,6 +241,7 @@ class RandomRotation(Augmentation):
         return RotationTransform(h, w, angle, expand=self.expand, center=center, interp=self.interp)
 
 
+@AUGMENTATION_REGISTRY.register()
 class RandomCrop(Augmentation):
     """
     Randomly crop a subimage out of an image.
@@ -400,6 +413,7 @@ class RandomContrast(Augmentation):
         return BlendTransform(src_image=img.mean(), src_weight=1 - w, dst_weight=w)
 
 
+@AUGMENTATION_REGISTRY.register()
 class RandomBrightness(Augmentation):
     """
     Randomly transforms image brightness.
@@ -426,6 +440,7 @@ class RandomBrightness(Augmentation):
         return BlendTransform(src_image=0, src_weight=1 - w, dst_weight=w)
 
 
+@AUGMENTATION_REGISTRY.register()
 class RandomSaturation(Augmentation):
     """
     Randomly transforms saturation of an RGB image.
@@ -455,6 +470,7 @@ class RandomSaturation(Augmentation):
         return BlendTransform(src_image=grayscale, src_weight=1 - w, dst_weight=w)
 
 
+@AUGMENTATION_REGISTRY.register()
 class RandomLighting(Augmentation):
     """
     The "lighting" augmentation described in AlexNet, using fixed PCA over ImageNet.

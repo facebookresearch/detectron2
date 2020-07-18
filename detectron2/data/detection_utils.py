@@ -5,6 +5,7 @@
 Common data processing utilities that are used in a
 typical object detection data pipeline.
 """
+import copy
 import logging
 import numpy as np
 import pycocotools.mask as mask_util
@@ -25,6 +26,7 @@ from detectron2.structures import (
 
 from . import transforms as T
 from .catalog import MetadataCatalog
+from .transforms import AUGMENTATION_REGISTRY
 
 __all__ = [
     "SizeMismatchError",
@@ -576,7 +578,11 @@ def build_augmentation(cfg, is_train):
         sample_style = "choice"
     augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
     if is_train:
-        augmentation.append(T.RandomFlip())
+        for aug in cfg.INPUT.AUGMENTATION:
+            name = aug["name"]
+            kwargs = copy.copy(aug)
+            kwargs.pop("name", None)
+            augmentation.append(AUGMENTATION_REGISTRY.get(aug["name"])(**kwargs))
     return augmentation
 
 
