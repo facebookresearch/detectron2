@@ -581,7 +581,6 @@ def build_augmentation(cfg, is_train):
     augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
     if is_train:
         for aug in cfg.INPUT.AUGMENTATION:
-            name = aug["name"]
             kwargs = copy.copy(aug)
             kwargs.pop("name", None)
             augmentation.append(AUGMENTATION_REGISTRY.get(aug["name"])(**kwargs))
