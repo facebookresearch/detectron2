@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-from typing import Sequence
+from typing import Sequence, List, Tuple
 import torch
 
 from detectron2.structures import ImageList
@@ -44,13 +44,11 @@ class TestImageList(unittest.TestCase):
         image_tensor = torch.randn((image_nums, 10, 20), dtype=torch.float32)
         image_shape = [(10, 20)] * image_nums
 
-        qualified_name = torch._jit_internal._qualified_name(ImageList)
-        ImageList_script = torch.jit._state._get_script_class(qualified_name)
-        if not ImageList_script:
-            ImageList_script = torch.jit.script(ImageList)
+        def f(image_tensor, image_shape: List[Tuple[int, int]]):
+            return ImageList(image_tensor, image_shape)
 
-        ret = ImageList(image_tensor, image_shape)
-        ret_script = ImageList_script(image_tensor, image_shape)
+        ret = f(image_tensor, image_shape)
+        ret_script = torch.jit.script(f)(image_tensor, image_shape)
 
         self.assertEqual(len(ret), len(ret_script))
         for i in range(image_nums):
