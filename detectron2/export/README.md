@@ -9,5 +9,5 @@ Please see [documentation](https://detectron2.readthedocs.io/tutorials/deploymen
 
 Thanks to Mobile Vision team at Facebook for developing the conversion tools.
 
-Thanks to PAI team at Alibaba Group (@bddpqq, @chenbohua3) and @ppwwyyxx for promoting the process of exporting
-Detectron2 to TorchScript.
+Thanks to Computing Platform Department - PAI team at Alibaba Group (@bddpqq, @chenbohua3) and @ppwwyyxx for 
+promoting the process of exporting Detectron2 to TorchScript.
