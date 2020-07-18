@@ -15,10 +15,10 @@ from fvcore.transforms.transform import (
 )
 from PIL import Image
 
+from detectron2.utils.registry import Registry
+
 from .augmentation import Augmentation
 from .transform import ExtentTransform, ResizeTransform, RotationTransform
-
-from detectron2.utils.registry import Registry
 
 AUGMENTATION_REGISTRY = Registry("AUGMENTATION")
 AUGMENTATION_REGISTRY.__doc__ = """
