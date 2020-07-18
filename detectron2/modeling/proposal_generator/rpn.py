@@ -266,8 +266,11 @@ class RPN(nn.Module):
         label.scatter_(0, neg_idx, 0)
         return label
 
+    @torch.jit.unused
     @torch.no_grad()
-    def label_and_sample_anchors(self, anchors: List[Boxes], gt_instances: List[Instances]):
+    def label_and_sample_anchors(
+        self, anchors: List[Boxes], gt_instances: List[Instances]
+    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
         Args:
             anchors (list[Boxes]): anchors for each feature map.
@@ -323,14 +326,15 @@ class RPN(nn.Module):
             matched_gt_boxes.append(matched_gt_boxes_i)
         return gt_labels, matched_gt_boxes
 
+    @torch.jit.unused
     def losses(
         self,
-        anchors,
+        anchors: List[Boxes],
         pred_objectness_logits: List[torch.Tensor],
         gt_labels: List[torch.Tensor],
         pred_anchor_deltas: List[torch.Tensor],
         gt_boxes: List[torch.Tensor],
-    ):
+    ) -> Dict[str, torch.Tensor]:
         """
         Return the losses from a set of RPN predictions and their associated ground-truth.
 
@@ -390,10 +394,12 @@ class RPN(nn.Module):
             reduction="sum",
         )
         normalizer = self.batch_size_per_image * num_images
-        return {
+        losses = {
             "loss_rpn_cls": objectness_loss / normalizer,
             "loss_rpn_loc": localization_loss / normalizer,
         }
+        losses = {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
+        return losses
 
     def forward(
         self,
@@ -433,15 +439,12 @@ class RPN(nn.Module):
             for x in pred_anchor_deltas
         ]
 
-        if self.training and not torch.jit.is_scripting():
+        if self.training:
+            assert gt_instances is not None, "RPN requires gt_instances in training!"
             gt_labels, gt_boxes = self.label_and_sample_anchors(anchors, gt_instances)
             losses = self.losses(
                 anchors, pred_objectness_logits, gt_labels, pred_anchor_deltas, gt_boxes
             )
-            # Currently dict comprehension is not supported by JIT.
-            # https://github.com/pytorch/pytorch/issues/41448
-            for k, v in losses.items():
-                losses[k] = v * self.loss_weight.get(k, 1.0)
         else:
             losses = {}
         proposals = self.predict_proposals(
