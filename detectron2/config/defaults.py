@@ -158,7 +158,7 @@ _C.MODEL.PROPOSAL_GENERATOR = CN()
 _C.MODEL.PROPOSAL_GENERATOR.NAME = "RPN"
 # Proposal height and width both need to be greater than MIN_SIZE
 # (a the scale used during training or inference)
-_C.MODEL.PROPOSAL_GENERATOR.MIN_SIZE = 0
+_C.MODEL.PROPOSAL_GENERATOR.MIN_SIZE = 0.0
 
 
 # ---------------------------------------------------------------------------- #

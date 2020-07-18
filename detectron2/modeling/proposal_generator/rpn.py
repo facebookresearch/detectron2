@@ -206,12 +206,13 @@ class RPN(nn.Module):
         self.batch_size_per_image = batch_size_per_image
         self.positive_fraction = positive_fraction
         # Map from self.training state to train/test settings
-        # Currently JIT does not support the case where boolean value is used as the dict key.
+        # Currently torchscript does not support the case where
+        # boolean value is used as the dict key.
         # https://github.com/pytorch/pytorch/issues/41449
         self.pre_nms_topk = {1: pre_nms_topk[0], 0: pre_nms_topk[1]}
         self.post_nms_topk = {1: post_nms_topk[0], 0: post_nms_topk[1]}
         self.nms_thresh = nms_thresh
-        self.min_box_size = min_box_size
+        self.min_box_size = float(min_box_size)
         self.anchor_boundary_thresh = anchor_boundary_thresh
         if isinstance(loss_weight, float):
             loss_weight = {"loss_rpn_cls": loss_weight, "loss_rpn_loc": loss_weight}
