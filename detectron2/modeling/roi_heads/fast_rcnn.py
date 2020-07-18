@@ -130,8 +130,8 @@ def fast_rcnn_inference_single_image(
 
 class FastRCNNOutputs:
     """
-    A class that stores information about outputs of a Fast R-CNN head.
-    It provides methods that are used to decode the outputs of a Fast R-CNN head.
+    An internal implementation that stores information about outputs of a Fast R-CNN head,
+    and provides methods that are used to decode the outputs of a Fast R-CNN head.
     """
 
     def __init__(
@@ -430,6 +430,9 @@ class FastRCNNOutputLayers(nn.Module):
 
     def forward(self, x):
         """
+        Args:
+            x: per-region features of shape (N, ...) for N bounding boxes to predict.
+
         Returns:
             Tensor: shape (N,K+1), scores for each of the N box. Each row contains the scores for
                 K object categories and 1 background class.
@@ -447,8 +450,12 @@ class FastRCNNOutputLayers(nn.Module):
         """
         Args:
             predictions: return values of :meth:`forward()`.
-            proposals (list[Instances]): proposals that match the features
-                that were used to compute predictions.
+            proposals (list[Instances]): proposals that match the features that were used
+                to compute predictions. The fields ``proposal_boxes``, ``gt_boxes``,
+                ``gt_classes`` are expected.
+
+        Returns:
+            Dict[str, Tensor]: dict of losses
         """
         scores, proposal_deltas = predictions
         losses = FastRCNNOutputs(
@@ -463,6 +470,11 @@ class FastRCNNOutputLayers(nn.Module):
 
     def inference(self, predictions, proposals):
         """
+        Args:
+            predictions: return values of :meth:`forward()`.
+            proposals (list[Instances]): proposals that match the features that were
+                used to compute predictions. The ``proposal_boxes`` field is expected.
+
         Returns:
             list[Instances]: same as `fast_rcnn_inference`.
             list[Tensor]: same as `fast_rcnn_inference`.
@@ -481,10 +493,15 @@ class FastRCNNOutputLayers(nn.Module):
 
     def predict_boxes_for_gt_classes(self, predictions, proposals):
         """
+        Args:
+            predictions: return values of :meth:`forward()`.
+            proposals (list[Instances]): proposals that match the features that were used
+                to compute predictions. The fields ``proposal_boxes``, ``gt_classes`` are expected.
+
         Returns:
             list[Tensor]: A list of Tensors of predicted boxes for GT classes in case of
                 class-specific box head. Element i of the list has shape (Ri, B), where Ri is
-                the number of predicted objects for image i and B is the box dimension (4 or 5)
+                the number of proposals for image i and B is the box dimension (4 or 5)
         """
         if not len(proposals):
             return []
@@ -511,10 +528,15 @@ class FastRCNNOutputLayers(nn.Module):
 
     def predict_boxes(self, predictions, proposals):
         """
+        Args:
+            predictions: return values of :meth:`forward()`.
+            proposals (list[Instances]): proposals that match the features that were
+                used to compute predictions. The ``proposal_boxes`` field is expected.
+
         Returns:
             list[Tensor]: A list of Tensors of predicted class-specific or class-agnostic boxes
                 for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
-                the number of predicted objects for image i and B is the box dimension (4 or 5)
+                the number of proposals for image i and B is the box dimension (4 or 5)
         """
         if not len(proposals):
             return []
@@ -529,10 +551,14 @@ class FastRCNNOutputLayers(nn.Module):
 
     def predict_probs(self, predictions, proposals):
         """
+        Args:
+            predictions: return values of :meth:`forward()`.
+            proposals (list[Instances]): proposals that match the features that were
+                used to compute predictions.
+
         Returns:
             list[Tensor]: A list of Tensors of predicted class probabilities for each image.
-                Element i has shape (Ri, K + 1), where Ri is the number of predicted objects
-                for image i.
+                Element i has shape (Ri, K + 1), where Ri is the number of proposals for image i.
         """
         scores, _ = predictions
         num_inst_per_image = [len(p) for p in proposals]

@@ -54,18 +54,23 @@ does not provide what you need, you may write a custom mapper function and use i
 
 ```python
 from detectron2.data import detection_utils as utils
- # Implement a mapper, similar to the default DatasetMapper, but with customizations:
+ # Show how to implement a minimal mapper, similar to the default DatasetMapper
 def mapper(dataset_dict):
-    # Here we implement a minimal mapper for instance detection/segmentation
     dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
+    # can use other ways to read image
     image = utils.read_image(dataset_dict["file_name"], format="BGR")
-    dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1))
+    # can use other augmentations
+    transform = T.Resize((800, 800)).get_transform(image)
+    image = torch.from_numpy(transform.apply_image(image).transpose(2, 0, 1))
     annos = [
-        utils.transform_instance_annotations(obj, transforms, image.shape[:2])
-        for obj in dataset_dict.pop("annotations")
+        utils.transform_instance_annotations(annotation, [transform], image.shape[1:])
+        for annotation in dataset_dict.pop("annotations")
     ]
-    dataset_dict["instances"] = utils.annotations_to_instances(annos, image.shape[:2])
-    return dataset_dict
+    return {
+       # create the format that the model expects
+       "image": image,
+       "instances": utils.annotations_to_instances(annos, image.shape[1:])
+    }
 dataloader = build_detection_train_loader(cfg, mapper=mapper)
 ```
 
