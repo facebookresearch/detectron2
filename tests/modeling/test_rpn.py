@@ -4,7 +4,7 @@ import unittest
 import torch
 
 from detectron2.config import get_cfg
-from detectron2.export.patch_instance import export_torchscript_with_patch_instance
+from detectron2.export.patch_instance import export_torchscript_with_patch_instance, patch_instance
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals
@@ -79,9 +79,8 @@ class RPNTest(unittest.TestCase):
             )
             self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_rpn_scriptability(self):
-        torch.manual_seed(121)
         cfg = get_cfg()
         cfg.MODEL.PROPOSAL_GENERATOR.NAME = "RPN"
         cfg.MODEL.ANCHOR_GENERATOR.NAME = "DefaultAnchorGenerator"
@@ -97,21 +96,21 @@ class RPNTest(unittest.TestCase):
         features = {"res4": torch.rand(num_images, num_channels, 1, 2)}
 
         fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
-        proposal_generator_script, new_instance = export_torchscript_with_patch_instance(
+        proposal_generator_script = export_torchscript_with_patch_instance(
             proposal_generator, fields
         )
 
-        box_data = [[1, 1, 3, 3], [2, 2, 6, 6]]
-        all_gt_instances = []
-        for t in box_data:
-            gt_boxes = torch.tensor([t], dtype=torch.float32)
-            gt_instance = new_instance(image_shape)
-            gt_instance.gt_boxes = Boxes(gt_boxes)
-            all_gt_instances.append(gt_instance)
+        with patch_instance(fields) as new_instance:
+            box_data = [[1, 1, 3, 3], [2, 2, 6, 6]]
+            all_gt_instances = []
+            for t in box_data:
+                gt_boxes = torch.tensor([t], dtype=torch.float32)
+                gt_instance = new_instance(image_shape)
+                gt_instance.gt_boxes = Boxes(gt_boxes)
+                all_gt_instances.append(gt_instance)
 
-        with EventStorage():  # capture events in a new storage to discard them
-            proposals, _ = proposal_generator(images, features, all_gt_instances)
-            proposals_script, _ = proposal_generator_script(images, features, all_gt_instances)
+        proposals, _ = proposal_generator(images, features, all_gt_instances)
+        proposals_script, _ = proposal_generator_script(images, features, all_gt_instances)
 
         for proposal, proposal_script in zip(proposals, proposals_script):
             self.assertEqual(proposal.image_size, proposal_script.image_size)
