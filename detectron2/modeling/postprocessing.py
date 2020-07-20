@@ -32,11 +32,15 @@ def detector_postprocess(results, output_height, output_width, mask_threshold=0.
     #   computing scale_x and scale_y.
     if isinstance(output_width, torch.Tensor):
         output_width_tmp = output_width.float()
+    elif isinstance(output_width, int):
+        output_width_tmp = float(output_width)
     else:
         output_width_tmp = output_width
 
     if isinstance(output_height, torch.Tensor):
         output_height_tmp = output_height.float()
+    elif isinstance(output_height, int):
+        output_height_tmp = float(output_height)
     else:
         output_height_tmp = output_height
 
