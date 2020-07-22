@@ -400,7 +400,6 @@ class DefaultTrainer(SimpleTrainer):
             verify_results(self.cfg, self._last_eval_results)
             return self._last_eval_results
 
-    @classmethod
     def wrap_model_with_ddp(self, cfg, model):
         """
         Returns:
