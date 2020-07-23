@@ -664,7 +664,7 @@ def densepose_inference(
         v_i = v[k : k + n_i]
         _local_vars = locals()
         confidences = {
-            name: _local_vars[name]
+            name: _local_vars[name][k : k + n_i]
             for name in (
                 "sigma_1",
                 "sigma_2",

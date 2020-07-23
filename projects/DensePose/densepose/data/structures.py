@@ -2,7 +2,7 @@
 import base64
 import numpy as np
 from io import BytesIO
-from typing import BinaryIO, Dict, Union
+from typing import BinaryIO, Dict, List, Optional, Tuple, Union
 import torch
 from PIL import Image
 from torch.nn import functional as F
@@ -127,14 +127,18 @@ class DensePoseDataRelative(object):
 
     @staticmethod
     def extract_segmentation_mask(annotation):
-        import pycocotools.mask as mask_util
-
         poly_specs = annotation[DensePoseDataRelative.S_KEY]
+        if isinstance(poly_specs, torch.Tensor):
+            # data is already given as mask tensors, no need to decode
+            return poly_specs
+
+        import pycocotools.mask as mask_utils
+
         segm = torch.zeros((DensePoseDataRelative.MASK_SIZE,) * 2, dtype=torch.float32)
         for i in range(DensePoseDataRelative.N_BODY_PARTS):
             poly_i = poly_specs[i]
             if poly_i:
-                mask_i = mask_util.decode(poly_i)
+                mask_i = mask_utils.decode(poly_i)
                 segm[mask_i > 0] = i + 1
         return segm
 
@@ -382,6 +386,8 @@ class DensePoseOutput(object):
         if self.I.shape[0] > 0:
             for el in "SIUV":
                 self.__dict__[el] = torch.flip(self.__dict__[el], [3])
+            for key in self.confidences:
+                self.confidences[key] = torch.flip(self.confidences[key], [3])
             self._flip_iuv_semantics_tensor(transform_data)
             self._flip_segm_semantics_tensor(transform_data)
 
@@ -445,6 +451,88 @@ class DensePoseOutput(object):
         return self.S.size(0)
 
 
+def resample_output_to_bbox(
+    output: DensePoseOutput, bbox_xywh_abs: List[int], confidences: Optional[List[str]] = None
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Convert DensePose output of size [1, C, S, S] into DensePose results [D, H_i, W_i],
+    where `i` is detection index and `D == 2 + len(confidences)`. This conversion:
+     - resamples data to the detection bounding box size (H_i, W_i),
+     - sets label for each pixel of the bounding box as the `argmax` of scores,
+     - assigns values (U, V, confidences) based on label and resampled data
+
+    Args:
+      output (DensePoseOutput): outputs of the DensePose model
+      bbox_xywh_abs (List[int]): bounding box, a list of 4 integer values XYWH
+      confidences (List[str]): optional list of `str` that specifies confidence
+        channels to be resampled and added to the results
+
+    Results:
+        labels (torch.Tensor): tensor [1, H_i, W_i] of `torch.uint8` containing fine
+            segmentation labels of each pixel
+        data (torch.Tensor): tensor [D, H_i, W_i] of `torch.float32` containing
+            for each pixel the estimated U, V coordinates and the requested
+            confidence values in the order that corresponds to `confidences`
+    """
+    x, y, w, h = bbox_xywh_abs
+    w = max(int(w), 1)
+    h = max(int(h), 1)
+    N_out = 2 if confidences is None else 2 + len(confidences)
+    device = output.U.device
+    data = torch.zeros([N_out, h, w], dtype=torch.float32, device=device)
+    # coarse segmentation
+    assert (
+        len(output.S.size()) == 4
+    ), "AnnIndex tensor size should have {} dimensions but has {}".format(4, len(output.S.size()))
+    s_bbox = F.interpolate(output.S, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
+    # fine segmentation
+    assert (
+        len(output.I.size()) == 4
+    ), "IndexUV tensor size should have {} dimensions but has {}".format(4, len(output.S.size()))
+    labels = (
+        F.interpolate(output.I, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
+        * (s_bbox > 0).long()
+    ).squeeze(0)
+    # U
+    assert len(output.U.size()) == 4, "U tensor size should have {} dimensions but has {}".format(
+        4, len(output.U.size())
+    )
+    u_bbox = F.interpolate(output.U, (h, w), mode="bilinear", align_corners=False)
+    # V
+    assert len(output.V.size()) == 4, "V tensor size should have {} dimensions but has {}".format(
+        4, len(output.V.size())
+    )
+    v_bbox = F.interpolate(output.V, (h, w), mode="bilinear", align_corners=False)
+    # confidences
+    if confidences is not None:
+        resampled_confidence = {}
+        for key in output.confidences:
+            resampled_confidence[key] = F.interpolate(
+                output.confidences[key], (h, w), mode="bilinear", align_corners=False
+            )
+
+    # assign data from channels that correspond to the labels
+    for part_id in range(1, u_bbox.size(1)):
+        data[0][labels == part_id] = u_bbox[0, part_id][labels == part_id]
+        data[1][labels == part_id] = v_bbox[0, part_id][labels == part_id]
+        if confidences is None:
+            continue
+        for i, key in enumerate(confidences):
+            if resampled_confidence[key].size(1) != u_bbox.size(1):
+                # confidence is not part-based, don't try to fill it part by part
+                continue
+            data[2 + i][labels == part_id] = resampled_confidence[key][0, part_id][
+                labels == part_id
+            ]
+    if confidences is not None:
+        for i, key in enumerate(confidences):
+            if resampled_confidence[key].size(1) != u_bbox.size(1):
+                # confidence is not part-based, fill the data with the first channel
+                # (targeted for segmentation confidences that have only 1 channel)
+                data[2 + i] = resampled_confidence[key][0, 0]
+    return labels.unsqueeze(0), data
+
+
 class DensePoseResult(object):
     def __init__(self, boxes_xywh, S, I, U, V):
         self.results = []
@@ -465,6 +553,7 @@ class DensePoseResult(object):
         return s
 
     def _output_to_result(self, box_xywh, S, I, U, V):
+        # TODO: reuse resample_output_to_bbox
         x, y, w, h = box_xywh
         w = max(int(w), 1)
         h = max(int(h), 1)
