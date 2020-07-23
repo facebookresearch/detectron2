@@ -30,6 +30,25 @@ def _grouper(iterable: Iterable[Any], n: int, fillvalue=None) -> Iterator[Tuple[
         yield tuple(values)
 
 
+class ScoreBasedFilter:
+    """
+    Filters entries in model output based on their scores
+    Discards all entries with score less than the specified minimum
+    """
+
+    def __init__(self, min_score: float = 0.8):
+        self.min_score = min_score
+
+    def __call__(self, model_output: ModelOutput) -> ModelOutput:
+        for model_output_i in model_output:
+            instances = model_output_i["instances"]
+            if not instances.has("scores"):
+                continue
+            instances_filtered = instances[instances.scores >= self.min_score]
+            model_output_i["instances"] = instances_filtered
+        return model_output
+
+
 class InferenceBasedLoader:
     """
     Data loader based on results inferred by a model. Consists of:
