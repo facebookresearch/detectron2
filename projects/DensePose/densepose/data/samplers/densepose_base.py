@@ -136,9 +136,15 @@ class DensePoseBaseSampler:
             .long()
         )
         I = (
-            F.interpolate(output.I, (sz, sz), mode="bilinear", align_corners=False).argmax(dim=1)
-            * (S > 0).long()
-        ).cpu()
+            (
+                F.interpolate(output.I, (sz, sz), mode="bilinear", align_corners=False).argmax(
+                    dim=1
+                )
+                * (S > 0).long()
+            )
+            .squeeze()
+            .cpu()
+        )
         # Map fine segmentation results to coarse segmentation ground truth
         # TODO: extract this into separate classes
         # coarse segmentation: 1 = Torso, 2 = Right Hand, 3 = Left Hand,
@@ -178,9 +184,7 @@ class DensePoseBaseSampler:
             23: 14,
             24: 14,
         }
-        mask = torch.zeros(
-            (output.I.size(0), sz, sz), dtype=torch.int64, device=torch.device("cpu")
-        )
+        mask = torch.zeros((sz, sz), dtype=torch.int64, device=torch.device("cpu"))
         for i in range(DensePoseDataRelative.N_PART_LABELS):
             mask[I == i + 1] = FINE_TO_COARSE_SEGMENTATION[i + 1]
         return mask

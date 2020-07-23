@@ -5,6 +5,8 @@ from .build import (
     build_detection_train_loader,
     build_combined_loader,
     build_frame_selector,
+    build_inference_based_loaders,
+    has_inference_based_loaders,
 )
 from .combined_loader import CombinedDataLoader
 from .dataset_mapper import DatasetMapper

@@ -7,7 +7,12 @@ from detectron2.config import get_cfg
 from detectron2.engine import default_setup
 from detectron2.modeling import build_model
 
-from densepose import add_dataset_category_config, add_densepose_config, add_hrnet_config
+from densepose import (
+    add_bootstrap_config,
+    add_dataset_category_config,
+    add_densepose_config,
+    add_hrnet_config,
+)
 
 _BASE_CONFIG_DIR = "configs"
 _EVOLUTION_CONFIG_SUB_DIR = "evolution"
@@ -100,6 +105,7 @@ def _get_model_config(config_file):
     """
     cfg = get_cfg()
     add_dataset_category_config(cfg)
+    add_bootstrap_config(cfg)
     add_densepose_config(cfg)
     add_hrnet_config(cfg)
     path = os.path.join(_get_base_config_dir(), config_file)

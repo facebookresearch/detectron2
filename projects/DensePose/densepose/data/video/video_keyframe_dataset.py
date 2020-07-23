@@ -29,53 +29,60 @@ def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
        List[int]: list of keyframe timestaps (timestamp is a count in timebase
            units)
     """
-    with PathManager.open(video_fpath, "rb") as io:
-        container = av.open(io, mode="r")
-        stream = container.streams.video[video_stream_idx]
-        keyframes = []
-        pts = -1
-        # Note: even though we request forward seeks for keyframes, sometimes
-        # a keyframe in backwards direction is returned. We introduce tolerance
-        # as a max count of ignored backward seeks
-        tolerance_backward_seeks = 2
-        while True:
-            try:
-                container.seek(pts + 1, backward=False, any_frame=False, stream=stream)
-            except av.AVError as e:
-                # the exception occurs when the video length is exceeded,
-                # we then return whatever data we've already collected
-                logger = logging.getLogger(__name__)
-                logger.debug(
-                    f"List keyframes: Error seeking video file {video_fpath}, "
-                    f"video stream {video_stream_idx}, pts {pts + 1}, AV error: {e}"
-                )
-                return keyframes
-            except OSError as e:
-                logger = logging.getLogger(__name__)
-                logger.warning(
-                    f"List keyframes: Error seeking video file {video_fpath}, "
-                    f"video stream {video_stream_idx}, pts {pts + 1}, OS error: {e}"
-                )
-                return []
-            packet = next(container.demux(video=video_stream_idx))
-            if packet.pts is not None and packet.pts <= pts:
-                logger = logging.getLogger(__name__)
-                logger.warning(
-                    f"Video file {video_fpath}, stream {video_stream_idx}: "
-                    f"bad seek for packet {pts + 1} (got packet {packet.pts}), "
-                    f"tolerance {tolerance_backward_seeks}."
-                )
-                tolerance_backward_seeks -= 1
-                if tolerance_backward_seeks == 0:
+    try:
+        with PathManager.open(video_fpath, "rb") as io:
+            container = av.open(io, mode="r")
+            stream = container.streams.video[video_stream_idx]
+            keyframes = []
+            pts = -1
+            # Note: even though we request forward seeks for keyframes, sometimes
+            # a keyframe in backwards direction is returned. We introduce tolerance
+            # as a max count of ignored backward seeks
+            tolerance_backward_seeks = 2
+            while True:
+                try:
+                    container.seek(pts + 1, backward=False, any_frame=False, stream=stream)
+                except av.AVError as e:
+                    # the exception occurs when the video length is exceeded,
+                    # we then return whatever data we've already collected
+                    logger = logging.getLogger(__name__)
+                    logger.debug(
+                        f"List keyframes: Error seeking video file {video_fpath}, "
+                        f"video stream {video_stream_idx}, pts {pts + 1}, AV error: {e}"
+                    )
+                    return keyframes
+                except OSError as e:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"List keyframes: Error seeking video file {video_fpath}, "
+                        f"video stream {video_stream_idx}, pts {pts + 1}, OS error: {e}"
+                    )
                     return []
-                pts += 1
-                continue
-            pts = packet.pts
-            if pts is None:
-                return keyframes
-            if packet.is_keyframe:
-                keyframes.append(pts)
-        return keyframes
+                packet = next(container.demux(video=video_stream_idx))
+                if packet.pts is not None and packet.pts <= pts:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"Video file {video_fpath}, stream {video_stream_idx}: "
+                        f"bad seek for packet {pts + 1} (got packet {packet.pts}), "
+                        f"tolerance {tolerance_backward_seeks}."
+                    )
+                    tolerance_backward_seeks -= 1
+                    if tolerance_backward_seeks == 0:
+                        return []
+                    pts += 1
+                    continue
+                tolerance_backward_seeks = 2
+                pts = packet.pts
+                if pts is None:
+                    return keyframes
+                if packet.is_keyframe:
+                    keyframes.append(pts)
+            return keyframes
+    except OSError as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"List keyframes: Error opening video file container {video_fpath}, " f"OS error: {e}"
+        )
     return []
 
 
@@ -93,16 +100,49 @@ def read_keyframes(
     Returns:
         List[Frame]: list of frames that correspond to the specified timestamps
     """
-    with PathManager.open(video_fpath, "rb") as io:
-        container = av.open(io)
-        stream = container.streams.video[video_stream_idx]
-        frames = []
-        for pts in keyframes:
-            container.seek(pts, any_frame=False, stream=stream)
-            frame = next(container.decode(video=0))
-            frames.append(frame)
-        container.close()
-        return frames
+    try:
+        with PathManager.open(video_fpath, "rb") as io:
+            container = av.open(io)
+            stream = container.streams.video[video_stream_idx]
+            frames = []
+            for pts in keyframes:
+                try:
+                    container.seek(pts, any_frame=False, stream=stream)
+                    frame = next(container.decode(video=0))
+                    frames.append(frame)
+                except av.AVError as e:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"Read keyframes: Error seeking video file {video_fpath}, "
+                        f"video stream {video_stream_idx}, pts {pts}, AV error: {e}"
+                    )
+                    container.close()
+                    return frames
+                except OSError as e:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"Read keyframes: Error seeking video file {video_fpath}, "
+                        f"video stream {video_stream_idx}, pts {pts}, OS error: {e}"
+                    )
+                    container.close()
+                    return frames
+                except StopIteration:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"Read keyframes: Error decoding frame from {video_fpath}, "
+                        f"video stream {video_stream_idx}, pts {pts}"
+                    )
+                    container.close()
+                    return frames
+
+            container.close()
+            return frames
+    except OSError as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"Read keyframes: Error opening video file container {video_fpath}, " f"OS error: {e}"
+        )
+        return []
 
 
 def video_list_from_file(video_list_fpath: str, base_path: Optional[str] = None):
@@ -165,14 +205,14 @@ class VideoKeyframeDataset(Dataset):
         fpath = self.video_list[idx]
         keyframes = list_keyframes(fpath)
         if not keyframes:
-            return self.EMPTY_FRAMES
+            return self._EMPTY_FRAMES
         if self.frame_selector is not None:
             keyframes = self.frame_selector(keyframes)
         frames = read_keyframes(fpath, keyframes)
         if not frames:
-            return self.EMPTY_FRAMES
+            return self._EMPTY_FRAMES
         frames = np.stack([frame.to_rgb().to_ndarray() for frame in frames])
-        frames = torch.as_tensor(frames)
+        frames = torch.as_tensor(frames, device=torch.device("cpu"))
         if self.transform is not None:
             frames = self.transform(frames)
         return frames
