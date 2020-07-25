@@ -319,7 +319,6 @@ class Visualizer:
     Style such as color, opacity, label contents, visibility of labels, or even the visibility
     of objects themselves (e.g. when the object is too small) may change according
     to different heuristics, as long as the results still look visually reasonable.
-    For example, we currently do not draw class names if there is only one class.
     To obtain a consistent style, implement custom drawing functions with the primitive
     methods instead.
 
