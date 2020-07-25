@@ -277,10 +277,7 @@ class DefaultTrainer(SimpleTrainer):
         data_loader = self.build_train_loader(cfg)
 
         # For training, wrap with DDP. But don't need this for inference.
-        if comm.get_world_size() > 1:
-            model = DistributedDataParallel(
-                model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
-            )
+        model = self.wrap_model_with_ddp(cfg, model)
         super().__init__(model, data_loader, optimizer)
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
@@ -391,6 +388,22 @@ class DefaultTrainer(SimpleTrainer):
             JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),
             TensorboardXWriter(self.cfg.OUTPUT_DIR),
         ]
+
+    def wrap_model_with_ddp(self, cfg, model):
+        """
+        Wrap model with DDP.
+
+        Returns:
+            torch.nn.Module:
+
+        Overwrite this function if you'd like to implement more with DDP,
+        such as adding `find_unused_parameters=True`.
+        """
+        if comm.get_world_size() > 1:
+            model = DistributedDataParallel(
+                model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
+            )
+        return model
 
     def train(self):
         """
