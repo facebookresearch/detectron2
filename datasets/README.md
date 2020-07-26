@@ -1,9 +1,9 @@
 # Use Builtin Datasets
 
-A dataset can be used by accessing [DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog)
-for its data, or [MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog) for its metadata (class names, etc).
+A dataset can be used by accessing [DatasetCatalog](https://detectron2.readthedocs.io/modules/data.html#detectron2.data.DatasetCatalog)
+for its data, or [MetadataCatalog](https://detectron2.readthedocs.io/modules/data.html#detectron2.data.MetadataCatalog) for its metadata (class names, etc).
 This document explains how to setup the builtin datasets so they can be used by the above APIs.
-[Use Custom Datasets](datasets.md) gives a deeper dive on how to use `DatasetCatalog` and `MetadataCatalog`,
+[Use Custom Datasets](https://detectron2.readthedocs.io/tutorials/datasets.html) gives a deeper dive on how to use `DatasetCatalog` and `MetadataCatalog`,
 and how to add new datasets to them.
 
 Detectron2 has builtin support for a few datasets.
