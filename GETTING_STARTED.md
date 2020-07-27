@@ -36,9 +36,13 @@ to understand its behavior. Some common arguments are:
 
 ### Training & Evaluation in Command Line
 
-We provide a script in "tools/{,plain_}train_net.py", that is made to train
-all the configs provided in detectron2.
-You may want to use it as a reference to write your own training script.
+We provide two scripts in "tools/plain_train_net.py" and "tools/train_net.py",
+that are made to train all the configs provided in detectron2. You may want to
+use it as a reference to write your own training script.
+
+Compared to "train_net.py", "plain_train_net.py" supports fewer default
+features. It also includes fewer abstraction, therefore is easier to add custom
+logic.
 
 To train a model with "train_net.py", first
 setup the corresponding datasets following
