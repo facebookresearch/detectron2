@@ -10,9 +10,6 @@ Alexander Kirillov, Yuxin Wu, Kaiming He, Ross Girshick
 
 In this repository, we release code for PointRend in Detectron2. PointRend can be flexibly applied to both instance and semantic segmentation tasks by building on top of existing state-of-the-art models.
 
-## Installation
-Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html). You are ready to go!
-
 ## Quick start and visualization
 
 This [Colab Notebook](https://colab.research.google.com/drive/1isGPL5h5_cKoPPhVL9XhMokRtHDvmMVL) tutorial contains examples of PointRend usage and visualizations of its point sampling stages.

@@ -50,15 +50,15 @@ class FPN(Backbone):
 
         # Feature map strides and channels from the bottom up network (e.g. ResNet)
         input_shapes = bottom_up.output_shape()
-        in_strides = [input_shapes[f].stride for f in in_features]
-        in_channels = [input_shapes[f].channels for f in in_features]
+        strides = [input_shapes[f].stride for f in in_features]
+        in_channels_per_feature = [input_shapes[f].channels for f in in_features]
 
-        _assert_strides_are_log2_contiguous(in_strides)
+        _assert_strides_are_log2_contiguous(strides)
         lateral_convs = []
         output_convs = []
 
         use_bias = norm == ""
-        for idx, in_channels in enumerate(in_channels):
+        for idx, in_channels in enumerate(in_channels_per_feature):
             lateral_norm = get_norm(norm, out_channels)
             output_norm = get_norm(norm, out_channels)
 
@@ -76,7 +76,7 @@ class FPN(Backbone):
             )
             weight_init.c2_xavier_fill(lateral_conv)
             weight_init.c2_xavier_fill(output_conv)
-            stage = int(math.log2(in_strides[idx]))
+            stage = int(math.log2(strides[idx]))
             self.add_module("fpn_lateral{}".format(stage), lateral_conv)
             self.add_module("fpn_output{}".format(stage), output_conv)
 
@@ -90,7 +90,7 @@ class FPN(Backbone):
         self.in_features = in_features
         self.bottom_up = bottom_up
         # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
-        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in in_strides}
+        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
         # top block output feature maps.
         if self.top_block is not None:
             for s in range(stage, stage + self.top_block.num_levels):
@@ -98,7 +98,7 @@ class FPN(Backbone):
 
         self._out_features = list(self._out_feature_strides.keys())
         self._out_feature_channels = {k: out_channels for k in self._out_features}
-        self._size_divisibility = in_strides[-1]
+        self._size_divisibility = strides[-1]
         assert fuse_type in {"avg", "sum"}
         self._fuse_type = fuse_type
 

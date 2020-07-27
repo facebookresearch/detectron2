@@ -68,9 +68,9 @@ void MatchDetectionsToGroundTruth(
     const std::array<double, 2>& area_range,
     ImageEvaluation* results) {
   // Initialize memory to store return data matches and ignore
-  const uint64_t num_iou_thresholds = iou_thresholds.size();
-  const uint64_t num_ground_truth = ground_truth_sorted_indices.size();
-  const uint64_t num_detections = detection_sorted_indices.size();
+  const int num_iou_thresholds = iou_thresholds.size();
+  const int num_ground_truth = ground_truth_sorted_indices.size();
+  const int num_detections = detection_sorted_indices.size();
   std::vector<uint64_t> ground_truth_matches(
       num_iou_thresholds * num_ground_truth, 0);
   std::vector<uint64_t>& detection_matches = results->detection_matches;
@@ -87,7 +87,7 @@ void MatchDetectionsToGroundTruth(
     for (auto d = 0; d < num_detections; ++d) {
       // information about best match so far (match=-1 -> unmatched)
       double best_iou = std::min(iou_thresholds[t], 1 - 1e-10);
-      int64_t match = -1;
+      int match = -1;
       for (auto g = 0; g < num_ground_truth; ++g) {
         // if this ground truth instance is already matched and not a
         // crowd, it cannot be matched to another detection
@@ -132,7 +132,7 @@ void MatchDetectionsToGroundTruth(
 
   // store detection score results
   results->detection_scores.resize(detection_sorted_indices.size());
-  for (auto d = 0; d < detection_sorted_indices.size(); ++d) {
+  for (size_t d = 0; d < detection_sorted_indices.size(); ++d) {
     results->detection_scores[d] =
         detection_instances[detection_sorted_indices[d]].score;
   }
@@ -147,9 +147,9 @@ std::vector<ImageEvaluation> EvaluateImages(
         image_category_ground_truth_instances,
     const ImageCategoryInstances<InstanceAnnotation>&
         image_category_detection_instances) {
-  const uint64_t num_area_ranges = area_ranges.size();
-  const uint64_t num_images = image_category_ground_truth_instances.size();
-  const uint64_t num_categories =
+  const int num_area_ranges = area_ranges.size();
+  const int num_images = image_category_ground_truth_instances.size();
+  const int num_categories =
       image_category_ious.size() > 0 ? image_category_ious[0].size() : 0;
   std::vector<uint64_t> detection_sorted_indices;
   std::vector<uint64_t> ground_truth_sorted_indices;
@@ -168,11 +168,11 @@ std::vector<ImageEvaluation> EvaluateImages(
 
       SortInstancesByDetectionScore(
           detection_instances, &detection_sorted_indices);
-      if (detection_sorted_indices.size() > max_detections) {
+      if ((int)detection_sorted_indices.size() > max_detections) {
         detection_sorted_indices.resize(max_detections);
       }
 
-      for (auto a = 0; a < area_ranges.size(); ++a) {
+      for (size_t a = 0; a < area_ranges.size(); ++a) {
         SortInstancesByIgnore(
             area_ranges[a],
             ground_truth_instances,
@@ -201,7 +201,7 @@ std::vector<ImageEvaluation> EvaluateImages(
 template <typename T>
 std::vector<T> list_to_vec(const py::list& l) {
   std::vector<T> v(py::len(l));
-  for (int i = 0; i < py::len(l); ++i) {
+  for (int i = 0; i < (int)py::len(l); ++i) {
     v[i] = l[i].cast<T>();
   }
   return v;
@@ -219,11 +219,11 @@ std::vector<T> list_to_vec(const py::list& l) {
 // and is the image_detection_indices[i]'th of the list of detections
 // for the image containing i.  detection_sorted_indices[] defines a sorted
 // permutation of the 3 other outputs
-int64_t BuildSortedDetectionList(
+int BuildSortedDetectionList(
     const std::vector<ImageEvaluation>& evaluations,
     const int64_t evaluation_index,
     const int64_t num_images,
-    const int64_t max_detections,
+    const int max_detections,
     std::vector<uint64_t>* evaluation_indices,
     std::vector<double>* detection_scores,
     std::vector<uint64_t>* detection_sorted_indices,
@@ -238,12 +238,12 @@ int64_t BuildSortedDetectionList(
   image_detection_indices->reserve(num_images * max_detections);
   evaluation_indices->reserve(num_images * max_detections);
   detection_scores->reserve(num_images * max_detections);
-  int64_t num_valid_ground_truth = 0;
+  int num_valid_ground_truth = 0;
   for (auto i = 0; i < num_images; ++i) {
     const ImageEvaluation& evaluation = evaluations[evaluation_index + i];
 
-    for (auto d = 0;
-         d < evaluation.detection_scores.size() && d < max_detections;
+    for (int d = 0;
+         d < (int)evaluation.detection_scores.size() && d < max_detections;
          ++d) { // detected instances
       evaluation_indices->push_back(evaluation_index + i);
       image_detection_indices->push_back(d);
@@ -285,9 +285,9 @@ void ComputePrecisionRecallCurve(
     const int64_t precisions_out_stride,
     const int64_t recalls_out_index,
     const std::vector<double>& recall_thresholds,
-    const int64_t iou_threshold_index,
-    const int64_t num_iou_thresholds,
-    const int64_t num_valid_ground_truth,
+    const int iou_threshold_index,
+    const int num_iou_thresholds,
+    const int num_valid_ground_truth,
     const std::vector<ImageEvaluation>& evaluations,
     const std::vector<uint64_t>& evaluation_indices,
     const std::vector<double>& detection_scores,
@@ -349,11 +349,11 @@ void ComputePrecisionRecallCurve(
   }
 
   // Sample the per instance precision/recall list at each recall threshold
-  for (auto r = 0; r < recall_thresholds.size(); ++r) {
+  for (size_t r = 0; r < recall_thresholds.size(); ++r) {
     // first index in recalls >= recall_thresholds[r]
     std::vector<double>::iterator low = std::lower_bound(
         recalls->begin(), recalls->end(), recall_thresholds[r]);
-    const auto precisions_index = low - recalls->begin();
+    size_t precisions_index = low - recalls->begin();
 
     const auto results_ind = precisions_out_index + r * precisions_out_stride;
     assert(results_ind < precisions_out->size());
@@ -373,16 +373,16 @@ py::dict Accumulate(
     const std::vector<ImageEvaluation>& evaluations) {
   const std::vector<double> recall_thresholds =
       list_to_vec<double>(params.attr("recThrs"));
-  const std::vector<int64_t> max_detections =
-      list_to_vec<int64_t>(params.attr("maxDets"));
-  const int64_t num_iou_thresholds = py::len(params.attr("iouThrs"));
-  const int64_t num_recall_thresholds = py::len(params.attr("recThrs"));
-  const int64_t num_categories = params.attr("useCats").cast<int64_t>() == 1
+  const std::vector<int> max_detections =
+      list_to_vec<int>(params.attr("maxDets"));
+  const int num_iou_thresholds = py::len(params.attr("iouThrs"));
+  const int num_recall_thresholds = py::len(params.attr("recThrs"));
+  const int num_categories = params.attr("useCats").cast<int>() == 1
       ? py::len(params.attr("catIds"))
       : 1;
-  const int64_t num_area_ranges = py::len(params.attr("areaRng"));
-  const int64_t num_max_detections = py::len(params.attr("maxDets"));
-  const int64_t num_images = py::len(params.attr("imgIds"));
+  const int num_area_ranges = py::len(params.attr("areaRng"));
+  const int num_max_detections = py::len(params.attr("maxDets"));
+  const int num_images = py::len(params.attr("imgIds"));
 
   std::vector<double> precisions_out(
       num_iou_thresholds * num_recall_thresholds * num_categories *
@@ -420,7 +420,7 @@ py::dict Accumulate(
         // the outermost loop and images in the innermost loop.
         const int64_t evaluations_index =
             c * num_area_ranges * num_images + a * num_images;
-        int64_t num_valid_ground_truth = BuildSortedDetectionList(
+        int num_valid_ground_truth = BuildSortedDetectionList(
             evaluations,
             evaluations_index,
             num_images,

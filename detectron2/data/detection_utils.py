@@ -498,7 +498,7 @@ def create_keypoint_hflip_indices(dataset_names):
     flip_map.update({v: k for k, v in flip_map.items()})
     flipped_names = [i if i not in flip_map else flip_map[i] for i in names]
     flip_indices = [names.index(i) for i in flipped_names]
-    return np.asarray(flip_indices)
+    return np.asarray(flip_indices, dtype=np.int32)
 
 
 def gen_crop_transform_with_instance(crop_size, image_size, instance):

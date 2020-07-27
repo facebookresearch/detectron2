@@ -43,7 +43,7 @@ install_dep: &install_dep
       name: Install Dependencies
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off opencv-python
+        pip install --progress-bar off opencv-python pytest-xdist
         pip install --progress-bar off torch torchvision
 
 install_detectron2: &install_detectron2
@@ -67,7 +67,7 @@ run_unittests: &run_unittests
   - run:
       name: Run Unit Tests
       command: |
-        python -m unittest discover -v -s tests
+        pytest -n 4 -v tests
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
@@ -85,14 +85,14 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200425
+            - cache-key-{{ .Branch }}-ID-20200720
 
       - <<: *install_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-key-{{ .Branch }}-ID-20200425
+          key: cache-key-{{ .Branch }}-ID-20200720
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -149,7 +149,7 @@ jobs:
       - run:
           name: Run Unit Tests
           command: |
-            docker exec -e CIRCLECI=true -it d2 python3 -m unittest discover -v -s /detectron2/tests
+            docker exec -e CIRCLECI=true -it d2 python3 -m pytest -n 2 -v /detectron2/tests
 
 workflows:
   version: 2

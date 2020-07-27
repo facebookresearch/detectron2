@@ -11,7 +11,7 @@ RUN wget -q https://bootstrap.pypa.io/get-pip.py && \
 	rm get-pip.py
 
 # install dependencies
-RUN pip install tensorboard opencv-python-headless
+RUN pip install tensorboard opencv-python-headless pytest-xdist
 ARG PYTORCH_VERSION
 ARG TORCHVISION_VERSION
 RUN pip install torch==${PYTORCH_VERSION} torchvision==${TORCHVISION_VERSION} -f https://download.pytorch.org/whl/cu101/torch_stable.html
