@@ -209,7 +209,7 @@ class RPN(nn.Module):
         self.pre_nms_topk = {True: pre_nms_topk[0], False: pre_nms_topk[1]}
         self.post_nms_topk = {True: post_nms_topk[0], False: post_nms_topk[1]}
         self.nms_thresh = nms_thresh
-        self.min_box_size = min_box_size
+        self.min_box_size = float(min_box_size)
         self.anchor_boundary_thresh = anchor_boundary_thresh
         if isinstance(loss_weight, float):
             loss_weight = {"loss_rpn_cls": loss_weight, "loss_rpn_loc": loss_weight}
@@ -264,8 +264,11 @@ class RPN(nn.Module):
         label.scatter_(0, neg_idx, 0)
         return label
 
+    @torch.jit.unused
     @torch.no_grad()
-    def label_and_sample_anchors(self, anchors: List[Boxes], gt_instances: List[Instances]):
+    def label_and_sample_anchors(
+        self, anchors: List[Boxes], gt_instances: List[Instances]
+    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
         Args:
             anchors (list[Boxes]): anchors for each feature map.
@@ -321,14 +324,15 @@ class RPN(nn.Module):
             matched_gt_boxes.append(matched_gt_boxes_i)
         return gt_labels, matched_gt_boxes
 
+    @torch.jit.unused
     def losses(
         self,
-        anchors,
+        anchors: List[Boxes],
         pred_objectness_logits: List[torch.Tensor],
         gt_labels: List[torch.Tensor],
         pred_anchor_deltas: List[torch.Tensor],
         gt_boxes: List[torch.Tensor],
-    ):
+    ) -> Dict[str, torch.Tensor]:
         """
         Return the losses from a set of RPN predictions and their associated ground-truth.
 
@@ -388,16 +392,18 @@ class RPN(nn.Module):
             reduction="sum",
         )
         normalizer = self.batch_size_per_image * num_images
-        return {
+        losses = {
             "loss_rpn_cls": objectness_loss / normalizer,
             "loss_rpn_loc": localization_loss / normalizer,
         }
+        losses = {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
+        return losses
 
     def forward(
         self,
         images: ImageList,
         features: Dict[str, torch.Tensor],
-        gt_instances: Optional[Instances] = None,
+        gt_instances: Optional[List[Instances]] = None,
     ):
         """
         Args:
@@ -432,23 +438,23 @@ class RPN(nn.Module):
         ]
 
         if self.training:
+            assert gt_instances is not None, "RPN requires gt_instances in training!"
             gt_labels, gt_boxes = self.label_and_sample_anchors(anchors, gt_instances)
             losses = self.losses(
                 anchors, pred_objectness_logits, gt_labels, pred_anchor_deltas, gt_boxes
             )
-            losses = {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
         else:
             losses = {}
-
         proposals = self.predict_proposals(
             anchors, pred_objectness_logits, pred_anchor_deltas, images.image_sizes
         )
         return proposals, losses
 
-    @torch.no_grad()
+    # TODO: use torch.no_grad when torchscript supports it.
+    # https://github.com/pytorch/pytorch/pull/41371
     def predict_proposals(
         self,
-        anchors,
+        anchors: List[Boxes],
         pred_objectness_logits: List[torch.Tensor],
         pred_anchor_deltas: List[torch.Tensor],
         image_sizes: List[Tuple[int, int]],
@@ -465,19 +471,22 @@ class RPN(nn.Module):
         # The proposals are treated as fixed for approximate joint training with roi heads.
         # This approach ignores the derivative w.r.t. the proposal boxes’ coordinates that
         # are also network responses, so is approximate.
+        pred_objectness_logits = [t.detach() for t in pred_objectness_logits]
+        pred_anchor_deltas = [t.detach() for t in pred_anchor_deltas]
         pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
         return find_top_rpn_proposals(
             pred_proposals,
             pred_objectness_logits,
             image_sizes,
             self.nms_thresh,
-            self.pre_nms_topk[self.training],
-            self.post_nms_topk[self.training],
+            # https://github.com/pytorch/pytorch/issues/41449
+            self.pre_nms_topk[int(self.training)],
+            self.post_nms_topk[int(self.training)],
             self.min_box_size,
             self.training,
         )
 
-    def _decode_proposals(self, anchors, pred_anchor_deltas: List[torch.Tensor]):
+    def _decode_proposals(self, anchors: List[Boxes], pred_anchor_deltas: List[torch.Tensor]):
         """
         Transform anchors into proposals by applying the predicted anchor deltas.
 

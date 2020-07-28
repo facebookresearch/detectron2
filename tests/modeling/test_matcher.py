@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import unittest
+from typing import List
 import torch
 
 from detectron2.config import get_cfg
@@ -29,9 +30,11 @@ class TestMatcher(unittest.TestCase):
         # https://github.com/pytorch/pytorch/issues/38964
         from detectron2.layers import nonzero_tuple  # noqa F401
 
-        scripted_matcher = torch.jit.script(Matcher)
-        scripted_anchor_matcher = scripted_matcher(
-            cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
+        def f(thresholds: List[float], labels: List[int]):
+            return Matcher(thresholds, labels, allow_low_quality_matches=True)
+
+        scripted_anchor_matcher = torch.jit.script(f)(
+            cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS
         )
         matches, match_labels = scripted_anchor_matcher(match_quality_matrix)
         self.assertTrue(torch.allclose(matches, expected_matches))

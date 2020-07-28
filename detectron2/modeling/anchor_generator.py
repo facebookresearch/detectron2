@@ -83,7 +83,7 @@ class DefaultAnchorGenerator(nn.Module):
     "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks".
     """
 
-    box_dim: int = 4
+    box_dim: torch.jit.Final[int] = 4
     """
     the dimension of each anchor box.
     """
