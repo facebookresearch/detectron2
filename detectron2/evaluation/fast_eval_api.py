@@ -58,7 +58,7 @@ class COCOeval_opt(COCOeval):
             instances_cpp = []
             for instance in instances:
                 instance_cpp = _C.InstanceAnnotation(
-                    instance["id"],
+                    int(instance["id"]),
                     instance["score"] if is_det else instance.get("score", 0.0),
                     instance["area"],
                     bool(instance.get("iscrowd", 0)),
