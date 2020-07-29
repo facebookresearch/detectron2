@@ -115,11 +115,11 @@ class TestROIPooler(unittest.TestCase):
         scripted_roialignv2_out = torch.jit.script(roialignv2_pooler)(features, rois)
         self.assertTrue(torch.equal(roialignv2_out, scripted_roialignv2_out))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_scriptability_cpu(self):
         self._test_scriptability(device="cpu")
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_scriptability_gpu(self):
         self._test_scriptability(device="cuda")
