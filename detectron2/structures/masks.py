@@ -202,7 +202,8 @@ class BitMasks:
     def get_bounding_boxes(self) -> Boxes:
         """
         Returns:
-            Boxes: tight bounding boxes around bitmasks. If a mask is empty, it's bounding box will be all zero.
+            Boxes: tight bounding boxes around bitmasks.
+            If a mask is empty, it's bounding box will be all zero.
         """
         boxes = torch.zeros(self.tensor.shape[0], 4, dtype=torch.float32)
         x_any = torch.any(self.tensor, dim=1)
