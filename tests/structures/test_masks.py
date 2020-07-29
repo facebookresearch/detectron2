@@ -13,19 +13,12 @@ class TestBitMask(unittest.TestCase):
                     [False, False, True, True],
                     [False, True, True, False],
                     [False, True, True, False],
-                    [False, False, False, False],
                 ],
-                [
-                    [False, False, False, False],
-                    [False, False, False, False],
-                    [False, False, False, False],
-                    [False, False, False, False],
-                    [False, False, False, False],
-                ],
+                torch.zeros(4, 4),
             ]
         )
         bitmask = BitMasks(mask)
-        box_true = torch.tensor([[1, 0, 3, 3], [0, 0, 0, 0]], dtype=torch.float32)
+        box_true = torch.tensor([[1, 0, 4, 4], [0, 0, 0, 0]], dtype=torch.float32)
         box = bitmask.get_bounding_boxes()
         self.assertTrue(torch.all(box.tensor == box_true))
 
