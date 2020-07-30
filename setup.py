@@ -175,7 +175,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
-        "Pillow>=7.0",  # or use pillow-simd for better performance
+        "Pillow>=7.1",  # or use pillow-simd for better performance
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",

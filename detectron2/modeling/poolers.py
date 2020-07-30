@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import math
-import sys
 from typing import List
 import torch
 from torch import nn
