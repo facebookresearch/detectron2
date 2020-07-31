@@ -73,7 +73,7 @@ run_unittests: &run_unittests
 # Jobs to run
 # -------------------------------------------------------------------------------------
 jobs:
-  cpu_tests:
+  linux_cpu_tests:
     <<: *cpu
 
     working_directory: ~/detectron2
@@ -85,19 +85,19 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200720
+            - cache-key-{{ .Branch }}-ID-20200730
 
       - <<: *install_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-key-{{ .Branch }}-ID-20200720
+          key: cache-key-{{ .Branch }}-ID-20200730
 
       - <<: *install_detectron2
       - <<: *run_unittests
 
-  gpu_tests:
+  linux_gpu_tests:
     <<: *gpu
 
     parameters:
@@ -155,12 +155,16 @@ workflows:
   version: 2
   regular_test:
     jobs:
-      - cpu_tests
-      - gpu_tests:
-          name: gpu_tests_pytorch1.4
+      - linux_cpu_tests
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.4
           pytorch_version: '1.4'
           torchvision_version: '0.5'
-      - gpu_tests:
-          name: gpu_tests_pytorch1.5
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.5
           pytorch_version: '1.5'
           torchvision_version: '0.6'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.6
+          pytorch_version: '1.6'
+          torchvision_version: '0.7'

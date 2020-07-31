@@ -35,10 +35,12 @@ jobs:
     if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     strategy:
       matrix:
-        torch: [1.5]
+        torch: [1.5, 1.6]
         include:
           - torch: 1.5
             torchvision: 0.6
+          - torch: 1.6
+            torchvision: 0.7
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -67,4 +69,4 @@ jobs:
           CC=clang CXX=clang++ python -m pip install -e .
           python -m detectron2.utils.collect_env
       - name: Run unittests
-        run: pytest -n 4 -v tests/
+        run: python -m pytest -n 4 -v tests/
