@@ -533,22 +533,33 @@ class DensePoseDataFilter(object):
         self.keep_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
 
     @torch.no_grad()
-    def __call__(self, proposals_with_targets):
+    def __call__(self, features: List[torch.Tensor], proposals_with_targets: List[Instances]):
         """
         Filters proposals with targets to keep only the ones relevant for
         DensePose training
-        proposals: list(Instances), each element of the list corresponds to
-            various instances (proposals, GT for boxes and densepose) for one
-            image
+
+        Args:
+            features (list[Tensor]): input data as a list of features,
+                each feature is a tensor. Axis 0 represents the number of
+                images `N` in the input data; axes 1-3 are channels,
+                height, and width, which may vary between features
+                (e.g., if a feature pyramid is used).
+            proposals_with_targets (list[Instances]): length `N` list of
+                `Instances`. The i-th `Instances` contains instances
+                (proposals, GT) for the i-th input image,
         """
         proposals_filtered = []
-        for proposals_per_image in proposals_with_targets:
-            if not hasattr(proposals_per_image, "gt_densepose") and (
-                not hasattr(proposals_per_image, "gt_masks") or not self.keep_masks
+        feature_mask = torch.ones(
+            len(proposals_with_targets),
+            dtype=torch.bool,
+            device=features[0].device if len(features) > 0 else torch.device("cpu"),
+        )
+        for i, proposals_per_image in enumerate(proposals_with_targets):
+            if not proposals_per_image.has("gt_densepose") and (
+                not proposals_per_image.has("gt_masks") or not self.keep_masks
             ):
+                feature_mask[i] = 0
                 continue
-            assert hasattr(proposals_per_image, "gt_boxes")
-            assert hasattr(proposals_per_image, "proposal_boxes")
             gt_boxes = proposals_per_image.gt_boxes
             est_boxes = proposals_per_image.proposal_boxes
             # apply match threshold for densepose head
@@ -582,11 +593,15 @@ class DensePoseDataFilter(object):
                 for i, (dp_target, mask_target) in enumerate(zip(gt_densepose, gt_masks))
                 if (dp_target is not None) or (mask_target is not None)
             ]
+            if not len(selected_indices):
+                feature_mask[i] = 0
+                continue
             if len(selected_indices) != N_gt_boxes:
                 proposals_per_image = proposals_per_image[selected_indices]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
             proposals_filtered.append(proposals_per_image)
-        return proposals_filtered
+        features_filtered = [feature[feature_mask] for feature in features]
+        return features_filtered, proposals_filtered
 
 
 def build_densepose_head(cfg, input_channels):
@@ -664,7 +679,7 @@ def densepose_inference(
         v_i = v[k : k + n_i]
         _local_vars = locals()
         confidences = {
-            name: _local_vars[name]
+            name: _local_vars[name][k : k + n_i]
             for name in (
                 "sigma_1",
                 "sigma_2",
@@ -1188,7 +1203,15 @@ class DensePoseLosses(object):
             losses.update(losses_mask)
             return losses
 
+    def produce_fake_mask_losses(self, densepose_outputs):
+        losses = {}
+        segm_scores, _, _, _ = densepose_outputs
+        losses["loss_densepose_S"] = segm_scores.sum() * 0
+        return losses
+
     def produce_mask_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
+        if not len(proposals_with_gt):
+            return self.produce_fake_mask_losses(densepose_outputs)
         losses = {}
         # densepose outputs are computed for all images and all bounding boxes;
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
@@ -1199,11 +1222,40 @@ class DensePoseLosses(object):
                 proposals_with_gt, segm_scores
             )
         if (mask_loss_data.masks_gt is None) or (mask_loss_data.masks_est is None):
-            losses["loss_densepose_S"] = segm_scores.sum() * 0
-            return losses
+            return self.produce_fake_mask_losses(densepose_outputs)
         losses["loss_densepose_S"] = (
             F.cross_entropy(mask_loss_data.masks_est, mask_loss_data.masks_gt.long()) * self.w_segm
         )
+        return losses
+
+    def produce_fake_densepose_losses(self, densepose_outputs, densepose_confidences):
+        # we need to keep the same computation graph on all the GPUs to
+        # perform reduction properly. Hence even if we have no data on one
+        # of the GPUs, we still need to generate the computation graph.
+        # Add fake (zero) losses in the form Tensor.sum() * 0
+        s, index_uv, u, v = densepose_outputs
+        conf_type = self.confidence_model_cfg.uv_confidence.type
+        (
+            sigma_1,
+            sigma_2,
+            kappa_u,
+            kappa_v,
+            fine_segm_confidence,
+            coarse_segm_confidence,
+        ) = densepose_confidences
+        losses = {}
+        losses["loss_densepose_I"] = index_uv.sum() * 0
+        if not self.segm_trained_by_masks:
+            losses["loss_densepose_S"] = s.sum() * 0
+        if self.confidence_model_cfg.uv_confidence.enabled:
+            losses["loss_densepose_UV"] = (u.sum() + v.sum()) * 0
+            if conf_type == DensePoseUVConfidenceType.IID_ISO:
+                losses["loss_densepose_UV"] += sigma_2.sum() * 0
+            elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
+                losses["loss_densepose_UV"] += (sigma_2.sum() + kappa_u.sum() + kappa_v.sum()) * 0
+        else:
+            losses["loss_densepose_U"] = u.sum() * 0
+            losses["loss_densepose_V"] = v.sum() * 0
         return losses
 
     def produce_densepose_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
@@ -1212,6 +1264,8 @@ class DensePoseLosses(object):
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
         # the outputs will have size(0) == 3+1+2+1 == 7
         s, index_uv, u, v = densepose_outputs
+        if not len(proposals_with_gt):
+            return self.produce_fake_densepose_losses(densepose_outputs, densepose_confidences)
         (
             sigma_1,
             sigma_2,
@@ -1249,21 +1303,7 @@ class DensePoseLosses(object):
         # of the GPUs, we still need to generate the computation graph.
         # Add fake (zero) loss in the form Tensor.sum() * 0
         if not n_batch:
-            losses["loss_densepose_I"] = index_uv.sum() * 0
-            if not self.segm_trained_by_masks:
-                losses["loss_densepose_S"] = s.sum() * 0
-            if self.confidence_model_cfg.uv_confidence.enabled:
-                losses["loss_densepose_UV"] = (u.sum() + v.sum()) * 0
-                if conf_type == DensePoseUVConfidenceType.IID_ISO:
-                    losses["loss_densepose_UV"] += sigma_2.sum() * 0
-                elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
-                    losses["loss_densepose_UV"] += (
-                        sigma_2.sum() + kappa_u.sum() + kappa_v.sum()
-                    ) * 0
-            else:
-                losses["loss_densepose_U"] = u.sum() * 0
-                losses["loss_densepose_V"] = v.sum() * 0
-            return losses
+            return self.produce_fake_densepose_losses(densepose_outputs, densepose_confidences)
 
         zh = u.size(2)
         zw = u.size(3)

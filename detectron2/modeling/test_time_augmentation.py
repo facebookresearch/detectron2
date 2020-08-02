@@ -13,7 +13,7 @@ from detectron2.data.transforms import (
     RandomFlip,
     ResizeShortestEdge,
     ResizeTransform,
-    apply_transform_gens,
+    apply_augmentations,
 )
 from detectron2.structures import Boxes, Instances
 
@@ -61,18 +61,18 @@ class DatasetMapperTTA:
             pre_tfm = NoOpTransform()
 
         # Create all combinations of augmentations to use
-        tfm_gen_candidates = []  # each element is a list[TransformGen]
+        aug_candidates = []  # each element is a list[Augmentation]
         for min_size in self.min_sizes:
             resize = ResizeShortestEdge(min_size, self.max_size)
-            tfm_gen_candidates.append([resize])  # resize only
+            aug_candidates.append([resize])  # resize only
             if self.flip:
                 flip = RandomFlip(prob=1.0)
-                tfm_gen_candidates.append([resize, flip])  # resize + flip
+                aug_candidates.append([resize, flip])  # resize + flip
 
         # Apply all the augmentations
         ret = []
-        for tfm_gen in tfm_gen_candidates:
-            new_image, tfms = apply_transform_gens(tfm_gen, np.copy(numpy_image))
+        for aug in aug_candidates:
+            new_image, tfms = apply_augmentations(aug, np.copy(numpy_image))
             torch_image = torch.from_numpy(np.ascontiguousarray(new_image.transpose(2, 0, 1)))
 
             dic = copy.deepcopy(dataset_dict)

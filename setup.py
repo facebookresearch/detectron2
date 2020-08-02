@@ -102,6 +102,7 @@ def get_extensions():
         if not is_rocm_pytorch:
             define_macros += [("WITH_CUDA", None)]
             extra_compile_args["nvcc"] = [
+                "-O3",
                 "-DCUDA_HAS_FP16=1",
                 "-D__CUDA_NO_HALF_OPERATORS__",
                 "-D__CUDA_NO_HALF_CONVERSIONS__",
@@ -174,7 +175,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
-        "Pillow",  # you can also use pillow-simd for better performance
+        "Pillow>=7.1",  # or use pillow-simd for better performance
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",
@@ -191,7 +192,7 @@ setup(
         "all": ["shapely", "psutil"],
         "dev": [
             "flake8==3.8.1",
-            "isort",
+            "isort==4.3.21",
             "black @ git+https://github.com/psf/black@673327449f86fce558adde153bb6cbe54bfebad2",
             "flake8-bugbear",
             "flake8-comprehensions",

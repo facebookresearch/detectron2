@@ -123,13 +123,17 @@ class DensePoseROIHeads(StandardROIHeads):
         )
         self.densepose_losses = build_densepose_losses(cfg)
 
-    def _forward_densepose(self, features: List[torch.Tensor], instances: List[Instances]):
+    def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances]):
         """
         Forward logic of the densepose prediction branch.
 
         Args:
-            features (list[Tensor]): #level input features for densepose prediction
-            instances (list[Instances]): the per-image instances to train/predict densepose.
+            features (dict[str, Tensor]): input data as a mapping from feature
+                map name to tensor. Axis 0 represents the number of images `N` in
+                the input data; axes 1-3 are channels, height, and width, which may
+                vary between feature maps (e.g., if a feature pyramid is used).
+            instances (list[Instances]): length `N` list of `Instances`. The i-th
+                `Instances` contains instances for the i-th input image,
                 In training, they can be the proposals.
                 In inference, they can be the predicted boxes.
 
@@ -143,23 +147,17 @@ class DensePoseROIHeads(StandardROIHeads):
         features = [features[f] for f in self.in_features]
         if self.training:
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
-            proposals_dp = self.densepose_data_filter(proposals)
-            if len(proposals_dp) > 0:
-                # NOTE may deadlock in DDP if certain workers have empty proposals_dp
-                proposal_boxes = [x.proposal_boxes for x in proposals_dp]
+            features, proposals = self.densepose_data_filter(features, proposals)
+            proposal_boxes = [x.proposal_boxes for x in proposals]
 
-                if self.use_decoder:
-                    features = [self.decoder(features)]
+            if self.use_decoder:
+                features = [self.decoder(features)]
 
-                features_dp = self.densepose_pooler(features, proposal_boxes)
-                densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_outputs, _, confidences, _ = self.densepose_predictor(
-                    densepose_head_outputs
-                )
-                densepose_loss_dict = self.densepose_losses(
-                    proposals_dp, densepose_outputs, confidences
-                )
-                return densepose_loss_dict
+            features_dp = self.densepose_pooler(features, proposal_boxes)
+            densepose_head_outputs = self.densepose_head(features_dp)
+            densepose_outputs, _, confidences, _ = self.densepose_predictor(densepose_head_outputs)
+            densepose_loss_dict = self.densepose_losses(proposals, densepose_outputs, confidences)
+            return densepose_loss_dict
         else:
             pred_boxes = [x.pred_boxes for x in instances]
 

@@ -23,7 +23,7 @@ We provide a tool, `caffe2_converter.py` as an example that uses
 these APIs to convert a standard model.
 
 To convert an official Mask R-CNN trained on COCO, first
-[prepare the COCO dataset](../../datasets/), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
+[prepare the COCO dataset](builtin_datasets.md), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
 cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
 	--output ./caffe2_model --run-eval \
@@ -32,13 +32,12 @@ cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-Insta
 ```
 
 Note that:
-1. The conversion needs valid sample inputs & weights to trace the model. That's why the script requires the dataset.
+1. The conversion needs valid weights & sample inputs to trace the model. That's why the script requires the dataset.
 	 You can modify the script to obtain sample inputs in other ways.
 2. With the `--run-eval` flag, it will evaluate the converted models to verify its accuracy.
    The accuracy is typically slightly different (within 0.1 AP) from PyTorch due to
 	 numerical precisions between different implementations.
-	 It's recommended to always verify the accuracy in case your custom model is not supported by the
-	 conversion.
+	 It's recommended to always verify the accuracy in case the conversion is not successful.
 
 The converted model is available at the specified `caffe2_model/` directory. Two files `model.pb`
 and `model_init.pb` that contain network structure and network parameters are necessary for deployment.
@@ -81,12 +80,14 @@ Note that:
 
 * The converted models do not contain post-processing operations that
   transform raw layer outputs into formatted predictions.
-  The example only produces raw outputs (28x28 masks) from the final
+  For example, the command in this tutorial only produces raw outputs (28x28 masks) from the final
   layers that are not post-processed, because in actual deployment, an application often needs
-  its custom lightweight post-processing (e.g. full-image masks for every detected object is often not necessary).
+  its custom lightweight post-processing, so this step is left for users.
 
-We also provide a python wrapper around the converted model, in the
+To use the converted model in python,
+we provide a python wrapper around the converted model, in the
 [Caffe2Model.\_\_call\_\_](../modules/export.html#detectron2.export.Caffe2Model.__call__) method.
 This method has an interface that's identical to the [pytorch versions of models](./models.md),
 and it internally applies pre/post-processing code to match the formats.
-They can serve as a reference for pre/post-processing in actual deployment.
+This wrapper can serve as a reference for how to use caffe2's python API,
+or for how to implement pre/post-processing in actual deployment.

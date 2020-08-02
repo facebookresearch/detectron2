@@ -211,8 +211,7 @@ class Boxes:
         keep = (widths > threshold) & (heights > threshold)
         return keep
 
-    @torch.jit.unused
-    def __getitem__(self, item: Union[int, slice, torch.BoolTensor]):
+    def __getitem__(self, item):
         """
         Args:
             item: int, slice, or a BoolTensor

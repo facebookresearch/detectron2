@@ -12,14 +12,14 @@ In addition to these official baseline models, you can find more models in [proj
 
 #### How to Read the Tables
 * The "Name" column contains a link to the config file. Running `tools/train_net.py` with this config file
-	and 8 GPUs will reproduce the model.
+  and 8 GPUs will reproduce the model.
 * Training speed is averaged across the entire training.
-	We keep updating the speed with latest version of detectron2/pytorch/etc.,
-	so they might be different from the `metrics` file.
-	Training speed for multi-machine jobs is not provided.
+  We keep updating the speed with latest version of detectron2/pytorch/etc.,
+  so they might be different from the `metrics` file.
+  Training speed for multi-machine jobs is not provided.
 * Inference speed is measured by `tools/train_net.py --eval-only`, or [inference_on_dataset()](https://detectron2.readthedocs.io/modules/evaluation.html#detectron2.evaluation.inference_on_dataset),
   with batch size 1 in detectron2 directly.
-	Measuring it with custom code may introduce other overhead.
+  Measuring it with custom code may introduce other overhead.
   Actual deployment in production should in general be faster than the given inference
   speed due to more optimizations.
 * The *model id* column is provided for ease of reference.
@@ -49,12 +49,15 @@ In addition to these official baseline models, you can find more models in [proj
 
 #### ImageNet Pretrained Models
 
-We provide backbone models pretrained on ImageNet-1k dataset.
-These models have __different__ format from those provided in Detectron: we do not fuse BatchNorm into an affine layer.
+It's common to initialize from backbone models pre-trained on ImageNet classification tasks. The following backbone models are available:
+
 * [R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl): converted copy of [MSRA's original ResNet-50](https://github.com/KaimingHe/deep-residual-networks) model.
 * [R-101.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-101.pkl): converted copy of [MSRA's original ResNet-101](https://github.com/KaimingHe/deep-residual-networks) model.
 * [X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl): ResNeXt-101-32x8d model trained with Caffe2 at FB.
+* [R-50.pkl (torchvision)](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/torchvision/R-50.pkl): converted copy of [torchvision's ResNet-50](https://pytorch.org/docs/stable/torchvision/models.html#torchvision.models.resnet50) model.
+  More details can be found in [the conversion script](tools/convert-torchvision-to-d2.py).
 
+Note that the above models have __different__ format from those provided in Detectron: we do not fuse BatchNorm into an affine layer.
 Pretrained models in Detectron's format can still be used. For example:
 * [X-152-32x8d-IN5k.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/25093814/X-152-32x8d-IN5k.pkl):
   ResNeXt-152-32x8d model trained on ImageNet-5k with Caffe2 at FB (see ResNeXt paper for details on ImageNet-5k).
@@ -62,8 +65,6 @@ Pretrained models in Detectron's format can still be used. For example:
   ResNet-50 with Group Normalization.
 * [R-101-GN.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/47592356/R-101-GN.pkl):
   ResNet-101 with Group Normalization.
-
-Torchvision's ResNet models can be used after converted by [this script](tools/convert-torchvision-to-d2.py).
 
 #### License
 
@@ -566,7 +567,7 @@ They are roughly 24 epochs of LVISv0.5 data.
 The final results of these configs have large variance across different runs.
 
 <!--
-./gen_html_table.py --config 'LVIS-InstanceSegmentation/mask*50*' 'LVIS-InstanceSegmentation/mask*101*' --name R50-FPN R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP
+./gen_html_table.py --config 'LVISv0.5-InstanceSegmentation/mask*50*' 'LVISv0.5-InstanceSegmentation/mask*101*' --name R50-FPN R101-FPN X101-FPN --fields lr_sched train_speed inference_speed mem box_AP mask_AP
 -->
 
 
@@ -584,7 +585,7 @@ The final results of these configs have large variance across different runs.
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
 <!-- ROW: mask_rcnn_R_50_FPN_1x -->
- <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
+ <tr><td align="left"><a href="configs/LVISv0.5-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml">R50-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.292</td>
 <td align="center">0.107</td>
@@ -592,10 +593,10 @@ The final results of these configs have large variance across different runs.
 <td align="center">23.6</td>
 <td align="center">24.4</td>
 <td align="center">144219072</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/model_final_571f7c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/metrics.json">metrics</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/model_final_571f7c.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_R_101_FPN_1x -->
- <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x.yaml">R101-FPN</a></td>
+ <tr><td align="left"><a href="configs/LVISv0.5-InstanceSegmentation/mask_rcnn_R_101_FPN_1x.yaml">R101-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.371</td>
 <td align="center">0.114</td>
@@ -603,10 +604,10 @@ The final results of these configs have large variance across different runs.
 <td align="center">25.6</td>
 <td align="center">25.9</td>
 <td align="center">144219035</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/model_final_824ab5.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/metrics.json">metrics</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/model_final_824ab5.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_X_101_32x8d_FPN_1x -->
- <tr><td align="left"><a href="configs/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x.yaml">X101-FPN</a></td>
+ <tr><td align="left"><a href="configs/LVISv0.5-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x.yaml">X101-FPN</a></td>
 <td align="center">1x</td>
 <td align="center">0.712</td>
 <td align="center">0.151</td>
@@ -614,7 +615,7 @@ The final results of these configs have large variance across different runs.
 <td align="center">26.7</td>
 <td align="center">27.1</td>
 <td align="center">144219108</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/model_final_5e3439.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVIS-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/metrics.json">metrics</a></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/model_final_5e3439.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 

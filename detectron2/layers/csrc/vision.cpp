@@ -4,6 +4,7 @@
 #include "ROIAlign/ROIAlign.h"
 #include "ROIAlignRotated/ROIAlignRotated.h"
 #include "box_iou_rotated/box_iou_rotated.h"
+#include "cocoeval/cocoeval.h"
 #include "deformable/deform_conv.h"
 #include "nms_rotated/nms_rotated.h"
 
@@ -103,6 +104,15 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       "roi_align_rotated_backward",
       &ROIAlignRotated_backward,
       "Backward pass for Rotated ROI-Align Operator");
-}
 
+  m.def("COCOevalAccumulate", &COCOeval::Accumulate, "COCOeval::Accumulate");
+  m.def(
+      "COCOevalEvaluateImages",
+      &COCOeval::EvaluateImages,
+      "COCOeval::EvaluateImages");
+  pybind11::class_<COCOeval::InstanceAnnotation>(m, "InstanceAnnotation")
+      .def(pybind11::init<uint64_t, double, double, bool, bool>());
+  pybind11::class_<COCOeval::ImageEvaluation>(m, "ImageEvaluation")
+      .def(pybind11::init<>());
+}
 } // namespace detectron2

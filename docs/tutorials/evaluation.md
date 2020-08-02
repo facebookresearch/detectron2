@@ -52,5 +52,17 @@ This will execute `model` on all inputs from `data_loader`, and call evaluator t
 
 Compared to running the evaluation manually using the model, the benefit of this function is that
 evaluators can be merged together using [DatasetEvaluators](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluators),
-and all the evaluation can fininsh in one forward pass over the dataset.
+and all the evaluation can finish in one forward pass over the dataset.
 This function also provides accurate speed benchmarks for the given model and dataset.
+
+## Evaluators for custom dataset
+
+Many evaluators in detectron2 are made for specific datasets,
+in order to obtain scores using each dataset's official API.
+In addition to that, two evaluators are able to evaluate any generic dataset
+that follows detectron2's [standard dataset format](./datasets.md), so they
+can be used to evaluate custom datasets:
+
+* [COCOEvaluator](../modules/evaluation.html#detectron2.evaluation.COCOEvaluator) is able to evaluate AP (Average Precision) for box detection,
+  instance segmentation, keypoint detection on any custom dataset.
+* [SemSegEvaluator](../modules/evaluation.html#detectron2.evaluation.SemSegEvaluator) is able to evaluate semantic segmentation metrics on any custom dataset.

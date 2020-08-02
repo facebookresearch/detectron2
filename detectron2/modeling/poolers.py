@@ -1,18 +1,30 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import math
-import sys
 from typing import List
 import torch
 from torch import nn
 from torchvision.ops import RoIPool
 
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple
+from detectron2.structures import Boxes
+
+"""
+To export ROIPooler to torchscript, in this file, variables that should be annotated with
+`Union[List[Boxes], List[RotatedBoxes]]` are only annotated with `List[Boxes]`.
+
+TODO: Correct these annotations when torchscript support `Union`.
+https://github.com/pytorch/pytorch/issues/41412
+"""
 
 __all__ = ["ROIPooler"]
 
 
 def assign_boxes_to_levels(
-    box_lists, min_level: int, max_level: int, canonical_box_size: int, canonical_level: int
+    box_lists: List[Boxes],
+    min_level: int,
+    max_level: int,
+    canonical_box_size: int,
+    canonical_level: int,
 ):
     """
     Map each box in `box_lists` to a feature map level index and return the assignment
@@ -35,11 +47,10 @@ def assign_boxes_to_levels(
             `self.min_level`, for the corresponding box (so value i means the box is at
             `self.min_level + i`).
     """
-    eps = sys.float_info.epsilon
     box_sizes = torch.sqrt(cat([boxes.area() for boxes in box_lists]))
     # Eqn.(1) in FPN paper
     level_assignments = torch.floor(
-        canonical_level + torch.log2(box_sizes / canonical_box_size + eps)
+        canonical_level + torch.log2(box_sizes / canonical_box_size + 1e-8)
     )
     # clamp level to (min, max), in case the box size is too large or too small
     # for the available feature maps
@@ -47,7 +58,14 @@ def assign_boxes_to_levels(
     return level_assignments.to(torch.int64) - min_level
 
 
-def convert_boxes_to_pooler_format(box_lists):
+def _fmt_box_list(box_tensor, batch_index: int):
+    repeated_index = torch.full(
+        (len(box_tensor), 1), batch_index, dtype=box_tensor.dtype, device=box_tensor.device
+    )
+    return cat((repeated_index, box_tensor), dim=1)
+
+
+def convert_boxes_to_pooler_format(box_lists: List[Boxes]):
     """
     Convert all boxes in `box_lists` to the low-level format used by ROI pooling ops
     (see description under Returns).
@@ -70,15 +88,8 @@ def convert_boxes_to_pooler_format(box_lists):
             where batch index is the index in [0, N) identifying which batch image the
             rotated box (x_ctr, y_ctr, width, height, angle_degrees) comes from.
     """
-
-    def fmt_box_list(box_tensor, batch_index):
-        repeated_index = torch.full(
-            (len(box_tensor), 1), batch_index, dtype=box_tensor.dtype, device=box_tensor.device
-        )
-        return cat((repeated_index, box_tensor), dim=1)
-
     pooler_fmt_boxes = cat(
-        [fmt_box_list(box_list.tensor, i) for i, box_list in enumerate(box_lists)], dim=0
+        [_fmt_box_list(box_list.tensor, i) for i, box_list in enumerate(box_lists)], dim=0
     )
 
     return pooler_fmt_boxes
@@ -171,12 +182,12 @@ class ROIPooler(nn.Module):
         assert (
             len(scales) == self.max_level - self.min_level + 1
         ), "[ROIPooler] Sizes of input featuremaps do not form a pyramid!"
-        assert 0 < self.min_level and self.min_level <= self.max_level
+        assert 0 <= self.min_level and self.min_level <= self.max_level
         self.canonical_level = canonical_level
         assert canonical_box_size > 0
         self.canonical_box_size = canonical_box_size
 
-    def forward(self, x: List[torch.Tensor], box_lists):
+    def forward(self, x: List[torch.Tensor], box_lists: List[Boxes]):
         """
         Args:
             x (list[Tensor]): A list of feature maps of NCHW shape, with scales matching those
@@ -226,9 +237,9 @@ class ROIPooler(nn.Module):
             (num_boxes, num_channels, output_size, output_size), dtype=dtype, device=device
         )
 
-        for level, (x_level, pooler) in enumerate(zip(x, self.level_poolers)):
+        for level, pooler in enumerate(self.level_poolers):
             inds = nonzero_tuple(level_assignments == level)[0]
             pooler_fmt_boxes_level = pooler_fmt_boxes[inds]
-            output[inds] = pooler(x_level, pooler_fmt_boxes_level)
+            output[inds] = pooler(x[level], pooler_fmt_boxes_level)
 
         return output

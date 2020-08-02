@@ -46,7 +46,7 @@ class CityscapesEvaluator(DatasetEvaluator):
 
 class CityscapesInstanceEvaluator(CityscapesEvaluator):
     """
-    Evaluate instance segmentation results using cityscapes API.
+    Evaluate instance segmentation results on cityscapes dataset using cityscapes API.
 
     Note:
         * It does not work in multi-machine distributed training.
@@ -121,7 +121,7 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
 
 class CityscapesSemSegEvaluator(CityscapesEvaluator):
     """
-    Evaluate semantic segmentation results using cityscapes API.
+    Evaluate semantic segmentation results on cityscapes dataset using cityscapes API.
 
     Note:
         * It does not work in multi-machine distributed training.

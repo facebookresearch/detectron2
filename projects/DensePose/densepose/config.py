@@ -15,6 +15,58 @@ def add_dataset_category_config(cfg: CN):
     _C.DATASETS.WHITELISTED_CATEGORIES = CN(new_allowed=True)
 
 
+def add_bootstrap_config(cfg: CN):
+    """
+    """
+    _C = cfg
+    _C.BOOTSTRAP_DATASETS = []
+    _C.BOOTSTRAP_MODEL = CN()
+    _C.BOOTSTRAP_MODEL.WEIGHTS = ""
+    _C.BOOTSTRAP_MODEL.DEVICE = "cuda"
+
+
+def get_bootstrap_dataset_config() -> CN:
+    _C = CN()
+    _C.DATASET = ""
+    # ratio used to mix data loaders
+    _C.RATIO = 0.1
+    # image loader
+    _C.IMAGE_LOADER = CN(new_allowed=True)
+    _C.IMAGE_LOADER.TYPE = ""
+    _C.IMAGE_LOADER.BATCH_SIZE = 4
+    _C.IMAGE_LOADER.NUM_WORKERS = 4
+    # inference
+    _C.INFERENCE = CN()
+    # batch size for model inputs
+    _C.INFERENCE.INPUT_BATCH_SIZE = 4
+    # batch size to group model outputs
+    _C.INFERENCE.OUTPUT_BATCH_SIZE = 2
+    # sampled data
+    _C.DATA_SAMPLER = CN(new_allowed=True)
+    _C.DATA_SAMPLER.TYPE = ""
+    # filter
+    _C.FILTER = CN(new_allowed=True)
+    _C.FILTER.TYPE = ""
+    return _C
+
+
+def load_bootstrap_config(cfg: CN):
+    """
+    Bootstrap datasets are given as a list of `dict` that are not automatically
+    converted into CfgNode. This method processes all bootstrap dataset entries
+    and ensures that they are in CfgNode format and comply with the specification
+    """
+    if not cfg.BOOTSTRAP_DATASETS:
+        return
+
+    bootstrap_datasets_cfgnodes = []
+    for dataset_cfg in cfg.BOOTSTRAP_DATASETS:
+        _C = get_bootstrap_dataset_config().clone()
+        _C.merge_from_other_cfg(CN(dataset_cfg))
+        bootstrap_datasets_cfgnodes.append(_C)
+    cfg.BOOTSTRAP_DATASETS = bootstrap_datasets_cfgnodes
+
+
 def add_densepose_config(cfg: CN):
     """
     Add config for densepose head.
@@ -74,3 +126,39 @@ def add_densepose_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE = "iid_iso"
     # List of angles for rotation in data augmentation during training
     _C.INPUT.ROTATION_ANGLES = [0]
+    _C.TEST.AUG.ROTATION_ANGLES = ()  # Rotation TTA
+
+
+def add_hrnet_config(cfg: CN):
+    """
+    Add config for HRNet backbone.
+    """
+    _C = cfg
+
+    # For HigherHRNet w32
+    _C.MODEL.HRNET = CN()
+    _C.MODEL.HRNET.STEM_INPLANES = 64
+    _C.MODEL.HRNET.STAGE2 = CN()
+    _C.MODEL.HRNET.STAGE2.NUM_MODULES = 1
+    _C.MODEL.HRNET.STAGE2.NUM_BRANCHES = 2
+    _C.MODEL.HRNET.STAGE2.BLOCK = "BASIC"
+    _C.MODEL.HRNET.STAGE2.NUM_BLOCKS = [4, 4]
+    _C.MODEL.HRNET.STAGE2.NUM_CHANNELS = [32, 64]
+    _C.MODEL.HRNET.STAGE2.FUSE_METHOD = "SUM"
+    _C.MODEL.HRNET.STAGE3 = CN()
+    _C.MODEL.HRNET.STAGE3.NUM_MODULES = 4
+    _C.MODEL.HRNET.STAGE3.NUM_BRANCHES = 3
+    _C.MODEL.HRNET.STAGE3.BLOCK = "BASIC"
+    _C.MODEL.HRNET.STAGE3.NUM_BLOCKS = [4, 4, 4]
+    _C.MODEL.HRNET.STAGE3.NUM_CHANNELS = [32, 64, 128]
+    _C.MODEL.HRNET.STAGE3.FUSE_METHOD = "SUM"
+    _C.MODEL.HRNET.STAGE4 = CN()
+    _C.MODEL.HRNET.STAGE4.NUM_MODULES = 3
+    _C.MODEL.HRNET.STAGE4.NUM_BRANCHES = 4
+    _C.MODEL.HRNET.STAGE4.BLOCK = "BASIC"
+    _C.MODEL.HRNET.STAGE4.NUM_BLOCKS = [4, 4, 4, 4]
+    _C.MODEL.HRNET.STAGE4.NUM_CHANNELS = [32, 64, 128, 256]
+    _C.MODEL.HRNET.STAGE4.FUSE_METHOD = "SUM"
+
+    _C.MODEL.HRNET.HRFPN = CN()
+    _C.MODEL.HRNET.HRFPN.OUT_CHANNELS = 256

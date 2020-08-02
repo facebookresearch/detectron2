@@ -10,9 +10,6 @@ Alexander Kirillov, Yuxin Wu, Kaiming He, Ross Girshick
 
 In this repository, we release code for PointRend in Detectron2. PointRend can be flexibly applied to both instance and semantic segmentation tasks by building on top of existing state-of-the-art models.
 
-## Installation
-Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html). You are ready to go!
-
 ## Quick start and visualization
 
 This [Colab Notebook](https://colab.research.google.com/drive/1isGPL5h5_cKoPPhVL9XhMokRtHDvmMVL) tutorial contains examples of PointRend usage and visualizations of its point sampling stages.
@@ -115,9 +112,9 @@ Cityscapes model is trained with ImageNet pretraining.
  <tr><td align="left"><a href="configs/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes.yaml">SemanticFPN + PointRend</a></td>
 <td align="center">R101-FPN</td>
 <td align="center">1024&times;2048</td>
-<td align="center">78.6</td>
-<td align="center">186480235</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes/186480235/model_final_5f3665.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes/186480235/metrics.json">metrics</a></td>
+<td align="center">78.9</td>
+<td align="center">202576688</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes/202576688/model_final_cf6ac1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/SemanticSegmentation/pointrend_semantic_R_101_FPN_1x_cityscapes/202576688/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 

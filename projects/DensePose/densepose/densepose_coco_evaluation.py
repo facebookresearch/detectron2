@@ -958,18 +958,26 @@ class DensePoseCocoEval(object):
             return stats
 
         def _summarizeUvs():
-            stats = np.zeros((10,))
-            stats[0] = _summarize(1, maxDets=self.params.maxDets[0])
-            stats[1] = _summarize(1, maxDets=self.params.maxDets[0], iouThr=0.5)
-            stats[2] = _summarize(1, maxDets=self.params.maxDets[0], iouThr=0.75)
-            stats[3] = _summarize(1, maxDets=self.params.maxDets[0], areaRng="medium")
-            stats[4] = _summarize(1, maxDets=self.params.maxDets[0], areaRng="large")
-            stats[5] = _summarize(0, maxDets=self.params.maxDets[0])
-            stats[6] = _summarize(0, maxDets=self.params.maxDets[0], iouThr=0.5)
-            stats[7] = _summarize(0, maxDets=self.params.maxDets[0], iouThr=0.75)
-            stats[8] = _summarize(0, maxDets=self.params.maxDets[0], areaRng="medium")
-            stats[9] = _summarize(0, maxDets=self.params.maxDets[0], areaRng="large")
-            return stats
+            stats = [_summarize(1, maxDets=self.params.maxDets[0])]
+            min_threshold = self.params.iouThrs.min()
+            if min_threshold <= 0.201:
+                stats += [_summarize(1, maxDets=self.params.maxDets[0], iouThr=0.2)]
+            if min_threshold <= 0.301:
+                stats += [_summarize(1, maxDets=self.params.maxDets[0], iouThr=0.3)]
+            if min_threshold <= 0.401:
+                stats += [_summarize(1, maxDets=self.params.maxDets[0], iouThr=0.4)]
+            stats += [
+                _summarize(1, maxDets=self.params.maxDets[0], iouThr=0.5),
+                _summarize(1, maxDets=self.params.maxDets[0], iouThr=0.75),
+                _summarize(1, maxDets=self.params.maxDets[0], areaRng="medium"),
+                _summarize(1, maxDets=self.params.maxDets[0], areaRng="large"),
+                _summarize(0, maxDets=self.params.maxDets[0]),
+                _summarize(0, maxDets=self.params.maxDets[0], iouThr=0.5),
+                _summarize(0, maxDets=self.params.maxDets[0], iouThr=0.75),
+                _summarize(0, maxDets=self.params.maxDets[0], areaRng="medium"),
+                _summarize(0, maxDets=self.params.maxDets[0], areaRng="large"),
+            ]
+            return np.array(stats)
 
         def _summarizeUvsOld():
             stats = np.zeros((18,))
@@ -1090,8 +1098,8 @@ class Params:
         self.imgIds = []
         self.catIds = []
         # np.arange causes trouble.  the data point on arange is slightly larger than the true value
-        self.iouThrs = np.linspace(0.5, 0.95, np.round((0.95 - 0.5) / 0.05) + 1, endpoint=True)
-        self.recThrs = np.linspace(0.0, 1.00, np.round((1.00 - 0.0) / 0.01) + 1, endpoint=True)
+        self.iouThrs = np.linspace(0.5, 0.95, int(np.round((0.95 - 0.5) / 0.05)) + 1, endpoint=True)
+        self.recThrs = np.linspace(0.0, 1.00, int(np.round((1.00 - 0.0) / 0.01)) + 1, endpoint=True)
         self.maxDets = [1, 10, 100]
         self.areaRng = [
             [0 ** 2, 1e5 ** 2],

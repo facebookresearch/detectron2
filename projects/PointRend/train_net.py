@@ -10,10 +10,11 @@ This script is a simplified version of the training script in detectron2/tools.
 import os
 import torch
 
+import detectron2.data.transforms as T
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import MetadataCatalog, build_detection_train_loader
+from detectron2.data import DatasetMapper, MetadataCatalog, build_detection_train_loader
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
@@ -25,7 +26,28 @@ from detectron2.evaluation import (
     verify_results,
 )
 
-from point_rend import SemSegDatasetMapper, add_pointrend_config
+from point_rend import ColorAugSSDTransform, add_pointrend_config
+
+
+def build_sem_seg_train_aug(cfg):
+    augs = [
+        T.ResizeShortestEdge(
+            cfg.INPUT.MIN_SIZE_TRAIN, cfg.INPUT.MAX_SIZE_TRAIN, cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
+        )
+    ]
+    if cfg.INPUT.CROP.ENABLED:
+        augs.append(
+            T.RandomCrop_CategoryAreaConstraint(
+                cfg.INPUT.CROP.TYPE,
+                cfg.INPUT.CROP.SIZE,
+                cfg.INPUT.CROP.SINGLE_CATEGORY_MAX_AREA,
+                cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
+            )
+        )
+    if cfg.INPUT.COLOR_AUG_SSD:
+        augs.append(ColorAugSSDTransform(img_format=cfg.INPUT.FORMAT))
+    augs.append(T.RandomFlip())
+    return augs
 
 
 class Trainer(DefaultTrainer):
@@ -83,7 +105,7 @@ class Trainer(DefaultTrainer):
     @classmethod
     def build_train_loader(cls, cfg):
         if "SemanticSegmentor" in cfg.MODEL.META_ARCHITECTURE:
-            mapper = SemSegDatasetMapper(cfg, True)
+            mapper = DatasetMapper(cfg, is_train=True, augmentations=build_sem_seg_train_aug(cfg))
         else:
             mapper = None
         return build_detection_train_loader(cfg, mapper=mapper)

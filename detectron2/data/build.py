@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import bisect
-import copy
 import itertools
 import logging
 import numpy as np
@@ -155,13 +153,6 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
     return dataset_dicts
 
 
-def _quantize(x, bin_edges):
-    bin_edges = copy.copy(bin_edges)
-    bin_edges = sorted(bin_edges)
-    quantized = list(map(lambda y: bisect.bisect_right(bin_edges, y), x))
-    return quantized
-
-
 def print_instances_class_histogram(dataset_dicts, class_names):
     """
     Args:
@@ -220,6 +211,9 @@ def get_detection_dataset_dicts(
             `min_keypoints`. Set to 0 to do nothing.
         proposal_files (list[str]): if given, a list of object proposal files
             that match each dataset in `dataset_names`.
+
+    Returns:
+        list[dict]: a list of dicts following the standard dataset dict format.
     """
     assert len(dataset_names)
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
@@ -237,10 +231,8 @@ def get_detection_dataset_dicts(
     dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))
 
     has_instances = "annotations" in dataset_dicts[0]
-    # Keep images without instance-level GT if the dataset has semantic labels.
-    if filter_empty and has_instances and "sem_seg_file_name" not in dataset_dicts[0]:
+    if filter_empty and has_instances:
         dataset_dicts = filter_images_with_only_crowd_annotations(dataset_dicts)
-
     if min_keypoints > 0 and has_instances:
         dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
 
@@ -320,7 +312,7 @@ def build_detection_train_loader(cfg, mapper=None):
         cfg (CfgNode): the config
         mapper (callable): a callable which takes a sample (dict) from dataset and
             returns the format to be consumed by the model.
-            By default it will be `DatasetMapper(cfg, True)`.
+            By default it will be ``DatasetMapper(cfg, True)``.
 
     Returns:
         an infinite iterator of training data

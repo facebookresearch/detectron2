@@ -8,8 +8,8 @@ import unittest
 import torch
 import torchvision.io as io
 
-from densepose.data import RandomKFramesSelector, VideoKeyframeDataset
 from densepose.data.transform import ImageResizeTransform
+from densepose.data.video import RandomKFramesSelector, VideoKeyframeDataset
 
 try:
     import av

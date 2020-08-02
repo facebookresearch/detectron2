@@ -157,7 +157,11 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             segm = anno.get("segmentation", None)
             if segm:  # either list[list[float]] or dict(RLE)
-                if not isinstance(segm, dict):
+                if isinstance(segm, dict):
+                    if isinstance(segm["counts"], list):
+                        # convert to compressed RLE
+                        segm = mask_util.frPyObjects(segm, *segm["size"])
+                else:
                     # filter out invalid polygons (< 3 points)
                     segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
                     if len(segm) == 0:
@@ -318,7 +322,7 @@ def convert_to_coco_dict(dataset_name):
         }
         coco_images.append(coco_image)
 
-        anns_per_image = image_dict["annotations"]
+        anns_per_image = image_dict.get("annotations", [])
         for annotation in anns_per_image:
             # create a new dict with only COCO fields
             coco_annotation = {}
@@ -379,6 +383,7 @@ def convert_to_coco_dict(dataset_name):
                 if isinstance(seg, dict):  # RLE
                     counts = seg["counts"]
                     if not isinstance(counts, str):
+                        # make it json-serializable
                         seg["counts"] = counts.decode("ascii")
 
             coco_annotations.append(coco_annotation)
@@ -392,13 +397,9 @@ def convert_to_coco_dict(dataset_name):
         "date_created": str(datetime.datetime.now()),
         "description": "Automatically generated COCO json file for Detectron2.",
     }
-    coco_dict = {
-        "info": info,
-        "images": coco_images,
-        "annotations": coco_annotations,
-        "categories": categories,
-        "licenses": None,
-    }
+    coco_dict = {"info": info, "images": coco_images, "categories": categories, "licenses": None}
+    if len(coco_annotations) > 0:
+        coco_dict["annotations"] = coco_annotations
     return coco_dict
 
 

@@ -3,7 +3,7 @@ import copy
 import itertools
 import numpy as np
 from typing import Any, Iterator, List, Union
-import pycocotools.mask as mask_utils
+import pycocotools.mask as mask_util
 import torch
 
 from detectron2.layers.roi_align import ROIAlign
@@ -27,9 +27,9 @@ def polygons_to_bitmask(polygons: List[np.ndarray], height: int, width: int) -> 
         ndarray: a bool mask of shape (height, width)
     """
     assert len(polygons) > 0, "COCOAPI does not support empty polygons"
-    rles = mask_utils.frPyObjects(polygons, height, width)
-    rle = mask_utils.merge(rles)
-    return mask_utils.decode(rle).astype(np.bool)
+    rles = mask_util.frPyObjects(polygons, height, width)
+    rle = mask_util.merge(rles)
+    return mask_util.decode(rle).astype(np.bool)
 
 
 def rasterize_polygons_within_box(
@@ -199,9 +199,23 @@ class BitMasks:
         output = output >= 0.5
         return output
 
-    def get_bounding_boxes(self) -> None:
-        # not needed now
-        raise NotImplementedError
+    def get_bounding_boxes(self) -> Boxes:
+        """
+        Returns:
+            Boxes: tight bounding boxes around bitmasks.
+            If a mask is empty, it's bounding box will be all zero.
+        """
+        boxes = torch.zeros(self.tensor.shape[0], 4, dtype=torch.float32)
+        x_any = torch.any(self.tensor, dim=1)
+        y_any = torch.any(self.tensor, dim=2)
+        for idx in range(self.tensor.shape[0]):
+            x = torch.where(x_any[idx, :])[0]
+            y = torch.where(y_any[idx, :])[0]
+            if len(x) > 0 and len(y) > 0:
+                boxes[idx, :] = torch.as_tensor(
+                    [x[0], y[0], x[-1] + 1, y[-1] + 1], dtype=torch.float32
+                )
+        return Boxes(boxes)
 
     @staticmethod
     def cat(bitmasks_list: List["BitMasks"]) -> "BitMasks":

@@ -10,7 +10,7 @@ import numpy as np
 import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
-from PIL import Image, ImageOps
+from PIL import Image
 
 from detectron2.structures import (
     BitMasks,
@@ -26,6 +26,21 @@ from detectron2.structures import (
 from . import transforms as T
 from .catalog import MetadataCatalog
 
+__all__ = [
+    "SizeMismatchError",
+    "convert_image_to_rgb",
+    "check_image_size",
+    "transform_proposals",
+    "transform_instance_annotations",
+    "annotations_to_instances",
+    "annotations_to_instances_rotated",
+    "build_augmentation",
+    "build_transform_gen",
+    "create_keypoint_hflip_indices",
+    "filter_empty_instances",
+    "read_image",
+]
+
 
 class SizeMismatchError(ValueError):
     """
@@ -36,6 +51,9 @@ class SizeMismatchError(ValueError):
 # https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
 _M_RGB2YUV = [[0.299, 0.587, 0.114], [-0.14713, -0.28886, 0.436], [0.615, -0.51499, -0.10001]]
 _M_YUV2RGB = [[1.0, 0.0, 1.13983], [1.0, -0.39465, -0.58060], [1.0, 2.03211, 0.0]]
+
+# https://www.exiv2.org/tags.html
+_EXIF_ORIENT = 274  # exif 'Orientation' tag
 
 
 def convert_PIL_to_numpy(image, format):
@@ -97,6 +115,50 @@ def convert_image_to_rgb(image, format):
     return image
 
 
+def _apply_exif_orientation(image):
+    """
+    Applies the exif orientation correctly.
+
+    This code exists per the bug:
+      https://github.com/python-pillow/Pillow/issues/3973
+    with the function `ImageOps.exif_transpose`. The Pillow source raises errors with
+    various methods, especially `tobytes`
+
+    Function based on:
+      https://github.com/wkentaro/labelme/blob/v4.5.4/labelme/utils/image.py#L59
+      https://github.com/python-pillow/Pillow/blob/7.1.2/src/PIL/ImageOps.py#L527
+
+    Args:
+        image (PIL.Image): a PIL image
+
+    Returns:
+        (PIL.Image): the PIL image with exif orientation applied, if applicable
+    """
+    if not hasattr(image, "getexif"):
+        return image
+
+    exif = image.getexif()
+
+    if exif is None:
+        return image
+
+    orientation = exif.get(_EXIF_ORIENT)
+
+    method = {
+        2: Image.FLIP_LEFT_RIGHT,
+        3: Image.ROTATE_180,
+        4: Image.FLIP_TOP_BOTTOM,
+        5: Image.TRANSPOSE,
+        6: Image.ROTATE_270,
+        7: Image.TRANSVERSE,
+        8: Image.ROTATE_90,
+    }.get(orientation)
+
+    if method is not None:
+        return image.transpose(method)
+    return image
+
+
 def read_image(file_name, format=None):
     """
     Read an image into the given format.
@@ -113,11 +175,8 @@ def read_image(file_name, format=None):
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
 
-        # capture and ignore this bug: https://github.com/python-pillow/Pillow/issues/3973
-        try:
-            image = ImageOps.exif_transpose(image)
-        except Exception:
-            pass
+        # work around this bug: https://github.com/python-pillow/Pillow/issues/3973
+        image = _apply_exif_orientation(image)
 
         return convert_PIL_to_numpy(image, format)
 
@@ -204,7 +263,7 @@ def transform_instance_annotations(
     Args:
         annotation (dict): dict of instance annotations for a single instance.
             It will be modified in-place.
-        transforms (TransformList):
+        transforms (TransformList or list[Transform]):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
 
@@ -214,10 +273,12 @@ def transform_instance_annotations(
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
+    if isinstance(transforms, (tuple, list)):
+        transforms = T.TransformList(transforms)
     # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
     # clip transformed bbox to image size
-    bbox = transforms.apply_box([bbox])[0].clip(min=0)
+    bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
@@ -437,7 +498,7 @@ def create_keypoint_hflip_indices(dataset_names):
     flip_map.update({v: k for k, v in flip_map.items()})
     flipped_names = [i if i not in flip_map else flip_map[i] for i in names]
     flip_indices = [names.index(i) for i in flipped_names]
-    return np.asarray(flip_indices)
+    return np.asarray(flip_indices, dtype=np.int32)
 
 
 def gen_crop_transform_with_instance(crop_size, image_size, instance):
@@ -499,13 +560,13 @@ def check_metadata_consistency(key, dataset_names):
             raise ValueError("Datasets have different metadata '{}'!".format(key))
 
 
-def build_transform_gen(cfg, is_train):
+def build_augmentation(cfg, is_train):
     """
-    Create a list of :class:`TransformGen` from config.
+    Create a list of default :class:`Augmentation` from config.
     Now it includes resizing and flipping.
 
     Returns:
-        list[TransformGen]
+        list[Augmentation]
     """
     if is_train:
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
@@ -515,15 +576,13 @@ def build_transform_gen(cfg, is_train):
         min_size = cfg.INPUT.MIN_SIZE_TEST
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
-    if sample_style == "range":
-        assert len(min_size) == 2, "more than 2 ({}) min_size(s) are provided for ranges".format(
-            len(min_size)
-        )
-
-    logger = logging.getLogger(__name__)
-    tfm_gens = []
-    tfm_gens.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
+    augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
     if is_train:
-        tfm_gens.append(T.RandomFlip())
-        logger.info("TransformGens used in training: " + str(tfm_gens))
-    return tfm_gens
+        augmentation.append(T.RandomFlip())
+    return augmentation
+
+
+build_transform_gen = build_augmentation
+"""
+Alias for backward-compatibility.
+"""

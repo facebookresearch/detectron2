@@ -167,7 +167,7 @@ class AllReduce(Function):
 
 class NaiveSyncBatchNorm(BatchNorm2d):
     """
-    In PyTorch<=1.5, `nn.SyncBatchNorm` has incorrect gradient
+    In PyTorch<=1.5, ``nn.SyncBatchNorm`` has incorrect gradient
     when the batch size on each worker is different.
     (e.g., when scale augmentation is used, or when it is applied to mask head).
 
