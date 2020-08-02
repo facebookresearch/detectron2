@@ -75,6 +75,8 @@ _C.INPUT.CROP = CN({"ENABLED": False})
 # - "relative_range" uniformly sample relative crop size from between [CROP.SIZE[0], [CROP.SIZE[1]].
 #   and  [1, 1] and use it as in "relative" scenario.
 # - "absolute" crop part of an input with absolute size: (CROP.SIZE[0], CROP.SIZE[1]).
+# - "absolute_range", for an input of size (H, W), uniformly sample H_crop in
+#   [CROP.SIZE[0], min(H, CROP.SIZE[1])] and W_crop in [CROP.SIZE[0], min(W, CROP.SIZE[1])]
 _C.INPUT.CROP.TYPE = "relative_range"
 # Size of crop in range (0, 1] if CROP.TYPE is "relative" or "relative_range" and in number of
 # pixels if CROP.TYPE is "absolute"
@@ -125,8 +127,8 @@ _C.DATALOADER.ASPECT_RATIO_GROUPING = True
 _C.DATALOADER.SAMPLER_TRAIN = "TrainingSampler"
 # Repeat threshold for RepeatFactorTrainingSampler
 _C.DATALOADER.REPEAT_THRESHOLD = 0.0
-# if True, the dataloader will filter out images that have no associated
-# annotations at train time.
+# Tf True, when working on datasets that have instance annotations, the
+# training dataloader will filter out images without associated annotations
 _C.DATALOADER.FILTER_EMPTY_ANNOTATIONS = True
 
 # ---------------------------------------------------------------------------- #
@@ -224,6 +226,9 @@ _C.MODEL.RPN.IOU_LABELS = [0, -1, 1]
 _C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
 # Target fraction of foreground (positive) examples per RPN minibatch
 _C.MODEL.RPN.POSITIVE_FRACTION = 0.5
+# Options are: "smooth_l1", "giou"
+_C.MODEL.RPN.BBOX_REG_LOSS_TYPE = "smooth_l1"
+_C.MODEL.RPN.BBOX_REG_LOSS_WEIGHT = 1.0
 # Weights on (dx, dy, dw, dh) for normalizing RPN anchor regression targets
 _C.MODEL.RPN.BBOX_REG_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # The transition point from L1 to L2 loss. Set to 0.0 to make the loss simply L1.
@@ -533,7 +538,15 @@ _C.SOLVER.CHECKPOINT_PERIOD = 5000
 # Number of images per batch across all machines.
 # If we have 16 GPUs and IMS_PER_BATCH = 32,
 # each GPU will see 2 images per batch.
+# May be adjusted automatically if REFERENCE_WORLD_SIZE is set.
 _C.SOLVER.IMS_PER_BATCH = 16
+
+# The reference number of workers (GPUs) this config is meant to train with.
+# With a non-zero value, it will be used by DefaultTrainer to compute a desired
+# per-worker batch size, and then scale the other related configs (total batch size,
+# learning rate, etc) to match the per-worker batch size if the actual number
+# of workers during training is different from this reference.
+_C.SOLVER.REFERENCE_WORLD_SIZE = 0
 
 # Detectron v1 (and previous detection code) used a 2x higher LR and 0 WD for
 # biases. This is not useful (at least for recent models). You should avoid
@@ -578,8 +591,8 @@ _C.TEST.EXPECTED_RESULTS = []
 # Set to 0 to disable.
 _C.TEST.EVAL_PERIOD = 0
 # The sigmas used to calculate keypoint OKS. See http://cocodataset.org/#keypoints-eval
-# When empty it will use the defaults in COCO.
-# Otherwise it should have the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
+# When empty, it will use the defaults in COCO.
+# Otherwise it should be a list[float] with the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
 _C.TEST.KEYPOINT_OKS_SIGMAS = []
 # Maximum number of detections to return per image during inference (100 is
 # based on the limit established for the COCO dataset).

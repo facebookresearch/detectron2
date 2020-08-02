@@ -14,6 +14,7 @@ MODEL:
     SUBDIVISION_STEPS: 2
     SUBDIVISION_NUM_POINTS: 8192
     COARSE_SEM_SEG_HEAD_NAME: "SemSegFPNHead"
+    COARSE_PRED_EACH_LAYER: False
 DATASETS:
   TRAIN: ("coco_2017_train_panoptic_stuffonly",)
   TEST: ("coco_2017_val_panoptic_stuffonly",)

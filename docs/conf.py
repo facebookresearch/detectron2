@@ -265,9 +265,16 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         return True
 
     # Hide some that are deprecated or not intended to be used
-    _DEPRECATED = {"ResNetBlockBase", "GroupedBatchSampler"}
+    HIDDEN = {
+        "ResNetBlockBase",
+        "GroupedBatchSampler",
+        "build_transform_gen",
+        "export_caffe2_model",
+        "export_onnx_model",
+        "apply_transform_gens",
+    }
     try:
-        if obj.__doc__.lower().strip().startswith("deprecated") or name in _DEPRECATED:
+        if obj.__doc__.lower().strip().startswith("deprecated") or name in HIDDEN:
             print("Skipping deprecated object: {}".format(name))
             return True
     except:
@@ -290,7 +297,7 @@ _PAPER_DATA = {
     "cascade r-cnn": ("1712.00726", "Cascade R-CNN: Delving into High Quality Object Detection"),
     "lvis": ("1908.03195", "LVIS: A Dataset for Large Vocabulary Instance Segmentation"),
     "rrpn": ("1703.01086", "Arbitrary-Oriented Scene Text Detection via Rotation Proposals"),
-    "in1k1h": ("1706.02677", "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour"),
+    "imagenet in 1h": ("1706.02677", "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour"),
 }
 
 

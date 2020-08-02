@@ -44,6 +44,17 @@ To see a list of available configs in detectron2 and what they mean,
 check [Config References](../modules/config.html#config-references)
 
 
+### Configs in Projects
+
+A project that lives outside the detectron2 library may define its own configs, which will need to be added
+for the project to be functional, e.g.:
+```python
+from point_rend import add_pointrend_config
+cfg = get_cfg()    # obtain detectron2's default config
+add_pointrend_config(cfg)  # add pointrend's default config
+# ... ...
+```
+
 ### Best Practice with Configs
 
 1. Treat the configs you write as "code": avoid copying them or duplicating them; use `_BASE_`

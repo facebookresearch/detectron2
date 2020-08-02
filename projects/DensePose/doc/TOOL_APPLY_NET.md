@@ -60,6 +60,7 @@ data: [{'file_name': '/your_path/image1.jpg',
 We can use the following code, to parse the outputs of the first
 detected instance on the first image.
 ```
+from densepose.data.structures import DensePoseResult
 img_id, instance_id = 0, 0  # Look at the first image and the first detected instance
 bbox_xyxy = data[img_id]['pred_boxes_XYXY'][instance_id]
 result_encoded = data[img_id]['pred_densepose'].results[instance_id]

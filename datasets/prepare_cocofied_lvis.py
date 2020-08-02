@@ -166,7 +166,7 @@ def cocofy_lvis(input_filename, output_filename):
 
 
 if __name__ == "__main__":
-    dataset_dir = os.path.join(os.path.dirname(__file__), "lvis")
+    dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "lvis")
     for s in ["lvis_v0.5_train", "lvis_v0.5_val"]:
         print("Start COCOfing {}.".format(s))
         cocofy_lvis(

@@ -1,8 +1,12 @@
 # Use Custom Datasets
 
-Datasets that have builtin support in detectron2 are listed in [datasets](../../datasets).
+This document explains how the dataset APIs
+([DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog), or [MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog))
+work, and how to use them to add custom datasets.
+
+Datasets that have builtin support in detectron2 are listed in [builtin datasets](builtin_datasets.md).
 If you want to use a custom dataset while also reusing detectron2's data loaders,
-you will need to
+you will need to:
 
 1. __Register__ your dataset (i.e., tell detectron2 how to obtain your dataset).
 2. Optionally, __register metadata__ for your dataset.
@@ -14,7 +18,7 @@ has a live example of how to register and train on a dataset of custom formats.
 
 ### Register a Dataset
 
-To let detectron2 know how to obtain a dataset named "my_dataset", you will implement
+To let detectron2 know how to obtain a dataset named "my_dataset", users need to implement
 a function that returns the items in your dataset and then tell detectron2 about this
 function:
 ```python
@@ -24,16 +28,18 @@ def my_dataset_function():
 
 from detectron2.data import DatasetCatalog
 DatasetCatalog.register("my_dataset", my_dataset_function)
+# later, to access the data:
+data: List[Dict] = DatasetCatalog.get("my_dataset")
 ```
 
-Here, the snippet associates a dataset "my_dataset" with a function that returns the data.
+Here, the snippet associates a dataset named "my_dataset" with a function that returns the data.
 The function must return the same data if called multiple times.
 The registration stays effective until the process exits.
 
-The function can process data from its original format into either one of the following:
-1. Detectron2's standard dataset dict, described below. This will work with many other builtin
-	 features in detectron2, so it's recommended to use it when it's sufficient for your task.
-2. Your custom dataset dict. You can also return arbitrary dicts in your own format,
+The function can do arbitrary things and should returns the data in either of the following formats:
+1. Detectron2's standard dataset dict, described below. This will make it work with many other builtin
+	 features in detectron2, so it's recommended to use it when it's sufficient.
+2. Any custom format. You can also return arbitrary dicts in your own format,
 	 such as adding extra keys for new tasks.
 	 Then you will need to handle them properly downstream as well.
 	 See below for more details.
@@ -49,14 +55,13 @@ Each dict contains information about one image.
 The dict may have the following fields,
 and the required fields vary based on what the dataloader or the task needs (see more below).
 
-+ `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
-+ `height`, `width`: integer. The shape of image.
-+ `image_id` (str or int): a unique id that identifies this image. Used
-	during evaluation to identify the images, but a dataset may use it for different purposes.
-+ `annotations` (list[dict]): each dict corresponds to annotations of one instance
-  in this image. Required by instance detection/segmentation or keypoint detection tasks.
-
-	Images with empty `annotations` will by default be removed from training,
++ `file_name`: the full path to the image file. Rotation or flipping may be applied if the image has EXIF metadata.
++ `height`, `width`: integer. The shape of the image.
++ `image_id` (str or int): a unique id that identifies this image. Required by
+  evaluation to identify the images, but a dataset may use it for different purposes.
++ `annotations` (list[dict]): each dict corresponds to annotations of one instance in this image.
+  Required by instance detection/segmentation or keypoint detection tasks, but can be an empty list.
+  Note that images with empty `annotations` will by default be removed from training,
 	but can be included using `DATALOADER.FILTER_EMPTY_ANNOTATIONS`.
 
 	Each dict contains the following keys, of which `bbox`,`bbox_mode` and `category_id` are required:
@@ -71,24 +76,23 @@ and the required fields vary based on what the dataloader or the task needs (see
     + If `list[list[float]]`, it represents a list of polygons, one for each connected component
       of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]`.
       The Xs and Ys are absolute coordinates in unit of pixels.
-    + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format. The dict should have
-			keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and 1s into
-			such dict by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
+    + If `dict`, it represents the per-pixel segmentation mask in COCO's compressed RLE format.
+      The dict should have keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and
+      1s into such dict by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
       `cfg.INPUT.MASK_FORMAT` must be set to `bitmask` if using the default data loader with such format.
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
     v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
     `n` must be equal to the number of keypoint categories.
-    The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
-    depend on whether "bbox_mode" is relative.
+    The Xs and Ys are absolute coordinates in unit of pixels.
 
-    Note that the coordinate annotations in COCO format are integers in range [0, H-1 or W-1].
-    By default, detectron2 adds 0.5 to absolute keypoint coordinates to convert them from discrete
-    pixel indices to floating point coordinates.
+    (Note that the keypoint coordinates in COCO format are integers in range [0, H-1 or W-1], which is different
+    from our standard format. Detectron2 adds 0.5 to COCO keypoint coordinates to convert them from discrete
+    pixel indices to floating point coordinates.)
   + `iscrowd`: 0 (default) or 1. Whether this instance is labeled as COCO's "crowd
     region". Don't include this field if you don't know what it means.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 	Required by semantic segmentation task.
-	It should be an image whose pixel values are integer labels.
+	It should be a grayscale image whose pixel values are integer labels.
 
 
 Fast R-CNN (with precomputed proposals) is rarely used today.
@@ -105,18 +109,18 @@ To train a Fast R-CNN, the following extra keys are needed:
 #### Custom Dataset Dicts for New Tasks
 
 In the `list[dict]` that your dataset function returns, the dictionary can also have arbitrary custom data.
-This will be useful for a new task that needs extra information not supported
+This will be useful for a new task that needs extra information not covered
 by the standard dataset dicts. In this case, you need to make sure the downstream code can handle your data
 correctly. Usually this requires writing a new `mapper` for the dataloader (see [Use Custom Dataloaders](./data_loading.md)).
 
 When designing a custom format, note that all dicts are stored in memory
 (sometimes serialized and with multiple copies).
-To save memory, each dict is meant to contain small but sufficient information
+To save memory, each dict is meant to contain __small__ but sufficient information
 about each sample, such as file names and annotations.
 Loading full samples typically happens in the data loader.
 
 For attributes shared among the entire dataset, use `Metadata` (see below).
-To avoid extra memory, do not save such information repeatly for each sample.
+To avoid extra memory, do not save such information inside each sample.
 
 ### "Metadata" for Datasets
 
@@ -126,7 +130,7 @@ Metadata is a key-value mapping that contains information that's shared among
 the entire dataset, and usually is used to interpret what's in the dataset, e.g.,
 names of classes, colors of classes, root of files, etc.
 This information will be useful for augmentation, evaluation, visualization, logging, etc.
-The structure of metadata depends on the what is needed from the corresponding downstream code.
+The structure of metadata depends on what is needed from the corresponding downstream code.
 
 If you register a new dataset through `DatasetCatalog.register`,
 you may also want to add its corresponding metadata through
@@ -147,7 +151,7 @@ unavailable to you:
   If you load a COCO format dataset, it will be automatically set by the function `load_coco_json`.
 
 * `thing_colors` (list[tuple(r, g, b)]): Pre-defined color (in [0, 255]) for each thing category.
-  Used for visualization. If not given, random colors are used.
+  Used for visualization. If not given, random colors will be used.
 
 * `stuff_classes` (list[str]): Used by semantic and panoptic segmentation tasks.
   A list of names for each stuff category.
@@ -155,9 +159,9 @@ unavailable to you:
 * `stuff_colors` (list[tuple(r, g, b)]): Pre-defined color (in [0, 255]) for each stuff category.
   Used for visualization. If not given, random colors are used.
 
-* `keypoint_names` (list[str]): Used by keypoint localization. A list of names for each keypoint.
+* `keypoint_names` (list[str]): Used by keypoint detection. A list of names for each keypoint.
 
-* `keypoint_flip_map` (list[tuple[str]]): Used by the keypoint localization task. A list of pairs of names,
+* `keypoint_flip_map` (list[tuple[str]]): Used by keypoint detection. A list of pairs of names,
   where each pair are the two keypoints that should be flipped if the image is
   flipped horizontally during augmentation.
 * `keypoint_connection_rules`: list[tuple(str, str, (r, g, b))]. Each tuple specifies a pair of keypoints
@@ -196,7 +200,7 @@ from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
 ```
 
-If your dataset is in COCO format but with extra custom per-instance annotations,
+If your dataset is in COCO format but need to be further processed, or has extra custom per-instance annotations,
 the [load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_json)
 function might be useful.
 

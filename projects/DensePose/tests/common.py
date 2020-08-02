@@ -7,10 +7,16 @@ from detectron2.config import get_cfg
 from detectron2.engine import default_setup
 from detectron2.modeling import build_model
 
-from densepose import add_dataset_category_config, add_densepose_config
+from densepose import (
+    add_bootstrap_config,
+    add_dataset_category_config,
+    add_densepose_config,
+    add_hrnet_config,
+)
 
 _BASE_CONFIG_DIR = "configs"
 _EVOLUTION_CONFIG_SUB_DIR = "evolution"
+_HRNET_CONFIG_SUB_DIR = "HRNet"
 _QUICK_SCHEDULES_CONFIG_SUB_DIR = "quick_schedules"
 _BASE_CONFIG_FILE_PREFIX = "Base-"
 _CONFIG_FILE_EXT = ".yaml"
@@ -28,6 +34,13 @@ def _get_evolution_config_dir():
     Return the base directory for evolution configurations
     """
     return os.path.join(_get_base_config_dir(), _EVOLUTION_CONFIG_SUB_DIR)
+
+
+def _get_hrnet_config_dir():
+    """
+    Return the base directory for HRNet configurations
+    """
+    return os.path.join(_get_base_config_dir(), _HRNET_CONFIG_SUB_DIR)
 
 
 def _get_quick_schedules_config_dir():
@@ -71,6 +84,13 @@ def get_evolution_config_files():
     return _collect_config_files(_get_evolution_config_dir())
 
 
+def get_hrnet_config_files():
+    """
+    Get all the HRNet configuration files (relative to the base configuration directory)
+    """
+    return _collect_config_files(_get_hrnet_config_dir())
+
+
 def get_quick_schedules_config_files():
     """
     Get all the quick schedules configuration files (relative to the base configuration directory)
@@ -85,7 +105,9 @@ def _get_model_config(config_file):
     """
     cfg = get_cfg()
     add_dataset_category_config(cfg)
+    add_bootstrap_config(cfg)
     add_densepose_config(cfg)
+    add_hrnet_config(cfg)
     path = os.path.join(_get_base_config_dir(), config_file)
     cfg.merge_from_file(path)
     if not torch.cuda.is_available():

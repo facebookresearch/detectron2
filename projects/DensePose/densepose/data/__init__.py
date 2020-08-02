@@ -5,16 +5,12 @@ from .build import (
     build_detection_train_loader,
     build_combined_loader,
     build_frame_selector,
+    build_inference_based_loaders,
+    has_inference_based_loaders,
 )
 from .combined_loader import CombinedDataLoader
 from .dataset_mapper import DatasetMapper
-from .video.video_keyframe_dataset import VideoKeyframeDataset
-from .video.frame_selector import (
-    FrameSelectionStrategy,
-    RandomKFramesSelector,
-    FirstKFramesSelector,
-    LastKFramesSelector,
-)
+from .inference_based_loader import InferenceBasedLoader, ScoreBasedFilter
 from .utils import is_relative_local_path, maybe_prepend_base_path
 
 # ensure the builtin datasets are registered

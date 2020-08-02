@@ -125,6 +125,7 @@ class ROIHeads(torch.nn.Module):
     ROIHeads perform all per-region computation in an R-CNN.
 
     It typically contains logic to
+
     1. (in training only) match proposals with ground truth and sample them
     2. crop the regions and extract per-region features using proposals
     3. make per-region predictions with different heads

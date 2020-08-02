@@ -116,7 +116,7 @@ class TestNMSRotated(unittest.TestCase):
                 torch.allclose(rotated_boxes, backup),
                 "rotated_boxes modified by batched_nms_rotated",
             )
-            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 2, err_msg.format(iou))
 
     def test_nms_rotated_0_degree_cpu(self):
         N = 1000

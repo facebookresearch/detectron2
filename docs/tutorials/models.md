@@ -36,7 +36,7 @@ For example, in order to do inference,
 all existing models expect the "image" key, and optionally "height" and "width".
 The detailed format of inputs and outputs of existing models are explained below.
 
-When in training mode, all models are required to be used under an `EventStorage`.
+__Training__: When in training mode, all models are required to be used under an `EventStorage`.
 The training statistics will be put into the storage:
 ```python
 from detectron2.utils.events import EventStorage
@@ -44,13 +44,13 @@ with EventStorage() as storage:
   losses = model(inputs)
 ```
 
-If you only want to do simple inference using an existing model,
+__Inference__: If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
 is a wrapper around model that provides such basic functionality.
 It includes default behavior including model loading, preprocessing,
 and operates on single image rather than batches. See its documentation for usage.
 
-A model can also be used directly like this:
+You can also run inference directly like this:
 ```
 model.eval()
 with torch.no_grad():
@@ -130,7 +130,8 @@ Based on the tasks the model is doing, each dict may contain the following field
 
 ### Partially execute a model:
 
-Sometimes you may want to obtain an intermediate tensor inside a model.
+Sometimes you may want to obtain an intermediate tensor inside a model,
+such as the input of certain layer, the output before post-processing.
 Since there are typically hundreds of intermediate tensors, there isn't an API that provides you
 the intermediate result you need.
 You have the following options:
@@ -153,5 +154,10 @@ mask_features = [features[f] for f in model.roi_heads.in_features]
 mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
 ```
 
-Note that both options require you to read the existing forward code to understand
-how to write code to obtain the outputs you need.
+3. Use [forward hooks](https://pytorch.org/tutorials/beginner/former_torchies/nnft_tutorial.html#forward-and-backward-function-hooks).
+   Forward hooks can help you obtain inputs or outputs of a certain module.
+   If they are not exactly what you want, they can at least be used together with partial execution
+   to obtain other tensors.
+
+All options require you to read the existing forward code to understand the internal logic,
+in order to write code to obtain the internal tensors.
