@@ -25,9 +25,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     d2_version = f"=={args.d2_version}" if args.d2_version else ""
 
-    all_versions = [("1.4", k) for k in ["10.1", "10.0", "9.2", "cpu"]] + [
-        ("1.5", k) for k in ["10.2", "10.1", "9.2", "cpu"]
-    ]
+    all_versions = (
+        [("1.4", k) for k in ["10.1", "10.0", "9.2", "cpu"]]
+        + [("1.5", k) for k in ["10.2", "10.1", "9.2", "cpu"]]
+        + [("1.6", k) for k in ["10.2", "10.1", "9.2", "cpu"]]
+    )
 
     torch_versions = sorted({k[0] for k in all_versions}, key=float, reverse=True)
     cuda_versions = sorted(
