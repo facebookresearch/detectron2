@@ -10,6 +10,14 @@ import torch
 from fvcore.common.file_io import PathManager
 from fvcore.common.history_buffer import HistoryBuffer
 
+__all__ = [
+    "get_event_storage",
+    "JSONWriter",
+    "TensorboardXWriter",
+    "CommonMetricPrinter",
+    "EventStorage",
+]
+
 _CURRENT_STORAGE_STACK = []
 
 
@@ -90,12 +98,23 @@ class JSONWriter(EventWriter):
         """
         self._file_handle = PathManager.open(json_file, "a")
         self._window_size = window_size
+        self._last_write = -1
 
     def write(self):
         storage = get_event_storage()
-        to_save = {"iteration": storage.iter}
-        to_save.update(storage.latest_with_smoothing_hint(self._window_size))
-        self._file_handle.write(json.dumps(to_save, sort_keys=True) + "\n")
+        to_save = defaultdict(dict)
+
+        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+            # keep scalars that have not been written
+            if iter <= self._last_write:
+                continue
+            to_save[iter][k] = v
+        all_iters = sorted(to_save.keys())
+        self._last_write = max(all_iters)
+
+        for itr, scalars_per_iter in to_save.items():
+            scalars_per_iter["iteration"] = itr
+            self._file_handle.write(json.dumps(scalars_per_iter, sort_keys=True) + "\n")
         self._file_handle.flush()
         try:
             os.fsync(self._file_handle.fileno())
@@ -123,11 +142,16 @@ class TensorboardXWriter(EventWriter):
         from torch.utils.tensorboard import SummaryWriter
 
         self._writer = SummaryWriter(log_dir, **kwargs)
+        self._last_write = -1
 
     def write(self):
         storage = get_event_storage()
-        for k, v in storage.latest_with_smoothing_hint(self._window_size).items():
-            self._writer.add_scalar(k, v, storage.iter)
+        new_last_write = self._last_write
+        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+            if iter > self._last_write:
+                self._writer.add_scalar(k, v, iter)
+                new_last_write = max(new_last_write, iter)
+        self._last_write = new_last_write
 
         # storage.put_{image,histogram} is only meant to be used by
         # tensorboard writer. So we access its internal fields directly from here.
@@ -281,7 +305,7 @@ class EventStorage:
         history = self._history[name]
         value = float(value)
         history.update(value, self._iter)
-        self._latest_scalars[name] = value
+        self._latest_scalars[name] = (value, self._iter)
 
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
@@ -352,7 +376,8 @@ class EventStorage:
     def latest(self):
         """
         Returns:
-            dict[name -> number]: the scalars that's added in the current iteration.
+            dict[str -> (float, int)]: mapping from the name of each scalar to the most
+                recent value and the iteration number its added.
         """
         return self._latest_scalars
 
@@ -366,8 +391,11 @@ class EventStorage:
         This provides a default behavior that other writers can use.
         """
         result = {}
-        for k, v in self._latest_scalars.items():
-            result[k] = self._history[k].median(window_size) if self._smoothing_hints[k] else v
+        for k, (v, itr) in self._latest_scalars.items():
+            result[k] = (
+                self._history[k].median(window_size) if self._smoothing_hints[k] else v,
+                itr,
+            )
         return result
 
     def smoothing_hints(self):
@@ -386,7 +414,6 @@ class EventStorage:
         correct iteration number.
         """
         self._iter += 1
-        self._latest_scalars = {}
 
     @property
     def iter(self):
