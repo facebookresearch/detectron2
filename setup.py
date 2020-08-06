@@ -65,9 +65,9 @@ def get_extensions():
         # Current version of hipify function in pytorch creates an intermediate directory
         # named "hip" at the same level of the path hierarchy if a "cuda" directory exists,
         # or modifying the hierarchy, if it doesn't. Once pytorch supports
-        # "same directory" hipification (PR pendeing), the source_cuda will be set
-        # similarly in both cuda and hip paths, and the explicit header file copy
-        # (below) will not be needed.
+        # "same directory" hipification (https://github.com/pytorch/pytorch/pull/40523),
+        # the source_cuda will be set similarly in both cuda and hip paths, and the explicit
+        # header file copy (below) will not be needed.
         source_cuda = glob.glob(path.join(extensions_dir, "**", "hip", "*.hip")) + glob.glob(
             path.join(extensions_dir, "hip", "*.hip")
         )

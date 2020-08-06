@@ -212,7 +212,7 @@ _C.MODEL.RPN.BOUNDARY_THRESH = -1
 # are ignored (-1)
 _C.MODEL.RPN.IOU_THRESHOLDS = [0.3, 0.7]
 _C.MODEL.RPN.IOU_LABELS = [0, -1, 1]
-# Total number of RPN examples per image
+# Number of regions per image used to train RPN
 _C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
 # Target fraction of foreground (positive) examples per RPN minibatch
 _C.MODEL.RPN.POSITIVE_FRACTION = 0.5
