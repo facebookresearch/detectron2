@@ -11,7 +11,13 @@
 import os
 import qiniu
 
-from fvcore.common.file_io import PathHandler, PathManager as _PathManager
+from fvcore.common import file_io
+from fvcore.common.file_io import (
+    PathHandler,
+    PathManagerBase as _PathManagerBase,
+    HTTPURLHandler,
+    OneDrivePathHandler
+)
 
 
 class KODOHandler(PathHandler):
@@ -29,9 +35,10 @@ class KODOHandler(PathHandler):
     if access_key is not None and secret_key is not None:
         AUTH = qiniu.Auth(access_key, secret_key)
 
-    def _check_auth(self):
-        assert hasattr(self, "AUTH"), (
-            "The environment variables 'kodo_access_key' and 'kodo_secret_key' are not found."
+    @classmethod
+    def check_auth(cls):
+        assert hasattr(cls, "AUTH"), (
+            "The environment variables 'kodo_access_key' or 'kodo_secret_key' are not found."
         )
 
     def _get_supported_prefixes(self):
@@ -45,7 +52,7 @@ class KODOHandler(PathHandler):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
 
     def _upload(self, local: str, remote: str, **kwargs) -> bool:
-        self._check_auth()
+        self.check_auth()
 
         assert "bucket" in kwargs
 
@@ -58,10 +65,9 @@ class KODOHandler(PathHandler):
         return info.status_code == 200
 
 
-class PathManager(_PathManager):
+class PathManagerBase(_PathManagerBase):
 
-    @staticmethod
-    def upload(local: str, remote: str, **kwargs):
+    def upload(self, local: str, remote: str, **kwargs):
         """
         Upload the local file (not directory) to the specified remote URI.
 
@@ -69,9 +75,14 @@ class PathManager(_PathManager):
             local (str): path of the local file to be uploaded.
             remote (str): the remote uri.
         """
-        handler = PathManager.__get_path_handler(remote)
+        handler = self.__get_path_handler(remote)
         assert isinstance(handler, KODOHandler), "Invalid remote path: {}.".format(remote)
         return handler._upload(local, remote, **kwargs)
 
 
-PathManager.register_handler(KODOHandler())
+file_io.PathManager = PathManagerBase()
+file_io.PathManager.register_handler(HTTPURLHandler())
+file_io.PathManager.register_handler(OneDrivePathHandler())
+file_io.PathManager.register_handler(KODOHandler())
+
+PathManager = file_io.PathManager
