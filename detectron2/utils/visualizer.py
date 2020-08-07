@@ -1165,3 +1165,20 @@ class Visualizer:
             to the image.
         """
         return self.output
+
+
+def fast_visualize_sample(sample, dataset_name, output_path="vis.png"):
+    """
+    Args:
+        instance (Instance):
+    """
+    img = sample["image"].cpu().numpy().transpose(1, 2, 0)
+    vis = Visualizer(img[:, :, ::-1], metadata=MetadataCatalog.get(dataset_name))
+    pred = sample["instances"]
+    pred.pred_boxes = pred.gt_boxes
+    pred.pred_classes = pred.gt_classes
+    out = vis.draw_instance_predictions(pred)
+    cv2.imwrite(output_path, out.get_image()[:, :, ::-1])
+    print("Original sample path:   {}".format(sample["file_name"]))
+    print("Visualized sample path: {}".format(output_path))
+    input("Press 'enter' to continue ...\n")
