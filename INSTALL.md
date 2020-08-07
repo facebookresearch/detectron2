@@ -59,6 +59,7 @@ Choose from this table:
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.5/index.html
 </code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.4/index.html
+  </code></pre> </details> </td> </tr></tbody></table>  
 
 
 Note that:
