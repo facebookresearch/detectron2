@@ -443,14 +443,18 @@ class PeriodicDump(HookBase):
 
     def __init__(self, output_dir, period, platforms, buckets):
         assert len(platforms) == len(buckets)
-        prefix_mapper = {
-            "KODO": getattr(F, "KODOHandler").PREFIX,
+        handler_mapper = {
+            "KODO": getattr(F, "KODOHandler"),
         }
         self._output_dir = os.path.abspath(output_dir)
         self._period = period
-        self.prefixes = [prefix_mapper[p] for p in platforms]
+        self.prefixes = [handler_mapper[p].PREFIX for p in platforms]
         self.buckets = buckets
         self.logger = logging.getLogger(__name__)
+
+        # check auth
+        for p in platforms:
+            handler_mapper[p].check_auth()
 
     def after_step(self):
         if len(self.prefixes) == 0:
