@@ -30,7 +30,7 @@ Overriding the backbone can prove to be helpful in certain cases. In case you wa
 
 As another example, to add new abilities to the ROI heads in the Generalized R-CNN meta-architecture,
 you can implement a new
-[ROIHeads](../modules/modeling.rst) subclass and put it in the `ROI_HEADS_REGISTRY`.
+[ROIHeads](../modules/modeling.html#detectron2.modeling.ROIHeads) subclass and put it in the `ROI_HEADS_REGISTRY`.
 See [densepose in detectron2](../../projects/DensePose)
 and [meshrcnn](https://github.com/facebookresearch/meshrcnn)
 for examples that implement new ROIHeads to perform new tasks.
