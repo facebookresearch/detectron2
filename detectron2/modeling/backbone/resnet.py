@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import logging
 import numpy as np
 import fvcore.nn.weight_init as weight_init
 import torch
@@ -6,9 +7,9 @@ import torch.nn.functional as F
 from torch import nn
 
 from detectron2.layers import (
+    CNNBlockBase,
     Conv2d,
     DeformConv,
-    FrozenBatchNorm2d,
     ModulatedDeformConv,
     ShapeSpec,
     get_norm,
@@ -29,40 +30,20 @@ __all__ = [
 ]
 
 
-class ResNetBlockBase(nn.Module):
-    def __init__(self, in_channels, out_channels, stride):
-        """
-        The `__init__` method of any subclass should also contain these arguments.
+class BasicBlock(CNNBlockBase):
+    """
+    The basic residual block for ResNet-18 and ResNet-34 defined in :paper:`ResNet`,
+    with two 3x3 conv layers and a projection shortcut if needed.
+    """
 
-        Args:
-            in_channels (int):
-            out_channels (int):
-            stride (int):
-        """
-        super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.stride = stride
-
-    def freeze(self):
-        for p in self.parameters():
-            p.requires_grad = False
-        FrozenBatchNorm2d.convert_frozen_batchnorm(self)
-        return self
-
-
-class BasicBlock(ResNetBlockBase):
     def __init__(self, in_channels, out_channels, *, stride=1, norm="BN"):
         """
-        The standard block type for ResNet18 and ResNet34.
-
         Args:
             in_channels (int): Number of input channels.
             out_channels (int): Number of output channels.
             stride (int): Stride for the first conv.
-            norm (str or callable): A callable that takes the number of
-                channels and returns a `nn.Module`, or a pre-defined string
-                (one of {"FrozenBN", "BN", "GN"}).
+            norm (str or callable): normalization for all conv layers.
+                See :func:`layers.get_norm` for supported format.
         """
         super().__init__(in_channels, out_channels, stride)
 
@@ -117,7 +98,13 @@ class BasicBlock(ResNetBlockBase):
         return out
 
 
-class BottleneckBlock(ResNetBlockBase):
+class BottleneckBlock(CNNBlockBase):
+    """
+    The standard bottleneck residual block used by ResNet-50, 101 and 152
+    defined in :paper:`ResNet`.  It contains 3 conv layers with kernels
+    1x1, 3x3, 1x1, and a projection shortcut if needed.
+    """
+
     def __init__(
         self,
         in_channels,
@@ -132,11 +119,14 @@ class BottleneckBlock(ResNetBlockBase):
     ):
         """
         Args:
-            norm (str or callable): a callable that takes the number of
-                channels and return a `nn.Module`, or a pre-defined string
-                (one of {"FrozenBN", "BN", "GN"}).
-            stride_in_1x1 (bool): when stride==2, whether to put stride in the
+            bottleneck_channels (int): number of output channels for the 3x3
+                "bottleneck" conv layers.
+            num_groups (int): number of groups for the 3x3 conv layer.
+            norm (str or callable): normalization for all conv layers.
+                See :func:`layers.get_norm` for supported format.
+            stride_in_1x1 (bool): when stride>1, whether to put stride in the
                 first 1x1 convolution or the bottleneck 3x3 convolution.
+            dilation (int): the dilation rate of the 3x3 conv layer.
         """
         super().__init__(in_channels, out_channels, stride)
 
@@ -221,7 +211,12 @@ class BottleneckBlock(ResNetBlockBase):
         return out
 
 
-class DeformBottleneckBlock(ResNetBlockBase):
+class DeformBottleneckBlock(CNNBlockBase):
+    """
+    Similar to :class:`BottleneckBlock`, but with :paper:`deformable conv <deformconv>`
+    in the 3x3 convolution.
+    """
+
     def __init__(
         self,
         in_channels,
@@ -236,9 +231,6 @@ class DeformBottleneckBlock(ResNetBlockBase):
         deform_modulated=False,
         deform_num_groups=1,
     ):
-        """
-        Similar to :class:`BottleneckBlock`, but with deformable conv in the 3x3 convolution.
-        """
         super().__init__(in_channels, out_channels, stride)
         self.deform_modulated = deform_modulated
 
@@ -336,36 +328,19 @@ class DeformBottleneckBlock(ResNetBlockBase):
         return out
 
 
-def make_stage(block_class, num_blocks, first_stride, **kwargs):
+class BasicStem(CNNBlockBase):
     """
-    Create a resnet stage by creating many blocks.
-
-    Args:
-        block_class (class): a subclass of ResNetBlockBase
-        num_blocks (int):
-        first_stride (int): the stride of the first block. The other blocks will have stride=1.
-            A `stride` argument will be passed to the block constructor.
-        kwargs: other arguments passed to the block constructor.
-
-    Returns:
-        list[nn.Module]: a list of block module.
+    The standard ResNet stem (layers before the first residual block).
     """
-    blocks = []
-    for i in range(num_blocks):
-        blocks.append(block_class(stride=first_stride if i == 0 else 1, **kwargs))
-        kwargs["in_channels"] = kwargs["out_channels"]
-    return blocks
 
-
-class BasicStem(nn.Module):
     def __init__(self, in_channels=3, out_channels=64, norm="BN"):
         """
         Args:
-            norm (str or callable): a callable that takes the number of
-                channels and return a `nn.Module`, or a pre-defined string
-                (one of {"FrozenBN", "BN", "GN"}).
+            norm (str or callable): norm after the first conv layer.
+                See :func:`layers.get_norm` for supported format.
         """
-        super().__init__()
+        super().__init__(in_channels, out_channels, 4)
+        self.in_channels = in_channels
         self.conv1 = Conv2d(
             in_channels,
             out_channels,
@@ -383,28 +358,25 @@ class BasicStem(nn.Module):
         x = F.max_pool2d(x, kernel_size=3, stride=2, padding=1)
         return x
 
-    @property
-    def out_channels(self):
-        return self.conv1.out_channels
-
-    @property
-    def stride(self):
-        return 4  # = stride 2 conv -> stride 2 max pool
-
 
 class ResNet(Backbone):
+    """
+    Implement :paper:`ResNet`.
+    """
+
     def __init__(self, stem, stages, num_classes=None, out_features=None):
         """
         Args:
             stem (nn.Module): a stem module
-            stages (list[list[ResNetBlock]]): several (typically 4) stages,
-                each contains multiple :class:`ResNetBlockBase`.
+            stages (list[list[CNNBlockBase]]): several (typically 4) stages,
+                each contains multiple :class:`CNNBlockBase`.
             num_classes (None or int): if None, will not perform classification.
+                Otherwise, will create a linear layer.
             out_features (list[str]): name of the layers whose outputs should
                 be returned in forward. Can be anything in "stem", "linear", or "res2" ...
                 If None, will return the output of the last layer.
         """
-        super(ResNet, self).__init__()
+        super().__init__()
         self.stem = stem
         self.num_classes = num_classes
 
@@ -414,17 +386,20 @@ class ResNet(Backbone):
 
         self.stages_and_names = []
         for i, blocks in enumerate(stages):
+            assert len(blocks) > 0, len(blocks)
             for block in blocks:
-                assert isinstance(block, ResNetBlockBase), block
-                curr_channels = block.out_channels
-            stage = nn.Sequential(*blocks)
+                assert isinstance(block, CNNBlockBase), block
+
             name = "res" + str(i + 2)
+            stage = nn.Sequential(*blocks)
+
             self.add_module(name, stage)
             self.stages_and_names.append((stage, name))
+
             self._out_feature_strides[name] = current_stride = int(
                 current_stride * np.prod([k.stride for k in blocks])
             )
-            self._out_feature_channels[name] = blocks[-1].out_channels
+            self._out_feature_channels[name] = curr_channels = blocks[-1].out_channels
 
         if num_classes is not None:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -445,6 +420,14 @@ class ResNet(Backbone):
             assert out_feature in children, "Available children: {}".format(", ".join(children))
 
     def forward(self, x):
+        """
+        Args:
+            x: Tensor of shape (N,C,H,W). H, W must be a multiple of ``self.size_divisibility``.
+
+        Returns:
+            dict[str->Tensor]
+        """
+        assert x.dim() == 4, f"ResNet takes an input of shape (N, C, H, W). Got {x.shape} instead!"
         outputs = {}
         x = self.stem(x)
         if "stem" in self._out_features:
@@ -469,6 +452,109 @@ class ResNet(Backbone):
             for name in self._out_features
         }
 
+    def freeze(self, freeze_at=0):
+        """
+        Freeze the first several stages of the ResNet. Commonly used in
+        fine-tuning.
+
+        Layers that produce the same feature map spatial size are defined as one
+        "stage" by :paper:`FPN`.
+
+        Args:
+            freeze_at (int): number of stages to freeze.
+                `1` means freezing the stem. `2` means freezing the stem and
+                one residual stage, etc.
+
+        Returns:
+            nn.Module: this ResNet itself
+        """
+        if freeze_at >= 1:
+            self.stem.freeze()
+        for idx, (stage, _) in enumerate(self.stages_and_names, start=2):
+            if freeze_at >= idx:
+                for block in stage.children():
+                    block.freeze()
+        return self
+
+    @staticmethod
+    def make_stage(
+        block_class, num_blocks, first_stride=None, *, in_channels, out_channels, **kwargs
+    ):
+        """
+        Create a list of blocks of the same type that forms one ResNet stage.
+
+        Args:
+            block_class (type): a subclass of CNNBlockBase that's used to create all blocks in this
+                stage. A module of this type must not change spatial resolution of inputs unless its
+                stride != 1.
+            num_blocks (int): number of blocks in this stage
+            first_stride (int): deprecated
+            in_channels (int): input channels of the entire stage.
+            out_channels (int): output channels of **every block** in the stage.
+            kwargs: other arguments passed to the constructor of
+                `block_class`. If the argument name is "xx_per_block", the
+                argument is a list of values to be passed to each block in the
+                stage. Otherwise, the same argument is passed to every block
+                in the stage.
+
+        Returns:
+            list[nn.Module]: a list of block module.
+
+        Examples:
+        ::
+            stages = ResNet.make_stage(
+                BottleneckBlock, 3, in_channels=16, out_channels=64,
+                bottleneck_channels=16, num_groups=1,
+                stride_per_block=[2, 1, 1],
+                dilations_per_block=[1, 1, 2]
+            )
+
+        Usually, layers that produce the same feature map spatial size are defined as one
+        "stage" (in :paper:`FPN`). In this case ``stride_per_block[1:]`` should all be 1.
+        """
+        if first_stride is not None:
+            assert "stride" not in kwargs and "stride_per_block" not in kwargs
+            kwargs["stride_per_block"] = [first_stride] + [1] * (num_blocks - 1)
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "ResNet.make_stage(first_stride=) is deprecated!  "
+                "Use 'stride_per_block' or 'stride' instead."
+            )
+
+        blocks = []
+        for i in range(num_blocks):
+            curr_kwargs = {}
+            for k, v in kwargs.items():
+                if k.endswith("_per_block"):
+                    assert len(v) == num_blocks, (
+                        f"Argument '{k}' of make_stage should have the "
+                        f"same length as num_blocks={num_blocks}."
+                    )
+                    newk = k[: -len("_per_block")]
+                    assert newk not in kwargs, f"Cannot call make_stage with both {k} and {newk}!"
+                    curr_kwargs[newk] = v[i]
+                else:
+                    curr_kwargs[k] = v
+
+            blocks.append(
+                block_class(in_channels=in_channels, out_channels=out_channels, **curr_kwargs)
+            )
+            in_channels = out_channels
+        return blocks
+
+
+ResNetBlockBase = CNNBlockBase
+"""
+Alias for backward compatibiltiy.
+"""
+
+
+def make_stage(*args, **kwargs):
+    """
+    Deprecated alias for backward compatibiltiy.
+    """
+    return ResNet.make_stage(*args, **kwargs)
+
 
 @BACKBONE_REGISTRY.register()
 def build_resnet_backbone(cfg, input_shape):
@@ -485,14 +571,9 @@ def build_resnet_backbone(cfg, input_shape):
         out_channels=cfg.MODEL.RESNETS.STEM_OUT_CHANNELS,
         norm=norm,
     )
-    freeze_at = cfg.MODEL.BACKBONE.FREEZE_AT
-
-    if freeze_at >= 1:
-        for p in stem.parameters():
-            p.requires_grad = False
-        stem = FrozenBatchNorm2d.convert_frozen_batchnorm(stem)
 
     # fmt: off
+    freeze_at           = cfg.MODEL.BACKBONE.FREEZE_AT
     out_features        = cfg.MODEL.RESNETS.OUT_FEATURES
     depth               = cfg.MODEL.RESNETS.DEPTH
     num_groups          = cfg.MODEL.RESNETS.NUM_GROUPS
@@ -535,7 +616,7 @@ def build_resnet_backbone(cfg, input_shape):
         first_stride = 1 if idx == 0 or (stage_idx == 5 and dilation == 2) else 2
         stage_kargs = {
             "num_blocks": num_blocks_per_stage[idx],
-            "first_stride": first_stride,
+            "stride_per_block": [first_stride] + [1] * (num_blocks_per_stage[idx] - 1),
             "in_channels": in_channels,
             "out_channels": out_channels,
             "norm": norm,
@@ -554,13 +635,9 @@ def build_resnet_backbone(cfg, input_shape):
                 stage_kargs["deform_num_groups"] = deform_num_groups
             else:
                 stage_kargs["block_class"] = BottleneckBlock
-        blocks = make_stage(**stage_kargs)
+        blocks = ResNet.make_stage(**stage_kargs)
         in_channels = out_channels
         out_channels *= 2
         bottleneck_channels *= 2
-
-        if freeze_at >= stage_idx:
-            for block in blocks:
-                block.freeze()
         stages.append(blocks)
-    return ResNet(stem, stages, out_features=out_features)
+    return ResNet(stem, stages, out_features=out_features).freeze(freeze_at)

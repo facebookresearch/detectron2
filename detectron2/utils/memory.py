@@ -41,9 +41,7 @@ def retry_if_cuda_oom(func):
         a callable which retries `func` if OOM is encountered.
 
     Examples:
-
-    .. code-block:: python
-
+    ::
         output = retry_if_cuda_oom(some_torch_function)(input1, input2)
         # output may be on CPU even if inputs are on GPU
 

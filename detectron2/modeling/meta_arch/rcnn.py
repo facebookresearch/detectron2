@@ -1,14 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import numpy as np
+from typing import Optional, Tuple
 import torch
 from torch import nn
 
+from detectron2.config import configurable
+from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.structures import ImageList
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
 
-from ..backbone import build_backbone
+from ..backbone import Backbone, build_backbone
 from ..postprocessing import detector_postprocess
 from ..proposal_generator import build_proposal_generator
 from ..roi_heads import build_roi_heads
@@ -26,22 +29,63 @@ class GeneralizedRCNN(nn.Module):
     3. Per-region feature extraction and prediction
     """
 
-    def __init__(self, cfg):
+    @configurable
+    def __init__(
+        self,
+        *,
+        backbone: Backbone,
+        proposal_generator: nn.Module,
+        roi_heads: nn.Module,
+        pixel_mean: Tuple[float],
+        pixel_std: Tuple[float],
+        input_format: Optional[str] = None,
+        vis_period: int = 0,
+    ):
+        """
+        NOTE: this interface is experimental.
+
+        Args:
+            backbone: a backbone module, must follow detectron2's backbone interface
+            proposal_generator: a module that generates proposals using backbone features
+            roi_heads: a ROI head that performs per-region computation
+            pixel_mean, pixel_std: list or tuple with #channels element,
+                representing the per-channel mean and std to be used to normalize
+                the input image
+            input_format: describe the meaning of channels of input. Needed by visualization
+            vis_period: the period to run visualization. Set to 0 to disable.
+        """
         super().__init__()
+        self.backbone = backbone
+        self.proposal_generator = proposal_generator
+        self.roi_heads = roi_heads
 
-        self.device = torch.device(cfg.MODEL.DEVICE)
-        self.backbone = build_backbone(cfg)
-        self.proposal_generator = build_proposal_generator(cfg, self.backbone.output_shape())
-        self.roi_heads = build_roi_heads(cfg, self.backbone.output_shape())
-        self.vis_period = cfg.VIS_PERIOD
-        self.input_format = cfg.INPUT.FORMAT
+        self.input_format = input_format
+        self.vis_period = vis_period
+        if vis_period > 0:
+            assert input_format is not None, "input_format is required for visualization!"
 
-        assert len(cfg.MODEL.PIXEL_MEAN) == len(cfg.MODEL.PIXEL_STD)
-        num_channels = len(cfg.MODEL.PIXEL_MEAN)
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(num_channels, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(num_channels, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-        self.to(self.device)
+        self.register_buffer("pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(pixel_std).view(-1, 1, 1))
+        assert (
+            self.pixel_mean.shape == self.pixel_std.shape
+        ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
+
+    @classmethod
+    def from_config(cls, cfg):
+        backbone = build_backbone(cfg)
+        return {
+            "backbone": backbone,
+            "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
+            "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
+            "input_format": cfg.INPUT.FORMAT,
+            "vis_period": cfg.VIS_PERIOD,
+            "pixel_mean": cfg.MODEL.PIXEL_MEAN,
+            "pixel_std": cfg.MODEL.PIXEL_STD,
+        }
+
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     def visualize_training(self, batched_inputs, proposals):
         """
@@ -61,11 +105,8 @@ class GeneralizedRCNN(nn.Module):
         max_vis_prop = 20
 
         for input, prop in zip(batched_inputs, proposals):
-            img = input["image"].cpu().numpy()
-            assert img.shape[0] == 3, "Images should have 3 channels."
-            if self.input_format == "BGR":
-                img = img[::-1, :, :]
-            img = img.transpose(1, 2, 0)
+            img = input["image"]
+            img = convert_image_to_rgb(img.permute(1, 2, 0), self.input_format)
             v_gt = Visualizer(img, None)
             v_gt = v_gt.overlay_instances(boxes=input["instances"].gt_boxes)
             anno_img = v_gt.get_image()
@@ -110,11 +151,6 @@ class GeneralizedRCNN(nn.Module):
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        elif "targets" in batched_inputs[0]:
-            log_first_n(
-                logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
-            )
-            gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
 
@@ -182,7 +218,7 @@ class GeneralizedRCNN(nn.Module):
         Normalize, pad and batch the input images.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         return images
 
@@ -205,17 +241,21 @@ class GeneralizedRCNN(nn.Module):
 
 @META_ARCH_REGISTRY.register()
 class ProposalNetwork(nn.Module):
+    """
+    A meta architecture that only predicts object proposals.
+    """
+
     def __init__(self, cfg):
         super().__init__()
-        self.device = torch.device(cfg.MODEL.DEVICE)
-
         self.backbone = build_backbone(cfg)
         self.proposal_generator = build_proposal_generator(cfg, self.backbone.output_shape())
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(-1, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(-1, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-        self.to(self.device)
+        self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
+        self.register_buffer("pixel_std", torch.Tensor(cfg.MODEL.PIXEL_STD).view(-1, 1, 1))
+
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     def forward(self, batched_inputs):
         """
@@ -229,7 +269,7 @@ class ProposalNetwork(nn.Module):
                 :class:`Instances` with keys "proposal_boxes" and "objectness_logits".
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         features = self.backbone(images.tensor)
 

@@ -18,7 +18,7 @@ from .evaluator import DatasetEvaluator
 
 class SemSegEvaluator(DatasetEvaluator):
     """
-    Evaluate semantic segmentation
+    Evaluate semantic segmentation metrics.
     """
 
     def __init__(self, dataset_name, distributed, num_classes, ignore_label=255, output_dir=None):
@@ -54,6 +54,7 @@ class SemSegEvaluator(DatasetEvaluator):
             self._contiguous_id_to_dataset_id = {v: k for k, v in c2d.items()}
         except AttributeError:
             self._contiguous_id_to_dataset_id = None
+        self._class_names = meta.stuff_classes
 
     def reset(self):
         self._conf_matrix = np.zeros((self._N, self._N), dtype=np.int64)
@@ -110,8 +111,8 @@ class SemSegEvaluator(DatasetEvaluator):
             with PathManager.open(file_path, "w") as f:
                 f.write(json.dumps(self._predictions))
 
-        acc = np.zeros(self._num_classes, dtype=np.float)
-        iou = np.zeros(self._num_classes, dtype=np.float)
+        acc = np.full(self._num_classes, np.nan, dtype=np.float)
+        iou = np.full(self._num_classes, np.nan, dtype=np.float)
         tp = self._conf_matrix.diagonal()[:-1].astype(np.float)
         pos_gt = np.sum(self._conf_matrix[:-1, :-1], axis=0).astype(np.float)
         class_weights = pos_gt / np.sum(pos_gt)
@@ -121,16 +122,20 @@ class SemSegEvaluator(DatasetEvaluator):
         iou_valid = (pos_gt + pos_pred) > 0
         union = pos_gt + pos_pred - tp
         iou[acc_valid] = tp[acc_valid] / union[acc_valid]
-        macc = np.sum(acc) / np.sum(acc_valid)
-        miou = np.sum(iou) / np.sum(iou_valid)
-        fiou = np.sum(iou * class_weights)
+        macc = np.sum(acc[acc_valid]) / np.sum(acc_valid)
+        miou = np.sum(iou[acc_valid]) / np.sum(iou_valid)
+        fiou = np.sum(iou[acc_valid] * class_weights[acc_valid])
         pacc = np.sum(tp) / np.sum(pos_gt)
 
         res = {}
         res["mIoU"] = 100 * miou
         res["fwIoU"] = 100 * fiou
+        for i, name in enumerate(self._class_names):
+            res["IoU-{}".format(name)] = 100 * iou[i]
         res["mACC"] = 100 * macc
         res["pACC"] = 100 * pacc
+        for i, name in enumerate(self._class_names):
+            res["ACC-{}".format(name)] = 100 * acc[i]
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "sem_seg_evaluation.pth")

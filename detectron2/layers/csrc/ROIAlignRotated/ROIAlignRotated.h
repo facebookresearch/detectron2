@@ -24,7 +24,7 @@ at::Tensor ROIAlignRotated_backward_cpu(
     const int width,
     const int sampling_ratio);
 
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
 at::Tensor ROIAlignRotated_forward_cuda(
     const at::Tensor& input,
     const at::Tensor& rois,
@@ -54,8 +54,8 @@ inline at::Tensor ROIAlignRotated_forward(
     const int pooled_height,
     const int pooled_width,
     const int sampling_ratio) {
-  if (input.type().is_cuda()) {
-#ifdef WITH_CUDA
+  if (input.is_cuda()) {
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     return ROIAlignRotated_forward_cuda(
         input,
         rois,
@@ -82,8 +82,8 @@ inline at::Tensor ROIAlignRotated_backward(
     const int height,
     const int width,
     const int sampling_ratio) {
-  if (grad.type().is_cuda()) {
-#ifdef WITH_CUDA
+  if (grad.is_cuda()) {
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     return ROIAlignRotated_backward_cuda(
         grad,
         rois,

@@ -179,13 +179,13 @@ class Box2BoxTransformRotated(object):
         Apply transformation `deltas` (dx, dy, dw, dh, da) to `boxes`.
 
         Args:
-            deltas (Tensor): transformation deltas of shape (N, 5).
+            deltas (Tensor): transformation deltas of shape (N, k*5).
                 deltas[i] represents box transformation for the single box boxes[i].
             boxes (Tensor): boxes to transform, of shape (N, 5)
         """
-        assert deltas.shape[1] == 5 and boxes.shape[1] == 5
+        assert deltas.shape[1] % 5 == 0 and boxes.shape[1] == 5
 
-        boxes = boxes.to(deltas.dtype)
+        boxes = boxes.to(deltas.dtype).unsqueeze(2)
 
         ctr_x = boxes[:, 0]
         ctr_y = boxes[:, 1]
@@ -195,27 +195,27 @@ class Box2BoxTransformRotated(object):
 
         wx, wy, ww, wh, wa = self.weights
 
-        dx = deltas[:, 0] / wx
-        dy = deltas[:, 1] / wy
-        dw = deltas[:, 2] / ww
-        dh = deltas[:, 3] / wh
-        da = deltas[:, 4] / wa
+        dx = deltas[:, 0::5] / wx
+        dy = deltas[:, 1::5] / wy
+        dw = deltas[:, 2::5] / ww
+        dh = deltas[:, 3::5] / wh
+        da = deltas[:, 4::5] / wa
 
         # Prevent sending too large values into torch.exp()
         dw = torch.clamp(dw, max=self.scale_clamp)
         dh = torch.clamp(dh, max=self.scale_clamp)
 
         pred_boxes = torch.zeros_like(deltas)
-        pred_boxes[:, 0] = dx * widths + ctr_x  # x_ctr
-        pred_boxes[:, 1] = dy * heights + ctr_y  # y_ctr
-        pred_boxes[:, 2] = torch.exp(dw) * widths  # width
-        pred_boxes[:, 3] = torch.exp(dh) * heights  # height
+        pred_boxes[:, 0::5] = dx * widths + ctr_x  # x_ctr
+        pred_boxes[:, 1::5] = dy * heights + ctr_y  # y_ctr
+        pred_boxes[:, 2::5] = torch.exp(dw) * widths  # width
+        pred_boxes[:, 3::5] = torch.exp(dh) * heights  # height
 
         # Following original RRPN implementation,
         # angles of deltas are in radians while angles of boxes are in degrees.
         pred_angle = da * 180.0 / math.pi + angles
         pred_angle = (pred_angle + 180.0) % 360.0 - 180.0  # make it in [-180, 180)
 
-        pred_boxes[:, 4] = pred_angle
+        pred_boxes[:, 4::5] = pred_angle
 
         return pred_boxes

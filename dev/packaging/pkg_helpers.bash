@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 # Function to retry functions that sometimes timeout or have flaky failures
 retry () {
@@ -15,6 +16,10 @@ setup_cuda() {
   # Like other torch domain libraries, we choose common GPU architectures only.
   export FORCE_CUDA=1
   case "$CU_VERSION" in
+    cu102)
+      export CUDA_HOME=/usr/local/cuda-10.2/
+      export TORCH_CUDA_ARCH_LIST="3.5;3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
+      ;;
     cu101)
       export CUDA_HOME=/usr/local/cuda-10.1/
       export TORCH_CUDA_ARCH_LIST="3.5;3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"

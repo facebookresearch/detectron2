@@ -14,7 +14,8 @@ In this repository, we release code for TensorMask in Detectron2.
 TensorMask is a dense sliding-window instance segmentation framework that, for the first time, achieves results close to the well-developed Mask R-CNN framework -- both qualitatively and quantitatively. It establishes a conceptually complementary direction for object instance segmentation research.
 
 ## Installation
-First install Detectron 2 following [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). Then compile the TensorMask-specific op (`swap_align2nat`):
+First install Detectron2 following the [documentation](https://detectron2.readthedocs.io/tutorials/install.html) and
+[setup the dataset](../../datasets). Then compile the TensorMask-specific op (`swap_align2nat`):
 ```bash
 cd /path/to/detectron2/projects/TensorMask
 python setup.py build develop

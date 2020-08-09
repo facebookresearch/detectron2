@@ -39,9 +39,6 @@ def roi_mask_point_loss(mask_logits, instances, points_coord):
     Returns:
         point_loss (Tensor): A scalar tensor containing the loss.
     """
-    assert len(instances) == 0 or isinstance(
-        instances[0].gt_masks, BitMasks
-    ), "Point head works with GT in 'bitmask' format only. Set INPUT.MASK_FORMAT to 'bitmask'."
     with torch.no_grad():
         cls_agnostic_mask = mask_logits.size(1) == 1
         total_num_masks = mask_logits.size(0)
@@ -50,6 +47,12 @@ def roi_mask_point_loss(mask_logits, instances, points_coord):
         gt_mask_logits = []
         idx = 0
         for instances_per_image in instances:
+            if len(instances_per_image) == 0:
+                continue
+            assert isinstance(
+                instances_per_image.gt_masks, BitMasks
+            ), "Point head works with GT in 'bitmask' format. Set INPUT.MASK_FORMAT to 'bitmask'."
+
             if not cls_agnostic_mask:
                 gt_classes_per_image = instances_per_image.gt_classes.to(dtype=torch.int64)
                 gt_classes.append(gt_classes_per_image)
@@ -68,12 +71,12 @@ def roi_mask_point_loss(mask_logits, instances, points_coord):
                     align_corners=False,
                 ).squeeze(1)
             )
-        gt_mask_logits = cat(gt_mask_logits)
 
-    # torch.mean (in binary_cross_entropy_with_logits) doesn't
-    # accept empty tensors, so handle it separately
-    if gt_mask_logits.numel() == 0:
+    if len(gt_mask_logits) == 0:
         return mask_logits.sum() * 0
+
+    gt_mask_logits = cat(gt_mask_logits)
+    assert gt_mask_logits.numel() > 0, gt_mask_logits.shape
 
     if cls_agnostic_mask:
         mask_logits = mask_logits[:, 0]

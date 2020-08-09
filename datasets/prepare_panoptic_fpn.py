@@ -78,7 +78,7 @@ def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root, sem_seg_r
 
 
 if __name__ == "__main__":
-    dataset_dir = os.path.join(os.path.dirname(__file__), "coco")
+    dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "coco")
     for s in ["val2017", "train2017"]:
         separate_coco_semantic_from_panoptic(
             os.path.join(dataset_dir, "annotations/panoptic_{}.json".format(s)),

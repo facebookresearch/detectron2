@@ -7,9 +7,11 @@ import io
 import itertools
 import json
 import logging
+import numpy as np
 import os
 from collections import OrderedDict
 import torch
+from fvcore.common.file_io import PathManager
 from pycocotools.coco import COCO
 
 from detectron2.data import MetadataCatalog
@@ -30,8 +32,10 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
+        self._min_threshold = 0.5
+        json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
-            self._coco_api = COCO(self._metadata.json_file)
+            self._coco_api = COCO(json_file)
 
     def reset(self):
         self._predictions = []
@@ -84,9 +88,12 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
 
         self._logger.info("Evaluating predictions ...")
         res = OrderedDict()
-        results_gps, results_gpsm = _evaluate_predictions_on_coco(self._coco_api, predictions)
+        results_gps, results_gpsm, results_segm = _evaluate_predictions_on_coco(
+            self._coco_api, predictions, min_threshold=self._min_threshold
+        )
         res["densepose_gps"] = results_gps
         res["densepose_gpsm"] = results_gpsm
+        res["densepose_segm"] = results_segm
         return res
 
 
@@ -115,9 +122,15 @@ def prediction_to_json(instances, img_id):
     return results
 
 
-def _evaluate_predictions_on_coco(coco_gt, coco_results):
-    metrics = ["AP", "AP50", "AP75", "APm", "APl"]
-
+def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5):
+    metrics = ["AP"]
+    if min_threshold <= 0.201:
+        metrics += ["AP20"]
+    if min_threshold <= 0.301:
+        metrics += ["AP30"]
+    if min_threshold <= 0.401:
+        metrics += ["AP40"]
+    metrics.extend(["AP50", "AP75", "APm", "APl"])
     logger = logging.getLogger(__name__)
 
     if len(coco_results) == 0:  # cocoapi does not handle empty results very well
@@ -127,19 +140,24 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results):
         return results_gps, results_gpsm
 
     coco_dt = coco_gt.loadRes(coco_results)
-    results_gps = _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics)
+    results_segm = _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold)
+    logger.info("Evaluation results for densepose segm: \n" + create_small_table(results_segm))
+    results_gps = _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold)
     logger.info(
         "Evaluation results for densepose, GPS metric: \n" + create_small_table(results_gps)
     )
-    results_gpsm = _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics)
+    results_gpsm = _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold)
     logger.info(
         "Evaluation results for densepose, GPSm metric: \n" + create_small_table(results_gpsm)
     )
-    return results_gps, results_gpsm
+    return results_gps, results_gpsm, results_segm
 
 
-def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics):
+def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0.5):
     coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPS)
+    coco_eval.params.iouThrs = np.linspace(
+        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
+    )
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
@@ -147,8 +165,23 @@ def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics):
     return results
 
 
-def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics):
+def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=0.5):
     coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPSM)
+    coco_eval.params.iouThrs = np.linspace(
+        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
+    )
+    coco_eval.evaluate()
+    coco_eval.accumulate()
+    coco_eval.summarize()
+    results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
+    return results
+
+
+def _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold=0.5):
+    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "segm")
+    coco_eval.params.iouThrs = np.linspace(
+        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
+    )
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()

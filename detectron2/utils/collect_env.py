@@ -53,10 +53,20 @@ def detect_compute_compatibility(CUDA_HOME, so_file):
 
 
 def collect_env_info():
-    has_cuda = torch.cuda.is_available()
-    # NOTE: the use of CUDA_HOME requires the CUDA build deps, though in
-    # theory detectron2 should be made runnable with only the CUDA runtime
+    has_gpu = torch.cuda.is_available()  # true for both CUDA & ROCM
+    torch_version = torch.__version__
+
+    # NOTE: the use of CUDA_HOME and ROCM_HOME requires the CUDA/ROCM build deps, though in
+    # theory detectron2 should be made runnable with only the corresponding runtimes
     from torch.utils.cpp_extension import CUDA_HOME
+
+    has_rocm = False
+    if tuple(map(int, torch_version.split(".")[:2])) >= (1, 5):
+        from torch.utils.cpp_extension import ROCM_HOME
+
+        if (getattr(torch.version, "hip", None) is not None) and (ROCM_HOME is not None):
+            has_rocm = True
+    has_cuda = has_gpu and (not has_rocm)
 
     data = []
     data.append(("sys.platform", sys.platform))
@@ -71,47 +81,60 @@ def collect_env_info():
         )
     except ImportError:
         data.append(("detectron2", "failed to import"))
+
+    try:
+        from detectron2 import _C
+    except ImportError:
+        data.append(("detectron2._C", "failed to import"))
+
+        # print system compilers when extension fails to build
+        if sys.platform != "win32":  # don't know what to do for windows
+            try:
+                # this is how torch/utils/cpp_extensions.py choose compiler
+                cxx = os.environ.get("CXX", "c++")
+                cxx = subprocess.check_output("'{}' --version".format(cxx), shell=True)
+                cxx = cxx.decode("utf-8").strip().split("\n")[0]
+            except subprocess.SubprocessError:
+                cxx = "Not found"
+            data.append(("Compiler", cxx))
+
+            if has_cuda and CUDA_HOME is not None:
+                try:
+                    nvcc = os.path.join(CUDA_HOME, "bin", "nvcc")
+                    nvcc = subprocess.check_output("'{}' -V".format(nvcc), shell=True)
+                    nvcc = nvcc.decode("utf-8").strip().split("\n")[-1]
+                except subprocess.SubprocessError:
+                    nvcc = "Not found"
+                data.append(("CUDA compiler", nvcc))
     else:
-        try:
-            from detectron2 import _C
-        except ImportError:
-            data.append(("detectron2._C", "failed to import"))
-        else:
-            data.append(("detectron2 compiler", _C.get_compiler_version()))
-            data.append(("detectron2 CUDA compiler", _C.get_cuda_version()))
-            if has_cuda:
-                data.append(
-                    ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
-                )
+        # print compilers that are used to build extension
+        data.append(("Compiler", _C.get_compiler_version()))
+        data.append(("CUDA compiler", _C.get_cuda_version()))  # cuda or hip
+        if has_cuda:
+            data.append(
+                ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
+            )
 
     data.append(get_env_module())
-    data.append(("PyTorch", torch.__version__ + " @" + os.path.dirname(torch.__file__)))
+    data.append(("PyTorch", torch_version + " @" + os.path.dirname(torch.__file__)))
     data.append(("PyTorch debug build", torch.version.debug))
 
-    data.append(("CUDA available", has_cuda))
-    if has_cuda:
+    data.append(("GPU available", has_gpu))
+    if has_gpu:
         devices = defaultdict(list)
         for k in range(torch.cuda.device_count()):
             devices[torch.cuda.get_device_name(k)].append(str(k))
         for name, devids in devices.items():
             data.append(("GPU " + ",".join(devids), name))
 
-        from torch.utils.cpp_extension import CUDA_HOME
+        if has_rocm:
+            data.append(("ROCM_HOME", str(ROCM_HOME)))
+        else:
+            data.append(("CUDA_HOME", str(CUDA_HOME)))
 
-        data.append(("CUDA_HOME", str(CUDA_HOME)))
-
-        if CUDA_HOME is not None and os.path.isdir(CUDA_HOME):
-            try:
-                nvcc = os.path.join(CUDA_HOME, "bin", "nvcc")
-                nvcc = subprocess.check_output("'{}' -V | tail -n1".format(nvcc), shell=True)
-                nvcc = nvcc.decode("utf-8").strip()
-            except subprocess.SubprocessError:
-                nvcc = "Not Available"
-            data.append(("NVCC", nvcc))
-
-        cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
-        if cuda_arch_list:
-            data.append(("TORCH_CUDA_ARCH_LIST", cuda_arch_list))
+            cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
+            if cuda_arch_list:
+                data.append(("TORCH_CUDA_ARCH_LIST", cuda_arch_list))
     data.append(("Pillow", PIL.__version__))
 
     try:
@@ -130,6 +153,13 @@ def collect_env_info():
                 data.append(("torchvision._C", "failed to find"))
     except AttributeError:
         data.append(("torchvision", "unknown"))
+
+    try:
+        import fvcore
+
+        data.append(("fvcore", fvcore.__version__))
+    except ImportError:
+        pass
 
     try:
         import cv2

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from typing import List
 import torch
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
 
-def batched_nms(boxes, scores, idxs, iou_threshold):
+def batched_nms(
+    boxes: torch.Tensor, scores: torch.Tensor, idxs: torch.Tensor, iou_threshold: float
+):
     """
     Same as torchvision.ops.boxes.batched_nms, but safer.
     """
@@ -17,7 +20,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold):
         return box_ops.batched_nms(boxes, scores, idxs, iou_threshold)
 
     result_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
-    for id in torch.unique(idxs).cpu().tolist():
+    for id in torch.jit.annotate(List[int], torch.unique(idxs).cpu().tolist()):
         mask = (idxs == id).nonzero().view(-1)
         keep = nms(boxes[mask], scores[mask], iou_threshold)
         result_mask[mask[keep]] = True
@@ -137,7 +140,7 @@ def batched_nms_rotated(boxes, scores, idxs, iou_threshold):
         torch.max(boxes[:, 0], boxes[:, 1]) + torch.max(boxes[:, 2], boxes[:, 3]) / 2
     ).max()
     min_coordinate = (
-        torch.min(boxes[:, 0], boxes[:, 1]) - torch.min(boxes[:, 2], boxes[:, 3]) / 2
+        torch.min(boxes[:, 0], boxes[:, 1]) - torch.max(boxes[:, 2], boxes[:, 3]) / 2
     ).min()
     offsets = idxs.to(boxes) * (max_coordinate - min_coordinate + 1)
     boxes_for_nms = boxes.clone()  # avoid modifying the original values in boxes

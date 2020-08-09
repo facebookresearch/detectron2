@@ -7,31 +7,74 @@ from detectron2.modeling import build_model
 model = build_model(cfg)  # returns a torch.nn.Module
 ```
 
-Note that `build_model` only builds the model structure, and fill it with random parameters.
-To load an existing checkpoint to the model, use
-`DetectionCheckpointer(model).load(file_path)`.
-Detectron2 recognizes models in pytorch's `.pth` format, as well as the `.pkl` files
+`build_model` only builds the model structure and fills it with random parameters.
+See below for how to load an existing checkpoint to the model and how to use the `model` object.
+
+### Load/Save a Checkpoint
+```python
+from detectron2.checkpoint import DetectionCheckpointer
+DetectionCheckpointer(model).load(file_path_or_url)  # load a file, usually from cfg.MODEL.WEIGHTS
+
+checkpointer = DetectionCheckpointer(model, save_dir="output")
+checkpointer.save("model_999")  # save to output/model_999.pth
+```
+
+Detectron2's checkpointer recognizes models in pytorch's `.pth` format, as well as the `.pkl` files
 in our model zoo.
+See [API doc](../modules/checkpoint.html#detectron2.checkpoint.DetectionCheckpointer)
+for more details about its usage.
 
-You can use a model by just `outputs = model(inputs)`.
-Next, we explain the inputs/outputs format used by the builtin models in detectron2.
+The model files can be arbitrarily manipulated using `torch.{load,save}` for `.pth` files or
+`pickle.{dump,load}` for `.pkl` files.
 
+### Use a Model
+
+A model can be called by `outputs = model(inputs)`, where `inputs` is a `list[dict]`.
+Each dict corresponds to one image and the required keys
+depend on the type of model, and whether the model is in training or evaluation mode.
+For example, in order to do inference,
+all existing models expect the "image" key, and optionally "height" and "width".
+The detailed format of inputs and outputs of existing models are explained below.
+
+__Training__: When in training mode, all models are required to be used under an `EventStorage`.
+The training statistics will be put into the storage:
+```python
+from detectron2.utils.events import EventStorage
+with EventStorage() as storage:
+  losses = model(inputs)
+```
+
+__Inference__: If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
-is a wrapper around model that provides the default behavior for regular inference. It includes model loading as
-well as preprocessing, and operates on single image rather than batches.
+is a wrapper around model that provides such basic functionality.
+It includes default behavior including model loading, preprocessing,
+and operates on single image rather than batches. See its documentation for usage.
 
+You can also run inference directly like this:
+```
+model.eval()
+with torch.no_grad():
+  outputs = model(inputs)
+```
 
 ### Model Input Format
 
-All builtin models take a `list[dict]` as the inputs. Each dict
+Users can implement custom models that support any arbitrary input format.
+Here we describe the standard input format that all builtin models support in detectron2.
+They all take a `list[dict]` as the inputs. Each dict
 corresponds to information about one image.
 
 The dict may contain the following keys:
 
 * "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
-  Image normalization, if any, will be performed inside the model.
+  Image normalization, if any, will be performed inside the model using
+  `cfg.MODEL.PIXEL_{MEAN,STD}`.
+* "height", "width": the **desired** output height and width, which is not necessarily the same
+  as the height or width of the `image` field.
+  For example, the `image` field contains the resized image, if resize is used as a preprocessing step.
+  But you may want the outputs to be in **original** resolution.
 * "instances": an [Instances](../modules/structures.html#detectron2.structures.Instances)
-  object, with the following fields:
+  object for training, with the following fields:
   + "gt_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing N boxes, one for each instance.
   + "gt_classes": `Tensor` of long type, a vector of N labels, in range [0, num_categories).
   + "gt_masks": a [PolygonMasks](../modules/structures.html#detectron2.structures.PolygonMasks)
@@ -42,14 +85,10 @@ The dict may contain the following keys:
   object used only in Fast R-CNN style models, with the following fields:
   + "proposal_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing P proposal boxes.
   + "objectness_logits": `Tensor`, a vector of P scores, one for each proposal.
-* "height", "width": the **desired** output height and width, which is not necessarily the same
-  as the height or width of the `image` input field.
-  For example, the `image` input field might be a resized image,
-  but you may want the outputs to be in **original** resolution.
 
   If provided, the model will produce output in this resolution,
   rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
-* "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth.
+* "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth for training.
   Values represent category labels starting from 0.
 
 
@@ -89,31 +128,15 @@ Based on the tasks the model is doing, each dict may contain the following field
        class id when `isthing==True`, and the stuff class id otherwise.
 
 
-### How to use a model in your code:
-
-Construct your own `list[dict]` as inputs, with the necessary keys. Then call `outputs = model(inputs)`.
-For example, in order to do inference, provide dicts with "image", and optionally "height" and "width".
-
-Note that when in training mode, all models are required to be used under an `EventStorage`.
-The training statistics will be put into the storage:
-```python
-from detectron2.utils.events import EventStorage
-with EventStorage() as storage:
-  losses = model(inputs)
-```
-
-Another small thing to remember: detectron2 models do not support `model.to(device)` or `model.cpu()`.
-The device is defined in `cfg.MODEL.DEVICE` and cannot be changed afterwards.
-
-
 ### Partially execute a model:
 
-Sometimes you may want to obtain an intermediate tensor inside a model.
+Sometimes you may want to obtain an intermediate tensor inside a model,
+such as the input of certain layer, the output before post-processing.
 Since there are typically hundreds of intermediate tensors, there isn't an API that provides you
 the intermediate result you need.
 You have the following options:
 
-1. Write a (sub)model. Following the [tutorial](write-models.html), you can
+1. Write a (sub)model. Following the [tutorial](./write-models.md), you can
    rewrite a model component (e.g. a head of a model), such that it
    does the same thing as the existing component, but returns the output
    you need.
@@ -131,5 +154,10 @@ mask_features = [features[f] for f in model.roi_heads.in_features]
 mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
 ```
 
-Note that both options require you to read the existing forward code to understand
-how to write code to obtain the outputs you need.
+3. Use [forward hooks](https://pytorch.org/tutorials/beginner/former_torchies/nnft_tutorial.html#forward-and-backward-function-hooks).
+   Forward hooks can help you obtain inputs or outputs of a certain module.
+   If they are not exactly what you want, they can at least be used together with partial execution
+   to obtain other tensors.
+
+All options require you to read the existing forward code to understand the internal logic,
+in order to write code to obtain the internal tensors.

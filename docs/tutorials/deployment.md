@@ -18,12 +18,12 @@ For example, custom backbones and heads are often supported out of the box.
 
 ### Usage
 
-The conversion APIs are documented at [the API documentation](../modules/export.html).
+The conversion APIs are documented at [the API documentation](../modules/export).
 We provide a tool, `caffe2_converter.py` as an example that uses
 these APIs to convert a standard model.
 
 To convert an official Mask R-CNN trained on COCO, first
-[prepare the COCO dataset](../../datasets/), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
+[prepare the COCO dataset](builtin_datasets.md), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
 cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
 	--output ./caffe2_model --run-eval \
@@ -32,14 +32,12 @@ cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-Insta
 ```
 
 Note that:
-1. The conversion needs valid sample inputs & weights to trace the model. That's why the script requires the dataset.
+1. The conversion needs valid weights & sample inputs to trace the model. That's why the script requires the dataset.
 	 You can modify the script to obtain sample inputs in other ways.
-2. GPU conversion is supported only with Pytorch's master. So we use `MODEL.DEVICE cpu`.
-3. With the `--run-eval` flag, it will evaluate the converted models to verify its accuracy.
+2. With the `--run-eval` flag, it will evaluate the converted models to verify its accuracy.
    The accuracy is typically slightly different (within 0.1 AP) from PyTorch due to
 	 numerical precisions between different implementations.
-	 It's recommended to always verify the accuracy in case your custom model is not supported by the
-	 conversion.
+	 It's recommended to always verify the accuracy in case the conversion is not successful.
 
 The converted model is available at the specified `caffe2_model/` directory. Two files `model.pb`
 and `model_init.pb` that contain network structure and network parameters are necessary for deployment.
@@ -51,27 +49,26 @@ You can also load `model.pb` to tools such as [netron](https://github.com/lutzro
 ### Use the model in C++/Python
 
 The model can be loaded in C++. An example [caffe2_mask_rcnn.cpp](../../tools/deploy/) is given,
-which performs CPU inference using `COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x`.
+which performs CPU/GPU inference using `COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x`.
 
-The C++ code needs to be built with:
-* `libtorch.so`, `libc10.so`
+The C++ example needs to be built with:
+* PyTorch with caffe2 inside
 * gflags, glog, opencv
 * protobuf headers that match the version of your caffe2
 * MKL headers if caffe2 is built with MKL
-* `-D_GLIBCXX_USE_CXX11_ABI=` equals `torch._C._GLIBCXX_USE_CXX11_ABI`
 
-As an example, the following works inside [official detectron2 docker](../../docker/):
+The following can compile the example inside [official detectron2 docker](../../docker/):
 ```
-apt install libgflags-dev libgoogle-glog-dev
+sudo apt update && sudo apt install libgflags-dev libgoogle-glog-dev libopencv-dev
 pip install mkl-include
 wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz
 tar xf protobuf-cpp-3.6.1.tar.gz
-export TORCH_ROOT=/home/appuser/.local/lib/python3.6/site-packages/torch/
-g++ -O2 caffe2_mask_rcnn.cpp  `pkg-config --libs --cflags opencv` -Iprotobuf-3.6.1/src/  \
-   -lgflags -lglog -I$TORCH_ROOT/include -L$TORCH_ROOT/lib -lc10 -ltorch \
-   -I/home/appuser/.local/include -D_GLIBCXX_USE_CXX11_ABI=0 -o caffe2_mask_rcnn
+export CPATH=$(readlink -f ./protobuf-3.6.1/src/):$HOME/.local/include
+export CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.6/site-packages/torch/
+mkdir build && cd build
+cmake -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST .. && make
 
-export LD_LIBRARY_PATH=$TORCH_ROOT/lib
+# To run:
 ./caffe2_mask_rcnn --predict_net=./model.pb --init_net=./model_init.pb --input=input.jpg
 ```
 
@@ -83,12 +80,14 @@ Note that:
 
 * The converted models do not contain post-processing operations that
   transform raw layer outputs into formatted predictions.
-  The example only produces raw outputs (28x28 masks) from the final
+  For example, the command in this tutorial only produces raw outputs (28x28 masks) from the final
   layers that are not post-processed, because in actual deployment, an application often needs
-  its custom lightweight post-processing (e.g. full-image masks for every detected object is often not necessary).
+  its custom lightweight post-processing, so this step is left for users.
 
-We also provide a python wrapper around the converted model, in the
-[Caffe2Model.__call__](../modules/export.html#detectron2.export.Caffe2Model.__call__) method.
-This method has an interface that's identical to the [pytorch versions of models](models.html),
+To use the converted model in python,
+we provide a python wrapper around the converted model, in the
+[Caffe2Model.\_\_call\_\_](../modules/export.html#detectron2.export.Caffe2Model.__call__) method.
+This method has an interface that's identical to the [pytorch versions of models](./models.md),
 and it internally applies pre/post-processing code to match the formats.
-They can serve as a reference for pre/post-processing in actual deployment.
+This wrapper can serve as a reference for how to use caffe2's python API,
+or for how to implement pre/post-processing in actual deployment.

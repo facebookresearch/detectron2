@@ -9,68 +9,30 @@ This script is similar to the training script in detectron2/tools.
 It is an example of how a user might use detectron2 for a new project.
 """
 
-import logging
-import os
-from collections import OrderedDict
+from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
-from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import CfgNode, get_cfg
-from detectron2.data import build_detection_test_loader, build_detection_train_loader
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
-from detectron2.evaluation import COCOEvaluator, DatasetEvaluators, verify_results
-from detectron2.modeling import DatasetMapperTTA
+from detectron2.config import get_cfg
+from detectron2.engine import default_argument_parser, default_setup, hooks, launch
+from detectron2.evaluation import verify_results
 from detectron2.utils.logger import setup_logger
 
 from densepose import (
-    DatasetMapper,
-    DensePoseCOCOEvaluator,
-    DensePoseGeneralizedRCNNWithTTA,
+    add_bootstrap_config,
+    add_dataset_category_config,
     add_densepose_config,
-    load_from_cfg,
+    add_hrnet_config,
 )
-
-
-class Trainer(DefaultTrainer):
-    @classmethod
-    def build_evaluator(cls, cfg: CfgNode, dataset_name, output_folder=None):
-        if output_folder is None:
-            output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        evaluators = [COCOEvaluator(dataset_name, cfg, True, output_folder)]
-        if cfg.MODEL.DENSEPOSE_ON:
-            evaluators.append(DensePoseCOCOEvaluator(dataset_name, True, output_folder))
-        return DatasetEvaluators(evaluators)
-
-    @classmethod
-    def build_test_loader(cls, cfg: CfgNode, dataset_name):
-        return build_detection_test_loader(cfg, dataset_name, mapper=DatasetMapper(cfg, False))
-
-    @classmethod
-    def build_train_loader(cls, cfg: CfgNode):
-        return build_detection_train_loader(cfg, mapper=DatasetMapper(cfg, True))
-
-    @classmethod
-    def test_with_TTA(cls, cfg: CfgNode, model):
-        logger = logging.getLogger("detectron2.trainer")
-        # In the end of training, run an evaluation with TTA
-        # Only support some R-CNN models.
-        logger.info("Running inference with test-time augmentation ...")
-        transform_data = load_from_cfg(cfg)
-        model = DensePoseGeneralizedRCNNWithTTA(cfg, model, transform_data, DatasetMapperTTA(cfg))
-        evaluators = [
-            cls.build_evaluator(
-                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference_TTA")
-            )
-            for name in cfg.DATASETS.TEST
-        ]
-        res = cls.test(cfg, model, evaluators)
-        res = OrderedDict({k + "_TTA": v for k, v in res.items()})
-        return res
+from densepose.engine import Trainer
+from densepose.modeling.densepose_checkpoint import DensePoseCheckpointer
 
 
 def setup(args):
     cfg = get_cfg()
+    add_dataset_category_config(cfg)
+    add_bootstrap_config(cfg)
     add_densepose_config(cfg)
+    add_hrnet_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
@@ -82,10 +44,13 @@ def setup(args):
 
 def main(args):
     cfg = setup(args)
+    # disable strict kwargs checking: allow one to specify path handle
+    # hints through kwargs, like timeout in DP evaluation
+    PathManager.set_strict_kwargs_checking(False)
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
-        DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
+        DensePoseCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)

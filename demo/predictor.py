@@ -133,7 +133,7 @@ class AsyncPredictor:
     """
     A predictor that runs the model asynchronously, possibly on >1 GPUs.
     Because rendering the visualization takes considerably amount of time,
-    this helps improve throughput when rendering videos.
+    this helps improve throughput a little bit when rendering videos.
     """
 
     class _StopToken:

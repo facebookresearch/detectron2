@@ -134,15 +134,21 @@ def register_all_coco(root):
 
 
 _PREDEFINED_SPLITS_LVIS = {
+    "lvis_v1": {
+        "lvis_v1_train": ("coco/", "lvis/lvis_v1_train.json"),
+        "lvis_v1_val": ("coco/", "lvis/lvis_v1_val.json"),
+        "lvis_v1_test_dev": ("coco/", "lvis/lvis_v1_image_info_test_dev.json"),
+        "lvis_v1_test_challenge": ("coco/", "lvis/lvis_v1_image_info_test_challenge.json"),
+    },
     "lvis_v0.5": {
-        "lvis_v0.5_train": ("coco/train2017", "lvis/lvis_v0.5_train.json"),
-        "lvis_v0.5_val": ("coco/val2017", "lvis/lvis_v0.5_val.json"),
-        "lvis_v0.5_val_rand_100": ("coco/val2017", "lvis/lvis_v0.5_val_rand_100.json"),
-        "lvis_v0.5_test": ("coco/test2017", "lvis/lvis_v0.5_image_info_test.json"),
+        "lvis_v0.5_train": ("coco/", "lvis/lvis_v0.5_train.json"),
+        "lvis_v0.5_val": ("coco/", "lvis/lvis_v0.5_val.json"),
+        "lvis_v0.5_val_rand_100": ("coco/", "lvis/lvis_v0.5_val_rand_100.json"),
+        "lvis_v0.5_test": ("coco/", "lvis/lvis_v0.5_image_info_test.json"),
     },
     "lvis_v0.5_cocofied": {
-        "lvis_v0.5_train_cocofied": ("coco/train2017", "lvis/lvis_v0.5_train_cocofied.json"),
-        "lvis_v0.5_val_cocofied": ("coco/val2017", "lvis/lvis_v0.5_val_cocofied.json"),
+        "lvis_v0.5_train_cocofied": ("coco/", "lvis/lvis_v0.5_train_cocofied.json"),
+        "lvis_v0.5_val_cocofied": ("coco/", "lvis/lvis_v0.5_val_cocofied.json"),
     },
 }
 
@@ -183,7 +189,7 @@ def register_all_cityscapes(root):
             ),
         )
         MetadataCatalog.get(inst_key).set(
-            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes", **meta
+            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes_instance", **meta
         )
 
         sem_key = key.format(task="sem_seg")
@@ -191,7 +197,7 @@ def register_all_cityscapes(root):
             sem_key, lambda x=image_dir, y=gt_dir: load_cityscapes_semantic(x, y)
         )
         MetadataCatalog.get(sem_key).set(
-            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="sem_seg", **meta
+            image_dir=image_dir, gt_dir=gt_dir, evaluator_type="cityscapes_sem_seg", **meta
         )
 
 

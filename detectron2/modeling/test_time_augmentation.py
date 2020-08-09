@@ -4,12 +4,18 @@ import numpy as np
 from contextlib import contextmanager
 from itertools import count
 import torch
+from fvcore.transforms import HFlipTransform, NoOpTransform
 from torch import nn
 from torch.nn.parallel import DistributedDataParallel
 
 from detectron2.data.detection_utils import read_image
-from detectron2.data.transforms import ResizeShortestEdge
-from detectron2.structures import Instances
+from detectron2.data.transforms import (
+    RandomFlip,
+    ResizeShortestEdge,
+    ResizeTransform,
+    apply_augmentations,
+)
+from detectron2.structures import Boxes, Instances
 
 from .meta_arch import GeneralizedRCNN
 from .postprocessing import detector_postprocess
@@ -36,34 +42,43 @@ class DatasetMapperTTA:
     def __call__(self, dataset_dict):
         """
         Args:
-            dict: a detection dataset dict
+            dict: a dict in standard model input format. See tutorials for details.
 
         Returns:
             list[dict]:
-                a list of dataset dicts, which contain augmented version of the input image.
+                a list of dicts, which contain augmented version of the input image.
                 The total number of dicts is ``len(min_sizes) * (2 if flip else 1)``.
+                Each dict has field "transforms" which is a TransformList,
+                containing the transforms that are used to generate this image.
         """
-        ret = []
-        if "image" not in dataset_dict:
-            numpy_image = read_image(dataset_dict["file_name"], self.image_format)
+        numpy_image = dataset_dict["image"].permute(1, 2, 0).numpy()
+        shape = numpy_image.shape
+        orig_shape = (dataset_dict["height"], dataset_dict["width"])
+        if shape[:2] != orig_shape:
+            # It transforms the "original" image in the dataset to the input image
+            pre_tfm = ResizeTransform(orig_shape[0], orig_shape[1], shape[0], shape[1])
         else:
-            numpy_image = dataset_dict["image"].permute(1, 2, 0).numpy().astype("uint8")
+            pre_tfm = NoOpTransform()
+
+        # Create all combinations of augmentations to use
+        aug_candidates = []  # each element is a list[Augmentation]
         for min_size in self.min_sizes:
-            image = np.copy(numpy_image)
-            tfm = ResizeShortestEdge(min_size, self.max_size).get_transform(image)
-            resized = tfm.apply_image(image)
-            resized = torch.as_tensor(resized.transpose(2, 0, 1).astype("float32"))
+            resize = ResizeShortestEdge(min_size, self.max_size)
+            aug_candidates.append([resize])  # resize only
+            if self.flip:
+                flip = RandomFlip(prob=1.0)
+                aug_candidates.append([resize, flip])  # resize + flip
+
+        # Apply all the augmentations
+        ret = []
+        for aug in aug_candidates:
+            new_image, tfms = apply_augmentations(aug, np.copy(numpy_image))
+            torch_image = torch.from_numpy(np.ascontiguousarray(new_image.transpose(2, 0, 1)))
 
             dic = copy.deepcopy(dataset_dict)
-            dic["horiz_flip"] = False
-            dic["image"] = resized
+            dic["transforms"] = pre_tfm + tfms
+            dic["image"] = torch_image
             ret.append(dic)
-
-            if self.flip:
-                dic = copy.deepcopy(dataset_dict)
-                dic["horiz_flip"] = True
-                dic["image"] = torch.flip(resized, dims=[2])
-                ret.append(dic)
         return ret
 
 
@@ -128,7 +143,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
             for attr in old.keys():
                 setattr(roi_heads, attr, old[attr])
 
-    def _batch_inference(self, batched_inputs, detected_instances=None, do_postprocess=True):
+    def _batch_inference(self, batched_inputs, detected_instances=None):
         """
         Execute inference on a list of inputs,
         using batch size = self.batch_size, instead of the length of the list.
@@ -148,7 +163,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
                     self.model.inference(
                         inputs,
                         instances if instances[0] is not None else None,
-                        do_postprocess=do_postprocess,
+                        do_postprocess=False,
                     )
                 )
                 inputs, instances = [], []
@@ -158,81 +173,74 @@ class GeneralizedRCNNWithTTA(nn.Module):
         """
         Same input/output format as :meth:`GeneralizedRCNN.forward`
         """
-        return [self._inference_one_image(x) for x in batched_inputs]
 
-    def _detector_postprocess(self, outputs, aug_vars):
-        return detector_postprocess(outputs, aug_vars["height"], aug_vars["width"])
+        def _maybe_read_image(dataset_dict):
+            ret = copy.copy(dataset_dict)
+            if "image" not in ret:
+                image = read_image(ret.pop("file_name"), self.image_format)
+                image = torch.from_numpy(image).permute(2, 0, 1)  # CHW
+                ret["image"] = image
+            if "height" not in ret and "width" not in ret:
+                ret["height"] = image.shape[1]
+                ret["width"] = image.shape[2]
+            return ret
+
+        return [self._inference_one_image(_maybe_read_image(x)) for x in batched_inputs]
 
     def _inference_one_image(self, input):
         """
         Args:
-            input (dict): one dataset dict
+            input (dict): one dataset dict with "image" field being a CHW tensor
 
         Returns:
             dict: one output dict
         """
-
-        augmented_inputs, aug_vars = self._get_augmented_inputs(input)
+        orig_shape = (input["height"], input["width"])
+        augmented_inputs, tfms = self._get_augmented_inputs(input)
         # Detect boxes from all augmented versions
         with self._turn_off_roi_heads(["mask_on", "keypoint_on"]):
             # temporarily disable roi heads
-            all_boxes, all_scores, all_classes = self._get_augmented_boxes(
-                augmented_inputs, aug_vars
-            )
-        merged_instances = self._merge_detections(
-            all_boxes, all_scores, all_classes, (aug_vars["height"], aug_vars["width"])
-        )
+            all_boxes, all_scores, all_classes = self._get_augmented_boxes(augmented_inputs, tfms)
+        # merge all detected boxes to obtain final predictions for boxes
+        merged_instances = self._merge_detections(all_boxes, all_scores, all_classes, orig_shape)
 
         if self.cfg.MODEL.MASK_ON:
-            # Use the detected boxes to obtain new fields
+            # Use the detected boxes to obtain masks
             augmented_instances = self._rescale_detected_boxes(
-                augmented_inputs, merged_instances, aug_vars
+                augmented_inputs, merged_instances, tfms
             )
             # run forward on the detected boxes
-            outputs = self._batch_inference(
-                augmented_inputs, augmented_instances, do_postprocess=False
-            )
+            outputs = self._batch_inference(augmented_inputs, augmented_instances)
             # Delete now useless variables to avoid being out of memory
-            del augmented_inputs, augmented_instances, merged_instances
+            del augmented_inputs, augmented_instances
             # average the predictions
-            outputs[0].pred_masks = self._reduce_pred_masks(outputs, aug_vars)
-            # postprocess
-            output = self._detector_postprocess(outputs[0], aug_vars)
-            return {"instances": output}
+            merged_instances.pred_masks = self._reduce_pred_masks(outputs, tfms)
+            merged_instances = detector_postprocess(merged_instances, *orig_shape)
+            return {"instances": merged_instances}
         else:
             return {"instances": merged_instances}
 
     def _get_augmented_inputs(self, input):
         augmented_inputs = self.tta_mapper(input)
+        tfms = [x.pop("transforms") for x in augmented_inputs]
+        return augmented_inputs, tfms
 
-        do_hflip = [k.pop("horiz_flip", False) for k in augmented_inputs]
-        heights = [k["height"] for k in augmented_inputs]
-        widths = [k["width"] for k in augmented_inputs]
-        assert (
-            len(set(heights)) == 1 and len(set(widths)) == 1
-        ), "Augmented version of the inputs should have the same original resolution!"
-        height = heights[0]
-        width = widths[0]
-        aug_vars = {"height": height, "width": width, "do_hflip": do_hflip}
-
-        return augmented_inputs, aug_vars
-
-    def _get_augmented_boxes(self, augmented_inputs, aug_vars):
+    def _get_augmented_boxes(self, augmented_inputs, tfms):
         # 1: forward with all augmented images
-        outputs = self._batch_inference(augmented_inputs, do_postprocess=False)
+        outputs = self._batch_inference(augmented_inputs)
         # 2: union the results
         all_boxes = []
         all_scores = []
         all_classes = []
-        for idx, output in enumerate(outputs):
-            rescaled_output = self._detector_postprocess(output, aug_vars)
-            pred_boxes = rescaled_output.pred_boxes.tensor
-            if aug_vars["do_hflip"][idx]:
-                pred_boxes[:, [0, 2]] = aug_vars["width"] - pred_boxes[:, [2, 0]]
-            all_boxes.append(pred_boxes)
-            all_scores.extend(rescaled_output.scores)
-            all_classes.extend(rescaled_output.pred_classes)
-        all_boxes = torch.cat(all_boxes, dim=0).cpu()
+        for output, tfm in zip(outputs, tfms):
+            # Need to inverse the transforms on boxes, to obtain results on original image
+            pred_boxes = output.pred_boxes.tensor
+            original_pred_boxes = tfm.inverse().apply_box(pred_boxes.cpu().numpy())
+            all_boxes.append(torch.from_numpy(original_pred_boxes).to(pred_boxes.device))
+
+            all_scores.extend(output.scores)
+            all_classes.extend(output.pred_classes)
+        all_boxes = torch.cat(all_boxes, dim=0)
         return all_boxes, all_scores, all_classes
 
     def _merge_detections(self, all_boxes, all_scores, all_classes, shape_hw):
@@ -255,30 +263,28 @@ class GeneralizedRCNNWithTTA(nn.Module):
 
         return merged_instances
 
-    def _rescale_detected_boxes(self, augmented_inputs, merged_instances, aug_vars):
+    def _rescale_detected_boxes(self, augmented_inputs, merged_instances, tfms):
         augmented_instances = []
-        for idx, input in enumerate(augmented_inputs):
-            actual_height, actual_width = input["image"].shape[1:3]
-            scale_x = actual_width * 1.0 / aug_vars["width"]
-            scale_y = actual_height * 1.0 / aug_vars["height"]
-            pred_boxes = merged_instances.pred_boxes.clone()
-            pred_boxes.tensor[:, 0::2] *= scale_x
-            pred_boxes.tensor[:, 1::2] *= scale_y
-            if aug_vars["do_hflip"][idx]:
-                pred_boxes.tensor[:, [0, 2]] = actual_width - pred_boxes.tensor[:, [2, 0]]
+        for input, tfm in zip(augmented_inputs, tfms):
+            # Transform the target box to the augmented image's coordinate space
+            pred_boxes = merged_instances.pred_boxes.tensor.cpu().numpy()
+            pred_boxes = torch.from_numpy(tfm.apply_box(pred_boxes))
 
             aug_instances = Instances(
-                image_size=(actual_height, actual_width),
-                pred_boxes=pred_boxes,
+                image_size=input["image"].shape[1:3],
+                pred_boxes=Boxes(pred_boxes),
                 pred_classes=merged_instances.pred_classes,
                 scores=merged_instances.scores,
             )
             augmented_instances.append(aug_instances)
         return augmented_instances
 
-    def _reduce_pred_masks(self, outputs, aug_vars):
-        for idx, output in enumerate(outputs):
-            if aug_vars["do_hflip"][idx]:
+    def _reduce_pred_masks(self, outputs, tfms):
+        # Should apply inverse transforms on masks.
+        # We assume only resize & flip are used. pred_masks is a scale-invariant
+        # representation, so we handle flip specially
+        for output, tfm in zip(outputs, tfms):
+            if any(isinstance(t, HFlipTransform) for t in tfm.transforms):
                 output.pred_masks = output.pred_masks.flip(dims=[3])
         all_pred_masks = torch.stack([o.pred_masks for o in outputs], dim=0)
         avg_pred_masks = torch.mean(all_pred_masks, dim=0)

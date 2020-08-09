@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import numpy as np
-from typing import Dict
+from typing import Dict, List, Optional
 import fvcore.nn.weight_init as weight_init
 import torch
 import torch.nn as nn
@@ -12,6 +12,7 @@ from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.modeling import ROI_HEADS_REGISTRY, StandardROIHeads
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.roi_heads import select_foreground_proposals
+from detectron2.structures import ImageList, Instances
 
 from .densepose_head import (
     build_densepose_data_filter,
@@ -70,7 +71,7 @@ class Decoder(nn.Module):
         self.predictor = Conv2d(conv_dims, num_classes, kernel_size=1, stride=1, padding=0)
         weight_init.c2_msra_fill(self.predictor)
 
-    def forward(self, features):
+    def forward(self, features: List[torch.Tensor]):
         for i, _ in enumerate(self.in_features):
             if i == 0:
                 x = self.scale_heads[i](features[i])
@@ -122,13 +123,17 @@ class DensePoseROIHeads(StandardROIHeads):
         )
         self.densepose_losses = build_densepose_losses(cfg)
 
-    def _forward_densepose(self, features, instances):
+    def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances]):
         """
         Forward logic of the densepose prediction branch.
 
         Args:
-            features (list[Tensor]): #level input features for densepose prediction
-            instances (list[Instances]): the per-image instances to train/predict densepose.
+            features (dict[str, Tensor]): input data as a mapping from feature
+                map name to tensor. Axis 0 represents the number of images `N` in
+                the input data; axes 1-3 are channels, height, and width, which may
+                vary between feature maps (e.g., if a feature pyramid is used).
+            instances (list[Instances]): length `N` list of `Instances`. The i-th
+                `Instances` contains instances for the i-th input image,
                 In training, they can be the proposals.
                 In inference, they can be the predicted boxes.
 
@@ -142,23 +147,17 @@ class DensePoseROIHeads(StandardROIHeads):
         features = [features[f] for f in self.in_features]
         if self.training:
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
-            proposals_dp = self.densepose_data_filter(proposals)
-            if len(proposals_dp) > 0:
-                # NOTE may deadlock in DDP if certain workers have empty proposals_dp
-                proposal_boxes = [x.proposal_boxes for x in proposals_dp]
+            features, proposals = self.densepose_data_filter(features, proposals)
+            proposal_boxes = [x.proposal_boxes for x in proposals]
 
-                if self.use_decoder:
-                    features = [self.decoder(features)]
+            if self.use_decoder:
+                features = [self.decoder(features)]
 
-                features_dp = self.densepose_pooler(features, proposal_boxes)
-                densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_outputs, _, confidences, _ = self.densepose_predictor(
-                    densepose_head_outputs
-                )
-                densepose_loss_dict = self.densepose_losses(
-                    proposals_dp, densepose_outputs, confidences
-                )
-                return densepose_loss_dict
+            features_dp = self.densepose_pooler(features, proposal_boxes)
+            densepose_head_outputs = self.densepose_head(features_dp)
+            densepose_outputs, _, confidences, _ = self.densepose_predictor(densepose_head_outputs)
+            densepose_loss_dict = self.densepose_losses(proposals, densepose_outputs, confidences)
+            return densepose_loss_dict
         else:
             pred_boxes = [x.pred_boxes for x in instances]
 
@@ -176,12 +175,18 @@ class DensePoseROIHeads(StandardROIHeads):
                 # set densepose_outputs to empty tensors
                 empty_tensor = torch.zeros(size=(0, 0, 0, 0), device=features_dp.device)
                 densepose_outputs = tuple([empty_tensor] * 4)
-                confidences = tuple([empty_tensor] * 4)
+                confidences = tuple([empty_tensor] * 6)
 
             densepose_inference(densepose_outputs, confidences, instances)
             return instances
 
-    def forward(self, images, features, proposals, targets=None):
+    def forward(
+        self,
+        images: ImageList,
+        features: Dict[str, torch.Tensor],
+        proposals: List[Instances],
+        targets: Optional[List[Instances]] = None,
+    ):
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
 
@@ -189,7 +194,9 @@ class DensePoseROIHeads(StandardROIHeads):
             losses.update(self._forward_densepose(features, instances))
         return instances, losses
 
-    def forward_with_given_boxes(self, features, instances):
+    def forward_with_given_boxes(
+        self, features: Dict[str, torch.Tensor], instances: List[Instances]
+    ):
         """
         Use the given boxes in `instances` to produce other (non-box) per-ROI outputs.
 

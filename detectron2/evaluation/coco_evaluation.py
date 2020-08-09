@@ -13,12 +13,12 @@ import pycocotools.mask as mask_util
 import torch
 from fvcore.common.file_io import PathManager
 from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
 
 import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
 from detectron2.data.datasets.coco import convert_to_coco_json
+from detectron2.evaluation.fast_eval_api import COCOeval_opt as COCOeval
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.logger import create_small_table
 
@@ -27,8 +27,13 @@ from .evaluator import DatasetEvaluator
 
 class COCOEvaluator(DatasetEvaluator):
     """
-    Evaluate object proposal, instance detection/segmentation, keypoint detection
-    outputs using COCO's metrics and APIs.
+    Evaluate AR for object proposals, AP for instance detection/segmentation, AP
+    for keypoint detection outputs using COCO's metrics.
+    See http://cocodataset.org/#detection-eval and
+    http://cocodataset.org/#keypoints-eval to understand its metrics.
+
+    In addition to COCO, this evaluator is able to support any bounding box detection,
+    instance segmentation, or keypoint detection dataset.
     """
 
     def __init__(self, dataset_name, cfg, distributed, output_dir=None):
@@ -62,9 +67,9 @@ class COCOEvaluator(DatasetEvaluator):
 
         self._metadata = MetadataCatalog.get(dataset_name)
         if not hasattr(self._metadata, "json_file"):
-            self._logger.warning(
-                f"json_file was not found in MetaDataCatalog for '{dataset_name}'."
-                " Trying to convert it to COCO format ..."
+            self._logger.info(
+                f"'{dataset_name}' is not registered by `register_coco_instances`."
+                " Therefore trying to convert it to COCO format ..."
             )
 
             cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
@@ -264,7 +269,7 @@ class COCOEvaluator(DatasetEvaluator):
             "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
         )
         if not np.isfinite(sum(results.values())):
-            self._logger.info("Note that some metrics cannot be computed.")
+            self._logger.info("Some metrics cannot be computed and is shown as NaN.")
 
         if class_names is None or len(class_names) <= 1:
             return results
@@ -492,17 +497,23 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, iou_type, kpt_oks_sigma
 
     coco_dt = coco_gt.loadRes(coco_results)
     coco_eval = COCOeval(coco_gt, coco_dt, iou_type)
-    # Use the COCO default keypoint OKS sigmas unless overrides are specified
-    if kpt_oks_sigmas:
-        coco_eval.params.kpt_oks_sigmas = np.array(kpt_oks_sigmas)
 
     if iou_type == "keypoints":
-        num_keypoints = len(coco_results[0]["keypoints"]) // 3
-        assert len(coco_eval.params.kpt_oks_sigmas) == num_keypoints, (
-            "[COCOEvaluator] The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) "
-            "must be equal to the number of keypoints. However the prediction has {} "
-            "keypoints! For more information please refer to "
-            "http://cocodataset.org/#keypoints-eval.".format(num_keypoints)
+        # Use the COCO default keypoint OKS sigmas unless overrides are specified
+        if kpt_oks_sigmas:
+            assert hasattr(coco_eval.params, "kpt_oks_sigmas"), "pycocotools is too old!"
+            coco_eval.params.kpt_oks_sigmas = np.array(kpt_oks_sigmas)
+        # COCOAPI requires every detection and every gt to have keypoints, so
+        # we just take the first entry from both
+        num_keypoints_dt = len(coco_results[0]["keypoints"]) // 3
+        num_keypoints_gt = len(next(iter(coco_gt.anns.values()))["keypoints"]) // 3
+        num_keypoints_oks = len(coco_eval.params.kpt_oks_sigmas)
+        assert num_keypoints_oks == num_keypoints_dt == num_keypoints_gt, (
+            f"[COCOEvaluator] Prediction contain {num_keypoints_dt} keypoints. "
+            f"Ground truth contains {num_keypoints_gt} keypoints. "
+            f"The length of cfg.TEST.KEYPOINT_OKS_SIGMAS is {num_keypoints_oks}. "
+            "They have to agree with each other. For meaning of OKS, please refer to "
+            "http://cocodataset.org/#keypoints-eval."
         )
 
     coco_eval.evaluate()

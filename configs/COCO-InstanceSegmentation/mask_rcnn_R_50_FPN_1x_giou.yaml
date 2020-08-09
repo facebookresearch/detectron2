@@ -1,0 +1,12 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  RPN:
+    BBOX_REG_LOSS_TYPE: "giou"
+    BBOX_REG_LOSS_WEIGHT: 2.0
+  ROI_BOX_HEAD:
+    BBOX_REG_LOSS_TYPE: "giou"
+    BBOX_REG_LOSS_WEIGHT: 10.0

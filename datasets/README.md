@@ -1,8 +1,28 @@
+# Use Builtin Datasets
 
-For a few datasets that detectron2 natively supports,
-the datasets are assumed to exist in a directory specified by the environment variable
-`DETECTRON2_DATASETS` (default is `./datasets` relative to your current working directory).
-Under this directory, detectron2 expects to find datasets in the following structure:
+A dataset can be used by accessing [DatasetCatalog](https://detectron2.readthedocs.io/modules/data.html#detectron2.data.DatasetCatalog)
+for its data, or [MetadataCatalog](https://detectron2.readthedocs.io/modules/data.html#detectron2.data.MetadataCatalog) for its metadata (class names, etc).
+This document explains how to setup the builtin datasets so they can be used by the above APIs.
+[Use Custom Datasets](https://detectron2.readthedocs.io/tutorials/datasets.html) gives a deeper dive on how to use `DatasetCatalog` and `MetadataCatalog`,
+and how to add new datasets to them.
+
+Detectron2 has builtin support for a few datasets.
+The datasets are assumed to exist in a directory specified by the environment variable
+`DETECTRON2_DATASETS`.
+Under this directory, detectron2 will look for datasets in the structure described below, if needed.
+```
+$DETECTRON2_DATASETS/
+  coco/
+  lvis/
+  cityscapes/
+  VOC20{07,12}/
+```
+
+You can set the location for builtin datasets by `export DETECTRON2_DATASETS=/path/to/datasets`.
+If left unset, the default is `./datasets` relative to your current working directory.
+
+The [model zoo](https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md)
+contains configs and models that use these builtin datasets.
 
 ## Expected dataset structure for COCO instance/keypoint detection:
 
@@ -43,6 +63,8 @@ coco/
 lvis/
   lvis_v0.5_{train,val}.json
   lvis_v0.5_image_info_test.json
+  lvis_v1_{train,val}.json
+  lvis_v1_image_info_test{,_challenge}.json
 ```
 
 Install lvis-api by:
@@ -50,7 +72,8 @@ Install lvis-api by:
 pip install git+https://github.com/lvis-dataset/lvis-api.git
 ```
 
-Run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations for evaluation of models trained on the COCO dataset.
+To evaluate models trained on the COCO dataset using LVIS annotations,
+run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations.
 
 ## Expected dataset structure for cityscapes:
 ```
@@ -73,9 +96,11 @@ Install cityscapes scripts by:
 pip install git+https://github.com/mcordts/cityscapesScripts.git
 ```
 
-Note:
-labelTrainIds.png are created by `cityscapesscripts/preparation/createTrainIdLabelImgs.py`.
-They are not needed for instance segmentation.
+Note: to create labelTrainIds.png, first prepare the above structure, then run cityscapesescript with:
+```
+CITYSCAPES_DATASET=/path/to/abovementioned/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
+```
+These files are not needed for instance segmentation.
 
 ## Expected dataset structure for Pascal VOC:
 ```

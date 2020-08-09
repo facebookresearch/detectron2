@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import bisect
-import copy
 import itertools
 import logging
 import numpy as np
@@ -16,17 +14,18 @@ from detectron2.utils.comm import get_world_size
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.logger import log_first_n
 
-from . import samplers
 from .catalog import DatasetCatalog, MetadataCatalog
 from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
+from .samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
 
 """
 This file contains the default logic to build a dataloader for training or testing.
 """
 
 __all__ = [
+    "build_batch_data_loader",
     "build_detection_train_loader",
     "build_detection_test_loader",
     "get_detection_dataset_dicts",
@@ -154,13 +153,6 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
     return dataset_dicts
 
 
-def _quantize(x, bin_edges):
-    bin_edges = copy.copy(bin_edges)
-    bin_edges = sorted(bin_edges)
-    quantized = list(map(lambda y: bisect.bisect_right(bin_edges, y), x))
-    return quantized
-
-
 def print_instances_class_histogram(dataset_dicts, class_names):
     """
     Args:
@@ -219,6 +211,9 @@ def get_detection_dataset_dicts(
             `min_keypoints`. Set to 0 to do nothing.
         proposal_files (list[str]): if given, a list of object proposal files
             that match each dataset in `dataset_names`.
+
+    Returns:
+        list[dict]: a list of dicts following the standard dataset dict format.
     """
     assert len(dataset_names)
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
@@ -236,10 +231,8 @@ def get_detection_dataset_dicts(
     dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))
 
     has_instances = "annotations" in dataset_dicts[0]
-    # Keep images without instance-level GT if the dataset has semantic labels.
-    if filter_empty and has_instances and "sem_seg_file_name" not in dataset_dicts[0]:
+    if filter_empty and has_instances:
         dataset_dicts = filter_images_with_only_crowd_annotations(dataset_dicts)
-
     if min_keypoints > 0 and has_instances:
         dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
 
@@ -253,41 +246,77 @@ def get_detection_dataset_dicts(
     return dataset_dicts
 
 
+def build_batch_data_loader(
+    dataset, sampler, total_batch_size, *, aspect_ratio_grouping=False, num_workers=0
+):
+    """
+    Build a batched dataloader for training.
+
+    Args:
+        dataset (torch.utils.data.Dataset): map-style PyTorch dataset. Can be indexed.
+        sampler (torch.utils.data.sampler.Sampler): a sampler that produces indices
+        total_batch_size (int): total batch size across GPUs.
+        aspect_ratio_grouping (bool): whether to group images with similar
+            aspect ratio for efficiency. When enabled, it requires each
+            element in dataset be a dict with keys "width" and "height".
+        num_workers (int): number of parallel data loading workers
+
+    Returns:
+        iterable[list]. Length of each list is the batch size of the current
+            GPU. Each element in the list comes from the dataset.
+    """
+    world_size = get_world_size()
+    assert (
+        total_batch_size > 0 and total_batch_size % world_size == 0
+    ), "Total batch size ({}) must be divisible by the number of gpus ({}).".format(
+        total_batch_size, world_size
+    )
+
+    batch_size = total_batch_size // world_size
+    if aspect_ratio_grouping:
+        data_loader = torch.utils.data.DataLoader(
+            dataset,
+            sampler=sampler,
+            num_workers=num_workers,
+            batch_sampler=None,
+            collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
+            worker_init_fn=worker_init_reset_seed,
+        )  # yield individual mapped dict
+        return AspectRatioGroupedDataset(data_loader, batch_size)
+    else:
+        batch_sampler = torch.utils.data.sampler.BatchSampler(
+            sampler, batch_size, drop_last=True
+        )  # drop_last so the batch always have the same size
+        return torch.utils.data.DataLoader(
+            dataset,
+            num_workers=num_workers,
+            batch_sampler=batch_sampler,
+            collate_fn=trivial_batch_collator,
+            worker_init_fn=worker_init_reset_seed,
+        )
+
+
 def build_detection_train_loader(cfg, mapper=None):
     """
     A data loader is created by the following steps:
 
     1. Use the dataset names in config to query :class:`DatasetCatalog`, and obtain a list of dicts.
-    2. Start workers to work on the dicts. Each worker will:
-
+    2. Coordinate a random shuffle order shared among all processes (all GPUs)
+    3. Each process spawn another few workers to process the dicts. Each worker will:
        * Map each metadata dict into another format to be consumed by the model.
        * Batch them by simply putting dicts into a list.
 
-    The batched ``list[mapped_dict]`` is what this dataloader will return.
+    The batched ``list[mapped_dict]`` is what this dataloader will yield.
 
     Args:
         cfg (CfgNode): the config
         mapper (callable): a callable which takes a sample (dict) from dataset and
             returns the format to be consumed by the model.
-            By default it will be `DatasetMapper(cfg, True)`.
+            By default it will be ``DatasetMapper(cfg, True)``.
 
     Returns:
         an infinite iterator of training data
     """
-    num_workers = get_world_size()
-    images_per_batch = cfg.SOLVER.IMS_PER_BATCH
-    assert (
-        images_per_batch % num_workers == 0
-    ), "SOLVER.IMS_PER_BATCH ({}) must be divisible by the number of workers ({}).".format(
-        images_per_batch, num_workers
-    )
-    assert (
-        images_per_batch >= num_workers
-    ), "SOLVER.IMS_PER_BATCH ({}) must be larger than the number of workers ({}).".format(
-        images_per_batch, num_workers
-    )
-    images_per_worker = images_per_batch // num_workers
-
     dataset_dicts = get_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
         filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
@@ -305,39 +334,23 @@ def build_detection_train_loader(cfg, mapper=None):
     sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
     logger = logging.getLogger(__name__)
     logger.info("Using training sampler {}".format(sampler_name))
+    # TODO avoid if-else?
     if sampler_name == "TrainingSampler":
-        sampler = samplers.TrainingSampler(len(dataset))
+        sampler = TrainingSampler(len(dataset))
     elif sampler_name == "RepeatFactorTrainingSampler":
-        sampler = samplers.RepeatFactorTrainingSampler(
+        repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
             dataset_dicts, cfg.DATALOADER.REPEAT_THRESHOLD
         )
+        sampler = RepeatFactorTrainingSampler(repeat_factors)
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
-
-    if cfg.DATALOADER.ASPECT_RATIO_GROUPING:
-        data_loader = torch.utils.data.DataLoader(
-            dataset,
-            sampler=sampler,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-            batch_sampler=None,
-            collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
-            worker_init_fn=worker_init_reset_seed,
-        )  # yield individual mapped dict
-        data_loader = AspectRatioGroupedDataset(data_loader, images_per_worker)
-    else:
-        batch_sampler = torch.utils.data.sampler.BatchSampler(
-            sampler, images_per_worker, drop_last=True
-        )
-        # drop_last so the batch always have the same size
-        data_loader = torch.utils.data.DataLoader(
-            dataset,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-            batch_sampler=batch_sampler,
-            collate_fn=trivial_batch_collator,
-            worker_init_fn=worker_init_reset_seed,
-        )
-
-    return data_loader
+    return build_batch_data_loader(
+        dataset,
+        sampler,
+        cfg.SOLVER.IMS_PER_BATCH,
+        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
 
 
 def build_detection_test_loader(cfg, dataset_name, mapper=None):
@@ -372,7 +385,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         mapper = DatasetMapper(cfg, False)
     dataset = MapDataset(dataset, mapper)
 
-    sampler = samplers.InferenceSampler(len(dataset))
+    sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)

@@ -75,17 +75,20 @@ int main(int argc, char** argv) {
     CAFFE_ENFORCE(workSpace.RunNet(predictNet_.name()));
   }
   auto end_time = chrono::high_resolution_clock::now();
-  auto ms = std::chrono::duration_cast<std::chrono::microseconds>(
-                end_time - start_time)
+  auto ms = chrono::duration_cast<chrono::microseconds>(end_time - start_time)
                 .count();
-  cout << "Latency: " << ms * 1.0 / 1e6 / N_benchmark << " seconds" << endl;
+  cout << "Latency (should vary with different inputs): "
+       << ms * 1.0 / 1e6 / N_benchmark << " seconds" << endl;
 
   // parse Mask R-CNN outputs
-  auto& bbox = BlobGetTensor(*workSpace.GetBlob("bbox_nms"), caffe2::CPU);
-  auto& scores = BlobGetTensor(*workSpace.GetBlob("score_nms"), caffe2::CPU);
-  auto& labels = BlobGetTensor(*workSpace.GetBlob("class_nms"), caffe2::CPU);
-  auto& mask_probs =
-      BlobGetTensor(*workSpace.GetBlob("mask_fcn_probs"), caffe2::CPU);
+  caffe2::Tensor bbox(
+      workSpace.GetBlob("bbox_nms")->Get<caffe2::Tensor>(), caffe2::CPU);
+  caffe2::Tensor scores(
+      workSpace.GetBlob("score_nms")->Get<caffe2::Tensor>(), caffe2::CPU);
+  caffe2::Tensor labels(
+      workSpace.GetBlob("class_nms")->Get<caffe2::Tensor>(), caffe2::CPU);
+  caffe2::Tensor mask_probs(
+      workSpace.GetBlob("mask_fcn_probs")->Get<caffe2::Tensor>(), caffe2::CPU);
   cout << "bbox:" << bbox.DebugString() << endl;
   cout << "scores:" << scores.DebugString() << endl;
   cout << "labels:" << labels.DebugString() << endl;

@@ -56,21 +56,15 @@ class TrainingSampler(Sampler):
 
 class RepeatFactorTrainingSampler(Sampler):
     """
-    Similar to TrainingSampler, but suitable for training on class imbalanced datasets
-    like LVIS. In each epoch, an image may appear multiple times based on its "repeat
-    factor". The repeat factor for an image is a function of the frequency the rarest
-    category labeled in that image. The "frequency of category c" in [0, 1] is defined
-    as the fraction of images in the training set (without repeats) in which category c
-    appears.
-
-    See https://arxiv.org/abs/1908.03195 (>= v2) Appendix B.2.
+    Similar to TrainingSampler, but a sample may appear more times than others based
+    on its "repeat factor". This is suitable for training on class imbalanced datasets like LVIS.
     """
 
-    def __init__(self, dataset_dicts, repeat_thresh, shuffle=True, seed=None):
+    def __init__(self, repeat_factors, *, shuffle=True, seed=None):
         """
         Args:
-            dataset_dicts (list[dict]): annotations in Detectron2 dataset format.
-            repeat_thresh (float): frequency threshold below which data is repeated.
+            repeat_factors (Tensor): a float vector, the repeat factor for each indice. When it's
+                full of ones, it is equivalent to ``TrainingSampler(len(repeat_factors), ...)``.
             shuffle (bool): whether to shuffle the indices or not
             seed (int): the initial seed of the shuffle. Must be the same
                 across all workers. If None, will use a random seed shared
@@ -84,18 +78,25 @@ class RepeatFactorTrainingSampler(Sampler):
         self._rank = comm.get_rank()
         self._world_size = comm.get_world_size()
 
-        # Get fractional repeat factors and split into whole number (_int_part)
-        # and fractional (_frac_part) parts.
-        rep_factors = self._get_repeat_factors(dataset_dicts, repeat_thresh)
-        self._int_part = torch.trunc(rep_factors)
-        self._frac_part = rep_factors - self._int_part
+        # Split into whole number (_int_part) and fractional (_frac_part) parts.
+        self._int_part = torch.trunc(repeat_factors)
+        self._frac_part = repeat_factors - self._int_part
 
-    def _get_repeat_factors(self, dataset_dicts, repeat_thresh):
+    @staticmethod
+    def repeat_factors_from_category_frequency(dataset_dicts, repeat_thresh):
         """
-        Compute (fractional) per-image repeat factors.
+        Compute (fractional) per-image repeat factors based on category frequency.
+        The repeat factor for an image is a function of the frequency of the rarest
+        category labeled in that image. The "frequency of category c" in [0, 1] is defined
+        as the fraction of images in the training set (without repeats) in which category c
+        appears.
+        See :paper:`lvis` (>= v2) Appendix B.2.
 
         Args:
-            See __init__.
+            dataset_dicts (list[dict]): annotations in Detectron2 dataset format.
+            repeat_thresh (float): frequency threshold below which data is repeated.
+                If the frequency is half of `repeat_thresh`, the image will be
+                repeated twice.
 
         Returns:
             torch.Tensor: the i-th element is the repeat factor for the dataset image

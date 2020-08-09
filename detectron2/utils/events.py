@@ -10,6 +10,14 @@ import torch
 from fvcore.common.file_io import PathManager
 from fvcore.common.history_buffer import HistoryBuffer
 
+__all__ = [
+    "get_event_storage",
+    "JSONWriter",
+    "TensorboardXWriter",
+    "CommonMetricPrinter",
+    "EventStorage",
+]
+
 _CURRENT_STORAGE_STACK = []
 
 
@@ -17,7 +25,7 @@ def get_event_storage():
     """
     Returns:
         The :class:`EventStorage` object that's currently being used.
-        Throws an error if no :class`EventStorage` is currently enabled.
+        Throws an error if no :class:`EventStorage` is currently enabled.
     """
     assert len(
         _CURRENT_STORAGE_STACK
@@ -44,9 +52,7 @@ class JSONWriter(EventWriter):
     It saves scalars as one json per line (instead of a big json) for easy parsing.
 
     Examples parsing such a json file:
-
-    .. code-block:: none
-
+    ::
         $ cat metrics.json | jq -s '.[0:2]'
         [
           {
@@ -92,12 +98,23 @@ class JSONWriter(EventWriter):
         """
         self._file_handle = PathManager.open(json_file, "a")
         self._window_size = window_size
+        self._last_write = -1
 
     def write(self):
         storage = get_event_storage()
-        to_save = {"iteration": storage.iter}
-        to_save.update(storage.latest_with_smoothing_hint(self._window_size))
-        self._file_handle.write(json.dumps(to_save, sort_keys=True) + "\n")
+        to_save = defaultdict(dict)
+
+        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+            # keep scalars that have not been written
+            if iter <= self._last_write:
+                continue
+            to_save[iter][k] = v
+        all_iters = sorted(to_save.keys())
+        self._last_write = max(all_iters)
+
+        for itr, scalars_per_iter in to_save.items():
+            scalars_per_iter["iteration"] = itr
+            self._file_handle.write(json.dumps(scalars_per_iter, sort_keys=True) + "\n")
         self._file_handle.flush()
         try:
             os.fsync(self._file_handle.fileno())
@@ -125,16 +142,33 @@ class TensorboardXWriter(EventWriter):
         from torch.utils.tensorboard import SummaryWriter
 
         self._writer = SummaryWriter(log_dir, **kwargs)
+        self._last_write = -1
 
     def write(self):
         storage = get_event_storage()
-        for k, v in storage.latest_with_smoothing_hint(self._window_size).items():
-            self._writer.add_scalar(k, v, storage.iter)
+        new_last_write = self._last_write
+        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+            if iter > self._last_write:
+                self._writer.add_scalar(k, v, iter)
+                new_last_write = max(new_last_write, iter)
+        self._last_write = new_last_write
 
-        if len(storage.vis_data) >= 1:
-            for img_name, img, step_num in storage.vis_data:
+        # storage.put_{image,histogram} is only meant to be used by
+        # tensorboard writer. So we access its internal fields directly from here.
+        if len(storage._vis_data) >= 1:
+            for img_name, img, step_num in storage._vis_data:
                 self._writer.add_image(img_name, img, step_num)
+            # Storage stores all image data and rely on this writer to clear them.
+            # As a result it assumes only one writer will use its image data.
+            # An alternative design is to let storage store limited recent
+            # data (e.g. only the most recent image) that all writers can access.
+            # In that case a writer may not see all image data if its period is long.
             storage.clear_images()
+
+        if len(storage._histograms) >= 1:
+            for params in storage._histograms:
+                self._writer.add_histogram_raw(**params)
+            storage.clear_histograms()
 
     def close(self):
         if hasattr(self, "_writer"):  # doesn't exist when the code fails at import
@@ -145,8 +179,10 @@ class CommonMetricPrinter(EventWriter):
     """
     Print **common** metrics to the terminal, including
     iteration time, ETA, memory, all losses, and the learning rate.
+    It also applies smoothing using a window of 20 elements.
 
-    To print something different, please implement a similar printer by yourself.
+    It's meant to print common metrics in common ways.
+    To print something in more customized ways, please implement a similar printer by yourself.
     """
 
     def __init__(self, max_iter):
@@ -170,7 +206,7 @@ class CommonMetricPrinter(EventWriter):
             # or when SimpleTrainer is not used
             data_time = None
 
-        eta_string = "N/A"
+        eta_string = None
         try:
             iter_time = storage.history("time").global_avg()
             eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
@@ -199,8 +235,8 @@ class CommonMetricPrinter(EventWriter):
 
         # NOTE: max_mem is parsed by grep in "dev/parse_results.sh"
         self.logger.info(
-            " eta: {eta}  iter: {iter}  {losses}  {time}{data_time}lr: {lr}  {memory}".format(
-                eta=eta_string,
+            " {eta}iter: {iter}  {losses}  {time}{data_time}lr: {lr}  {memory}".format(
+                eta=f"eta: {eta_string}  " if eta_string else "",
                 iter=iteration,
                 losses="  ".join(
                     [
@@ -235,10 +271,12 @@ class EventStorage:
         self._iter = start_iter
         self._current_prefix = ""
         self._vis_data = []
+        self._histograms = []
 
     def put_image(self, img_name, img_tensor):
         """
-        Add an `img_tensor` to the `_vis_data` associated with `img_name`.
+        Add an `img_tensor` associated with `img_name`, to be shown on
+        tensorboard.
 
         Args:
             img_name (str): The name of the image to put into tensorboard.
@@ -249,13 +287,6 @@ class EventStorage:
                 The `img_tensor` will be visualized in tensorboard.
         """
         self._vis_data.append((img_name, img_tensor, self._iter))
-
-    def clear_images(self):
-        """
-        Delete all the stored images for visualization. This should be called
-        after images are written to tensorboard.
-        """
-        self._vis_data = []
 
     def put_scalar(self, name, value, smoothing_hint=True):
         """
@@ -274,7 +305,7 @@ class EventStorage:
         history = self._history[name]
         value = float(value)
         history.update(value, self._iter)
-        self._latest_scalars[name] = value
+        self._latest_scalars[name] = (value, self._iter)
 
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
@@ -294,6 +325,36 @@ class EventStorage:
         """
         for k, v in kwargs.items():
             self.put_scalar(k, v, smoothing_hint=smoothing_hint)
+
+    def put_histogram(self, hist_name, hist_tensor, bins=1000):
+        """
+        Create a histogram from a tensor.
+
+        Args:
+            hist_name (str): The name of the histogram to put into tensorboard.
+            hist_tensor (torch.Tensor): A Tensor of arbitrary shape to be converted
+                into a histogram.
+            bins (int): Number of histogram bins.
+        """
+        ht_min, ht_max = hist_tensor.min().item(), hist_tensor.max().item()
+
+        # Create a histogram with PyTorch
+        hist_counts = torch.histc(hist_tensor, bins=bins)
+        hist_edges = torch.linspace(start=ht_min, end=ht_max, steps=bins + 1, dtype=torch.float32)
+
+        # Parameter for the add_histogram_raw function of SummaryWriter
+        hist_params = dict(
+            tag=hist_name,
+            min=ht_min,
+            max=ht_max,
+            num=len(hist_tensor),
+            sum=float(hist_tensor.sum()),
+            sum_squares=float(torch.sum(hist_tensor ** 2)),
+            bucket_limits=hist_edges[1:].tolist(),
+            bucket_counts=hist_counts.tolist(),
+            global_step=self._iter,
+        )
+        self._histograms.append(hist_params)
 
     def history(self, name):
         """
@@ -315,7 +376,8 @@ class EventStorage:
     def latest(self):
         """
         Returns:
-            dict[name -> number]: the scalars that's added in the current iteration.
+            dict[str -> (float, int)]: mapping from the name of each scalar to the most
+                recent value and the iteration number its added.
         """
         return self._latest_scalars
 
@@ -329,8 +391,11 @@ class EventStorage:
         This provides a default behavior that other writers can use.
         """
         result = {}
-        for k, v in self._latest_scalars.items():
-            result[k] = self._history[k].median(window_size) if self._smoothing_hints[k] else v
+        for k, (v, itr) in self._latest_scalars.items():
+            result[k] = (
+                self._history[k].median(window_size) if self._smoothing_hints[k] else v,
+                itr,
+            )
         return result
 
     def smoothing_hints(self):
@@ -349,11 +414,6 @@ class EventStorage:
         correct iteration number.
         """
         self._iter += 1
-        self._latest_scalars = {}
-
-    @property
-    def vis_data(self):
-        return self._vis_data
 
     @property
     def iter(self):
@@ -383,3 +443,17 @@ class EventStorage:
         self._current_prefix = name.rstrip("/") + "/"
         yield
         self._current_prefix = old_prefix
+
+    def clear_images(self):
+        """
+        Delete all the stored images for visualization. This should be called
+        after images are written to tensorboard.
+        """
+        self._vis_data = []
+
+    def clear_histograms(self):
+        """
+        Delete all the stored histograms for visualization.
+        This should be called after histograms are written to tensorboard.
+        """
+        self._histograms = []

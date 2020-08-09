@@ -63,10 +63,10 @@ class DatasetEvaluator:
 
 class DatasetEvaluators(DatasetEvaluator):
     """
-    Wrapper class to combine multiple :ref:`DatasetEvaluator` instances.
+    Wrapper class to combine multiple :class:`DatasetEvaluator` instances.
 
     This class dispatches every evaluation call to
-    all of its :ref:`DatasetEvaluator`s.
+    all of its :class:`DatasetEvaluator`.
     """
 
     def __init__(self, evaluators):

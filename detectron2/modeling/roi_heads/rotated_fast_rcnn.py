@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import numpy as np
-from typing import Dict
 import torch
 
+from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, batched_nms_rotated
 from detectron2.structures import Instances, RotatedBoxes, pairwise_iou_rotated
 from detectron2.utils.events import get_event_storage
@@ -133,7 +133,7 @@ def fast_rcnn_inference_single_image_rotated(
 
 class RotatedFastRCNNOutputLayers(FastRCNNOutputLayers):
     """
-    A class that stores information about outputs of a Fast R-CNN head with RotatedBoxes.
+    Two linear layers for predicting Rotated Fast R-CNN outputs.
     """
 
     @classmethod
@@ -167,46 +167,51 @@ class RotatedFastRCNNOutputLayers(FastRCNNOutputLayers):
 @ROI_HEADS_REGISTRY.register()
 class RROIHeads(StandardROIHeads):
     """
-    This class is used by Rotated RPN (RRPN).
-    For now, it just supports box head but not mask or keypoints.
+    This class is used by Rotated Fast R-CNN to detect rotated boxes.
+    For now, it only supports box predictions but not mask or keypoints.
     """
 
-    def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
-        super().__init__(cfg, input_shape)
+    @configurable
+    def __init__(self, **kwargs):
+        """
+        NOTE: this interface is experimental.
+        """
+        super().__init__(**kwargs)
         assert (
             not self.mask_on and not self.keypoint_on
         ), "Mask/Keypoints not supported in Rotated ROIHeads."
+        assert not self.train_on_pred_boxes, "train_on_pred_boxes not implemented for RROIHeads!"
 
-    def _init_box_head(self, cfg, input_shape):
+    @classmethod
+    def _init_box_head(cls, cfg, input_shape):
         # fmt: off
-        pooler_resolution        = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
-        pooler_scales            = tuple(1.0 / input_shape[k].stride for k in self.in_features)
-        sampling_ratio           = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
-        self.train_on_pred_boxes = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
+        in_features       = cfg.MODEL.ROI_HEADS.IN_FEATURES
+        pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
+        pooler_scales     = tuple(1.0 / input_shape[k].stride for k in in_features)
+        sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
+        pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         # fmt: on
-        assert not self.train_on_pred_boxes, "Not Implemented!"
+        assert pooler_type in ["ROIAlignRotated"], pooler_type
+        # assume all channel counts are equal
+        in_channels = [input_shape[f].channels for f in in_features][0]
 
-        # If StandardROIHeads is applied on multiple feature maps (as in FPN),
-        # then we share the same predictors and therefore the channel counts must be the same
-        in_channels = [input_shape[f].channels for f in self.in_features]
-        # Check all channel counts are equal
-        assert len(set(in_channels)) == 1, in_channels
-        in_channels = in_channels[0]
-
-        assert pooler_type in ["ROIAlignRotated"]
-
-        self.box_pooler = ROIPooler(
+        box_pooler = ROIPooler(
             output_size=pooler_resolution,
             scales=pooler_scales,
             sampling_ratio=sampling_ratio,
             pooler_type=pooler_type,
         )
-        self.box_head = build_box_head(
+        box_head = build_box_head(
             cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
         )
-
-        self.box_predictor = RotatedFastRCNNOutputLayers(cfg, self.box_head.output_shape)
+        # This line is the only difference v.s. StandardROIHeads
+        box_predictor = RotatedFastRCNNOutputLayers(cfg, box_head.output_shape)
+        return {
+            "box_in_features": in_features,
+            "box_pooler": box_pooler,
+            "box_head": box_head,
+            "box_predictor": box_predictor,
+        }
 
     @torch.no_grad()
     def label_and_sample_proposals(self, proposals, targets):

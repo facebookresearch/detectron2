@@ -1,19 +1,27 @@
-# Use Configs
+# Configs
 
-Detectron2's config system uses yaml and [yacs](https://github.com/rbgirshick/yacs).
-In addition to the basic operations that access and update a config, we provide
-the following extra functionalities:
+Detectron2 provides a key-value based config system that can be
+used to obtain standard, common behaviors.
+
+Detectron2's config system uses YAML and [yacs](https://github.com/rbgirshick/yacs).
+In addition to the [basic operations](../modules/config.html#detectron2.config.CfgNode)
+that access and update a config, we provide the following extra functionalities:
 
 1. The config can have `_BASE_: base.yaml` field, which will load a base config first.
    Values in the base config will be overwritten in sub-configs, if there are any conflicts.
    We provided several base configs for standard model architectures.
 2. We provide config versioning, for backward compatibility.
    If your config file is versioned with a config line like `VERSION: 2`,
-   detectron2 will still recognize it even if we rename some keys in the future.
+   detectron2 will still recognize it even if we change some keys in the future.
 
-### Use Configs
+Config file is a very limited language.
+We do not expect all features in detectron2 to be available through configs.
+If you need something that's not available in the config space,
+please write code using detectron2's API.
 
-Some basic usage of the `CfgNode` object is shown below:
+### Basic Usage
+
+Some basic usage of the `CfgNode` object is shown here. See more in [documentation](../modules/config.html#detectron2.config.CfgNode).
 ```python
 from detectron2.config import get_cfg
 cfg = get_cfg()    # obtain detectron2's default config
@@ -24,8 +32,28 @@ cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values f
 print(cfg.dump())  # print formatted configs
 ```
 
-To see a list of available configs in detectron2, see [Config References](../modules/config.html#config-references)
+Many builtin tools in detectron2 accept command line config overwrite:
+Key-value pairs provided in the command line will overwrite the existing values in the config file.
+For example, [demo.py](../../demo/demo.py) can be used with
+```
+./demo.py --config-file config.yaml [--other-options] \
+  --opts MODEL.WEIGHTS /path/to/weights INPUT.MIN_SIZE_TEST 1000
+```
 
+To see a list of available configs in detectron2 and what they mean,
+check [Config References](../modules/config.html#config-references)
+
+
+### Configs in Projects
+
+A project that lives outside the detectron2 library may define its own configs, which will need to be added
+for the project to be functional, e.g.:
+```python
+from point_rend import add_pointrend_config
+cfg = get_cfg()    # obtain detectron2's default config
+add_pointrend_config(cfg)  # add pointrend's default config
+# ... ...
+```
 
 ### Best Practice with Configs
 
@@ -39,7 +67,3 @@ To see a list of available configs in detectron2, see [Config References](../mod
 	 We print a warning when reading a config without version number.
    The official configs do not include version number because they are meant to
    be always up-to-date.
-
-4. Save a full config together with a trained model, and use it to run inference.
-   This is more robust to changes that may happen to the config definition
-   (e.g., if a default value changed), although we will try to avoid such changes.

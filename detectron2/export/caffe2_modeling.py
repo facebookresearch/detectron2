@@ -9,6 +9,7 @@ import torch
 from detectron2.modeling import meta_arch
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.meta_arch.panoptic_fpn import combine_semantic_and_instance_outputs
+from detectron2.modeling.meta_arch.retinanet import permute_to_N_HWA_K
 from detectron2.modeling.postprocessing import detector_postprocess, sem_seg_postprocess
 from detectron2.modeling.roi_heads import keypoint_head
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
@@ -207,7 +208,8 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
         data, im_info = inputs
         data = alias(data, "data")
         im_info = alias(im_info, "im_info")
-        normalized_data = self._wrapped_model.normalizer(data)
+        mean, std = self._wrapped_model.pixel_mean, self._wrapped_model.pixel_std
+        normalized_data = (data - mean) / std
         normalized_data = alias(normalized_data, "normalized_data")
 
         # Pack (data, im_info) into ImageList which is recognized by self.inference.
@@ -395,8 +397,8 @@ class Caffe2RetinaNet(Caffe2MetaArch):
             features[i] = alias(feature_i, "feature_{}".format(i), is_backward=True)
             return_tensors.append(features[i])
 
-        box_cls, box_delta = self._wrapped_model.head(features)
-        for i, (box_cls_i, box_delta_i) in enumerate(zip(box_cls, box_delta)):
+        pred_logits, pred_anchor_deltas = self._wrapped_model.head(features)
+        for i, (box_cls_i, box_delta_i) in enumerate(zip(pred_logits, pred_anchor_deltas)):
             return_tensors.append(alias(box_cls_i, "box_cls_{}".format(i)))
             return_tensors.append(alias(box_delta_i, "box_delta_{}".format(i)))
 
@@ -468,18 +470,21 @@ class Caffe2RetinaNet(Caffe2MetaArch):
             image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
 
             num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])
-            box_cls = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]
-            box_delta = [c2_results["box_delta_{}".format(i)] for i in range(num_features)]
+            pred_logits = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]
+            pred_anchor_deltas = [c2_results["box_delta_{}".format(i)] for i in range(num_features)]
 
             # For each feature level, feature should have the same batch size and
             # spatial dimension as the box_cls and box_delta.
-            dummy_features = [box_delta[i].clone()[:, 0:0, :, :] for i in range(num_features)]
+            dummy_features = [x.clone()[:, 0:0, :, :] for x in pred_logits]
             anchors = self.anchor_generator(dummy_features)
 
             # self.num_classess can be inferred
-            self.num_classes = box_cls[0].shape[1] // (box_delta[0].shape[1] // 4)
+            self.num_classes = pred_logits[0].shape[1] // (pred_anchor_deltas[0].shape[1] // 4)
 
-            results = self.inference(box_cls, box_delta, anchors, image_sizes)
+            pred_logits = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits]
+            pred_anchor_deltas = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
+
+            results = self.inference(anchors, pred_logits, pred_anchor_deltas, image_sizes)
             return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
 
         return f
