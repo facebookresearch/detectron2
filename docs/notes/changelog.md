@@ -19,6 +19,8 @@ But we try to reduce users' disruption by the following ways:
   use them for convenience among projects under `detectron2/projects`.
   For such APIs, we may treat them as stable APIs and also apply the above strategies.
   They may be promoted to stable when we're ready.
+* Projects under "detectron2/projects" or imported with "detectron2.projects" are research projects
+  and are all considered experimental.
 
 Despite of the possible breakage, if a third-party project would like to keep up with the latest updates
 in detectron2, using it as a library will still be less disruptive than forking, because
