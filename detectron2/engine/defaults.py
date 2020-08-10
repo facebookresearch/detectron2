@@ -300,7 +300,8 @@ class DefaultTrainer(SimpleTrainer):
     def resume_or_load(self, resume=True):
         """
         If `resume==True`, and last checkpoint exists, resume from it, load all checkpointables
-        (eg. optimizer and scheduler) and update iteration counter.
+        (eg. optimizer and scheduler) and update iteration counter from it. ``cfg.MODEL.WEIGHTS``
+        will not be used.
 
         Otherwise, load the model specified by the config (skip all checkpointables) and start from
         the first iteration.
