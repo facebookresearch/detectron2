@@ -917,7 +917,7 @@ class DensePoseCocoEval(object):
                 # dimension of recall: [TxKxAxM]
                 s = self.eval["recall"]
                 if iouThr is not None:
-                    t = np.where(iouThr == p.iouThrs)[0]
+                    t = np.where(np.abs(iouThr - p.iouThrs) < 0.001)[0]
                     s = s[t]
                 s = s[:, :, aind, mind]
             if len(s[s > -1]) == 0:
