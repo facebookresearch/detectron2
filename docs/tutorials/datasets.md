@@ -1,7 +1,7 @@
 # Use Custom Datasets
 
 This document explains how the dataset APIs
-([DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog), or [MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog))
+([DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog), [MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog))
 work, and how to use them to add custom datasets.
 
 Datasets that have builtin support in detectron2 are listed in [builtin datasets](builtin_datasets.md).

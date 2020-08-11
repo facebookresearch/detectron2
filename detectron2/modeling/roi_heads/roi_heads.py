@@ -516,7 +516,7 @@ class StandardROIHeads(ROIHeads):
                 None if not using mask head.
             mask_pooler (ROIPooler): pooler to extra region features for mask head
             mask_head (nn.Module): transform features to make mask predictions
-            keypoint_in_features, keypoint_pooler, keypoint_head: similar to ``mask*``.
+            keypoint_in_features, keypoint_pooler, keypoint_head: similar to ``mask_*``.
             train_on_pred_boxes (bool): whether to use proposal boxes or
                 predicted boxes from the box head to train other heads.
         """

@@ -383,8 +383,8 @@ class FastRCNNOutputLayers(nn.Module):
             box_reg_loss_type (str): Box regression loss type. One of: "smooth_l1", "giou"
             loss_weight (float|dict): weights to use for losses. Can be single float for weighting
                 all losses, or a dict of individual weightings. Valid dict keys are:
-                    "loss_cls" - applied to classification loss
-                    "loss_box_reg" - applied to box regression loss
+                    * "loss_cls": applied to classification loss
+                    * "loss_box_reg": applied to box regression loss
         """
         super().__init__()
         if isinstance(input_shape, int):  # some backward compatibility
@@ -434,10 +434,12 @@ class FastRCNNOutputLayers(nn.Module):
             x: per-region features of shape (N, ...) for N bounding boxes to predict.
 
         Returns:
-            Tensor: shape (N,K+1), scores for each of the N box. Each row contains the scores for
-                K object categories and 1 background class.
-            Tensor: bounding box regression deltas for each box. Shape is shape (N,Kx4), or (N,4)
-                for class-agnostic regression.
+            (Tensor, Tensor):
+            First tensor: shape (N,K+1), scores for each of the N box. Each row contains the
+            scores for K object categories and 1 background class.
+
+            Second tensor: bounding box regression deltas for each box. Shape is shape (N,Kx4),
+            or (N,4) for class-agnostic regression.
         """
         if x.dim() > 2:
             x = torch.flatten(x, start_dim=1)
@@ -499,7 +501,8 @@ class FastRCNNOutputLayers(nn.Module):
                 to compute predictions. The fields ``proposal_boxes``, ``gt_classes`` are expected.
 
         Returns:
-            list[Tensor]: A list of Tensors of predicted boxes for GT classes in case of
+            list[Tensor]:
+                A list of Tensors of predicted boxes for GT classes in case of
                 class-specific box head. Element i of the list has shape (Ri, B), where Ri is
                 the number of proposals for image i and B is the box dimension (4 or 5)
         """
@@ -534,7 +537,8 @@ class FastRCNNOutputLayers(nn.Module):
                 used to compute predictions. The ``proposal_boxes`` field is expected.
 
         Returns:
-            list[Tensor]: A list of Tensors of predicted class-specific or class-agnostic boxes
+            list[Tensor]:
+                A list of Tensors of predicted class-specific or class-agnostic boxes
                 for each image. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
                 the number of proposals for image i and B is the box dimension (4 or 5)
         """
@@ -557,7 +561,8 @@ class FastRCNNOutputLayers(nn.Module):
                 used to compute predictions.
 
         Returns:
-            list[Tensor]: A list of Tensors of predicted class probabilities for each image.
+            list[Tensor]:
+                A list of Tensors of predicted class probabilities for each image.
                 Element i has shape (Ri, K + 1), where Ri is the number of proposals for image i.
         """
         scores, _ = predictions

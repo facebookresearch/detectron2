@@ -137,7 +137,10 @@ def _apply_exif_orientation(image):
     if not hasattr(image, "getexif"):
         return image
 
-    exif = image.getexif()
+    try:
+        exif = image.getexif()
+    except Exception:  # https://github.com/facebookresearch/detectron2/issues/1885
+        exif = None
 
     if exif is None:
         return image
@@ -177,7 +180,6 @@ def read_image(file_name, format=None):
 
         # work around this bug: https://github.com/python-pillow/Pillow/issues/3973
         image = _apply_exif_orientation(image)
-
         return convert_PIL_to_numpy(image, format)
 
 

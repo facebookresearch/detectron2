@@ -144,15 +144,15 @@ You have the following options:
    but use custom code to execute it instead of its `forward()`. For example,
    the following code obtains mask features before mask head.
 
-```python
-images = ImageList.from_tensors(...)  # preprocessed input tensor
-model = build_model(cfg)
-features = model.backbone(images.tensor)
-proposals, _ = model.proposal_generator(images, features)
-instances = model.roi_heads._forward_box(features, proposals)
-mask_features = [features[f] for f in model.roi_heads.in_features]
-mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
-```
+   ```python
+   images = ImageList.from_tensors(...)  # preprocessed input tensor
+   model = build_model(cfg)
+   features = model.backbone(images.tensor)
+   proposals, _ = model.proposal_generator(images, features)
+   instances = model.roi_heads._forward_box(features, proposals)
+   mask_features = [features[f] for f in model.roi_heads.in_features]
+   mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
+   ```
 
 3. Use [forward hooks](https://pytorch.org/tutorials/beginner/former_torchies/nnft_tutorial.html#forward-and-backward-function-hooks).
    Forward hooks can help you obtain inputs or outputs of a certain module.
