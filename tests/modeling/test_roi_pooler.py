@@ -124,6 +124,16 @@ class TestROIPooler(unittest.TestCase):
     def test_scriptability_gpu(self):
         self._test_scriptability(device="cuda")
 
+    def test_no_images(self):
+        N, C, H, W = 0, 32, 32, 32
+        feature = torch.rand(N, C, H, W) - 0.5
+        features = [feature]
+        pooler = ROIPooler(
+            output_size=14, scales=(1.0,), sampling_ratio=0.0, pooler_type="ROIAlignV2"
+        )
+        output = pooler.forward(features, [])
+        self.assertEqual(output.shape, (0, C, 14, 14))
+
 
 if __name__ == "__main__":
     unittest.main()
