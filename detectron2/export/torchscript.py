@@ -7,11 +7,8 @@ import tempfile
 from contextlib import contextmanager
 import torch
 
-# fmt: off
 # need an explicit import due to https://github.com/pytorch/pytorch/issues/38964
 from detectron2.structures import Boxes, Instances  # noqa F401
-
-# fmt: on
 
 _counter = 0
 
