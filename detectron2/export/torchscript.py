@@ -5,11 +5,9 @@ import os
 import sys
 import tempfile
 from contextlib import contextmanager
-from typing import Dict
 import torch
 
 # fmt: off
-from detectron2.modeling.proposal_generator import RPN
 # need an explicit import due to https://github.com/pytorch/pytorch/issues/38964
 from detectron2.structures import Boxes, Instances  # noqa F401
 
@@ -54,14 +52,6 @@ def export_torchscript_with_instances(model, fields):
         torch.jit.ScriptModule: the input model in torchscript format
     """
     with patch_instances(fields):
-
-        # Also add some other hacks for torchscript:
-        # boolean as dictionary keys is unsupported:
-        # https://github.com/pytorch/pytorch/issues/41449
-        # We annotate it this way to let torchscript interpret them as integers.
-        RPN.__annotations__["pre_nms_topk"] = Dict[int, int]
-        RPN.__annotations__["post_nms_topk"] = Dict[int, int]
-
         scripted_model = torch.jit.script(model)
         return scripted_model
 

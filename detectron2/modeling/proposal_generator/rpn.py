@@ -479,9 +479,8 @@ class RPN(nn.Module):
             pred_objectness_logits,
             image_sizes,
             self.nms_thresh,
-            # https://github.com/pytorch/pytorch/issues/41449
-            self.pre_nms_topk[int(self.training)],
-            self.post_nms_topk[int(self.training)],
+            self.pre_nms_topk[self.training],
+            self.post_nms_topk[self.training],
             self.min_box_size,
             self.training,
         )
