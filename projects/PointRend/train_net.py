@@ -25,8 +25,7 @@ from detectron2.evaluation import (
     SemSegEvaluator,
     verify_results,
 )
-
-from point_rend import ColorAugSSDTransform, add_pointrend_config
+from detectron2.projects.point_rend import ColorAugSSDTransform, add_pointrend_config
 
 
 def build_sem_seg_train_aug(cfg):
