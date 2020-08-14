@@ -4,6 +4,7 @@ import numpy as np
 from enum import IntEnum, unique
 from typing import Any, List, Tuple, Union
 import torch
+from torch import device
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
@@ -297,7 +298,7 @@ class Boxes:
         return cat_boxes
 
     @property
-    def device(self) -> torch.device:
+    def device(self) -> device:
         return self.tensor.device
 
     # type "Iterator[torch.Tensor]", yield, and iter() not supported by torchscript

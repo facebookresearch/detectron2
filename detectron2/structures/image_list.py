@@ -2,6 +2,7 @@
 from __future__ import division
 from typing import Any, List, Sequence, Tuple
 import torch
+from torch import device
 from torch.nn import functional as F
 
 
@@ -48,7 +49,7 @@ class ImageList(object):
         return ImageList(cast_tensor, self.image_sizes)
 
     @property
-    def device(self) -> torch.device:
+    def device(self) -> device:
         return self.tensor.device
 
     @staticmethod
