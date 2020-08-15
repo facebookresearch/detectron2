@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
+#include<time.h>
 
 using namespace pybind11::literals;
 
@@ -480,7 +481,7 @@ py::dict Accumulate(
   struct tm local_time;
   std::array<char, 200> buffer;
   time(&rawtime);
-  localtime_r(&rawtime, &local_time);
+  localtime_s(&local_time, &rawtime);
   strftime(
       buffer.data(), 200, "%Y-%m-%d %H:%num_max_detections:%S", &local_time);
   return py::dict(
