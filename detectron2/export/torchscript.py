@@ -129,9 +129,24 @@ class {cls_name}:
     )
 
     for name, type_ in fields.items():
-        lines.append(indent(2, f"self.{name} = torch.jit.annotate(Optional[{type_}], None)"))
-    # TODO add getter/setter when @property is supported
+        lines.append(indent(2, f"self._{name} = torch.jit.annotate(Optional[{type_}], None)"))
 
+    for name, type_ in fields.items():
+        lines.append(
+            f"""
+    @property
+    def {name}(self) -> {type_}:
+        # has to use a local for type refinement
+        # https://pytorch.org/docs/stable/jit_language_reference.html#optional-type-refinement
+        t = self._{name}
+        assert t is not None
+        return t
+
+    @{name}.setter
+    def {name}(self, value: {type_}) -> None:
+        self._{name} = value
+"""
+        )
     return cls_name, os.linesep.join(lines)
 
 

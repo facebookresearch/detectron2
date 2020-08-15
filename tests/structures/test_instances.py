@@ -54,6 +54,18 @@ class TestInstances(unittest.TestCase):
             with self.assertRaises(Exception):
                 torch.jit.script(g2())
 
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_script_access_fields(self):
+        class f(torch.nn.Module):
+            def forward(self, x: Instances):
+                proposal_boxes = x.proposal_boxes
+                objectness_logits = x.objectness_logits
+                return proposal_boxes.tensor + objectness_logits
+
+        fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+        with patch_instances(fields):
+            torch.jit.script(f())
+
 
 if __name__ == "__main__":
     unittest.main()
