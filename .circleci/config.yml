@@ -59,7 +59,6 @@ setup_venv_win: &setup_venv_win
         python --version
         which python
         which pip
-        pip install --upgrade pip
 
 install_dep: &install_dep
   - run:
