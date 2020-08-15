@@ -30,7 +30,7 @@ See [GETTING_STARTED.md](GETTING_STARTED.md),
 or the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5).
 
 Learn more at our [documentation](https://detectron2.readthedocs.org).
-And see [projects/](projects/) for some projects that are built on top of detectron2.
+And see [projects](projects/) for some projects that are built on top of detectron2.
 
 ## Model Zoo and Baselines
 
