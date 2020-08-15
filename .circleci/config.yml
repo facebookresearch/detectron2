@@ -18,6 +18,7 @@ windows-cpu: &windows_cpu
     machine:
       resource_class: windows.medium
       image: windows-server-2019-vs2019:stable
+      shell: powershell.exe
 
 windows-gpu: &windows_gpu
     machine:
