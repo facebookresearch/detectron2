@@ -510,7 +510,8 @@ class ResNet(Backbone):
             )
 
         Usually, layers that produce the same feature map spatial size are defined as one
-        "stage" (in :paper:`FPN`). In this case ``stride_per_block[1:]`` should all be 1.
+        "stage" (in :paper:`FPN`). Under such definition, ``stride_per_block[1:]`` should
+        all be 1.
         """
         if first_stride is not None:
             assert "stride" not in kwargs and "stride_per_block" not in kwargs

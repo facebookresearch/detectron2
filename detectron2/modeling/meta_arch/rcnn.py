@@ -90,8 +90,8 @@ class GeneralizedRCNN(nn.Module):
     def visualize_training(self, batched_inputs, proposals):
         """
         A function used to visualize images and proposals. It shows ground truth
-        bounding boxes on the original image and up to 20 predicted object
-        proposals on the original image. Users can implement different
+        bounding boxes on the original image and up to 20 top-scoring predicted
+        object proposals on the original image. Users can implement different
         visualization functions for different models.
 
         Args:

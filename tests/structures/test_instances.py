@@ -22,7 +22,7 @@ class TestInstances(unittest.TestCase):
         self.assertRaises(IndexError, lambda: instances[len(instances)])
         self.assertRaises(IndexError, lambda: instances[-len(instances) - 1])
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_script_new_fields(self):
         class f(torch.nn.Module):
             def forward(self, x: Instances):

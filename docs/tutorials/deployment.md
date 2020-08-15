@@ -54,16 +54,25 @@ which performs CPU/GPU inference using `COCO-InstanceSegmentation/mask_rcnn_R_50
 The C++ example needs to be built with:
 * PyTorch with caffe2 inside
 * gflags, glog, opencv
-* protobuf headers that match the version of your caffe2
+* protobuf library that match the version used by PyTorch (3.6 for PyTorch 1.5, 3.11 for PyTorch 1.6)
 * MKL headers if caffe2 is built with MKL
 
 The following can compile the example inside [official detectron2 docker](../../docker/):
 ```
+# install dependencies
 sudo apt update && sudo apt install libgflags-dev libgoogle-glog-dev libopencv-dev
 pip install mkl-include
-wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz
-tar xf protobuf-cpp-3.6.1.tar.gz
-export CPATH=$(readlink -f ./protobuf-3.6.1/src/):$HOME/.local/include
+
+# install the correct version of protobuf:
+wget https://github.com/protocolbuffers/protobuf/releases/download/v3.11.4/protobuf-cpp-3.11.4.tar.gz && tar xf protobuf-cpp-3.11.4.tar.gz
+cd protobuf-3.11.4
+export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
+./configure --prefix=$HOME/.local && make && make install
+export CPATH=$HOME/.local/include
+export LIBRARY_PATH=$HOME/.local/lib
+export LD_LIBRARY_PATH=$HOME/.local/lib
+
+# build the program:
 export CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.6/site-packages/torch/
 mkdir build && cd build
 cmake -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST .. && make
