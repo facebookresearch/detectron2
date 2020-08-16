@@ -7,9 +7,11 @@ MODEL:
     IN_FEATURES: ["res5"]
     PRE_NMS_TOPK_TEST: 6000
     POST_NMS_TOPK_TEST: 1000
+    IGNORE_THRESHOLD: -1.0
   ROI_HEADS:
     NAME: "StandardROIHeads"
     IN_FEATURES: ["res5"]
+    IGNORE_THRESHOLD: -1.0
   ROI_BOX_HEAD:
     NAME: "FastRCNNConvFCHead"
     NUM_FC: 2

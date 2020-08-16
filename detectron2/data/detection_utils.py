@@ -369,13 +369,18 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
 
     Returns:
         Instances:
-            It will contain fields "gt_boxes", "gt_classes",
+            It will contain fields "gt_boxes", "ignore_list", "gt_classes",
             "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
     boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
     target = Instances(image_size)
     target.gt_boxes = Boxes(boxes)
+
+    ignore_list = [obj.get("ignore", 0) for obj in annos]
+    ignore_list = torch.tensor(ignore_list, dtype=torch.int64)
+    assert len(boxes) == len(ignore_list)
+    target.ignore_list = ignore_list
 
     classes = [obj["category_id"] for obj in annos]
     classes = torch.tensor(classes, dtype=torch.int64)

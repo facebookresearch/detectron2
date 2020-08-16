@@ -6,7 +6,7 @@ from torch.autograd.function import Function
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec
-from detectron2.structures import Boxes, Instances, pairwise_iou
+from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
 from ..box_regression import Box2BoxTransform
@@ -93,6 +93,7 @@ class CascadeROIHeads(StandardROIHeads):
         pooler_type              = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
         cascade_bbox_reg_weights = cfg.MODEL.ROI_BOX_CASCADE_HEAD.BBOX_REG_WEIGHTS
         cascade_ious             = cfg.MODEL.ROI_BOX_CASCADE_HEAD.IOUS
+        ignore_thresholds        = cfg.MODEL.ROI_BOX_CASCADE_HEAD.IGNORE_THRESHOLDS
         assert len(cascade_bbox_reg_weights) == len(cascade_ious)
         assert cfg.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG,  \
             "CascadeROIHeads only support class-agnostic regression now!"
@@ -115,7 +116,9 @@ class CascadeROIHeads(StandardROIHeads):
         )
 
         box_heads, box_predictors, proposal_matchers = [], [], []
-        for match_iou, bbox_reg_weights in zip(cascade_ious, cascade_bbox_reg_weights):
+        for match_iou, bbox_reg_weights, ignore_threshold in zip(
+            cascade_ious, cascade_bbox_reg_weights, ignore_thresholds
+        ):
             box_head = build_box_head(cfg, pooled_shape)
             box_heads.append(box_head)
             box_predictors.append(
@@ -125,7 +128,14 @@ class CascadeROIHeads(StandardROIHeads):
                     box2box_transform=Box2BoxTransform(weights=bbox_reg_weights),
                 )
             )
-            proposal_matchers.append(Matcher([match_iou], [0, 1], allow_low_quality_matches=False))
+            proposal_matchers.append(
+                Matcher(
+                    [match_iou],
+                    [0, 1],
+                    allow_low_quality_matches=False,
+                    ignore_threshold=ignore_threshold,
+                )
+            )
         return {
             "box_in_features": in_features,
             "box_pooler": box_pooler,
@@ -222,16 +232,20 @@ class CascadeROIHeads(StandardROIHeads):
         """
         num_fg_samples, num_bg_samples = [], []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
-            match_quality_matrix = pairwise_iou(
-                targets_per_image.gt_boxes, proposals_per_image.proposal_boxes
+            targets_per_image = targets_per_image.get_process_match_data()
+            targets_gt_boxes = targets_per_image.gt_boxes
+            targets_ignore_boxes = targets_per_image.ignore_boxes
+
+            # proposal_labels are 0 or 1, if apply ignore box, proposal_labels cound contain -1
+            matched_idxs, proposal_labels = self.proposal_matchers[stage](
+                proposals_per_image.proposal_boxes, targets_gt_boxes, targets_ignore_boxes
             )
-            # proposal_labels are 0 or 1
-            matched_idxs, proposal_labels = self.proposal_matchers[stage](match_quality_matrix)
             if len(targets_per_image) > 0:
                 gt_classes = targets_per_image.gt_classes[matched_idxs]
                 # Label unmatched proposals (0 label from matcher) as background (label=num_classes)
                 gt_classes[proposal_labels == 0] = self.num_classes
-                gt_boxes = targets_per_image.gt_boxes[matched_idxs]
+                gt_classes[proposal_labels == -1] = -1
+                gt_boxes = targets_gt_boxes[matched_idxs]
             else:
                 gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
                 gt_boxes = Boxes(
@@ -241,7 +255,9 @@ class CascadeROIHeads(StandardROIHeads):
             proposals_per_image.gt_boxes = gt_boxes
 
             num_fg_samples.append((proposal_labels == 1).sum().item())
-            num_bg_samples.append(proposal_labels.numel() - num_fg_samples[-1])
+            num_bg_samples.append(
+                proposal_labels.numel() - num_fg_samples[-1] - (proposal_labels == -1).sum().item()
+            )
 
         # Log the number of fg/bg samples in each stage
         storage = get_event_storage()

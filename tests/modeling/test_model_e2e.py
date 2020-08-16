@@ -36,6 +36,7 @@ def get_empty_instance(h, w):
     inst.gt_boxes = Boxes(torch.rand(0, 4))
     inst.gt_classes = torch.tensor([]).to(dtype=torch.int64)
     inst.gt_masks = BitMasks(torch.rand(0, h, w))
+    inst.ignore_list = torch.tensor([]).to(dtype=torch.int64)
     return inst
 
 
@@ -45,6 +46,7 @@ def get_regular_bitmask_instances(h, w):
     inst.gt_boxes.tensor[:, 2:] += inst.gt_boxes.tensor[:, :2]
     inst.gt_classes = torch.tensor([3, 4, 5]).to(dtype=torch.int64)
     inst.gt_masks = BitMasks((torch.rand(3, h, w) > 0.5))
+    inst.ignore_list = torch.tensor([0, 0, 0]).to(dtype=torch.int64)
     return inst
 
 

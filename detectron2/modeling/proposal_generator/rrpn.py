@@ -5,7 +5,7 @@ from typing import Dict, List
 import torch
 
 from detectron2.layers import ShapeSpec, batched_nms_rotated, cat
-from detectron2.structures import Instances, RotatedBoxes, pairwise_iou_rotated
+from detectron2.structures import Instances, RotatedBoxes
 from detectron2.utils.memory import retry_if_cuda_oom
 
 from ..box_regression import Box2BoxTransformRotated
@@ -153,17 +153,26 @@ class RRPN(RPN):
         """
         anchors = RotatedBoxes.cat(anchors)
 
-        gt_boxes = [x.gt_boxes for x in gt_instances]
+        gt_boxes = []
+        ignore_boxes = []
+
+        for x in gt_instances:
+            x = x.get_process_match_data()
+            gt_boxes.append(x.gt_boxes)
+            ignore_boxes.append(x.ignore_boxes)
+
         del gt_instances
 
         gt_labels = []
         matched_gt_boxes = []
-        for gt_boxes_i in gt_boxes:
+        for gt_boxes_i, ignore_boxes_i in zip(gt_boxes, ignore_boxes):
             """
             gt_boxes_i: ground-truth boxes for i-th image
+            ignore_boxes_i: ignore boxes for i-th image
             """
-            match_quality_matrix = retry_if_cuda_oom(pairwise_iou_rotated)(gt_boxes_i, anchors)
-            matched_idxs, gt_labels_i = retry_if_cuda_oom(self.anchor_matcher)(match_quality_matrix)
+            matched_idxs, gt_labels_i = retry_if_cuda_oom(self.anchor_matcher)(
+                anchors, gt_boxes_i, ignore_boxes_i, rotated=True
+            )
             # Matching is memory-expensive and may result in CPU tensors. But the result is small
             gt_labels_i = gt_labels_i.to(device=gt_boxes_i.device)
 

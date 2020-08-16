@@ -210,8 +210,10 @@ _C.MODEL.RPN.BOUNDARY_THRESH = -1
 # ==> negative RPN example: 0)
 # Anchors with overlap in between (BG_IOU_THRESHOLD <= IoU < FG_IOU_THRESHOLD)
 # are ignored (-1)
+# Ignore threshold > 0 will set BG_IOU < threshold boxes to ignore flag
 _C.MODEL.RPN.IOU_THRESHOLDS = [0.3, 0.7]
 _C.MODEL.RPN.IOU_LABELS = [0, -1, 1]
+_C.MODEL.RPN.IGNORE_THRESHOLD = -1.0
 # Number of regions per image used to train RPN
 _C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
 # Target fraction of foreground (positive) examples per RPN minibatch
@@ -255,6 +257,7 @@ _C.MODEL.ROI_HEADS.IN_FEATURES = ["res4"]
 # Overlap threshold for an RoI to be considered foreground (if >= IOU_THRESHOLD)
 _C.MODEL.ROI_HEADS.IOU_THRESHOLDS = [0.5]
 _C.MODEL.ROI_HEADS.IOU_LABELS = [0, 1]
+_C.MODEL.ROI_HEADS.IGNORE_THRESHOLD = -1.0
 # RoI minibatch size *per image* (number of regions of interest [ROIs])
 # Total number of RoIs per training minibatch =
 #   ROI_HEADS.BATCH_SIZE_PER_IMAGE * SOLVER.IMS_PER_BATCH
@@ -325,6 +328,7 @@ _C.MODEL.ROI_BOX_CASCADE_HEAD.BBOX_REG_WEIGHTS = (
     (30.0, 30.0, 15.0, 15.0),
 )
 _C.MODEL.ROI_BOX_CASCADE_HEAD.IOUS = (0.5, 0.6, 0.7)
+_C.MODEL.ROI_BOX_CASCADE_HEAD.IGNORE_THRESHOLDS = [-1.0, -1.0, -1.0]
 
 
 # ---------------------------------------------------------------------------- #
@@ -428,8 +432,10 @@ _C.MODEL.RETINANET.NUM_CONVS = 4
 # Anchors with < bg are labeled negative (0)
 # Anchors  with >= bg and < fg are ignored (-1)
 # Anchors with >= fg are labeled positive (1)
+# Ignore threshold > 0 will set BG_IOU < threshold boxes to ignore flag
 _C.MODEL.RETINANET.IOU_THRESHOLDS = [0.4, 0.5]
 _C.MODEL.RETINANET.IOU_LABELS = [0, -1, 1]
+_C.MODEL.RETINANET.IGNORE_THRESHOLD = -1.0
 
 # Prior prob for rare case (i.e. foreground) at the beginning of training.
 # This is used to set the bias for the logits layer of the classifier subnet.

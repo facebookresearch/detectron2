@@ -313,7 +313,7 @@ class Boxes:
 
 # implementation from https://github.com/kuangliu/torchcv/blob/master/torchcv/utils/box.py
 # with slight modifications
-def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
+def pairwise_iou(boxes1: Boxes, boxes2: Boxes, mode="iou") -> torch.Tensor:
     """
     Given two lists of boxes of size N and M,
     compute the IoU (intersection over union)
@@ -322,6 +322,7 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
 
     Args:
         boxes1,boxes2 (Boxes): two `Boxes`. Contains N & M boxes, respectively.
+        mode (bool): 'iou' will return normal pairwise iou, 'iof' will use boxes1 as union area
 
     Returns:
         Tensor: IoU, sized [N,M].
@@ -339,12 +340,15 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     inter = width_height.prod(dim=2)  # [N,M]
     del width_height
 
+    if mode == "iou":
+        ua = area1[:, None] + area2 - inter
+    elif mode == "iof":
+        ua = area1[:, None]
+    else:
+        raise NotImplementedError
+
     # handle empty boxes
-    iou = torch.where(
-        inter > 0,
-        inter / (area1[:, None] + area2 - inter),
-        torch.zeros(1, dtype=inter.dtype, device=inter.device),
-    )
+    iou = torch.where(inter > 0, inter / ua, torch.zeros(1, dtype=inter.dtype, device=inter.device))
     return iou
 
 
