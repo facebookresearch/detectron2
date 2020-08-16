@@ -25,8 +25,13 @@ class DeepLabCE(nn.Module):
             weight=weight, ignore_index=ignore_label, reduction="none"
         )
 
-    def forward(self, logits, labels):
-        pixel_losses = self.criterion(logits, labels).contiguous().view(-1)
+    def forward(self, logits, labels, weights=None):
+        if weights is None:
+            pixel_losses = self.criterion(logits, labels).contiguous().view(-1)
+        else:
+            # Apply per-pixel loss weights.
+            pixel_losses = self.criterion(logits, labels) * weights
+            pixel_losses = pixel_losses.contiguous().view(-1)
         if self.top_k_percent_pixels == 1.0:
             return pixel_losses.mean()
 
