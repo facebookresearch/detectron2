@@ -72,6 +72,7 @@ install_dep_win: &install_dep_win
   - run:
       name: Install Dependencies on Windows
       command: |
+        pip install numpy
         pip install cython
         pip install pycocotools==2.0.2a1
         pip install git+https://github.com/facebookresearch/fvcore
