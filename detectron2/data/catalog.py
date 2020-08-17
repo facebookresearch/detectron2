@@ -2,6 +2,7 @@
 import copy
 import logging
 import types
+from collections import UserDict
 from typing import List
 
 from detectron2.utils.logger import log_first_n
@@ -9,9 +10,9 @@ from detectron2.utils.logger import log_first_n
 __all__ = ["DatasetCatalog", "MetadataCatalog", "Metadata"]
 
 
-class DatasetCatalog(object):
+class _DatasetCatalog(UserDict):
     """
-    A catalog that stores information about the datasets and how to obtain them.
+    A global dictionary that stores information about the datasets and how to obtain them.
 
     It contains a mapping from strings
     (which are names that identify a dataset, e.g. "coco_2014_train")
@@ -25,10 +26,7 @@ class DatasetCatalog(object):
     different datasets, by just using the strings in the config.
     """
 
-    _REGISTERED = {}
-
-    @staticmethod
-    def register(name, func):
+    def register(self, name, func):
         """
         Args:
             name (str): the name that identifies a dataset, e.g. "coco_2014_train".
@@ -36,13 +34,10 @@ class DatasetCatalog(object):
                 It must return the same results if called multiple times.
         """
         assert callable(func), "You must register a function with `DatasetCatalog.register`!"
-        assert name not in DatasetCatalog._REGISTERED, "Dataset '{}' is already registered!".format(
-            name
-        )
-        DatasetCatalog._REGISTERED[name] = func
+        assert name not in self, "Dataset '{}' is already registered!".format(name)
+        self[name] = func
 
-    @staticmethod
-    def get(name):
+    def get(self, name):
         """
         Call the registered function and return its results.
 
@@ -50,41 +45,47 @@ class DatasetCatalog(object):
             name (str): the name that identifies a dataset, e.g. "coco_2014_train".
 
         Returns:
-            list[dict]: dataset annotations.0
+            list[dict]: dataset annotations.
         """
         try:
-            f = DatasetCatalog._REGISTERED[name]
+            f = self[name]
         except KeyError:
             raise KeyError(
                 "Dataset '{}' is not registered! Available datasets are: {}".format(
-                    name, ", ".join(DatasetCatalog._REGISTERED.keys())
+                    name, ", ".join(list(self.keys()))
                 )
             )
         return f()
 
-    @staticmethod
-    def list() -> List[str]:
+    def list(self) -> List[str]:
         """
         List all registered datasets.
 
         Returns:
             list[str]
         """
-        return list(DatasetCatalog._REGISTERED.keys())
+        return list(self.keys())
 
-    @staticmethod
-    def clear():
+    def remove(self, name):
         """
-        Remove all registered dataset.
+        Alias of ``pop``.
         """
-        DatasetCatalog._REGISTERED.clear()
+        self.pop(name)
 
-    @staticmethod
-    def remove(name):
-        """
-        Remove the dataset registered by ``name``.
-        """
-        DatasetCatalog._REGISTERED.pop(name)
+    def __str__(self):
+        return "DatasetCatalog(registered datasets: {})".format(", ".join(self.keys()))
+
+    __repr__ = __str__
+
+
+DatasetCatalog = _DatasetCatalog()
+DatasetCatalog.__doc__ = (
+    _DatasetCatalog.__doc__
+    + """
+    .. automethod:: detectron2.data.catalog.DatasetCatalog.register
+    .. automethod:: detectron2.data.catalog.DatasetCatalog.get
+"""
+)
 
 
 class Metadata(types.SimpleNamespace):
@@ -177,9 +178,10 @@ class Metadata(types.SimpleNamespace):
             return default
 
 
-class MetadataCatalog:
+class _MetadataCatalog(UserDict):
     """
-    MetadataCatalog provides access to "Metadata" of a given dataset.
+    MetadataCatalog is a global dictionary that provides access to
+    :class:`Metadata` of a given dataset.
 
     The metadata associated with a certain name is a singleton: once created, the
     metadata will stay alive and will be returned by future calls to ``get(name)``.
@@ -189,10 +191,7 @@ class MetadataCatalog:
     of the program, e.g.: the class names in COCO.
     """
 
-    _NAME_TO_META = {}
-
-    @staticmethod
-    def get(name):
+    def get(self, name):
         """
         Args:
             name (str): name of a dataset (e.g. coco_2014_train).
@@ -202,32 +201,36 @@ class MetadataCatalog:
             or create an empty one if none is available.
         """
         assert len(name)
-        if name in MetadataCatalog._NAME_TO_META:
-            return MetadataCatalog._NAME_TO_META[name]
-        else:
-            m = MetadataCatalog._NAME_TO_META[name] = Metadata(name=name)
-            return m
+        r = super().get(name, None)
+        if r is None:
+            r = self[name] = Metadata(name=name)
+        return r
 
-    @staticmethod
-    def list():
+    def list(self):
         """
         List all registered metadata.
 
         Returns:
             list[str]: keys (names of datasets) of all registered metadata
         """
-        return list(MetadataCatalog._NAME_TO_META.keys())
+        return list(self.keys())
 
-    @staticmethod
-    def clear():
+    def remove(self, name):
         """
-        Remove all registered metadata.
+        Alias of ``pop``.
         """
-        MetadataCatalog._NAME_TO_META.clear()
+        self.pop(name)
 
-    @staticmethod
-    def remove(name):
-        """
-        Remove the metadata registered by ``name``.
-        """
-        MetadataCatalog._NAME_TO_META.pop(name)
+    def __str__(self):
+        return "MetadataCatalog(registered metadata: {})".format(", ".join(self.keys()))
+
+    __repr__ = __str__
+
+
+MetadataCatalog = _MetadataCatalog()
+MetadataCatalog.__doc__ = (
+    _MetadataCatalog.__doc__
+    + """
+    .. automethod:: detectron2.data.catalog.MetadataCatalog.get
+"""
+)
