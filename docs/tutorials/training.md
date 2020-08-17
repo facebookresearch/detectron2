@@ -31,10 +31,19 @@ It includes the following two instantiations:
 To customize a `DefaultTrainer`:
 
 1. For simple customizations (e.g. change optimizer, evaluator, LR scheduler, data loader, etc.), overwrite [its methods](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer) in a subclass, just like [tools/train_net.py](../../tools/train_net.py).
-2. Using a trainer+hook system means there will always be some non-standard behaviors that cannot be supported, especially in research.
-   For more complicated tasks during training, see if
-   [the hook system](../modules/engine.html#detectron2.engine.HookBase) can support it, or
-   start from [tools/plain_train_net.py](../../tools/plain_train_net.py) to implement the training logic manually.
+2. For extra tasks during training, check the
+   [hook system](../modules/engine.html#detectron2.engine.HookBase) to see if it's supported.
+
+   As an example, to print hello during training:
+   ```python
+   class HelloHook(HookBase):
+     def after_step(self):
+       if self.trainer.iter % 100 == 0:
+         print(f"Hello at iteration {self.trainer.iter}!")
+   ```
+3. Using a trainer+hook system means there will always be some non-standard behaviors that cannot be supported, especially in research.
+   For this reason, we intentionally keep the trainer & hook system minimal, rather than powerful.
+   If anything cannot be achieved by such a system, it's eaiser to start from [tools/plain_train_net.py](../../tools/plain_train_net.py) to implement custom training logic manually.
 
 ### Logging of Metrics
 

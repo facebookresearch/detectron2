@@ -221,7 +221,7 @@ class DefaultPredictor:
 class DefaultTrainer(SimpleTrainer):
     """
     A trainer with default training logic.
-    It is a subclass of `SimpleTrainer` which instantiates everything needed from the
+    It is a subclass of :class:`SimpleTrainer` and instantiates everything needed from the
     config. It does the following:
 
     1. Create model, optimizer, scheduler, dataloader from the given config.
@@ -235,7 +235,7 @@ class DefaultTrainer(SimpleTrainer):
     may easily become invalid in a new research. In fact, any assumptions beyond those made in the
     :class:`SimpleTrainer` are too much for research.
 
-    The code of this class has been annotated about restrictive assumptions it mades.
+    The code of this class has been annotated about restrictive assumptions it makes.
     When they do not work for you, you're encouraged to:
 
     1. Overwrite methods of this class, OR:
@@ -243,7 +243,9 @@ class DefaultTrainer(SimpleTrainer):
        nothing else. You can then add your own hooks if needed. OR:
     3. Write your own training loop similar to `tools/plain_train_net.py`.
 
-    Also note that the behavior of this class, like other functions/classes in
+    See the :doc:`/tutorials/training` tutorials for more details.
+
+    Note that the behavior of this class, like other functions/classes in
     this file, is not stable, since it is meant to represent the "common default behavior".
     It is only guaranteed to work well with the standard models and training workflow in detectron2.
     To obtain more stable behavior, write your own training logic with other public APIs.

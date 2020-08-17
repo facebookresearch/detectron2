@@ -35,15 +35,20 @@ In this code, we implement a new backbone following the interface of the
 [Backbone](../modules/modeling.html#detectron2.modeling.Backbone) class,
 and register it into the [BACKBONE_REGISTRY](../modules/modeling.html#detectron2.modeling.BACKBONE_REGISTRY)
 which requires subclasses of `Backbone`.
-After importing this code, you can use `cfg.MODEL.BACKBONE.NAME = 'ToyBackbone'` in your config.
-`build_model(cfg)` will find `ToyBackbone` through the name and then construct `ToyBackbone`.
+After importing this code, detectron2 can link the name of the class to its implementation. Therefore you can write the following code:
+
+```python
+cfg = ...   # read a config
+cfg.MODEL.BACKBONE.NAME = 'ToyBackbone'   # or set it in the config file
+model = build_model(cfg)  # it will find `ToyBackbone` defined above
+```
 
 As another example, to add new abilities to the ROI heads in the Generalized R-CNN meta-architecture,
 you can implement a new
 [ROIHeads](../modules/modeling.html#detectron2.modeling.ROIHeads) subclass and put it in the `ROI_HEADS_REGISTRY`.
-See [densepose in detectron2](../../projects/DensePose)
-and [meshrcnn](https://github.com/facebookresearch/meshrcnn)
-for examples that implement new ROIHeads to perform new tasks.
+[DensePose](../../projects/DensePose)
+and [MeshRCNN](https://github.com/facebookresearch/meshrcnn)
+are two examples that implement new ROIHeads to perform new tasks.
 And [projects/](../../projects/)
 contains more examples that implement different architectures.
 
@@ -51,10 +56,10 @@ A complete list of registries can be found in [API documentation](../modules/mod
 You can register components in these registries to customize different parts of a model, or the
 entire model.
 
-
 ## Construct Models with Explicit Arguments
 
 Registry is a bridge to connect names in config files to the actual code.
+They are meant to cover a few main components that users frequently need to replace.
 However, the capability of a text-based config file is sometimes limited and
 some deeper customization may be available only through writing code.
 
@@ -67,14 +72,15 @@ As an example, to use __custom loss function__ in the box head of a Faster R-CNN
 1. Losses are currently computed in [FastRCNNOutputLayers](../modules/modeling.html#detectron2.modeling.FastRCNNOutputLayers).
    We need to implement a variant or a subclass of it, with custom loss functions, named  `MyRCNNOutput`.
 2. Call `StandardROIHeads` with `box_predictor=MyRCNNOutput()` argument instead of the builtin `FastRCNNOutputLayers`.
-   If all other arguments should stay unchanged, this can be easily achieved by using the [configurable __init__](../modules/config.html#detectron2.config.configurable) mechanism:
+   If all other arguments should stay unchanged, this can be easily achieved by using the [configurable `__init__`](../modules/config.html#detectron2.config.configurable) mechanism:
 
    ```python
    roi_heads = StandardROIHeads(
      cfg, backbone.output_shape(),
-     box_predictor=MyRCNNOutput())
+     box_predictor=MyRCNNOutput(...)
+   )
    ```
-3. (optional) In order to enable this new model from a config file, registration is needed:
+3. (optional) If we want to enable this new model from a config file, registration is needed:
    ```python
    @ROI_HEADS_REGISTRY.register()
    class MyStandardROIHeads(StandardROIHeads):

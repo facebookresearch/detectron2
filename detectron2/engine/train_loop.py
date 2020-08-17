@@ -38,8 +38,9 @@ class HookBase:
         hook.after_train()
 
     Notes:
-        1. In the hook method, users can access `self.trainer` to access more
-           properties about the context (e.g., current iteration).
+        1. In the hook method, users can access ``self.trainer`` to access more
+           properties about the context (e.g., model, current iteration, or config
+           if using :class:`DefaultTrainer`).
 
         2. A hook that does something in :meth:`before_step` can often be
            implemented equivalently in :meth:`after_step`.
@@ -52,8 +53,8 @@ class HookBase:
            function properly.
 
     Attributes:
-        trainer: A weak reference to the trainer object. Set by the trainer when the hook is
-            registered.
+        trainer (TrainerBase): A weak reference to the trainer object. Set by the trainer
+            when the hook is registered.
     """
 
     def before_train(self):
