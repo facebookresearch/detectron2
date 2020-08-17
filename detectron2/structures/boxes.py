@@ -311,6 +311,33 @@ class Boxes:
         yield from self.tensor
 
 
+def intersection_cacl(
+    boxes1: Boxes, boxes2: Boxes
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Given two lists of boxes of size N and M,
+    compute their independent boxes areas and intersection areas.
+    Args:
+        boxes1,boxes2 (Boxes): two `Boxes`. Contains N & M boxes, respectively.
+
+    Returns:
+        Tensor: intersection, sized [N,M].
+        Tensor: area1, area2, sized N and M
+    """
+    area1 = boxes1.area()  # [N]
+    area2 = boxes2.area()  # [M]
+
+    boxes1, boxes2 = boxes1.tensor, boxes2.tensor
+    width_height = torch.min(boxes1[:, None, 2:], boxes2[:, 2:]) - torch.max(
+        boxes1[:, None, :2], boxes2[:, :2]
+    )  # [N,M,2]
+
+    width_height.clamp_(min=0)  # [N,M,2]
+    intersection = width_height.prod(dim=2)  # [N,M]
+    del width_height
+    return intersection, area1, area2
+
+
 # implementation from https://github.com/kuangliu/torchcv/blob/master/torchcv/utils/box.py
 # with slight modifications
 def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
@@ -326,18 +353,7 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     Returns:
         Tensor: IoU, sized [N,M].
     """
-    area1 = boxes1.area()
-    area2 = boxes2.area()
-
-    boxes1, boxes2 = boxes1.tensor, boxes2.tensor
-
-    width_height = torch.min(boxes1[:, None, 2:], boxes2[:, 2:]) - torch.max(
-        boxes1[:, None, :2], boxes2[:, :2]
-    )  # [N,M,2]
-
-    width_height.clamp_(min=0)  # [N,M,2]
-    inter = width_height.prod(dim=2)  # [N,M]
-    del width_height
+    inter, area1, area2 = intersection_cacl(boxes1, boxes2)
 
     # handle empty boxes
     iou = torch.where(
@@ -346,6 +362,25 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
         torch.zeros(1, dtype=inter.dtype, device=inter.device),
     )
     return iou
+
+
+def pairwise_ioa(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
+    """
+    Similar to pariwise_iou but compute the IoA (intersection over boxes2 area).
+
+    Args:
+        boxes1,boxes2 (Boxes): two `Boxes`. Contains N & M boxes, respectively.
+
+    Returns:
+        Tensor: IoA, sized [N,M].
+    """
+    inter, _, area2 = intersection_cacl(boxes1, boxes2)
+
+    # handle empty boxes
+    ioa = torch.where(
+        inter > 0, inter / area2, torch.zeros(1, dtype=inter.dtype, device=inter.device)
+    )
+    return ioa
 
 
 def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
