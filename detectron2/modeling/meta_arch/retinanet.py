@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import logging
 import math
 import numpy as np
 from typing import List
@@ -8,7 +9,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.data.detection_utils import convert_image_to_rgb
-from detectron2.layers import ShapeSpec, batched_nms, cat
+from detectron2.layers import ShapeSpec, batched_nms, cat, get_norm
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 
@@ -396,16 +397,25 @@ class RetinaNetHead(nn.Module):
     def __init__(self, cfg, input_shape: List[ShapeSpec]):
         super().__init__()
         # fmt: off
-        in_channels      = input_shape[0].channels
-        num_classes      = cfg.MODEL.RETINANET.NUM_CLASSES
-        num_convs        = cfg.MODEL.RETINANET.NUM_CONVS
-        prior_prob       = cfg.MODEL.RETINANET.PRIOR_PROB
-        num_anchors      = build_anchor_generator(cfg, input_shape).num_cell_anchors
+        in_channels = input_shape[0].channels
+        num_classes = cfg.MODEL.RETINANET.NUM_CLASSES
+        num_convs   = cfg.MODEL.RETINANET.NUM_CONVS
+        prior_prob  = cfg.MODEL.RETINANET.PRIOR_PROB
+        norm        = cfg.MODEL.RETINANET.NORM
+        # Disabling shared norm causes backwards compatibility issues
+        # Hardcode to true for now
+        # shared_norm = cfg.MODEL.RETINANET.SHARED_NORM
+
+        num_anchors = build_anchor_generator(cfg, input_shape).num_cell_anchors
         # fmt: on
         assert (
             len(set(num_anchors)) == 1
         ), "Using different number of anchors between levels is not currently supported!"
         num_anchors = num_anchors[0]
+
+        if norm == "BN" or norm == "SyncBN":
+            logger = logging.getLogger(__name__)
+            logger.warn("Shared norm does not work well for BN, SyncBN, expect poor results")
 
         cls_subnet = []
         bbox_subnet = []
@@ -413,10 +423,14 @@ class RetinaNetHead(nn.Module):
             cls_subnet.append(
                 nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
             )
+            if norm:
+                cls_subnet.append(get_norm(norm, in_channels))
             cls_subnet.append(nn.ReLU())
             bbox_subnet.append(
                 nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
             )
+            if norm:
+                bbox_subnet.append(get_norm(norm, in_channels))
             bbox_subnet.append(nn.ReLU())
 
         self.cls_subnet = nn.Sequential(*cls_subnet)

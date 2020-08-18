@@ -452,6 +452,10 @@ _C.MODEL.RETINANET.SMOOTH_L1_LOSS_BETA = 0.1
 # Options are: "smooth_l1", "giou"
 _C.MODEL.RETINANET.BBOX_REG_LOSS_TYPE = "smooth_l1"
 
+# One of BN, SyncBN, FrozenBN, GN
+# Only supports GN until unshared norm is implemented
+_C.MODEL.RETINANET.NORM = ""
+
 
 # ---------------------------------------------------------------------------- #
 # ResNe[X]t options (ResNets = {ResNet, ResNeXt}
