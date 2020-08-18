@@ -449,6 +449,8 @@ _C.MODEL.RETINANET.BBOX_REG_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 _C.MODEL.RETINANET.FOCAL_LOSS_GAMMA = 2.0
 _C.MODEL.RETINANET.FOCAL_LOSS_ALPHA = 0.25
 _C.MODEL.RETINANET.SMOOTH_L1_LOSS_BETA = 0.1
+# Options are: "smooth_l1", "giou"
+_C.MODEL.RETINANET.BBOX_REG_LOSS_TYPE = "smooth_l1"
 
 
 # ---------------------------------------------------------------------------- #
