@@ -32,6 +32,7 @@ class RPNTest(unittest.TestCase):
         gt_boxes = torch.tensor([[1, 1, 3, 3], [2, 2, 6, 6]], dtype=torch.float32)
         gt_instances = Instances(image_shape)
         gt_instances.gt_boxes = Boxes(gt_boxes)
+        gt_instances.ignore_list = torch.tensor([0, 0]).to(dtype=torch.int64)
         with EventStorage():  # capture events in a new storage to discard them
             proposals, proposal_losses = proposal_generator(
                 images, features, [gt_instances[0], gt_instances[1]]
@@ -122,6 +123,7 @@ class RPNTest(unittest.TestCase):
         gt_boxes = torch.tensor([[2, 2, 2, 2, 0], [4, 4, 4, 4, 0]], dtype=torch.float32)
         gt_instances = Instances(image_shape)
         gt_instances.gt_boxes = RotatedBoxes(gt_boxes)
+        gt_instances.ignore_list = torch.tensor([0, 0]).to(dtype=torch.int64)
         with EventStorage():  # capture events in a new storage to discard them
             proposals, proposal_losses = proposal_generator(
                 images, features, [gt_instances[0], gt_instances[1]]

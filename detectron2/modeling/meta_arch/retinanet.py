@@ -9,7 +9,7 @@ from torch.nn import functional as F
 
 from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.layers import ShapeSpec, batched_nms, cat
-from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
+from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
 
 from ..anchor_generator import build_anchor_generator
@@ -72,6 +72,7 @@ class RetinaNet(nn.Module):
             cfg.MODEL.RETINANET.IOU_THRESHOLDS,
             cfg.MODEL.RETINANET.IOU_LABELS,
             allow_low_quality_matches=True,
+            ignore_threshold=cfg.MODEL.RETINANET.IGNORE_THRESHOLD,
         )
 
         self.register_buffer("pixel_mean", torch.Tensor(cfg.MODEL.PIXEL_MEAN).view(-1, 1, 1))
@@ -112,7 +113,9 @@ class RetinaNet(nn.Module):
         img = batched_inputs[image_index]["image"]
         img = convert_image_to_rgb(img.permute(1, 2, 0), self.input_format)
         v_gt = Visualizer(img, None)
-        v_gt = v_gt.overlay_instances(boxes=batched_inputs[image_index]["instances"].gt_boxes)
+        v_gt = v_gt.overlay_instances(
+            boxes=batched_inputs[image_index]["instances"].get_process_match_data().gt_boxes
+        )
         anno_img = v_gt.get_image()
         processed_results = detector_postprocess(results[image_index], img.shape[0], img.shape[1])
         predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
@@ -260,13 +263,14 @@ class RetinaNet(nn.Module):
         gt_labels = []
         matched_gt_boxes = []
         for gt_per_image in gt_instances:
-            match_quality_matrix = pairwise_iou(gt_per_image.gt_boxes, anchors)
-            matched_idxs, anchor_labels = self.anchor_matcher(match_quality_matrix)
-            del match_quality_matrix
+            gt_per_image = gt_per_image.get_process_match_data()
+            gt_boxes = gt_per_image.gt_boxes
+            ignore_boxes = gt_per_image.ignore_boxes
+            matched_idxs, anchor_labels = self.anchor_matcher(anchors, gt_boxes, ignore_boxes)
 
             if len(gt_per_image) > 0:
-                matched_gt_boxes_i = gt_per_image.gt_boxes.tensor[matched_idxs]
-
+                # only non ignore object used
+                matched_gt_boxes_i = gt_boxes.tensor[matched_idxs]
                 gt_labels_i = gt_per_image.gt_classes[matched_idxs]
                 # Anchors with label 0 are treated as background.
                 gt_labels_i[anchor_labels == 0] = self.num_classes

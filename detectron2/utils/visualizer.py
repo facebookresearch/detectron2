@@ -533,6 +533,7 @@ class Visualizer:
                 "{}".format(i) + ("|crowd" if a.get("iscrowd", 0) else "")
                 for i, a in zip(labels, annos)
             ]
+            labels = [i if a.get("ignore", 0) == 0 else "ignore" for i, a in zip(labels, annos)]
             self.overlay_instances(
                 labels=labels, boxes=boxes, masks=masks, keypoints=keypts, assigned_colors=colors
             )

@@ -3,8 +3,10 @@ MODEL:
   RPN:
     PRE_NMS_TOPK_TEST: 6000
     POST_NMS_TOPK_TEST: 1000
+    IGNORE_THRESHOLD: -1.0
   ROI_HEADS:
     NAME: "Res5ROIHeads"
+    IGNORE_THRESHOLD: -1.0
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)

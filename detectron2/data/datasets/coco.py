@@ -129,7 +129,9 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
     dataset_dicts = []
 
-    ann_keys = ["iscrowd", "bbox", "keypoints", "category_id"] + (extra_annotation_keys or [])
+    ann_keys = ["ignore", "iscrowd", "bbox", "keypoints", "category_id"] + (
+        extra_annotation_keys or []
+    )
 
     num_instances_without_valid_segmentation = 0
 
@@ -150,8 +152,6 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             # actually contains bugs that, together with certain ways of using COCO API,
             # can trigger this assertion.
             assert anno["image_id"] == image_id
-
-            assert anno.get("ignore", 0) == 0, '"ignore" in COCO json file is not supported.'
 
             obj = {key: anno[key] for key in ann_keys if key in anno}
 
@@ -183,6 +183,10 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             obj["bbox_mode"] = BoxMode.XYWH_ABS
             if id_map:
                 obj["category_id"] = id_map[obj["category_id"]]
+
+            # support "ignore" in COCO json
+            obj["ignore"] = obj.get("ignore", 0)
+
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)

@@ -196,17 +196,18 @@ class FastRCNNOutputs:
         """
         Log the accuracy metrics to EventStorage.
         """
+        valid_mask = self.gt_classes >= 0
         num_instances = self.gt_classes.numel()
         pred_classes = self.pred_class_logits.argmax(dim=1)
         bg_class_ind = self.pred_class_logits.shape[1] - 1
 
-        fg_inds = (self.gt_classes >= 0) & (self.gt_classes < bg_class_ind)
+        fg_inds = valid_mask & (self.gt_classes < bg_class_ind)
         num_fg = fg_inds.nonzero().numel()
         fg_gt_classes = self.gt_classes[fg_inds]
         fg_pred_classes = pred_classes[fg_inds]
 
         num_false_negative = (fg_pred_classes == bg_class_ind).nonzero().numel()
-        num_accurate = (pred_classes == self.gt_classes).nonzero().numel()
+        num_accurate = (pred_classes[valid_mask] == self.gt_classes[valid_mask]).nonzero().numel()
         fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
 
         storage = get_event_storage()
@@ -227,7 +228,10 @@ class FastRCNNOutputs:
             return 0.0 * self.pred_class_logits.sum()
         else:
             self._log_accuracy()
-            return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
+            valid_mask = self.gt_classes >= 0
+            return F.cross_entropy(
+                self.pred_class_logits[valid_mask], self.gt_classes[valid_mask], reduction="mean"
+            )
 
     def box_reg_loss(self):
         """

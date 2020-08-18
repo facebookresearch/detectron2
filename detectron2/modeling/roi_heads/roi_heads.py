@@ -8,7 +8,7 @@ from torch import nn
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, nonzero_tuple
-from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
+from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
@@ -175,6 +175,7 @@ class ROIHeads(torch.nn.Module):
                 cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS,
                 cfg.MODEL.ROI_HEADS.IOU_LABELS,
                 allow_low_quality_matches=False,
+                ignore_threshold=cfg.MODEL.ROI_HEADS.IGNORE_THRESHOLD,
             ),
         }
 
@@ -263,11 +264,14 @@ class ROIHeads(torch.nn.Module):
         num_fg_samples = []
         num_bg_samples = []
         for proposals_per_image, targets_per_image in zip(proposals, targets):
+            targets_per_image = targets_per_image.get_process_match_data()
             has_gt = len(targets_per_image) > 0
-            match_quality_matrix = pairwise_iou(
-                targets_per_image.gt_boxes, proposals_per_image.proposal_boxes
+            targets_gt_boxes = targets_per_image.gt_boxes
+            targets_ignore_boxes = targets_per_image.ignore_boxes
+
+            matched_idxs, matched_labels = self.proposal_matcher(
+                proposals_per_image.proposal_boxes, targets_gt_boxes, targets_ignore_boxes
             )
-            matched_idxs, matched_labels = self.proposal_matcher(match_quality_matrix)
             sampled_idxs, gt_classes = self._sample_proposals(
                 matched_idxs, matched_labels, targets_per_image.gt_classes
             )
@@ -294,7 +298,9 @@ class ROIHeads(torch.nn.Module):
                 proposals_per_image.gt_boxes = gt_boxes
 
             num_bg_samples.append((gt_classes == self.num_classes).sum().item())
-            num_fg_samples.append(gt_classes.numel() - num_bg_samples[-1])
+            num_fg_samples.append(
+                gt_classes.numel() - num_bg_samples[-1] - (gt_classes == -1).sum().item()
+            )
             proposals_with_gt.append(proposals_per_image)
 
         # Log the number of fg/bg samples that are selected for training ROI heads

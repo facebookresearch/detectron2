@@ -66,11 +66,14 @@ class Instances:
         The length of `value` must be the number of instances,
         and must agree with other existing fields in this object.
         """
-        data_len = len(value)
-        if len(self._fields):
-            assert (
-                len(self) == data_len
-            ), "Adding a field of length {} to a Instances of length {}".format(data_len, len(self))
+        if name != "ignore_boxes":
+            data_len = len(value)
+            if len(self._fields):
+                assert (
+                    len(self) == data_len
+                ), "Adding a field of length {} to a Instances of length {}".format(
+                    data_len, len(self)
+                )
         self._fields[name] = value
 
     def has(self, name: str) -> bool:
@@ -100,6 +103,31 @@ class Instances:
         Modifying the returned dict will modify this instance.
         """
         return self._fields
+
+    def get_process_match_data(self) -> Dict[str, Any]:
+        """
+        Returns:
+            dict: a dict which maps name (str) to data of the fields
+            process ignore label to get correspoding data
+        """
+        if self._fields.get("ignore_list") is None:
+            return self._fields
+
+        new_instance = Instances(self._image_size)
+        ignore_list = self._fields["ignore_list"]
+        valid_index = (ignore_list == 0).nonzero().view(-1)
+        ignore_index = (ignore_list == 1).nonzero().view(-1)
+        keys = self._fields.keys()
+        if "gt_boxes" in keys:
+            new_instance.gt_boxes = self._fields["gt_boxes"][valid_index]
+            new_instance.ignore_boxes = self._fields["gt_boxes"][ignore_index]
+        if "gt_classes" in keys:
+            new_instance.gt_classes = self._fields["gt_classes"][valid_index]
+        if "gt_masks" in keys:
+            new_instance.gt_masks = self._fields["gt_masks"][valid_index]
+        if "gt_keypoints" in keys:
+            new_instance.gt_keypoints = self._fields["gt_keypoints"][valid_index]
+        return new_instance
 
     # Tensor-like methods
     def to(self, *args: Any, **kwargs: Any) -> "Instances":
@@ -135,8 +163,9 @@ class Instances:
         return ret
 
     def __len__(self) -> int:
-        for v in self._fields.values():
-            return len(v)
+        for k, v in self._fields.items():
+            if k != "ignore_boxes":
+                return len(v)
         raise NotImplementedError("Empty Instances does not support __len__!")
 
     def __iter__(self):

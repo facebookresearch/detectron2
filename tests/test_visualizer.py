@@ -49,6 +49,7 @@ class TestVisualizer(unittest.TestCase):
                     "bbox_mode": BoxMode.XYWH_ABS,
                     "category_id": 0,
                     "iscrowd": 1,
+                    "ignore": 0,
                     "segmentation": {
                         "counts": "_jh52m?2N2N2N2O100O10O001N1O2MceP2",
                         "size": [512, 512],

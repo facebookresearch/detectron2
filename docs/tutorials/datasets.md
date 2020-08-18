@@ -89,6 +89,7 @@ and the required fields vary based on what the dataloader or the task needs (see
     from our standard format. Detectron2 adds 0.5 to COCO keypoint coordinates to convert them from discrete
     pixel indices to floating point coordinates.)
   + `iscrowd`: 0 (default) or 1. Whether this instance is labeled as COCO's "crowd
+  + `ignore`: 0 (default) or 1. Whether this instance is labeled as COCO's "ignore, ignore boxes will be used to set ignore areas in image for matching fg and bg.
     region". Don't include this field if you don't know what it means.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 	Required by semantic segmentation task.

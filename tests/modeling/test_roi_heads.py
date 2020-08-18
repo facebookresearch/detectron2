@@ -42,11 +42,13 @@ class ROIHeadsTest(unittest.TestCase):
         gt_instance0.gt_boxes = Boxes(gt_boxes0)
         gt_instance0.gt_classes = torch.tensor([2, 1])
         gt_instance0.gt_masks = BitMasks(torch.rand((2,) + image_shape) > 0.5)
+        gt_instance0.ignore_list = torch.tensor([0, 0])
         gt_boxes1 = torch.tensor([[1, 5, 2, 8], [7, 3, 10, 5]], dtype=torch.float32)
         gt_instance1 = Instances(image_shape)
         gt_instance1.gt_boxes = Boxes(gt_boxes1)
         gt_instance1.gt_classes = torch.tensor([1, 2])
         gt_instance1.gt_masks = BitMasks(torch.rand((2,) + image_shape) > 0.5)
+        gt_instance1.ignore_list = torch.tensor([0, 0])
         gt_instances = [gt_instance0, gt_instance1]
 
         proposal_generator = build_proposal_generator(cfg, feature_shape)
@@ -100,10 +102,12 @@ class ROIHeadsTest(unittest.TestCase):
         gt_instance0 = Instances(image_shape)
         gt_instance0.gt_boxes = RotatedBoxes(gt_boxes0)
         gt_instance0.gt_classes = torch.tensor([2, 1])
+        gt_instance0.ignore_list = torch.tensor([0, 0])
         gt_boxes1 = torch.tensor([[1.5, 5.5, 1, 3, 0], [8.5, 4, 3, 2, -50]], dtype=torch.float32)
         gt_instance1 = Instances(image_shape)
         gt_instance1.gt_boxes = RotatedBoxes(gt_boxes1)
         gt_instance1.gt_classes = torch.tensor([1, 2])
+        gt_instance1.ignore_list = torch.tensor([0, 0])
         gt_instances = [gt_instance0, gt_instance1]
 
         proposal_generator = build_proposal_generator(cfg, feature_shape)
