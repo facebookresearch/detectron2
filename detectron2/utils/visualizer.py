@@ -521,6 +521,7 @@ class Visualizer:
             boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
 
             labels = [x["category_id"] for x in annos]
+            ignore_list = [x.get("ignore", 0) for x in annos]
             colors = None
             if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
                 colors = [
@@ -528,7 +529,9 @@ class Visualizer:
                 ]
             names = self.metadata.get("thing_classes", None)
             if names:
-                labels = [names[i] for i in labels]
+                labels = [
+                    names[i] if flag == 0 else "ignore" for flag, i in zip(ignore_list, labels)
+                ]
             labels = [
                 "{}".format(i) + ("|crowd" if a.get("iscrowd", 0) else "")
                 for i, a in zip(labels, annos)

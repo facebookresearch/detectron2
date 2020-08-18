@@ -30,7 +30,7 @@ class Instances:
        or a binary mask of length ``num_instances``
     """
 
-    def __init__(self, image_size: Tuple[int, int], **kwargs: Any):
+    def __init__(self, image_size: Tuple[int, int], name: str = "default", **kwargs: Any):
         """
         Args:
             image_size (height, width): the spatial size of the image.
@@ -40,6 +40,9 @@ class Instances:
         self._fields: Dict[str, Any] = {}
         for k, v in kwargs.items():
             self.set(k, v)
+        # for pump data by Instances
+        self._extra_instance = {}
+        self._name = name
 
     @property
     def image_size(self) -> Tuple[int, int]:
@@ -101,6 +104,29 @@ class Instances:
         """
         return self._fields
 
+    def store_extra_data(self, data: Any) -> None:
+        """
+        Store another Instances class into itself for pump data.
+        """
+        assert isinstance(data, Instances)
+        if data._name in self._extra_instance.keys():
+            raise ValueError("already store {} in extra data".format(data._name))
+        self._extra_instance[data._name] = data
+
+    def obtain_extra_data(self, name: str) -> "Instances":
+        """
+        Returns:
+            Instances: return stored Instances by name.
+        """
+        return self._extra_instance.get(name)
+
+    def apply_func_to_extra_data(self, func: Any) -> None:
+        """
+        Apply given function to process Instances to stored instances.
+        """
+        for k, v in self._extra_instance.items():
+            self._extra_instance[k] = func(v)
+
     # Tensor-like methods
     def to(self, *args: Any, **kwargs: Any) -> "Instances":
         """
@@ -132,6 +158,7 @@ class Instances:
         ret = Instances(self._image_size)
         for k, v in self._fields.items():
             ret.set(k, v[item])
+        ret._extra_instance = self._extra_instance
         return ret
 
     def __len__(self) -> int:

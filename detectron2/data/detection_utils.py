@@ -373,13 +373,21 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
             "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
-    boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
     target = Instances(image_size)
-    target.gt_boxes = Boxes(boxes)
+    ignore_target = Instances(image_size, name="ignore")
 
-    classes = [obj["category_id"] for obj in annos]
-    classes = torch.tensor(classes, dtype=torch.int64)
-    target.gt_classes = classes
+    ignore_list = torch.tensor([obj.get("ignore", 0) for obj in annos], dtype=torch.int64)
+    classes = torch.tensor([obj["category_id"] for obj in annos], dtype=torch.int64)
+    assert len(classes) == len(ignore_list)
+    gt_index = (ignore_list == 0).nonzero().view(-1)
+    ignore_index = (ignore_list == 1).nonzero().view(-1)
+
+    boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+    target.gt_boxes = Boxes(boxes)[gt_index]
+    ignore_target.gt_boxes = Boxes(boxes)[ignore_index]
+
+    target.gt_classes = classes[gt_index]
+    ignore_target.gt_classes = classes[ignore_index]
 
     if len(annos) and "segmentation" in annos[0]:
         segms = [obj["segmentation"] for obj in annos]
@@ -413,11 +421,15 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
             masks = BitMasks(
                 torch.stack([torch.from_numpy(np.ascontiguousarray(x)) for x in masks])
             )
-        target.gt_masks = masks
+        target.gt_masks = masks[gt_index]
+        ignore_target.gt_masks = masks[ignore_index]
 
     if len(annos) and "keypoints" in annos[0]:
         kpts = [obj.get("keypoints", []) for obj in annos]
-        target.gt_keypoints = Keypoints(kpts)
+        target.gt_keypoints = Keypoints(kpts)[gt_index]
+        ignore_target.gt_keypoints = Keypoints(kpts)[ignore_index]
+
+    target.store_extra_data(ignore_target)
 
     return target
 
@@ -439,14 +451,18 @@ def annotations_to_instances_rotated(annos, image_size):
             if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
-    boxes = [obj["bbox"] for obj in annos]
     target = Instances(image_size)
-    boxes = target.gt_boxes = RotatedBoxes(boxes)
-    boxes.clip(image_size)
 
-    classes = [obj["category_id"] for obj in annos]
-    classes = torch.tensor(classes, dtype=torch.int64)
-    target.gt_classes = classes
+    ignore_list = torch.tensor([obj.get("ignore", 0) for obj in annos], dtype=torch.int64)
+    classes = torch.tensor([obj["category_id"] for obj in annos], dtype=torch.int64)
+    assert len(classes) == len(ignore_list)
+    gt_index = (ignore_list == 0).nonzero().view(-1)
+
+    boxes = [obj["bbox"] for obj in annos]
+    target.gt_boxes = RotatedBoxes(boxes)[gt_index]
+    target.gt_boxes.clip(image_size)
+
+    target.gt_classes = classes[gt_index]
 
     return target
 

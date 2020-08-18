@@ -181,5 +181,7 @@ class DatasetMapper:
             # the intersection of original bounding box and the cropping box.
             if self.recompute_boxes:
                 instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
+            instances.apply_func_to_extra_data(utils.filter_empty_instances)
             dataset_dict["instances"] = utils.filter_empty_instances(instances)
+
         return dataset_dict
