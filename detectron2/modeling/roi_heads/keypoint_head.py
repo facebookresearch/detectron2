@@ -127,7 +127,8 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
 
 class BaseKeypointRCNNHead(nn.Module):
     """
-    Implement the basic Keypoint R-CNN losses and inference logic described in :paper:`Mask R-CNN`.
+    Implement the basic Keypoint R-CNN losses and inference logic described in
+    Sec. 5 of :paper:`Mask R-CNN`.
     """
 
     @configurable
@@ -208,6 +209,7 @@ class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead):
     """
     A standard keypoint head containing a series of 3x3 convs, followed by
     a transpose convolution and bilinear interpolation for upsampling.
+    It is described in Sec. 5 of :paper:`Mask R-CNN`.
     """
 
     @configurable

@@ -175,7 +175,11 @@ class Augmentation(metaclass=ABCMeta):
                 default = param.default
                 if default is attr:
                     continue
-                argstr.append("{}={}".format(name, pprint.pformat(attr)))
+                attr_str = pprint.pformat(attr)
+                if "\n" in attr_str:
+                    # don't show it if pformat decides to use >1 lines
+                    attr_str = "..."
+                argstr.append("{}={}".format(name, attr_str))
             return "{}({})".format(classname, ", ".join(argstr))
         except AssertionError:
             return super().__repr__()
