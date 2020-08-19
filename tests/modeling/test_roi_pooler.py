@@ -5,6 +5,7 @@ import torch
 
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.structures import Boxes, RotatedBoxes
+from detectron2.utils.env import TORCH_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,59 @@ class TestROIPooler(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_roialignv2_roialignrotated_match_cuda(self):
         self._test_roialignv2_roialignrotated_match(device="cuda")
+
+    def _test_scriptability(self, device):
+        pooler_resolution = 14
+        canonical_level = 4
+        canonical_scale_factor = 2 ** canonical_level
+        pooler_scales = (1.0 / canonical_scale_factor,)
+        sampling_ratio = 0
+
+        N, C, H, W = 2, 4, 10, 8
+        N_rois = 10
+        std = 11
+        mean = 0
+        feature = (torch.rand(N, C, H, W) - 0.5) * 2 * std + mean
+
+        features = [feature.to(device)]
+
+        rois = []
+        for _ in range(N):
+            boxes = self._rand_boxes(
+                num_boxes=N_rois, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
+            )
+
+            rois.append(Boxes(boxes).to(device))
+
+        roialignv2_pooler = ROIPooler(
+            output_size=pooler_resolution,
+            scales=pooler_scales,
+            sampling_ratio=sampling_ratio,
+            pooler_type="ROIAlignV2",
+        )
+
+        roialignv2_out = roialignv2_pooler(features, rois)
+        scripted_roialignv2_out = torch.jit.script(roialignv2_pooler)(features, rois)
+        self.assertTrue(torch.equal(roialignv2_out, scripted_roialignv2_out))
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_scriptability_cpu(self):
+        self._test_scriptability(device="cpu")
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def test_scriptability_gpu(self):
+        self._test_scriptability(device="cuda")
+
+    def test_no_images(self):
+        N, C, H, W = 0, 32, 32, 32
+        feature = torch.rand(N, C, H, W) - 0.5
+        features = [feature]
+        pooler = ROIPooler(
+            output_size=14, scales=(1.0,), sampling_ratio=0.0, pooler_type="ROIAlignV2"
+        )
+        output = pooler.forward(features, [])
+        self.assertEqual(output.shape, (0, C, 14, 14))
 
 
 if __name__ == "__main__":

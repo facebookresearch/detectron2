@@ -145,9 +145,10 @@ class IterationTimer(HookBase):
 
 class PeriodicWriter(HookBase):
     """
-    Write events to EventStorage periodically.
+    Write events to EventStorage (by calling ``writer.write()``) periodically.
 
     It is executed every ``period`` iterations and after the last iteration.
+    Note that ``period`` does not affect how data is smoothed by each writer.
     """
 
     def __init__(self, writers, period=20):
@@ -237,9 +238,7 @@ class AutogradProfiler(HookBase):
     A hook which runs `torch.autograd.profiler.profile`.
 
     Examples:
-
-    .. code-block:: python
-
+    ::
         hooks.AutogradProfiler(
              lambda trainer: trainer.iter > 10 and trainer.iter < 20, self.cfg.OUTPUT_DIR
         )
@@ -254,7 +253,7 @@ class AutogradProfiler(HookBase):
         autograd profiler may cause deadlock because it unnecessarily allocates
         memory on every device it sees. The memory management calls, if
         interleaved with NCCL calls, lead to deadlock on GPUs that do not
-        support `cudaLaunchCooperativeKernelMultiDevice`.
+        support ``cudaLaunchCooperativeKernelMultiDevice``.
     """
 
     def __init__(self, enable_predicate, output_dir, *, use_cuda=True):

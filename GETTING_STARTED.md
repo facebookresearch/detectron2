@@ -13,8 +13,8 @@ For more advanced tutorials, refer to our [documentation](https://detectron2.rea
 ### Inference Demo with Pre-trained Models
 
 1. Pick a model and its config file from
-	[model zoo](MODEL_ZOO.md),
-	for example, `mask_rcnn_R_50_FPN_3x.yaml`.
+  [model zoo](MODEL_ZOO.md),
+  for example, `mask_rcnn_R_50_FPN_3x.yaml`.
 2. We provide `demo.py` that is able to run builtin standard models. Run it with:
 ```
 cd demo/
@@ -36,9 +36,13 @@ to understand its behavior. Some common arguments are:
 
 ### Training & Evaluation in Command Line
 
-We provide a script in "tools/{,plain_}train_net.py", that is made to train
-all the configs provided in detectron2.
-You may want to use it as a reference to write your own training script.
+We provide two scripts in "tools/plain_train_net.py" and "tools/train_net.py",
+that are made to train all the configs provided in detectron2. You may want to
+use it as a reference to write your own training script.
+
+Compared to "train_net.py", "plain_train_net.py" supports fewer default
+features. It also includes fewer abstraction, therefore is easier to add custom
+logic.
 
 To train a model with "train_net.py", first
 setup the corresponding datasets following
@@ -47,15 +51,15 @@ then run:
 ```
 cd tools/
 ./train_net.py --num-gpus 8 \
-	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
+  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
 ```
 
 The configs are made for 8-GPU training.
 To train on 1 GPU, you may need to [change some parameters](https://arxiv.org/abs/1706.02677), e.g.:
 ```
 ./train_net.py \
-	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
-	--num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
+  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+  --num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 ```
 
 For most models, CPU training is not supported.
@@ -63,8 +67,8 @@ For most models, CPU training is not supported.
 To evaluate a model's performance, use
 ```
 ./train_net.py \
-	--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
-	--eval-only MODEL.WEIGHTS /path/to/checkpoint_file
+  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+  --eval-only MODEL.WEIGHTS /path/to/checkpoint_file
 ```
 For more options, see `./train_net.py -h`.
 

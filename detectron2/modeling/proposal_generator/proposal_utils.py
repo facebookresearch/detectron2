@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import itertools
 import logging
 import math
 from typing import List, Tuple
@@ -18,15 +17,13 @@ def find_top_rpn_proposals(
     nms_thresh: float,
     pre_nms_topk: int,
     post_nms_topk: int,
-    min_box_side_len: int,
+    min_box_size: float,
     training: bool,
 ):
     """
     For each feature map, select the `pre_nms_topk` highest scoring proposals,
     apply NMS, clip proposals, and remove small boxes. Return the `post_nms_topk`
-    highest scoring proposals among all the feature maps if `training` is True,
-    otherwise, returns the highest `post_nms_topk` scoring proposals for each
-    feature map.
+    highest scoring proposals among all the feature maps for each image.
 
     Args:
         proposals (list[Tensor]): A list of L tensors. Tensor i has shape (N, Hi*Wi*A, 4).
@@ -40,7 +37,7 @@ def find_top_rpn_proposals(
         post_nms_topk (int): number of top k scoring proposals to keep after applying NMS.
             When RPN is run on multiple feature maps (as in FPN) this number is total,
             over all feature maps.
-        min_box_side_len (float): minimum proposal box side length in pixels (absolute units
+        min_box_size (float): minimum proposal box side length in pixels (absolute units
             wrt input images).
         training (bool): True if proposals are to be used in training, otherwise False.
             This arg exists only to support a legacy bug; look for the "NB: Legacy bug ..."
@@ -59,9 +56,7 @@ def find_top_rpn_proposals(
     topk_proposals = []
     level_ids = []  # #lvl Tensor, each of shape (topk,)
     batch_idx = torch.arange(num_images, device=device)
-    for level_id, proposals_i, logits_i in zip(
-        itertools.count(), proposals, pred_objectness_logits
-    ):
+    for level_id, (proposals_i, logits_i) in enumerate(zip(proposals, pred_objectness_logits)):
         Hi_Wi_A = logits_i.shape[1]
         num_proposals_i = min(pre_nms_topk, Hi_Wi_A)
 
@@ -84,7 +79,7 @@ def find_top_rpn_proposals(
     level_ids = cat(level_ids, dim=0)
 
     # 3. For each image, run a per-level NMS, and choose topk results.
-    results = []
+    results: List[Instances] = []
     for n, image_size in enumerate(image_sizes):
         boxes = Boxes(topk_proposals[n])
         scores_per_img = topk_scores[n]
@@ -102,7 +97,7 @@ def find_top_rpn_proposals(
         boxes.clip(image_size)
 
         # filter empty boxes
-        keep = boxes.nonempty(threshold=min_box_side_len)
+        keep = boxes.nonempty(threshold=min_box_size)
         if keep.sum().item() != len(boxes):
             boxes, scores_per_img, lvl = boxes[keep], scores_per_img[keep], lvl[keep]
 
@@ -161,13 +156,13 @@ def add_ground_truth_to_proposals_single_image(gt_boxes, proposals):
         Same as `add_ground_truth_to_proposals`, but for only one image.
     """
     device = proposals.objectness_logits.device
-    # Concatenating gt_boxes with proposals requires them to have the same fields
-    # Assign all ground-truth boxes an objectness logit corresponding to P(object) \approx 1.
+    # Assign all ground-truth boxes an objectness logit corresponding to
+    # P(object) = sigmoid(logit) =~ 1.
     gt_logit_value = math.log((1.0 - 1e-10) / (1 - (1.0 - 1e-10)))
-
     gt_logits = gt_logit_value * torch.ones(len(gt_boxes), device=device)
-    gt_proposal = Instances(proposals.image_size)
 
+    # Concatenating gt_boxes with proposals requires them to have the same fields
+    gt_proposal = Instances(proposals.image_size)
     gt_proposal.proposal_boxes = gt_boxes
     gt_proposal.objectness_logits = gt_logits
     new_proposals = Instances.cat([proposals, gt_proposal])

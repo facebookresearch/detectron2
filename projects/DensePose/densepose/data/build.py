@@ -3,25 +3,44 @@
 import itertools
 import logging
 import numpy as np
-import operator
-from typing import Any, Callable, Collection, Dict, Iterable, List, Optional
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence
 import torch
 
 from detectron2.config import CfgNode
-from detectron2.data import samplers
 from detectron2.data.build import (
+    build_batch_data_loader,
     load_proposals_into_dataset,
     print_instances_class_histogram,
     trivial_batch_collator,
-    worker_init_reset_seed,
 )
 from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
-from detectron2.data.common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
+from detectron2.data.common import DatasetFromList, MapDataset
+from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
 from detectron2.utils.comm import get_world_size
 
+from densepose.config import get_bootstrap_dataset_config
+
+from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper
 from .datasets.coco import DENSEPOSE_KEYS_WITHOUT_MASK as DENSEPOSE_COCO_KEYS_WITHOUT_MASK
 from .datasets.coco import DENSEPOSE_MASK_KEY as DENSEPOSE_COCO_MASK_KEY
+from .datasets.dataset_type import DatasetType
+from .inference_based_loader import InferenceBasedLoader, ScoreBasedFilter
+from .samplers import (
+    DensePoseConfidenceBasedSampler,
+    DensePoseUniformSampler,
+    MaskFromDensePoseSampler,
+    PredictionToGroundTruthSampler,
+)
+from .transform import ImageResizeTransform
+from .video import (
+    FirstKFramesSelector,
+    FrameSelectionStrategy,
+    LastKFramesSelector,
+    RandomKFramesSelector,
+    VideoKeyframeDataset,
+    video_list_from_file,
+)
 
 __all__ = ["build_detection_train_loader", "build_detection_test_loader"]
 
@@ -308,7 +327,6 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     Returns:
         an infinite iterator of training data
     """
-    images_per_worker = _compute_num_images_per_worker(cfg)
 
     _add_category_whitelists_to_metadata(cfg)
     _add_category_maps_to_metadata(cfg)
@@ -327,38 +345,22 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     logger = logging.getLogger(__name__)
     logger.info("Using training sampler {}".format(sampler_name))
     if sampler_name == "TrainingSampler":
-        sampler = samplers.TrainingSampler(len(dataset))
+        sampler = TrainingSampler(len(dataset))
     elif sampler_name == "RepeatFactorTrainingSampler":
-        sampler = samplers.RepeatFactorTrainingSampler(
+        repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
             dataset_dicts, cfg.DATALOADER.REPEAT_THRESHOLD
         )
+        sampler = RepeatFactorTrainingSampler(repeat_factors)
     else:
         raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
-    if cfg.DATALOADER.ASPECT_RATIO_GROUPING:
-        data_loader = torch.utils.data.DataLoader(
-            dataset,
-            sampler=sampler,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-            batch_sampler=None,
-            collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
-            worker_init_fn=worker_init_reset_seed,
-        )  # yield individual mapped dict
-        data_loader = AspectRatioGroupedDataset(data_loader, images_per_worker)
-    else:
-        batch_sampler = torch.utils.data.sampler.BatchSampler(
-            sampler, images_per_worker, drop_last=True
-        )
-        # drop_last so the batch always have the same size
-        data_loader = torch.utils.data.DataLoader(
-            dataset,
-            num_workers=cfg.DATALOADER.NUM_WORKERS,
-            batch_sampler=batch_sampler,
-            collate_fn=trivial_batch_collator,
-            worker_init_fn=worker_init_reset_seed,
-        )
-
-    return data_loader
+    return build_batch_data_loader(
+        dataset,
+        sampler,
+        cfg.SOLVER.IMS_PER_BATCH,
+        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
 
 
 def build_detection_test_loader(cfg, dataset_name, mapper=None):
@@ -395,7 +397,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         mapper = DatasetMapper(cfg, False)
     dataset = MapDataset(dataset, mapper)
 
-    sampler = samplers.InferenceSampler(len(dataset))
+    sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
@@ -407,3 +409,168 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         collate_fn=trivial_batch_collator,
     )
     return data_loader
+
+
+def build_frame_selector(cfg: CfgNode):
+    strategy = FrameSelectionStrategy(cfg.STRATEGY)
+    if strategy == FrameSelectionStrategy.RANDOM_K:
+        frame_selector = RandomKFramesSelector(cfg.NUM_IMAGES)
+    elif strategy == FrameSelectionStrategy.FIRST_K:
+        frame_selector = FirstKFramesSelector(cfg.NUM_IMAGES)
+    elif strategy == FrameSelectionStrategy.LAST_K:
+        frame_selector = LastKFramesSelector(cfg.NUM_IMAGES)
+    elif strategy == FrameSelectionStrategy.ALL:
+        frame_selector = None
+    return frame_selector
+
+
+def build_transform(cfg: CfgNode, data_type: str):
+    if cfg.TYPE == "resize":
+        if data_type == "image":
+            return ImageResizeTransform(cfg.MIN_SIZE, cfg.MAX_SIZE)
+    raise ValueError(f"Unknown transform {cfg.TYPE} for data type {data_type}")
+
+
+def build_combined_loader(cfg: CfgNode, loaders: Collection[Loader], ratios: Sequence[float]):
+    images_per_worker = _compute_num_images_per_worker(cfg)
+    return CombinedDataLoader(loaders, images_per_worker, ratios)
+
+
+def build_bootstrap_dataset(dataset_name: str, cfg: CfgNode) -> Sequence[torch.Tensor]:
+    """
+    Build dataset that provides data to bootstrap on
+
+    Args:
+        dataset_name (str): Name of the dataset, needs to have associated metadata
+            to load the data
+        cfg (CfgNode): bootstrapping config
+    Returns:
+        Sequence[Tensor] - dataset that provides image batches, Tensors of size
+            [N, C, H, W] of type float32
+    """
+    logger = logging.getLogger(__name__)
+    meta = MetadataCatalog.get(dataset_name)
+    if meta.dataset_type == DatasetType.VIDEO_LIST:
+        video_list_fpath = meta.video_list_fpath
+        video_base_path = meta.video_base_path
+        if cfg.TYPE == "video_keyframe":
+            frame_selector = build_frame_selector(cfg.SELECT)
+            transform = build_transform(cfg.TRANSFORM, data_type="image")
+            video_list = video_list_from_file(video_list_fpath, video_base_path)
+            return VideoKeyframeDataset(video_list, frame_selector, transform)
+    logger.warning(
+        f"Could not create an image sampler of type {cfg.TYPE} for dataset {dataset_name}"
+    )
+    return None
+
+
+def build_data_sampler(cfg: CfgNode):
+    if cfg.TYPE == "densepose_uniform":
+        data_sampler = PredictionToGroundTruthSampler()
+        # transform densepose pred -> gt
+        data_sampler.register_sampler(
+            "pred_densepose",
+            "gt_densepose",
+            DensePoseUniformSampler(count_per_class=cfg.COUNT_PER_CLASS),
+        )
+        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        return data_sampler
+    elif cfg.TYPE == "densepose_UV_confidence":
+        data_sampler = PredictionToGroundTruthSampler()
+        # transform densepose pred -> gt
+        data_sampler.register_sampler(
+            "pred_densepose",
+            "gt_densepose",
+            DensePoseConfidenceBasedSampler(
+                confidence_channel="sigma_2",
+                count_per_class=cfg.COUNT_PER_CLASS,
+                search_proportion=0.5,
+            ),
+        )
+        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        return data_sampler
+    elif cfg.TYPE == "densepose_fine_segm_confidence":
+        data_sampler = PredictionToGroundTruthSampler()
+        # transform densepose pred -> gt
+        data_sampler.register_sampler(
+            "pred_densepose",
+            "gt_densepose",
+            DensePoseConfidenceBasedSampler(
+                confidence_channel="fine_segm_confidence",
+                count_per_class=cfg.COUNT_PER_CLASS,
+                search_proportion=0.5,
+            ),
+        )
+        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        return data_sampler
+    elif cfg.TYPE == "densepose_coarse_segm_confidence":
+        data_sampler = PredictionToGroundTruthSampler()
+        # transform densepose pred -> gt
+        data_sampler.register_sampler(
+            "pred_densepose",
+            "gt_densepose",
+            DensePoseConfidenceBasedSampler(
+                confidence_channel="coarse_segm_confidence",
+                count_per_class=cfg.COUNT_PER_CLASS,
+                search_proportion=0.5,
+            ),
+        )
+        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        return data_sampler
+
+    raise ValueError(f"Unknown data sampler type {cfg.TYPE}")
+
+
+def build_data_filter(cfg: CfgNode):
+    if cfg.TYPE == "detection_score":
+        min_score = cfg.MIN_VALUE
+        return ScoreBasedFilter(min_score=min_score)
+    raise ValueError(f"Unknown data filter type {cfg.TYPE}")
+
+
+def build_inference_based_loader(
+    cfg: CfgNode, dataset_cfg: CfgNode, model: torch.nn.Module
+) -> InferenceBasedLoader:
+    """
+    Constructs data loader based on inference results of a model.
+    """
+    dataset = build_bootstrap_dataset(dataset_cfg.DATASET, dataset_cfg.IMAGE_LOADER)
+    training_sampler = TrainingSampler(len(dataset))
+    data_loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=dataset_cfg.IMAGE_LOADER.BATCH_SIZE,
+        sampler=training_sampler,
+        num_workers=dataset_cfg.IMAGE_LOADER.NUM_WORKERS,
+        collate_fn=trivial_batch_collator,
+    )
+    return InferenceBasedLoader(
+        model,
+        data_loader=data_loader,
+        data_sampler=build_data_sampler(dataset_cfg.DATA_SAMPLER),
+        data_filter=build_data_filter(dataset_cfg.FILTER),
+        shuffle=True,
+        batch_size=dataset_cfg.INFERENCE.OUTPUT_BATCH_SIZE,
+        inference_batch_size=dataset_cfg.INFERENCE.INPUT_BATCH_SIZE,
+    )
+
+
+def has_inference_based_loaders(cfg: CfgNode) -> bool:
+    """
+    Returns True, if at least one inferense-based loader must
+    be instantiated for training
+    """
+    return len(cfg.BOOTSTRAP_DATASETS) > 0
+
+
+def build_inference_based_loaders(
+    cfg: CfgNode, model: torch.nn.Module
+) -> List[InferenceBasedLoader]:
+    loaders = []
+    ratios = []
+    for dataset_spec in cfg.BOOTSTRAP_DATASETS:
+        dataset_cfg = get_bootstrap_dataset_config().clone()
+        dataset_cfg.merge_from_other_cfg(CfgNode(dataset_spec))
+        loader = build_inference_based_loader(cfg, dataset_cfg, model)
+        loaders.append(loader)
+        ratios.append(dataset_cfg.RATIO)
+    return loaders, ratios

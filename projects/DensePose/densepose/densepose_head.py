@@ -50,6 +50,17 @@ class DensePoseUVConfidenceConfig:
 
 
 @dataclass
+class DensePoseSegmConfidenceConfig:
+    """
+    Configuration options for confidence on segmentation
+    """
+
+    enabled: bool = False
+    # lower bound on confidence values
+    epsilon: float = 0.01
+
+
+@dataclass
 class DensePoseConfidenceModelConfig:
     """
     Configuration options for confidence models
@@ -57,6 +68,8 @@ class DensePoseConfidenceModelConfig:
 
     # confidence for U and V values
     uv_confidence: DensePoseUVConfidenceConfig
+    # segmentation confidence
+    segm_confidence: DensePoseSegmConfidenceConfig
 
     @staticmethod
     def from_cfg(cfg: CfgNode) -> "DensePoseConfidenceModelConfig":
@@ -65,7 +78,11 @@ class DensePoseConfidenceModelConfig:
                 enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED,
                 epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.EPSILON,
                 type=DensePoseUVConfidenceType(cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE),
-            )
+            ),
+            segm_confidence=DensePoseSegmConfidenceConfig(
+                enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.ENABLED,
+                epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.EPSILON,
+            ),
         )
 
 
@@ -398,8 +415,15 @@ class DensePosePredictor(nn.Module):
         u = interp2d(u_lowres)
         v = interp2d(v_lowres)
         (
-            (sigma_1, sigma_2, kappa_u, kappa_v),
-            (sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
             (ann_index, index_uv),
         ) = self._forward_confidence_estimation_layers(
             self.confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
@@ -407,8 +431,15 @@ class DensePosePredictor(nn.Module):
         return (
             (ann_index, index_uv, u, v),
             (ann_index_lowres, index_uv_lowres, u_lowres, v_lowres),
-            (sigma_1, sigma_2, kappa_u, kappa_v),
-            (sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
         )
 
     def _initialize_confidence_estimation_layers(
@@ -435,12 +466,21 @@ class DensePosePredictor(nn.Module):
                 raise ValueError(
                     f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
                 )
+        if confidence_model_cfg.segm_confidence.enabled:
+            self.fine_segm_confidence_lowres = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
+            self.coarse_segm_confidence_lowres = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
 
     def _forward_confidence_estimation_layers(
         self, confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
     ):
         sigma_1, sigma_2, kappa_u, kappa_v = None, None, None, None
         sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres = None, None, None, None
+        fine_segm_confidence_lowres, fine_segm_confidence = None, None
+        coarse_segm_confidence_lowres, coarse_segm_confidence = None, None
         if confidence_model_cfg.uv_confidence.enabled:
             if confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
                 sigma_2_lowres = self.sigma_2_lowres(head_outputs)
@@ -456,9 +496,33 @@ class DensePosePredictor(nn.Module):
                 raise ValueError(
                     f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
                 )
+        if confidence_model_cfg.segm_confidence.enabled:
+            fine_segm_confidence_lowres = self.fine_segm_confidence_lowres(head_outputs)
+            fine_segm_confidence = interp2d(fine_segm_confidence_lowres)
+            fine_segm_confidence = (
+                F.softplus(fine_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
+            )
+            index_uv = index_uv * torch.repeat_interleave(
+                fine_segm_confidence, index_uv.shape[1], dim=1
+            )
+            coarse_segm_confidence_lowres = self.coarse_segm_confidence_lowres(head_outputs)
+            coarse_segm_confidence = interp2d(coarse_segm_confidence_lowres)
+            coarse_segm_confidence = (
+                F.softplus(coarse_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
+            )
+            ann_index = ann_index * torch.repeat_interleave(
+                coarse_segm_confidence, ann_index.shape[1], dim=1
+            )
         return (
-            (sigma_1, sigma_2, kappa_u, kappa_v),
-            (sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres),
+            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
+            (
+                sigma_1_lowres,
+                sigma_2_lowres,
+                kappa_u_lowres,
+                kappa_v_lowres,
+                fine_segm_confidence_lowres,
+                coarse_segm_confidence_lowres,
+            ),
             (ann_index, index_uv),
         )
 
@@ -469,22 +533,33 @@ class DensePoseDataFilter(object):
         self.keep_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
 
     @torch.no_grad()
-    def __call__(self, proposals_with_targets):
+    def __call__(self, features: List[torch.Tensor], proposals_with_targets: List[Instances]):
         """
         Filters proposals with targets to keep only the ones relevant for
         DensePose training
-        proposals: list(Instances), each element of the list corresponds to
-            various instances (proposals, GT for boxes and densepose) for one
-            image
+
+        Args:
+            features (list[Tensor]): input data as a list of features,
+                each feature is a tensor. Axis 0 represents the number of
+                images `N` in the input data; axes 1-3 are channels,
+                height, and width, which may vary between features
+                (e.g., if a feature pyramid is used).
+            proposals_with_targets (list[Instances]): length `N` list of
+                `Instances`. The i-th `Instances` contains instances
+                (proposals, GT) for the i-th input image,
         """
         proposals_filtered = []
-        for proposals_per_image in proposals_with_targets:
-            if not hasattr(proposals_per_image, "gt_densepose") and (
-                not hasattr(proposals_per_image, "gt_masks") or not self.keep_masks
+        feature_mask = torch.ones(
+            len(proposals_with_targets),
+            dtype=torch.bool,
+            device=features[0].device if len(features) > 0 else torch.device("cpu"),
+        )
+        for i, proposals_per_image in enumerate(proposals_with_targets):
+            if not proposals_per_image.has("gt_densepose") and (
+                not proposals_per_image.has("gt_masks") or not self.keep_masks
             ):
+                feature_mask[i] = 0
                 continue
-            assert hasattr(proposals_per_image, "gt_boxes")
-            assert hasattr(proposals_per_image, "proposal_boxes")
             gt_boxes = proposals_per_image.gt_boxes
             est_boxes = proposals_per_image.proposal_boxes
             # apply match threshold for densepose head
@@ -518,11 +593,15 @@ class DensePoseDataFilter(object):
                 for i, (dp_target, mask_target) in enumerate(zip(gt_densepose, gt_masks))
                 if (dp_target is not None) or (mask_target is not None)
             ]
+            if not len(selected_indices):
+                feature_mask[i] = 0
+                continue
             if len(selected_indices) != N_gt_boxes:
                 proposals_per_image = proposals_per_image[selected_indices]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
             proposals_filtered.append(proposals_per_image)
-        return proposals_filtered
+        features_filtered = [feature[feature_mask] for feature in features]
+        return features_filtered, proposals_filtered
 
 
 def build_densepose_head(cfg, input_channels):
@@ -572,6 +651,10 @@ def densepose_inference(
                 vector of size (N, C, H, W)
             - kappa_v (:obj: `torch.Tensor`): second component of confidence direction
                 vector of size (N, C, H, W)
+            - fine_segm_confidence (:obj: `torch.Tensor`): confidence for fine
+                segmentation of size (N, 1, H, W)
+            - coarse_segm_confidence (:obj: `torch.Tensor`): confidence for coarse
+                segmentation of size (N, 1, H, W)
         detections (list[Instances]): A list of N Instances, where N is the number of images
             in the batch. Instances are modified by this method: "pred_densepose" attribute
             is added to each instance, the attribute contains the corresponding
@@ -579,7 +662,14 @@ def densepose_inference(
     """
     # DensePose outputs: segmentation, body part indices, U, V
     s, index_uv, u, v = densepose_outputs
-    sigma_1, sigma_2, kappa_u, kappa_v = densepose_confidences
+    (
+        sigma_1,
+        sigma_2,
+        kappa_u,
+        kappa_v,
+        fine_segm_confidence,
+        coarse_segm_confidence,
+    ) = densepose_confidences
     k = 0
     for detection in detections:
         n_i = len(detection)
@@ -589,8 +679,15 @@ def densepose_inference(
         v_i = v[k : k + n_i]
         _local_vars = locals()
         confidences = {
-            name: _local_vars[name]
-            for name in ("sigma_1", "sigma_2", "kappa_u", "kappa_v")
+            name: _local_vars[name][k : k + n_i]
+            for name in (
+                "sigma_1",
+                "sigma_2",
+                "kappa_u",
+                "kappa_v",
+                "fine_segm_confidence",
+                "coarse_segm_confidence",
+            )
             if _local_vars.get(name) is not None
         }
         densepose_output_i = DensePoseOutput(s_i, index_uv_i, u_i, v_i, confidences)
@@ -1106,7 +1203,15 @@ class DensePoseLosses(object):
             losses.update(losses_mask)
             return losses
 
+    def produce_fake_mask_losses(self, densepose_outputs):
+        losses = {}
+        segm_scores, _, _, _ = densepose_outputs
+        losses["loss_densepose_S"] = segm_scores.sum() * 0
+        return losses
+
     def produce_mask_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
+        if not len(proposals_with_gt):
+            return self.produce_fake_mask_losses(densepose_outputs)
         losses = {}
         # densepose outputs are computed for all images and all bounding boxes;
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
@@ -1117,11 +1222,40 @@ class DensePoseLosses(object):
                 proposals_with_gt, segm_scores
             )
         if (mask_loss_data.masks_gt is None) or (mask_loss_data.masks_est is None):
-            losses["loss_densepose_S"] = segm_scores.sum() * 0
-            return losses
+            return self.produce_fake_mask_losses(densepose_outputs)
         losses["loss_densepose_S"] = (
             F.cross_entropy(mask_loss_data.masks_est, mask_loss_data.masks_gt.long()) * self.w_segm
         )
+        return losses
+
+    def produce_fake_densepose_losses(self, densepose_outputs, densepose_confidences):
+        # we need to keep the same computation graph on all the GPUs to
+        # perform reduction properly. Hence even if we have no data on one
+        # of the GPUs, we still need to generate the computation graph.
+        # Add fake (zero) losses in the form Tensor.sum() * 0
+        s, index_uv, u, v = densepose_outputs
+        conf_type = self.confidence_model_cfg.uv_confidence.type
+        (
+            sigma_1,
+            sigma_2,
+            kappa_u,
+            kappa_v,
+            fine_segm_confidence,
+            coarse_segm_confidence,
+        ) = densepose_confidences
+        losses = {}
+        losses["loss_densepose_I"] = index_uv.sum() * 0
+        if not self.segm_trained_by_masks:
+            losses["loss_densepose_S"] = s.sum() * 0
+        if self.confidence_model_cfg.uv_confidence.enabled:
+            losses["loss_densepose_UV"] = (u.sum() + v.sum()) * 0
+            if conf_type == DensePoseUVConfidenceType.IID_ISO:
+                losses["loss_densepose_UV"] += sigma_2.sum() * 0
+            elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
+                losses["loss_densepose_UV"] += (sigma_2.sum() + kappa_u.sum() + kappa_v.sum()) * 0
+        else:
+            losses["loss_densepose_U"] = u.sum() * 0
+            losses["loss_densepose_V"] = v.sum() * 0
         return losses
 
     def produce_densepose_losses(self, proposals_with_gt, densepose_outputs, densepose_confidences):
@@ -1130,7 +1264,16 @@ class DensePoseLosses(object):
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
         # the outputs will have size(0) == 3+1+2+1 == 7
         s, index_uv, u, v = densepose_outputs
-        sigma_1, sigma_2, kappa_u, kappa_v = densepose_confidences
+        if not len(proposals_with_gt):
+            return self.produce_fake_densepose_losses(densepose_outputs, densepose_confidences)
+        (
+            sigma_1,
+            sigma_2,
+            kappa_u,
+            kappa_v,
+            fine_segm_confidence,
+            coarse_segm_confidence,
+        ) = densepose_confidences
         conf_type = self.confidence_model_cfg.uv_confidence.type
         assert u.size(2) == v.size(2)
         assert u.size(3) == v.size(3)
@@ -1160,21 +1303,7 @@ class DensePoseLosses(object):
         # of the GPUs, we still need to generate the computation graph.
         # Add fake (zero) loss in the form Tensor.sum() * 0
         if not n_batch:
-            losses["loss_densepose_I"] = index_uv.sum() * 0
-            if not self.segm_trained_by_masks:
-                losses["loss_densepose_S"] = s.sum() * 0
-            if self.confidence_model_cfg.uv_confidence.enabled:
-                losses["loss_densepose_UV"] = (u.sum() + v.sum()) * 0
-                if conf_type == DensePoseUVConfidenceType.IID_ISO:
-                    losses["loss_densepose_UV"] += sigma_2.sum() * 0
-                elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
-                    losses["loss_densepose_UV"] += (
-                        sigma_2.sum() + kappa_u.sum() + kappa_v.sum()
-                    ) * 0
-            else:
-                losses["loss_densepose_U"] = u.sum() * 0
-                losses["loss_densepose_V"] = v.sum() * 0
-            return losses
+            return self.produce_fake_densepose_losses(densepose_outputs, densepose_confidences)
 
         zh = u.size(2)
         zw = u.size(3)

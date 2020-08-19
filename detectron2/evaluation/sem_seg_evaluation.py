@@ -18,7 +18,7 @@ from .evaluator import DatasetEvaluator
 
 class SemSegEvaluator(DatasetEvaluator):
     """
-    Evaluate semantic segmentation
+    Evaluate semantic segmentation metrics.
     """
 
     def __init__(self, dataset_name, distributed, num_classes, ignore_label=255, output_dir=None):

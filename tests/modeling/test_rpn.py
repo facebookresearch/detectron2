@@ -4,10 +4,13 @@ import unittest
 import torch
 
 from detectron2.config import get_cfg
+from detectron2.export.torchscript import export_torchscript_with_instances
+from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import build_backbone
-from detectron2.modeling.proposal_generator.build import build_proposal_generator
+from detectron2.modeling.proposal_generator import RPN, build_proposal_generator
 from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 
 logger = logging.getLogger(__name__)
@@ -17,11 +20,8 @@ class RPNTest(unittest.TestCase):
     def test_rpn(self):
         torch.manual_seed(121)
         cfg = get_cfg()
-        cfg.MODEL.PROPOSAL_GENERATOR.NAME = "RPN"
-        cfg.MODEL.ANCHOR_GENERATOR.NAME = "DefaultAnchorGenerator"
-        cfg.MODEL.RPN.BBOX_REG_WEIGHTS = (1, 1, 1, 1)
         backbone = build_backbone(cfg)
-        proposal_generator = build_proposal_generator(cfg, backbone.output_shape())
+        proposal_generator = RPN(cfg, backbone.output_shape())
         num_images = 2
         images_tensor = torch.rand(num_images, 20, 30)
         image_sizes = [(10, 10), (20, 30)]
@@ -76,6 +76,29 @@ class RPNTest(unittest.TestCase):
                 torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor)
             )
             self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_rpn_scriptability(self):
+        cfg = get_cfg()
+        proposal_generator = RPN(cfg, {"res4": ShapeSpec(channels=1024, stride=16)}).eval()
+        num_images = 2
+        images_tensor = torch.rand(num_images, 30, 40)
+        image_sizes = [(32, 32), (30, 40)]
+        images = ImageList(images_tensor, image_sizes)
+        features = {"res4": torch.rand(num_images, 1024, 1, 2)}
+
+        fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+        proposal_generator_ts = export_torchscript_with_instances(proposal_generator, fields)
+
+        proposals, _ = proposal_generator(images, features)
+        proposals_ts, _ = proposal_generator_ts(images, features)
+
+        for proposal, proposal_ts in zip(proposals, proposals_ts):
+            self.assertEqual(proposal.image_size, proposal_ts.image_size)
+            self.assertTrue(
+                torch.equal(proposal.proposal_boxes.tensor, proposal_ts.proposal_boxes.tensor)
+            )
+            self.assertTrue(torch.equal(proposal.objectness_logits, proposal_ts.objectness_logits))
 
     def test_rrpn(self):
         torch.manual_seed(121)

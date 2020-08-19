@@ -2,6 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import copy
+import logging
 from typing import Any, Dict, Tuple
 import torch
 from fvcore.common.file_io import PathManager
@@ -15,13 +16,25 @@ from detectron2.structures import BoxMode
 from .structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
 
 
+def build_augmentation(cfg, is_train):
+    logger = logging.getLogger(__name__)
+    result = utils.build_augmentation(cfg, is_train)
+    if is_train:
+        random_rotation = T.RandomRotation(
+            cfg.INPUT.ROTATION_ANGLES, expand=False, sample_style="choice"
+        )
+        result.append(random_rotation)
+        logger.info("DensePose-specific augmentation used in training: " + str(random_rotation))
+    return result
+
+
 class DatasetMapper:
     """
     A customized version of `detectron2.data.DatasetMapper`
     """
 
     def __init__(self, cfg, is_train=True):
-        self.tfm_gens = utils.build_transform_gen(cfg, is_train)
+        self.augmentation = build_augmentation(cfg, is_train)
 
         # fmt: off
         self.img_format     = cfg.INPUT.FORMAT
@@ -70,7 +83,7 @@ class DatasetMapper:
         image = utils.read_image(dataset_dict["file_name"], format=self.img_format)
         utils.check_image_size(dataset_dict, image)
 
-        image, transforms = T.apply_transform_gens(self.tfm_gens, image)
+        image, transforms = T.apply_transform_gens(self.augmentation, image)
         image_shape = image.shape[:2]  # h, w
         dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
 

@@ -12,6 +12,15 @@ from detectron2.utils.registry import Registry
 
 _TOTAL_SKIPPED = 0
 
+
+__all__ = [
+    "ROI_KEYPOINT_HEAD_REGISTRY",
+    "build_keypoint_head",
+    "BaseKeypointRCNNHead",
+    "KRCNNConvDeconvUpsampleHead",
+]
+
+
 ROI_KEYPOINT_HEAD_REGISTRY = Registry("ROI_KEYPOINT_HEAD")
 ROI_KEYPOINT_HEAD_REGISTRY.__doc__ = """
 Registry for keypoint heads, which make keypoint predictions from per-region features.
@@ -118,7 +127,8 @@ def keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
 
 class BaseKeypointRCNNHead(nn.Module):
     """
-    Implement the basic Keypoint R-CNN losses and inference logic described in :paper:`Mask R-CNN`.
+    Implement the basic Keypoint R-CNN losses and inference logic described in
+    Sec. 5 of :paper:`Mask R-CNN`.
     """
 
     @configurable
@@ -132,7 +142,7 @@ class BaseKeypointRCNNHead(nn.Module):
             loss_normalizer (float or str):
                 If float, divide the loss by `loss_normalizer * #images`.
                 If 'visible', the loss is normalized by the total number of
-                    visible keypoints across images.
+                visible keypoints across images.
         """
         super().__init__()
         self.num_keypoints = num_keypoints
@@ -199,6 +209,7 @@ class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead):
     """
     A standard keypoint head containing a series of 3x3 convs, followed by
     a transpose convolution and bilinear interpolation for upsampling.
+    It is described in Sec. 5 of :paper:`Mask R-CNN`.
     """
 
     @configurable

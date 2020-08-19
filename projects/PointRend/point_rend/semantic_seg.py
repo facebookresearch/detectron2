@@ -37,7 +37,7 @@ def calculate_uncertainty(sem_seg_logits):
 class PointRendSemSegHead(nn.Module):
     """
     A semantic segmentation head that combines a head set in `POINT_HEAD.COARSE_SEM_SEG_HEAD_NAME`
-        and a point head set in `MODEL.POINT_HEAD.NAME`.
+    and a point head set in `MODEL.POINT_HEAD.NAME`.
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
@@ -85,7 +85,8 @@ class PointRendSemSegHead(nn.Module):
                 [
                     point_sample(features[in_feature], point_coords, align_corners=False)
                     for in_feature in self.in_features
-                ]
+                ],
+                dim=1,
             )
             point_logits = self.point_head(fine_grained_features, coarse_features)
             point_targets = (

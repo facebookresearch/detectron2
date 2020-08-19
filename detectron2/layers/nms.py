@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from typing import List
 import torch
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
@@ -19,7 +20,7 @@ def batched_nms(
         return box_ops.batched_nms(boxes, scores, idxs, iou_threshold)
 
     result_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
-    for id in torch.unique(idxs).cpu().tolist():
+    for id in torch.jit.annotate(List[int], torch.unique(idxs).cpu().tolist()):
         mask = (idxs == id).nonzero().view(-1)
         keep = nms(boxes[mask], scores[mask], iou_threshold)
         result_mask[mask[keep]] = True

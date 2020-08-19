@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 
+import numpy as np
 import unittest
 import torch
 
@@ -145,10 +146,12 @@ class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
                 tensor(1, 256, 8, 8),
             ]
             anchors = self.model.anchor_generator(features)
-            box_cls, box_delta = self.model.head(features)
-            box_cls = [tensor(*k.shape) for k in box_cls]
-            box_delta = [tensor(*k.shape) for k in box_delta]
-            det = self.model.inference(box_cls, box_delta, anchors, images.image_sizes)
+            _, pred_anchor_deltas = self.model.head(features)
+            HWAs = [np.prod(x.shape[-3:]) // 4 for x in pred_anchor_deltas]
+
+            pred_logits = [tensor(1, HWA, self.model.num_classes) for HWA in HWAs]
+            pred_anchor_deltas = [tensor(1, HWA, 4) for HWA in HWAs]
+            det = self.model.inference(anchors, pred_logits, pred_anchor_deltas, images.image_sizes)
             # all predictions (if any) are infinite or nan
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)

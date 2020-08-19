@@ -10,7 +10,7 @@ find_package(OpenCV REQUIRED)
 add_executable(caffe2_mask_rcnn caffe2_mask_rcnn.cpp)
 target_link_libraries(
   caffe2_mask_rcnn
-  "${TORCH_LIBRARIES}" gflags glog ${OpenCV_LIBS})
+  "${TORCH_LIBRARIES}" gflags glog protobuf ${OpenCV_LIBS})
 set_property(TARGET caffe2_mask_rcnn PROPERTY CXX_STANDARD 14)
 
 
