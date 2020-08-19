@@ -4,7 +4,7 @@
 
 namespace detectron2 {
 
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
 int deform_conv_forward_cuda(
     at::Tensor input,
     at::Tensor weight,
@@ -132,7 +132,7 @@ inline int deform_conv_forward(
     int deformable_group,
     int im2col_step) {
   if (input.is_cuda()) {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     TORCH_CHECK(weight.is_cuda(), "weight tensor is not on GPU!");
     TORCH_CHECK(offset.is_cuda(), "offset tensor is not on GPU!");
     return deform_conv_forward_cuda(
@@ -180,7 +180,7 @@ inline int deform_conv_backward_input(
     int deformable_group,
     int im2col_step) {
   if (gradOutput.is_cuda()) {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     TORCH_CHECK(input.is_cuda(), "input tensor is not on GPU!");
     TORCH_CHECK(weight.is_cuda(), "weight tensor is not on GPU!");
     TORCH_CHECK(offset.is_cuda(), "offset tensor is not on GPU!");
@@ -230,7 +230,7 @@ inline int deform_conv_backward_filter(
     float scale,
     int im2col_step) {
   if (gradOutput.is_cuda()) {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     TORCH_CHECK(input.is_cuda(), "input tensor is not on GPU!");
     TORCH_CHECK(offset.is_cuda(), "offset tensor is not on GPU!");
     return deform_conv_backward_parameters_cuda(
@@ -280,7 +280,7 @@ inline void modulated_deform_conv_forward(
     const int deformable_group,
     const bool with_bias) {
   if (input.is_cuda()) {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     TORCH_CHECK(weight.is_cuda(), "weight tensor is not on GPU!");
     TORCH_CHECK(bias.is_cuda(), "bias tensor is not on GPU!");
     TORCH_CHECK(offset.is_cuda(), "offset tensor is not on GPU!");
@@ -337,7 +337,7 @@ inline void modulated_deform_conv_backward(
     int deformable_group,
     const bool with_bias) {
   if (grad_output.is_cuda()) {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
     TORCH_CHECK(input.is_cuda(), "input tensor is not on GPU!");
     TORCH_CHECK(weight.is_cuda(), "weight tensor is not on GPU!");
     TORCH_CHECK(bias.is_cuda(), "bias tensor is not on GPU!");

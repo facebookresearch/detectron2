@@ -4,18 +4,25 @@
 #include "ROIAlign/ROIAlign.h"
 #include "ROIAlignRotated/ROIAlignRotated.h"
 #include "box_iou_rotated/box_iou_rotated.h"
+#include "cocoeval/cocoeval.h"
 #include "deformable/deform_conv.h"
 #include "nms_rotated/nms_rotated.h"
 
 namespace detectron2 {
 
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
 extern int get_cudart_version();
 #endif
 
 std::string get_cuda_version() {
-#ifdef WITH_CUDA
+#if defined(WITH_CUDA) || defined(WITH_HIP)
   std::ostringstream oss;
+
+#if defined(WITH_CUDA)
+  oss << "CUDA ";
+#else
+  oss << "HIP ";
+#endif
 
   // copied from
   // https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/cuda/detail/CUDAHooks.cpp#L231
@@ -27,7 +34,7 @@ std::string get_cuda_version() {
   };
   printCudaStyleVersion(get_cudart_version());
   return oss.str();
-#else
+#else // neither CUDA nor HIP
   return std::string("not available");
 #endif
 }
@@ -97,6 +104,15 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       "roi_align_rotated_backward",
       &ROIAlignRotated_backward,
       "Backward pass for Rotated ROI-Align Operator");
-}
 
+  m.def("COCOevalAccumulate", &COCOeval::Accumulate, "COCOeval::Accumulate");
+  m.def(
+      "COCOevalEvaluateImages",
+      &COCOeval::EvaluateImages,
+      "COCOeval::EvaluateImages");
+  pybind11::class_<COCOeval::InstanceAnnotation>(m, "InstanceAnnotation")
+      .def(pybind11::init<uint64_t, double, double, bool, bool>());
+  pybind11::class_<COCOeval::ImageEvaluation>(m, "ImageEvaluation")
+      .def(pybind11::init<>());
+}
 } // namespace detectron2

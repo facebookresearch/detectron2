@@ -7,9 +7,8 @@ from detectron2.modeling import build_model
 model = build_model(cfg)  # returns a torch.nn.Module
 ```
 
-`build_model` only builds the model structure, and fill it with random parameters.
-See below for how to load an existing checkpoint to the model,
-and how to use the `model` object.
+`build_model` only builds the model structure and fills it with random parameters.
+See below for how to load an existing checkpoint to the model and how to use the `model` object.
 
 ### Load/Save a Checkpoint
 ```python
@@ -37,7 +36,7 @@ For example, in order to do inference,
 all existing models expect the "image" key, and optionally "height" and "width".
 The detailed format of inputs and outputs of existing models are explained below.
 
-When in training mode, all models are required to be used under an `EventStorage`.
+__Training__: When in training mode, all models are required to be used under an `EventStorage`.
 The training statistics will be put into the storage:
 ```python
 from detectron2.utils.events import EventStorage
@@ -45,11 +44,18 @@ with EventStorage() as storage:
   losses = model(inputs)
 ```
 
-If you only want to do simple inference using an existing model,
+__Inference__: If you only want to do simple inference using an existing model,
 [DefaultPredictor](../modules/engine.html#detectron2.engine.defaults.DefaultPredictor)
 is a wrapper around model that provides such basic functionality.
 It includes default behavior including model loading, preprocessing,
-and operates on single image rather than batches.
+and operates on single image rather than batches. See its documentation for usage.
+
+You can also run inference directly like this:
+```
+model.eval()
+with torch.no_grad():
+  outputs = model(inputs)
+```
 
 ### Model Input Format
 
@@ -62,9 +68,13 @@ The dict may contain the following keys:
 
 * "image": `Tensor` in (C, H, W) format. The meaning of channels are defined by `cfg.INPUT.FORMAT`.
   Image normalization, if any, will be performed inside the model using
-	`cfg.MODEL.PIXEL_{MEAN,STD}`.
+  `cfg.MODEL.PIXEL_{MEAN,STD}`.
+* "height", "width": the **desired** output height and width, which is not necessarily the same
+  as the height or width of the `image` field.
+  For example, the `image` field contains the resized image, if resize is used as a preprocessing step.
+  But you may want the outputs to be in **original** resolution.
 * "instances": an [Instances](../modules/structures.html#detectron2.structures.Instances)
-  object, with the following fields:
+  object for training, with the following fields:
   + "gt_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing N boxes, one for each instance.
   + "gt_classes": `Tensor` of long type, a vector of N labels, in range [0, num_categories).
   + "gt_masks": a [PolygonMasks](../modules/structures.html#detectron2.structures.PolygonMasks)
@@ -75,14 +85,10 @@ The dict may contain the following keys:
   object used only in Fast R-CNN style models, with the following fields:
   + "proposal_boxes": a [Boxes](../modules/structures.html#detectron2.structures.Boxes) object storing P proposal boxes.
   + "objectness_logits": `Tensor`, a vector of P scores, one for each proposal.
-* "height", "width": the **desired** output height and width, which is not necessarily the same
-  as the height or width of the `image` field.
-  For example, the `image` field contains the resized image, if resize is used as a preprocessing step.
-  But you may want the outputs to be in **original** resolution.
 
   If provided, the model will produce output in this resolution,
   rather than in the resolution of the `image` as input into the model. This is more efficient and accurate.
-* "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth.
+* "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth for training.
   Values represent category labels starting from 0.
 
 
@@ -124,7 +130,8 @@ Based on the tasks the model is doing, each dict may contain the following field
 
 ### Partially execute a model:
 
-Sometimes you may want to obtain an intermediate tensor inside a model.
+Sometimes you may want to obtain an intermediate tensor inside a model,
+such as the input of certain layer, the output before post-processing.
 Since there are typically hundreds of intermediate tensors, there isn't an API that provides you
 the intermediate result you need.
 You have the following options:
@@ -137,15 +144,22 @@ You have the following options:
    but use custom code to execute it instead of its `forward()`. For example,
    the following code obtains mask features before mask head.
 
-```python
-images = ImageList.from_tensors(...)  # preprocessed input tensor
-model = build_model(cfg)
-features = model.backbone(images.tensor)
-proposals, _ = model.proposal_generator(images, features)
-instances = model.roi_heads._forward_box(features, proposals)
-mask_features = [features[f] for f in model.roi_heads.in_features]
-mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
-```
+   ```python
+   images = ImageList.from_tensors(...)  # preprocessed input tensor
+   model = build_model(cfg)
+   model.eval()
+   features = model.backbone(images.tensor)
+   proposals, _ = model.proposal_generator(images, features)
+   instances, _ = model.roi_heads(images, features, proposals)
+   mask_features = [features[f] for f in model.roi_heads.in_features]
+   mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
+   ```
 
-Note that both options require you to read the existing forward code to understand
-how to write code to obtain the outputs you need.
+3. Use [forward hooks](https://pytorch.org/tutorials/beginner/former_torchies/nnft_tutorial.html#forward-and-backward-function-hooks).
+   Forward hooks can help you obtain inputs or outputs of a certain module.
+   If they are not exactly what you want, they can at least be used together with partial execution
+   to obtain other tensors.
+
+All options require you to read documentation and sometimes code
+of the existing models to understand the internal logic,
+in order to write code to obtain the internal tensors.

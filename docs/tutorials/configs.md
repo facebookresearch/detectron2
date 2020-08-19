@@ -14,7 +14,7 @@ that access and update a config, we provide the following extra functionalities:
    If your config file is versioned with a config line like `VERSION: 2`,
    detectron2 will still recognize it even if we change some keys in the future.
 
-"Config" is a very limited abstraction.
+Config file is a very limited language.
 We do not expect all features in detectron2 to be available through configs.
 If you need something that's not available in the config space,
 please write code using detectron2's API.
@@ -32,7 +32,7 @@ cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values f
 print(cfg.dump())  # print formatted configs
 ```
 
-Many builtin tools in detectron2 accepts command line config overwrite:
+Many builtin tools in detectron2 accept command line config overwrite:
 Key-value pairs provided in the command line will overwrite the existing values in the config file.
 For example, [demo.py](../../demo/demo.py) can be used with
 ```
@@ -43,6 +43,17 @@ For example, [demo.py](../../demo/demo.py) can be used with
 To see a list of available configs in detectron2 and what they mean,
 check [Config References](../modules/config.html#config-references)
 
+
+### Configs in Projects
+
+A project that lives outside the detectron2 library may define its own configs, which will need to be added
+for the project to be functional, e.g.:
+```python
+from detectron2.projects.point_rend import add_pointrend_config
+cfg = get_cfg()    # obtain detectron2's default config
+add_pointrend_config(cfg)  # add pointrend's default config
+# ... ...
+```
 
 ### Best Practice with Configs
 

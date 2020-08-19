@@ -11,6 +11,14 @@ from detectron2.structures import Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
+__all__ = [
+    "BaseMaskRCNNHead",
+    "MaskRCNNConvUpsampleHead",
+    "build_mask_head",
+    "ROI_MASK_HEAD_REGISTRY",
+]
+
+
 ROI_MASK_HEAD_REGISTRY = Registry("ROI_MASK_HEAD")
 ROI_MASK_HEAD_REGISTRY.__doc__ = """
 Registry for mask heads, which predicts instance masks given

@@ -57,6 +57,15 @@ class TestRotationTransform(unittest.TestCase):
                 self.assertEqualsArrays(r1.apply_image(image), r2.apply_image(image))
                 self.assertEqualsArrays(r1.apply_coords(coords), r2.apply_coords(coords))
 
+    def test_inverse_transform(self):
+        image, coords, h, w = self.randomData(h=5, w=8)
+        rot = RotationTransform(h, w, 90, expand=True, center=None)
+        rot_image = rot.apply_image(image)
+        self.assertEqualsArrays(rot.inverse().apply_image(rot_image), image)
+        rot = RotationTransform(h, w, 65, expand=True, center=None)
+        rotated_coords = rot.apply_coords(coords)
+        self.assertEqualsArrays(rot.inverse().apply_coords(rotated_coords), coords)
+
 
 if __name__ == "__main__":
     unittest.main()

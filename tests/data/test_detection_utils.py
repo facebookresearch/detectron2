@@ -2,10 +2,12 @@
 
 import copy
 import numpy as np
+import os
 import unittest
 import pycocotools.mask as mask_util
+from fvcore.common.file_io import PathManager
 
-from detectron2.data import detection_utils
+from detectron2.data import MetadataCatalog, detection_utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, BoxMode
 
@@ -58,6 +60,24 @@ class TestTransformAnnotations(unittest.TestCase):
                 anno["keypoints"][1:, 1:].reshape(-1, 2, 2),
             )
         )
+
+    def test_crop(self):
+        transforms = T.TransformList([T.CropTransform(300, 300, 10, 10)])
+        keypoints = np.random.rand(17, 3) * 50 + 15
+        keypoints[:, 2] = 2
+        anno = {
+            "bbox": np.asarray([10, 10, 200, 400]),
+            "bbox_mode": BoxMode.XYXY_ABS,
+            "keypoints": keypoints,
+        }
+
+        output = detection_utils.transform_instance_annotations(
+            copy.deepcopy(anno), transforms, (10, 10)
+        )
+        # box is shifted and cropped
+        self.assertTrue((output["bbox"] == np.asarray([0, 0, 0, 10])).all())
+        # keypoints are no longer visible
+        self.assertTrue((output["keypoints"][:, 2] == 0).all())
 
     def test_transform_RLE(self):
         transforms = T.TransformList([T.HFlipTransform(400)])
@@ -114,3 +134,23 @@ class TestTransformAnnotations(unittest.TestCase):
         instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
         with self.assertRaises(AssertionError):
             detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
+
+    def test_read_sem_seg(self):
+        cityscapes_dir = MetadataCatalog.get("cityscapes_fine_sem_seg_val").gt_dir
+        sem_seg_gt_path = os.path.join(
+            cityscapes_dir, "frankfurt", "frankfurt_000001_083852_gtFine_labelIds.png"
+        )
+        if not PathManager.exists(sem_seg_gt_path):
+            raise unittest.SkipTest(
+                "Semantic segmentation ground truth {} not found.".format(sem_seg_gt_path)
+            )
+        sem_seg = detection_utils.read_image(sem_seg_gt_path, "L")
+        self.assertEqual(sem_seg.ndim, 3)
+        self.assertEqual(sem_seg.shape[2], 1)
+        self.assertEqual(sem_seg.dtype, np.uint8)
+        self.assertEqual(sem_seg.max(), 32)
+        self.assertEqual(sem_seg.min(), 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

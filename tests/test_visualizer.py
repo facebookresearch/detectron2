@@ -4,6 +4,7 @@
 
 import numpy as np
 import unittest
+import cv2
 import torch
 
 from detectron2.data import MetadataCatalog
@@ -141,3 +142,21 @@ class TestVisualizer(unittest.TestCase):
 
         v = Visualizer(img, MetadataCatalog.get("asdfasdf"))
         v.draw_instance_predictions(inst)
+
+    def test_draw_binary_mask(self):
+        img, boxes, _, _, masks = self._random_data()
+        img[:, :, 0] = 0  # remove red color
+        mask = masks[0]
+        mask_with_hole = np.zeros_like(mask).astype("uint8")
+        mask_with_hole = cv2.rectangle(mask_with_hole, (10, 10), (50, 50), 1, 5)
+
+        for m in [mask, mask_with_hole]:
+            v = Visualizer(img)
+            o = v.draw_binary_mask(m, color="red", text="test")
+            o = o.get_image().astype("float32")
+            # red color is drawn on the image
+            self.assertTrue(o[:, :, 0].sum() > 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

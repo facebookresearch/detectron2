@@ -3,7 +3,6 @@
 import argparse
 import os
 import onnx
-import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -11,6 +10,7 @@ from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.export import Caffe2Tracer, add_export_config
 from detectron2.modeling import build_model
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.logger import setup_logger
 
 
@@ -23,7 +23,6 @@ def setup_cfg(args):
     cfg.merge_from_list(args.opts)
     cfg.freeze()
     if cfg.MODEL.DEVICE != "cpu":
-        TORCH_VERSION = tuple(int(x) for x in torch.__version__.split(".")[:2])
         assert TORCH_VERSION >= (1, 5), "PyTorch>=1.5 required for GPU conversion!"
     return cfg
 

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 
+#include <c10/cuda/CUDAStream.h>
 #include <torch/csrc/autograd/grad_mode.h>
 #include <torch/script.h>
 
@@ -41,12 +42,16 @@ int main(int argc, const char* argv[]) {
 
   // run the network
   auto output = module.forward({std::make_tuple(input, im_info)});
+  if (device.is_cuda())
+    c10::cuda::getCurrentCUDAStream().synchronize();
 
   // run 3 more times to benchmark
   int N_benchmark = 3;
   auto start_time = chrono::high_resolution_clock::now();
   for (int i = 0; i < N_benchmark; ++i) {
     output = module.forward({std::make_tuple(input, im_info)});
+    if (device.is_cuda())
+      c10::cuda::getCurrentCUDAStream().synchronize();
   }
   auto end_time = chrono::high_resolution_clock::now();
   auto ms = chrono::duration_cast<chrono::microseconds>(end_time - start_time)

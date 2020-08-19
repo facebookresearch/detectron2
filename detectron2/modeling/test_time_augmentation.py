@@ -13,7 +13,7 @@ from detectron2.data.transforms import (
     RandomFlip,
     ResizeShortestEdge,
     ResizeTransform,
-    apply_transform_gens,
+    apply_augmentations,
 )
 from detectron2.structures import Boxes, Instances
 
@@ -42,11 +42,11 @@ class DatasetMapperTTA:
     def __call__(self, dataset_dict):
         """
         Args:
-            dict: a detection dataset dict in standard format
+            dict: a dict in standard model input format. See tutorials for details.
 
         Returns:
             list[dict]:
-                a list of dataset dicts, which contain augmented version of the input image.
+                a list of dicts, which contain augmented version of the input image.
                 The total number of dicts is ``len(min_sizes) * (2 if flip else 1)``.
                 Each dict has field "transforms" which is a TransformList,
                 containing the transforms that are used to generate this image.
@@ -61,18 +61,18 @@ class DatasetMapperTTA:
             pre_tfm = NoOpTransform()
 
         # Create all combinations of augmentations to use
-        tfm_gen_candidates = []  # each element is a list[TransformGen]
+        aug_candidates = []  # each element is a list[Augmentation]
         for min_size in self.min_sizes:
             resize = ResizeShortestEdge(min_size, self.max_size)
-            tfm_gen_candidates.append([resize])  # resize only
+            aug_candidates.append([resize])  # resize only
             if self.flip:
                 flip = RandomFlip(prob=1.0)
-                tfm_gen_candidates.append([resize, flip])  # resize + flip
+                aug_candidates.append([resize, flip])  # resize + flip
 
         # Apply all the augmentations
         ret = []
-        for tfm_gen in tfm_gen_candidates:
-            new_image, tfms = apply_transform_gens(tfm_gen, np.copy(numpy_image))
+        for aug in aug_candidates:
+            new_image, tfms = apply_augmentations(aug, np.copy(numpy_image))
             torch_image = torch.from_numpy(np.ascontiguousarray(new_image.transpose(2, 0, 1)))
 
             dic = copy.deepcopy(dataset_dict)
@@ -177,7 +177,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
         def _maybe_read_image(dataset_dict):
             ret = copy.copy(dataset_dict)
             if "image" not in ret:
-                image = read_image(ret.pop("file_name"), self.image_format)
+                image = read_image(ret.pop("file_name"), self.tta_mapper.image_format)
                 image = torch.from_numpy(image).permute(2, 0, 1)  # CHW
                 ret["image"] = image
             if "height" not in ret and "width" not in ret:

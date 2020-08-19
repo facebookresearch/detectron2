@@ -116,7 +116,7 @@ class TestNMSRotated(unittest.TestCase):
                 torch.allclose(rotated_boxes, backup),
                 "rotated_boxes modified by batched_nms_rotated",
             )
-            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 2, err_msg.format(iou))
 
     def test_nms_rotated_0_degree_cpu(self):
         N = 1000
@@ -149,7 +149,7 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
-            assert torch.equal(keep, keep_ref), err_msg.format(iou)
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
 
     def test_nms_rotated_180_degrees_cpu(self):
         N = 1000
@@ -164,7 +164,7 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
-            assert torch.equal(keep, keep_ref), err_msg.format(iou)
+            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_nms_rotated_0_degree_cuda(self):
@@ -180,8 +180,7 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             r_cpu = nms_rotated(rotated_boxes, scores, iou)
             r_cuda = nms_rotated(rotated_boxes.cuda(), scores.cuda(), iou)
-
-            assert torch.equal(r_cpu, r_cuda.cpu()), err_msg.format(iou)
+            self.assertLessEqual(nms_edit_distance(r_cpu, r_cuda.cpu()), 1, err_msg.format(iou))
 
 
 if __name__ == "__main__":

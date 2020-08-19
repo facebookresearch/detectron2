@@ -14,6 +14,7 @@ inference_test_output
 __pycache__
 _ext
 *.pyc
+*.pyd
 *.so
 detectron2.egg-info/
 build/

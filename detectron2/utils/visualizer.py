@@ -14,6 +14,7 @@ from fvcore.common.file_io import PathManager
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
 
+from detectron2.data import MetadataCatalog
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 
 from .colormap import random_color
@@ -204,7 +205,7 @@ def _create_text_labels(classes, scores, class_names):
         list[str] or None
     """
     labels = None
-    if classes is not None and class_names is not None and len(class_names) > 1:
+    if classes is not None and class_names is not None and len(class_names) > 0:
         labels = [class_names[i] for i in classes]
     if scores is not None:
         if labels is None:
@@ -306,7 +307,26 @@ class VisImage:
 
 
 class Visualizer:
-    def __init__(self, img_rgb, metadata, scale=1.0, instance_mode=ColorMode.IMAGE):
+    """
+    Visualizer that draws data about detection/segmentation on images.
+
+    It contains methods like `draw_{text,box,circle,line,binary_mask,polygon}`
+    that draw primitive objects to images, as well as high-level wrappers like
+    `draw_{instance_predictions,sem_seg,panoptic_seg_predictions,dataset_dict}`
+    that draw composite data in some pre-defined style.
+
+    Note that the exact visualization style for the high-level wrappers are subject to change.
+    Style such as color, opacity, label contents, visibility of labels, or even the visibility
+    of objects themselves (e.g. when the object is too small) may change according
+    to different heuristics, as long as the results still look visually reasonable.
+    To obtain a consistent style, implement custom drawing functions with the primitive
+    methods instead.
+
+    This visualizer focuses on high rendering quality rather than performance. It is not
+    designed to be used for real-time applications.
+    """
+
+    def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
         """
         Args:
             img_rgb: a numpy array of shape (H, W, C), where H and W correspond to
@@ -315,8 +335,12 @@ class Visualizer:
                 is a requirement of the Matplotlib library. The image is also expected
                 to be in the range [0, 255].
             metadata (MetadataCatalog): image metadata.
+            instance_mode (ColorMode): defines one of the pre-defined style for drawing
+                instances on an image.
         """
         self.img = np.asarray(img_rgb).clip(0, 255).astype(np.uint8)
+        if metadata is None:
+            metadata = MetadataCatalog.get("__nonexist__")
         self.metadata = metadata
         self.output = VisImage(self.img, scale=scale)
         self.cpu_device = torch.device("cpu")
@@ -675,7 +699,6 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
-
         num_instances = len(boxes)
 
         if assigned_colors is None:
@@ -847,6 +870,8 @@ class Visualizer:
         self, rotated_box, alpha=0.5, edge_color="g", line_style="-", label=None
     ):
         """
+        Draw a rotated box with label on its top-left corner.
+
         Args:
             rotated_box (tuple): a tuple containing (cnt_x, cnt_y, w, h, angle),
                 where cnt_x and cnt_y are the center coordinates of the box.
@@ -946,7 +971,7 @@ class Visualizer:
         return self.output
 
     def draw_binary_mask(
-        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=4096
+        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=0
     ):
         """
         Args:
@@ -966,8 +991,7 @@ class Visualizer:
         """
         if color is None:
             color = random_color(rgb=True, maximum=1)
-        if area_threshold is None:
-            area_threshold = 4096
+        color = mplc.to_rgb(color)
 
         has_valid_segment = False
         binary_mask = binary_mask.astype("uint8")  # opencv needs uint8
@@ -978,7 +1002,7 @@ class Visualizer:
             # draw polygons for regular masks
             for segment in mask.polygons:
                 area = mask_util.area(mask_util.frPyObjects([segment], shape2d[0], shape2d[1]))
-                if area < area_threshold:
+                if area < (area_threshold or 0):
                     continue
                 has_valid_segment = True
                 segment = segment.reshape(-1, 2)

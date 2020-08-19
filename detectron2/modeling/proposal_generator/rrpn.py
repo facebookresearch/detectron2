@@ -22,7 +22,7 @@ def find_top_rrpn_proposals(
     nms_thresh,
     pre_nms_topk,
     post_nms_topk,
-    min_box_side_len,
+    min_box_size,
     training,
 ):
     """
@@ -44,8 +44,8 @@ def find_top_rrpn_proposals(
         post_nms_topk (int): number of top k scoring proposals to keep after applying NMS.
             When RRPN is run on multiple feature maps (as in FPN) this number is total,
             over all feature maps.
-        min_box_side_len (float): minimum proposal box side length in pixels (absolute units
-            wrt input images).
+        min_box_size(float): minimum proposal box side length in pixels (absolute units wrt
+            input images).
         training (bool): True if proposals are to be used in training, otherwise False.
             This arg exists only to support a legacy bug; look for the "NB: Legacy bug ..."
             comment.
@@ -98,7 +98,7 @@ def find_top_rrpn_proposals(
         boxes.clip(image_size)
 
         # filter empty boxes
-        keep = boxes.nonempty(threshold=min_box_side_len)
+        keep = boxes.nonempty(threshold=min_box_size)
         lvl = level_ids
         if keep.sum().item() != len(boxes):
             boxes, scores_per_img, lvl = (boxes[keep], scores_per_img[keep], level_ids[keep])
@@ -127,11 +127,11 @@ class RRPN(RPN):
     """
 
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
-        super().__init__(cfg, input_shape)
-        self.box2box_transform = Box2BoxTransformRotated(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
-        if self.boundary_threshold >= 0:
+        box2box_transform = Box2BoxTransformRotated(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
+        super().__init__(cfg, input_shape, box2box_transform=box2box_transform)
+        if self.anchor_boundary_thresh >= 0:
             raise NotImplementedError(
-                "boundary_threshold is a legacy option not implemented for RRPN."
+                "anchor_boundary_thresh is a legacy option not implemented for RRPN."
             )
 
     @torch.no_grad()
@@ -191,6 +191,6 @@ class RRPN(RPN):
             self.nms_thresh,
             self.pre_nms_topk[self.training],
             self.post_nms_topk[self.training],
-            self.min_box_side_len,
+            self.min_box_size,
             self.training,
         )
