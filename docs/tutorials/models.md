@@ -147,9 +147,10 @@ You have the following options:
    ```python
    images = ImageList.from_tensors(...)  # preprocessed input tensor
    model = build_model(cfg)
+   model.eval()
    features = model.backbone(images.tensor)
    proposals, _ = model.proposal_generator(images, features)
-   instances = model.roi_heads._forward_box(features, proposals)
+   instances, _ = model.roi_heads(images, features, proposals)
    mask_features = [features[f] for f in model.roi_heads.in_features]
    mask_features = model.roi_heads.mask_pooler(mask_features, [x.pred_boxes for x in instances])
    ```
@@ -159,5 +160,6 @@ You have the following options:
    If they are not exactly what you want, they can at least be used together with partial execution
    to obtain other tensors.
 
-All options require you to read the existing forward code to understand the internal logic,
+All options require you to read documentation and sometimes code
+of the existing models to understand the internal logic,
 in order to write code to obtain the internal tensors.

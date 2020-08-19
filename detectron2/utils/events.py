@@ -224,7 +224,7 @@ class CommonMetricPrinter(EventWriter):
             self._last_write = (iteration, time.perf_counter())
 
         try:
-            lr = "{:.6f}".format(storage.history("lr").latest())
+            lr = "{:.5g}".format(storage.history("lr").latest())
         except KeyError:
             lr = "N/A"
 
@@ -240,7 +240,7 @@ class CommonMetricPrinter(EventWriter):
                 iter=iteration,
                 losses="  ".join(
                     [
-                        "{}: {:.3f}".format(k, v.median(20))
+                        "{}: {:.4g}".format(k, v.median(20))
                         for k, v in storage.histories().items()
                         if "loss" in k
                     ]

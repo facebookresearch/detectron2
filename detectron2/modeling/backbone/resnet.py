@@ -425,7 +425,7 @@ class ResNet(Backbone):
             x: Tensor of shape (N,C,H,W). H, W must be a multiple of ``self.size_divisibility``.
 
         Returns:
-            dict[str->Tensor]
+            dict[str->Tensor]: names and the corresponding features
         """
         assert x.dim() == 4, f"ResNet takes an input of shape (N, C, H, W). Got {x.shape} instead!"
         outputs = {}
