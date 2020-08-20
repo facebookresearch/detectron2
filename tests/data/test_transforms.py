@@ -73,13 +73,16 @@ class TestTransforms(unittest.TestCase):
 
     def test_print_augmentation(self):
         t = T.RandomCrop("relative", (100, 100))
-        self.assertTrue(str(t) == "RandomCrop(crop_type='relative', crop_size=(100, 100))")
+        self.assertEqual(str(t), "RandomCrop(crop_type='relative', crop_size=(100, 100))")
 
-        t = T.RandomFlip(prob=0.5)
-        self.assertTrue(str(t) == "RandomFlip(prob=0.5)")
+        t0 = T.RandomFlip(prob=0.5)
+        self.assertEqual(str(t0), "RandomFlip(prob=0.5)")
 
-        t = T.RandomFlip()
-        self.assertTrue(str(t) == "RandomFlip()")
+        t1 = T.RandomFlip()
+        self.assertEqual(str(t1), "RandomFlip()")
+
+        t = T.AugmentationList([t0, t1])
+        self.assertEqual(str(t), f"AugmentationList[{t0}, {t1}]")
 
     def test_random_apply_prob_out_of_range_check(self):
         test_probabilities = {0.0: True, 0.5: True, 1.0: True, -0.01: False, 1.01: False}
@@ -154,6 +157,16 @@ class TestTransforms(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             inputs.apply_augmentations([TG3()])
+
+    def test_augmentation_list(self):
+        input_shape = (100, 100)
+        image = np.random.rand(*input_shape).astype("float32")
+        sem_seg = (np.random.rand(*input_shape) < 0.5).astype("uint8")
+        inputs = T.StandardAugInput(image, sem_seg=sem_seg)  # provide two args
+
+        augs = T.AugmentationList([T.RandomFlip(), T.Resize(20)])
+        tfms = T.AugmentationList([augs, T.Resize(30)])(inputs)
+        self.assertEqual(len(tfms), 2)
 
     def test_color_transforms(self):
         rand_img = np.random.random((100, 100, 3)) * 255
