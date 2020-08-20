@@ -15,7 +15,7 @@ from fvcore.transforms.transform import (
 )
 from PIL import Image
 
-from .augmentation import Augmentation
+from .augmentation import Augmentation, _transform_to_aug
 from .transform import ExtentTransform, ResizeTransform, RotationTransform
 
 __all__ = [
@@ -36,36 +36,35 @@ __all__ = [
 
 class RandomApply(Augmentation):
     """
-    Randomly apply the wrapper transformation with a given probability.
+    Randomly apply an augmentation with a given probability.
     """
 
-    def __init__(self, transform, prob=0.5):
+    def __init__(self, tfm_or_aug, prob=0.5):
         """
         Args:
-            transform (Transform, Augmentation): the transform to be wrapped
-                by the `RandomApply`. The `transform` can either be a
-                `Transform` or `Augmentation` instance.
+            tfm_or_aug (Transform, Augmentation): the transform or augmentation
+                to be applied. It can either be a `Transform` or `Augmentation`
+                instance.
             prob (float): probability between 0.0 and 1.0 that
                 the wrapper transformation is applied
         """
         super().__init__()
-        assert isinstance(transform, (Transform, Augmentation)), (
-            f"The given transform must either be a Transform or Augmentation instance. "
-            f"Not {type(transform)}"
-        )
+        self.aug = _transform_to_aug(tfm_or_aug)
+        self.input_args = self.aug.input_args
         assert 0.0 <= prob <= 1.0, f"Probablity must be between 0.0 and 1.0 (given: {prob})"
         self.prob = prob
-        self.transform = transform
-        if isinstance(transform, Augmentation):
-            self.input_args = transform.input_args
 
     def get_transform(self, img):
         do = self._rand_range() < self.prob
         if do:
-            if isinstance(self.transform, Augmentation):
-                return self.transform.get_transform(img)
-            else:
-                return self.transform
+            return self.aug.get_transform(img)
+        else:
+            return NoOpTransform()
+
+    def __call__(self, aug_input):
+        do = self._rand_range() < self.prob
+        if do:
+            return self.aug(aug_input)
         else:
             return NoOpTransform()
 

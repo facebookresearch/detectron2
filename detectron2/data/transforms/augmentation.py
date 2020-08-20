@@ -224,10 +224,28 @@ class Augmentation:
     __str__ = __repr__
 
 
-TransformGen = Augmentation
-"""
-Alias for Augmentation, since it is something that generates :class:`Transform`s
-"""
+def _transform_to_aug(tfm_or_aug):
+    """
+    Wrap Transform into Augmentation.
+    Private, used internally to implement augmentations.
+    """
+    assert isinstance(tfm_or_aug, (Transform, Augmentation)), tfm_or_aug
+    if isinstance(tfm_or_aug, Augmentation):
+        return tfm_or_aug
+    else:
+        class _TransformToAug(Augmentation):
+            def __init__(self, tfm: Transform):
+                self.tfm = tfm
+
+            def get_transform(self, *args):
+                return self.tfm
+
+            def __repr__(self):
+                return repr(self.tfm)
+
+            __str__ = __repr__
+
+        return _TransformToAug(tfm_or_aug)
 
 
 class AugmentationList(Augmentation):
@@ -241,17 +259,13 @@ class AugmentationList(Augmentation):
             augs (list[Augmentation or Transform]):
         """
         super().__init__()
-        self.augs = augs
+        self.augs = [_transform_to_aug(x) for x in augs]
 
     def __call__(self, aug_input) -> Transform:
         tfms = []
         for x in self.augs:
-            if isinstance(x, Augmentation):
-                tfm = x(aug_input)
-                tfms.append(tfm)
-            else:  # must be a Transform
-                aug_input.transform(x)
-                tfms.append(x)
+            tfm = x(aug_input)
+            tfms.append(tfm)
         return TransformList(tfms)
 
     def __repr__(self):
@@ -374,4 +388,9 @@ def apply_augmentations(augmentations: List[Union[Transform, Augmentation]], inp
 apply_transform_gens = apply_augmentations
 """
 Alias for backward-compatibility.
+"""
+
+TransformGen = Augmentation
+"""
+Alias for Augmentation, since it is something that generates :class:`Transform`s
 """
