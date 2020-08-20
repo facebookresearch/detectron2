@@ -136,6 +136,8 @@ def do_train(cfg, model, resume=False):
     )
     max_iter = cfg.SOLVER.MAX_ITER
 
+    scheduler.step(start_iter)
+
     periodic_checkpointer = PeriodicCheckpointer(
         checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_iter=max_iter
     )
