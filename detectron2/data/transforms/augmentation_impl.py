@@ -10,7 +10,6 @@ from fvcore.transforms.transform import (
     CropTransform,
     HFlipTransform,
     NoOpTransform,
-    Transform,
     VFlipTransform,
 )
 from PIL import Image

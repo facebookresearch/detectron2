@@ -233,6 +233,7 @@ def _transform_to_aug(tfm_or_aug):
     if isinstance(tfm_or_aug, Augmentation):
         return tfm_or_aug
     else:
+
         class _TransformToAug(Augmentation):
             def __init__(self, tfm: Transform):
                 self.tfm = tfm

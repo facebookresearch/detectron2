@@ -249,6 +249,9 @@ class ColorTransform(Transform):
     def apply_coords(self, coords):
         return coords
 
+    def inverse(self):
+        return NoOpTransform()
+
     def apply_segmentation(self, segmentation):
         return segmentation
 
