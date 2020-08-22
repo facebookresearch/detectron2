@@ -549,16 +549,21 @@ class DensePoseDataFilter(object):
                 (proposals, GT) for the i-th input image,
         """
         proposals_filtered = []
-        feature_mask = torch.ones(
-            len(proposals_with_targets),
-            dtype=torch.bool,
-            device=features[0].device if len(features) > 0 else torch.device("cpu"),
-        )
+        # TODO: the commented out code was supposed to correctly deal with situations
+        # where no valid DensePose GT is available for certain images. The corresponding
+        # image features were sliced and proposals were filtered. This led to performance
+        # deterioration, both in terms of runtime and in terms of evaluation results.
+        #
+        # feature_mask = torch.ones(
+        #    len(proposals_with_targets),
+        #    dtype=torch.bool,
+        #    device=features[0].device if len(features) > 0 else torch.device("cpu"),
+        # )
         for i, proposals_per_image in enumerate(proposals_with_targets):
             if not proposals_per_image.has("gt_densepose") and (
                 not proposals_per_image.has("gt_masks") or not self.keep_masks
             ):
-                feature_mask[i] = 0
+                # feature_mask[i] = 0
                 continue
             gt_boxes = proposals_per_image.gt_boxes
             est_boxes = proposals_per_image.proposal_boxes
@@ -593,15 +598,16 @@ class DensePoseDataFilter(object):
                 for i, (dp_target, mask_target) in enumerate(zip(gt_densepose, gt_masks))
                 if (dp_target is not None) or (mask_target is not None)
             ]
-            if not len(selected_indices):
-                feature_mask[i] = 0
-                continue
+            # if not len(selected_indices):
+            #     feature_mask[i] = 0
+            #     continue
             if len(selected_indices) != N_gt_boxes:
                 proposals_per_image = proposals_per_image[selected_indices]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
             proposals_filtered.append(proposals_per_image)
-        features_filtered = [feature[feature_mask] for feature in features]
-        return features_filtered, proposals_filtered
+        # features_filtered = [feature[feature_mask] for feature in features]
+        # return features_filtered, proposals_filtered
+        return features, proposals_filtered
 
 
 def build_densepose_head(cfg, input_channels):
