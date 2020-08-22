@@ -139,7 +139,9 @@ def configurable(init_func):
         try:
             from_config_func = type(self).from_config
         except AttributeError as e:
-            raise AttributeError("Class with @configurable must have a 'from_config' classmethod.") from e
+            raise AttributeError(
+                "Class with @configurable must have a 'from_config' classmethod."
+            ) from e
         if not inspect.ismethod(from_config_func):
             raise TypeError("Class with @configurable must have a 'from_config' classmethod.")
 
