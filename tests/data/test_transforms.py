@@ -165,7 +165,7 @@ class TestTransforms(unittest.TestCase):
         inputs = T.StandardAugInput(image, sem_seg=sem_seg)  # provide two args
 
         augs = T.AugmentationList([T.RandomFlip(), T.Resize(20)])
-        tfms = T.AugmentationList([augs, T.Resize(30)])(inputs)
+        _ = T.AugmentationList([augs, T.Resize(30)])(inputs)
         # 3 in latest fvcore (flattened transformlist), 2 in older
         # self.assertEqual(len(tfms), 3)
 

@@ -348,8 +348,9 @@ class FastRCNNOutputs:
 class FastRCNNOutputLayers(nn.Module):
     """
     Two linear layers for predicting Fast R-CNN outputs:
-      (1) proposal-to-detection box regression deltas
-      (2) classification scores
+
+    1. proposal-to-detection box regression deltas
+    2. classification scores
     """
 
     @configurable

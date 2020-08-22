@@ -1,8 +1,8 @@
 
-# Use Dataloaders
+# Dataloader
 
 Dataloader is the component that provides data to models.
-A dataloader usually (but not necessarily) takes raw information from [datasets](datasets.md),
+A dataloader usually (but not necessarily) takes raw information from [datasets](./datasets.md),
 and process them into a format needed by the model.
 
 ## How the Existing Dataloader Works
