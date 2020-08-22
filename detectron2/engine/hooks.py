@@ -331,11 +331,11 @@ class EvalHook(HookBase):
             for k, v in flattened_results.items():
                 try:
                     v = float(v)
-                except Exception:
+                except Exception as e:
                     raise ValueError(
                         "[EvalHook] eval_function should return a nested dict of float. "
                         "Got '{}: {}' instead.".format(k, v)
-                    )
+                    ) from e
             self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
 
         # Evaluation may take different time among workers.
