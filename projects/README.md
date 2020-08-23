@@ -36,3 +36,4 @@ External projects in the community that use detectron2:
 + [Res2Net backbones](https://github.com/Res2Net/Res2Net-detectron2)
 + [VoVNet backbones](https://github.com/youngwanLEE/vovnet-detectron2)
 + [FsDet](https://github.com/ucbdrive/few-shot-object-detection), Few-Shot Object Detection.
++ [MGD: Matching Guided Distillation](https://github.com/KaiyuYue/mgd)
