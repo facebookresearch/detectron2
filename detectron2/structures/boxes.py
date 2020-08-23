@@ -359,10 +359,9 @@ def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     Returns:
         Tensor: iou, sized [N].
     """
-    assert len(boxes1) == len(
-        boxes2
-    ), "boxlists should have the same" "number of entries, got {}, {}".format(
-        len(boxes1), len(boxes2)
+    assert len(boxes1) == len(boxes2), (
+        "boxlists should have the same"
+        "number of entries, got {}, {}".format(len(boxes1), len(boxes2))
     )
     area1 = boxes1.area()  # [N]
     area2 = boxes2.area()  # [N]
