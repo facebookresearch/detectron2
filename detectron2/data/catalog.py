@@ -49,12 +49,12 @@ class _DatasetCatalog(UserDict):
         """
         try:
             f = self[name]
-        except KeyError:
+        except KeyError as e:
             raise KeyError(
                 "Dataset '{}' is not registered! Available datasets are: {}".format(
                     name, ", ".join(list(self.keys()))
                 )
-            )
+            ) from e
         return f()
 
     def list(self) -> List[str]:

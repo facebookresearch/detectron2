@@ -85,10 +85,10 @@ def _get_aug_input_args(aug, aug_input) -> List[Any]:
     for f in aug.input_args:
         try:
             args.append(getattr(aug_input, f))
-        except AttributeError:
+        except AttributeError as e:
             raise AttributeError(
                 f"Augmentation {aug} needs '{f}', which is not an attribute of {aug_input}!"
-            )
+            ) from e
     return args
 
 
