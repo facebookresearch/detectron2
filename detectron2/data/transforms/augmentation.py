@@ -7,6 +7,7 @@ import pprint
 from typing import Any, List, Optional, Tuple, Union
 from fvcore.transforms.transform import Transform, TransformList
 
+# TODO rewrite tutorial and update docs
 """
 Overview of the augmentation system:
 
@@ -23,12 +24,12 @@ be re-applied on associated data, e.g. the geometry of an image and its segmenta
 to be transformed in the same way, instead of both being randomly augmented in inconsistent ways.
 (If you're sure such re-application is not needed, then determinism is not a crucial requirement.)
 An augmentation policy may need to access arbitrary input data to create a `Transform`, so it
-declares the needed input data by its `input_args` attribute. Users are expected to provide them
-when calling its `get_transform` method.
+declares the needed input data by the signature of `get_transform`. Users are expected to provide
+them when calling its `get_transform` method.
 
 `Augmentation` is not able to apply transforms to data: data associated with one sample may be
-much more than what `Augmentation` gets. For example, >90% of the common augmentation policies
-only need an image, but the actual input samples can be much more complicated.
+much more than what `Augmentation.get_transform` gets. For example, >90% of the common augmentation
+policies only need an image, but the actual input samples can be much more complicated.
 
 `AugInput` manages all inputs needed by `Augmentation` and implements the logic
 to apply a sequence of augmentation. It defines how the inputs should be modified by a `Transform`,
@@ -81,13 +82,35 @@ def _get_aug_input_args(aug, aug_input) -> List[Any]:
     """
     Get the arguments to be passed to ``aug.get_transform`` from the input ``aug_input``.
     """
+    if aug.input_args is None:
+        # Decide what attributes are needed automatically
+        prms = list(inspect.signature(aug.get_transform).parameters.items())
+        # The default behavior is: if there is one parameter, then its "image"
+        # (work automatically for majority of use cases, and also avoid BC breaking),
+        # Otherwise, use the argument names.
+        if len(prms) == 1:
+            names = ("image",)
+        else:
+            names = []
+            for name, prm in prms:
+                if prm.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+                    raise TypeError(
+                        f""" \
+The default implementation of `{type(aug)}.__call__` does not allow \
+`{type(aug)}.get_transform` to use variable-length arguments (*args, **kwargs)! \
+If arguments are unknown, reimplement `__call__` instead. \
+"""
+                    )
+                names.append(name)
+        aug.input_args = tuple(names)
+
     args = []
     for f in aug.input_args:
         try:
             args.append(getattr(aug_input, f))
         except AttributeError as e:
             raise AttributeError(
-                f"Augmentation {aug} needs '{f}', which is not an attribute of {aug_input}!"
+                f"{aug}.get_transform() needs '{f}', which is not an attribute of {aug_input}!"
             ) from e
     return args
 
@@ -101,29 +124,24 @@ class Augmentation:
     A "policy" that generates a :class:`Transform` may, in the most general case,
     need arbitrary information from input data in order to determine what transforms
     to apply. Therefore, each :class:`Augmentation` instance defines the arguments
-    needed by its :meth:`get_transform` method with the :attr:`input_args` attribute.
-    When called with the positional arguments defined by the :attr:`input_args`,
+    needed by its :meth:`get_transform` method. When called with the positional arguments,
     the :meth:`get_transform` method executes the policy.
 
     Examples:
     ::
         # if a policy needs to know both image and semantic segmentation
-        assert aug.input_args == ("image", "sem_seg")
         tfm: Transform = aug.get_transform(image, sem_seg)
         new_image = tfm.apply_image(image)
-
-    To implement a custom :class:`Augmentation`, define its :attr:`input_args` and
-    implement :meth:`get_transform`.
 
     Note that :class:`Augmentation` defines the policies to create a :class:`Transform`,
     but not how to apply the actual transform to those data.
     """
 
-    input_args: Tuple[str] = ("image",)
+    input_args: Optional[Tuple[str]] = None
     """
-    Attribute of class instances that defines the argument(s) needed by
-    :meth:`get_transform`. Default to only "image", because most policies only
-    require knowing the image in order to determine the transform.
+    Attribute that defines the argument(s) needed by :meth:`get_transform`.
+    Default to be automatically obtained from the method signature, which often only
+    contain "image".
 
     Users can freely define arbitrary new args and their types in custom
     :class:`Augmentation`. In detectron2 we use the following convention:
@@ -149,7 +167,8 @@ class Augmentation:
         Execute the policy based on input data, and decide what transform to apply to inputs.
 
         Args:
-            arguments must follow what's defined in :attr:`input_args`.
+            any fixed-length positional arguments. By default, the name of the arguments
+            should exist in the :class:`AugInput` to be used.
 
         Returns:
             Transform: Returns the deterministic transform to apply to the input.
@@ -166,7 +185,7 @@ class Augmentation:
 
         Args:
             aug_input (AugInput): an object that has attributes needed by this augmentation
-                (defined by ``self.input_args``). Its ``transform`` method will be called
+                (defined by ``self.get_transform``). Its ``transform`` method will be called
                 to in-place transform it.
 
         Returns:
