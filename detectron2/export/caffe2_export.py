@@ -139,7 +139,10 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     assert hasattr(model, "encode_additional_info")
 
     # Export via ONNX
-    logger.info("Exporting a {} model via ONNX ...".format(type(model).__name__))
+    logger.info(
+        "Exporting a {} model via ONNX ...".format(type(model).__name__)
+        + " Some warnings from ONNX are expected and are usually not to worry about."
+    )
     onnx_model = export_onnx_model(model, (tensor_inputs,))
     # Convert ONNX model to Caffe2 protobuf
     init_net, predict_net = Caffe2Backend.onnx_graph_to_caffe2_net(onnx_model)
