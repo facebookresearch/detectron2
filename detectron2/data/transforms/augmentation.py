@@ -297,47 +297,12 @@ class AugmentationList(Augmentation):
 
 class AugInput:
     """
-    A base class for anything on which a list of :class:`Augmentation` can be applied.
-    This class provides input arguments for :class:`Augmentation` to use, and defines how
-    to apply transforms to these data.
-
-    An instance of this class must satisfy the following:
-
-    * :class:`Augmentation` declares some data it needs as arguments. A :class:`AugInput`
-      must provide access to these data in the form of attribute access (``getattr``).
-      For example, if a :class:`Augmentation` to be applied needs "image" and "sem_seg"
-      arguments, this class must have the attribute "image" and "sem_seg" whose content
-      is as required by the :class:`Augmentation`s.
-    * This class must have a ``transform(tfm: Transform) -> None`` method which
-      in-place transforms all attributes stored in the class.
-    """
-
-    def transform(self, tfm: Transform) -> None:
-        raise NotImplementedError
-
-    def apply_augmentations(
-        self, augmentations: List[Union[Augmentation, Transform]]
-    ) -> TransformList:
-        """
-        Apply a list of Transform/Augmentation in-place and returned the applied transform.
-        Attributes of this class will be modified.
-
-        Returns:
-            TransformList:
-                returns transformed inputs and the list of transforms applied.
-                The TransformList can then be applied to other data associated with the inputs.
-        """
-        return AugmentationList(augmentations)(self)
-
-
-class StandardAugInput(AugInput):
-    """
-    A standard implementation of :class:`AugInput` for the majority of use cases.
-    This class provides the following standard attributes that are common to use by
-    Augmentation (augmentation policies). These are chosen because most
-    :class:`Augmentation` won't need anything more to define a augmentation policy.
-    After applying augmentations to these special attributes, the returned transforms
-    can then be used to transform other data structures that users have.
+    Input that can be used with :meth:`Augmentation.__call__`.
+    This is a standard implementation for the majority of use cases.
+    This class provides the following standard attributes that :class:`Augmentation`
+    may require. After applying augmentations to these attributes,
+    the returned transforms can then be used to transform other data structures
+    that users have.
 
     Attributes:
         image (ndarray): image in HW or HWC format. The meaning of C is up to users
@@ -346,8 +311,8 @@ class StandardAugInput(AugInput):
 
     Examples:
     ::
-        input = StandardAugInput(image, boxes=boxes)
-        tfms = input.apply_augmentations(list_of_augmentations)
+        input = AugInput(image, boxes=boxes)
+        tfms = augmentation(input)
         transformed_image = input.image
         transformed_boxes = input.boxes
         transformed_other_data = tfms.apply_other(other_data)
@@ -355,8 +320,16 @@ class StandardAugInput(AugInput):
     An extended project that works with new data types may require augmentation
     policies that need more inputs. An algorithm may need to transform inputs
     in a way different from the standard approach defined in this class. In those
-    situations, users can implement new subclasses of :class:`AugInput` with different
-    attributes and the :meth:`transform` method.
+    situations, users can provide input in a custom type that satify the following
+    condition:
+
+    * :class:`Augmentation` declares some data it needs as arguments. The input
+      must provide access to these data in the form of attribute access (``getattr``).
+      For example, if a :class:`Augmentation` to be applied needs "image" and "sem_seg"
+      arguments, its input must have the attribute "image" and "sem_seg" whose content
+      is as required by the :class:`Augmentation`s.
+    * The input must have a ``transform(tfm: Transform) -> None`` method which
+      in-place transforms all its attributes.
     """
 
     # TODO maybe should support more builtin data types here
@@ -390,15 +363,29 @@ class StandardAugInput(AugInput):
         if self.sem_seg is not None:
             self.sem_seg = tfm.apply_segmentation(self.sem_seg)
 
+    def apply_augmentations(
+        self, augmentations: List[Union[Augmentation, Transform]]
+    ) -> TransformList:
+        """
+        Apply a list of Transform/Augmentation in-place and returned the applied transform.
+        Attributes of this class will be modified.
+
+        Returns:
+            TransformList:
+                returns transformed inputs and the list of transforms applied.
+                The TransformList can then be applied to other data associated with the inputs.
+        """
+        return AugmentationList(augmentations)(self)
+
 
 def apply_augmentations(augmentations: List[Union[Transform, Augmentation]], inputs):
     """
-    Use :meth:`AugInput.apply_augmentations` instead.
+    Use ``T.AugmentationList(augmentations)(inputs)`` instead.
     """
     if isinstance(inputs, np.ndarray):
         # handle the common case of image-only Augmentation, also for backward compatibility
         image_only = True
-        inputs = StandardAugInput(inputs)
+        inputs = AugInput(inputs)
     else:
         image_only = False
     tfms = inputs.apply_augmentations(augmentations)
@@ -414,3 +401,5 @@ TransformGen = Augmentation
 """
 Alias for Augmentation, since it is something that generates :class:`Transform`s
 """
+
+StandardAugInput = AugInput
