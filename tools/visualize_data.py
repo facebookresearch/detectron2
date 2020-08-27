@@ -63,7 +63,7 @@ if __name__ == "__main__":
             print("Saving to {} ...".format(filepath))
             vis.save(filepath)
 
-    scale = 2.0 if args.show else 1.0
+    scale = 1.0 if args.show else 1.0
     if args.source == "dataloader":
         train_data_loader = build_detection_train_loader(cfg)
         for batch in train_data_loader:
@@ -73,14 +73,22 @@ if __name__ == "__main__":
                 img = utils.convert_image_to_rgb(img, cfg.INPUT.FORMAT)
 
                 visualizer = Visualizer(img, metadata=metadata, scale=scale)
-                target_fields = per_image["instances"].get_fields()
-                labels = [metadata.thing_classes[i] for i in target_fields["gt_classes"]]
-                vis = visualizer.overlay_instances(
-                    labels=labels,
-                    boxes=target_fields.get("gt_boxes", None),
-                    masks=target_fields.get("gt_masks", None),
-                    keypoints=target_fields.get("gt_keypoints", None),
-                )
+                for j, target_fields in enumerate(
+                    [
+                        per_image["instances"].get_fields(),
+                        per_image["instances"].obtain_extra_data("ignore").get_fields(),
+                    ]
+                ):
+                    labels = [
+                        metadata.thing_classes[i] if j == 0 else "ignore"
+                        for i in target_fields["gt_classes"]
+                    ]
+                    vis = visualizer.overlay_instances(
+                        labels=labels,
+                        boxes=target_fields.get("gt_boxes", None),
+                        masks=target_fields.get("gt_masks", None),
+                        keypoints=target_fields.get("gt_keypoints", None),
+                    )
                 output(vis, str(per_image["image_id"]) + ".jpg")
     else:
         dicts = list(chain.from_iterable([DatasetCatalog.get(k) for k in cfg.DATASETS.TRAIN]))
