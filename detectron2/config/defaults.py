@@ -57,6 +57,10 @@ _C.INPUT.MAX_SIZE_TRAIN = 1333
 _C.INPUT.MIN_SIZE_TEST = 800
 # Maximum size of the side of the image during testing
 _C.INPUT.MAX_SIZE_TEST = 1333
+# `True` if flipping is used for data augmentation during training
+_C.INPUT.RANDOM_FLIP = CN({"ENABLED": True})
+_C.INPUT.RANDOM_FLIP.HORIZONTAL = True
+_C.INPUT.RANDOM_FLIP.VERTICAL = False
 
 # `True` if cropping is used for data augmentation during training
 _C.INPUT.CROP = CN({"ENABLED": False})
