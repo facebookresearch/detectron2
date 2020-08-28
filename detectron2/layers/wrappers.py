@@ -222,5 +222,5 @@ def nonzero_tuple(x):
     because of https://github.com/pytorch/pytorch/issues/38718
     """
     if x.dim() == 0:
-        return x.unsqueeze(0).nonzero().unbind(1)
-    return x.nonzero().unbind(1)
+        return x.unsqueeze(0).nonzero(as_tuple=False).unbind(1)
+    return x.nonzero(as_tuple=False).unbind(1)
