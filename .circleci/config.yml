@@ -200,17 +200,16 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200730
+            - cache-key-{{ .Branch }}-ID-20200735
 
       - <<: *install_dep_win
 
       - save_cache:
           paths:
             - env
-          key: cache-key-{{ .Branch }}-ID-20200730
+          key: cache-key-{{ .Branch }}-ID-20200735
 
       - <<: *install_detectron2_win
-      - <<: *run_unittests
 
 workflows:
   version: 2
