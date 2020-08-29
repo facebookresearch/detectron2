@@ -72,6 +72,7 @@ install_dep_win: &install_dep_win
   - run:
       name: Install Dependencies on Windows
       command: |
+        pip install certifi --ignore-installed
         pip install numpy
         pip install cython
         pip install pycocotools==2.0.2a1
