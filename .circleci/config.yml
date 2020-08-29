@@ -20,10 +20,10 @@ windows-cpu: &windows_cpu
       image: windows-server-2019-vs2019:stable
       shell: powershell.exe
 
-windows-gpu: &windows_gpu
-    machine:
-      resource_class: windows.gpu.nvidia.medium
-      image: windows-server-2019-nvidia:stable
+# windows-gpu: &windows_gpu
+#     machine:
+#       resource_class: windows.gpu.nvidia.medium
+#       image: windows-server-2019-nvidia:stable
 
 # -------------------------------------------------------------------------------------
 # Re-usable commands
@@ -75,8 +75,8 @@ install_dep_win: &install_dep_win
         pip install certifi --ignore-installed
         pip install numpy
         pip install cython
-        pip install pycocotools==2.0.2a1
-        pip install git+https://github.com/facebookresearch/fvcore
+        pip install pycocotools>=2.0.2
+        pip install -U git+https://github.com/facebookresearch/fvcore
         pip install opencv-python pytest-xdist
         pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
