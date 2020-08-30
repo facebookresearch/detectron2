@@ -14,6 +14,17 @@ gpu: &gpu
     docker_layer_caching: true
   resource_class: gpu.small
 
+windows-cpu: &windows_cpu
+    machine:
+      resource_class: windows.medium
+      image: windows-server-2019-vs2019:stable
+      shell: powershell.exe
+
+# windows-gpu: &windows_gpu
+#     machine:
+#       resource_class: windows.gpu.nvidia.medium
+#       image: windows-server-2019-nvidia:stable
+
 # -------------------------------------------------------------------------------------
 # Re-usable commands
 # -------------------------------------------------------------------------------------
@@ -38,6 +49,17 @@ setup_venv: &setup_venv
         which pip
         pip install --upgrade pip
 
+setup_venv_win: &setup_venv_win
+  - run:
+      name: Setup Virutal Env for Windows
+      command: |
+        pip install virtualenv
+        python -m virtualenv env
+        .\env\Scripts\activate
+        python --version
+        which python
+        which pip
+
 install_dep: &install_dep
   - run:
       name: Install Dependencies
@@ -46,11 +68,30 @@ install_dep: &install_dep
         pip install --progress-bar off opencv-python pytest-xdist
         pip install --progress-bar off torch torchvision
 
+install_dep_win: &install_dep_win
+  - run:
+      name: Install Dependencies on Windows
+      command: |
+        pip install certifi --ignore-installed
+        pip install numpy
+        pip install cython
+        pip install pycocotools>=2.0.2
+        pip install -U git+https://github.com/facebookresearch/fvcore
+        pip install opencv-python pytest-xdist
+        pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
 install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
         gcc --version
+        pip install -U --progress-bar off -e .[dev]
+        python -m detectron2.utils.collect_env
+
+install_detectron2_win: &install_detectron2_win
+  - run:
+      name: Install Detectron2 on Windows
+      command: |
         pip install -U --progress-bar off -e .[dev]
         python -m detectron2.utils.collect_env
 
@@ -151,6 +192,26 @@ jobs:
           command: |
             docker exec -e CIRCLECI=true -it d2 python3 -m pytest -n 2 -v /detectron2/tests
 
+  windows_cpu_tests:
+    <<: *windows_cpu
+    steps:
+      - checkout
+      - <<: *setup_venv_win
+
+      # Cache the env directory that contains dependencies
+      - restore_cache:
+          keys:
+            - cache-key-{{ .Branch }}-ID-20200735
+
+      - <<: *install_dep_win
+
+      - save_cache:
+          paths:
+            - env
+          key: cache-key-{{ .Branch }}-ID-20200735
+
+      - <<: *install_detectron2_win
+
 workflows:
   version: 2
   regular_test:
@@ -168,3 +229,4 @@ workflows:
           name: linux_gpu_tests_pytorch1.6
           pytorch_version: '1.6'
           torchvision_version: '0.7'
+      - windows_cpu_tests

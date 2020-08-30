@@ -59,7 +59,7 @@ Choose from this table:
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.5/index.html
 </code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.4/index.html
-  </code></pre> </details> </td> </tr></tbody></table>  
+  </code></pre> </details> </td> </tr></tbody></table>
 
 
 Note that:
@@ -211,9 +211,8 @@ Any issue on windows.
 </summary>
 <br/>
 
-Although detectron2 can be installed on windows with some effort (similar to [these](https://github.com/facebookresearch/pytorch3d/blob/master/INSTALL.md#2-install-from-a-local-clone)),
-we do not provide official support for it.
-
+Detectron2 is continuously built on windows with [CircleCI](https://circleci.com/gh/facebookresearch/detectron2).
+However we do not provide official support for it.
 PRs that improves code compatibility on windows are welcome.
 </details>
 
