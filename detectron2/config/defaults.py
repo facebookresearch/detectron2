@@ -531,6 +531,9 @@ _C.SOLVER.WARMUP_METHOD = "linear"
 # Save a checkpoint after every this number of iterations
 _C.SOLVER.CHECKPOINT_PERIOD = 5000
 
+# The maximum number of checkpoints to save through the PeriodicCheckpointer
+_C.SOLVER.MAX_TO_KEEP = None
+
 # Number of images per batch across all machines.
 # If we have 16 GPUs and IMS_PER_BATCH = 32,
 # each GPU will see 2 images per batch.
