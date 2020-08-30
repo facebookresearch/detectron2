@@ -450,8 +450,6 @@ class RPN(nn.Module):
         )
         return proposals, losses
 
-    # TODO: use torch.no_grad when torchscript supports it.
-    # https://github.com/pytorch/pytorch/pull/41371
     def predict_proposals(
         self,
         anchors: List[Boxes],
@@ -468,22 +466,21 @@ class RPN(nn.Module):
                 stores post_nms_topk object proposals for image i, sorted by their
                 objectness score in descending order.
         """
-        # The proposals are treated as fixed for approximate joint training with roi heads.
+        # The proposals are treated as fixed for joint training with roi heads.
         # This approach ignores the derivative w.r.t. the proposal boxes’ coordinates that
-        # are also network responses, so is approximate.
-        pred_objectness_logits = [t.detach() for t in pred_objectness_logits]
-        pred_anchor_deltas = [t.detach() for t in pred_anchor_deltas]
-        pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
-        return find_top_rpn_proposals(
-            pred_proposals,
-            pred_objectness_logits,
-            image_sizes,
-            self.nms_thresh,
-            self.pre_nms_topk[self.training],
-            self.post_nms_topk[self.training],
-            self.min_box_size,
-            self.training,
-        )
+        # are also network responses.
+        with torch.no_grad():
+            pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
+            return find_top_rpn_proposals(
+                pred_proposals,
+                pred_objectness_logits,
+                image_sizes,
+                self.nms_thresh,
+                self.pre_nms_topk[self.training],
+                self.post_nms_topk[self.training],
+                self.min_box_size,
+                self.training,
+            )
 
     def _decode_proposals(self, anchors: List[Boxes], pred_anchor_deltas: List[torch.Tensor]):
         """
