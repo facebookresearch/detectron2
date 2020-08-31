@@ -89,7 +89,7 @@ these functions.
 
 If you use [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
 you can overwrite its `build_{train,test}_loader` method to use your own dataloader.
-See the [densepose dataloader](../../projects/DensePose/train_net.py)
+See the [deeplab dataloader](../../projects/DeepLab/train_net.py)
 for an example.
 
 If you write your own training loop, you can plug in your data loader easily.

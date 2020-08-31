@@ -85,7 +85,7 @@ def collect_env_info():
     try:
         from detectron2 import _C
     except ImportError:
-        data.append(("detectron2._C", "failed to import"))
+        data.append(("detectron2._C", "failed to import. detectron2 is not built correctly"))
 
         # print system compilers when extension fails to build
         if sys.platform != "win32":  # don't know what to do for windows

@@ -113,6 +113,13 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
     #   'id': 42986},
     #  ...]
     anns = [coco_api.imgToAnns[img_id] for img_id in img_ids]
+    total_num_valid_anns = sum([len(x) for x in anns])
+    total_num_anns = len(coco_api.anns)
+    if total_num_valid_anns < total_num_anns:
+        logger.warning(
+            f"{json_file} contains {total_num_anns} annotations, but only "
+            f"{total_num_valid_anns} of them match to images in the file."
+        )
 
     if "minival" not in json_file:
         # The popular valminusminival & minival annotations for COCO2014 contain this bug.
@@ -124,7 +131,6 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         )
 
     imgs_anns = list(zip(imgs, anns))
-
     logger.info("Loaded {} images in COCO format from {}".format(len(imgs_anns), json_file))
 
     dataset_dicts = []
@@ -370,7 +376,7 @@ def convert_to_coco_dict(dataset_name):
             coco_annotation["image_id"] = coco_image["id"]
             coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
             coco_annotation["area"] = float(area)
-            coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
+            coco_annotation["iscrowd"] = int(annotation.get("iscrowd", 0))
             coco_annotation["category_id"] = reverse_id_mapper(annotation["category_id"])
 
             # Add optional fields

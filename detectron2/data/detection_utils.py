@@ -377,7 +377,7 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
     target = Instances(image_size)
     target.gt_boxes = Boxes(boxes)
 
-    classes = [obj["category_id"] for obj in annos]
+    classes = [int(obj["category_id"]) for obj in annos]
     classes = torch.tensor(classes, dtype=torch.int64)
     target.gt_classes = classes
 

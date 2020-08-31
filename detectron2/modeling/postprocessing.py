@@ -7,6 +7,7 @@ from detectron2.structures import Instances
 from detectron2.utils.memory import retry_if_cuda_oom
 
 
+# perhaps should rename to "resize_instance"
 def detector_postprocess(results, output_height, output_width, mask_threshold=0.5):
     """
     Resize the output instances.
