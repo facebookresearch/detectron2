@@ -130,9 +130,11 @@ def collect_env_info():
             data.append(("GPU " + ",".join(devids), name))
 
         if has_rocm:
-            data.append(("ROCM_HOME", str(ROCM_HOME)))
+            msg = " - invalid!" if not os.path.isdir(ROCM_HOME) else ""
+            data.append(("ROCM_HOME", str(ROCM_HOME) + msg))
         else:
-            data.append(("CUDA_HOME", str(CUDA_HOME)))
+            msg = " - invalid!" if not os.path.isdir(CUDA_HOME) else ""
+            data.append(("CUDA_HOME", str(CUDA_HOME) + msg))
 
             cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
             if cuda_arch_list:
