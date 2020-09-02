@@ -644,6 +644,10 @@ class Visualizer:
                     text_pos = (x0, y0)  # if drawing boxes, put text on the box corner.
                     horiz_align = "left"
                 elif masks is not None:
+                    # skip small mask without polygon
+                    if len(masks[i].polygons) == 0:
+                        continue
+
                     x0, y0, x1, y1 = masks[i].bbox()
 
                     # draw text in the center (defined by median) when box is not drawn
