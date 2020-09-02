@@ -175,6 +175,14 @@ class DensePoseCocoEval(object):
         def _toMask(anns, coco):
             # modify ann['segmentation'] by reference
             for ann in anns:
+                # safeguard for invalid segmentation annotation;
+                # annotations containing empty lists exist in the posetrack
+                # dataset. This is not a correct segmentation annotation
+                # in terms of COCO format; we need to deal with it somehow
+                segm = ann["segmentation"]
+                if type(segm) == list and len(segm) == 0:
+                    ann["segmentation"] = None
+                    continue
                 rle = coco.annToRLE(ann)
                 ann["segmentation"] = rle
 
@@ -255,6 +263,8 @@ class DensePoseCocoEval(object):
                 gt["ignore"] = (gt["num_keypoints"] == 0) or gt["ignore"]
             if p.iouType == "densepose":
                 gt["ignore"] = ("dp_x" in gt) == 0
+            if p.iouType == "segm":
+                gt["ignore"] = gt["segmentation"] is None
 
         self._gts = defaultdict(list)  # gt for evaluation
         self._dts = defaultdict(list)  # dt for evaluation
@@ -424,8 +434,8 @@ class DensePoseCocoEval(object):
             dt = dt[0 : p.maxDets[-1]]
 
         if p.iouType == "segm":
-            g = [g["segmentation"] for g in gt]
-            d = [d["segmentation"] for d in dt]
+            g = [g["segmentation"] for g in gt if g["segmentation"] is not None]
+            d = [d["segmentation"] for d in dt if d["segmentation"] is not None]
         elif p.iouType == "bbox":
             g = [g["bbox"] for g in gt]
             d = [d["bbox"] for d in dt]
