@@ -47,7 +47,7 @@ setup_venv: &setup_venv
         python --version
         which python
         which pip
-        pip install --upgrade pip setuptools==49
+        pip install --upgrade pip setuptools==49.6.0
 
 setup_venv_win: &setup_venv_win
   - run:
