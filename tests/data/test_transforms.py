@@ -23,6 +23,7 @@ class TestTransforms(unittest.TestCase):
         np.random.seed(125)
         cfg = get_cfg()
         is_train = True
+        cfg.INPUT.RANDOM_FLIP = 'horizontal'
         augs = detection_utils.build_augmentation(cfg, is_train)
         image = np.random.rand(200, 300)
         image, transforms = T.apply_augmentations(augs, image)
