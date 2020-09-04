@@ -83,6 +83,12 @@ def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
         logger.warning(
             f"List keyframes: Error opening video file container {video_fpath}, " f"OS error: {e}"
         )
+    except RuntimeError as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"List keyframes: Error opening video file container {video_fpath}, "
+            f"Runtime error: {e}"
+        )
     return []
 
 
