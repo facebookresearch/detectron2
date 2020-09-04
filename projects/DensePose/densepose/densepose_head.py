@@ -15,6 +15,7 @@ from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
 
 from .data.structures import DensePoseOutput
+from .modeling import initialize_module_params
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
 
@@ -84,14 +85,6 @@ class DensePoseConfidenceModelConfig:
                 epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.EPSILON,
             ),
         )
-
-
-def initialize_module_params(module):
-    for name, param in module.named_parameters():
-        if "bias" in name:
-            nn.init.constant_(param, 0)
-        elif "weight" in name:
-            nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
 
 
 @ROI_DENSEPOSE_HEAD_REGISTRY.register()
