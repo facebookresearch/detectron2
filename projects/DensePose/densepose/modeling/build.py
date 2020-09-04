@@ -34,3 +34,19 @@ def build_densepose_data_filter(cfg: CfgNode):
     """
     dp_filter = DensePoseDataFilter(cfg)
     return dp_filter
+
+
+def build_densepose_head(cfg: CfgNode, input_channels: int):
+    """
+    Build DensePose head based on configurations options
+
+    Args:
+        cfg (CfgNode): configuration options
+        input_channels (int): input tensor size along the channel dimension
+    Return:
+        An instance of DensePose head
+    """
+    from .roi_heads.registry import ROI_DENSEPOSE_HEAD_REGISTRY
+
+    head_name = cfg.MODEL.ROI_DENSEPOSE_HEAD.NAME
+    return ROI_DENSEPOSE_HEAD_REGISTRY.get(head_name)(cfg, input_channels)
