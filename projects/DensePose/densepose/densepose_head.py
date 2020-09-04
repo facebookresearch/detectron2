@@ -7,8 +7,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.config import CfgNode
-from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
+from detectron2.layers import Conv2d
 from detectron2.structures import Instances
 from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
@@ -19,6 +18,7 @@ from .modeling import (
     DensePoseUVConfidenceType,
     initialize_module_params,
 )
+from .modeling.predictors import DensePoseChartWithConfidencePredictor
 
 ROI_DENSEPOSE_HEAD_REGISTRY = Registry("ROI_DENSEPOSE_HEAD")
 
@@ -303,159 +303,6 @@ class DensePoseV1ConvXHead(nn.Module):
         return layer_name
 
 
-class DensePosePredictor(nn.Module):
-    def __init__(self, cfg, input_channels):
-
-        super(DensePosePredictor, self).__init__()
-        dim_in = input_channels
-        n_segm_chan = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
-        dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
-        kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
-        self.ann_index_lowres = ConvTranspose2d(
-            dim_in, n_segm_chan, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-        )
-        self.index_uv_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-        )
-        self.u_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-        )
-        self.v_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-        )
-        self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
-        self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
-        self._initialize_confidence_estimation_layers(cfg, self.confidence_model_cfg, dim_in)
-        initialize_module_params(self)
-
-    def forward(self, head_outputs):
-        ann_index_lowres = self.ann_index_lowres(head_outputs)
-        index_uv_lowres = self.index_uv_lowres(head_outputs)
-        u_lowres = self.u_lowres(head_outputs)
-        v_lowres = self.v_lowres(head_outputs)
-
-        def interp2d(input):
-            return interpolate(
-                input, scale_factor=self.scale_factor, mode="bilinear", align_corners=False
-            )
-
-        ann_index = interp2d(ann_index_lowres)
-        index_uv = interp2d(index_uv_lowres)
-        u = interp2d(u_lowres)
-        v = interp2d(v_lowres)
-        (
-            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
-            (
-                sigma_1_lowres,
-                sigma_2_lowres,
-                kappa_u_lowres,
-                kappa_v_lowres,
-                fine_segm_confidence_lowres,
-                coarse_segm_confidence_lowres,
-            ),
-            (ann_index, index_uv),
-        ) = self._forward_confidence_estimation_layers(
-            self.confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
-        )
-        return (
-            (ann_index, index_uv, u, v),
-            (ann_index_lowres, index_uv_lowres, u_lowres, v_lowres),
-            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
-            (
-                sigma_1_lowres,
-                sigma_2_lowres,
-                kappa_u_lowres,
-                kappa_v_lowres,
-                fine_segm_confidence_lowres,
-                coarse_segm_confidence_lowres,
-            ),
-        )
-
-    def _initialize_confidence_estimation_layers(
-        self, cfg: CfgNode, confidence_model_cfg: DensePoseConfidenceModelConfig, dim_in: int
-    ):
-        dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
-        kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
-        if confidence_model_cfg.uv_confidence.enabled:
-            if confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
-                self.sigma_2_lowres = ConvTranspose2d(
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-                )
-            elif confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
-                self.sigma_2_lowres = ConvTranspose2d(
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-                )
-                self.kappa_u_lowres = ConvTranspose2d(
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-                )
-                self.kappa_v_lowres = ConvTranspose2d(
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-                )
-            else:
-                raise ValueError(
-                    f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
-                )
-        if confidence_model_cfg.segm_confidence.enabled:
-            self.fine_segm_confidence_lowres = ConvTranspose2d(
-                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-            )
-            self.coarse_segm_confidence_lowres = ConvTranspose2d(
-                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-            )
-
-    def _forward_confidence_estimation_layers(
-        self, confidence_model_cfg, head_outputs, interp2d, ann_index, index_uv
-    ):
-        sigma_1, sigma_2, kappa_u, kappa_v = None, None, None, None
-        sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres = None, None, None, None
-        fine_segm_confidence_lowres, fine_segm_confidence = None, None
-        coarse_segm_confidence_lowres, coarse_segm_confidence = None, None
-        if confidence_model_cfg.uv_confidence.enabled:
-            if confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
-                sigma_2_lowres = self.sigma_2_lowres(head_outputs)
-                sigma_2 = interp2d(sigma_2_lowres)
-            elif confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
-                sigma_2_lowres = self.sigma_2_lowres(head_outputs)
-                kappa_u_lowres = self.kappa_u_lowres(head_outputs)
-                kappa_v_lowres = self.kappa_v_lowres(head_outputs)
-                sigma_2 = interp2d(sigma_2_lowres)
-                kappa_u = interp2d(kappa_u_lowres)
-                kappa_v = interp2d(kappa_v_lowres)
-            else:
-                raise ValueError(
-                    f"Unknown confidence model type: {confidence_model_cfg.confidence_model_type}"
-                )
-        if confidence_model_cfg.segm_confidence.enabled:
-            fine_segm_confidence_lowres = self.fine_segm_confidence_lowres(head_outputs)
-            fine_segm_confidence = interp2d(fine_segm_confidence_lowres)
-            fine_segm_confidence = (
-                F.softplus(fine_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
-            )
-            index_uv = index_uv * torch.repeat_interleave(
-                fine_segm_confidence, index_uv.shape[1], dim=1
-            )
-            coarse_segm_confidence_lowres = self.coarse_segm_confidence_lowres(head_outputs)
-            coarse_segm_confidence = interp2d(coarse_segm_confidence_lowres)
-            coarse_segm_confidence = (
-                F.softplus(coarse_segm_confidence) + confidence_model_cfg.segm_confidence.epsilon
-            )
-            ann_index = ann_index * torch.repeat_interleave(
-                coarse_segm_confidence, ann_index.shape[1], dim=1
-            )
-        return (
-            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence),
-            (
-                sigma_1_lowres,
-                sigma_2_lowres,
-                kappa_u_lowres,
-                kappa_v_lowres,
-                fine_segm_confidence_lowres,
-                coarse_segm_confidence_lowres,
-            ),
-            (ann_index, index_uv),
-        )
-
-
 class DensePoseDataFilter(object):
     def __init__(self, cfg):
         self.iou_threshold = cfg.MODEL.ROI_DENSEPOSE_HEAD.FG_IOU_THRESHOLD
@@ -545,7 +392,7 @@ def build_densepose_head(cfg, input_channels):
 
 
 def build_densepose_predictor(cfg, input_channels):
-    predictor = DensePosePredictor(cfg, input_channels)
+    predictor = DensePoseChartWithConfidencePredictor(cfg, input_channels)
     return predictor
 
 
