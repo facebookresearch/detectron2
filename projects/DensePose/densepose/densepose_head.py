@@ -309,16 +309,6 @@ def build_densepose_head(cfg, input_channels):
     return ROI_DENSEPOSE_HEAD_REGISTRY.get(head_name)(cfg, input_channels)
 
 
-def build_densepose_predictor(cfg, input_channels):
-    predictor = DensePoseChartWithConfidencePredictor(cfg, input_channels)
-    return predictor
-
-
-def build_densepose_data_filter(cfg):
-    dp_filter = DensePoseDataFilter(cfg)
-    return dp_filter
-
-
 def _linear_interpolation_utilities(v_norm, v0_src, size_src, v0_dst, size_dst, size_z):
     """
     Computes utility values for linear interpolation at points v.

@@ -14,13 +14,8 @@ from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.roi_heads import select_foreground_proposals
 from detectron2.structures import ImageList, Instances
 
-from .densepose_head import (
-    build_densepose_data_filter,
-    build_densepose_head,
-    build_densepose_losses,
-    build_densepose_predictor,
-)
-from .modeling import densepose_inference
+from .densepose_head import build_densepose_head, build_densepose_losses
+from .modeling import build_densepose_data_filter, build_densepose_predictor, densepose_inference
 
 
 class Decoder(nn.Module):
