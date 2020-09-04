@@ -8,7 +8,7 @@ from torch.nn import functional as F
 
 from detectron2.structures import Instances
 
-from .modeling import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
+from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 
 
 def _linear_interpolation_utilities(v_norm, v0_src, size_src, v0_dst, size_dst, size_z):
@@ -780,8 +780,3 @@ class DensePoseLosses(object):
             s_loss = F.cross_entropy(s_est, s_gt.long()) * self.w_segm
             losses["loss_densepose_S"] = s_loss
         return losses
-
-
-def build_densepose_losses(cfg):
-    losses = DensePoseLosses(cfg)
-    return losses
