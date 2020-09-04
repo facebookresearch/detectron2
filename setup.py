@@ -7,6 +7,19 @@ import shutil
 from os import path
 from setuptools import find_packages, setup
 from typing import List
+
+try:
+    from pip._internal import main
+else:
+    from pip import main
+import sys
+
+if 'numpy' not in sys.modules:
+    main(["install", "numpy"])
+
+if 'torch' not in sys.modules:
+    main(["install", "torch", "torchvision"])
+
 import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 from torch.utils.hipify import hipify_python
