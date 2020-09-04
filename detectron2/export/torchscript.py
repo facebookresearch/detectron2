@@ -134,6 +134,45 @@ class {cls_name}:
         self._{name} = value
 """
         )
+
+    # support function attribute `__len__`
+    lines.append(
+        """
+    def __len__(self) -> int:
+"""
+    )
+    for name, _ in fields.items():
+        lines.append(
+            f"""
+        t = self._{name}
+        if t is not None:
+            return len(t)
+"""
+        )
+    lines.append(
+        """
+        raise NotImplementedError("Empty Instances does not support __len__!")
+"""
+    )
+
+    # support function attribute `has`
+    lines.append(
+        """
+    def has(self, name: str) -> bool:
+"""
+    )
+    for name, _ in fields.items():
+        lines.append(
+            f"""
+        if name == "{name}":
+            return self._{name} is not None
+"""
+        )
+    lines.append(
+        """
+        return False
+"""
+    )
     return cls_name, os.linesep.join(lines)
 
 
