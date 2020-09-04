@@ -9,6 +9,7 @@ from detectron2.layers import ShapeSpec
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.roi_heads import StandardROIHeads, build_mask_head, build_roi_heads
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 
 logger = logging.getLogger(__name__)
@@ -132,6 +133,7 @@ class ROIHeadsTest(unittest.TestCase):
             ),
         )
 
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_mask_head_scriptability(self):
         cfg = get_cfg()
         cfg.MODEL.ROI_MASK_HEAD.NUM_CONV = 1
