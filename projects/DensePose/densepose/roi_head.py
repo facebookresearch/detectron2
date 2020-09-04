@@ -19,8 +19,8 @@ from .densepose_head import (
     build_densepose_head,
     build_densepose_losses,
     build_densepose_predictor,
-    densepose_inference,
 )
+from .modeling import densepose_inference
 
 
 class Decoder(nn.Module):
