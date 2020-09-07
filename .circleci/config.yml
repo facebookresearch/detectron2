@@ -14,10 +14,10 @@ gpu: &gpu
   resource_class: gpu.small
 
 windows-cpu: &windows_cpu
-    machine:
-      resource_class: windows.medium
-      image: windows-server-2019-vs2019:stable
-      shell: powershell.exe
+  machine:
+    resource_class: windows.medium
+    image: windows-server-2019-vs2019:stable
+    shell: powershell.exe
 
 # windows-gpu: &windows_gpu
 #     machine:
@@ -62,37 +62,9 @@ setup_venv_win: &setup_venv_win
         which python
         which pip
 
-install_dep: &install_dep
-  - run:
-      name: Install Dependencies
-      command: |
-        pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off opencv-python-headless pytest-xdist
-        pip install --progress-bar off torch torchvision
-
-install_dep_win: &install_dep_win
-  - run:
-      name: Install Dependencies on Windows
-      command: |
-        pip install certifi --ignore-installed
-        pip install numpy
-        pip install cython
-        pip install pycocotools>=2.0.2
-        pip install -U git+https://github.com/facebookresearch/fvcore
-        pip install opencv-python-headless pytest-xdist
-        pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
 install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
-      command: |
-        gcc --version
-        pip install -U --progress-bar off -e .[dev]
-        python -m detectron2.utils.collect_env
-
-install_detectron2_win: &install_detectron2_win
-  - run:
-      name: Install Detectron2 on Windows
       command: |
         pip install -U --progress-bar off -e .[dev]
         python -m detectron2.utils.collect_env
@@ -130,7 +102,13 @@ jobs:
           keys:
             - cache-key-{{ .Branch }}-ID-20200730
 
-      - <<: *install_dep
+      - run:
+          name: Install Dependencies
+          command: |
+            sudo apt install ninja-build
+            pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+            pip install --progress-bar off opencv-python-headless pytest-xdist
+            pip install --progress-bar off torch torchvision
 
       - save_cache:
           paths:
@@ -157,29 +135,31 @@ jobs:
 
     steps:
       - checkout
-      - <<: *install_python
 
-      # Cache the venv directory that contains dependencies
+      # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
             - cache-key-gpu-{{ .Environment.PYTORCH_VERSION }}-{{ .Branch }}-ID-20200830
 
+      - <<: *install_python
+
       - run:
           name: Install Dependencies
           command: |
+            sudo apt install ninja-build
             pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
             pip install --progress-bar off opencv-python-headless pytest-xdist
             pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
             python -c 'import torch; assert(torch.cuda.is_available())'
+            gcc --version
 
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-key-gpu-{{ .Environment.$PYTORCH_VERSION }}-{{ .Branch }}-ID-20200830
+          key: cache-key-gpu-{{ .Environment.PYTORCH_VERSION }}-{{ .Branch }}-ID-20200830
 
       - <<: *install_detectron2
       - <<: *run_unittests
-
 
   windows_cpu_tests:
     <<: *windows_cpu
@@ -192,14 +172,23 @@ jobs:
           keys:
             - cache-key-{{ .Branch }}-ID-20200735
 
-      - <<: *install_dep_win
+      - run:
+          name: Install Dependencies on Windows
+          command: |
+            pip install certifi --ignore-installed
+            pip install numpy cython
+            pip install pycocotools>=2.0.2
+            pip install -U git+https://github.com/facebookresearch/fvcore
+            pip install opencv-python-headless pytest-xdist
+            pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - save_cache:
           paths:
             - env
           key: cache-key-{{ .Branch }}-ID-20200735
 
-      - <<: *install_detectron2_win
+      - <<: *install_detectron2
+      # TODO: unittest fails for now
 
 workflows:
   version: 2
