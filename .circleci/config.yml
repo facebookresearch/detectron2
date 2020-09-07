@@ -32,8 +32,11 @@ install_python: &install_python
       name: Install Python
       working_directory: ~/
       command: |
-        pyenv install 3.6.8
+        pyenv install -s 3.6.8
         pyenv global 3.6.8
+        python --version
+        which python
+        pip install --upgrade pip setuptools==49.6.0
 
 setup_venv: &setup_venv
   - run:
@@ -64,7 +67,7 @@ install_dep: &install_dep
       name: Install Dependencies
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off opencv-python pytest-xdist
+        pip install --progress-bar off opencv-python-headless pytest-xdist
         pip install --progress-bar off torch torchvision
 
 install_dep_win: &install_dep_win
@@ -76,7 +79,7 @@ install_dep_win: &install_dep_win
         pip install cython
         pip install pycocotools>=2.0.2
         pip install -U git+https://github.com/facebookresearch/fvcore
-        pip install opencv-python pytest-xdist
+        pip install opencv-python-headless pytest-xdist
         pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 install_detectron2: &install_detectron2
@@ -159,20 +162,20 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-gpu-{{ $PYTORCH_VERSION }}-{{ .Branch }}-ID-20200730
+            - cache-key-gpu-{{ .Environment.PYTORCH_VERSION }}-{{ .Branch }}-ID-20200830
 
       - run:
           name: Install Dependencies
           command: |
             pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-            pip install --progress-bar off opencv-python pytest-xdist
+            pip install --progress-bar off opencv-python-headless pytest-xdist
             pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
             python -c 'import torch; assert(torch.cuda.is_available())'
 
       - save_cache:
           paths:
-            - ~/venv
-          key: cache-key-gpu-{{ $PYTORCH_VERSION }}-{{ .Branch }}-ID-20200730
+            - /opt/circleci/.pyenv
+          key: cache-key-gpu-{{ .Environment.$PYTORCH_VERSION }}-{{ .Branch }}-ID-20200830
 
       - <<: *install_detectron2
       - <<: *run_unittests
