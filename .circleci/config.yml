@@ -139,7 +139,7 @@ jobs:
       # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
-            - cache-key-gpu-<< parameters.pytorch_version }}-{{ .Branch }}-ID-20200830
+            - cache-key-gpu-<< parameters.pytorch_version >>-{{ .Branch }}-ID-20200830
 
       - <<: *install_python
 
@@ -156,7 +156,7 @@ jobs:
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-key-gpu-<< parameters.pytorch_version }}-{{ .Branch }}-ID-20200830
+          key: cache-key-gpu-<< parameters.pytorch_version >>-{{ .Branch }}-ID-20200830
 
       - <<: *install_detectron2
       - <<: *run_unittests
