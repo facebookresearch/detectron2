@@ -10,8 +10,7 @@ cpu: &cpu
 
 gpu: &gpu
   machine:
-    image: ubuntu-1604:201903-01
-    docker_layer_caching: true
+    image: ubuntu-1604-cuda-10.1:201909-23
   resource_class: gpu.small
 
 windows-cpu: &windows_cpu
@@ -155,43 +154,29 @@ jobs:
 
     steps:
       - checkout
-      - <<: *install_nvidia_driver
+      - <<: *setup_venv
+
+      # Cache the venv directory that contains dependencies
+      - restore_cache:
+          keys:
+            - cache-key-gpu-{{ $PYTORCH_VERSION }}-{{ .Branch }}-ID-20200730
 
       - run:
-          name: Install nvidia-docker
-          working_directory: ~/
+          name: Install Dependencies
           command: |
-            curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-            distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-            curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
-            sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-            sudo apt-get update && sudo apt-get install -y nvidia-docker2
-            # reload the docker daemon configuration
-            sudo pkill -SIGHUP dockerd
+            pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+            pip install --progress-bar off opencv-python pytest-xdist
+            pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
+            python -c 'import torch; assert(torch.cuda.is_available())'
 
-      - run:
-          name: Launch docker
-          working_directory: ~/detectron2/docker
-          command: |
-            nvidia-docker build -t detectron2:v0 -f Dockerfile-circleci --build-arg PYTORCH_VERSION=$PYTORCH_VERSION --build-arg TORCHVISION_VERSION=$TORCHVISION_VERSION .
-            nvidia-docker run -itd --name d2 detectron2:v0
-            docker exec -it d2 nvidia-smi
+      - save_cache:
+          paths:
+            - ~/venv
+          key: cache-key-gpu-{{ $PYTORCH_VERSION }}-{{ .Branch }}-ID-20200730
 
-      - run:
-          name: Build Detectron2
-          command: |
-            docker exec -it d2 pip install 'git+https://github.com/facebookresearch/fvcore'
-            docker cp ~/detectron2 d2:/detectron2
-            # This will build d2 for the target GPU arch only
-            # Install with --editable so that pytest can run tests in the source directory
-            docker exec -it d2 pip install --progress-bar off -e /detectron2
-            docker exec -it d2 python3 -m detectron2.utils.collect_env
-            docker exec -it d2 python3 -c 'import torch; assert(torch.cuda.is_available())'
+      - <<: *install_detectron2
+      - <<: *run_unittests
 
-      - run:
-          name: Run Unit Tests
-          command: |
-            docker exec -e CIRCLECI=true -it d2 python3 -m pytest -n 2 -v /detectron2/tests
 
   windows_cpu_tests:
     <<: *windows_cpu
