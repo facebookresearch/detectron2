@@ -107,7 +107,7 @@ jobs:
           command: |
             sudo apt install ninja-build
             pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-            pip install --progress-bar off opencv-python-headless pytest-xdist
+            pip install --progress-bar off opencv-python-headless pytest-xdist tensorboard pycocotools
             pip install --progress-bar off torch torchvision
 
       - save_cache:
@@ -148,7 +148,7 @@ jobs:
           command: |
             sudo apt install ninja-build
             pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-            pip install --progress-bar off opencv-python-headless pytest-xdist
+            pip install --progress-bar off opencv-python-headless pytest-xdist tensorboard pycocotools
             pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
             python -c 'import torch; assert(torch.cuda.is_available())'
             gcc --version
@@ -170,22 +170,21 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200735
+            - cache-key-win-{{ .Branch }}-ID-20200735
 
       - run:
           name: Install Dependencies on Windows
           command: |
-            pip install certifi --ignore-installed
-            pip install numpy cython
-            pip install pycocotools>=2.0.2
+            pip install certifi --ignore-installed  # required on windows to workaround some cert issue
+            pip install numpy cython  # required on windows before pycocotools
+            pip install opencv-python-headless pytest-xdist pycocotools tensorboard
             pip install -U git+https://github.com/facebookresearch/fvcore
-            pip install opencv-python-headless pytest-xdist
             pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - save_cache:
           paths:
             - env
-          key: cache-key-{{ .Branch }}-ID-20200735
+          key: cache-key-win-{{ .Branch }}-ID-20200735
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
