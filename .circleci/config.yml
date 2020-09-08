@@ -24,9 +24,31 @@ windows-cpu: &windows_cpu
 #       resource_class: windows.gpu.nvidia.medium
 #       image: windows-server-2019-nvidia:stable
 
+pytorch_parameters: &pytorch_parameters
+  parameters:
+    pytorch_version:
+      type: string
+      default: "1.6"
+    torchvision_version:
+      type: string
+      default: "0.7"
+
+  environment:
+    PYTORCH_VERSION: << parameters.pytorch_version >>
+    TORCHVISION_VERSION: << parameters.torchvision_version >>
+
 # -------------------------------------------------------------------------------------
 # Re-usable commands
 # -------------------------------------------------------------------------------------
+# install_nvidia_driver: &install_nvidia_driver
+#   - run:
+#       name: Install nvidia driver
+#       working_directory: ~/
+#       command: |
+#         wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
+#         sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
+#         nvidia-smi
+
 install_python: &install_python
   - run:
       name: Install Python
@@ -62,21 +84,23 @@ setup_venv_win: &setup_venv_win
         which python
         which pip
 
+install_linux_dep: &install_linux_dep
+  - run:
+      name: Install Dependencies
+      command: |
+        sudo apt install ninja-build
+        pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+        pip install --progress-bar off opencv-python-headless pytest-xdist tensorboard pycocotools
+        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
+        python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
+        gcc --version
+
 install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
         pip install -U --progress-bar off -e .[dev]
         python -m detectron2.utils.collect_env
-
-# install_nvidia_driver: &install_nvidia_driver
-#   - run:
-#       name: Install nvidia driver
-#       working_directory: ~/
-#       command: |
-#         wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
-#         sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
-#         nvidia-smi
 
 run_unittests: &run_unittests
   - run:
@@ -90,6 +114,7 @@ run_unittests: &run_unittests
 jobs:
   linux_cpu_tests:
     <<: *cpu
+    <<: *pytorch_parameters
 
     working_directory: ~/detectron2
 
@@ -100,36 +125,21 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200730
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
-      - run:
-          name: Install Dependencies
-          command: |
-            sudo apt install ninja-build
-            pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-            pip install --progress-bar off opencv-python-headless pytest-xdist tensorboard pycocotools
-            pip install --progress-bar off torch torchvision
+      - <<: *install_linux_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-key-{{ .Branch }}-ID-20200730
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - <<: *install_detectron2
       - <<: *run_unittests
 
   linux_gpu_tests:
     <<: *gpu
-
-    parameters:
-      pytorch_version:
-        type: string
-      torchvision_version:
-        type: string
-
-    environment:
-      PYTORCH_VERSION: << parameters.pytorch_version >>
-      TORCHVISION_VERSION: << parameters.torchvision_version >>
+    <<: *pytorch_parameters
 
     working_directory: ~/detectron2
 
@@ -139,30 +149,22 @@ jobs:
       # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
-            - cache-key-gpu-<< parameters.pytorch_version >>-{{ .Branch }}-ID-20200830
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - <<: *install_python
-
-      - run:
-          name: Install Dependencies
-          command: |
-            sudo apt install ninja-build
-            pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-            pip install --progress-bar off opencv-python-headless pytest-xdist tensorboard pycocotools
-            pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
-            python -c 'import torch; assert(torch.cuda.is_available())'
-            gcc --version
+      - <<: *install_linux_dep
 
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-key-gpu-<< parameters.pytorch_version >>-{{ .Branch }}-ID-20200830
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - <<: *install_detectron2
       - <<: *run_unittests
 
   windows_cpu_tests:
     <<: *windows_cpu
+    <<: *pytorch_parameters
     steps:
       - checkout
       - <<: *setup_venv_win
@@ -170,10 +172,10 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-win-{{ .Branch }}-ID-20200735
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - run:
-          name: Install Dependencies on Windows
+          name: Install Dependencies
           command: |
             pip install certifi --ignore-installed  # required on windows to workaround some cert issue
             pip install numpy cython  # required on windows before pycocotools
@@ -184,7 +186,7 @@ jobs:
       - save_cache:
           paths:
             - env
-          key: cache-key-win-{{ .Branch }}-ID-20200735
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
