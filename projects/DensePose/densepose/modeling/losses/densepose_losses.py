@@ -57,33 +57,33 @@ def _linear_interpolation_utilities(v_norm, v0_src, size_src, v0_dst, size_dst, 
     return v_lo, v_hi, v_w, j_valid
 
 
-def _grid_sampling_utilities(
-    zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt, x_norm, y_norm, index_bbox
-):
+class SingleTensorsHelper:
+    def __init__(self, proposals_with_gt):
+
+        with torch.no_grad():
+            (
+                index_uv_img,
+                i_with_dp,
+                bbox_xywh_est,
+                bbox_xywh_gt,
+                index_gt_all,
+                x_norm,
+                y_norm,
+                u_gt_all,
+                v_gt_all,
+                s_gt,
+                index_bbox,
+            ) = _extract_single_tensors_from_matches(proposals_with_gt)
+
+        for k, v in locals().items():
+            if k not in ["self", "proposals_with_gt"]:
+                setattr(self, k, v)
+
+
+class BilinearInterpolationHelper:
     """
-    Prepare tensors used in grid sampling.
-
     Args:
-        z_est (:obj: `torch.Tensor`): tensor of size (N,C,H,W) with estimated
-            values of Z to be extracted for the points X, Y and channel
-            indices I
-        bbox_xywh_est (:obj: `torch.Tensor`): tensor of size (N, 4) containing
-            estimated bounding boxes in format XYWH
-        bbox_xywh_gt (:obj: `torch.Tensor`): tensor of size (N, 4) containing
-            matched ground truth bounding boxes in format XYWH
-        index_gt (:obj: `torch.Tensor`): tensor of size K with point labels for
-            ground truth points
-        x_norm (:obj: `torch.Tensor`): tensor of size K with X normalized
-            coordinates of ground truth points. Image X coordinates can be
-            obtained as X = Xbbox + x_norm * Wbbox / 255
-        y_norm (:obj: `torch.Tensor`): tensor of size K with Y normalized
-            coordinates of ground truth points. Image Y coordinates can be
-            obtained as Y = Ybbox + y_norm * Hbbox / 255
-        index_bbox (:obj: `torch.Tensor`): tensor of size K with bounding box
-            indices for each ground truth point. The values are thus in
-            [0, N-1]
-
-    Returns:
+        tensors_helper (SingleTensorsHelper)
         j_valid (:obj: `torch.Tensor`): uint8 tensor of size M containing
             0 for points to be discarded and 1 for points to be selected
         y_lo (:obj: `torch.Tensor`): int tensor of indices of upper values
@@ -104,52 +104,90 @@ def _grid_sampling_utilities(
             contains lower-right value weight for each point
     """
 
-    x0_gt, y0_gt, w_gt, h_gt = bbox_xywh_gt[index_bbox].unbind(dim=1)
-    x0_est, y0_est, w_est, h_est = bbox_xywh_est[index_bbox].unbind(dim=1)
-    x_lo, x_hi, x_w, jx_valid = _linear_interpolation_utilities(
-        x_norm, x0_gt, w_gt, x0_est, w_est, zw
-    )
-    y_lo, y_hi, y_w, jy_valid = _linear_interpolation_utilities(
-        y_norm, y0_gt, h_gt, y0_est, h_est, zh
-    )
-    j_valid = jx_valid * jy_valid
+    def __init__(
+        self,
+        tensors_helper,
+        j_valid,
+        y_lo,
+        y_hi,
+        x_lo,
+        x_hi,
+        w_ylo_xlo,
+        w_ylo_xhi,
+        w_yhi_xlo,
+        w_yhi_xhi,
+    ):
+        for k, v in locals().items():
+            if k != "self":
+                setattr(self, k, v)
 
-    w_ylo_xlo = (1.0 - x_w) * (1.0 - y_w)
-    w_ylo_xhi = x_w * (1.0 - y_w)
-    w_yhi_xlo = (1.0 - x_w) * y_w
-    w_yhi_xhi = x_w * y_w
+    @staticmethod
+    def from_matches(tensors_helper, densepose_outputs_size):
 
-    return j_valid, y_lo, y_hi, x_lo, x_hi, w_ylo_xlo, w_ylo_xhi, w_yhi_xlo, w_yhi_xhi
+        zh, zw = densepose_outputs_size[2], densepose_outputs_size[3]
 
+        x0_gt, y0_gt, w_gt, h_gt = tensors_helper.bbox_xywh_gt[tensors_helper.index_bbox].unbind(1)
+        x0_est, y0_est, w_est, h_est = tensors_helper.bbox_xywh_est[
+            tensors_helper.index_bbox
+        ].unbind(dim=1)
+        x_lo, x_hi, x_w, jx_valid = _linear_interpolation_utilities(
+            tensors_helper.x_norm, x0_gt, w_gt, x0_est, w_est, zw
+        )
+        y_lo, y_hi, y_w, jy_valid = _linear_interpolation_utilities(
+            tensors_helper.y_norm, y0_gt, h_gt, y0_est, h_est, zh
+        )
+        j_valid = jx_valid * jy_valid
 
-def _extract_at_points_packed(
-    z_est,
-    index_bbox_valid,
-    slice_index_uv,
-    y_lo,
-    y_hi,
-    x_lo,
-    x_hi,
-    w_ylo_xlo,
-    w_ylo_xhi,
-    w_yhi_xlo,
-    w_yhi_xhi,
-):
-    """
-    Extract ground truth values z_gt for valid point indices and estimated
-    values z_est using bilinear interpolation over top-left (y_lo, x_lo),
-    top-right (y_lo, x_hi), bottom-left (y_hi, x_lo) and bottom-right
-    (y_hi, x_hi) values in z_est with corresponding weights:
-    w_ylo_xlo, w_ylo_xhi, w_yhi_xlo and w_yhi_xhi.
-    Use slice_index_uv to slice dim=1 in z_est
-    """
-    z_est_sampled = (
-        z_est[index_bbox_valid, slice_index_uv, y_lo, x_lo] * w_ylo_xlo
-        + z_est[index_bbox_valid, slice_index_uv, y_lo, x_hi] * w_ylo_xhi
-        + z_est[index_bbox_valid, slice_index_uv, y_hi, x_lo] * w_yhi_xlo
-        + z_est[index_bbox_valid, slice_index_uv, y_hi, x_hi] * w_yhi_xhi
-    )
-    return z_est_sampled
+        w_ylo_xlo = (1.0 - x_w) * (1.0 - y_w)
+        w_ylo_xhi = x_w * (1.0 - y_w)
+        w_yhi_xlo = (1.0 - x_w) * y_w
+        w_yhi_xhi = x_w * y_w
+
+        return BilinearInterpolationHelper(
+            tensors_helper,
+            j_valid,
+            y_lo,
+            y_hi,
+            x_lo,
+            x_hi,
+            w_ylo_xlo,
+            w_ylo_xhi,
+            w_yhi_xlo,
+            w_yhi_xhi,
+        )
+
+    def extract_at_points(
+        self,
+        z_est,
+        slice_index_uv=None,
+        w_ylo_xlo=None,
+        w_ylo_xhi=None,
+        w_yhi_xlo=None,
+        w_yhi_xhi=None,
+    ):
+        """
+        Extract ground truth values z_gt for valid point indices and estimated
+        values z_est using bilinear interpolation over top-left (y_lo, x_lo),
+        top-right (y_lo, x_hi), bottom-left (y_hi, x_lo) and bottom-right
+        (y_hi, x_hi) values in z_est with corresponding weights:
+        w_ylo_xlo, w_ylo_xhi, w_yhi_xlo and w_yhi_xhi.
+        Use slice_index_uv to slice dim=1 in z_est
+        """
+        index_gt_all = self.tensors_helper.index_gt_all
+        slice_index_uv = index_gt_all if slice_index_uv is None else slice_index_uv
+        w_ylo_xlo = self.w_ylo_xlo if w_ylo_xlo is None else w_ylo_xlo
+        w_ylo_xhi = self.w_ylo_xhi if w_ylo_xhi is None else w_ylo_xhi
+        w_yhi_xlo = self.w_yhi_xlo if w_yhi_xlo is None else w_yhi_xlo
+        w_yhi_xhi = self.w_yhi_xhi if w_yhi_xhi is None else w_yhi_xhi
+
+        index_bbox = self.tensors_helper.index_bbox
+        z_est_sampled = (
+            z_est[index_bbox, slice_index_uv, self.y_lo, self.x_lo] * w_ylo_xlo
+            + z_est[index_bbox, slice_index_uv, self.y_lo, self.x_hi] * w_ylo_xhi
+            + z_est[index_bbox, slice_index_uv, self.y_hi, self.x_lo] * w_yhi_xlo
+            + z_est[index_bbox, slice_index_uv, self.y_hi, self.x_hi] * w_yhi_xhi
+        )
+        return z_est_sampled
 
 
 def _resample_data(
@@ -580,6 +618,12 @@ class DensePoseLosses(object):
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
         # the outputs will have size(0) == 3+1+2+1 == 7
         s, index_uv, u, v = densepose_outputs
+        assert u.size(2) == v.size(2)
+        assert u.size(3) == v.size(3)
+        assert u.size(2) == index_uv.size(2)
+        assert u.size(3) == index_uv.size(3)
+        densepose_outputs_size = u.size()
+
         if not len(proposals_with_gt):
             return self.produce_fake_densepose_losses(densepose_outputs, densepose_confidences)
         (
@@ -591,28 +635,9 @@ class DensePoseLosses(object):
             coarse_segm_confidence,
         ) = densepose_confidences
         conf_type = self.confidence_model_cfg.uv_confidence.type
-        assert u.size(2) == v.size(2)
-        assert u.size(3) == v.size(3)
-        assert u.size(2) == index_uv.size(2)
-        assert u.size(3) == index_uv.size(3)
 
-        with torch.no_grad():
-            (
-                index_uv_img,
-                i_with_dp,
-                bbox_xywh_est,
-                bbox_xywh_gt,
-                index_gt_all,
-                x_norm,
-                y_norm,
-                u_gt_all,
-                v_gt_all,
-                s_gt,
-                index_bbox,
-            ) = _extract_single_tensors_from_matches(  # noqa
-                proposals_with_gt
-            )
-        n_batch = len(i_with_dp)
+        tensors_helper = SingleTensorsHelper(proposals_with_gt)
+        n_batch = len(tensors_helper.i_with_dp)
 
         # NOTE: we need to keep the same computation graph on all the GPUs to
         # perform reduction properly. Hence even if we have no data on one
@@ -621,127 +646,49 @@ class DensePoseLosses(object):
         if not n_batch:
             return self.produce_fake_densepose_losses(densepose_outputs, densepose_confidences)
 
-        zh = u.size(2)
-        zw = u.size(3)
-
-        (
-            j_valid,
-            y_lo,
-            y_hi,
-            x_lo,
-            x_hi,
-            w_ylo_xlo,
-            w_ylo_xhi,
-            w_yhi_xlo,
-            w_yhi_xhi,
-        ) = _grid_sampling_utilities(  # noqa
-            zh, zw, bbox_xywh_est, bbox_xywh_gt, index_gt_all, x_norm, y_norm, index_bbox
+        interpolator = BilinearInterpolationHelper.from_matches(
+            tensors_helper, densepose_outputs_size
         )
 
-        j_valid_fg = j_valid * (index_gt_all > 0)
+        j_valid_fg = interpolator.j_valid * (tensors_helper.index_gt_all > 0)
 
-        u_gt = u_gt_all[j_valid_fg]
-        u_est_all = _extract_at_points_packed(
-            u[i_with_dp],
-            index_bbox,
-            index_gt_all,
-            y_lo,
-            y_hi,
-            x_lo,
-            x_hi,
-            w_ylo_xlo,
-            w_ylo_xhi,
-            w_yhi_xlo,
-            w_yhi_xhi,
-        )
+        u_gt = tensors_helper.u_gt_all[j_valid_fg]
+        u_est_all = interpolator.extract_at_points(u[tensors_helper.i_with_dp])
         u_est = u_est_all[j_valid_fg]
 
-        v_gt = v_gt_all[j_valid_fg]
-        v_est_all = _extract_at_points_packed(
-            v[i_with_dp],
-            index_bbox,
-            index_gt_all,
-            y_lo,
-            y_hi,
-            x_lo,
-            x_hi,
-            w_ylo_xlo,
-            w_ylo_xhi,
-            w_yhi_xlo,
-            w_yhi_xhi,
-        )
+        v_gt = tensors_helper.v_gt_all[j_valid_fg]
+        v_est_all = interpolator.extract_at_points(v[tensors_helper.i_with_dp])
         v_est = v_est_all[j_valid_fg]
 
-        index_uv_gt = index_gt_all[j_valid]
-        index_uv_est_all = _extract_at_points_packed(
-            index_uv[i_with_dp],
-            index_bbox,
-            slice(None),
-            y_lo,
-            y_hi,
-            x_lo,
-            x_hi,
-            w_ylo_xlo[:, None],
-            w_ylo_xhi[:, None],
-            w_yhi_xlo[:, None],
-            w_yhi_xhi[:, None],
+        index_uv_gt = tensors_helper.index_gt_all[interpolator.j_valid]
+        index_uv_est_all = interpolator.extract_at_points(
+            index_uv[tensors_helper.i_with_dp],
+            slice_index_uv=slice(None),
+            w_ylo_xlo=interpolator.w_ylo_xlo[:, None],
+            w_ylo_xhi=interpolator.w_ylo_xhi[:, None],
+            w_yhi_xlo=interpolator.w_yhi_xlo[:, None],
+            w_yhi_xhi=interpolator.w_yhi_xhi[:, None],
         )
-        index_uv_est = index_uv_est_all[j_valid, :]
+        index_uv_est = index_uv_est_all[interpolator.j_valid, :]
 
         if self.confidence_model_cfg.uv_confidence.enabled:
-            sigma_2_est_all = _extract_at_points_packed(
-                sigma_2[i_with_dp],
-                index_bbox,
-                index_gt_all,
-                y_lo,
-                y_hi,
-                x_lo,
-                x_hi,
-                w_ylo_xlo,
-                w_ylo_xhi,
-                w_yhi_xlo,
-                w_yhi_xhi,
-            )
+            sigma_2_est_all = interpolator.extract_at_points(sigma_2[tensors_helper.i_with_dp])
             sigma_2_est = sigma_2_est_all[j_valid_fg]
             if conf_type in [DensePoseUVConfidenceType.INDEP_ANISO]:
-                kappa_u_est_all = _extract_at_points_packed(
-                    kappa_u[i_with_dp],
-                    index_bbox,
-                    index_gt_all,
-                    y_lo,
-                    y_hi,
-                    x_lo,
-                    x_hi,
-                    w_ylo_xlo,
-                    w_ylo_xhi,
-                    w_yhi_xlo,
-                    w_yhi_xhi,
-                )
+                kappa_u_est_all = interpolator.extract_at_points(kappa_u[tensors_helper.i_with_dp])
                 kappa_u_est = kappa_u_est_all[j_valid_fg]
-                kappa_v_est_all = _extract_at_points_packed(
-                    kappa_v[i_with_dp],
-                    index_bbox,
-                    index_gt_all,
-                    y_lo,
-                    y_hi,
-                    x_lo,
-                    x_hi,
-                    w_ylo_xlo,
-                    w_ylo_xhi,
-                    w_yhi_xlo,
-                    w_yhi_xhi,
-                )
+                kappa_v_est_all = interpolator.extract_at_points(kappa_v[tensors_helper.i_with_dp])
                 kappa_v_est = kappa_v_est_all[j_valid_fg]
 
         # Resample everything to the estimated data size, no need to resample
         # S_est then:
         if not self.segm_trained_by_masks:
-            s_est = s[i_with_dp]
+            s_est = s[tensors_helper.i_with_dp]
             with torch.no_grad():
                 s_gt = _resample_data(
-                    s_gt.unsqueeze(1),
-                    bbox_xywh_gt,
-                    bbox_xywh_est,
+                    tensors_helper.s_gt.unsqueeze(1),
+                    tensors_helper.bbox_xywh_gt,
+                    tensors_helper.bbox_xywh_est,
                     self.heatmap_size,
                     self.heatmap_size,
                     mode="nearest",
