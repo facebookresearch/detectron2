@@ -28,6 +28,7 @@ Baselines trained using schedules from [Güler et al, 2018](https://arxiv.org/pd
 <th valign="bottom">inference<br/>time<br/>(s/im)</th>
 <th valign="bottom">train<br/>mem<br/>(GB)</th>
 <th valign="bottom">box<br/>AP</th>
+<th valign="bottom">segm<br/>AP</th>
 <th valign="bottom">dp. AP<br/>GPS</th>
 <th valign="bottom">dp. AP<br/>GPSm</th>
 <th valign="bottom">model id</th>
@@ -40,6 +41,7 @@ Baselines trained using schedules from [Güler et al, 2018](https://arxiv.org/pd
  <td align="center">0.051</td>
  <td align="center">3.2</td>
  <td align="center">58.1</td>
+ <td align="center">30.6</td>
  <td align="center">52.1</td>
  <td align="center">54.9</td>
  <td align="center">164832157</td>
@@ -52,6 +54,7 @@ Baselines trained using schedules from [Güler et al, 2018](https://arxiv.org/pd
   <td align="center">0.063</td>
   <td align="center">4.3</td>
   <td align="center">59.5</td>
+  <td align="center">31.2</td>
   <td align="center">53.2</td>
   <td align="center">56.1</td>
   <td align="center">164832182</td>
@@ -72,6 +75,7 @@ These models use an improved training schedule and Panoptic FPN head from [Kiril
   <th valign="bottom">inference<br/>time<br/>(s/im)</th>
   <th valign="bottom">train<br/>mem<br/>(GB)</th>
   <th valign="bottom">box<br/>AP</th>
+  <th valign="bottom">segm<br/>AP</th>
   <th valign="bottom">dp. AP<br/>GPS</th>
   <th valign="bottom">dp. AP<br/>GPSm</th>
   <th valign="bottom">model id</th>
@@ -84,6 +88,7 @@ These models use an improved training schedule and Panoptic FPN head from [Kiril
    <td align="center">0.066</td>
    <td align="center">4.5</td>
    <td align="center">61.2</td>
+   <td align="center">34.7</td>
    <td align="center">63.7</td>
    <td align="center">65.3</td>
    <td align="center">165712039</td>
@@ -96,6 +101,7 @@ These models use an improved training schedule and Panoptic FPN head from [Kiril
     <td align="center">0.079</td>
     <td align="center">5.8</td>
     <td align="center">62.3</td>
+    <td align="center">34.8</td>
     <td align="center">64.5</td>
     <td align="center">66.4</td>
     <td align="center">165712084</td>
@@ -116,6 +122,7 @@ These models use an improved training schedule, Panoptic FPN head from [Kirillov
     <th valign="bottom">inference<br/>time<br/>(s/im)</th>
     <th valign="bottom">train<br/>mem<br/>(GB)</th>
     <th valign="bottom">box<br/>AP</th>
+    <th valign="bottom">segm<br/>AP</th>
     <th valign="bottom">dp. AP<br/>GPS</th>
     <th valign="bottom">dp. AP<br/>GPSm</th>
     <th valign="bottom">model id</th>
@@ -128,6 +135,7 @@ These models use an improved training schedule, Panoptic FPN head from [Kirillov
      <td align="center">0.070</td>
      <td align="center">6.7</td>
      <td align="center">61.1</td>
+     <td align="center">39.0</td>
      <td align="center">65.6</td>
      <td align="center">66.8</td>
      <td align="center">165712097</td>
@@ -140,6 +148,7 @@ These models use an improved training schedule, Panoptic FPN head from [Kirillov
       <td align="center">0.083</td>
       <td align="center">7.0</td>
       <td align="center">62.3</td>
+      <td align="center">38.8</td>
       <td align="center">66.3</td>
       <td align="center">67.7</td>
       <td align="center">165712116</td>
@@ -160,6 +169,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <th valign="bottom">inference<br/>time<br/>(s/im)</th>
 <th valign="bottom">train<br/>mem<br/>(GB)</th>
 <th valign="bottom">box<br/>AP</th>
+<th valign="bottom">segm<br/>AP</th>
 <th valign="bottom">dp. AP<br/>GPS</th>
 <th valign="bottom">dp. AP<br/>GPSm</th>
 <th valign="bottom">model id</th>
@@ -172,6 +182,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.064</td>
 <td align="center">4.6</td>
 <td align="center">60.5</td>
+<td align="center">35.0</td>
 <td align="center">64.2</td>
 <td align="center">65.6</td>
 <td align="center">173862049</td>
@@ -184,6 +195,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.066</td>
 <td align="center">4.8</td>
 <td align="center">60.7</td>
+<td align="center">34.8</td>
 <td align="center">64.2</td>
 <td align="center">65.7</td>
 <td align="center">173861455</td>
@@ -196,6 +208,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.068</td>
 <td align="center">6.7</td>
 <td align="center">61.1</td>
+<td align="center">38.0</td>
 <td align="center">65.8</td>
 <td align="center">67.1</td>
 <td align="center">173067973</td>
@@ -208,6 +221,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.070</td>
 <td align="center">6.8</td>
 <td align="center">60.8</td>
+<td align="center">38.2</td>
 <td align="center">65.6</td>
 <td align="center">66.7</td>
 <td align="center">173859335</td>
@@ -220,6 +234,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.076</td>
 <td align="center">5.7</td>
 <td align="center">62.5</td>
+<td align="center">35.1</td>
 <td align="center">64.9</td>
 <td align="center">66.5</td>
 <td align="center">171402969</td>
@@ -232,6 +247,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.078</td>
 <td align="center">5.7</td>
 <td align="center">62.3</td>
+<td align="center">34.8</td>
 <td align="center">64.8</td>
 <td align="center">66.6</td>
 <td align="center">173860702</td>
@@ -244,6 +260,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.081</td>
 <td align="center">7.9</td>
 <td align="center">62.0</td>
+<td align="center">38.4</td>
 <td align="center">66.2</td>
 <td align="center">67.4</td>
 <td align="center">173858525</td>
@@ -256,10 +273,134 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">0.082</td>
 <td align="center">7.6</td>
 <td align="center">61.7</td>
+<td align="center">38.1</td>
 <td align="center">65.9</td>
 <td align="center">67.3</td>
 <td align="center">173294801</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2_s1x/173294801/model_final_6e1ed1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2_s1x/173294801/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
+
+The following models estimate confidences of the regressed UV coodrinates and coarse and fine segmentations, as described in [Sanakoyeu et al., 2020](https://openaccess.thecvf.com/content_CVPR_2020/html/Sanakoyeu_Transferring_Dense_Pose_to_Proximal_Animal_Classes_CVPR_2020_paper.html).
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom">lr<br/>sched</th>
+<th valign="bottom">train<br/>time<br/>(s/iter)</th>
+<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">train<br/>mem<br/>(GB)</th>
+<th valign="bottom">box<br/>AP</th>
+<th valign="bottom">segm<br/>AP</th>
+<th valign="bottom">dp. AP<br/>GPS</th>
+<th valign="bottom">dp. AP<br/>GPSm</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+<!-- ROW: densepose_rcnn_R_50_FPN_WC1M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_WC1M_s1x.yaml">R_50_FPN_WC1M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.381</td>
+<td align="center">0.066</td>
+<td align="center">4.8</td>
+<td align="center">60.6</td>
+<td align="center">42.9</td>
+<td align="center">64.0</td>
+<td align="center">65.5</td>
+<td align="center">217144516</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC1M_s1x/217144516/model_final_48a9d9.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC1M_s1x/217144516/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_WC2M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_WC2M_s1x.yaml">R_50_FPN_WC2M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.342</td>
+<td align="center">0.068</td>
+<td align="center">5.0</td>
+<td align="center">60.7</td>
+<td align="center">42.7</td>
+<td align="center">64.2</td>
+<td align="center">65.7</td>
+<td align="center">216245640</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC2M_s1x/216245640/model_final_d79ada.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC2M_s1x/216245640/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC1M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_DL_WC1M_s1x.yaml">R_50_FPN_DL_WC1M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.371</td>
+<td align="center">0.068</td>
+<td align="center">6.0</td>
+<td align="center">60.7</td>
+<td align="center">51.3</td>
+<td align="center">65.2</td>
+<td align="center">66.8</td>
+<td align="center">216245703</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC1M_s1x/216245703/model_final_61971e.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC1M_s1x/216245703/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC2M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_DL_WC2M_s1x.yaml">R_50_FPN_DL_WC2M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.385</td>
+<td align="center">0.071</td>
+<td align="center">6.1</td>
+<td align="center">60.8</td>
+<td align="center">51.3</td>
+<td align="center">65.0</td>
+<td align="center">66.5</td>
+<td align="center">216245758</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC2M_s1x/216245758/model_final_7bfb43.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC2M_s1x/216245758/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_WC1M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_WC1M_s1x.yaml">R_101_FPN_WC1M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.423</td>
+<td align="center">0.079</td>
+<td align="center">5.9</td>
+<td align="center">62.0</td>
+<td align="center">42.3</td>
+<td align="center">64.8</td>
+<td align="center">66.2</td>
+<td align="center">216453687</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC1M_s1x/216453687/model_final_0a7287.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC1M_s1x/216453687/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_WC2M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_WC2M_s1x.yaml">R_101_FPN_WC2M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.436</td>
+<td align="center">0.080</td>
+<td align="center">5.9</td>
+<td align="center">62.5</td>
+<td align="center">41.3</td>
+<td align="center">64.5</td>
+<td align="center">66.2</td>
+<td align="center">216245682</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC2M_s1x/216245682/model_final_e354d9.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC2M_s1x/216245682/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC1M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_DL_WC1M_s1x.yaml">R_101_FPN_DL_WC1M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.453</td>
+<td align="center">0.079</td>
+<td align="center">6.8</td>
+<td align="center">62.0</td>
+<td align="center">51.4</td>
+<td align="center">66.4</td>
+<td align="center">67.3</td>
+<td align="center">216245771</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC1M_s1x/216245771/model_final_0ebeb3.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC1M_s1x/216245771/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC2M_s1x -->
+ <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_DL_WC2M_s1x.yaml">R_101_FPN_DL_WC2M_s1x</a></td>
+<td align="center">s1x</td>
+<td align="center">0.464</td>
+<td align="center">0.080</td>
+<td align="center">6.9</td>
+<td align="center">61.9</td>
+<td align="center">50.9</td>
+<td align="center">66.1</td>
+<td align="center">67.2</td>
+<td align="center">216245790</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2M_s1x/216245790/model_final_de6e7a.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2M_s1x/216245790/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 
