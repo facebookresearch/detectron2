@@ -88,9 +88,8 @@ install_linux_dep: &install_linux_dep
   - run:
       name: Install Dependencies
       command: |
-        sudo apt install ninja-build
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off opencv-python-headless pytest-xdist tensorboard pycocotools
+        pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
         pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
         gcc --version
@@ -99,7 +98,7 @@ install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
-        pip install -U --progress-bar off -e .[dev]
+        pip install --progress-bar off -e .
         python -m detectron2.utils.collect_env
 
 run_unittests: &run_unittests
