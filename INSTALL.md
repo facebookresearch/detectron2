@@ -146,18 +146,18 @@ Two possibilities:
   you need to either install a different build of PyTorch (or build by yourself)
   to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
-* PyTorch/torchvision/Detectron2 is not built for the correct GPU architecture (aka. compute compatibility).
+* PyTorch/torchvision/Detectron2 is not built for the correct GPU architecture (aka. compute capability).
 
-  The compute compatibility included by PyTorch/detectron2/torchvision is available in the "architecture flags" in
+  The architecture included by PyTorch/detectron2/torchvision is available in the "architecture flags" in
   `python -m detectron2.utils.collect_env`. It must include
-  the compute compatibility of your GPU, which can be found at [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus).
+  the architecture of your GPU, which can be found at [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus).
 
   If you're using pre-built PyTorch/detectron2/torchvision, they have included support for most popular GPUs already.
   If not supported, you need to build them from source.
 
   When building detectron2/torchvision from source, they detect the GPU device and build for only the device.
   This means the compiled code may not work on a different GPU device.
-  To recompile them for the correct compatiblity, remove all installed/compiled files,
+  To recompile them for the correct architecture, remove all installed/compiled files,
   and rebuild them with the `TORCH_CUDA_ARCH_LIST` environment variable set properly.
   For example, `export TORCH_CUDA_ARCH_LIST=6.0,7.0` makes it compile for both P100s and V100s.
 </details>
