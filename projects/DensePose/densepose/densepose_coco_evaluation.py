@@ -379,7 +379,8 @@ class DensePoseCocoEval(object):
         gtmasks = []
         for g in gt:
             if DensePoseDataRelative.S_KEY in g:
-                mask = self.getDensePoseMask(g[DensePoseDataRelative.S_KEY])
+                # convert DensePose mask to a binary mask
+                mask = np.minimum(self.getDensePoseMask(g[DensePoseDataRelative.S_KEY]), 1.0)
                 _, _, w, h = g["bbox"]
                 scale_x = float(max(w, 1)) / mask.shape[1]
                 scale_y = float(max(h, 1)) / mask.shape[0]
