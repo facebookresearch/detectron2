@@ -337,7 +337,8 @@ class DensePoseCocoEval(object):
 
     def getDensePoseMask(self, polys):
         maskGen = np.zeros([256, 256])
-        for i in range(1, 15):
+        stop = min(len(polys) + 1, 15)
+        for i in range(1, stop):
             if polys[i - 1]:
                 currentMask = maskUtils.decode(polys[i - 1])
                 maskGen[currentMask > 0] = i
