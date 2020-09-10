@@ -3,8 +3,10 @@
 import itertools
 import logging
 import numpy as np
+from collections import UserDict
 from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence
 import torch
+from torch.utils.data.dataset import Dataset
 
 from detectron2.config import CfgNode
 from detectron2.data.build import (
@@ -13,7 +15,7 @@ from detectron2.data.build import (
     print_instances_class_histogram,
     trivial_batch_collator,
 )
-from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
+from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
 from detectron2.data.common import DatasetFromList, MapDataset
 from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
 from detectron2.utils.comm import get_world_size
@@ -450,18 +452,13 @@ def build_bootstrap_dataset(dataset_name: str, cfg: CfgNode) -> Sequence[torch.T
     """
     logger = logging.getLogger(__name__)
     meta = MetadataCatalog.get(dataset_name)
-    if meta.dataset_type == DatasetType.VIDEO_LIST:
-        video_list_fpath = meta.video_list_fpath
-        video_base_path = meta.video_base_path
-        if cfg.TYPE == "video_keyframe":
-            frame_selector = build_frame_selector(cfg.SELECT)
-            transform = build_transform(cfg.TRANSFORM, data_type="image")
-            video_list = video_list_from_file(video_list_fpath, video_base_path)
-            return VideoKeyframeDataset(video_list, frame_selector, transform)
-    logger.warning(
-        f"Could not create an image sampler of type {cfg.TYPE} for dataset {dataset_name}"
-    )
-    return None
+    factory = BootstrapDatasetFactoryCatalog.get(meta.dataset_type)
+    dataset = None
+    if factory is not None:
+        dataset = factory(meta, cfg)
+    if dataset is None:
+        logger.warning(f"Failed to create dataset {dataset_name} of type {meta.dataset_type}")
+    return dataset
 
 
 def build_data_sampler(cfg: CfgNode):
@@ -574,3 +571,34 @@ def build_inference_based_loaders(
         loaders.append(loader)
         ratios.append(dataset_cfg.RATIO)
     return loaders, ratios
+
+
+def build_video_list_dataset(meta: Metadata, cfg: CfgNode):
+    video_list_fpath = meta.video_list_fpath
+    video_base_path = meta.video_base_path
+    if cfg.TYPE == "video_keyframe":
+        frame_selector = build_frame_selector(cfg.SELECT)
+        transform = build_transform(cfg.TRANSFORM, data_type="image")
+        video_list = video_list_from_file(video_list_fpath, video_base_path)
+        return VideoKeyframeDataset(video_list, frame_selector, transform)
+
+
+class _BootstrapDatasetFactoryCatalog(UserDict):
+    """
+    A global dictionary that stores information about bootstrapped datasets creation functions
+    from metadata and config, for diverse DatasetType
+    """
+
+    def register(self, dataset_type: DatasetType, factory: Callable[[Metadata, CfgNode], Dataset]):
+        """
+        Args:
+            dataset_type (DatasetType): a DatasetType e.g. DatasetType.VIDEO_LIST
+            factory (Callable[Metadata, CfgNode]): a callable which takes Metadata and cfg
+            arguments and returns a dataset object.
+        """
+        assert dataset_type not in self, "Dataset '{}' is already registered!".format(dataset_type)
+        self[dataset_type] = factory
+
+
+BootstrapDatasetFactoryCatalog = _BootstrapDatasetFactoryCatalog()
+BootstrapDatasetFactoryCatalog.register(DatasetType.VIDEO_LIST, build_video_list_dataset)

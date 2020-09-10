@@ -1,0 +1,20 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  ROI_DENSEPOSE_HEAD:
+    UV_CONFIDENCE:
+      ENABLED: True
+      TYPE: "iid_iso"
+    SEGM_CONFIDENCE:
+      ENABLED: True
+    POINT_REGRESSION_WEIGHTS: 0.0005
+SOLVER:
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: norm
+    CLIP_VALUE: 100.0
+  MAX_ITER: 130000
+  STEPS: (100000, 120000)
+  WARMUP_FACTOR: 0.025
