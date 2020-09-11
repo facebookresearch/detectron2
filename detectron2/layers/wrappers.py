@@ -223,4 +223,6 @@ def nonzero_tuple(x):
     """
     if x.dim() == 0:
         return x.unsqueeze(0).nonzero().unbind(1)
-    return x.nonzero().unbind(1)
+    if torch.jit.is_scripting():
+        return x.nonzero().unbind(1)
+    return torch.nonzero(x, as_tuple=True)
