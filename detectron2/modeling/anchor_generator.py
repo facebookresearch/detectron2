@@ -88,6 +88,11 @@ class DefaultAnchorGenerator(nn.Module):
     the dimension of each anchor box.
     """
 
+    __ignored_properties__ = ["num_cell_anchors", "num_anchors"]
+    """
+    properties that should not be JITted.
+    """
+
     @configurable
     def __init__(self, *, sizes, aspect_ratios, strides, offset=0.5):
         """
