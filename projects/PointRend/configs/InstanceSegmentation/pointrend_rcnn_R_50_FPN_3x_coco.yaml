@@ -1,7 +1,6 @@
 _BASE_: Base-PointRend-RCNN-FPN.yaml
 MODEL:
   WEIGHTS: detectron2://ImageNetPretrained/MSRA/R-50.pkl
-  MASK_ON: true
   RESNETS:
     DEPTH: 50
 SOLVER:

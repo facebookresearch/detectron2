@@ -12,7 +12,8 @@ and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/
 
 ### What's New
 * It is powered by the [PyTorch](https://pytorch.org) deep learning framework.
-* Includes more features such as panoptic segmentation, densepose, Cascade R-CNN, rotated bounding boxes, etc.
+* Includes more features such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
+  DeepLab, etc.
 * Can be used as a library to support [different projects](projects/) on top of it.
   We'll open source more research projects in this way.
 * It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).

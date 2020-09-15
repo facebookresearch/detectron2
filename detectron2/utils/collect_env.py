@@ -85,7 +85,7 @@ def collect_env_info():
     try:
         from detectron2 import _C
     except ImportError:
-        data.append(("detectron2._C", "failed to import"))
+        data.append(("detectron2._C", "failed to import. detectron2 is not built correctly"))
 
         # print system compilers when extension fails to build
         if sys.platform != "win32":  # don't know what to do for windows
@@ -130,9 +130,11 @@ def collect_env_info():
             data.append(("GPU " + ",".join(devids), name))
 
         if has_rocm:
-            data.append(("ROCM_HOME", str(ROCM_HOME)))
+            msg = " - invalid!" if not os.path.isdir(ROCM_HOME) else ""
+            data.append(("ROCM_HOME", str(ROCM_HOME) + msg))
         else:
-            data.append(("CUDA_HOME", str(CUDA_HOME)))
+            msg = " - invalid!" if not os.path.isdir(CUDA_HOME) else ""
+            data.append(("CUDA_HOME", str(CUDA_HOME) + msg))
 
             cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)
             if cuda_arch_list:
@@ -183,3 +185,11 @@ if __name__ == "__main__":
         from detectron2.utils.collect_env import collect_env_info
 
         print(collect_env_info())
+    if torch.cuda.is_available():
+        for k in range(torch.cuda.device_count()):
+            device = f"cuda:{k}"
+            try:
+                x = torch.tensor([1, 2.0], dtype=torch.float32)
+                x = x.to(device)
+            except Exception:
+                print(f"Unable to copy tensor to device={device}")
