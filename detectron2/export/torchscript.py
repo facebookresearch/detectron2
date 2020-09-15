@@ -85,12 +85,13 @@ def patch_instances(fields):
 # TODO: find a more automatic way to enable import of other classes
 def _gen_imports():
     imports_str = """
+from copy import deepcopy
 import torch
 from torch import Tensor
 import typing
 from typing import *
 
-from detectron2.structures import Boxes
+from detectron2.structures import Boxes, Instances
 
 """
     return imports_str
@@ -171,6 +172,23 @@ class {cls_name}:
     lines.append(
         """
         return False
+"""
+    )
+
+    # support function attribute `from_instances`
+    lines.append(
+        f"""
+    @torch.jit.unused
+    @staticmethod
+    def from_instances(instances: Instances) -> "{cls_name}":
+        fields = instances.get_fields()
+        image_size = instances.image_size
+        new_instances = {cls_name}(image_size)
+        for name, val in fields.items():
+            assert hasattr(new_instances, '_{{}}'.format(name)), \\
+                "No attribute named {{}} in {cls_name}".format(name)
+            setattr(new_instances, name, deepcopy(val))
+        return new_instances
 """
     )
     return cls_name, os.linesep.join(lines)

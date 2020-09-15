@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from typing import List
+from typing import Any, List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -28,7 +28,8 @@ The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 
-def mask_rcnn_loss(pred_mask_logits, instances, vis_period=0):
+@torch.jit.unused
+def mask_rcnn_loss(pred_mask_logits: torch.Tensor, instances: List[Instances], vis_period: int = 0):
     """
     Compute the mask prediction loss defined in the Mask R-CNN paper.
 
@@ -110,7 +111,7 @@ def mask_rcnn_loss(pred_mask_logits, instances, vis_period=0):
     return mask_loss
 
 
-def mask_rcnn_inference(pred_mask_logits, pred_instances):
+def mask_rcnn_inference(pred_mask_logits: torch.Tensor, pred_instances: List[Instances]):
     """
     Convert pred_mask_logits to estimated foreground probability masks while also
     extracting only the masks for the predicted classes in pred_instances. For each
@@ -171,7 +172,7 @@ class BaseMaskRCNNHead(nn.Module):
     def from_config(cls, cfg, input_shape):
         return {"vis_period": cfg.VIS_PERIOD}
 
-    def forward(self, x, instances: List[Instances]):
+    def forward(self, x, instances: List[Instances]) -> Any:
         """
         Args:
             x: input region feature(s) provided by :class:`ROIHeads`.
@@ -199,8 +200,11 @@ class BaseMaskRCNNHead(nn.Module):
         raise NotImplementedError
 
 
+# To get torchscript support, we make the head a subclass of `nn.Sequential`.
+# Therefore, to add new layers in this head class, please make sure they are
+# added in the order they will be used in forward().
 @ROI_MASK_HEAD_REGISTRY.register()
-class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
+class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead, nn.Sequential):
     """
     A mask head with several conv layers, plus an upsample layer (with `ConvTranspose2d`).
     Predictions are made with a final 1x1 conv layer.
@@ -234,7 +238,7 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
                 padding=1,
                 bias=not conv_norm,
                 norm=get_norm(conv_norm, conv_dim),
-                activation=F.relu,
+                activation=nn.ReLU(),
             )
             self.add_module("mask_fcn{}".format(k + 1), conv)
             self.conv_norm_relus.append(conv)
@@ -243,6 +247,7 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
         self.deconv = ConvTranspose2d(
             cur_channels, conv_dims[-1], kernel_size=2, stride=2, padding=0
         )
+        self.add_module("deconv_relu", nn.ReLU())
         cur_channels = conv_dims[-1]
 
         self.predictor = Conv2d(cur_channels, num_classes, kernel_size=1, stride=1, padding=0)
@@ -271,10 +276,9 @@ class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
         return ret
 
     def layers(self, x):
-        for layer in self.conv_norm_relus:
+        for layer in self:
             x = layer(x)
-        x = F.relu(self.deconv(x))
-        return self.predictor(x)
+        return x
 
 
 def build_mask_head(cfg, input_shape):
