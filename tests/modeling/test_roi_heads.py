@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import unittest
+from copy import deepcopy
 import torch
 
 from detectron2.config import get_cfg
@@ -153,7 +154,9 @@ class ROIHeadsTest(unittest.TestCase):
         mask_head = MaskRCNNConvUpsampleHead(
             input_shape, num_classes=80, conv_dims=[256, 256]
         ).eval()
-        origin_outputs = mask_head(mask_features, [pred_instance0, pred_instance1])
+        # pred_instance will be in-place changed during the inference
+        # process of `MaskRCNNConvUpsampleHead`
+        origin_outputs = mask_head(mask_features, deepcopy([pred_instance0, pred_instance1]))
 
         fields = {"pred_masks": "Tensor", "pred_classes": "Tensor"}
         with patch_instances(fields) as NewInstances:

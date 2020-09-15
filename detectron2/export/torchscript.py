@@ -85,6 +85,7 @@ def patch_instances(fields):
 # TODO: find a more automatic way to enable import of other classes
 def _gen_imports():
     imports_str = """
+from copy import deepcopy
 import torch
 from torch import Tensor
 import typing
@@ -186,7 +187,7 @@ class {cls_name}:
         for name, val in fields.items():
             assert hasattr(new_instances, '_{{}}'.format(name)), \\
                 "No attribute named {{}} in {cls_name}".format(name)
-            setattr(new_instances, name, val)
+            setattr(new_instances, name, deepcopy(val))
         return new_instances
 """
     )
