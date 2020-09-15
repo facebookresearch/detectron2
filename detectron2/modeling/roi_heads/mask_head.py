@@ -30,8 +30,6 @@ The registered object will be called with `obj(cfg, input_shape)`.
 # To get torchscript support, we make mask head class `MaskRCNNConvUpsampleHead` a subclass
 # of `nn.Sequential`. If you want to add new layers in this head class, please make sure
 # they are added to the class in the order of that in the network.
-# todo: revert to nn.Module when torchscript supports List[nn.Module]
-# https://github.com/pytorch/pytorch/pull/38059
 
 
 @torch.jit.unused

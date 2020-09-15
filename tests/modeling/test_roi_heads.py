@@ -139,12 +139,7 @@ class ROIHeadsTest(unittest.TestCase):
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_mask_head_scriptability(self):
-        cfg = get_cfg()
-        cfg.MODEL.ROI_MASK_HEAD.NUM_CONV = 1
-        cfg.MODEL.MASK_ON = True
-
         input_shape = ShapeSpec(channels=1024)
-
         mask_features = torch.randn(4, 1024, 14, 14)
 
         image_shapes = [(10, 10), (15, 15)]
