@@ -27,9 +27,9 @@ per-region features.
 The registered object will be called with `obj(cfg, input_shape)`.
 """
 
-# To get torchscript support, we make mask head class a subclass of `nn.Sequential`.
-# If you want to add new layers in these head classes, please make sure they are added to the class
-# in the order of that in the network.
+# To get torchscript support, we make mask head class `MaskRCNNConvUpsampleHead` a subclass
+# of `nn.Sequential`. If you want to add new layers in this head class, please make sure
+# they are added to the class in the order of that in the network.
 # todo: revert to nn.Module when torchscript supports List[nn.Module]
 # https://github.com/pytorch/pytorch/pull/38059
 
@@ -158,7 +158,7 @@ def mask_rcnn_inference(pred_mask_logits: torch.Tensor, pred_instances: List[Ins
         instances.pred_masks = prob  # (1, Hmask, Wmask)
 
 
-class BaseMaskRCNNHead(nn.Sequential):
+class BaseMaskRCNNHead(nn.Module):
     """
     Implement the basic Mask R-CNN losses and inference logic described in :paper:`Mask R-CNN`
     """
@@ -207,7 +207,7 @@ class BaseMaskRCNNHead(nn.Sequential):
 
 
 @ROI_MASK_HEAD_REGISTRY.register()
-class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead):
+class MaskRCNNConvUpsampleHead(BaseMaskRCNNHead, nn.Sequential):
     """
     A mask head with several conv layers, plus an upsample layer (with `ConvTranspose2d`).
     Predictions are made with a final 1x1 conv layer.

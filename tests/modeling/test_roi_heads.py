@@ -7,7 +7,11 @@ from detectron2.config import get_cfg
 from detectron2.export.torchscript import patch_instances
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
-from detectron2.modeling.roi_heads import StandardROIHeads, build_mask_head, build_roi_heads
+from detectron2.modeling.roi_heads import (
+    MaskRCNNConvUpsampleHead,
+    StandardROIHeads,
+    build_roi_heads,
+)
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
@@ -151,16 +155,16 @@ class ROIHeadsTest(unittest.TestCase):
         pred_classes1 = torch.tensor([4], dtype=torch.int64)
         pred_instance1.pred_classes = pred_classes1
 
-        mask_head = build_mask_head(cfg, input_shape).eval()
+        mask_head = MaskRCNNConvUpsampleHead(
+            input_shape, num_classes=80, conv_dims=[256, 256]
+        ).eval()
         origin_outputs = mask_head(mask_features, [pred_instance0, pred_instance1])
 
         fields = {"pred_masks": "Tensor", "pred_classes": "Tensor"}
-        with patch_instances(fields) as new_instance:
+        with patch_instances(fields) as NewInstances:
             sciript_mask_head = torch.jit.script(mask_head)
-            pred_instance0 = new_instance(image_shapes[0])
-            pred_instance0.pred_classes = pred_classes0
-            pred_instance1 = new_instance(image_shapes[1])
-            pred_instance1.pred_classes = pred_classes1
+            pred_instance0 = NewInstances.from_instances(pred_instance0)
+            pred_instance1 = NewInstances.from_instances(pred_instance1)
             script_outputs = sciript_mask_head(mask_features, [pred_instance0, pred_instance1])
 
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
