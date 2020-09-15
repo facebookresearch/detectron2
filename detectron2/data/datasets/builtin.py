@@ -21,8 +21,9 @@ import os
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 
-from .builtin_meta import _get_builtin_metadata
+from .builtin_meta import ADE20K_SEM_SEG_CATEGORIES, _get_builtin_metadata
 from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
+from .coco import load_sem_seg
 from .lvis import get_lvis_instances_meta, register_lvis_instances
 from .pascal_voc import register_pascal_voc
 from .register_coco import register_coco_instances, register_coco_panoptic_separated
@@ -169,9 +170,9 @@ def register_all_lvis(root):
 
 
 _RAW_CITYSCAPES_SPLITS = {
-    "cityscapes_fine_{task}_train": ("cityscapes/leftImg8bit/train", "cityscapes/gtFine/train"),
-    "cityscapes_fine_{task}_val": ("cityscapes/leftImg8bit/val", "cityscapes/gtFine/val"),
-    "cityscapes_fine_{task}_test": ("cityscapes/leftImg8bit/test", "cityscapes/gtFine/test"),
+    "cityscapes_fine_{task}_train": ("cityscapes/leftImg8bit/train/", "cityscapes/gtFine/train/"),
+    "cityscapes_fine_{task}_val": ("cityscapes/leftImg8bit/val/", "cityscapes/gtFine/val/"),
+    "cityscapes_fine_{task}_test": ("cityscapes/leftImg8bit/test/", "cityscapes/gtFine/test/"),
 }
 
 
@@ -218,6 +219,23 @@ def register_all_pascal_voc(root):
         MetadataCatalog.get(name).evaluator_type = "pascal_voc"
 
 
+def register_all_ade20k(root):
+    root = os.path.join(root, "ADEChallengeData2016")
+    for name, dirname in [("train", "training"), ("val", "validation")]:
+        image_dir = os.path.join(root, "images", dirname)
+        gt_dir = os.path.join(root, "annotations_detectron2", dirname)
+        name = f"ade20k_sem_seg_{name}"
+        DatasetCatalog.register(
+            name, lambda x=image_dir, y=gt_dir: load_sem_seg(y, x, gt_ext="png", image_ext="jpg")
+        )
+        MetadataCatalog.get(name).set(
+            stuff_classes=ADE20K_SEM_SEG_CATEGORIES[:],
+            image_root=image_dir,
+            sem_seg_root=gt_dir,
+            evaluator_type="sem_seg",
+        )
+
+
 # True for open source;
 # Internally at fb, we register them elsewhere
 if __name__.endswith(".builtin"):
@@ -227,3 +245,4 @@ if __name__.endswith(".builtin"):
     register_all_lvis(_root)
     register_all_cityscapes(_root)
     register_all_pascal_voc(_root)
+    register_all_ade20k(_root)
