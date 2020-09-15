@@ -104,7 +104,8 @@ def fast_rcnn_inference_single_image(
     boxes.clip(image_shape)
     boxes = boxes.tensor.view(-1, num_bbox_reg_classes, 4)  # R x C x 4
 
-    # Filter results based on detection scores
+    # 1. Filter results based on detection scores. It can make NMS more efficient
+    #    by filtering out low-confidence detections.
     filter_mask = scores > score_thresh  # R x K
     # R' x 2. First column contains indices of the R predictions;
     # Second column contains indices of classes.
@@ -115,7 +116,7 @@ def fast_rcnn_inference_single_image(
         boxes = boxes[filter_mask]
     scores = scores[filter_mask]
 
-    # Apply per-class NMS
+    # 2. Apply NMS for each class independently.
     keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
     if topk_per_image >= 0:
         keep = keep[:topk_per_image]

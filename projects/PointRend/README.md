@@ -67,7 +67,9 @@ python train_net.py --config-file configs/InstanceSegmentation/pointrend_rcnn_R_
 </tr>
 </tbody></table>
 
-AP&ast; is COCO mask AP evaluated against the higher-quality LVIS annotations; see the paper for details. Run `python detectron2/datasets/prepare_cocofied_lvis.py` to prepare GT files for AP&ast; evaluation. Since LVIS annotations are not exhaustive `lvis-api` and not `cocoapi` should be used to evaluate AP&ast;.
+AP&ast; is COCO mask AP evaluated against the higher-quality LVIS annotations; see the paper for details.
+Run `python detectron2/datasets/prepare_cocofied_lvis.py` to prepare GT files for AP&ast; evaluation.
+Since LVIS annotations are not exhaustive, `lvis-api` and not `cocoapi` should be used to evaluate AP&ast;.
 
 #### Cityscapes
 Cityscapes model is trained with ImageNet pretraining.

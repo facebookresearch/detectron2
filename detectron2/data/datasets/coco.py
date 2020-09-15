@@ -6,6 +6,7 @@ import json
 import logging
 import numpy as np
 import os
+import shutil
 import pycocotools.mask as mask_util
 from fvcore.common.file_io import PathManager, file_lock
 from fvcore.common.timer import Timer
@@ -322,9 +323,9 @@ def convert_to_coco_dict(dataset_name):
     for image_id, image_dict in enumerate(dataset_dicts):
         coco_image = {
             "id": image_dict.get("image_id", image_id),
-            "width": image_dict["width"],
-            "height": image_dict["height"],
-            "file_name": image_dict["file_name"],
+            "width": int(image_dict["width"]),
+            "height": int(image_dict["height"]),
+            "file_name": str(image_dict["file_name"]),
         }
         coco_images.append(coco_image)
 
@@ -377,7 +378,7 @@ def convert_to_coco_dict(dataset_name):
             coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
             coco_annotation["area"] = float(area)
             coco_annotation["iscrowd"] = int(annotation.get("iscrowd", 0))
-            coco_annotation["category_id"] = reverse_id_mapper(annotation["category_id"])
+            coco_annotation["category_id"] = int(reverse_id_mapper(annotation["category_id"]))
 
             # Add optional fields
             if "keypoints" in annotation:
@@ -437,8 +438,10 @@ def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
             coco_dict = convert_to_coco_dict(dataset_name)
 
             logger.info(f"Caching COCO format annotations at '{output_file}' ...")
-            with PathManager.open(output_file, "w") as f:
+            tmp_file = output_file + ".tmp"
+            with PathManager.open(tmp_file, "w") as f:
                 json.dump(coco_dict, f)
+            shutil.move(tmp_file, output_file)
 
 
 if __name__ == "__main__":
