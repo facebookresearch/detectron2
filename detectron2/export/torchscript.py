@@ -38,6 +38,11 @@ def export_torchscript_with_instances(model, fields):
             fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
             torchscipt_model =  export_torchscript_with_instances(model, fields)
 
+    Note:
+        Currently we only support models in evaluation mode. Exporting models in training mode
+        or running inference processes of torchscripts that are exported from models in training
+        mode may encounter unexpected errors.
+
     Args:
         model (nn.Module): The input model to be exported to torchscript.
         fields (Dict[str, str]): Attribute names and corresponding type annotations that
@@ -48,6 +53,11 @@ def export_torchscript_with_instances(model, fields):
     Returns:
         torch.jit.ScriptModule: the input model in torchscript format
     """
+
+    assert (
+        not model.training
+    ), "Currently we only support exporting models in evaluation mode to torchscripts"
+
     with patch_instances(fields):
         scripted_model = torch.jit.script(model)
         return scripted_model

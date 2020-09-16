@@ -9,6 +9,7 @@ from detectron2.export.torchscript import patch_instances
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.roi_heads import (
+    KRCNNConvDeconvUpsampleHead,
     MaskRCNNConvUpsampleHead,
     StandardROIHeads,
     build_roi_heads,
@@ -169,6 +170,46 @@ class ROIHeadsTest(unittest.TestCase):
             self.assertEqual(origin_ins.image_size, script_ins.image_size)
             self.assertTrue(torch.equal(origin_ins.pred_classes, script_ins.pred_classes))
             self.assertTrue(torch.equal(origin_ins.pred_masks, script_ins.pred_masks))
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_keypoint_head_scriptability(self):
+        input_shape = ShapeSpec(channels=1024, height=14, width=14)
+        keypoint_features = torch.randn(4, 1024, 14, 14)
+
+        image_shapes = [(10, 10), (15, 15)]
+        pred_boxes0 = torch.tensor([[1, 1, 3, 3], [2, 2, 6, 6], [1, 5, 2, 8]], dtype=torch.float32)
+        pred_instance0 = Instances(image_shapes[0])
+        pred_instance0.pred_boxes = Boxes(pred_boxes0)
+        pred_boxes1 = torch.tensor([[7, 3, 10, 5]], dtype=torch.float32)
+        pred_instance1 = Instances(image_shapes[1])
+        pred_instance1.pred_boxes = Boxes(pred_boxes1)
+
+        keypoint_head = KRCNNConvDeconvUpsampleHead(
+            input_shape, num_keypoints=17, conv_dims=[512, 512]
+        ).eval()
+        origin_outputs = keypoint_head(
+            keypoint_features, deepcopy([pred_instance0, pred_instance1])
+        )
+
+        fields = {
+            "pred_boxes": "Boxes",
+            "pred_keypoints": "Tensor",
+            "pred_keypoint_heatmaps": "Tensor",
+        }
+        with patch_instances(fields) as NewInstances:
+            sciript_keypoint_head = torch.jit.script(keypoint_head)
+            pred_instance0 = NewInstances.from_instances(pred_instance0)
+            pred_instance1 = NewInstances.from_instances(pred_instance1)
+            script_outputs = sciript_keypoint_head(
+                keypoint_features, [pred_instance0, pred_instance1]
+            )
+
+        for origin_ins, script_ins in zip(origin_outputs, script_outputs):
+            self.assertEqual(origin_ins.image_size, script_ins.image_size)
+            self.assertTrue(torch.equal(origin_ins.pred_keypoints, script_ins.pred_keypoints))
+            self.assertTrue(
+                torch.equal(origin_ins.pred_keypoint_heatmaps, script_ins.pred_keypoint_heatmaps)
+            )
 
 
 if __name__ == "__main__":
