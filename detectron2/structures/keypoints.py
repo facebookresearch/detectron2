@@ -158,9 +158,8 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
     we maintain consistency with :meth:`Keypoints.to_heatmap` by using the conversion from
     Heckbert 1990: c = d + 0.5, where d is a discrete coordinate and c is a continuous coordinate.
     """
-    # functions decorated with @torch.no_grad() can not be exported to torchscript when
-    # other functions are called inside them.
-    # https://github.com/pytorch/pytorch/issues/44768
+    # The decorator use of torch.no_grad() was not supported by torchscript.
+    # https://github.com/pytorch/pytorch/pull/41371
     maps = maps.detach()
     rois = rois.detach()
 
