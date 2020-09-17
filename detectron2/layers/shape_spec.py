@@ -7,7 +7,7 @@ class ShapeSpec(namedtuple("_ShapeSpec", ["channels", "height", "width", "stride
     """
     A simple structure that contains basic shape specification about a tensor.
     It is often used as the auxiliary inputs/outputs of models,
-    to obtain the shape inference ability among pytorch modules.
+    to complement the lack of shape inference ability among pytorch modules.
 
     Attributes:
         channels:
