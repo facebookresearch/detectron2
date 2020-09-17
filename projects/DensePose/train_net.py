@@ -17,22 +17,14 @@ from detectron2.engine import default_argument_parser, default_setup, hooks, lau
 from detectron2.evaluation import verify_results
 from detectron2.utils.logger import setup_logger
 
-from densepose import (
-    add_bootstrap_config,
-    add_dataset_category_config,
-    add_densepose_config,
-    add_hrnet_config,
-)
+from densepose import add_densepose_config
 from densepose.engine import Trainer
 from densepose.modeling.densepose_checkpoint import DensePoseCheckpointer
 
 
 def setup(args):
     cfg = get_cfg()
-    add_dataset_category_config(cfg)
-    add_bootstrap_config(cfg)
     add_densepose_config(cfg)
-    add_hrnet_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()

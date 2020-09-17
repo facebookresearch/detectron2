@@ -2,6 +2,7 @@
 from .data.datasets import builtin  # just to register data
 from .config import (
     add_densepose_config,
+    add_densepose_head_config,
     add_hrnet_config,
     add_dataset_category_config,
     add_bootstrap_config,
