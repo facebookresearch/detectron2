@@ -141,7 +141,6 @@ def _keypoints_to_heatmap(
     return heatmaps, valid
 
 
-@torch.no_grad()
 def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tensor:
     """
     Extract predicted keypoint locations from heatmaps.
@@ -159,6 +158,11 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
     we maintain consistency with :meth:`Keypoints.to_heatmap` by using the conversion from
     Heckbert 1990: c = d + 0.5, where d is a discrete coordinate and c is a continuous coordinate.
     """
+    # The decorator use of torch.no_grad() was not supported by torchscript.
+    # https://github.com/pytorch/pytorch/pull/41371
+    maps = maps.detach()
+    rois = rois.detach()
+
     offset_x = rois[:, 0]
     offset_y = rois[:, 1]
 
