@@ -88,11 +88,6 @@ class DefaultAnchorGenerator(nn.Module):
     the dimension of each anchor box.
     """
 
-    __ignored_properties__ = ["num_cell_anchors", "num_anchors"]
-    """
-    properties that should not be JITted.
-    """
-
     @configurable
     def __init__(self, *, sizes, aspect_ratios, strides, offset=0.5):
         """
@@ -139,6 +134,7 @@ class DefaultAnchorGenerator(nn.Module):
         return BufferList(cell_anchors)
 
     @property
+    @torch.jit.ignore
     def num_cell_anchors(self):
         """
         Alias of `num_anchors`.
@@ -146,6 +142,7 @@ class DefaultAnchorGenerator(nn.Module):
         return self.num_anchors
 
     @property
+    @torch.jit.ignore
     def num_anchors(self):
         """
         Returns:
