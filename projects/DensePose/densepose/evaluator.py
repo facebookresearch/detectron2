@@ -78,11 +78,10 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._logger.info("Preparing results for COCO format ...")
 
         if self._output_dir:
-            file_path = os.path.join(self._output_dir, "coco_densepose_results.json")
-            with open(file_path, "w") as f:
-                json.dump(predictions, f)
-                f.flush()
-                os.fsync(f.fileno())
+            PathManager.mkdirs(self._output_dir)
+            file_path = os.path.join(self._output_dir, "coco_densepose_predictions.pth")
+            with PathManager.open(file_path, "wb") as f:
+                torch.save(predictions, f)
 
         self._logger.info("Evaluating predictions ...")
         res = OrderedDict()
