@@ -12,7 +12,7 @@ from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
-from ..backbone.resnet import BottleneckBlock, make_stage
+from ..backbone.resnet import BottleneckBlock, ResNet
 from ..matcher import Matcher
 from ..poolers import ROIPooler
 from ..proposal_generator.proposal_utils import add_ground_truth_to_proposals
@@ -394,10 +394,10 @@ class Res5ROIHeads(ROIHeads):
             "Deformable conv is not yet supported in res5 head."
         # fmt: on
 
-        blocks = make_stage(
+        blocks = ResNet.make_stage(
             BottleneckBlock,
             3,
-            first_stride=2,
+            stride_per_block=[2, 1, 1],
             in_channels=out_channels // 2,
             bottleneck_channels=bottleneck_channels,
             out_channels=out_channels,
