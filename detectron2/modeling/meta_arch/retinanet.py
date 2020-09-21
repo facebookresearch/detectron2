@@ -402,7 +402,7 @@ class RetinaNetHead(nn.Module):
         input_shape: List[ShapeSpec],
         num_classes,
         num_anchors,
-        num_convs,
+        conv_dims: List[int],
         norm="",
         prior_prob=0.01,
     ):
@@ -413,7 +413,7 @@ class RetinaNetHead(nn.Module):
             input_shape (List[ShapeSpec]): input shape
             num_classes (int): number of classes. Used to label background proposals.
             num_anchors (int): number of generated anchors
-            num_convs (int): number of conv layers
+            conv_dims (List[int]): dimensions for each convolution layer
             norm (str or callable):
                     Normalization for conv layers except for the two output layers.
                     See :func:`detectron2.layers.get_norm` for supported types.
@@ -425,29 +425,30 @@ class RetinaNetHead(nn.Module):
             logger = logging.getLogger(__name__)
             logger.warn("Shared norm does not work well for BN, SyncBN, expect poor results")
 
-        in_channels = input_shape[0].channels
         cls_subnet = []
         bbox_subnet = []
-        for _ in range(num_convs):
+        for in_channels, out_channels in zip([input_shape[0].channels] + conv_dims, conv_dims):
             cls_subnet.append(
-                nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+                nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
             )
             if norm:
-                cls_subnet.append(get_norm(norm, in_channels))
+                cls_subnet.append(get_norm(norm, out_channels))
             cls_subnet.append(nn.ReLU())
             bbox_subnet.append(
-                nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+                nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
             )
             if norm:
-                bbox_subnet.append(get_norm(norm, in_channels))
+                bbox_subnet.append(get_norm(norm, out_channels))
             bbox_subnet.append(nn.ReLU())
 
         self.cls_subnet = nn.Sequential(*cls_subnet)
         self.bbox_subnet = nn.Sequential(*bbox_subnet)
         self.cls_score = nn.Conv2d(
-            in_channels, num_anchors * num_classes, kernel_size=3, stride=1, padding=1
+            conv_dims[-1], num_anchors * num_classes, kernel_size=3, stride=1, padding=1
         )
-        self.bbox_pred = nn.Conv2d(in_channels, num_anchors * 4, kernel_size=3, stride=1, padding=1)
+        self.bbox_pred = nn.Conv2d(
+            conv_dims[-1], num_anchors * 4, kernel_size=3, stride=1, padding=1
+        )
 
         # Initialization
         for modules in [self.cls_subnet, self.bbox_subnet, self.cls_score, self.bbox_pred]:
@@ -472,7 +473,7 @@ class RetinaNetHead(nn.Module):
         return {
             "input_shape": input_shape,
             "num_classes": cfg.MODEL.RETINANET.NUM_CLASSES,
-            "num_convs": cfg.MODEL.RETINANET.NUM_CONVS,
+            "conv_dims": [input_shape[0].channels] * cfg.MODEL.RETINANET.NUM_CONVS,
             "prior_prob": cfg.MODEL.RETINANET.PRIOR_PROB,
             "norm": cfg.MODEL.RETINANET.NORM,
             "num_anchors": num_anchors,
