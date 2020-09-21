@@ -154,7 +154,7 @@ def collect_env_info():
                 msg = detect_compute_compatibility(CUDA_HOME, torchvision_C)
                 data.append(("torchvision arch flags", msg))
             except ImportError:
-                data.append(("torchvision._C", "failed to find"))
+                data.append(("torchvision._C", "Not found"))
     except AttributeError:
         data.append(("torchvision", "unknown"))
 
@@ -170,7 +170,7 @@ def collect_env_info():
 
         data.append(("cv2", cv2.__version__))
     except ImportError:
-        pass
+        data.append(("cv2", "Not found"))
     env_str = tabulate(data) + "\n"
     env_str += collect_torch_env()
     return env_str

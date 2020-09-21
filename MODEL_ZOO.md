@@ -11,8 +11,8 @@ You can access these models from code using [detectron2.model_zoo](https://detec
 In addition to these official baseline models, you can find more models in [projects/](projects/).
 
 #### How to Read the Tables
-* The "Name" column contains a link to the config file. Running `tools/train_net.py` with this config file
-  and 8 GPUs will reproduce the model.
+* The "Name" column contains a link to the config file. Running `tools/train_net.py --num-gpus 8` with this config file
+  will reproduce the model.
 * Training speed is averaged across the entire training.
   We keep updating the speed with latest version of detectron2/pytorch/etc.,
   so they might be different from the `metrics` file.

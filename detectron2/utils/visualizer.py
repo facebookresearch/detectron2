@@ -387,6 +387,8 @@ class Visualizer:
         if self._instance_mode == ColorMode.IMAGE_BW:
             self.output.img = self._create_grayscale_image(
                 (predictions.pred_masks.any(dim=0) > 0).numpy()
+                if predictions.has("pred_masks")
+                else None
             )
             alpha = 0.3
 

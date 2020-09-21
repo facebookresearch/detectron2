@@ -50,6 +50,7 @@ pytorch_parameters: &pytorch_parameters
 #         nvidia-smi
 
 add_ssh_keys: &add_ssh_keys
+  # https://circleci.com/docs/2.0/add-ssh-key/
   - add_ssh_keys:
       fingerprints:
         - "e4:13:f2:22:d4:49:e8:e4:57:5a:ac:20:2f:3f:1f:ca"
