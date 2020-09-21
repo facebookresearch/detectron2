@@ -8,6 +8,7 @@ from fvcore.nn import giou_loss, sigmoid_focal_loss_jit, smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
+from detectron2.config import configurable
 from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.layers import ShapeSpec, batched_nms, cat, get_norm
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
@@ -394,29 +395,37 @@ class RetinaNetHead(nn.Module):
     It has two subnets for the two tasks, with a common structure but separate parameters.
     """
 
-    def __init__(self, cfg, input_shape: List[ShapeSpec]):
-        super().__init__()
-        # fmt: off
-        in_channels = input_shape[0].channels
-        num_classes = cfg.MODEL.RETINANET.NUM_CLASSES
-        num_convs   = cfg.MODEL.RETINANET.NUM_CONVS
-        prior_prob  = cfg.MODEL.RETINANET.PRIOR_PROB
-        norm        = cfg.MODEL.RETINANET.NORM
-        # Disabling shared norm causes backwards compatibility issues
-        # Hardcode to true for now
-        # shared_norm = cfg.MODEL.RETINANET.SHARED_NORM
+    @configurable
+    def __init__(
+        self,
+        *,
+        input_shape: List[ShapeSpec],
+        num_classes,
+        num_anchors,
+        num_convs,
+        norm="",
+        prior_prob=0.01,
+    ):
+        """
+        NOTE: this interface is experimental.
 
-        num_anchors = build_anchor_generator(cfg, input_shape).num_cell_anchors
-        # fmt: on
-        assert (
-            len(set(num_anchors)) == 1
-        ), "Using different number of anchors between levels is not currently supported!"
-        num_anchors = num_anchors[0]
+        Args:
+            input_shape (List[ShapeSpec]): input shape
+            num_classes (int): number of classes. Used to label background proposals.
+            num_anchors (int): number of generated anchors
+            num_convs (int): number of conv layers
+            norm (str or callable):
+                    Normalization for conv layers except for the two output layers.
+                    See :func:`detectron2.layers.get_norm` for supported types.
+            prior_prob (float): Prior weight for computing bias
+        """
+        super().__init__()
 
         if norm == "BN" or norm == "SyncBN":
             logger = logging.getLogger(__name__)
             logger.warn("Shared norm does not work well for BN, SyncBN, expect poor results")
 
+        in_channels = input_shape[0].channels
         cls_subnet = []
         bbox_subnet = []
         for _ in range(num_convs):
@@ -450,6 +459,24 @@ class RetinaNetHead(nn.Module):
         # Use prior in model initialization to improve stability
         bias_value = -(math.log((1 - prior_prob) / prior_prob))
         torch.nn.init.constant_(self.cls_score.bias, bias_value)
+
+    @classmethod
+    def from_config(cls, cfg, input_shape: List[ShapeSpec]):
+        num_anchors = build_anchor_generator(cfg, input_shape).num_cell_anchors
+        # fmt: on
+        assert (
+            len(set(num_anchors)) == 1
+        ), "Using different number of anchors between levels is not currently supported!"
+        num_anchors = num_anchors[0]
+
+        return {
+            "input_shape": input_shape,
+            "num_classes": cfg.MODEL.RETINANET.NUM_CLASSES,
+            "num_convs": cfg.MODEL.RETINANET.NUM_CONVS,
+            "prior_prob": cfg.MODEL.RETINANET.PRIOR_PROB,
+            "norm": cfg.MODEL.RETINANET.NORM,
+            "num_anchors": num_anchors,
+        }
 
     def forward(self, features):
         """
