@@ -59,8 +59,8 @@ def assign_boxes_to_levels(
 
 
 def _fmt_box_list(box_tensor, batch_index: int):
-    repeated_index = torch.full(
-        (len(box_tensor), 1), batch_index, dtype=box_tensor.dtype, device=box_tensor.device
+    repeated_index = torch.full_like(
+        box_tensor[:, :1], batch_index, dtype=box_tensor.dtype, device=box_tensor.device, layout=torch.strided
     )
     return cat((repeated_index, box_tensor), dim=1)
 
@@ -232,7 +232,7 @@ class ROIPooler(nn.Module):
             box_lists, self.min_level, self.max_level, self.canonical_box_size, self.canonical_level
         )
 
-        num_boxes = len(pooler_fmt_boxes)
+        num_boxes = pooler_fmt_boxes.size(0)
         num_channels = x[0].shape[1]
         output_size = self.output_size[0]
 
