@@ -2,7 +2,11 @@
 import importlib
 from pathlib import Path
 
-_PROJECTS = {"point_rend": "PointRend", "deeplab": "DeepLab"}
+_PROJECTS = {
+    "point_rend": "PointRend",
+    "deeplab": "DeepLab",
+    "panoptic_deeplab": "Panoptic-DeepLab",
+}
 _PROJECT_ROOT = Path(__file__).parent.parent.parent / "projects"
 
 if _PROJECT_ROOT.is_dir():

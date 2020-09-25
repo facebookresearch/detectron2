@@ -15,6 +15,7 @@ of support or stability as detectron2.
 + [PointRend: Image Segmentation as Rendering](PointRend)
 + [Momentum Contrast for Unsupervised Visual Representation Learning](https://github.com/facebookresearch/moco/tree/master/detection)
 + [DETR: End-to-End Object Detection with Transformers](https://github.com/facebookresearch/detr/tree/master/d2)
++ [Panoptic-DeepLab: A Simple, Strong, and Fast Baseline for Bottom-Up Panoptic Segmentation](Panoptic-DeepLab)
 
 
 ## External Projects

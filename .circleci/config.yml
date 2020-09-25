@@ -104,7 +104,7 @@ install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
-        pip install --progress-bar off -e .
+        pip install --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
 
 run_unittests: &run_unittests

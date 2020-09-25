@@ -14,6 +14,10 @@ class TestProjects(unittest.TestCase):
 
         _ = deeplab.add_deeplab_config
 
+        # import detectron2.projects.panoptic_deeplab as panoptic_deeplab
+
+        # _ = panoptic_deeplab.add_panoptic_deeplab_config
+
 
 class TestCollectEnv(unittest.TestCase):
     def test(self):

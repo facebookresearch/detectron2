@@ -168,6 +168,7 @@ def get_model_zoo_configs() -> List[str]:
 PROJECTS = {
     "detectron2.projects.point_rend": "projects/PointRend/point_rend",
     "detectron2.projects.deeplab": "projects/DeepLab/deeplab",
+    "detectron2.projects.panoptic_deeplab": "projects/Panoptic-DeepLab/panoptic_deeplab",
 }
 
 setup(
@@ -200,7 +201,11 @@ setup(
         "pydot",  # used to save caffe2 SVGs
     ],
     extras_require={
-        "all": ["shapely", "psutil"],
+        "all": [
+            "shapely",
+            "psutil",
+            "panopticapi @ https://github.com/cocodataset/panopticapi/archive/master.zip",
+        ],
         "dev": [
             "flake8==3.8.1",
             "isort==4.3.21",

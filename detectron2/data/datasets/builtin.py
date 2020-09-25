@@ -23,6 +23,7 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 
 from .builtin_meta import ADE20K_SEM_SEG_CATEGORIES, _get_builtin_metadata
 from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
+from .cityscapes_panoptic import register_all_cityscapes_panoptic
 from .coco import load_sem_seg
 from .lvis import get_lvis_instances_meta, register_lvis_instances
 from .pascal_voc import register_pascal_voc
@@ -244,5 +245,6 @@ if __name__.endswith(".builtin"):
     register_all_coco(_root)
     register_all_lvis(_root)
     register_all_cityscapes(_root)
+    register_all_cityscapes_panoptic(_root)
     register_all_pascal_voc(_root)
     register_all_ade20k(_root)

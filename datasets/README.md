@@ -88,6 +88,13 @@ cityscapes/
       ...
     val/
     test/
+    # below are generated Cityscapes panoptic annotation
+    cityscapes_panoptic_train.json
+    cityscapes_panoptic_train/
+    cityscapes_panoptic_val.json
+    cityscapes_panoptic_val/
+    cityscapes_panoptic_test.json
+    cityscapes_panoptic_test/
   leftImg8bit/
     train/
     val/
@@ -103,6 +110,12 @@ Note: to create labelTrainIds.png, first prepare the above structure, then run c
 CITYSCAPES_DATASET=/path/to/abovementioned/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
 ```
 These files are not needed for instance segmentation.
+
+Note: to generate Cityscapes panoptic dataset, run cityscapesescript with:
+```
+CITYSCAPES_DATASET=/path/to/abovementioned/cityscapes python cityscapesscripts/preparation/createPanopticImgs.py
+```
+These files are not needed for semantic and instance segmentation.
 
 ## Expected dataset structure for [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.html):
 ```

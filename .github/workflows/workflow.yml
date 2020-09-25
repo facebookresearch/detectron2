@@ -65,7 +65,7 @@ jobs:
 
       - name: Build and install
         run: |
-          CC=clang CXX=clang++ python -m pip install -e .
+          CC=clang CXX=clang++ python -m pip install -e .[all]
           python -m detectron2.utils.collect_env
       - name: Run unittests
         run: python -m pytest -n 4 -v tests/
