@@ -125,16 +125,16 @@ def benchmark_eval(args):
     cfg.defrost()
     cfg.DATALOADER.NUM_WORKERS = 0
     data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
-    dummy_data = list(itertools.islice(data_loader, 100))
+    dummy_data = DatasetFromList(list(itertools.islice(data_loader, 100)), copy=False)
 
     def f():
         while True:
-            yield from DatasetFromList(dummy_data, copy=False)
+            yield from dummy_data
 
-    for _ in range(5):  # warmup
-        model(dummy_data[0])
+    for k in range(5):  # warmup
+        model(dummy_data[k])
 
-    max_iter = 400
+    max_iter = 300
     timer = Timer()
     with tqdm.tqdm(total=max_iter) as pbar:
         for idx, d in enumerate(f()):

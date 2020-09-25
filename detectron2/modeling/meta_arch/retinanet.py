@@ -341,19 +341,20 @@ class RetinaNet(nn.Module):
         # Iterate over every feature level
         for box_cls_i, box_reg_i, anchors_i in zip(box_cls, box_delta, anchors):
             # (HxWxAxK,)
-            box_cls_i = box_cls_i.flatten().sigmoid_()
+            predicted_prob = box_cls_i.flatten().sigmoid_()
 
-            # Keep top k top scoring indices only.
-            num_topk = min(self.topk_candidates, box_reg_i.size(0))
-            # torch.sort is actually faster than .topk (at least on GPUs)
-            predicted_prob, topk_idxs = box_cls_i.sort(descending=True)
-            predicted_prob = predicted_prob[:num_topk]
-            topk_idxs = topk_idxs[:num_topk]
-
-            # filter out the proposals with low confidence score
+            # Apply two filtering below to make NMS faster.
+            # 1. Keep boxes with confidence score higher than threshold
             keep_idxs = predicted_prob > self.score_threshold
             predicted_prob = predicted_prob[keep_idxs]
-            topk_idxs = topk_idxs[keep_idxs]
+            topk_idxs = torch.nonzero(keep_idxs, as_tuple=True)[0]
+
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(self.topk_candidates, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            predicted_prob, idxs = predicted_prob.sort(descending=True)
+            predicted_prob = predicted_prob[:num_topk]
+            topk_idxs = topk_idxs[idxs[:num_topk]]
 
             anchor_idxs = topk_idxs // self.num_classes
             classes_idxs = topk_idxs % self.num_classes

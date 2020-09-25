@@ -219,7 +219,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml">R50</a></td>
 <td align="center">1x</td>
 <td align="center">0.205</td>
-<td align="center">0.056</td>
+<td align="center">0.041</td>
 <td align="center">4.1</td>
 <td align="center">37.4</td>
 <td align="center">190397773</td>
@@ -229,7 +229,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_50_FPN_3x.yaml">R50</a></td>
 <td align="center">3x</td>
 <td align="center">0.205</td>
-<td align="center">0.056</td>
+<td align="center">0.041</td>
 <td align="center">4.1</td>
 <td align="center">38.7</td>
 <td align="center">190397829</td>
@@ -239,7 +239,7 @@ All models available for download through this document are licensed under the
  <tr><td align="left"><a href="configs/COCO-Detection/retinanet_R_101_FPN_3x.yaml">R101</a></td>
 <td align="center">3x</td>
 <td align="center">0.291</td>
-<td align="center">0.069</td>
+<td align="center">0.054</td>
 <td align="center">5.2</td>
 <td align="center">40.4</td>
 <td align="center">190397697</td>

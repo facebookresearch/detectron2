@@ -442,6 +442,7 @@ _C.MODEL.RETINANET.PRIOR_PROB = 0.01
 # Inference cls score threshold, only anchors with score > INFERENCE_TH are
 # considered for inference (to improve speed)
 _C.MODEL.RETINANET.SCORE_THRESH_TEST = 0.05
+# Select topk candidates before NMS
 _C.MODEL.RETINANET.TOPK_CANDIDATES_TEST = 1000
 _C.MODEL.RETINANET.NMS_THRESH_TEST = 0.5
 
