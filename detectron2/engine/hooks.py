@@ -131,7 +131,8 @@ class IterationTimer(HookBase):
         self._total_timer.resume()
 
     def after_step(self):
-        # +1 because we're in after_step
+        # +1 because we're in after_step, the current step is done
+        # but not yet counted
         iter_done = self.trainer.iter - self.trainer.start_iter + 1
         if iter_done >= self._warmup_iter:
             sec = self._step_timer.seconds()
@@ -171,6 +172,9 @@ class PeriodicWriter(HookBase):
 
     def after_train(self):
         for writer in self._writers:
+            # If any new data is found (e.g. produced by other after_train),
+            # write them before closing
+            writer.write()
             writer.close()
 
 
@@ -307,7 +311,8 @@ class EvalHook(HookBase):
     def __init__(self, eval_period, eval_function):
         """
         Args:
-            eval_period (int): the period to run `eval_function`.
+            eval_period (int): the period to run `eval_function`. Set to 0 to
+                not evaluate periodically (but still after the last iteration).
             eval_function (callable): a function which takes no arguments, and
                 returns a nested dict of evaluation metrics.
 

@@ -35,6 +35,7 @@ class HookBase:
             hook.before_step()
             trainer.run_step()
             hook.after_step()
+        iter += 1
         hook.after_train()
 
     Notes:
@@ -140,6 +141,10 @@ class TrainerBase:
                     self.before_step()
                     self.run_step()
                     self.after_step()
+                # self.iter == max_iter can be used by `after_train` to
+                # tell whether the training successfully finished or failed
+                # due to exceptions.
+                self.iter += 1
             except Exception:
                 logger.exception("Exception during training:")
                 raise
@@ -151,18 +156,21 @@ class TrainerBase:
             h.before_train()
 
     def after_train(self):
+        self.storage.iter = self.iter
         for h in self._hooks:
             h.after_train()
 
     def before_step(self):
+        # Maintain the invariant that storage.iter == trainer.iter
+        # for the entire execution of each step
+        self.storage.iter = self.iter
+
         for h in self._hooks:
             h.before_step()
 
     def after_step(self):
         for h in self._hooks:
             h.after_step()
-        # this guarantees, that in each hook's after_step, storage.iter == trainer.iter
-        self.storage.step()
 
     def run_step(self):
         raise NotImplementedError
