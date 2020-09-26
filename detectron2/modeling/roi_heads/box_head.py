@@ -2,9 +2,7 @@
 import numpy as np
 from typing import List
 import fvcore.nn.weight_init as weight_init
-import torch
 from torch import nn
-from torch.nn import functional as F
 
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, Linear, ShapeSpec, get_norm
@@ -20,12 +18,17 @@ The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 
+# To get torchscript support, we make the head a subclass of `nn.Sequential`.
+# Therefore, to add new layers in this head class, please make sure they are
+# added in the order they will be used in forward().
 @ROI_BOX_HEAD_REGISTRY.register()
-class FastRCNNConvFCHead(nn.Module):
+class FastRCNNConvFCHead(nn.Sequential):
     """
     A head with several 3x3 conv layers (each followed by norm & relu) and then
     several fc layers (each followed by relu).
     """
+
+    __ignored_properties__ = ["output_shape"]
 
     @configurable
     def __init__(
@@ -55,7 +58,7 @@ class FastRCNNConvFCHead(nn.Module):
                 padding=1,
                 bias=not conv_norm,
                 norm=get_norm(conv_norm, conv_dim),
-                activation=F.relu,
+                activation=nn.ReLU(),
             )
             self.add_module("conv{}".format(k + 1), conv)
             self.conv_norm_relus.append(conv)
@@ -63,8 +66,11 @@ class FastRCNNConvFCHead(nn.Module):
 
         self.fcs = []
         for k, fc_dim in enumerate(fc_dims):
-            fc = Linear(np.prod(self._output_size), fc_dim)
+            if k == 0:
+                self.add_module("flatten", nn.Flatten())
+            fc = Linear(int(np.prod(self._output_size)), fc_dim)
             self.add_module("fc{}".format(k + 1), fc)
+            self.add_module("fc_relu{}".format(k + 1), nn.ReLU())
             self.fcs.append(fc)
             self._output_size = fc_dim
 
@@ -87,13 +93,8 @@ class FastRCNNConvFCHead(nn.Module):
         }
 
     def forward(self, x):
-        for layer in self.conv_norm_relus:
+        for layer in self:
             x = layer(x)
-        if len(self.fcs):
-            if x.dim() > 2:
-                x = torch.flatten(x, start_dim=1)
-            for layer in self.fcs:
-                x = F.relu(layer(x))
         return x
 
     @property

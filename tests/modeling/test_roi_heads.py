@@ -9,6 +9,7 @@ from detectron2.export.torchscript import patch_instances
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.roi_heads import (
+    FastRCNNConvFCHead,
     KRCNNConvDeconvUpsampleHead,
     MaskRCNNConvUpsampleHead,
     StandardROIHeads,
@@ -138,6 +139,20 @@ class ROIHeadsTest(unittest.TestCase):
                 {k: v.item() for k, v in detector_losses.items()}
             ),
         )
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_box_head_scriptability(self):
+        input_shape = ShapeSpec(channels=1024, height=14, width=14)
+        box_features = torch.randn(4, 1024, 14, 14)
+
+        box_head = FastRCNNConvFCHead(
+            input_shape, conv_dims=[512, 512], fc_dims=[1024, 1024]
+        ).eval()
+        script_box_head = torch.jit.script(box_head)
+
+        origin_output = box_head(box_features)
+        script_output = script_box_head(box_features)
+        self.assertTrue(torch.equal(origin_output, script_output))
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_mask_head_scriptability(self):
