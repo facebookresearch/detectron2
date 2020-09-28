@@ -248,8 +248,8 @@ class VisImage:
         # self.canvas = mpl.backends.backend_cairo.FigureCanvasCairo(fig)
         ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
         ax.axis("off")
-        ax.set_xlim(0.0, self.width)
-        ax.set_ylim(self.height)
+        # Need to imshow this first so that other patches can be drawn on top
+        ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
 
         self.fig = fig
         self.ax = ax
@@ -260,13 +260,7 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        if filepath.lower().endswith(".jpg") or filepath.lower().endswith(".png"):
-            # faster than matplotlib's imshow
-            cv2.imwrite(filepath, self.get_image()[:, :, ::-1])
-        else:
-            # support general formats (e.g. pdf)
-            self.ax.imshow(self.img, interpolation="nearest")
-            self.fig.savefig(filepath)
+        self.fig.savefig(filepath)
 
     def get_image(self):
         """
@@ -277,11 +271,6 @@ class VisImage:
         """
         canvas = self.canvas
         s, (width, height) = canvas.print_to_buffer()
-        if (self.width, self.height) != (width, height):
-            img = cv2.resize(self.img, (width, height))
-        else:
-            img = self.img
-
         # buf = io.BytesIO()  # works for cairo backend
         # canvas.print_rgba(buf)
         # width, height = self.width, self.height
@@ -289,21 +278,9 @@ class VisImage:
 
         buffer = np.frombuffer(s, dtype="uint8")
 
-        # imshow is slow. blend manually (still quite slow)
         img_rgba = buffer.reshape(height, width, 4)
         rgb, alpha = np.split(img_rgba, [3], axis=2)
-
-        try:
-            import numexpr as ne  # fuse them with numexpr
-
-            visualized_image = ne.evaluate("img * (1 - alpha / 255.0) + rgb * (alpha / 255.0)")
-        except ImportError:
-            alpha = alpha.astype("float32") / 255.0
-            visualized_image = img * (1 - alpha) + rgb * alpha
-
-        visualized_image = visualized_image.astype("uint8")
-
-        return visualized_image
+        return rgb.astype("uint8")
 
 
 class Visualizer:
@@ -325,6 +302,8 @@ class Visualizer:
     This visualizer focuses on high rendering quality rather than performance. It is not
     designed to be used for real-time applications.
     """
+
+    # TODO implement a fast, rasterized version using OpenCV
 
     def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
         """
@@ -1014,11 +993,13 @@ class Visualizer:
                 segment = segment.reshape(-1, 2)
                 self.draw_polygon(segment, color=color, edge_color=edge_color, alpha=alpha)
         else:
+            # TODO: Use Path/PathPatch to draw vector graphics:
+            # https://stackoverflow.com/questions/8919719/how-to-plot-a-complex-polygon
             rgba = np.zeros(shape2d + (4,), dtype="float32")
             rgba[:, :, :3] = color
             rgba[:, :, 3] = (mask.mask == 1).astype("float32") * alpha
             has_valid_segment = True
-            self.output.ax.imshow(rgba)
+            self.output.ax.imshow(rgba, extent=(0, self.output.width, self.output.height, 0))
 
         if text is not None and has_valid_segment:
             # TODO sometimes drawn on wrong objects. the heuristics here can improve.

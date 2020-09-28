@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# File:
 
 import numpy as np
+import os
+import tempfile
 import unittest
 import cv2
 import torch
@@ -26,7 +27,7 @@ class TestVisualizer(unittest.TestCase):
         polygons = [[_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)]
 
         mask = np.zeros_like(img[:, :, 0], dtype=np.bool)
-        mask[:10, 10:20] = 1
+        mask[:40, 10:20] = 1
 
         labels = [str(i) for i in range(N)]
         return img, boxes, labels, polygons, [mask] * N
@@ -162,11 +163,39 @@ class TestVisualizer(unittest.TestCase):
         mask_with_hole = cv2.rectangle(mask_with_hole, (10, 10), (50, 50), 1, 5)
 
         for m in [mask, mask_with_hole]:
-            v = Visualizer(img)
-            o = v.draw_binary_mask(m, color="red", text="test")
-            o = o.get_image().astype("float32")
-            # red color is drawn on the image
-            self.assertTrue(o[:, :, 0].sum() > 0)
+            for save in [True, False]:
+                v = Visualizer(img)
+                o = v.draw_binary_mask(m, color="red", text="test")
+                if save:
+                    with tempfile.TemporaryDirectory(prefix="detectron2_viz") as d:
+                        path = os.path.join(d, "output.png")
+                        o.save(path)
+                        o = cv2.imread(path)[:, :, ::-1]
+                else:
+                    o = o.get_image().astype("float32")
+                    # red color is drawn on the image
+                self.assertTrue(o[:, :, 0].sum() > 0)
+
+    def test_border(self):
+        H, W = 200, 200
+        img = np.zeros((H, W, 3))
+        img[:, :, 0] = 255.0
+        v = Visualizer(img, scale=3)
+
+        mask = np.zeros((H, W))
+        mask[:, 100:150] = 1
+        # create a hole, to trigger imshow
+        mask = cv2.rectangle(mask, (110, 110), (130, 130), 0, thickness=-1)
+        output = v.draw_binary_mask(mask, color="blue")
+        output = output.get_image()[:, :, ::-1]
+
+        first_row = {tuple(x.tolist()) for x in output[0]}
+        last_row = {tuple(x.tolist()) for x in output[-1]}
+        # check quantization / off-by-1 error: the first and last row must have two colors
+        self.assertEqual(len(last_row), 2)
+        self.assertEqual(len(first_row), 2)
+        self.assertIn((0, 0, 255), last_row)
+        self.assertIn((0, 0, 255), first_row)
 
 
 if __name__ == "__main__":
