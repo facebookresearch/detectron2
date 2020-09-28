@@ -147,7 +147,30 @@ class GenericMask:
 
 
 class _PanopticPrediction:
-    def __init__(self, panoptic_seg, segments_info):
+    def __init__(self, panoptic_seg, segments_info, metadata=None):
+        if segments_info is None:
+            assert metadata is not None
+            # If "segments_info" is None, we assume "panoptic_img" is a
+            # H*W int32 image storing the panoptic_id in the format of
+            # category_id * label_divisor + instance_id. We reserve -1 for
+            # VOID label.
+            label_divisor = metadata.label_divisor
+            segments_info = []
+            for panoptic_label in np.unique(panoptic_seg.numpy()):
+                if panoptic_label == -1:
+                    # VOID region.
+                    continue
+                pred_class = panoptic_label // label_divisor
+                isthing = pred_class in metadata.thing_dataset_id_to_contiguous_id.values()
+                segments_info.append(
+                    {
+                        "id": int(panoptic_label),
+                        "category_id": int(pred_class),
+                        "isthing": bool(isthing),
+                    }
+                )
+        del metadata
+
         self._seg = panoptic_seg
 
         self._sinfo = {s["id"]: s for s in segments_info}  # seg id -> seg info
@@ -433,7 +456,7 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
-        pred = _PanopticPrediction(panoptic_seg, segments_info)
+        pred = _PanopticPrediction(panoptic_seg, segments_info, self.metadata)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             self.output.img = self._create_grayscale_image(pred.non_empty_mask())
@@ -470,7 +493,9 @@ class Visualizer:
         labels = _create_text_labels(category_ids, scores, self.metadata.thing_classes)
 
         try:
-            colors = [random_color(rgb=True, maximum=1) for k in category_ids]
+            colors = [
+                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in category_ids
+            ]
         except AttributeError:
             colors = None
         self.overlay_instances(masks=masks, labels=labels, assigned_colors=colors, alpha=alpha)

@@ -125,7 +125,7 @@ class VideoVisualizer:
         self, frame, panoptic_seg, segments_info, area_threshold=None, alpha=0.5
     ):
         frame_visualizer = Visualizer(frame, self.metadata)
-        pred = _PanopticPrediction(panoptic_seg, segments_info)
+        pred = _PanopticPrediction(panoptic_seg, segments_info, self.metadata)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             frame_visualizer.output.img = frame_visualizer._create_grayscale_image(
