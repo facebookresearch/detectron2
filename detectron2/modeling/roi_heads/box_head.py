@@ -28,7 +28,7 @@ class FastRCNNConvFCHead(nn.Sequential):
     several fc layers (each followed by relu).
     """
 
-    __ignored_properties__ = ["output_shape"]
+    __jit_unused_properties__ = ["output_shape"]
 
     @configurable
     def __init__(
