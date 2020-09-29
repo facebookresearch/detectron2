@@ -24,7 +24,7 @@ class TestTransforms(unittest.TestCase):
         cfg = get_cfg()
         is_train = True
         augs = detection_utils.build_augmentation(cfg, is_train)
-        image = np.random.rand(200, 300, 1)
+        image = np.random.rand(200, 300)
         image, transforms = T.apply_augmentations(augs, image)
         image_shape = image.shape[:2]  # h, w
         assert image_shape == (800, 1200)
@@ -123,8 +123,8 @@ class TestTransforms(unittest.TestCase):
         self.assertIsInstance(transform, T.NoOpTransform)
 
     def test_augmentation_input_args(self):
-        input_shape = (100, 100, 1)
-        output_shape = (50, 50, 1)
+        input_shape = (100, 100)
+        output_shape = (50, 50)
 
         # define two augmentations with different args
         class TG1(T.Augmentation):
@@ -135,7 +135,7 @@ class TestTransforms(unittest.TestCase):
 
         class TG2(T.Augmentation):
             def get_transform(self, image):
-                assert image.shape == output_shape  # check that TG1 is applied
+                assert image.shape[:2] == output_shape  # check that TG1 is applied
                 return T.HFlipTransform(output_shape[1])
 
         image = np.random.rand(*input_shape).astype("float32")
@@ -144,8 +144,8 @@ class TestTransforms(unittest.TestCase):
         tfms = inputs.apply_augmentations([TG1(), TG2()])
         self.assertIsInstance(tfms[0], T.ResizeTransform)
         self.assertIsInstance(tfms[1], T.HFlipTransform)
-        self.assertTrue(inputs.image.shape == output_shape)
-        self.assertTrue(inputs.sem_seg.shape == output_shape)
+        self.assertTrue(inputs.image.shape[:2] == output_shape)
+        self.assertTrue(inputs.sem_seg.shape[:2] == output_shape)
 
         class TG3(T.Augmentation):
             def get_transform(self, image, nonexist):
@@ -155,7 +155,7 @@ class TestTransforms(unittest.TestCase):
             inputs.apply_augmentations([TG3()])
 
     def test_augmentation_list(self):
-        input_shape = (100, 100, 1)
+        input_shape = (100, 100)
         image = np.random.rand(*input_shape).astype("float32")
         sem_seg = (np.random.rand(*input_shape) < 0.5).astype("uint8")
         inputs = T.AugInput(image, sem_seg=sem_seg)  # provide two args
@@ -178,3 +178,22 @@ class TestTransforms(unittest.TestCase):
         solarize_transform = T.PILColorTransform(lambda img: ImageOps.solarize(img, magnitude))
         expected_img = ImageOps.solarize(Image.fromarray(rand_img), magnitude)
         self.assertTrue(np.array_equal(expected_img, solarize_transform.apply_image(rand_img)))
+
+    def test_resize_transform(self):
+        input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]
+        output_shapes = [(200, 200), (200, 200, 1), (200, 200, 3)]
+        for in_shape, out_shape in zip(input_shapes, output_shapes):
+            in_img = np.random.randint(0, 255, size=in_shape, dtype=np.uint8)
+            tfm = T.ResizeTransform(in_shape[0], in_shape[1], out_shape[0], out_shape[1])
+            out_img = tfm.apply_image(in_img)
+            self.assertTrue(out_img.shape == out_shape)
+
+    def test_extent_transform(self):
+        input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]
+        src_rect = (20, 20, 80, 80)
+        output_shapes = [(200, 200), (200, 200, 1), (200, 200, 3)]
+        for in_shape, out_shape in zip(input_shapes, output_shapes):
+            in_img = np.random.randint(0, 255, size=in_shape, dtype=np.uint8)
+            tfm = T.ExtentTransform(src_rect, out_shape[:2])
+            out_img = tfm.apply_image(in_img)
+            self.assertTrue(out_img.shape == out_shape)
