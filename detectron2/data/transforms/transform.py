@@ -52,7 +52,7 @@ class ExtentTransform(Transform):
 
     def apply_image(self, img, interp=None):
         h, w = self.output_size
-        if img.shape[2] == 1:
+        if len(img.shape) > 2 and img.shape[2] == 1:
             pil_image = Image.fromarray(img[:, :, 0], mode="L")
         else:
             pil_image = Image.fromarray(img)
@@ -64,7 +64,7 @@ class ExtentTransform(Transform):
             fill=self.fill,
         )
         ret = np.asarray(pil_image)
-        if img.shape[2] == 1:
+        if len(img.shape) > 2 and img.shape[2] == 1:
             ret = np.expand_dims(ret, -1)
         return ret
 
@@ -110,14 +110,14 @@ class ResizeTransform(Transform):
         assert len(img.shape) <= 4
 
         if img.dtype == np.uint8:
-            if img.shape[2] == 1:
+            if len(img.shape) > 2 and img.shape[2] == 1:
                 pil_image = Image.fromarray(img[:, :, 0], mode="L")
             else:
                 pil_image = Image.fromarray(img)
             interp_method = interp if interp is not None else self.interp
             pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
             ret = np.asarray(pil_image)
-            if img.shape[2] == 1:
+            if len(img.shape) > 2 and img.shape[2] == 1:
                 ret = np.expand_dims(ret, -1)
         else:
             # PIL only supports uint8
