@@ -542,10 +542,11 @@ _C.SOLVER.CHECKPOINT_PERIOD = 5000
 _C.SOLVER.IMS_PER_BATCH = 16
 
 # The reference number of workers (GPUs) this config is meant to train with.
+# It takes no effect when set to 0.
 # With a non-zero value, it will be used by DefaultTrainer to compute a desired
 # per-worker batch size, and then scale the other related configs (total batch size,
-# learning rate, etc) to match the per-worker batch size if the actual number
-# of workers during training is different from this reference.
+# learning rate, etc) to match the per-worker batch size.
+# See documentation of `DefaultTrainer.auto_scale_workers` for details:
 _C.SOLVER.REFERENCE_WORLD_SIZE = 0
 
 # Detectron v1 (and previous detection code) used a 2x higher LR and 0 WD for
