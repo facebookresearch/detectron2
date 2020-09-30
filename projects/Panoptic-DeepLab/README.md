@@ -16,7 +16,7 @@ Install Detectron2 following [the instructions](https://detectron2.readthedocs.i
 To train a model with 8 GPUs run:
 ```bash
 cd /path/to/detectron2/projects/Panoptic-DeepLab
-python train_net.py --config-file config/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --num-gpus 8
+python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --num-gpus 8
 ```
 
 ## Evaluation
@@ -24,7 +24,7 @@ python train_net.py --config-file config/Cityscapes-PanopticSegmentation/panopti
 Model evaluation can be done similarly:
 ```bash
 cd /path/to/detectron2/projects/Panoptic-DeepLab
-python train_net.py --config-file config/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
+python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
 ```
 
 ## Cityscapes Panoptic Segmentation
@@ -67,7 +67,7 @@ Cityscapes models are trained with ImageNet pretraining.
 <td align="center"> 33.2 </td>
 <td align="center"> 9682 </td>
 <td align="center">  </td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PanopticDeepLab/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32/model_final_380d9c.pkl
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PanopticDeepLab/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32/model_final_bd324a.pkl
 ">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PanopticDeepLab/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32/metrics.json
 ">metrics</a></td>
 </tr>
