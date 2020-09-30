@@ -47,7 +47,7 @@ def register_coco_panoptic_separated(
     name, metadata, image_root, panoptic_root, panoptic_json, sem_seg_root, instances_json
 ):
     """
-    Register a COCO panoptic segmentation dataset named `name`.
+    Register a "separated" version of COCO panoptic segmentation dataset named `name`.
     The annotations in this registered dataset will contain both instance annotations and
     semantic annotations, each with its own contiguous ids. Hence it's called "separated".
 

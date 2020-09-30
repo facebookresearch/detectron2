@@ -29,7 +29,7 @@ class SemSegEvaluator(DatasetEvaluator):
                 Otherwise, will evaluate the results in the current process.
             num_classes (int): number of classes
             ignore_label (int): value in semantic segmentation ground truth. Predictions for the
-            corresponding pixels should be ignored.
+                corresponding pixels should be ignored.
             output_dir (str): an output directory to dump results.
         """
         self._dataset_name = dataset_name

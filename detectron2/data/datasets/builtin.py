@@ -158,7 +158,6 @@ _PREDEFINED_SPLITS_LVIS = {
 def register_all_lvis(root):
     for dataset_name, splits_per_dataset in _PREDEFINED_SPLITS_LVIS.items():
         for key, (image_root, json_file) in splits_per_dataset.items():
-            # Assume pre-defined datasets live in `./datasets`.
             register_lvis_instances(
                 key,
                 get_lvis_instances_meta(dataset_name),
@@ -168,8 +167,6 @@ def register_all_lvis(root):
 
 
 # ==== Predefined splits for raw cityscapes images ===========
-
-
 _RAW_CITYSCAPES_SPLITS = {
     "cityscapes_fine_{task}_train": ("cityscapes/leftImg8bit/train/", "cityscapes/gtFine/train/"),
     "cityscapes_fine_{task}_val": ("cityscapes/leftImg8bit/val/", "cityscapes/gtFine/val/"),
@@ -240,7 +237,7 @@ def register_all_ade20k(root):
 # True for open source;
 # Internally at fb, we register them elsewhere
 if __name__.endswith(".builtin"):
-    # Register them all under "./datasets"
+    # Assume pre-defined datasets live in `./datasets`.
     _root = os.getenv("DETECTRON2_DATASETS", "datasets")
     register_all_coco(_root)
     register_all_lvis(_root)

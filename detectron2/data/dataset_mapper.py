@@ -46,7 +46,7 @@ class DatasetMapper:
         instance_mask_format: str = "polygon",
         keypoint_hflip_indices: Optional[np.ndarray] = None,
         precomputed_proposal_topk: Optional[int] = None,
-        recompute_boxes: bool = False
+        recompute_boxes: bool = False,
     ):
         """
         NOTE: this interface is experimental.
@@ -79,7 +79,8 @@ class DatasetMapper:
         self.recompute_boxes        = recompute_boxes
         # fmt: on
         logger = logging.getLogger(__name__)
-        logger.info("Augmentations used in training: " + str(augmentations))
+        mode = "training" if is_train else "inference"
+        logger.info(f"[DatasetMapper] Augmentations used in {mode}: {augmentations}")
 
     @classmethod
     def from_config(cls, cfg, is_train: bool = True):
@@ -99,6 +100,7 @@ class DatasetMapper:
             "use_keypoint": cfg.MODEL.KEYPOINT_ON,
             "recompute_boxes": recompute_boxes,
         }
+
         if cfg.MODEL.KEYPOINT_ON:
             ret["keypoint_hflip_indices"] = utils.create_keypoint_hflip_indices(cfg.DATASETS.TRAIN)
 
