@@ -43,6 +43,18 @@ _C.TWA.DATASET.USE_DEPTH = True
 _C.TWA.DATASET.AUGMENTATION = CN()
 _C.TWA.DATASET.AUGMENTATION.ROTATION = 20
 
+# Threshold for each individual class.
+_C.TWA.CLASS_THRESHOLDS = CN()
+_C.TWA.CLASS_THRESHOLDS.pallet = 0.5
+_C.TWA.CLASS_THRESHOLDS.payload = 0.5
+_C.TWA.CLASS_THRESHOLDS.person = 0.5
+_C.TWA.CLASS_THRESHOLDS.forklift = 0.5
+_C.TWA.CLASS_THRESHOLDS.liftarea = 0.5
+_C.TWA.CLASS_THRESHOLDS.fork = 0.5
+_C.TWA.CLASS_THRESHOLDS.frontofpallet = 0.5
+_C.TWA.CLASS_THRESHOLDS.rackface = 0.5
+_C.TWA.CLASS_THRESHOLDS.rackupright = 0.5
+
 
 # -----------------------------------------------------------------------------
 # END TWA FLAGS- These are flags we have added specific to TWA's use/ standardization.
