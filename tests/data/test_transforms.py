@@ -178,3 +178,22 @@ class TestTransforms(unittest.TestCase):
         solarize_transform = T.PILColorTransform(lambda img: ImageOps.solarize(img, magnitude))
         expected_img = ImageOps.solarize(Image.fromarray(rand_img), magnitude)
         self.assertTrue(np.array_equal(expected_img, solarize_transform.apply_image(rand_img)))
+
+    def test_resize_transform(self):
+        input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]
+        output_shapes = [(200, 200), (200, 200, 1), (200, 200, 3)]
+        for in_shape, out_shape in zip(input_shapes, output_shapes):
+            in_img = np.random.randint(0, 255, size=in_shape, dtype=np.uint8)
+            tfm = T.ResizeTransform(in_shape[0], in_shape[1], out_shape[0], out_shape[1])
+            out_img = tfm.apply_image(in_img)
+            self.assertTrue(out_img.shape == out_shape)
+
+    def test_extent_transform(self):
+        input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]
+        src_rect = (20, 20, 80, 80)
+        output_shapes = [(200, 200), (200, 200, 1), (200, 200, 3)]
+        for in_shape, out_shape in zip(input_shapes, output_shapes):
+            in_img = np.random.randint(0, 255, size=in_shape, dtype=np.uint8)
+            tfm = T.ExtentTransform(src_rect, out_shape[:2])
+            out_img = tfm.apply_image(in_img)
+            self.assertTrue(out_img.shape == out_shape)
