@@ -137,6 +137,7 @@ class TestROIPooler(unittest.TestCase):
         output = pooler.forward(features, [])
         self.assertEqual(output.shape, (0, C, 14, 14))
 
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_fmt_box_list_onnx_export(self):
         class Model(torch.nn.Module):
             def forward(self, box_tensor):
@@ -164,7 +165,7 @@ class TestROIPooler(unittest.TestCase):
             sess.run([], {"boxes": np.ones((5, 4), dtype=np.float32)})
             sess.run([], {"boxes": np.ones((20, 4), dtype=np.float32)})
 
-
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_roi_pooler_onnx_export(self):
         class Model(torch.nn.Module):
             def __init__(self, roi):
