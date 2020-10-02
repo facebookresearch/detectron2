@@ -207,6 +207,7 @@ setup(
             "black @ git+https://github.com/psf/black@673327449f86fce558adde153bb6cbe54bfebad2",
             "flake8-bugbear",
             "flake8-comprehensions",
+            "onnxruntime"
         ],
     },
     ext_modules=get_extensions(),

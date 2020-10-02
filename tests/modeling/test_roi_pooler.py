@@ -2,8 +2,11 @@
 import logging
 import unittest
 import torch
+import onnxruntime as rt
+import tempfile
+import numpy as np
 
-from detectron2.modeling.poolers import ROIPooler
+from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
 
@@ -133,6 +136,90 @@ class TestROIPooler(unittest.TestCase):
         )
         output = pooler.forward(features, [])
         self.assertEqual(output.shape, (0, C, 14, 14))
+
+    def test_fmt_box_list_onnx_export(self):
+        class Model(torch.nn.Module):
+            def forward(self, box_tensor):
+                return _fmt_box_list(box_tensor, 0)
+
+        with tempfile.TemporaryFile("w+b") as f:
+            torch.onnx.export(
+                Model(),
+                torch.ones(10, 4),
+                f,
+                input_names=["boxes"],
+                output_names=["formatted_boxes"],
+                dynamic_axes={
+                    "boxes": {0: "box_count"},
+                    "formatted_boxes": {0: "box_count"}
+                },
+                opset_version=11
+            )
+
+            f.seek(0)
+
+            sess = rt.InferenceSession(f.read(), None)
+
+            sess.run([], {"boxes": np.ones((10, 4), dtype=np.float32)})
+            sess.run([], {"boxes": np.ones((5, 4), dtype=np.float32)})
+            sess.run([], {"boxes": np.ones((20, 4), dtype=np.float32)})
+
+
+    def test_roi_pooler_onnx_export(self):
+        class Model(torch.nn.Module):
+            def __init__(self, roi):
+                super(Model, self).__init__()
+                self.roi = roi
+
+            def forward(self, x, boxes):
+                return self.roi([x], [Boxes(boxes)])
+                
+
+        pooler_resolution = 14
+        canonical_level = 4
+        canonical_scale_factor = 2 ** canonical_level
+        pooler_scales = (1.0 / canonical_scale_factor,)
+        sampling_ratio = 0
+
+        N, C, H, W = 1, 4, 10, 8
+        N_rois = 10
+        std = 11
+        mean = 0
+        feature = (torch.rand(N, C, H, W) - 0.5) * 2 * std + mean
+
+        rois = self._rand_boxes(
+            num_boxes=N_rois, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
+        )
+
+        model = Model(
+            ROIPooler(
+                output_size=pooler_resolution,
+                scales=pooler_scales,
+                sampling_ratio=sampling_ratio,
+                pooler_type="ROIAlign",
+            )
+        )
+
+        with tempfile.TemporaryFile("w+b") as f:
+            torch.onnx.export(
+                model,
+                (feature, rois),
+                f,
+                input_names=["features", "boxes"],
+                output_names=["pooled_features"],
+                dynamic_axes={
+                    "boxes": {0: "detections"},
+                    "pooled_features": {0: "detections"}
+                },
+                opset_version=11
+            )
+
+            f.seek(0)
+
+            sess = rt.InferenceSession(f.read(), None)
+
+            sess.run([], {"features": feature.numpy(), "boxes": rois.numpy()})
+            sess.run([], {"features": feature.numpy(), "boxes": rois[:5].numpy()})
 
 
 if __name__ == "__main__":
