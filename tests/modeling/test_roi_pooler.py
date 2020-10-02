@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
-import unittest
-import torch
-import onnxruntime as rt
-import tempfile
 import numpy as np
+import tempfile
+import unittest
+import onnxruntime as rt
+import torch
 
 from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
