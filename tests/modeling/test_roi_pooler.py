@@ -150,11 +150,8 @@ class TestROIPooler(unittest.TestCase):
                 f,
                 input_names=["boxes"],
                 output_names=["formatted_boxes"],
-                dynamic_axes={
-                    "boxes": {0: "box_count"},
-                    "formatted_boxes": {0: "box_count"}
-                },
-                opset_version=11
+                dynamic_axes={"boxes": {0: "box_count"}, "formatted_boxes": {0: "box_count"}},
+                opset_version=11,
             )
 
             f.seek(0)
@@ -174,7 +171,6 @@ class TestROIPooler(unittest.TestCase):
 
             def forward(self, x, boxes):
                 return self.roi([x], [Boxes(boxes)])
-                
 
         pooler_resolution = 14
         canonical_level = 4
@@ -208,11 +204,8 @@ class TestROIPooler(unittest.TestCase):
                 f,
                 input_names=["features", "boxes"],
                 output_names=["pooled_features"],
-                dynamic_axes={
-                    "boxes": {0: "detections"},
-                    "pooled_features": {0: "detections"}
-                },
-                opset_version=11
+                dynamic_axes={"boxes": {0: "detections"}, "pooled_features": {0: "detections"}},
+                opset_version=11,
             )
 
             f.seek(0)
