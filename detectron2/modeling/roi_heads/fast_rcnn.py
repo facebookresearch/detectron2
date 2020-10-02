@@ -191,7 +191,7 @@ class FastRCNNOutputs:
                 self.gt_classes = cat([p.gt_classes for p in proposals], dim=0)
         else:
             self.proposals = Boxes(torch.zeros(0, 4, device=self.pred_proposal_deltas.device))
-        self._no_instances = len(proposals) == 0  # no instances found
+        self._no_instances = len(self.proposals) == 0  # no instances found
 
     def _log_accuracy(self):
         """
