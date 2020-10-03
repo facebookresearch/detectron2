@@ -9,6 +9,7 @@ from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers
 from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputLayers
 from detectron2.structures import Boxes, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
+from detectron2.utils.env import TORCH_VERSION
 
 import onnxruntime as rt
 import tempfile
@@ -105,6 +106,7 @@ class FastRCNNTest(unittest.TestCase):
         for name in expected_losses.keys():
             assert torch.allclose(losses[name], expected_losses[name])
 
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_predict_boxes_onnx_export(self):
         class Model(torch.nn.Module):
             def __init__(self, output_layer):
@@ -145,6 +147,7 @@ class FastRCNNTest(unittest.TestCase):
             sess.run([], {"proposal_deltas": np.random.rand(5, 20).astype(np.float32), "proposal_boxes": np.random.rand(5, 4).astype(np.float32)})
             sess.run([], {"proposal_deltas": np.random.rand(20, 20).astype(np.float32), "proposal_boxes": np.random.rand(20, 4).astype(np.float32)})
 
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_predict_probs_onnx_export(self):
         class Model(torch.nn.Module):
             def __init__(self, output_layer):
