@@ -3,12 +3,13 @@ import logging
 import numpy as np
 import tempfile
 import unittest
-import onnxruntime as rt
 import torch
 
 from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
+
+import onnxruntime as rt
 
 logger = logging.getLogger(__name__)
 
