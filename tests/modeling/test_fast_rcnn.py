@@ -10,6 +10,10 @@ from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutpu
 from detectron2.structures import Boxes, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
 
+import onnxruntime as rt
+import tempfile
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
@@ -100,6 +104,50 @@ class FastRCNNTest(unittest.TestCase):
         }
         for name in expected_losses.keys():
             assert torch.allclose(losses[name], expected_losses[name])
+
+    def test_predict_boxes_onnx_export(self):
+        pass
+
+    def test_predict_probs_onnx_export(self):
+        class Model(torch.nn.Module):
+            def __init__(self, output_layer):
+                super(Model, self).__init__()
+                self._output_layer = output_layer
+
+            def forward(self, scores, proposal_boxes):
+                instances = Instances((10, 10))
+                instances.proposal_boxes = Boxes(proposal_boxes)
+                return self._output_layer.predict_probs((scores, None), [instances])
+
+        box_head_output_size = 8
+
+        box_predictor = FastRCNNOutputLayers(
+            ShapeSpec(channels=box_head_output_size),
+            box2box_transform=Box2BoxTransform(weights=(10, 10, 5, 5)),
+            num_classes=5,
+        )
+
+        model = Model(box_predictor)
+
+        with tempfile.TemporaryFile("w+b") as f:
+            torch.onnx.export(
+                model,
+                (torch.randn(10, 6), torch.rand(10, 4)),
+                f,
+                opset_version=11,
+                input_names=["scores", "proposal_boxes"],
+                output_names=["probs"],
+                dynamic_axes={"scores": {0: "detections"}, "proposal_boxes": {0: "detections"}, "probs": {0: "detections"}}
+            )
+
+            f.seek(0)
+
+            sess = rt.InferenceSession(f.read(), None)
+
+            sess.run([], {"scores": np.random.randn(10, 6).astype(np.float32), "proposal_boxes": np.random.rand(10, 4).astype(np.float32)})
+            sess.run([], {"scores": np.random.randn(5, 6).astype(np.float32), "proposal_boxes": np.random.rand(5, 4).astype(np.float32)})
+            sess.run([], {"scores": np.random.randn(20, 6).astype(np.float32), "proposal_boxes": np.random.rand(20, 4).astype(np.float32)})
+
 
 
 if __name__ == "__main__":
