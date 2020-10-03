@@ -1,5 +1,6 @@
 
-Here are a few projects that are built on detectron2.
+## Here are a few projects that are built on detectron2.
+
 They are examples of how to use detectron2 as a library, to make your projects more
 maintainable.
 
