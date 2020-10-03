@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
+import numpy as np
+import tempfile
 import unittest
 import torch
 
@@ -8,12 +10,10 @@ from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransfor
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers
 from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputLayers
 from detectron2.structures import Boxes, Instances, RotatedBoxes
-from detectron2.utils.events import EventStorage
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.events import EventStorage
 
 import onnxruntime as rt
-import tempfile
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -136,16 +136,38 @@ class FastRCNNTest(unittest.TestCase):
                 opset_version=11,
                 input_names=["proposal_deltas", "proposal_boxes"],
                 output_names=["boxes"],
-                dynamic_axes={"proposal_deltas": {0: "detections"}, "proposal_boxes": {0: "detections"}, "boxes": {0: "detections"}}
+                dynamic_axes={
+                    "proposal_deltas": {0: "detections"},
+                    "proposal_boxes": {0: "detections"},
+                    "boxes": {0: "detections"},
+                },
             )
 
             f.seek(0)
 
             sess = rt.InferenceSession(f.read(), None)
 
-            sess.run([], {"proposal_deltas": np.random.rand(10, 20).astype(np.float32), "proposal_boxes": np.random.rand(10, 4).astype(np.float32)})
-            sess.run([], {"proposal_deltas": np.random.rand(5, 20).astype(np.float32), "proposal_boxes": np.random.rand(5, 4).astype(np.float32)})
-            sess.run([], {"proposal_deltas": np.random.rand(20, 20).astype(np.float32), "proposal_boxes": np.random.rand(20, 4).astype(np.float32)})
+            sess.run(
+                [],
+                {
+                    "proposal_deltas": np.random.rand(10, 20).astype(np.float32),
+                    "proposal_boxes": np.random.rand(10, 4).astype(np.float32),
+                },
+            )
+            sess.run(
+                [],
+                {
+                    "proposal_deltas": np.random.rand(5, 20).astype(np.float32),
+                    "proposal_boxes": np.random.rand(5, 4).astype(np.float32),
+                },
+            )
+            sess.run(
+                [],
+                {
+                    "proposal_deltas": np.random.rand(20, 20).astype(np.float32),
+                    "proposal_boxes": np.random.rand(20, 4).astype(np.float32),
+                },
+            )
 
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_predict_probs_onnx_export(self):
@@ -177,17 +199,38 @@ class FastRCNNTest(unittest.TestCase):
                 opset_version=11,
                 input_names=["scores", "proposal_boxes"],
                 output_names=["probs"],
-                dynamic_axes={"scores": {0: "detections"}, "proposal_boxes": {0: "detections"}, "probs": {0: "detections"}}
+                dynamic_axes={
+                    "scores": {0: "detections"},
+                    "proposal_boxes": {0: "detections"},
+                    "probs": {0: "detections"},
+                },
             )
 
             f.seek(0)
 
             sess = rt.InferenceSession(f.read(), None)
 
-            sess.run([], {"scores": np.random.randn(10, 6).astype(np.float32), "proposal_boxes": np.random.rand(10, 4).astype(np.float32)})
-            sess.run([], {"scores": np.random.randn(5, 6).astype(np.float32), "proposal_boxes": np.random.rand(5, 4).astype(np.float32)})
-            sess.run([], {"scores": np.random.randn(20, 6).astype(np.float32), "proposal_boxes": np.random.rand(20, 4).astype(np.float32)})
-
+            sess.run(
+                [],
+                {
+                    "scores": np.random.randn(10, 6).astype(np.float32),
+                    "proposal_boxes": np.random.rand(10, 4).astype(np.float32),
+                },
+            )
+            sess.run(
+                [],
+                {
+                    "scores": np.random.randn(5, 6).astype(np.float32),
+                    "proposal_boxes": np.random.rand(5, 4).astype(np.float32),
+                },
+            )
+            sess.run(
+                [],
+                {
+                    "scores": np.random.randn(20, 6).astype(np.float32),
+                    "proposal_boxes": np.random.rand(20, 4).astype(np.float32),
+                },
+            )
 
 
 if __name__ == "__main__":
