@@ -60,10 +60,7 @@ def assign_boxes_to_levels(
 
 def _fmt_box_list(box_tensor, batch_index: int):
     repeated_index = torch.full_like(
-        box_tensor[:, :1],
-        batch_index,
-        dtype=box_tensor.dtype,
-        device=box_tensor.device
+        box_tensor[:, :1], batch_index, dtype=box_tensor.dtype, device=box_tensor.device
     )
     return cat((repeated_index, box_tensor), dim=1)
 
