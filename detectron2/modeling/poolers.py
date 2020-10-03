@@ -63,8 +63,7 @@ def _fmt_box_list(box_tensor, batch_index: int):
         box_tensor[:, :1],
         batch_index,
         dtype=box_tensor.dtype,
-        device=box_tensor.device,
-        layout=torch.strided,
+        device=box_tensor.device
     )
     return cat((repeated_index, box_tensor), dim=1)
 
