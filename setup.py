@@ -62,12 +62,7 @@ def get_extensions():
             is_pytorch_extension=True,
         )
 
-        # Current version of hipify function in pytorch creates an intermediate directory
-        # named "hip" at the same level of the path hierarchy if a "cuda" directory exists,
-        # or modifying the hierarchy, if it doesn't. Once pytorch supports
-        # "same directory" hipification (https://github.com/pytorch/pytorch/pull/40523),
-        # the source_cuda will be set similarly in both cuda and hip paths, and the explicit
-        # header file copy (below) will not be needed.
+       
         source_cuda = glob.glob(path.join(extensions_dir, "**", "hip", "*.hip")) + glob.glob(
             path.join(extensions_dir, "hip", "*.hip")
         )
@@ -188,11 +183,9 @@ setup(
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
     python_requires=">=3.6",
     install_requires=[
-        # Do not add opencv here. Just like pytorch, user should install
-        # opencv themselves, preferrably by OS's package manager, or by
-        # choosing the proper pypi package name at https://github.com/skvark/opencv-python
+        
         "termcolor>=1.1",
-        "Pillow>=7.1",  # or use pillow-simd for better performance
+        "Pillow>=7.1",  
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",
@@ -201,9 +194,7 @@ setup(
         "tqdm>4.29.0",
         "tensorboard",
         "fvcore>=0.1.1",
-        "pycocotools>=2.0.2",  # corresponds to the fork at https://github.com/ppwwyyxx/cocoapi
-        "future",  # used by caffe2
-        "pydot",  # used to save caffe2 SVGs
+        "pycocotools>=2.0.2",
     ],
     extras_require={
         "all": [
