@@ -2,16 +2,14 @@
 
 In this repository, we implement DeepLabV3 and DeepLabV3+ in Detectron2.
 
+
 ## Installation
 Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html).
 
-## Training
+**Training
 
 To train a model with 8 GPUs run:
-```bash
-cd /path/to/detectron2/projects/DeepLab
-python train_net.py --config-file configs/Cityscapes-SemanticSegmentation/deeplab_v3_plus_R_103_os16_mg124_poly_90k_bs16.yaml --num-gpus 8
-```
+
 
 ## Evaluation
 
@@ -41,6 +39,7 @@ Cityscapes models are trained with ImageNet pretraining.
 <td align="center"> - </td>
 <td align="center"> - &nbsp;|&nbsp; - </td>
 </tr>
+ 
  <tr><td align="left"><a href="configs/Cityscapes-SemanticSegmentation/deeplab_v3_R_103_os16_mg124_poly_90k_bs16.yaml">DeepLabV3</a></td>
 <td align="center">R103-DC5</td>
 <td align="center">1024&times;2048</td>
@@ -50,6 +49,7 @@ Cityscapes models are trained with ImageNet pretraining.
 ">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/DeepLab/Cityscapes-SemanticSegmentation/deeplab_v3_R_103_os16_mg124_poly_90k_bs16/28041665/metrics.json
 ">metrics</a></td>
 </tr>
+
  <tr><td align="left">DeepLabV3+</td>
 <td align="center">R101-DC5</td>
 <td align="center">1024&times;2048</td>
@@ -57,6 +57,7 @@ Cityscapes models are trained with ImageNet pretraining.
 <td align="center"> - </td>
 <td align="center"> - &nbsp;|&nbsp; - </td>
 </tr>
+
  <tr><td align="left"><a href="configs/Cityscapes-SemanticSegmentation/deeplab_v3_plus_R_103_os16_mg124_poly_90k_bs16.yaml">DeepLabV3+</a></td>
 <td align="center">R103-DC5</td>
 <td align="center">1024&times;2048</td>
@@ -66,6 +67,7 @@ Cityscapes models are trained with ImageNet pretraining.
 ">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/DeepLab/Cityscapes-SemanticSegmentation/deeplab_v3_plus_R_103_os16_mg124_poly_90k_bs16/28054032/metrics.json
 ">metrics</a></td>
 </tr>
+
 </tbody></table>
 
 Note:
@@ -75,26 +77,7 @@ This modification has been used in most semantic segmentation papers. We pre-tra
 
 ## <a name="CitingDeepLab"></a>Citing DeepLab
 
-If you use DeepLab, please use the following BibTeX entry.
 
-*   DeepLabv3+:
 
-```
-@inproceedings{deeplabv3plus2018,
-  title={Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation},
-  author={Liang-Chieh Chen and Yukun Zhu and George Papandreou and Florian Schroff and Hartwig Adam},
-  booktitle={ECCV},
-  year={2018}
-}
-```
 
-*   DeepLabv3:
 
-```
-@article{deeplabv32018,
-  title={Rethinking atrous convolution for semantic image segmentation},
-  author={Chen, Liang-Chieh and Papandreou, George and Schroff, Florian and Adam, Hartwig},
-  journal={arXiv:1706.05587},
-  year={2017}
-}
-```
