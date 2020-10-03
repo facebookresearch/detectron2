@@ -58,6 +58,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          brew install libomp
           python -m pip install -U pip setuptools==49
           python -m pip install ninja opencv-python-headless onnx pytest-xdist onnxruntime
           python -m pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
