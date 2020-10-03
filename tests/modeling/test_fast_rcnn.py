@@ -106,7 +106,44 @@ class FastRCNNTest(unittest.TestCase):
             assert torch.allclose(losses[name], expected_losses[name])
 
     def test_predict_boxes_onnx_export(self):
-        pass
+        class Model(torch.nn.Module):
+            def __init__(self, output_layer):
+                super(Model, self).__init__()
+                self._output_layer = output_layer
+
+            def forward(self, proposal_deltas, proposal_boxes):
+                instances = Instances((10, 10))
+                instances.proposal_boxes = Boxes(proposal_boxes)
+                return self._output_layer.predict_boxes((None, proposal_deltas), [instances])
+
+        box_head_output_size = 8
+
+        box_predictor = FastRCNNOutputLayers(
+            ShapeSpec(channels=box_head_output_size),
+            box2box_transform=Box2BoxTransform(weights=(10, 10, 5, 5)),
+            num_classes=5,
+        )
+
+        model = Model(box_predictor)
+
+        with tempfile.TemporaryFile("w+b") as f:
+            torch.onnx.export(
+                model,
+                (torch.randn(10, 20), torch.randn(10, 4)),
+                f,
+                opset_version=11,
+                input_names=["proposal_deltas", "proposal_boxes"],
+                output_names=["boxes"],
+                dynamic_axes={"proposal_deltas": {0: "detections"}, "proposal_boxes": {0: "detections"}, "boxes": {0: "detections"}}
+            )
+
+            f.seek(0)
+
+            sess = rt.InferenceSession(f.read(), None)
+
+            sess.run([], {"proposal_deltas": np.random.rand(10, 20).astype(np.float32), "proposal_boxes": np.random.rand(10, 4).astype(np.float32)})
+            sess.run([], {"proposal_deltas": np.random.rand(5, 20).astype(np.float32), "proposal_boxes": np.random.rand(5, 4).astype(np.float32)})
+            sess.run([], {"proposal_deltas": np.random.rand(20, 20).astype(np.float32), "proposal_boxes": np.random.rand(20, 4).astype(np.float32)})
 
     def test_predict_probs_onnx_export(self):
         class Model(torch.nn.Module):
