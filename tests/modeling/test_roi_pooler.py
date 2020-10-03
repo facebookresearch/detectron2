@@ -159,9 +159,9 @@ class TestROIPooler(unittest.TestCase):
 
             sess = rt.InferenceSession(f.read(), None)
 
-            sess.run([], {"boxes": np.ones((10, 4), dtype=np.float32)})
-            sess.run([], {"boxes": np.ones((5, 4), dtype=np.float32)})
-            sess.run([], {"boxes": np.ones((20, 4), dtype=np.float32)})
+            assert sess.run([], {"boxes": np.ones((10, 4), dtype=np.float32)})[0].shape == (10, 5)
+            assert sess.run([], {"boxes": np.ones((5, 4), dtype=np.float32)})[0].shape == (5, 5)
+            assert sess.run([], {"boxes": np.ones((20, 4), dtype=np.float32)})[0].shape == (20, 5)
 
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_roi_pooler_onnx_export(self):
@@ -213,8 +213,13 @@ class TestROIPooler(unittest.TestCase):
 
             sess = rt.InferenceSession(f.read(), None)
 
-            sess.run([], {"features": feature.numpy(), "boxes": rois.numpy()})
-            sess.run([], {"features": feature.numpy(), "boxes": rois[:5].numpy()})
+            assert (
+                sess.run([], {"features": feature.numpy(), "boxes": rois.numpy()})[0].shape[0] == 10
+            )
+            assert (
+                sess.run([], {"features": feature.numpy(), "boxes": rois[:5].numpy()})[0].shape[0]
+                == 5
+            )
 
 
 if __name__ == "__main__":
