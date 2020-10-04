@@ -95,7 +95,7 @@ install_linux_dep: &install_linux_dep
       name: Install Dependencies
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools onnxruntime
+        pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
         pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
         gcc --version
@@ -185,7 +185,7 @@ jobs:
           command: |
             pip install certifi --ignore-installed  # required on windows to workaround some cert issue
             pip install numpy cython  # required on windows before pycocotools
-            pip install opencv-python-headless pytest-xdist pycocotools tensorboard onnxruntime
+            pip install opencv-python-headless pytest-xdist pycocotools tensorboard
             pip install -U git+https://github.com/facebookresearch/fvcore
             pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 

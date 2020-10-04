@@ -232,7 +232,7 @@ class ROIPooler(nn.Module):
             box_lists, self.min_level, self.max_level, self.canonical_box_size, self.canonical_level
         )
 
-        num_boxes = pooler_fmt_boxes.size(0)
+        num_boxes = len(pooler_fmt_boxes)
         num_channels = x[0].shape[1]
         output_size = self.output_size[0]
 

@@ -1,15 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
-import numpy as np
-import tempfile
 import unittest
 import torch
 
 from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
-
-import onnxruntime as rt
 
 logger = logging.getLogger(__name__)
 
@@ -144,24 +140,12 @@ class TestROIPooler(unittest.TestCase):
             def forward(self, box_tensor):
                 return _fmt_box_list(box_tensor, 0)
 
-        with tempfile.TemporaryFile("w+b") as f:
-            torch.onnx.export(
-                Model(),
-                torch.ones(10, 4),
-                f,
-                input_names=["boxes"],
-                output_names=["formatted_boxes"],
-                dynamic_axes={"boxes": {0: "box_count"}, "formatted_boxes": {0: "box_count"}},
-                opset_version=11,
-            )
+        with torch.no_grad():
+            func = torch.jit.trace(Model(), torch.ones(10, 4))
 
-            f.seek(0)
-
-            sess = rt.InferenceSession(f.read(), None)
-
-            assert sess.run([], {"boxes": np.ones((10, 4), dtype=np.float32)})[0].shape == (10, 5)
-            assert sess.run([], {"boxes": np.ones((5, 4), dtype=np.float32)})[0].shape == (5, 5)
-            assert sess.run([], {"boxes": np.ones((20, 4), dtype=np.float32)})[0].shape == (20, 5)
+            self.assertEqual(func(torch.ones(10, 4)).shape, (10, 5))
+            self.assertEqual(func(torch.ones(5, 4)).shape, (5, 5))
+            self.assertEqual(func(torch.ones(20, 4)).shape, (20, 5))
 
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_roi_pooler_onnx_export(self):
@@ -198,28 +182,19 @@ class TestROIPooler(unittest.TestCase):
             )
         )
 
-        with tempfile.TemporaryFile("w+b") as f:
-            torch.onnx.export(
-                model,
-                (feature, rois),
-                f,
-                input_names=["features", "boxes"],
-                output_names=["pooled_features"],
-                dynamic_axes={"boxes": {0: "detections"}, "pooled_features": {0: "detections"}},
-                opset_version=11,
+        with torch.no_grad():
+            func = torch.jit.trace(model, (feature, rois))
+            o = func(feature, rois)
+            self.assertEqual(o.shape, (10, 4, 14, 14))
+            o = func(feature, rois[:5])
+            self.assertEqual(o.shape, (5, 4, 14, 14))
+            o = func(
+                feature,
+                self._rand_boxes(
+                    num_boxes=20, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
+                ),
             )
-
-            f.seek(0)
-
-            sess = rt.InferenceSession(f.read(), None)
-
-            assert (
-                sess.run([], {"features": feature.numpy(), "boxes": rois.numpy()})[0].shape[0] == 10
-            )
-            assert (
-                sess.run([], {"features": feature.numpy(), "boxes": rois[:5].numpy()})[0].shape[0]
-                == 5
-            )
+            self.assertEqual(o.shape, (20, 4, 14, 14))
 
 
 if __name__ == "__main__":

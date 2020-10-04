@@ -102,12 +102,16 @@ class Box2BoxTransform(object):
         pred_w = torch.exp(dw) * widths[:, None]
         pred_h = torch.exp(dh) * heights[:, None]
 
-        pred_boxes = torch.zeros_like(deltas)
-        pred_boxes[:, 0::4] = pred_ctr_x - 0.5 * pred_w  # x1
-        pred_boxes[:, 1::4] = pred_ctr_y - 0.5 * pred_h  # y1
-        pred_boxes[:, 2::4] = pred_ctr_x + 0.5 * pred_w  # x2
-        pred_boxes[:, 3::4] = pred_ctr_y + 0.5 * pred_h  # y2
-        return pred_boxes
+        # Hits into bug: https://github.com/pytorch/pytorch/pull/44335
+        return torch.cat(
+            [
+                (pred_ctr_x - 0.5 * pred_w).unsqueeze(dim=-1),  # x1
+                (pred_ctr_y - 0.5 * pred_h).unsqueeze(dim=-1),  # y1
+                (pred_ctr_x + 0.5 * pred_w).unsqueeze(dim=-1),  # x2
+                (pred_ctr_y + 0.5 * pred_h).unsqueeze(dim=-1),  # y2
+            ],
+            dim=-1,
+        ).flatten(1)
 
 
 @torch.jit.script

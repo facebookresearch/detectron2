@@ -29,6 +29,18 @@ class TestBox2BoxTransform(unittest.TestCase):
             dst_boxes_reconstructed = b2b_tfm.apply_deltas(deltas, src_boxes)
             assert torch.allclose(dst_boxes, dst_boxes_reconstructed)
 
+    def test_apply_deltas_tracing(self):
+        weights = (5, 5, 10, 10)
+        b2b_tfm = Box2BoxTransform(weights=weights)
+
+        with torch.no_grad():
+            func = torch.jit.trace(b2b_tfm.apply_deltas, (torch.randn(10, 20), torch.randn(10, 4)))
+
+            o = func(torch.randn(10, 20), torch.randn(10, 4))
+            self.assertEqual(o.shape, (10, 20))
+            o = func(torch.randn(5, 20), torch.randn(5, 4))
+            self.assertEqual(o.shape, (5, 20))
+
 
 def random_rotated_boxes(mean_box, std_length, std_angle, N):
     return torch.cat(
