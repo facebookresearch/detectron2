@@ -189,7 +189,8 @@ class TestBoxes(unittest.TestCase):
         self.assertTrue(x.tensor.shape, (0, 4))
 
     # require https://github.com/pytorch/pytorch/pull/39336
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    # require https://github.com/pytorch/pytorch/pull/39821
+    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_scriptability(self):
         def func(x):
             boxes = Boxes(x)
