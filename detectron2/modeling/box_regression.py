@@ -102,7 +102,6 @@ class Box2BoxTransform(object):
         pred_w = torch.exp(dw) * widths[:, None]
         pred_h = torch.exp(dh) * heights[:, None]
 
-        # Hits into bug: https://github.com/pytorch/pytorch/pull/44335
         return torch.cat(
             [
                 (pred_ctr_x - 0.5 * pred_w).unsqueeze(dim=-1),  # x1
