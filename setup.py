@@ -197,7 +197,6 @@ setup(
         "tabulate",
         "cloudpickle",
         "matplotlib",
-        "mock",
         "tqdm>4.29.0",
         "tensorboard",
         "fvcore>=0.1.1",

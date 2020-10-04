@@ -5,7 +5,7 @@ import os
 import tempfile
 import time
 import unittest
-from mock import MagicMock
+from unittest.mock import MagicMock
 import torch
 from torch import nn
 
