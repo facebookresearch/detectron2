@@ -272,6 +272,45 @@ def _get_builtin_metadata(dataset_name):
         return _get_coco_instances_meta()
     if dataset_name == "coco_panoptic_separated":
         return _get_coco_panoptic_separated_meta()
+    elif dataset_name == "coco_panoptic_standard":
+        meta = {}
+        # The following metadata maps contiguous id from [0, #thing categories +
+        # #stuff categories) to their names and colors. We have to replica of the
+        # same name and color under "thing_*" and "stuff_*" because the current
+        # visualization function in D2 handles thing and class classes differently
+        # due to some heuristic used in Panoptic FPN. We keep the same naming to
+        # enable reusing existing visualization functions.
+        thing_classes = [k["name"] for k in COCO_CATEGORIES]
+        thing_colors = [k["color"] for k in COCO_CATEGORIES]
+        stuff_classes = [k["name"] for k in COCO_CATEGORIES]
+        stuff_colors = [k["color"] for k in COCO_CATEGORIES]
+
+        meta["thing_classes"] = thing_classes
+        meta["thing_colors"] = thing_colors
+        meta["stuff_classes"] = stuff_classes
+        meta["stuff_colors"] = stuff_colors
+
+        # Convert category id for training:
+        #   category id: like semantic segmentation, it is the class id for each
+        #   pixel. Since there are some classes not used in evaluation, the category
+        #   id is not always contiguous and thus we have two set of category ids:
+        #       - original category id: category id in the original dataset, mainly
+        #           used for evaluation.
+        #       - contiguous category id: [0, #classes), in order to train the linear
+        #           softmax classifier.
+        thing_dataset_id_to_contiguous_id = {}
+        stuff_dataset_id_to_contiguous_id = {}
+
+        for i, cat in enumerate(COCO_CATEGORIES):
+            if cat["isthing"]:
+                thing_dataset_id_to_contiguous_id[cat["id"]] = i
+            else:
+                stuff_dataset_id_to_contiguous_id[cat["id"]] = i
+
+        meta["thing_dataset_id_to_contiguous_id"] = thing_dataset_id_to_contiguous_id
+        meta["stuff_dataset_id_to_contiguous_id"] = stuff_dataset_id_to_contiguous_id
+
+        return meta
     elif dataset_name == "coco_person":
         return {
             "thing_classes": ["person"],

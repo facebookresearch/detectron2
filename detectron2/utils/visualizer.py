@@ -550,6 +550,20 @@ class Visualizer:
                 sem_seg = np.asarray(sem_seg, dtype="uint8")
         if sem_seg is not None:
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
+
+        pan_seg = dic.get("pan_seg", None)
+        if pan_seg is None and "pan_seg_file_name" in dic:
+            assert "segments_info" in dic
+            with PathManager.open(dic["pan_seg_file_name"], "rb") as f:
+                pan_seg = Image.open(f)
+                pan_seg = np.asarray(pan_seg)
+                from panopticapi.utils import rgb2id
+
+                pan_seg = rgb2id(pan_seg)
+            segments_info = dic["segments_info"]
+        if pan_seg is not None:
+            pan_seg = torch.Tensor(pan_seg)
+            self.draw_panoptic_seg_predictions(pan_seg, segments_info, area_threshold=0, alpha=0.5)
         return self.output
 
     def overlay_instances(

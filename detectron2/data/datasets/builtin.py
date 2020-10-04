@@ -24,10 +24,10 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 from .builtin_meta import ADE20K_SEM_SEG_CATEGORIES, _get_builtin_metadata
 from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic
 from .cityscapes_panoptic import register_all_cityscapes_panoptic
-from .coco import load_sem_seg
+from .coco import load_sem_seg, register_coco_instances
+from .coco_panoptic import register_coco_panoptic, register_coco_panoptic_separated
 from .lvis import get_lvis_instances_meta, register_lvis_instances
 from .pascal_voc import register_pascal_voc
-from .register_coco import register_coco_instances, register_coco_panoptic_separated
 
 # ==== Predefined datasets and splits for COCO ==========
 
@@ -121,6 +121,8 @@ def register_all_coco(root):
         prefix_instances = prefix[: -len("_panoptic")]
         instances_meta = MetadataCatalog.get(prefix_instances)
         image_root, instances_json = instances_meta.image_root, instances_meta.json_file
+        # The "separated" version of COCO panoptic segmentation dataset,
+        # e.g. used by Panoptic FPN
         register_coco_panoptic_separated(
             prefix,
             _get_builtin_metadata("coco_panoptic_separated"),
@@ -128,6 +130,16 @@ def register_all_coco(root):
             os.path.join(root, panoptic_root),
             os.path.join(root, panoptic_json),
             os.path.join(root, semantic_root),
+            instances_json,
+        )
+        # The "standard" version of COCO panoptic segmentation dataset,
+        # e.g. used by Panoptic-DeepLab
+        register_coco_panoptic(
+            prefix,
+            _get_builtin_metadata("coco_panoptic_standard"),
+            image_root,
+            os.path.join(root, panoptic_root),
+            os.path.join(root, panoptic_json),
             instances_json,
         )
 
