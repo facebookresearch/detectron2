@@ -608,14 +608,11 @@ def build_resnet_backbone(cfg, input_shape):
 
     stages = []
 
-    rem_feat = []
-    if "stem" in out_features:
-        out_features.remove("stem")
-        rem_feat.append("stem")
-
     # Avoid creating variables without gradients
     # It consumes extra memory and may cause allreduce to fail
-    out_stage_idx = [{"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features]
+    out_stage_idx = [
+        {"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features if f != "stem"
+    ]
     max_stage_idx = max(out_stage_idx)
     for idx, stage_idx in enumerate(range(2, max_stage_idx + 1)):
         dilation = res5_dilation if stage_idx == 5 else 1
@@ -646,6 +643,4 @@ def build_resnet_backbone(cfg, input_shape):
         out_channels *= 2
         bottleneck_channels *= 2
         stages.append(blocks)
-    if rem_feat:
-        out_features = out_features + rem_feat
     return ResNet(stem, stages, out_features=out_features).freeze(freeze_at)
