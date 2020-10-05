@@ -188,7 +188,7 @@ class TestBoxes(unittest.TestCase):
         x = Boxes.cat([])
         self.assertTrue(x.tensor.shape, (0, 4))
 
-    # require https://github.com/pytorch/pytorch/pull/39336
+    # require https://github.com/pytorch/pytorch/pull/39821
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_scriptability(self):
         def func(x):
@@ -197,6 +197,19 @@ class TestBoxes(unittest.TestCase):
 
         f = torch.jit.script(func)
         f(torch.rand((3, 4)))
+
+        data = torch.rand((3, 4))
+
+        def func_cat(x: torch.Tensor):
+            boxes1 = Boxes(x)
+            boxes2 = Boxes(x)
+            # boxes3 = Boxes.cat([boxes1, boxes2])  # this is not supported by torchsript for now.
+            boxes3 = boxes1.cat([boxes1, boxes2])
+            return boxes3
+
+        f = torch.jit.script(func_cat)
+        script_box = f(data)
+        self.assertTrue(torch.equal(torch.cat([data, data]), script_box.tensor))
 
 
 if __name__ == "__main__":
