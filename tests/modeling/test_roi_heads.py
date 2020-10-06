@@ -186,7 +186,7 @@ class ROIHeadsTest(unittest.TestCase):
             self.assertTrue(torch.equal(origin_ins.pred_classes, script_ins.pred_classes))
             self.assertTrue(torch.equal(origin_ins.pred_masks, script_ins.pred_masks))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_keypoint_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024, height=14, width=14)
         keypoint_features = torch.randn(4, 1024, 14, 14)

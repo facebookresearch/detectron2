@@ -120,10 +120,7 @@ def keypoint_rcnn_inference(pred_keypoint_logits: torch.Tensor, pred_instances: 
     pred_keypoint_logits = pred_keypoint_logits.detach()
     keypoint_results = heatmaps_to_keypoints(pred_keypoint_logits, bboxes_flat.detach())
     num_instances_per_image = [len(i) for i in pred_instances]
-    # slicing multiple dimensions with sequences is not supported by torchscript
-    # https://github.com/pytorch/pytorch/issues/43943
-    idx = torch.tensor([0, 1, 3])
-    keypoint_results = keypoint_results[:, :, idx].split(num_instances_per_image, dim=0)
+    keypoint_results = keypoint_results[:, :, [0, 1, 3]].split(num_instances_per_image, dim=0)
     heatmap_results = pred_keypoint_logits.split(num_instances_per_image, dim=0)
 
     for keypoint_results_per_image, heatmap_results_per_image, instances_per_image in zip(
