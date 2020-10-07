@@ -19,6 +19,13 @@ detectron2.data.detection\_utils module
     :members:
     :undoc-members:
     :show-inheritance:
+    
+ detectron2.data.detection\_module
+----------------------------------
+.. automodule:: detectron2.data.detection
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 detectron2.data.datasets module
 ---------------------------------------
@@ -45,3 +52,12 @@ detectron2.data.transforms module
     :undoc-members:
     :show-inheritance:
     :imported-members:
+    
+ detectron2.data.Catalog module
+-------------------------------
+.. automodule:: detectron2.data.Catalog
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :imported-members:
+   
