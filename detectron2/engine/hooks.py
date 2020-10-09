@@ -131,7 +131,8 @@ class IterationTimer(HookBase):
         self._total_timer.resume()
 
     def after_step(self):
-        # +1 because we're in after_step
+        # +1 because we're in after_step, the current step is done
+        # but not yet counted
         iter_done = self.trainer.iter - self.trainer.start_iter + 1
         if iter_done >= self._warmup_iter:
             sec = self._step_timer.seconds()
@@ -171,6 +172,9 @@ class PeriodicWriter(HookBase):
 
     def after_train(self):
         for writer in self._writers:
+            # If any new data is found (e.g. produced by other after_train),
+            # write them before closing
+            writer.write()
             writer.close()
 
 
@@ -307,7 +311,8 @@ class EvalHook(HookBase):
     def __init__(self, eval_period, eval_function):
         """
         Args:
-            eval_period (int): the period to run `eval_function`.
+            eval_period (int): the period to run `eval_function`. Set to 0 to
+                not evaluate periodically (but still after the last iteration).
             eval_function (callable): a function which takes no arguments, and
                 returns a nested dict of evaluation metrics.
 
@@ -331,11 +336,11 @@ class EvalHook(HookBase):
             for k, v in flattened_results.items():
                 try:
                     v = float(v)
-                except Exception:
+                except Exception as e:
                     raise ValueError(
                         "[EvalHook] eval_function should return a nested dict of float. "
                         "Got '{}: {}' instead.".format(k, v)
-                    )
+                    ) from e
             self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
 
         # Evaluation may take different time among workers.
@@ -344,11 +349,13 @@ class EvalHook(HookBase):
 
     def after_step(self):
         next_iter = self.trainer.iter + 1
-        is_final = next_iter == self.trainer.max_iter
-        if is_final or (self._period > 0 and next_iter % self._period == 0):
+        if self._period > 0 and next_iter % self._period == 0:
             self._do_eval()
 
     def after_train(self):
+        # This condition is to prevent the eval from running after a failed training
+        if self.trainer.iter + 1 >= self.trainer.max_iter:
+            self._do_eval()
         # func is likely a closure that holds reference to the trainer
         # therefore we clean it to avoid circular reference in the end
         del self._func

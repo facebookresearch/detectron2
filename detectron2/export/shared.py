@@ -5,10 +5,10 @@ import contextlib
 import copy
 import functools
 import logging
-import mock
 import numpy as np
 import os
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from unittest import mock
 import caffe2.python.utils as putils
 import torch
 import torch.nn.functional as F

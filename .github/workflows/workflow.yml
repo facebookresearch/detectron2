@@ -58,15 +58,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install ninja
-          python -m pip install -U pip
-          python -m pip install opencv-python-headless onnx pytest-xdist
+          python -m pip install -U pip setuptools==49
+          python -m pip install ninja opencv-python-headless onnx pytest-xdist
           python -m pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
           python -m pip install -U 'git+https://github.com/facebookresearch/fvcore'
 
       - name: Build and install
         run: |
-          CC=clang CXX=clang++ python -m pip install -e .
+          CC=clang CXX=clang++ python -m pip install -e .[all]
           python -m detectron2.utils.collect_env
       - name: Run unittests
         run: python -m pytest -n 4 -v tests/

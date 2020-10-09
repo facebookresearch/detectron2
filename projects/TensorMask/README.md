@@ -17,8 +17,7 @@ TensorMask is a dense sliding-window instance segmentation framework that, for t
 First install Detectron2 following the [documentation](https://detectron2.readthedocs.io/tutorials/install.html) and
 [setup the dataset](../../datasets). Then compile the TensorMask-specific op (`swap_align2nat`):
 ```bash
-cd /path/to/detectron2/projects/TensorMask
-python setup.py build develop
+pip install -e /path/to/detectron2/projects/TensorMask
 ```
 
 ## Training

@@ -272,6 +272,9 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "export_caffe2_model",
         "export_onnx_model",
         "apply_transform_gens",
+        "TransformGen",
+        "apply_augmentations",
+        "StandardAugInput",
     }
     try:
         if obj.__doc__.lower().strip().startswith("deprecated") or name in HIDDEN:

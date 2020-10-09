@@ -1,8 +1,8 @@
 
-# Use Dataloaders
+# Dataloader
 
 Dataloader is the component that provides data to models.
-A dataloader usually (but not necessarily) takes raw information from [datasets](datasets.md),
+A dataloader usually (but not necessarily) takes raw information from [datasets](./datasets.md),
 and process them into a format needed by the model.
 
 ## How the Existing Dataloader Works
@@ -59,9 +59,10 @@ def mapper(dataset_dict):
     dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
     # can use other ways to read image
     image = utils.read_image(dataset_dict["file_name"], format="BGR")
-    # can use other augmentations
-    transform = T.Resize((800, 800)).get_transform(image)
-    image = torch.from_numpy(transform.apply_image(image).transpose(2, 0, 1))
+    # See "Data Augmentation" tutorial for details usage
+    auginput = T.AugInput(image)
+    transform = T.Resize((800, 800))(auginput)
+    image = torch.from_numpy(auginput.image.transpose(2, 0, 1))
     annos = [
         utils.transform_instance_annotations(annotation, [transform], image.shape[1:])
         for annotation in dataset_dict.pop("annotations")
@@ -88,7 +89,7 @@ these functions.
 
 If you use [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
 you can overwrite its `build_{train,test}_loader` method to use your own dataloader.
-See the [densepose dataloader](../../projects/DensePose/train_net.py)
+See the [deeplab dataloader](../../projects/DeepLab/train_net.py)
 for an example.
 
 If you write your own training loop, you can plug in your data loader easily.

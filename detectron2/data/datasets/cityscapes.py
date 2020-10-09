@@ -24,7 +24,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def get_cityscapes_files(image_dir, gt_dir):
+def _get_cityscapes_files(image_dir, gt_dir):
     files = []
     # scan through the directory
     cities = PathManager.ls(image_dir)
@@ -68,7 +68,7 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
             "Cityscapes's json annotations are in polygon format. "
             "Converting to mask format is not supported now."
         )
-    files = get_cityscapes_files(image_dir, gt_dir)
+    files = _get_cityscapes_files(image_dir, gt_dir)
 
     logger.info("Preprocessing cityscapes annotations ...")
     # This is still not fast: all workers will execute duplicate works and will
@@ -76,7 +76,7 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
     pool = mp.Pool(processes=max(mp.cpu_count() // get_world_size() // 2, 4))
 
     ret = pool.map(
-        functools.partial(cityscapes_files_to_dict, from_json=from_json, to_polygons=to_polygons),
+        functools.partial(_cityscapes_files_to_dict, from_json=from_json, to_polygons=to_polygons),
         files,
     )
     logger.info("Loaded {} images from {}".format(len(ret), image_dir))
@@ -105,7 +105,7 @@ def load_cityscapes_semantic(image_dir, gt_dir):
     ret = []
     # gt_dir is small and contain many small files. make sense to fetch to local first
     gt_dir = PathManager.get_local_path(gt_dir)
-    for image_file, _, label_file, json_file in get_cityscapes_files(image_dir, gt_dir):
+    for image_file, _, label_file, json_file in _get_cityscapes_files(image_dir, gt_dir):
         label_file = label_file.replace("labelIds", "labelTrainIds")
 
         with PathManager.open(json_file, "r") as f:
@@ -125,7 +125,7 @@ def load_cityscapes_semantic(image_dir, gt_dir):
     return ret
 
 
-def cityscapes_files_to_dict(files, from_json, to_polygons):
+def _cityscapes_files_to_dict(files, from_json, to_polygons):
     """
     Parse cityscapes annotation files to a instance segmentation dataset dict.
 

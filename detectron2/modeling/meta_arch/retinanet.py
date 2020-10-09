@@ -8,6 +8,7 @@ from fvcore.nn import giou_loss, sigmoid_focal_loss_jit, smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
+from detectron2.config import configurable
 from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.layers import ShapeSpec, batched_nms, cat, get_norm
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
@@ -340,19 +341,20 @@ class RetinaNet(nn.Module):
         # Iterate over every feature level
         for box_cls_i, box_reg_i, anchors_i in zip(box_cls, box_delta, anchors):
             # (HxWxAxK,)
-            box_cls_i = box_cls_i.flatten().sigmoid_()
+            predicted_prob = box_cls_i.flatten().sigmoid_()
 
-            # Keep top k top scoring indices only.
-            num_topk = min(self.topk_candidates, box_reg_i.size(0))
-            # torch.sort is actually faster than .topk (at least on GPUs)
-            predicted_prob, topk_idxs = box_cls_i.sort(descending=True)
-            predicted_prob = predicted_prob[:num_topk]
-            topk_idxs = topk_idxs[:num_topk]
-
-            # filter out the proposals with low confidence score
+            # Apply two filtering below to make NMS faster.
+            # 1. Keep boxes with confidence score higher than threshold
             keep_idxs = predicted_prob > self.score_threshold
             predicted_prob = predicted_prob[keep_idxs]
-            topk_idxs = topk_idxs[keep_idxs]
+            topk_idxs = torch.nonzero(keep_idxs, as_tuple=True)[0]
+
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(self.topk_candidates, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            predicted_prob, idxs = predicted_prob.sort(descending=True)
+            predicted_prob = predicted_prob[:num_topk]
+            topk_idxs = topk_idxs[idxs[:num_topk]]
 
             anchor_idxs = topk_idxs // self.num_classes
             classes_idxs = topk_idxs % self.num_classes
@@ -394,24 +396,31 @@ class RetinaNetHead(nn.Module):
     It has two subnets for the two tasks, with a common structure but separate parameters.
     """
 
-    def __init__(self, cfg, input_shape: List[ShapeSpec]):
-        super().__init__()
-        # fmt: off
-        in_channels = input_shape[0].channels
-        num_classes = cfg.MODEL.RETINANET.NUM_CLASSES
-        num_convs   = cfg.MODEL.RETINANET.NUM_CONVS
-        prior_prob  = cfg.MODEL.RETINANET.PRIOR_PROB
-        norm        = cfg.MODEL.RETINANET.NORM
-        # Disabling shared norm causes backwards compatibility issues
-        # Hardcode to true for now
-        # shared_norm = cfg.MODEL.RETINANET.SHARED_NORM
+    @configurable
+    def __init__(
+        self,
+        *,
+        input_shape: List[ShapeSpec],
+        num_classes,
+        num_anchors,
+        conv_dims: List[int],
+        norm="",
+        prior_prob=0.01,
+    ):
+        """
+        NOTE: this interface is experimental.
 
-        num_anchors = build_anchor_generator(cfg, input_shape).num_cell_anchors
-        # fmt: on
-        assert (
-            len(set(num_anchors)) == 1
-        ), "Using different number of anchors between levels is not currently supported!"
-        num_anchors = num_anchors[0]
+        Args:
+            input_shape (List[ShapeSpec]): input shape
+            num_classes (int): number of classes. Used to label background proposals.
+            num_anchors (int): number of generated anchors
+            conv_dims (List[int]): dimensions for each convolution layer
+            norm (str or callable):
+                    Normalization for conv layers except for the two output layers.
+                    See :func:`detectron2.layers.get_norm` for supported types.
+            prior_prob (float): Prior weight for computing bias
+        """
+        super().__init__()
 
         if norm == "BN" or norm == "SyncBN":
             logger = logging.getLogger(__name__)
@@ -419,26 +428,28 @@ class RetinaNetHead(nn.Module):
 
         cls_subnet = []
         bbox_subnet = []
-        for _ in range(num_convs):
+        for in_channels, out_channels in zip([input_shape[0].channels] + conv_dims, conv_dims):
             cls_subnet.append(
-                nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+                nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
             )
             if norm:
-                cls_subnet.append(get_norm(norm, in_channels))
+                cls_subnet.append(get_norm(norm, out_channels))
             cls_subnet.append(nn.ReLU())
             bbox_subnet.append(
-                nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+                nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
             )
             if norm:
-                bbox_subnet.append(get_norm(norm, in_channels))
+                bbox_subnet.append(get_norm(norm, out_channels))
             bbox_subnet.append(nn.ReLU())
 
         self.cls_subnet = nn.Sequential(*cls_subnet)
         self.bbox_subnet = nn.Sequential(*bbox_subnet)
         self.cls_score = nn.Conv2d(
-            in_channels, num_anchors * num_classes, kernel_size=3, stride=1, padding=1
+            conv_dims[-1], num_anchors * num_classes, kernel_size=3, stride=1, padding=1
         )
-        self.bbox_pred = nn.Conv2d(in_channels, num_anchors * 4, kernel_size=3, stride=1, padding=1)
+        self.bbox_pred = nn.Conv2d(
+            conv_dims[-1], num_anchors * 4, kernel_size=3, stride=1, padding=1
+        )
 
         # Initialization
         for modules in [self.cls_subnet, self.bbox_subnet, self.cls_score, self.bbox_pred]:
@@ -450,6 +461,24 @@ class RetinaNetHead(nn.Module):
         # Use prior in model initialization to improve stability
         bias_value = -(math.log((1 - prior_prob) / prior_prob))
         torch.nn.init.constant_(self.cls_score.bias, bias_value)
+
+    @classmethod
+    def from_config(cls, cfg, input_shape: List[ShapeSpec]):
+        num_anchors = build_anchor_generator(cfg, input_shape).num_cell_anchors
+        # fmt: on
+        assert (
+            len(set(num_anchors)) == 1
+        ), "Using different number of anchors between levels is not currently supported!"
+        num_anchors = num_anchors[0]
+
+        return {
+            "input_shape": input_shape,
+            "num_classes": cfg.MODEL.RETINANET.NUM_CLASSES,
+            "conv_dims": [input_shape[0].channels] * cfg.MODEL.RETINANET.NUM_CONVS,
+            "prior_prob": cfg.MODEL.RETINANET.PRIOR_PROB,
+            "norm": cfg.MODEL.RETINANET.NORM,
+            "num_anchors": num_anchors,
+        }
 
     def forward(self, features):
         """

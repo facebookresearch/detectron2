@@ -1,5 +1,6 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 #include "cocoeval.h"
+#include <time.h>
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
@@ -480,7 +481,11 @@ py::dict Accumulate(
   struct tm local_time;
   std::array<char, 200> buffer;
   time(&rawtime);
+#ifdef _WIN32
+  localtime_s(&local_time, &rawtime);
+#else
   localtime_r(&rawtime, &local_time);
+#endif
   strftime(
       buffer.data(), 200, "%Y-%m-%d %H:%num_max_detections:%S", &local_time);
   return py::dict(

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
@@ -8,11 +9,10 @@ import numpy as np
 import os
 import time
 from fvcore.common.download import download
+from panopticapi.utils import rgb2id
 from PIL import Image
 
 from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
-
-from panopticapi.utils import rgb2id
 
 
 def _process_panoptic_to_semantic(input_panoptic, output_semantic, segments, id_map):

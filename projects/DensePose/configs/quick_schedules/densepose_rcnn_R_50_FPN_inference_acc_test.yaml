@@ -5,4 +5,4 @@ DATASETS:
   TRAIN: ()
   TEST: ("densepose_coco_2014_minival_100",)
 TEST:
-  EXPECTED_RESULTS: [["bbox", "AP", 59.27, 0.025], ["densepose_gps", "AP",  60.11, 0.02], ["densepose_gpsm", "AP", 64.20, 0.02]]
+  EXPECTED_RESULTS: [["bbox", "AP", 59.27, 0.025], ["densepose_gps", "AP",  60.11, 0.02], ["densepose_gpsm", "AP", 64.09, 0.02]]

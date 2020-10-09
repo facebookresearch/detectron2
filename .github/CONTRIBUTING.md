@@ -44,7 +44,8 @@ When sending a PR, please do:
 3. For PRs that need experiments (e.g. adding a new model or new methods),
    you don't need to update model zoo, but do provide experiment results in the description of the PR.
 4. If APIs are changed, update the documentation.
-5. Make sure your code lints with `./dev/linter.sh`.
+5. We use the [Google style docstrings](https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html) in python.
+6. Make sure your code lints with `./dev/linter.sh`.
 
 
 ## Contributor License Agreement ("CLA")

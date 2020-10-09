@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import contextlib
-import mock
+from unittest import mock
 import torch
 
 from detectron2.modeling import poolers

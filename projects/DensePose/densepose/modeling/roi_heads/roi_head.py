@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import numpy as np
@@ -14,7 +13,7 @@ from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.roi_heads import select_foreground_proposals
 from detectron2.structures import ImageList, Instances
 
-from .densepose_head import (
+from .. import (
     build_densepose_data_filter,
     build_densepose_head,
     build_densepose_losses,
@@ -148,16 +147,21 @@ class DensePoseROIHeads(StandardROIHeads):
         if self.training:
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             features, proposals = self.densepose_data_filter(features, proposals)
-            proposal_boxes = [x.proposal_boxes for x in proposals]
+            if len(proposals) > 0:
+                proposal_boxes = [x.proposal_boxes for x in proposals]
 
-            if self.use_decoder:
-                features = [self.decoder(features)]
+                if self.use_decoder:
+                    features = [self.decoder(features)]
 
-            features_dp = self.densepose_pooler(features, proposal_boxes)
-            densepose_head_outputs = self.densepose_head(features_dp)
-            densepose_outputs, _, confidences, _ = self.densepose_predictor(densepose_head_outputs)
-            densepose_loss_dict = self.densepose_losses(proposals, densepose_outputs, confidences)
-            return densepose_loss_dict
+                features_dp = self.densepose_pooler(features, proposal_boxes)
+                densepose_head_outputs = self.densepose_head(features_dp)
+                densepose_outputs, _, confidences, _ = self.densepose_predictor(
+                    densepose_head_outputs
+                )
+                densepose_loss_dict = self.densepose_losses(
+                    proposals, densepose_outputs, confidences
+                )
+                return densepose_loss_dict
         else:
             pred_boxes = [x.pred_boxes for x in instances]
 

@@ -66,7 +66,10 @@ def _configure_libraries():
 
             if int(cv2.__version__.split(".")[0]) >= 3:
                 cv2.ocl.setUseOpenCL(False)
-        except ImportError:
+        except ModuleNotFoundError:
+            # Other types of ImportError, if happened, should not be ignored.
+            # Because a failed opencv import could mess up address space
+            # https://github.com/skvark/opencv-python/issues/381
             pass
 
     def get_version(module, digit=2):

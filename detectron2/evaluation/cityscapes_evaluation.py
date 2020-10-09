@@ -62,21 +62,28 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
             basename = os.path.splitext(os.path.basename(file_name))[0]
             pred_txt = os.path.join(self._temp_dir, basename + "_pred.txt")
 
-            output = output["instances"].to(self._cpu_device)
-            num_instances = len(output)
-            with open(pred_txt, "w") as fout:
-                for i in range(num_instances):
-                    pred_class = output.pred_classes[i]
-                    classes = self._metadata.thing_classes[pred_class]
-                    class_id = name2label[classes].id
-                    score = output.scores[i]
-                    mask = output.pred_masks[i].numpy().astype("uint8")
-                    png_filename = os.path.join(
-                        self._temp_dir, basename + "_{}_{}.png".format(i, classes)
-                    )
+            if "instances" in output:
+                output = output["instances"].to(self._cpu_device)
+                num_instances = len(output)
+                with open(pred_txt, "w") as fout:
+                    for i in range(num_instances):
+                        pred_class = output.pred_classes[i]
+                        classes = self._metadata.thing_classes[pred_class]
+                        class_id = name2label[classes].id
+                        score = output.scores[i]
+                        mask = output.pred_masks[i].numpy().astype("uint8")
+                        png_filename = os.path.join(
+                            self._temp_dir, basename + "_{}_{}.png".format(i, classes)
+                        )
 
-                    Image.fromarray(mask * 255).save(png_filename)
-                    fout.write("{} {} {}\n".format(os.path.basename(png_filename), class_id, score))
+                        Image.fromarray(mask * 255).save(png_filename)
+                        fout.write(
+                            "{} {} {}\n".format(os.path.basename(png_filename), class_id, score)
+                        )
+            else:
+                # Cityscapes requires a prediction file for every ground truth image.
+                with open(pred_txt, "w") as fout:
+                    pass
 
     def evaluate(self):
         """

@@ -1,6 +1,8 @@
 detectron2.config package
 =========================
 
+Related tutorials: :doc:`../tutorials/config`, :doc:`../tutorials/extend`.
+
 .. automodule:: detectron2.config
     :members:
     :undoc-members:

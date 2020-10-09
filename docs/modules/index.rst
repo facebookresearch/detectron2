@@ -6,6 +6,7 @@ API Documentation
     checkpoint
     config
     data
+    data_transforms
     engine
     evaluation
     layers

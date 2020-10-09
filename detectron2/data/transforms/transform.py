@@ -52,14 +52,21 @@ class ExtentTransform(Transform):
 
     def apply_image(self, img, interp=None):
         h, w = self.output_size
-        ret = Image.fromarray(img).transform(
+        if len(img.shape) > 2 and img.shape[2] == 1:
+            pil_image = Image.fromarray(img[:, :, 0], mode="L")
+        else:
+            pil_image = Image.fromarray(img)
+        pil_image = pil_image.transform(
             size=(w, h),
             method=Image.EXTENT,
             data=self.src_rect,
             resample=interp if interp else self.interp,
             fill=self.fill,
         )
-        return np.asarray(ret)
+        ret = np.asarray(pil_image)
+        if len(img.shape) > 2 and img.shape[2] == 1:
+            ret = np.expand_dims(ret, -1)
+        return ret
 
     def apply_coords(self, coords):
         # Transform image center from source coordinates into output coordinates
@@ -103,12 +110,19 @@ class ResizeTransform(Transform):
         assert len(img.shape) <= 4
 
         if img.dtype == np.uint8:
-            pil_image = Image.fromarray(img)
+            if len(img.shape) > 2 and img.shape[2] == 1:
+                pil_image = Image.fromarray(img[:, :, 0], mode="L")
+            else:
+                pil_image = Image.fromarray(img)
             interp_method = interp if interp is not None else self.interp
             pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
             ret = np.asarray(pil_image)
+            if len(img.shape) > 2 and img.shape[2] == 1:
+                ret = np.expand_dims(ret, -1)
         else:
             # PIL only supports uint8
+            if any(x < 0 for x in img.strides):
+                img = np.ascontiguousarray(img)
             img = torch.from_numpy(img)
             shape = list(img.shape)
             shape_4d = shape[:2] + [1] * (4 - len(shape)) + shape[2:]
@@ -246,6 +260,9 @@ class ColorTransform(Transform):
 
     def apply_coords(self, coords):
         return coords
+
+    def inverse(self):
+        return NoOpTransform()
 
     def apply_segmentation(self, segmentation):
         return segmentation

@@ -10,20 +10,61 @@ cpu: &cpu
 
 gpu: &gpu
   machine:
-    image: ubuntu-1604:201903-01
-    docker_layer_caching: true
+    image: ubuntu-1604-cuda-10.1:201909-23
   resource_class: gpu.small
+
+windows-cpu: &windows_cpu
+  machine:
+    resource_class: windows.medium
+    image: windows-server-2019-vs2019:stable
+    shell: powershell.exe
+
+# windows-gpu: &windows_gpu
+#     machine:
+#       resource_class: windows.gpu.nvidia.medium
+#       image: windows-server-2019-nvidia:stable
+
+pytorch_parameters: &pytorch_parameters
+  parameters:
+    pytorch_version:
+      type: string
+      default: "1.6"
+    torchvision_version:
+      type: string
+      default: "0.7"
+
+  environment:
+    PYTORCH_VERSION: << parameters.pytorch_version >>
+    TORCHVISION_VERSION: << parameters.torchvision_version >>
 
 # -------------------------------------------------------------------------------------
 # Re-usable commands
 # -------------------------------------------------------------------------------------
+# install_nvidia_driver: &install_nvidia_driver
+#   - run:
+#       name: Install nvidia driver
+#       working_directory: ~/
+#       command: |
+#         wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
+#         sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
+#         nvidia-smi
+
+add_ssh_keys: &add_ssh_keys
+  # https://circleci.com/docs/2.0/add-ssh-key/
+  - add_ssh_keys:
+      fingerprints:
+        - "e4:13:f2:22:d4:49:e8:e4:57:5a:ac:20:2f:3f:1f:ca"
+
 install_python: &install_python
   - run:
       name: Install Python
       working_directory: ~/
       command: |
-        pyenv install 3.6.1
-        pyenv global 3.6.1
+        pyenv install -s 3.6.8
+        pyenv global 3.6.8
+        python --version
+        which python
+        pip install --upgrade pip setuptools==49.6.0
 
 setup_venv: &setup_venv
   - run:
@@ -36,32 +77,35 @@ setup_venv: &setup_venv
         python --version
         which python
         which pip
-        pip install --upgrade pip
+        pip install --upgrade pip setuptools==49.6.0
 
-install_dep: &install_dep
+setup_venv_win: &setup_venv_win
+  - run:
+      name: Setup Virutal Env for Windows
+      command: |
+        pip install virtualenv
+        python -m virtualenv env
+        .\env\Scripts\activate
+        python --version
+        which python
+        which pip
+
+install_linux_dep: &install_linux_dep
   - run:
       name: Install Dependencies
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off opencv-python pytest-xdist
-        pip install --progress-bar off torch torchvision
+        pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
+        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
+        python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
+        gcc --version
 
 install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
-        gcc --version
-        pip install -U --progress-bar off -e .[dev]
+        pip install --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
-
-install_nvidia_driver: &install_nvidia_driver
-  - run:
-      name: Install nvidia driver
-      working_directory: ~/
-      command: |
-        wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
-        sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
-        nvidia-smi
 
 run_unittests: &run_unittests
   - run:
@@ -75,6 +119,7 @@ run_unittests: &run_unittests
 jobs:
   linux_cpu_tests:
     <<: *cpu
+    <<: *pytorch_parameters
 
     working_directory: ~/detectron2
 
@@ -85,71 +130,72 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-key-{{ .Branch }}-ID-20200730
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
-      - <<: *install_dep
+      - <<: *install_linux_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-key-{{ .Branch }}-ID-20200730
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - <<: *install_detectron2
       - <<: *run_unittests
 
   linux_gpu_tests:
     <<: *gpu
-
-    parameters:
-      pytorch_version:
-        type: string
-      torchvision_version:
-        type: string
-
-    environment:
-      PYTORCH_VERSION: << parameters.pytorch_version >>
-      TORCHVISION_VERSION: << parameters.torchvision_version >>
+    <<: *pytorch_parameters
 
     working_directory: ~/detectron2
 
     steps:
       - checkout
-      - <<: *install_nvidia_driver
+
+      # Cache the directory that contains python and dependencies
+      - restore_cache:
+          keys:
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+
+      - <<: *install_python
+      - <<: *install_linux_dep
+
+      - save_cache:
+          paths:
+            - /opt/circleci/.pyenv
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+
+      - <<: *install_detectron2
+      - <<: *run_unittests
+
+  windows_cpu_tests:
+    <<: *windows_cpu
+    <<: *pytorch_parameters
+    steps:
+      - <<: *add_ssh_keys
+      - checkout
+      - <<: *setup_venv_win
+
+      # Cache the env directory that contains dependencies
+      - restore_cache:
+          keys:
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
       - run:
-          name: Install nvidia-docker
-          working_directory: ~/
+          name: Install Dependencies
           command: |
-            curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-            distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-            curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
-            sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-            sudo apt-get update && sudo apt-get install -y nvidia-docker2
-            # reload the docker daemon configuration
-            sudo pkill -SIGHUP dockerd
+            pip install certifi --ignore-installed  # required on windows to workaround some cert issue
+            pip install numpy cython  # required on windows before pycocotools
+            pip install opencv-python-headless pytest-xdist pycocotools tensorboard
+            pip install -U git+https://github.com/facebookresearch/fvcore
+            pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-      - run:
-          name: Launch docker
-          working_directory: ~/detectron2/docker
-          command: |
-            nvidia-docker build -t detectron2:v0 -f Dockerfile-circleci --build-arg PYTORCH_VERSION=$PYTORCH_VERSION --build-arg TORCHVISION_VERSION=$TORCHVISION_VERSION .
-            nvidia-docker run -itd --name d2 detectron2:v0
-            docker exec -it d2 nvidia-smi
+      - save_cache:
+          paths:
+            - env
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
 
-      - run:
-          name: Build Detectron2
-          command: |
-            docker exec -it d2 pip install 'git+https://github.com/facebookresearch/fvcore'
-            docker cp ~/detectron2 d2:/detectron2
-            # This will build d2 for the target GPU arch only
-            docker exec -it d2 pip install --progress-bar off -e /detectron2
-            docker exec -it d2 python3 -m detectron2.utils.collect_env
-            docker exec -it d2 python3 -c 'import torch; assert(torch.cuda.is_available())'
-
-      - run:
-          name: Run Unit Tests
-          command: |
-            docker exec -e CIRCLECI=true -it d2 python3 -m pytest -n 2 -v /detectron2/tests
+      - <<: *install_detectron2
+      # TODO: unittest fails for now
 
 workflows:
   version: 2
@@ -168,3 +214,4 @@ workflows:
           name: linux_gpu_tests_pytorch1.6
           pytorch_version: '1.6'
           torchvision_version: '0.7'
+      - windows_cpu_tests

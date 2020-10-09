@@ -15,7 +15,7 @@ For more advanced tutorials, refer to our [documentation](https://detectron2.rea
 1. Pick a model and its config file from
   [model zoo](MODEL_ZOO.md),
   for example, `mask_rcnn_R_50_FPN_3x.yaml`.
-2. We provide `demo.py` that is able to run builtin standard models. Run it with:
+2. We provide `demo.py` that is able to demo builtin configs. Run it with:
 ```
 cd demo/
 python demo.py --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \

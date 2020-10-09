@@ -67,7 +67,7 @@ def load_bootstrap_config(cfg: CN):
     cfg.BOOTSTRAP_DATASETS = bootstrap_datasets_cfgnodes
 
 
-def add_densepose_config(cfg: CN):
+def add_densepose_head_config(cfg: CN):
     """
     Add config for densepose head.
     """
@@ -162,3 +162,10 @@ def add_hrnet_config(cfg: CN):
 
     _C.MODEL.HRNET.HRFPN = CN()
     _C.MODEL.HRNET.HRFPN.OUT_CHANNELS = 256
+
+
+def add_densepose_config(cfg: CN):
+    add_densepose_head_config(cfg)
+    add_hrnet_config(cfg)
+    add_bootstrap_config(cfg)
+    add_dataset_category_config(cfg)

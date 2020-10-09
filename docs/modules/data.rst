@@ -44,3 +44,4 @@ detectron2.data.transforms module
     :members:
     :undoc-members:
     :show-inheritance:
+    :imported-members:

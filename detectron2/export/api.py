@@ -4,6 +4,7 @@ import logging
 import os
 import torch
 from caffe2.proto import caffe2_pb2
+from fvcore.common.file_io import PathManager
 from torch import nn
 
 from detectron2.config import CfgNode as CN
@@ -222,13 +223,14 @@ class Caffe2Model(nn.Module):
         """
         logger = logging.getLogger(__name__)
         logger.info("Saving model to {} ...".format(output_dir))
-        os.makedirs(output_dir, exist_ok=True)
+        if not PathManager.exists(output_dir):
+            PathManager.mkdirs(output_dir)
 
-        with open(os.path.join(output_dir, "model.pb"), "wb") as f:
+        with PathManager.open(os.path.join(output_dir, "model.pb"), "wb") as f:
             f.write(self._predict_net.SerializeToString())
-        with open(os.path.join(output_dir, "model.pbtxt"), "w") as f:
+        with PathManager.open(os.path.join(output_dir, "model.pbtxt"), "w") as f:
             f.write(str(self._predict_net))
-        with open(os.path.join(output_dir, "model_init.pb"), "wb") as f:
+        with PathManager.open(os.path.join(output_dir, "model_init.pb"), "wb") as f:
             f.write(self._init_net.SerializeToString())
 
     def save_graph(self, output_file, inputs=None):
@@ -265,11 +267,11 @@ class Caffe2Model(nn.Module):
             Caffe2Model: the caffe2 model loaded from this directory.
         """
         predict_net = caffe2_pb2.NetDef()
-        with open(os.path.join(dir, "model.pb"), "rb") as f:
+        with PathManager.open(os.path.join(dir, "model.pb"), "rb") as f:
             predict_net.ParseFromString(f.read())
 
         init_net = caffe2_pb2.NetDef()
-        with open(os.path.join(dir, "model_init.pb"), "rb") as f:
+        with PathManager.open(os.path.join(dir, "model_init.pb"), "rb") as f:
             init_net.ParseFromString(f.read())
 
         return Caffe2Model(predict_net, init_net)

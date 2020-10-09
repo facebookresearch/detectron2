@@ -147,7 +147,30 @@ class GenericMask:
 
 
 class _PanopticPrediction:
-    def __init__(self, panoptic_seg, segments_info):
+    def __init__(self, panoptic_seg, segments_info, metadata=None):
+        if segments_info is None:
+            assert metadata is not None
+            # If "segments_info" is None, we assume "panoptic_img" is a
+            # H*W int32 image storing the panoptic_id in the format of
+            # category_id * label_divisor + instance_id. We reserve -1 for
+            # VOID label.
+            label_divisor = metadata.label_divisor
+            segments_info = []
+            for panoptic_label in np.unique(panoptic_seg.numpy()):
+                if panoptic_label == -1:
+                    # VOID region.
+                    continue
+                pred_class = panoptic_label // label_divisor
+                isthing = pred_class in metadata.thing_dataset_id_to_contiguous_id.values()
+                segments_info.append(
+                    {
+                        "id": int(panoptic_label),
+                        "category_id": int(pred_class),
+                        "isthing": bool(isthing),
+                    }
+                )
+        del metadata
+
         self._seg = panoptic_seg
 
         self._sinfo = {s["id"]: s for s in segments_info}  # seg id -> seg info
@@ -248,8 +271,8 @@ class VisImage:
         # self.canvas = mpl.backends.backend_cairo.FigureCanvasCairo(fig)
         ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
         ax.axis("off")
-        ax.set_xlim(0.0, self.width)
-        ax.set_ylim(self.height)
+        # Need to imshow this first so that other patches can be drawn on top
+        ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
 
         self.fig = fig
         self.ax = ax
@@ -260,13 +283,7 @@ class VisImage:
             filepath (str): a string that contains the absolute path, including the file name, where
                 the visualized image will be saved.
         """
-        if filepath.lower().endswith(".jpg") or filepath.lower().endswith(".png"):
-            # faster than matplotlib's imshow
-            cv2.imwrite(filepath, self.get_image()[:, :, ::-1])
-        else:
-            # support general formats (e.g. pdf)
-            self.ax.imshow(self.img, interpolation="nearest")
-            self.fig.savefig(filepath)
+        self.fig.savefig(filepath)
 
     def get_image(self):
         """
@@ -277,11 +294,6 @@ class VisImage:
         """
         canvas = self.canvas
         s, (width, height) = canvas.print_to_buffer()
-        if (self.width, self.height) != (width, height):
-            img = cv2.resize(self.img, (width, height))
-        else:
-            img = self.img
-
         # buf = io.BytesIO()  # works for cairo backend
         # canvas.print_rgba(buf)
         # width, height = self.width, self.height
@@ -289,21 +301,9 @@ class VisImage:
 
         buffer = np.frombuffer(s, dtype="uint8")
 
-        # imshow is slow. blend manually (still quite slow)
         img_rgba = buffer.reshape(height, width, 4)
         rgb, alpha = np.split(img_rgba, [3], axis=2)
-
-        try:
-            import numexpr as ne  # fuse them with numexpr
-
-            visualized_image = ne.evaluate("img * (1 - alpha / 255.0) + rgb * (alpha / 255.0)")
-        except ImportError:
-            alpha = alpha.astype("float32") / 255.0
-            visualized_image = img * (1 - alpha) + rgb * alpha
-
-        visualized_image = visualized_image.astype("uint8")
-
-        return visualized_image
+        return rgb.astype("uint8")
 
 
 class Visualizer:
@@ -326,6 +326,8 @@ class Visualizer:
     designed to be used for real-time applications.
     """
 
+    # TODO implement a fast, rasterized version using OpenCV
+
     def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
         """
         Args:
@@ -334,7 +336,7 @@ class Visualizer:
                 color channels. The image is required to be in RGB format since that
                 is a requirement of the Matplotlib library. The image is also expected
                 to be in the range [0, 255].
-            metadata (MetadataCatalog): image metadata.
+            metadata (Metadata): image metadata.
             instance_mode (ColorMode): defines one of the pre-defined style for drawing
                 instances on an image.
         """
@@ -387,6 +389,8 @@ class Visualizer:
         if self._instance_mode == ColorMode.IMAGE_BW:
             self.output.img = self._create_grayscale_image(
                 (predictions.pred_masks.any(dim=0) > 0).numpy()
+                if predictions.has("pred_masks")
+                else None
             )
             alpha = 0.3
 
@@ -452,7 +456,7 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
-        pred = _PanopticPrediction(panoptic_seg, segments_info)
+        pred = _PanopticPrediction(panoptic_seg, segments_info, self.metadata)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             self.output.img = self._create_grayscale_image(pred.non_empty_mask())
@@ -489,7 +493,9 @@ class Visualizer:
         labels = _create_text_labels(category_ids, scores, self.metadata.thing_classes)
 
         try:
-            colors = [random_color(rgb=True, maximum=1) for k in category_ids]
+            colors = [
+                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in category_ids
+            ]
         except AttributeError:
             colors = None
         self.overlay_instances(masks=masks, labels=labels, assigned_colors=colors, alpha=alpha)
@@ -544,6 +550,20 @@ class Visualizer:
                 sem_seg = np.asarray(sem_seg, dtype="uint8")
         if sem_seg is not None:
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
+
+        pan_seg = dic.get("pan_seg", None)
+        if pan_seg is None and "pan_seg_file_name" in dic:
+            assert "segments_info" in dic
+            with PathManager.open(dic["pan_seg_file_name"], "rb") as f:
+                pan_seg = Image.open(f)
+                pan_seg = np.asarray(pan_seg)
+                from panopticapi.utils import rgb2id
+
+                pan_seg = rgb2id(pan_seg)
+            segments_info = dic["segments_info"]
+        if pan_seg is not None:
+            pan_seg = torch.Tensor(pan_seg)
+            self.draw_panoptic_seg_predictions(pan_seg, segments_info, area_threshold=0, alpha=0.5)
         return self.output
 
     def overlay_instances(
@@ -644,6 +664,10 @@ class Visualizer:
                     text_pos = (x0, y0)  # if drawing boxes, put text on the box corner.
                     horiz_align = "left"
                 elif masks is not None:
+                    # skip small mask without polygon
+                    if len(masks[i].polygons) == 0:
+                        continue
+
                     x0, y0, x1, y1 = masks[i].bbox()
 
                     # draw text in the center (defined by median) when box is not drawn
@@ -1008,11 +1032,13 @@ class Visualizer:
                 segment = segment.reshape(-1, 2)
                 self.draw_polygon(segment, color=color, edge_color=edge_color, alpha=alpha)
         else:
+            # TODO: Use Path/PathPatch to draw vector graphics:
+            # https://stackoverflow.com/questions/8919719/how-to-plot-a-complex-polygon
             rgba = np.zeros(shape2d + (4,), dtype="float32")
             rgba[:, :, :3] = color
             rgba[:, :, 3] = (mask.mask == 1).astype("float32") * alpha
             has_valid_segment = True
-            self.output.ax.imshow(rgba)
+            self.output.ax.imshow(rgba, extent=(0, self.output.width, self.output.height, 0))
 
         if text is not None and has_valid_segment:
             # TODO sometimes drawn on wrong objects. the heuristics here can improve.

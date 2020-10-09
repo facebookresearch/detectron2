@@ -50,7 +50,7 @@ class COCOEvaluator(DatasetEvaluator):
             cfg (CfgNode): config instance
             distributed (True): if True, will collect results from all ranks and run evaluation
                 in the main process.
-                Otherwise, will evaluate the results in the current process.
+                Otherwise, will only evaluate the results in the current process.
             output_dir (str): optional, an output directory to dump all
                 results predicted on the dataset. The dump contains two files:
 
@@ -118,7 +118,6 @@ class COCOEvaluator(DatasetEvaluator):
         for input, output in zip(inputs, outputs):
             prediction = {"image_id": input["image_id"]}
 
-            # TODO this is ugly
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
                 prediction["instances"] = instances_to_coco_json(instances, input["image_id"])

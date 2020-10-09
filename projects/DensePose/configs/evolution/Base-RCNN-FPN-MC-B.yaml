@@ -96,8 +96,8 @@ BOOTSTRAP_DATASETS:
       BATCH_SIZE: 8
       NUM_WORKERS: 1
     INFERENCE:
-      INPUT_BATCH_SIZE: 4
-      OUTPUT_BATCH_SIZE: 4
+      INPUT_BATCH_SIZE: 1
+      OUTPUT_BATCH_SIZE: 1
     DATA_SAMPLER:
       # supported types:
       #   densepose_uniform

@@ -11,6 +11,7 @@ is implemented
 import math
 from typing import List
 import torch
+import torch.nn.functional as F
 from torch.nn.modules.utils import _ntuple
 
 from detectron2.utils.env import TORCH_VERSION
@@ -61,37 +62,46 @@ class Conv2d(torch.nn.Conv2d):
         self.activation = activation
 
     def forward(self, x):
-        if x.numel() == 0 and self.training:
-            # https://github.com/pytorch/pytorch/issues/12013
-            assert not isinstance(
-                self.norm, torch.nn.SyncBatchNorm
-            ), "SyncBatchNorm does not support empty inputs!"
+        # torchscript does not support SyncBatchNorm yet
+        # https://github.com/pytorch/pytorch/issues/40507
+        # and we skip these codes in torchscript since:
+        # 1. currently we only support torchscript in evaluation mode
+        # 2. features needed by exporting module to torchscript are added in PyTorch 1.6 or
+        # later version, `Conv2d` in these PyTorch versions has already supported empty inputs.
+        if not torch.jit.is_scripting():
+            if x.numel() == 0 and self.training:
+                # https://github.com/pytorch/pytorch/issues/12013
+                assert not isinstance(
+                    self.norm, torch.nn.SyncBatchNorm
+                ), "SyncBatchNorm does not support empty inputs!"
 
-        if x.numel() == 0 and TORCH_VERSION <= (1, 4):
-            assert not isinstance(
-                self.norm, torch.nn.GroupNorm
-            ), "GroupNorm does not support empty inputs in PyTorch <=1.4!"
-            # When input is empty, we want to return a empty tensor with "correct" shape,
-            # So that the following operations will not panic
-            # if they check for the shape of the tensor.
-            # This computes the height and width of the output tensor
-            output_shape = [
-                (i + 2 * p - (di * (k - 1) + 1)) // s + 1
-                for i, p, di, k, s in zip(
-                    x.shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
-                )
-            ]
-            output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
-            empty = _NewEmptyTensorOp.apply(x, output_shape)
-            if self.training:
-                # This is to make DDP happy.
-                # DDP expects all workers to have gradient w.r.t the same set of parameters.
-                _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
-                return empty + _dummy
-            else:
-                return empty
+            if x.numel() == 0 and TORCH_VERSION <= (1, 4):
+                assert not isinstance(
+                    self.norm, torch.nn.GroupNorm
+                ), "GroupNorm does not support empty inputs in PyTorch <=1.4!"
+                # When input is empty, we want to return a empty tensor with "correct" shape,
+                # So that the following operations will not panic
+                # if they check for the shape of the tensor.
+                # This computes the height and width of the output tensor
+                output_shape = [
+                    (i + 2 * p - (di * (k - 1) + 1)) // s + 1
+                    for i, p, di, k, s in zip(
+                        x.shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
+                    )
+                ]
+                output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
+                empty = _NewEmptyTensorOp.apply(x, output_shape)
+                if self.training:
+                    # This is to make DDP happy.
+                    # DDP expects all workers to have gradient w.r.t the same set of parameters.
+                    _dummy = sum([x.view(-1)[0] for x in self.parameters()]) * 0.0
+                    return empty + _dummy
+                else:
+                    return empty
 
-        x = super().forward(x)
+        x = F.conv2d(
+            x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups
+        )
         if self.norm is not None:
             x = self.norm(x)
         if self.activation is not None:
@@ -179,41 +189,45 @@ else:
             return x
 
 
-def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
-    """
-    A wrapper around :func:`torch.nn.functional.interpolate` to support zero-size tensor.
-    """
-    if TORCH_VERSION > (1, 4) or input.numel() > 0:
-        return torch.nn.functional.interpolate(
-            input, size, scale_factor, mode, align_corners=align_corners
-        )
+if TORCH_VERSION > (1, 4):
+    interpolate = torch.nn.functional.interpolate
+else:
 
-    def _check_size_scale_factor(dim):
-        if size is None and scale_factor is None:
-            raise ValueError("either size or scale_factor should be defined")
-        if size is not None and scale_factor is not None:
-            raise ValueError("only one of size or scale_factor should be defined")
-        if (
-            scale_factor is not None
-            and isinstance(scale_factor, tuple)
-            and len(scale_factor) != dim
-        ):
-            raise ValueError(
-                "scale_factor shape must match input shape. "
-                "Input is {}D, scale_factor size is {}".format(dim, len(scale_factor))
+    def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corners=None):
+        """
+        A wrapper around :func:`torch.nn.functional.interpolate` to support zero-size tensor.
+        """
+        if input.numel() > 0:
+            return torch.nn.functional.interpolate(
+                input, size, scale_factor, mode, align_corners=align_corners
             )
 
-    def _output_size(dim):
-        _check_size_scale_factor(dim)
-        if size is not None:
-            return size
-        scale_factors = _ntuple(dim)(scale_factor)
-        # math.floor might return float in py2.7
-        return [int(math.floor(input.size(i + 2) * scale_factors[i])) for i in range(dim)]
+        def _check_size_scale_factor(dim):
+            if size is None and scale_factor is None:
+                raise ValueError("either size or scale_factor should be defined")
+            if size is not None and scale_factor is not None:
+                raise ValueError("only one of size or scale_factor should be defined")
+            if (
+                scale_factor is not None
+                and isinstance(scale_factor, tuple)
+                and len(scale_factor) != dim
+            ):
+                raise ValueError(
+                    "scale_factor shape must match input shape. "
+                    "Input is {}D, scale_factor size is {}".format(dim, len(scale_factor))
+                )
 
-    output_shape = tuple(_output_size(2))
-    output_shape = input.shape[:-2] + output_shape
-    return _NewEmptyTensorOp.apply(input, output_shape)
+        def _output_size(dim):
+            _check_size_scale_factor(dim)
+            if size is not None:
+                return size
+            scale_factors = _ntuple(dim)(scale_factor)
+            # math.floor might return float in py2.7
+            return [int(math.floor(input.size(i + 2) * scale_factors[i])) for i in range(dim)]
+
+        output_shape = tuple(_output_size(2))
+        output_shape = input.shape[:-2] + output_shape
+        return _NewEmptyTensorOp.apply(input, output_shape)
 
 
 def nonzero_tuple(x):

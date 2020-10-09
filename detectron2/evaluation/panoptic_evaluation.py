@@ -4,6 +4,7 @@ import io
 import itertools
 import json
 import logging
+import numpy as np
 import os
 import tempfile
 from collections import OrderedDict
@@ -41,6 +42,7 @@ class COCOPanopticEvaluator(DatasetEvaluator):
             v: k for k, v in self._metadata.stuff_dataset_id_to_contiguous_id.items()
         }
 
+        PathManager.mkdirs(output_dir)
         self._predictions_json = os.path.join(output_dir, "predictions.json")
 
     def reset(self):
@@ -67,6 +69,31 @@ class COCOPanopticEvaluator(DatasetEvaluator):
         for input, output in zip(inputs, outputs):
             panoptic_img, segments_info = output["panoptic_seg"]
             panoptic_img = panoptic_img.cpu().numpy()
+            if segments_info is None:
+                # If "segments_info" is None, we assume "panoptic_img" is a
+                # H*W int32 image storing the panoptic_id in the format of
+                # category_id * label_divisor + instance_id. We reserve -1 for
+                # VOID label, and add 1 to panoptic_img since the official
+                # evaluation script uses 0 for VOID label.
+                label_divisor = self._metadata.label_divisor
+                segments_info = []
+                for panoptic_label in np.unique(panoptic_img):
+                    if panoptic_label == -1:
+                        # VOID region.
+                        continue
+                    pred_class = panoptic_label // label_divisor
+                    isthing = (
+                        pred_class in self._metadata.thing_dataset_id_to_contiguous_id.values()
+                    )
+                    segments_info.append(
+                        {
+                            "id": int(panoptic_label) + 1,
+                            "category_id": int(pred_class),
+                            "isthing": bool(isthing),
+                        }
+                    )
+                # Official evaluation script uses 0 for VOID label.
+                panoptic_img += 1
 
             file_name = os.path.basename(input["file_name"])
             file_name_png = os.path.splitext(file_name)[0] + ".png"

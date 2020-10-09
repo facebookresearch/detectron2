@@ -15,4 +15,5 @@ MODEL:
   SEM_SEG_HEAD:
     NAME: "DeepLabV3Head"
     NORM: "SyncBN"
-
+INPUT:
+  FORMAT: "RGB"
