@@ -18,7 +18,7 @@ from densepose.utils.dbhelper import EntrySelector
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import BoundingBoxVisualizer
-from densepose.vis.densepose import (
+from densepose.vis.densepose_data_points import (
     DensePoseDataCoarseSegmentationVisualizer,
     DensePoseDataPointsIVisualizer,
     DensePoseDataPointsUVisualizer,
