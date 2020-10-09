@@ -15,7 +15,7 @@ from detectron2.modeling.roi_heads import keypoint_head
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 
 from .c10 import Caffe2Compatible
-from .patcher import ROIHeadsPatcher, patch_generalized_rcnn
+from .caffe2_patch import ROIHeadsPatcher, patch_generalized_rcnn
 from .shared import (
     alias,
     check_set_pb_arg,

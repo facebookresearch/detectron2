@@ -15,7 +15,7 @@ from .shared import alias, to_device
 
 
 """
-This file contains caffe2-compatible implementation of several detectrno2 components.
+This file contains caffe2-compatible implementation of several detectron2 components.
 """
 
 

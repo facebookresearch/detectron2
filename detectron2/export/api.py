@@ -196,6 +196,8 @@ class Caffe2Model(nn.Module):
         self._init_net = init_net
         self._predictor = None
 
+    __init__.__HIDE_SPHINX_DOC__ = True
+
     @property
     def predict_net(self):
         """
@@ -211,8 +213,6 @@ class Caffe2Model(nn.Module):
             core.Net: the underlying caffe2 init net
         """
         return self._init_net
-
-    __init__.__HIDE_SPHINX_DOC__ = True
 
     def save_protobuf(self, output_dir):
         """

@@ -39,9 +39,7 @@ def export_torchscript_with_instances(model, fields):
             torchscipt_model =  export_torchscript_with_instances(model, fields)
 
     Note:
-        Currently we only support models in evaluation mode. Exporting models in training mode
-        or running inference processes of torchscripts that are exported from models in training
-        mode may encounter unexpected errors.
+        Currently we only support models in evaluation mode.
 
     Args:
         model (nn.Module): The input model to be exported to torchscript.
@@ -65,6 +63,10 @@ def export_torchscript_with_instances(model, fields):
 
 @contextmanager
 def patch_instances(fields):
+    """
+    A contextmanager, under which the Instances class in detectron2 is replaced
+    by a statically-typed scriptable class, defined by `fields`.
+    """
     with tempfile.TemporaryDirectory(prefix="detectron2") as dir, tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", suffix=".py", dir=dir, delete=False
     ) as f:
