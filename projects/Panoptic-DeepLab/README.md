@@ -9,11 +9,22 @@ Bowen Cheng, Maxwell D. Collins, Yukun Zhu, Ting Liu, Thomas S. Huang, Hartwig A
 </div><br/>
 
 ## Installation
+
 Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html).
 
-## Training
+If using the cityscape, follow [these instructions](github.com/mcordts/cityscapesScripts) to download the data set and convert it to panoptic
 
+On CUDA incompatible devices, you will need to update the models [config yaml](/Users/evanfreethy/playground/detectron2/projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml)
+```yaml
+# /projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml
+_BASE_: Base-PanopticDeepLab-OS16.yaml
+MODEL:
+  DEVICE: 'cpu'
+```
+
+## Training
 To train a model with 8 GPUs run:
+
 ```bash
 cd /path/to/detectron2/projects/Panoptic-DeepLab
 python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --num-gpus 8
@@ -22,12 +33,14 @@ python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panopt
 ## Evaluation
 
 Model evaluation can be done similarly:
+
 ```bash
 cd /path/to/detectron2/projects/Panoptic-DeepLab
 python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
 ```
 
 ## Cityscapes Panoptic Segmentation
+
 Cityscapes models are trained with ImageNet pretraining.
 
 <table><tbody>
@@ -74,6 +87,7 @@ Cityscapes models are trained with ImageNet pretraining.
 </tbody></table>
 
 Note:
+
 - [R52](https://dl.fbaipublicfiles.com/detectron2/DeepLab/R-52.pkl): a ResNet-50 with its first 7x7 convolution replaced by 3 3x3 convolutions. This modification has been used in most semantic segmentation papers. We pre-train this backbone on ImageNet using the default recipe of [pytorch examples](https://github.com/pytorch/examples/tree/master/imagenet).
 - DC5 means using dilated convolution in `res5`.
 - We use a smaller training crop size (512x1024) than the original paper (1025x2049), we find using larger crop size (1024x2048) could further improve PQ by 1.5% but also degrades AP by 3%.
@@ -82,7 +96,7 @@ Note:
 
 If you use Panoptic-DeepLab, please use the following BibTeX entry.
 
-*   CVPR 2020 paper:
+-   CVPR 2020 paper:
 
 ```
 @inproceedings{cheng2020panoptic,
