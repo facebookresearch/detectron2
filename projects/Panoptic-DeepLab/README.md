@@ -13,7 +13,7 @@ Install Detectron2 following [the instructions](https://detectron2.readthedocs.i
 
 If using the cityscape, follow [these instructions](https://detectron2.readthedocs.io/tutorials/builtin_datasets.html#expected-dataset-structure-for-cityscapes) to download the data set and convert it to panoptic.
 
-If you are running on a CPU, update the device in the models [config yaml](/Users/evanfreethy/playground/detectron2/projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml) with the following:
+If you are running on a CPU, update the device in the models [config yaml](github.com/facebookresearch/detectron2/blob/master/projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml) with the following:
 ```yaml
 # /projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml
 _BASE_: Base-PanopticDeepLab-OS16.yaml
