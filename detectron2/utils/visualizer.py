@@ -126,7 +126,10 @@ class GenericMask:
         has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
         res = res[-2]
         res = [x.flatten() for x in res]
-        res = [x for x in res if len(x) >= 6]
+        # These coordinates from OpenCV are integers in range [0, W-1 or H-1].
+        # We add 0.5 to turn them into real-value coordinate space. A better solution
+        # would be to first +0.5 and then dilate the returned polygon by 0.5.
+        res = [x + 0.5 for x in res if len(x) >= 6]
         return res, has_holes
 
     def polygons_to_mask(self, polygons):

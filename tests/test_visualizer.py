@@ -176,7 +176,7 @@ class TestVisualizer(unittest.TestCase):
                     # red color is drawn on the image
                 self.assertTrue(o[:, :, 0].sum() > 0)
 
-    def test_border(self):
+    def test_border_mask_with_holes(self):
         H, W = 200, 200
         img = np.zeros((H, W, 3))
         img[:, :, 0] = 255.0
@@ -191,9 +191,30 @@ class TestVisualizer(unittest.TestCase):
 
         first_row = {tuple(x.tolist()) for x in output[0]}
         last_row = {tuple(x.tolist()) for x in output[-1]}
-        # check quantization / off-by-1 error: the first and last row must have two colors
+        # Check quantization / off-by-1 error: the first and last row must have two colors
         self.assertEqual(len(last_row), 2)
         self.assertEqual(len(first_row), 2)
+        self.assertIn((0, 0, 255), last_row)
+        self.assertIn((0, 0, 255), first_row)
+
+    def test_border_polygons(self):
+        H, W = 200, 200
+        img = np.zeros((H, W, 3))
+        img[:, :, 0] = 255.0
+        v = Visualizer(img, scale=3)
+        mask = np.zeros((H, W))
+        mask[:, 100:150] = 1
+
+        output = v.draw_binary_mask(mask, color="blue")
+        output = output.get_image()[:, :, ::-1]
+
+        first_row = {tuple(x.tolist()) for x in output[0]}
+        last_row = {tuple(x.tolist()) for x in output[-1]}
+        # Check quantization / off-by-1 error:
+        # the first and last row must have >=2 colors, because the polygon
+        # touches both rows
+        self.assertGreaterEqual(len(last_row), 2)
+        self.assertGreaterEqual(len(first_row), 2)
         self.assertIn((0, 0, 255), last_row)
         self.assertIn((0, 0, 255), first_row)
 

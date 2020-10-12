@@ -14,6 +14,7 @@ pip_install() {
 setup_cuda() {
   # Now work out the CUDA settings
   # Like other torch domain libraries, we choose common GPU architectures only.
+  # See more details at https://github.com/pytorch/pytorch/blob/master/torch/utils/cpp_extension.py#L1363
   export FORCE_CUDA=1
   case "$CU_VERSION" in
     cu102)
