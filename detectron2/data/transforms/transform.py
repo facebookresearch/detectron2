@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# File: transform.py
+
+"""
+See "Data Augmentation" tutorial for an overview of the system:
+https://detectron2.readthedocs.io/tutorials/augmentation.html
+"""
 
 import numpy as np
 import torch

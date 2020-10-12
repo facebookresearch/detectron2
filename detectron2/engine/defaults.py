@@ -62,7 +62,10 @@ def default_argument_parser(epilog=None):
 Examples:
 
 Run on single machine:
-    $ {sys.argv[0]} --num-gpus 8 --config-file cfg.yaml MODEL.WEIGHTS /path/to/weight.pth
+    $ {sys.argv[0]} --num-gpus 8 --config-file cfg.yaml
+
+Change some config options:
+    $ {sys.argv[0]} --config-file cfg.yaml MODEL.WEIGHTS /path/to/weight.pth SOLVER.BASE_LR 0.001
 
 Run on multiple machines:
     (machine0)$ {sys.argv[0]} --machine-rank 0 --num-machines 2 --dist-url <URL> [--other-flags]
@@ -74,7 +77,8 @@ Run on multiple machines:
     parser.add_argument(
         "--resume",
         action="store_true",
-        help="whether to attempt to resume from the checkpoint directory",
+        help="Whether to attempt to resume from the checkpoint directory. "
+        "See documentation of `DefaultTrainer.resume_or_load()` for what it means.",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
@@ -95,7 +99,9 @@ Run on multiple machines:
     )
     parser.add_argument(
         "opts",
-        help="Modify config options using the command-line",
+        help="Modify config options by adding 'KEY VALUE' pairs at the end of the command. "
+        "See config references at "
+        "https://detectron2.readthedocs.io/modules/config.html#config-references",
         default=None,
         nargs=argparse.REMAINDER,
     )
@@ -225,7 +231,7 @@ class DefaultTrainer(SimpleTrainer):
     config. It does the following:
 
     1. Create model, optimizer, scheduler, dataloader from the given config.
-    2. Load a checkpoint or `cfg.MODEL.WEIGHTS`, if exists, when
+    2. Load the last checkpoint or `cfg.MODEL.WEIGHTS`, if exists, when
        `resume_or_load` is called.
     3. Register a few common hooks defined by the config.
 
@@ -301,12 +307,14 @@ class DefaultTrainer(SimpleTrainer):
 
     def resume_or_load(self, resume=True):
         """
-        If `resume==True`, and last checkpoint exists, resume from it, load all checkpointables
-        (eg. optimizer and scheduler) and update iteration counter from it. ``cfg.MODEL.WEIGHTS``
-        will not be used.
+        If `resume==True` and `cfg.OUTPUT_DIR` contains the last checkpoint (defined by
+        a `last_checkpoint` file), resume from the file. Resuming means loading all
+        available states (eg. optimizer and scheduler) and update iteration counter
+        from the checkpoint. ``cfg.MODEL.WEIGHTS`` will not be used.
 
-        Otherwise, load the model specified by the config (skip all checkpointables) and start from
-        the first iteration.
+        Otherwise, this is considered as an independent training. The method will load model
+        weights from the file `cfg.MODEL.WEIGHTS` (but will not load other states) and start
+        from iteration 0.
 
         Args:
             resume (bool): whether to do resume or not

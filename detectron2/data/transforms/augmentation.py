@@ -8,7 +8,8 @@ from typing import Any, List, Optional, Tuple, Union
 from fvcore.transforms.transform import Transform, TransformList
 
 """
-See "Data Augmentation" tutorial for an overview of the system.
+See "Data Augmentation" tutorial for an overview of the system:
+https://detectron2.readthedocs.io/tutorials/augmentation.html
 """
 
 

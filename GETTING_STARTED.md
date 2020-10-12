@@ -62,8 +62,6 @@ To train on 1 GPU, you may need to [change some parameters](https://arxiv.org/ab
   --num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 ```
 
-For most models, CPU training is not supported.
-
 To evaluate a model's performance, use
 ```
 ./train_net.py \

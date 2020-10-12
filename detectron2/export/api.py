@@ -187,6 +187,13 @@ def export_onnx_model(cfg, model, inputs):
 class Caffe2Model(nn.Module):
     """
     A wrapper around the traced model in caffe2's pb format.
+
+    Examples:
+    ::
+        model = Caffe2Model.load_protobuf("dir/with/pb/files")
+        inputs = [{"image": img_tensor_CHW}]
+        outputs = model(inputs)
+
     """
 
     def __init__(self, predict_net, init_net):
@@ -279,11 +286,12 @@ class Caffe2Model(nn.Module):
     def __call__(self, inputs):
         """
         An interface that wraps around a caffe2 model and mimics detectron2's models'
-        input & output format. This is used to compare the outputs of caffe2 model
-        with its original torch model.
+        input/output format. See details about the format at :doc:`/tutorials/models`.
+        This is used to compare the outputs of caffe2 model with its original torch model.
 
-        Due to the extra conversion between torch/caffe2,
-        this method is not meant for benchmark.
+        Due to the extra conversion between torch/caffe2, this method is not meant for
+        benchmark. Because of the conversion, this method also has dependency
+        on detectron2 in order to convert to detectron2's output format.
         """
         if self._predictor is None:
             self._predictor = ProtobufDetectionModel(self._predict_net, self._init_net)
