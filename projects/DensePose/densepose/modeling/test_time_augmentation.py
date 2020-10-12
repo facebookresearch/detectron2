@@ -9,6 +9,8 @@ from detectron2.data.transforms import RandomRotation, RotationTransform, apply_
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.modeling.test_time_augmentation import DatasetMapperTTA, GeneralizedRCNNWithTTA
 
+from ..converters import HFlipConverter
+
 
 class DensePoseDatasetMapperTTA(DatasetMapperTTA):
     def __init__(self, cfg):
@@ -115,7 +117,7 @@ class DensePoseGeneralizedRCNNWithTTA(GeneralizedRCNNWithTTA):
         # representation, so we handle the other ones specially
         for idx, (output, tfm) in enumerate(zip(outputs, tfms)):
             for t in tfm.transforms:
-                for attr in "SIUV":
+                for attr in ["coarse_segm", "fine_segm", "u", "v"]:
                     setattr(
                         output.pred_densepose,
                         attr,
@@ -124,13 +126,15 @@ class DensePoseGeneralizedRCNNWithTTA(GeneralizedRCNNWithTTA):
                         ),
                     )
             if any(isinstance(t, HFlipTransform) for t in tfm.transforms):
-                output.pred_densepose.hflip(self._transform_data)
+                output.pred_densepose = HFlipConverter.convert(
+                    output.pred_densepose, self._transform_data
+                )
             self._incremental_avg_dp(outputs[0].pred_densepose, output.pred_densepose, idx)
         return outputs[0].pred_densepose
 
     # incrementally computed average: u_(n + 1) = u_n + (x_(n+1) - u_n) / (n + 1).
     def _incremental_avg_dp(self, avg, new_el, idx):
-        for attr in "SIUV":
+        for attr in ["coarse_segm", "fine_segm", "u", "v"]:
             setattr(avg, attr, (getattr(avg, attr) * idx + getattr(new_el, attr)) / (idx + 1))
             if idx:
                 # Deletion of the > 0 index intermediary values to prevent GPU OOM
