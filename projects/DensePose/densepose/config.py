@@ -119,6 +119,8 @@ def add_densepose_head_config(cfg: CN):
     # Some registered losses:
     #   "DensePoseChartLoss": loss for chart-based models that estimate
     #      segmentation and UV coordinates
+    #   "DensePoseChartWithConfidenceLoss": loss for chart-based models that estimate
+    #      segmentation, UV coordinates and the corresponding confidences
     #   "DensePoseLosses": losses for chart-based models that estimate
     #      segmentation and UV coordinates and their confidences (default)
     _C.MODEL.ROI_DENSEPOSE_HEAD.LOSS_NAME = "DensePoseLosses"
