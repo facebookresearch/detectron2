@@ -1,10 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+from typing import Any
 import torch
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.layers import ConvTranspose2d
 
+from ...structures import decorate_predictor_output_class_with_confidences
 from ..confidence import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from ..utils import initialize_module_params
 
@@ -38,6 +41,7 @@ class DensePoseChartConfidencePredictorMixin:
         super().__init__(cfg, input_channels)
         self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
         self._initialize_confidence_estimation_layers(cfg, input_channels)
+        self._registry = {}
         initialize_module_params(self)
 
     def _initialize_confidence_estimation_layers(self, cfg: CfgNode, dim_in: int):
@@ -90,87 +94,75 @@ class DensePoseChartConfidencePredictorMixin:
         Args:
             head_outputs (Tensor): head outputs used as predictor inputs
         Return:
-            A tuple containing the following entries:
-            - SIUV tuple with possibly modified segmentation tensors
-            - various other outputs from the base predictor
-            - 6 tensors with estimated confidence model parameters at full resolution
-            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence)
-            - 6 tensors with estimated confidence model parameters at half resolution
-            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence)
+            An instance of outputs with confidences,
+            see `decorate_predictor_output_class_with_confidences`
         """
         # assuming base class returns SIUV estimates in its first result
         base_predictor_outputs = super().forward(head_outputs)
-        siuv = (
-            base_predictor_outputs[0]
-            if isinstance(base_predictor_outputs, tuple)
-            else base_predictor_outputs
-        )
-        coarse_segm, fine_segm, u, v = siuv
 
-        sigma_1, sigma_2, kappa_u, kappa_v = None, None, None, None
-        sigma_1_lowres, sigma_2_lowres, kappa_u_lowres, kappa_v_lowres = None, None, None, None
-        fine_segm_confidence_lowres, fine_segm_confidence = None, None
-        coarse_segm_confidence_lowres, coarse_segm_confidence = None, None
+        # create output instance by extending base predictor outputs:
+        output = self._create_output_instance(base_predictor_outputs)
+
         if self.confidence_model_cfg.uv_confidence.enabled:
             if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
-                sigma_2_lowres = self.sigma_2_lowres(head_outputs)
                 # assuming base class defines interp2d method for bilinear interpolation
-                sigma_2 = self.interp2d(sigma_2_lowres)
+                output.sigma_2 = self.interp2d(self.sigma_2_lowres(head_outputs))
             elif (
                 self.confidence_model_cfg.uv_confidence.type
                 == DensePoseUVConfidenceType.INDEP_ANISO
             ):
-                sigma_2_lowres = self.sigma_2_lowres(head_outputs)
-                kappa_u_lowres = self.kappa_u_lowres(head_outputs)
-                kappa_v_lowres = self.kappa_v_lowres(head_outputs)
                 # assuming base class defines interp2d method for bilinear interpolation
-                sigma_2 = self.interp2d(sigma_2_lowres)
-                kappa_u = self.interp2d(kappa_u_lowres)
-                kappa_v = self.interp2d(kappa_v_lowres)
+                output.sigma_2 = self.interp2d(self.sigma_2_lowres(head_outputs))
+                output.kappa_u = self.interp2d(self.kappa_u_lowres(head_outputs))
+                output.kappa_v = self.interp2d(self.kappa_v_lowres(head_outputs))
             else:
                 raise ValueError(
                     f"Unknown confidence model type: "
                     f"{self.confidence_model_cfg.confidence_model_type}"
                 )
         if self.confidence_model_cfg.segm_confidence.enabled:
-            fine_segm_confidence_lowres = self.fine_segm_confidence_lowres(head_outputs)
-            # assuming base class defines interp2d method for bilinear interpolation
-            fine_segm_confidence = self.interp2d(fine_segm_confidence_lowres)
-            fine_segm_confidence = (
-                F.softplus(fine_segm_confidence) + self.confidence_model_cfg.segm_confidence.epsilon
-            )
-            fine_segm = fine_segm * torch.repeat_interleave(
-                fine_segm_confidence, fine_segm.shape[1], dim=1
-            )
-            coarse_segm_confidence_lowres = self.coarse_segm_confidence_lowres(head_outputs)
-            # assuming base class defines interp2d method for bilinear interpolation
-            coarse_segm_confidence = self.interp2d(coarse_segm_confidence_lowres)
-            coarse_segm_confidence = (
-                F.softplus(coarse_segm_confidence)
+            # base predictor outputs are assumed to have `fine_segm` and `coarse_segm` attributes
+            # base predictor is assumed to define `interp2d` method for bilinear interpolation
+            output.fine_segm_confidence = (
+                F.softplus(self.interp2d(self.fine_segm_confidence_lowres(head_outputs)))
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
-            coarse_segm = coarse_segm * torch.repeat_interleave(
-                coarse_segm_confidence, coarse_segm.shape[1], dim=1
+            output.fine_segm = base_predictor_outputs.fine_segm * torch.repeat_interleave(
+                output.fine_segm_confidence, base_predictor_outputs.fine_segm.shape[1], dim=1
             )
-        results = []
-        # append SIUV with possibly modified segmentation tensors
-        results.append((coarse_segm, fine_segm, u, v))
-        # append the rest of base predictor outputs
-        if isinstance(base_predictor_outputs, tuple):
-            results.extend(base_predictor_outputs[1:])
-        # append hi-res confidence estimates
-        results.append(
-            (sigma_1, sigma_2, kappa_u, kappa_v, fine_segm_confidence, coarse_segm_confidence)
-        )
-        # append lo-res confidence estimates
-        results.append(
-            (
-                sigma_1_lowres,
-                sigma_2_lowres,
-                kappa_u_lowres,
-                kappa_v_lowres,
-                fine_segm_confidence_lowres,
-                coarse_segm_confidence_lowres,
+            output.coarse_segm_confidence = (
+                F.softplus(self.interp2d(self.coarse_segm_confidence_lowres(head_outputs)))
+                + self.confidence_model_cfg.segm_confidence.epsilon
             )
+            output.coarse_segm = base_predictor_outputs.coarse_segm * torch.repeat_interleave(
+                output.coarse_segm_confidence, base_predictor_outputs.coarse_segm.shape[1], dim=1
+            )
+
+        return output
+
+    def _create_output_instance(self, base_predictor_outputs: Any):
+        """
+        Create an instance of predictor outputs by copying the outputs from the
+        base predictor and initializing confidence
+
+        Args:
+            base_predictor_outputs: an instance of base predictor outputs
+                (the outputs type is assumed to be a dataclass)
+        Return:
+           An instance of outputs with confidences
+        """
+        PredictorOutput = decorate_predictor_output_class_with_confidences(
+            type(base_predictor_outputs)
         )
-        return tuple(results)
+        # base_predictor_outputs is assumed to be a dataclass
+        # reassign all the fields from base_predictor_outputs (no deep copy!), add new fields
+        output = PredictorOutput(
+            **base_predictor_outputs.__dict__,
+            coarse_segm_confidence=None,
+            fine_segm_confidence=None,
+            sigma_1=None,
+            sigma_2=None,
+            kappa_u=None,
+            kappa_v=None,
+        )
+        return output

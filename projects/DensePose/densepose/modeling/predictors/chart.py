@@ -6,6 +6,7 @@ from torch import nn
 from detectron2.config import CfgNode
 from detectron2.layers import ConvTranspose2d, interpolate
 
+from ...structures import DensePoseChartPredictorOutput
 from ..utils import initialize_module_params
 from .registry import DENSEPOSE_PREDICTOR_REGISTRY
 
@@ -16,10 +17,10 @@ class DensePoseChartPredictor(nn.Module):
     Predictor (last layers of a DensePose model) that takes DensePose head outputs as an input
     and produces 4 tensors which represent DensePose results for predefined body parts
     (patches / charts):
-     - coarse segmentation [N, K, H, W]
-     - fine segmentation [N, C, H, W]
-     - U coordinates [N, C, H, W]
-     - V coordinates [N, C, H, W]
+     * coarse segmentation, a tensor of shape [N, K, Hout, Wout]
+     * fine segmentation, a tensor of shape [N, C, Hout, Wout]
+     * U coordinates, a tensor of shape [N, C, Hout, Wout]
+     * V coordinates, a tensor of shape [N, C, Hout, Wout]
     where
      - N is the number of instances
      - K is the number of coarse segmentation channels (
@@ -27,7 +28,7 @@ class DensePoseChartPredictor(nn.Module):
          15 = one of 14 body parts / background)
      - C is the number of fine segmentation channels (
          24 fine body parts / background)
-     - H and W are height and width of predictions
+     - Hout and Wout are height and width of predictions
     """
 
     def __init__(self, cfg: CfgNode, input_channels: int):
@@ -43,15 +44,19 @@ class DensePoseChartPredictor(nn.Module):
         n_segm_chan = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         dim_out_patches = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
+        # coarse segmentation
         self.ann_index_lowres = ConvTranspose2d(
             dim_in, n_segm_chan, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
+        # fine segmentation
         self.index_uv_lowres = ConvTranspose2d(
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
+        # U
         self.u_lowres = ConvTranspose2d(
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
+        # V
         self.v_lowres = ConvTranspose2d(
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
@@ -79,26 +84,11 @@ class DensePoseChartPredictor(nn.Module):
         Args:
             head_outputs (tensor): DensePose head outputs, tensor of shape [N, D, H, W]
         Return:
-           - a tuple of 4 tensors containing DensePose predictions for charts:
-               * coarse segmentation estimate, a tensor of shape [N, K, Hout, Wout]
-               * fine segmentation estimate, a tensor of shape [N, C, Hout, Wout]
-               * U coordinates, a tensor of shape [N, C, Hout, Wout]
-               * V coordinates, a tensor of shape [N, C, Hout, Wout]
-           - a tuple of 4 tensors containing DensePose predictions for charts at reduced resolution:
-               * coarse segmentation estimate, a tensor of shape [N, K, Hout / 2, Wout / 2]
-               * fine segmentation estimate, a tensor of shape [N, C, Hout / 2, Wout / 2]
-               * U coordinates, a tensor of shape [N, C, Hout / 2, Wout / 2]
-               * V coordinates, a tensor of shape [N, C, Hout / 2, Wout / 2]
+           An instance of DensePoseChartPredictorOutput
         """
-        coarse_segm_lowres = self.ann_index_lowres(head_outputs)
-        fine_segm_lowres = self.index_uv_lowres(head_outputs)
-        u_lowres = self.u_lowres(head_outputs)
-        v_lowres = self.v_lowres(head_outputs)
-
-        coarse_segm = self.interp2d(coarse_segm_lowres)
-        fine_segm = self.interp2d(fine_segm_lowres)
-        u = self.interp2d(u_lowres)
-        v = self.interp2d(v_lowres)
-        siuv = (coarse_segm, fine_segm, u, v)
-        siuv_lowres = (coarse_segm_lowres, fine_segm_lowres, u_lowres, v_lowres)
-        return siuv, siuv_lowres
+        return DensePoseChartPredictorOutput(
+            coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
+            fine_segm=self.interp2d(self.index_uv_lowres(head_outputs)),
+            u=self.interp2d(self.u_lowres(head_outputs)),
+            v=self.interp2d(self.v_lowres(head_outputs)),
+        )
