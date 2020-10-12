@@ -9,12 +9,11 @@ Bowen Cheng, Maxwell D. Collins, Yukun Zhu, Ting Liu, Thomas S. Huang, Hartwig A
 </div><br/>
 
 ## Installation
-
 Install Detectron2 following [the instructions](https://detectron2.readthedocs.io/tutorials/install.html).
 
 If using the cityscape, follow [these instructions](github.com/mcordts/cityscapesScripts) to download the data set and convert it to panoptic
 
-On CUDA incompatible devices, you will need to update the models [config yaml](/Users/evanfreethy/playground/detectron2/projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml)
+If you are running on a CPU, update the device in the models [config yaml](/Users/evanfreethy/playground/detectron2/projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml) with the following:
 ```yaml
 # /projects/Panoptic-DeepLab/configs/Cityscapes-PanopticSegmentation/Base-PanopticDeepLab-OS16.yaml
 _BASE_: Base-PanopticDeepLab-OS16.yaml
