@@ -75,5 +75,9 @@ class BaseConverter:
         instance_type = type(instance)
         converter = cls._lookup_converter(instance_type)
         if converter is None:
-            raise KeyError(f"Could not find converter from {instance_type} to {cls.dst_type}")
+            if cls.dst_type is None:
+                output_type_str = "itself"
+            else:
+                output_type_str = cls.dst_type
+            raise KeyError(f"Could not find converter from {instance_type} to {output_type_str}")
         return converter(instance, *args, **kwargs)
