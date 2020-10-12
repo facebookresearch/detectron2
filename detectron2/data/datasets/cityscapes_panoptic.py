@@ -142,21 +142,19 @@ def register_all_cityscapes_panoptic(root):
     meta["stuff_classes"] = stuff_classes
     meta["stuff_colors"] = stuff_colors
 
-    # There are three types of ids in panoptic:
+    # There are three types of ids in cityscapes panoptic segmentation:
     # (1) category id: like semantic segmentation, it is the class id for each
     #   pixel. Since there are some classes not used in evaluation, the category
     #   id is not always contiguous and thus we have two set of category ids:
     #       - original category id: category id in the original dataset, mainly
     #           used for evaluation.
-    #       - contiguous category id: [0, #classes), in order to train the linear
-    #           softmax classifier.
+    #       - contiguous category id: [0, #classes), in order to train the classifier
     # (2) instance id: this id is used to differentiate different instances from
     #   the same category. For "stuff" classes, the instance id is always 0; for
     #   "thing" classes, the instance id starts from 1 and 0 is reserved for
     #   ignored instances (e.g. crowd annotation).
     # (3) panoptic id: this is the compact id that encode both category and
-    #   instance id by: category_id * label_divisor + instance_id. Following
-    #   the Cityscapes format, we set label_divisor = 1000.
+    #   instance id by: category_id * 1000 + instance_id.
     thing_dataset_id_to_contiguous_id = {}
     stuff_dataset_id_to_contiguous_id = {}
 

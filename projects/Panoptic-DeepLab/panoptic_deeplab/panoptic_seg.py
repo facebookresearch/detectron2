@@ -72,11 +72,12 @@ class PanopticDeepLab(nn.Module):
                      from input resolution), used in inference.
         Returns:
             list[dict]:
-              each dict is the results for one image. The dict contains the following keys:
+                each dict is the results for one image. The dict contains the following keys:
 
-                * "instances": see :meth:`GeneralizedRCNN.forward` for its format.
-                * "sem_seg": see :meth:`SemanticSegmentor.forward` for its format.
-                * "panoptic_seg": see :func:`combine_semantic_and_instance_outputs` for its format.
+                * "panoptic_seg", "sem_seg": see documentation
+                    :doc:`/tutorials/models` for the standard output format
+                * "instances": available if ``predict_instances is True``. see documentation
+                    :doc:`/tutorials/models` for the standard output format
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]

@@ -91,6 +91,8 @@ The dict may contain the following keys:
 * "sem_seg": `Tensor[int]` in (H, W) format. The semantic segmentation ground truth for training.
   Values represent category labels starting from 0.
 
+We currently don't define standard input format for panoptic segmentation training,
+because models now use custom formats produced by custom data loaders.
 
 #### How it connects to data loader:
 
@@ -120,12 +122,22 @@ Based on the tasks the model is doing, each dict may contain the following field
   * "proposal_boxes": [Boxes](../modules/structures.html#detectron2.structures.Boxes)
     object storing N boxes.
   * "objectness_logits": a torch vector of N scores.
-* "panoptic_seg": A tuple of `(Tensor, list[dict])`. The tensor has shape (H, W), where each element
-  represent the segment id of the pixel. Each dict describes one segment id and has the following fields:
-  * "id": the segment id
-  * "isthing": whether the segment is a thing or stuff
-  * "category_id": the category id of this segment. It represents the thing
-       class id when `isthing==True`, and the stuff class id otherwise.
+* "panoptic_seg": A tuple of `(pred: Tensor, segments_info: Optional[list[dict]])`.
+  The `pred` tensor has shape (H, W), containing the segment id of each pixel.
+
+  * If `segments_info` exists, each dict describes one segment id in `pred` and has the following fields:
+
+    * "id": the segment id
+    * "isthing": whether the segment is a thing or stuff
+    * "category_id": the category id of this segment.
+
+    If a pixel's id does not exist in `segments_info`, it is considered to be void label
+    defined in [Panoptic Segmentation](https://arxiv.org/abs/1801.00868).
+
+  * If `segments_info` is None, all pixel values in `pred` must be ≥ -1.
+    Pixels with value -1 are assigned void labels.
+    Otherwise, the category id of each pixel is obtained by
+    `category_id = pixel // metadata.label_divisor`.
 
 
 ### Partially execute a model:

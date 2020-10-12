@@ -53,18 +53,12 @@ class PanopticDeepLabTargetGenerator(object):
         """Generates the training target.
         reference: https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/preparation/createPanopticImgs.py  # noqa
         reference: https://github.com/facebookresearch/detectron2/blob/master/datasets/prepare_panoptic_fpn.py#L18  # noqa
+
         Args:
             panoptic: numpy.array, panoptic label, we assume it is already
                 converted from rgb image by panopticapi.utils.rgb2id.
-            segments_info: List, a list of dictionary containing information of
-                every segment, it has fields:
-                - id: panoptic id, this is the compact id that encode both
-                    category and instance id by:
-                    category_id * label_divisor + instance_id.
-                - category_id: category id, like semantic segmentation, it is
-                    the class id for each pixel. It is expected to by contiguous
-                    category id, conveted when registering panoptic datasets.
-                - iscrowd: crowd region.
+            segments_info (list[dict]): see detectron2 documentation of "Use Custom Datasets".
+
         Returns:
             A dictionary with fields:
                 - sem_seg: Tensor, semantic label, shape=(H, W).

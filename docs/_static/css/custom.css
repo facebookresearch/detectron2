@@ -10,8 +10,13 @@
   border: 0px;
 }
 
-th {
+.rst-content th {
   border: 1px solid #e1e4e5;
+}
+
+.rst-content th p {
+  /* otherwise will be default 24px for regular paragraph */
+  margin-bottom: 0px;
 }
 
 div.section > details {
