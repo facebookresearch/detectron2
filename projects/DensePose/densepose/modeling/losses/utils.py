@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import List
+from typing import Dict, List
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures import Instances
+
+LossDict = Dict[str, torch.Tensor]
 
 
 def _linear_interpolation_utilities(v_norm, v0_src, size_src, v0_dst, size_dst, size_z):

@@ -117,6 +117,8 @@ def add_densepose_head_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME = "DensePoseChartWithConfidencePredictor"
     # Loss class name, must be registered in DENSEPOSE_LOSS_REGISTRY
     # Some registered losses:
+    #   "DensePoseChartLoss": loss for chart-based models that estimate
+    #      segmentation and UV coordinates
     #   "DensePoseLosses": losses for chart-based models that estimate
     #      segmentation and UV coordinates and their confidences (default)
     _C.MODEL.ROI_DENSEPOSE_HEAD.LOSS_NAME = "DensePoseLosses"

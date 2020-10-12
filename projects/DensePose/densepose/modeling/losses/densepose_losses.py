@@ -1,75 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import math
-from dataclasses import dataclass
-from typing import Iterable, Optional
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.structures import Instances
-
 from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
+from .chart import extract_data_for_mask_loss_from_matches
 from .registry import DENSEPOSE_LOSS_REGISTRY
 from .utils import BilinearInterpolationHelper, SingleTensorsHelper, resample_data
-
-
-@dataclass
-class DataForMaskLoss:
-    """
-    Contains mask GT and estimated data for proposals from multiple images:
-    """
-
-    # tensor of size (K, H, W) containing GT labels
-    masks_gt: Optional[torch.Tensor] = None
-    # tensor of size (K, C, H, W) containing estimated scores
-    masks_est: Optional[torch.Tensor] = None
-
-
-def _extract_data_for_mask_loss_from_matches(
-    proposals_targets: Iterable[Instances], estimated_segm: torch.Tensor
-) -> DataForMaskLoss:
-    """
-    Extract data for mask loss from instances that contain matched GT and
-    estimated bounding boxes.
-    Args:
-        proposals_targets: Iterable[Instances]
-            matched GT and estimated results, each item in the iterable
-            corresponds to data in 1 image
-        estimated_segm: torch.Tensor if size
-            size to which GT masks are resized
-    Return:
-        masks_est: tensor(K, C, H, W) of float - class scores
-        masks_gt: tensor(K, H, W) of int64 - labels
-    """
-    data = DataForMaskLoss()
-    masks_gt = []
-    offset = 0
-    assert estimated_segm.shape[2] == estimated_segm.shape[3], (
-        f"Expected estimated segmentation to have a square shape, "
-        f"but the actual shape is {estimated_segm.shape[2:]}"
-    )
-    mask_size = estimated_segm.shape[2]
-    num_proposals = sum(inst.proposal_boxes.tensor.size(0) for inst in proposals_targets)
-    num_estimated = estimated_segm.shape[0]
-    assert (
-        num_proposals == num_estimated
-    ), "The number of proposals {} must be equal to the number of estimates {}".format(
-        num_proposals, num_estimated
-    )
-
-    for proposals_targets_per_image in proposals_targets:
-        n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)
-        if not n_i:
-            continue
-        gt_masks_per_image = proposals_targets_per_image.gt_masks.crop_and_resize(
-            proposals_targets_per_image.proposal_boxes.tensor, mask_size
-        ).to(device=estimated_segm.device)
-        masks_gt.append(gt_masks_per_image)
-        offset += n_i
-    if masks_gt:
-        data.masks_est = estimated_segm
-        data.masks_gt = torch.cat(masks_gt, dim=0)
-    return data
 
 
 class IIDIsotropicGaussianUVLoss(nn.Module):
@@ -214,9 +152,7 @@ class DensePoseLosses(object):
         # the outputs will have size(0) == 3+1+2+1 == 7
         segm_scores, _, _, _ = densepose_outputs
         with torch.no_grad():
-            mask_loss_data = _extract_data_for_mask_loss_from_matches(
-                proposals_with_gt, segm_scores
-            )
+            mask_loss_data = extract_data_for_mask_loss_from_matches(proposals_with_gt, segm_scores)
         if (mask_loss_data.masks_gt is None) or (mask_loss_data.masks_est is None):
             return self.produce_fake_mask_losses(densepose_outputs)
         losses["loss_densepose_S"] = (
