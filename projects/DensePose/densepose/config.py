@@ -109,6 +109,12 @@ def add_densepose_head_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB = CN()
     _C.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB.NORM = "GN"
     _C.MODEL.ROI_DENSEPOSE_HEAD.DEEPLAB.NONLOCAL_ON = 0
+    # Predictor class name, must be registered in DENSEPOSE_PREDICTOR_REGISTRY
+    # Some registered predictors:
+    #   "DensePoseChartPredictor": predicts segmentation and UV coordinates for predefined charts
+    #   "DensePoseChartWithConfidencePredictor": predicts segmentation, UV coordinates
+    #       and associated confidences for predefined charts (default)
+    _C.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME = "DensePoseChartWithConfidencePredictor"
     # Confidences
     # Enable learning UV confidences (variances) along with the actual values
     _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE = CN({"ENABLED": False})

@@ -7,8 +7,10 @@ from detectron2.config import CfgNode
 from detectron2.layers import ConvTranspose2d, interpolate
 
 from ..utils import initialize_module_params
+from .registry import DENSEPOSE_PREDICTOR_REGISTRY
 
 
+@DENSEPOSE_PREDICTOR_REGISTRY.register()
 class DensePoseChartPredictor(nn.Module):
     """
     Predictor (last layers of a DensePose model) that takes DensePose head outputs as an input

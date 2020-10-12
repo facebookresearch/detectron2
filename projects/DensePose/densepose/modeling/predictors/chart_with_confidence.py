@@ -1,8 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 from . import DensePoseChartConfidencePredictorMixin, DensePoseChartPredictor
+from .registry import DENSEPOSE_PREDICTOR_REGISTRY
 
 
+@DENSEPOSE_PREDICTOR_REGISTRY.register()
 class DensePoseChartWithConfidencePredictor(
     DensePoseChartConfidencePredictorMixin, DensePoseChartPredictor
 ):
