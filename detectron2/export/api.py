@@ -140,7 +140,7 @@ class Caffe2Tracer:
         logger = logging.getLogger(__name__)
         logger.info("Tracing the model with torch.jit.trace ...")
         with torch.no_grad():
-            return torch.jit.trace(model, (inputs,), optimize=True)
+            return torch.jit.trace(model, (inputs,))
 
 
 def export_caffe2_model(cfg, model, inputs):
