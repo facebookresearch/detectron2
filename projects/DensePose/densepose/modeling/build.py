@@ -3,7 +3,7 @@
 from detectron2.config import CfgNode
 
 from .filter import DensePoseDataFilter
-from .losses import DensePoseLosses
+from .losses import *  # noqa
 from .predictors import *  # noqa
 
 
@@ -64,5 +64,7 @@ def build_densepose_losses(cfg: CfgNode):
     Return:
         An instance of DensePose loss
     """
-    losses = DensePoseLosses(cfg)
-    return losses
+    from .losses.registry import DENSEPOSE_LOSS_REGISTRY
+
+    loss_name = cfg.MODEL.ROI_DENSEPOSE_HEAD.LOSS_NAME
+    return DENSEPOSE_LOSS_REGISTRY.get(loss_name)(cfg)

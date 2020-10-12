@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from detectron2.structures import Instances
 
 from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
+from .registry import DENSEPOSE_LOSS_REGISTRY
 
 
 def _linear_interpolation_utilities(v_norm, v0_src, size_src, v0_dst, size_dst, size_z):
@@ -520,6 +521,7 @@ class IndepAnisotropicGaussianUVLoss(nn.Module):
         return loss.sum()
 
 
+@DENSEPOSE_LOSS_REGISTRY.register()
 class DensePoseLosses(object):
     def __init__(self, cfg):
         # fmt: off
