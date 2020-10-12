@@ -1,22 +1,27 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 import numpy as np
-from typing import Optional
+from typing import Optional, Tuple
 import cv2
+import torch
 
-from ..data.structures import DensePoseDataRelative, DensePoseResult
+from ..data.structures import DensePoseDataRelative
+from ..structures import DensePoseChartResult
 from .base import Boxes, Image, MatrixVisualizer
 
 
 class DensePoseResultsVisualizer(object):
-    def visualize(self, image_bgr: Image, densepose_result: Optional[DensePoseResult]) -> Image:
-        if densepose_result is None:
+    def visualize(
+        self, image_bgr: Image, results_and_boxes_xywh: Optional[Tuple[DensePoseChartResult, Boxes]]
+    ) -> Image:
+        if results_and_boxes_xywh is None:
             return image_bgr
+        densepose_result, boxes_xywh = results_and_boxes_xywh
+        boxes_xywh = boxes_xywh.cpu().numpy()
         context = self.create_visualization_context(image_bgr)
-        for i, result_encoded_w_shape in enumerate(densepose_result.results):
-            iuv_arr = DensePoseResult.decode_png_data(*result_encoded_w_shape)
-            bbox_xywh = densepose_result.boxes_xywh[i]
-            self.visualize_iuv_arr(context, iuv_arr, bbox_xywh)
+        for i, result in enumerate(densepose_result):
+            iuv_array = torch.cat((result.labels[None], result.uv * 255.0)).type(torch.uint8)
+            self.visualize_iuv_arr(context, iuv_array.cpu().numpy(), boxes_xywh[i])
         image_bgr = self.context_to_image_bgr(context)
         return image_bgr
 

@@ -6,6 +6,7 @@ import torch
 from detectron2.layers.nms import batched_nms
 from detectron2.structures.instances import Instances
 
+from densepose.converters import ToChartResultConverter
 from densepose.vis.bounding_box import BoundingBoxVisualizer, ScoredBoundingBoxVisualizer
 from densepose.vis.densepose_results import DensePoseResultsVisualizer
 
@@ -80,13 +81,16 @@ class DensePoseResultExtractor(object):
     """
 
     def __call__(self, instances: Instances, select=None):
-        boxes_xywh = extract_boxes_xywh_from_instances(instances)
-        if instances.has("pred_densepose") and (boxes_xywh is not None):
+        if instances.has("pred_densepose") and instances.has("pred_boxes"):
             dpout = instances.pred_densepose
+            boxes_xyxy = instances.pred_boxes
+            boxes_xywh = extract_boxes_xywh_from_instances(instances)
             if select is not None:
                 dpout = dpout[select]
-                boxes_xywh = boxes_xywh[select]
-            return dpout.to_result(boxes_xywh)
+                boxes_xyxy = boxes_xyxy[select]
+            converter = ToChartResultConverter()
+            results = [converter.convert(dpout[i], boxes_xyxy[[i]]) for i in range(len(dpout))]
+            return results, boxes_xywh
         else:
             return None
 
