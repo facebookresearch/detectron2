@@ -20,7 +20,7 @@ from detectron2.structures import BoxMode
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.logger import create_small_table
 
-from .data.samplers import densepose_to_mask
+from .converters import ToMaskConverter
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
 
 
@@ -104,7 +104,9 @@ def prediction_to_json(instances, img_id):
         list[dict]: the results in densepose evaluation format
     """
     scores = instances.scores.tolist()
-    segmentations = densepose_to_mask(instances)
+    segmentations = ToMaskConverter.convert(
+        instances.pred_densepose, instances.pred_boxes, instances.image_size
+    )
 
     boxes = instances.pred_boxes.tensor.clone()
     boxes = BoxMode.convert(boxes, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
