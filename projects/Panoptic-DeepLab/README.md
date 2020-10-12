@@ -29,8 +29,8 @@ python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panopt
 ```
 
 ## Evaluation
-Model evaluation can be done similarly:
 
+Model evaluation can be done similarly:
 ```bash
 cd /path/to/detectron2/projects/Panoptic-DeepLab
 python train_net.py --config-file configs/Cityscapes-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_90k_bs32_crop_512_1024.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
