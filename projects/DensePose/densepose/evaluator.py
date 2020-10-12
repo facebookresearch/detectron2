@@ -20,8 +20,9 @@ from detectron2.structures import BoxMode
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.logger import create_small_table
 
-from .converters import ToMaskConverter
+from .converters import ToChartResultConverter, ToMaskConverter
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
+from .structures import compress_quantized_densepose_chart_result, quantize_densepose_chart_result
 
 
 class DensePoseCOCOEvaluator(DatasetEvaluator):
@@ -107,14 +108,17 @@ def prediction_to_json(instances, img_id):
     segmentations = ToMaskConverter.convert(
         instances.pred_densepose, instances.pred_boxes, instances.image_size
     )
-
-    boxes = instances.pred_boxes.tensor.clone()
-    boxes = BoxMode.convert(boxes, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
-    instances.pred_densepose = instances.pred_densepose.to_result(boxes)
+    raw_boxes_xywh = BoxMode.convert(
+        instances.pred_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
+    )
 
     results = []
     for k in range(len(instances)):
-        densepose = instances.pred_densepose[k]
+        densepose_results_quantized_compressed = compress_quantized_densepose_chart_result(
+            quantize_densepose_chart_result(
+                ToChartResultConverter.convert(instances.pred_densepose[k], instances.pred_boxes[k])
+            )
+        )
         segmentation = segmentations.tensor[k]
         segmentation_encoded = mask_utils.encode(
             np.require(segmentation.numpy(), dtype=np.uint8, requirements=["F"])
@@ -123,9 +127,9 @@ def prediction_to_json(instances, img_id):
         result = {
             "image_id": img_id,
             "category_id": 1,  # densepose only has one class
-            "bbox": densepose[1],
+            "bbox": raw_boxes_xywh[k].tolist(),
             "score": scores[k],
-            "densepose": densepose,
+            "densepose": densepose_results_quantized_compressed,
             "segmentation": segmentation_encoded,
         }
         results.append(result)
