@@ -53,7 +53,8 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         """
         for input, output in zip(inputs, outputs):
             instances = output["instances"].to(self._cpu_device)
-
+            if not instances.has("pred_densepose"):
+                continue
             json_results = prediction_to_json(instances, input["image_id"])
             self._predictions.extend(json_results)
 
