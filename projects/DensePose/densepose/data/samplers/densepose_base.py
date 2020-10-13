@@ -1,17 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import List, Optional
+from typing import Any, List, Optional
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures import BoxMode, Instances
 
-from ..structures import (
-    DensePoseDataRelative,
-    DensePoseList,
-    DensePoseOutput,
-    resample_output_to_bbox,
-)
+from ..structures import DensePoseDataRelative, DensePoseList
 
 
 class DensePoseBaseSampler:
@@ -33,20 +28,18 @@ class DensePoseBaseSampler:
 
     def __call__(self, instances: Instances) -> DensePoseList:
         """
-        Convert DensePose predictions (an instance of `DensePoseOutput`)
+        Convert DensePose predictions (an instance of `DensePoseChartPredictorOutput`)
         into DensePose annotations data (an instance of `DensePoseList`)
         """
         boxes_xyxy_abs = instances.pred_boxes.tensor.clone().cpu()
         boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
         dp_datas = []
         for i, box_xywh in enumerate(boxes_xywh_abs):
-            labels_i, result_i = resample_output_to_bbox(
-                instances.pred_densepose[i], box_xywh, self._confidence_channels()
-            )
+            pred_densepose_i = instances.pred_densepose[i]
+            labels_i = pred_densepose_i.fine_segm
+            result_i = torch.stack(pred_densepose_i.u, pred_densepose_i.v)
             annotation_i = self._sample(labels_i.cpu(), result_i.cpu(), box_xywh)
-            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(
-                instances.pred_densepose[i]
-            )
+            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(pred_densepose_i)
 
             dp_datas.append(DensePoseDataRelative(annotation_i))
         # create densepose annotations on CPU
@@ -124,22 +117,32 @@ class DensePoseBaseSampler:
         """
         raise NotImplementedError
 
-    def _resample_mask(self, output: DensePoseOutput) -> torch.Tensor:
+    def _resample_mask(self, output: Any) -> torch.Tensor:
         """
-        Convert output mask tensors into the annotation mask tensor of size
-        (256, 256)
+        Convert DensePose predictor output to segmentation annotation - tensors of size
+        (256, 256) and type `int64`.
+
+        Args:
+            output: DensePose predictor output with the following attributes:
+             - coarse_segm: tensor of size [N, D, H, W] with unnormalized coarse
+               segmentation scores
+             - fine_segm: tensor of size [N, C, H, W] with unnormalized fine
+               segmentation scores
+        Return:
+            Tensor of size (S, S) and type `int64` with coarse segmentation annotations,
+            where S = DensePoseDataRelative.MASK_SIZE
         """
         sz = DensePoseDataRelative.MASK_SIZE
         S = (
-            F.interpolate(output.S, (sz, sz), mode="bilinear", align_corners=False)
+            F.interpolate(output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False)
             .argmax(dim=1)
             .long()
         )
         I = (
             (
-                F.interpolate(output.I, (sz, sz), mode="bilinear", align_corners=False).argmax(
-                    dim=1
-                )
+                F.interpolate(
+                    output.fine_segm, (sz, sz), mode="bilinear", align_corners=False
+                ).argmax(dim=1)
                 * (S > 0).long()
             )
             .squeeze()

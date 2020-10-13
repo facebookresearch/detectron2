@@ -8,10 +8,8 @@ from densepose.converters import ToMaskConverter
 class MaskFromDensePoseSampler:
     """
     Produce mask GT from DensePose predictions
-    DensePose prediction is an instance of DensePoseOutput. This sampler takes
-    `S` and `I` output tensors (coarse and fine segmentation) and converts
-    then to a mask tensor, which is a bool tensor of the size of the input
-    image
+    This sampler simply converts DensePose predictions to BitMasks
+    that a contain a bool tensor of the size of the input image
     """
 
     def __call__(self, instances: Instances) -> BitMasks:
