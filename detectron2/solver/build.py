@@ -94,6 +94,33 @@ def build_optimizer(cfg: CfgNode, model: torch.nn.Module) -> torch.optim.Optimiz
     """
     Build an optimizer from config.
     """
+    params = get_default_optimizer_params(
+        model,
+        base_lr=cfg.SOLVER.BASE_LR,
+        weight_decay=cfg.SOLVER.WEIGHT_DECAY,
+        weight_decay_norm=cfg.SOLVER.WEIGHT_DECAY_NORM,
+        bias_lr_factor=cfg.SOLVER.BIAS_LR_FACTOR,
+        weight_decay_bias=cfg.SOLVER.WEIGHT_DECAY_BIAS,
+    )
+    optimizer = torch.optim.SGD(
+        params, cfg.SOLVER.BASE_LR, momentum=cfg.SOLVER.MOMENTUM, nesterov=cfg.SOLVER.NESTEROV
+    )
+    return maybe_add_gradient_clipping(cfg, optimizer)
+
+
+def get_default_optimizer_params(
+    model: torch.nn.Module,
+    base_lr,
+    weight_decay,
+    weight_decay_norm,
+    bias_lr_factor=1.0,
+    weight_decay_bias=None,
+):
+    if weight_decay_bias is None:
+        weight_decay_bias = weight_decay
+    """
+    Get default param list for optimizer
+    """
     norm_module_types = (
         torch.nn.BatchNorm1d,
         torch.nn.BatchNorm2d,
@@ -117,24 +144,21 @@ def build_optimizer(cfg: CfgNode, model: torch.nn.Module) -> torch.optim.Optimiz
             if value in memo:
                 continue
             memo.add(value)
-            lr = cfg.SOLVER.BASE_LR
-            weight_decay = cfg.SOLVER.WEIGHT_DECAY
+
+            lr = base_lr
+            new_weight_decay = weight_decay
             if isinstance(module, norm_module_types):
-                weight_decay = cfg.SOLVER.WEIGHT_DECAY_NORM
+                new_weight_decay = weight_decay_norm
             elif key == "bias":
                 # NOTE: unlike Detectron v1, we now default BIAS_LR_FACTOR to 1.0
                 # and WEIGHT_DECAY_BIAS to WEIGHT_DECAY so that bias optimizer
                 # hyperparameters are by default exactly the same as for regular
                 # weights.
-                lr = cfg.SOLVER.BASE_LR * cfg.SOLVER.BIAS_LR_FACTOR
-                weight_decay = cfg.SOLVER.WEIGHT_DECAY_BIAS
-            params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
+                lr = base_lr * bias_lr_factor
+                new_weight_decay = weight_decay_bias
+            params += [{"params": [value], "lr": lr, "weight_decay": new_weight_decay}]
 
-    optimizer = torch.optim.SGD(
-        params, cfg.SOLVER.BASE_LR, momentum=cfg.SOLVER.MOMENTUM, nesterov=cfg.SOLVER.NESTEROV
-    )
-    optimizer = maybe_add_gradient_clipping(cfg, optimizer)
-    return optimizer
+    return params
 
 
 def build_lr_scheduler(
