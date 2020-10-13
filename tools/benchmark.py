@@ -41,9 +41,17 @@ def setup(args):
     return cfg
 
 
+def RAM_msg():
+    vram = psutil.virtual_memory()
+    return "RAM Usage: {:.2f}/{:.2f} GB".format(
+        (vram.total - vram.available) / 1024 ** 3, vram.total / 1024 ** 3
+    )
+
+
 def benchmark_data(args):
     cfg = setup(args)
 
+    logger.info("After spawning " + RAM_msg())
     timer = Timer()
     dataloader = build_detection_train_loader(cfg)
     logger.info("Initialize loader using {} seconds.".format(timer.seconds()))
@@ -54,6 +62,7 @@ def benchmark_data(args):
         next(itr)
         if i == 0:
             startup_time = timer.seconds()
+    logger.info("Startup time: {} seconds".format(startup_time))
     timer = Timer()
     max_iter = 1000
     for _ in tqdm.trange(max_iter):
@@ -63,16 +72,10 @@ def benchmark_data(args):
             max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
         )
     )
-    logger.info("Startup time: {} seconds".format(startup_time))
-    vram = psutil.virtual_memory()
-    logger.info(
-        "RAM Usage: {:.2f}/{:.2f} GB".format(
-            (vram.total - vram.available) / 1024 ** 3, vram.total / 1024 ** 3
-        )
-    )
 
     # test for a few more rounds
-    for _ in range(10):
+    for k in range(10):
+        logger.info(f"Iteration {k} " + RAM_msg())
         timer = Timer()
         max_iter = 1000
         for _ in tqdm.trange(max_iter):
@@ -153,6 +156,7 @@ if __name__ == "__main__":
 
     if args.task == "data":
         f = benchmark_data
+        print("Initial " + RAM_msg())
     elif args.task == "train":
         """
         Note: training speed may not be representative.
