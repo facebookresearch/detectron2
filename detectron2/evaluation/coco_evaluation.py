@@ -125,7 +125,7 @@ class COCOEvaluator(DatasetEvaluator):
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             self._predictions.append(prediction)
 
-    def evaluate(self):
+    def evaluate(self, imgIds=None):
         if self._distributed:
             comm.synchronize()
             predictions = comm.gather(self._predictions, dst=0)
@@ -150,11 +150,11 @@ class COCOEvaluator(DatasetEvaluator):
         if "proposals" in predictions[0]:
             self._eval_box_proposals(predictions)
         if "instances" in predictions[0]:
-            self._eval_predictions(set(self._tasks), predictions)
+            self._eval_predictions(set(self._tasks), predictions, imgIds=imgIds)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
-    def _eval_predictions(self, tasks, predictions):
+    def _eval_predictions(self, tasks, predictions, imgIds=None):
         """
         Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
@@ -200,6 +200,7 @@ class COCOEvaluator(DatasetEvaluator):
                     task,
                     kpt_oks_sigmas=self._kpt_oks_sigmas,
                     use_fast_impl=self._use_fast_impl,
+                    imgIds=imgIds,
                 )
                 if len(coco_results) > 0
                 else None  # cocoapi does not handle empty results very well
@@ -494,7 +495,7 @@ def _evaluate_box_proposals(dataset_predictions, coco_api, thresholds=None, area
 
 
 def _evaluate_predictions_on_coco(
-    coco_gt, coco_results, iou_type, kpt_oks_sigmas=None, use_fast_impl=True
+    coco_gt, coco_results, iou_type, kpt_oks_sigmas=None, use_fast_impl=True, imgIds=None
 ):
     """
     Evaluate the coco results using COCOEval API.
@@ -512,6 +513,8 @@ def _evaluate_predictions_on_coco(
 
     coco_dt = coco_gt.loadRes(coco_results)
     coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
+    if imgIds:
+        coco_eval.params.imgIds = imgIds
 
     if iou_type == "keypoints":
         # Use the COCO default keypoint OKS sigmas unless overrides are specified
