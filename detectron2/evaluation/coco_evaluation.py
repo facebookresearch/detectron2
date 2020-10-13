@@ -17,6 +17,7 @@ from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
 
 import detectron2.utils.comm as comm
+from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
 from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.evaluation.fast_eval_api import COCOeval_opt
@@ -37,7 +38,16 @@ class COCOEvaluator(DatasetEvaluator):
     instance segmentation, or keypoint detection dataset.
     """
 
-    def __init__(self, dataset_name, cfg, distributed, output_dir=None, *, use_fast_impl=True):
+    def __init__(
+        self,
+        dataset_name,
+        tasks,
+        distributed,
+        output_dir=None,
+        *,
+        use_fast_impl=True,
+        kpt_oks_sigmas=(),
+    ):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
@@ -47,7 +57,9 @@ class COCOEvaluator(DatasetEvaluator):
 
                 Or it must be in detectron2's standard dataset format
                 so it can be converted to COCO format automatically.
-            cfg (CfgNode): config instance
+            tasks (tuple[str]): tasks that can be evaluated under the given configuration.
+                A task is one of "bbox", "segm", "keypoints".
+                DEPRECATED pass cfgNode here to generate tasks from config
             distributed (True): if True, will collect results from all ranks and run evaluation
                 in the main process.
                 Otherwise, will only evaluate the results in the current process.
@@ -62,14 +74,29 @@ class COCOEvaluator(DatasetEvaluator):
                 Although the results should be very close to the official implementation in COCO
                 API, it is still recommended to compute results with the official API for use in
                 papers.
+            kpt_oks_sigmas (list[float]): The sigmas used to calculate keypoint OKS.
+                See http://cocodataset.org/#keypoints-eval
+                When empty, it will use the defaults in COCO.
+                Otherwise it should be the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
         """
-        self._tasks = self._tasks_from_config(cfg)
+        self._logger = logging.getLogger(__name__)
+        if isinstance(tasks, CfgNode):
+            kpt_oks_sigmas = (
+                tasks.TEST.KEYPOINT_OKS_SIGMAS if not kpt_oks_sigmas else kpt_oks_sigmas
+            )
+            self._tasks = self._tasks_from_config(tasks)
+            self._logger.warn(
+                "COCO Evaluator instantiated using config, this is deprecated behavior. \
+                Please pass tasks in directly"
+            )
+        else:
+            self._tasks = tasks
+
         self._distributed = distributed
         self._output_dir = output_dir
         self._use_fast_impl = use_fast_impl
 
         self._cpu_device = torch.device("cpu")
-        self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
         if not hasattr(self._metadata, "json_file"):
@@ -86,7 +113,7 @@ class COCOEvaluator(DatasetEvaluator):
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)
 
-        self._kpt_oks_sigmas = cfg.TEST.KEYPOINT_OKS_SIGMAS
+        self._kpt_oks_sigmas = kpt_oks_sigmas
         # Test set json files do not contain annotations (evaluation must be
         # performed using the COCO evaluation server).
         self._do_evaluation = "annotations" in self._coco_api.dataset
@@ -94,7 +121,8 @@ class COCOEvaluator(DatasetEvaluator):
     def reset(self):
         self._predictions = []
 
-    def _tasks_from_config(self, cfg):
+    @staticmethod
+    def _tasks_from_config(cfg):
         """
         Returns:
             tuple[str]: tasks that can be evaluated under the given configuration.
