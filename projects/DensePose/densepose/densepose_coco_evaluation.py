@@ -1034,7 +1034,7 @@ class DensePoseCocoEval(object):
         ClosestVerts = np.ones(Index_points.shape) * -1
         for i in np.arange(24):
             #
-            if sum(Index_points == (i + 1)) > 0:
+            if (i + 1) in Index_points:
                 UVs = np.array(
                     [U_points[Index_points == (i + 1)], V_points[Index_points == (i + 1)]]
                 )
@@ -1047,7 +1047,7 @@ class DensePoseCocoEval(object):
         #
         ClosestVertsGT = np.ones(Index_points.shape) * -1
         for i in np.arange(24):
-            if sum(I_gt == (i + 1)) > 0:
+            if (i + 1) in I_gt:
                 UVs = np.array([U_gt[I_gt == (i + 1)], V_gt[I_gt == (i + 1)]])
                 Current_Part_UVs = self.Part_UVs[i]
                 Current_Part_ClosestVertInds = self.Part_ClosestVertInds[i]

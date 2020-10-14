@@ -119,7 +119,7 @@ def decompress_compressed_densepose_chart_result(
 
     fstream = BytesIO(base64.decodebytes(result.labels_uv_str.encode()))
     im = Image.open(fstream)
-    labels_uv_uint8_np_chw = np.moveaxis(np.array(im.getdata(), dtype=np.uint8), -1, 0)
+    labels_uv_uint8_np_chw = np.moveaxis(np.array(im, dtype=np.uint8), -1, 0)
     return DensePoseChartResultQuantized(
         labels_uv_uint8=torch.from_numpy(labels_uv_uint8_np_chw.reshape(result.shape_chw))
     )
