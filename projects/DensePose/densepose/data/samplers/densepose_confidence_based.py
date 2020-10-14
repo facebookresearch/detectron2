@@ -1,8 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import random
-from typing import List, Optional
+from typing import Optional, Tuple
 import torch
+
+from densepose.converters import ToChartResultConverterWithConfidences
 
 from .densepose_base import DensePoseBaseSampler
 
@@ -52,12 +54,6 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             f"and search_proportion (={search_proportion})"
         )
 
-    def _confidence_channels(self) -> Optional[List[str]]:
-        """
-        Confedence channels to be used for sampling (to be overridden in children)
-        """
-        return [self.confidence_channel]
-
     def _produce_index_sample(self, values: torch.Tensor, count: int):
         """
         Produce a sample of indices to select data based on confidences
@@ -89,3 +85,24 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             sample_from_top = random.sample(range(search_count), count)
             index_sample = sorted_confidence_indices[:search_count][sample_from_top]
         return index_sample
+
+    def _produce_labels_and_results(self, instance) -> Tuple[torch.Tensor]:
+        """
+        Method to get labels and DensePose results from an instance, with confidences
+
+        Args:
+            instance (Instances): an instance of `DensePoseChartPredictorOutputWithConfidences`
+
+        Return:
+            labels (torch.Tensor): shape [H, W], DensePose segmentation labels
+            dp_result (torch.Tensor): shape [3, H, W], DensePose results u and v
+                stacked with the confidence channel
+        """
+        converter = ToChartResultConverterWithConfidences
+        chart_result = converter.convert(instance.pred_densepose, instance.pred_boxes)
+        labels, dp_result = chart_result.labels.cpu(), chart_result.uv.cpu()
+        dp_result = torch.cat(
+            (dp_result, getattr(chart_result, self.confidence_channel)[None].cpu())
+        )
+
+        return labels, dp_result

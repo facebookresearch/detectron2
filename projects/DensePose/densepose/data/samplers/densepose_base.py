@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import Any, List, Optional
+from typing import Any, List, Tuple
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures import BoxMode, Instances
+
+from densepose.converters import ToChartResultConverter
 
 from ..structures import DensePoseDataRelative, DensePoseList
 
@@ -35,23 +37,20 @@ class DensePoseBaseSampler:
         boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
         dp_datas = []
         for i, box_xywh in enumerate(boxes_xywh_abs):
-            pred_densepose_i = instances.pred_densepose[i]
-            labels_i = pred_densepose_i.fine_segm
-            result_i = torch.stack(pred_densepose_i.u, pred_densepose_i.v)
-            annotation_i = self._sample(labels_i.cpu(), result_i.cpu(), box_xywh)
-            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(pred_densepose_i)
-
+            annotation_i = self._sample(instances[i], box_xywh)
+            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(
+                instances[i].pred_densepose
+            )
             dp_datas.append(DensePoseDataRelative(annotation_i))
         # create densepose annotations on CPU
         dp_list = DensePoseList(dp_datas, boxes_xyxy_abs, instances.image_size)
         return dp_list
 
-    def _sample(
-        self, labels: torch.Tensor, dp_result: torch.Tensor, bbox_xywh: List[int]
-    ) -> DensePoseDataRelative:
+    def _sample(self, instance: Instances, bbox_xywh: List[int]) -> DensePoseDataRelative:
         """
         Sample DensPoseDataRelative from estimation results
         """
+        labels, dp_result = self._produce_labels_and_results(instance)
         annotation = {
             DensePoseDataRelative.X_KEY: [],
             DensePoseDataRelative.Y_KEY: [],
@@ -93,12 +92,6 @@ class DensePoseBaseSampler:
             annotation[DensePoseDataRelative.I_KEY].extend(fine_segm_labels)
         return annotation
 
-    def _confidence_channels(self) -> Optional[List[str]]:
-        """
-        Confedence channels to be used for sampling (to be overridden in children)
-        """
-        return None
-
     def _produce_index_sample(self, values: torch.Tensor, count: int):
         """
         Abstract method to produce a sample of indices to select data
@@ -110,12 +103,27 @@ class DensePoseBaseSampler:
                 n: number of channels (U, V, confidences)
                 k: number of points labeled with part_id
             count (int): number of samples to produce, should be positive and <= k
-:w
 
         Return:
             list(int): indices of values (along axis 1) selected as a sample
         """
         raise NotImplementedError
+
+    def _produce_labels_and_results(self, instance: Instances) -> Tuple[torch.Tensor]:
+        """
+        Method to get labels and DensePose results from an instance
+
+        Args:
+            instance (Instances): an instance of `DensePoseChartPredictorOutput`
+
+        Return:
+            labels (torch.Tensor): shape [H, W], DensePose segmentation labels
+            dp_result (torch.Tensor): shape [2, H, W], stacked DensePose results u and v
+        """
+        converter = ToChartResultConverter
+        chart_result = converter.convert(instance.pred_densepose, instance.pred_boxes)
+        labels, dp_result = chart_result.labels.cpu(), chart_result.uv.cpu()
+        return labels, dp_result
 
     def _resample_mask(self, output: Any) -> torch.Tensor:
         """
