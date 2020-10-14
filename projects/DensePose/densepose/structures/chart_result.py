@@ -24,6 +24,28 @@ class DensePoseChartResult:
 
 
 @dataclass
+class DensePoseChartResultWithConfidences:
+    """
+    We add confidence values to DensePoseChartResult
+    Thus the results are represented by two tensors:
+    - labels (tensor [H, W] of uint8): contains estimated label for each pixel of
+        the detection bounding box of size (H, W)
+    - uv (tensor [2, H, W] of float): contains estimated U and V coordinates
+        for each pixel of the detection bounding box of size (H, W)
+    Plus one [H, W] tensor of float for each confidence type
+    """
+
+    labels: torch.Tensor
+    uv: torch.Tensor
+    sigma_1: torch.Tensor = None
+    sigma_2: torch.Tensor = None
+    kappa_u: torch.Tensor = None
+    kappa_v: torch.Tensor = None
+    fine_segm_confidence: torch.Tensor = None
+    coarse_segm_confidence: torch.Tensor = None
+
+
+@dataclass
 class DensePoseChartResultQuantized:
     """
     DensePose results for chart-based methods represented by labels and quantized
