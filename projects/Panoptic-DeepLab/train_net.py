@@ -7,7 +7,6 @@ This script is a simplified version of the training script in detectron2/tools.
 """
 
 import os
-from typing import Any, Dict, List, Set
 import torch
 
 import detectron2.data.transforms as T

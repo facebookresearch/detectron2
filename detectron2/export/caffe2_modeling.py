@@ -392,7 +392,7 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         return_tensors = [images.image_sizes]
 
         features = self._wrapped_model.backbone(images.tensor)
-        features = [features[f] for f in self._wrapped_model.in_features]
+        features = [features[f] for f in self._wrapped_model.head_in_features]
         for i, feature_i in enumerate(features):
             features[i] = alias(feature_i, "feature_{}".format(i), is_backward=True)
             return_tensors.append(features[i])
@@ -414,11 +414,13 @@ class Caffe2RetinaNet(Caffe2MetaArch):
 
         # Inference parameters:
         check_set_pb_arg(
-            predict_net, "score_threshold", "f", _cast_to_f32(self._wrapped_model.score_threshold)
+            predict_net, "score_threshold", "f", _cast_to_f32(self._wrapped_model.test_score_thresh)
         )
-        check_set_pb_arg(predict_net, "topk_candidates", "i", self._wrapped_model.topk_candidates)
         check_set_pb_arg(
-            predict_net, "nms_threshold", "f", _cast_to_f32(self._wrapped_model.nms_threshold)
+            predict_net, "topk_candidates", "i", self._wrapped_model.test_topk_candidates
+        )
+        check_set_pb_arg(
+            predict_net, "nms_threshold", "f", _cast_to_f32(self._wrapped_model.test_nms_thresh)
         )
         check_set_pb_arg(
             predict_net,
@@ -453,9 +455,9 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         self.anchor_generator = torch.load(serialized_anchor_generator)
         bbox_reg_weights = get_pb_arg_floats(predict_net, "bbox_reg_weights", None)
         self.box2box_transform = Box2BoxTransform(weights=tuple(bbox_reg_weights))
-        self.score_threshold = get_pb_arg_valf(predict_net, "score_threshold", None)
-        self.topk_candidates = get_pb_arg_vali(predict_net, "topk_candidates", None)
-        self.nms_threshold = get_pb_arg_valf(predict_net, "nms_threshold", None)
+        self.test_score_thresh = get_pb_arg_valf(predict_net, "score_threshold", None)
+        self.test_topk_candidates = get_pb_arg_vali(predict_net, "topk_candidates", None)
+        self.test_nms_thresh = get_pb_arg_valf(predict_net, "nms_threshold", None)
         self.max_detections_per_image = get_pb_arg_vali(
             predict_net, "max_detections_per_image", None
         )
