@@ -23,7 +23,6 @@ from scipy.io import loadmat
 from scipy.ndimage import zoom as spzoom
 
 from .data.structures import DensePoseDataRelative
-from .structures import decompress_compressed_densepose_chart_result
 
 logger = logging.getLogger(__name__)
 
@@ -522,10 +521,7 @@ class DensePoseCocoEval(object):
         return ious
 
     def _extract_mask(self, dt: Dict[str, Any]) -> np.ndarray:
-        densepose_results_quantized_compressed = dt["densepose"]
-        densepose_results_quantized = decompress_compressed_densepose_chart_result(
-            densepose_results_quantized_compressed
-        )
+        densepose_results_quantized = dt["densepose"]
         return densepose_results_quantized.labels_uv_uint8[0].numpy()
 
     def _extract_iuv(
@@ -605,10 +601,7 @@ class DensePoseCocoEval(object):
                     else:
                         px[pts == -1] = 0
                         py[pts == -1] = 0
-                        densepose_results_quantized_compressed = dt["densepose"]
-                        densepose_results_quantized = decompress_compressed_densepose_chart_result(
-                            densepose_results_quantized_compressed
-                        )
+                        densepose_results_quantized = dt["densepose"]
                         ipoints, upoints, vpoints = self._extract_iuv(
                             densepose_results_quantized.labels_uv_uint8.numpy(), py, px, gt
                         )

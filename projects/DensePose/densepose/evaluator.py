@@ -22,7 +22,7 @@ from detectron2.utils.logger import create_small_table
 
 from .converters import ToChartResultConverter, ToMaskConverter
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
-from .structures import compress_quantized_densepose_chart_result, quantize_densepose_chart_result
+from .structures import quantize_densepose_chart_result
 
 
 class DensePoseCOCOEvaluator(DatasetEvaluator):
@@ -56,8 +56,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             instances = output["instances"].to(self._cpu_device)
             if not instances.has("pred_densepose"):
                 continue
-            json_results = prediction_to_json(instances, input["image_id"])
-            self._predictions.extend(json_results)
+            self._predictions.extend(prediction_to_dict(instances, input["image_id"]))
 
     def evaluate(self, imgIds=None):
         if self._distributed:
@@ -95,7 +94,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         return res
 
 
-def prediction_to_json(instances, img_id):
+def prediction_to_dict(instances, img_id):
     """
     Args:
         instances (Instances): the output of the model
@@ -114,10 +113,11 @@ def prediction_to_json(instances, img_id):
 
     results = []
     for k in range(len(instances)):
-        densepose_results_quantized_compressed = compress_quantized_densepose_chart_result(
-            quantize_densepose_chart_result(
-                ToChartResultConverter.convert(instances.pred_densepose[k], instances.pred_boxes[k])
-            )
+        densepose_results_quantized = quantize_densepose_chart_result(
+            ToChartResultConverter.convert(instances.pred_densepose[k], instances.pred_boxes[k])
+        )
+        densepose_results_quantized.labels_uv_uint8 = (
+            densepose_results_quantized.labels_uv_uint8.cpu()
         )
         segmentation = segmentations.tensor[k]
         segmentation_encoded = mask_utils.encode(
@@ -129,7 +129,7 @@ def prediction_to_json(instances, img_id):
             "category_id": 1,  # densepose only has one class
             "bbox": raw_boxes_xywh[k].tolist(),
             "score": scores[k],
-            "densepose": densepose_results_quantized_compressed,
+            "densepose": densepose_results_quantized,
             "segmentation": segmentation_encoded,
         }
         results.append(result)
