@@ -96,7 +96,7 @@ class Bottleneck(nn.Module):
 
 
 class HighResolutionModule(nn.Module):
-    """ HighResolutionModule
+    """HighResolutionModule
     Building block of the PoseHigherResolutionNet (see lower)
     arXiv: https://arxiv.org/abs/1908.10357
     Args:
@@ -272,7 +272,7 @@ blocks_dict = {"BASIC": BasicBlock, "BOTTLENECK": Bottleneck}
 
 
 class PoseHigherResolutionNet(Backbone):
-    """ PoseHigherResolutionNet
+    """PoseHigherResolutionNet
     Composed of several HighResolutionModule tied together with ConvNets
     Adapted from the GitHub version to fit with HRFPN and the Detectron2 infrastructure
     arXiv: https://arxiv.org/abs/1908.10357

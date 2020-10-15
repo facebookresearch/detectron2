@@ -16,8 +16,7 @@ from .utils import BilinearInterpolationHelper, LossDict, SingleTensorsHelper
 
 @DENSEPOSE_LOSS_REGISTRY.register()
 class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
-    """
-    """
+    """"""
 
     def __init__(self, cfg: CfgNode):
         super().__init__(cfg)

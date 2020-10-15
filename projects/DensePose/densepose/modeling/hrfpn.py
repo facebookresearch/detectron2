@@ -30,7 +30,7 @@ from .hrnet import build_pose_hrnet_backbone
 
 
 class HRFPN(Backbone):
-    """ HRFPN (High Resolution Feature Pyramids)
+    """HRFPN (High Resolution Feature Pyramids)
     Transforms outputs of HRNet backbone so they are suitable for the ROI_heads
     arXiv: https://arxiv.org/abs/1904.04514
     Adapted from https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/hrfpn.py

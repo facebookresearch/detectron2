@@ -4,10 +4,10 @@
 # Run this script at project root by "./dev/linter.sh" before you commit
 
 {
-  black --version | grep -E "(19.3b0.*6733274)|(19.3b0\\+8)" > /dev/null
+  black --version | grep -E "20.8b1" > /dev/null
 } || {
-	echo "Linter requires 'black @ git+https://github.com/psf/black@673327449f86fce558adde153bb6cbe54bfebad2' !"
-	exit 1
+  echo "Linter requires 'black==20.8b1' !"
+  exit 1
 }
 
 ISORT_VERSION=$(isort --version-number)
