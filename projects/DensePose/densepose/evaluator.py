@@ -58,7 +58,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
                 continue
             self._predictions.extend(prediction_to_dict(instances, input["image_id"]))
 
-    def evaluate(self, imgIds=None):
+    def evaluate(self, img_ids=None):
         if self._distributed:
             synchronize()
             predictions = all_gather(self._predictions)
@@ -68,9 +68,9 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         else:
             predictions = self._predictions
 
-        return copy.deepcopy(self._eval_predictions(predictions, imgIds))
+        return copy.deepcopy(self._eval_predictions(predictions, img_ids))
 
-    def _eval_predictions(self, predictions, imgIds=None):
+    def _eval_predictions(self, predictions, img_ids=None):
         """
         Evaluate predictions on densepose.
         Return results with the metrics of the tasks.
@@ -86,7 +86,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._logger.info("Evaluating predictions ...")
         res = OrderedDict()
         results_gps, results_gpsm, results_segm = _evaluate_predictions_on_coco(
-            self._coco_api, predictions, min_threshold=self._min_threshold, imgIds=imgIds
+            self._coco_api, predictions, min_threshold=self._min_threshold, img_ids=img_ids
         )
         res["densepose_gps"] = results_gps
         res["densepose_gpsm"] = results_gpsm
@@ -136,7 +136,7 @@ def prediction_to_dict(instances, img_id):
     return results
 
 
-def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5, imgIds=None):
+def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5, img_ids=None):
     logger = logging.getLogger(__name__)
 
     segm_metrics = _get_segmentation_metrics()
@@ -150,17 +150,17 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5, imgI
 
     coco_dt = coco_gt.loadRes(coco_results)
     results_segm = _evaluate_predictions_on_coco_segm(
-        coco_gt, coco_dt, segm_metrics, min_threshold, imgIds
+        coco_gt, coco_dt, segm_metrics, min_threshold, img_ids
     )
     logger.info("Evaluation results for densepose segm: \n" + create_small_table(results_segm))
     results_gps = _evaluate_predictions_on_coco_gps(
-        coco_gt, coco_dt, densepose_metrics, min_threshold, imgIds
+        coco_gt, coco_dt, densepose_metrics, min_threshold, img_ids
     )
     logger.info(
         "Evaluation results for densepose, GPS metric: \n" + create_small_table(results_gps)
     )
     results_gpsm = _evaluate_predictions_on_coco_gpsm(
-        coco_gt, coco_dt, densepose_metrics, min_threshold, imgIds
+        coco_gt, coco_dt, densepose_metrics, min_threshold, img_ids
     )
     logger.info(
         "Evaluation results for densepose, GPSm metric: \n" + create_small_table(results_gpsm)
@@ -197,10 +197,10 @@ def _get_segmentation_metrics():
     ]
 
 
-def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0.5, imgIds=None):
+def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
     coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPS)
-    if imgIds is not None:
-        coco_eval.params.imgIds = imgIds
+    if img_ids is not None:
+        coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
         min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
     )
@@ -211,10 +211,10 @@ def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0
     return results
 
 
-def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=0.5, imgIds=None):
+def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
     coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPSM)
-    if imgIds is not None:
-        coco_eval.params.imgIds = imgIds
+    if img_ids is not None:
+        coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
         min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
     )
@@ -225,10 +225,10 @@ def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=
     return results
 
 
-def _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold=0.5, imgIds=None):
+def _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
     coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "segm")
-    if imgIds is not None:
-        coco_eval.params.imgIds = imgIds
+    if img_ids is not None:
+        coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
         min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
     )
