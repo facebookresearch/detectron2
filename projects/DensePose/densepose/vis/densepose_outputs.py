@@ -3,7 +3,8 @@ import numpy as np
 from typing import Optional, Tuple
 import cv2
 
-from ..data.structures import DensePoseDataRelative, DensePoseOutput
+from ..data.structures import DensePoseDataRelative
+from ..structures import DensePoseChartPredictorOutput
 from .base import Boxes, Image, MatrixVisualizer
 
 
@@ -21,20 +22,22 @@ class DensePoseOutputsVisualizer(object):
         )
 
     def visualize(
-        self, image_bgr: Image, dp_output_with_bboxes: Optional[Tuple[DensePoseOutput, Boxes]]
+        self,
+        image_bgr: Image,
+        dp_output_with_bboxes: Optional[Tuple[DensePoseChartPredictorOutput, Boxes]],
     ) -> Image:
         if dp_output_with_bboxes is None:
             return image_bgr
         densepose_output, bboxes_xywh = dp_output_with_bboxes
 
         assert isinstance(
-            densepose_output, DensePoseOutput
-        ), "DensePoseOutput expected, {} encountered".format(type(densepose_output))
+            densepose_output, DensePoseChartPredictorOutput
+        ), "DensePoseChartPredictorOutput expected, {} encountered".format(type(densepose_output))
 
-        S = densepose_output.S
-        I = densepose_output.I  # noqa
-        U = densepose_output.U
-        V = densepose_output.V
+        S = densepose_output.coarse_segm
+        I = densepose_output.fine_segm  # noqa
+        U = densepose_output.u
+        V = densepose_output.v
         N = S.size(0)
         assert N == I.size(
             0
