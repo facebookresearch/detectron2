@@ -251,7 +251,9 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
         torch_model = patch_generalized_rcnn(torch_model)
         super().__init__(cfg, torch_model)
 
-        self.roi_heads_patcher = ROIHeadsPatcher(cfg, self._wrapped_model.roi_heads)
+        self.roi_heads_patcher = ROIHeadsPatcher(
+            self._wrapped_model.roi_heads, cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT
+        )
 
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
@@ -288,7 +290,9 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
         torch_model = patch_generalized_rcnn(torch_model)
         super().__init__(cfg, torch_model)
 
-        self.roi_heads_patcher = ROIHeadsPatcher(cfg, self._wrapped_model.roi_heads)
+        self.roi_heads_patcher = ROIHeadsPatcher(
+            self._wrapped_model.roi_heads, cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT
+        )
 
     @mock_torch_nn_functional_interpolate()
     def forward(self, inputs):
