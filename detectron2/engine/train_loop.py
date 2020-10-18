@@ -7,6 +7,8 @@ import numpy as np
 import time
 import weakref
 import torch
+import torch.nn as nn
+from torch.cuda.amp import GradScaler, autocast
 
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage
@@ -194,9 +196,10 @@ class SimpleTrainer(TrainerBase):
     or write your own training loop.
     """
 
-    def __init__(self, model, data_loader, optimizer):
+    def __init__(self, cfg, model, data_loader, optimizer):
         """
         Args:
+            cfg: configuration options.
             model: a torch Module. Takes a data from data_loader and returns a
                 dict of losses.
             data_loader: an iterable. Contains data to be used to call model.
@@ -211,11 +214,19 @@ class SimpleTrainer(TrainerBase):
         like evaluation during training, you can overwrite its train() method.
         """
         model.train()
-
+        self.cfg = cfg
         self.model = model
         self.data_loader = data_loader
         self._data_loader_iter = iter(data_loader)
         self.optimizer = optimizer
+        self.scaler = GradScaler(enabled=self.cfg.MODEL.AMP)
+
+        # if model is an instance of DP or DPP we need to wrap its forward method with autocast
+        # see: https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-multiple-gpus
+        if self.cfg.MODEL.AMP and isinstance(
+            self.model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
+        ):
+            self.model = autocast()(self.model)
 
     def run_step(self):
         """
@@ -232,15 +243,16 @@ class SimpleTrainer(TrainerBase):
         """
         If you want to do something with the losses, you can wrap the model.
         """
-        loss_dict = self.model(data)
-        losses = sum(loss_dict.values())
+        with autocast(enabled=self.cfg.MODEL.AMP):
+            loss_dict = self.model(data)
+            losses = sum(loss_dict.values())
 
         """
         If you need to accumulate gradients or do something similar, you can
         wrap the optimizer with your custom `zero_grad()` method.
         """
         self.optimizer.zero_grad()
-        losses.backward()
+        self.scaler.scale(losses).backward()
 
         # use a new stream so the ops don't wait for DDP
         with torch.cuda.stream(
@@ -256,7 +268,8 @@ class SimpleTrainer(TrainerBase):
         wrap the optimizer with your custom `step()` method. But it is
         suboptimal as explained in https://arxiv.org/abs/2006.15704 Sec 3.2.4
         """
-        self.optimizer.step()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
 
     def _detect_anomaly(self, losses, loss_dict):
         if not torch.isfinite(losses).all():

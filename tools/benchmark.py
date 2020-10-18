@@ -110,7 +110,7 @@ def benchmark_train(args):
             yield from data
 
     max_iter = 400
-    trainer = SimpleTrainer(model, f(), optimizer)
+    trainer = SimpleTrainer(cfg, model, f(), optimizer)
     trainer.register_hooks(
         [hooks.IterationTimer(), hooks.PeriodicWriter([CommonMetricPrinter(max_iter)])]
     )

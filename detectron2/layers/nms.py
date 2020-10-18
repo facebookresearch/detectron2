@@ -3,10 +3,12 @@
 
 from typing import List
 import torch
+from torch.cuda.amp import custom_fwd
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
 
+@custom_fwd(cast_inputs=torch.float32)
 def batched_nms(
     boxes: torch.Tensor, scores: torch.Tensor, idxs: torch.Tensor, iou_threshold: float
 ):
@@ -31,6 +33,7 @@ def batched_nms(
 
 # Note: this function (nms_rotated) might be moved into
 # torchvision/ops/boxes.py in the future
+@custom_fwd(cast_inputs=torch.float32)
 def nms_rotated(boxes, scores, iou_threshold):
     """
     Performs non-maximum suppression (NMS) on the rotated boxes according

@@ -1,7 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import torch
 from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
+from torch.cuda.amp import custom_bwd, custom_fwd
 from torch.nn.modules.utils import _pair
 
 from detectron2 import _C
@@ -9,6 +11,7 @@ from detectron2 import _C
 
 class _ROIAlignRotated(Function):
     @staticmethod
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio):
         ctx.save_for_backward(roi)
         ctx.output_size = _pair(output_size)
@@ -22,6 +25,7 @@ class _ROIAlignRotated(Function):
 
     @staticmethod
     @once_differentiable
+    @custom_bwd
     def backward(ctx, grad_output):
         (rois,) = ctx.saved_tensors
         output_size = ctx.output_size
@@ -67,6 +71,7 @@ class ROIAlignRotated(nn.Module):
         self.spatial_scale = spatial_scale
         self.sampling_ratio = sampling_ratio
 
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(self, input, rois):
         """
         Args:

@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import torch
 from torch import nn
+from torch.cuda.amp import custom_bwd, custom_fwd
 from torchvision.ops import roi_align as tv_roi_align
 
 try:
@@ -21,6 +23,7 @@ else:
 
     class _ROIAlign(Function):
         @staticmethod
+        @custom_fwd(cast_inputs=torch.float32)
         def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio, aligned):
             ctx.save_for_backward(roi)
             ctx.output_size = _pair(output_size)
@@ -35,6 +38,7 @@ else:
 
         @staticmethod
         @once_differentiable
+        @custom_bwd
         def backward(ctx, grad_output):
             (rois,) = ctx.saved_tensors
             output_size = ctx.output_size
@@ -96,6 +100,7 @@ class ROIAlign(nn.Module):
         self.sampling_ratio = sampling_ratio
         self.aligned = aligned
 
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(self, input, rois):
         """
         Args:

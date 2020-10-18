@@ -4,6 +4,7 @@ import torch
 import torch.distributed as dist
 from torch import nn
 from torch.autograd.function import Function
+from torch.cuda.amp import custom_bwd, custom_fwd
 from torch.nn import functional as F
 
 from detectron2.utils import comm, env
@@ -42,6 +43,7 @@ class FrozenBatchNorm2d(nn.Module):
         self.register_buffer("running_mean", torch.zeros(num_features))
         self.register_buffer("running_var", torch.ones(num_features) - eps)
 
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(self, x):
         if x.requires_grad:
             # When gradients are needed, F.batch_norm will use extra memory
@@ -152,6 +154,7 @@ def get_norm(norm, out_channels):
 
 class AllReduce(Function):
     @staticmethod
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(ctx, input):
         input_list = [torch.zeros_like(input) for k in range(dist.get_world_size())]
         # Use allgather instead of allreduce since I don't trust in-place operations ..
@@ -160,6 +163,7 @@ class AllReduce(Function):
         return torch.sum(inputs, dim=0)
 
     @staticmethod
+    @custom_bwd
     def backward(ctx, grad_output):
         dist.all_reduce(grad_output, async_op=False)
         return grad_output
@@ -198,6 +202,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
         assert stats_mode in ["", "N"]
         self._stats_mode = stats_mode
 
+    @custom_fwd(cast_inputs=torch.float32)
     def forward(self, input):
         if comm.get_world_size() == 1 or not self.training:
             return super().forward(input)

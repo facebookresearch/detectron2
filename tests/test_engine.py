@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import torch
 from torch import nn
 
+from detectron2.config import get_cfg
 from detectron2.engine import SimpleTrainer, hooks
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter
 
@@ -31,10 +32,12 @@ class TestTrainer(unittest.TestCase):
         while True:
             yield torch.rand(3, 3).to(device)
 
-    def test_simple_trainer(self, device="cpu"):
+    def test_simple_trainer(self, device="cpu", amp=False):
+        cfg = get_cfg()
+        cfg.MODEL.AMP = amp
         model = SimpleModel().to(device=device)
         trainer = SimpleTrainer(
-            model, self._data_loader(device), torch.optim.SGD(model.parameters(), 0.1)
+            cfg, model, self._data_loader(device), torch.optim.SGD(model.parameters(), 0.1)
         )
         trainer.train(0, 10)
 
@@ -42,10 +45,15 @@ class TestTrainer(unittest.TestCase):
     def test_simple_trainer_cuda(self):
         self.test_simple_trainer(device="cuda")
 
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def test_simple_trainer_cuda_with_amp(self):
+        self.test_simple_trainer(device="cuda", amp=True)
+
     def test_writer_hooks(self):
+        cfg = get_cfg()
         model = SimpleModel(sleep_sec=0.1)
         trainer = SimpleTrainer(
-            model, self._data_loader("cpu"), torch.optim.SGD(model.parameters(), 0.1)
+            cfg, model, self._data_loader("cpu"), torch.optim.SGD(model.parameters(), 0.1)
         )
 
         max_iter = 50

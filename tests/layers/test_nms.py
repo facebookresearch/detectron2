@@ -24,7 +24,11 @@ class TestNMS(unittest.TestCase):
         num_classes = 50
         boxes, scores = self._create_tensors(N)
         idxs = torch.randint(0, num_classes, (N,))
-        scripted_batched_nms = torch.jit.script(batched_nms)
+        # As of PyTorch 1.6.0 JIT scripting/tracing interaction
+        # with AMP's autocasting is still a WIP
+        # see: https://github.com/pytorch/pytorch/issues/38958#issuecomment-635472379
+        # for now, we skip @custom_fwd by using __wrapped__ property
+        scripted_batched_nms = torch.jit.script(batched_nms.__wrapped__)
         err_msg = "NMS is incompatible with jit-scripted NMS for IoU={}"
 
         for iou in [0.2, 0.5, 0.8]:
