@@ -76,43 +76,39 @@ class ImageList(object):
         for t in tensors:
             assert isinstance(t, torch.Tensor), type(t)
             assert t.shape[1:-2] == tensors[0].shape[1:-2], t.shape
-        # per dimension maximum (H, W) or (C_1, ..., C_K, H, W) where K >= 1 among all tensors
-        max_size = (
-            # In tracing mode, x.shape[i] is Tensor, and should not be converted
+
+        image_sizes = tuple(im.shape[-2:] for im in tensors)
+        if torch.jit.is_tracing():
+            # In tracing mode, x.shape[i] is a scalar Tensor, and should not be converted
             # to int: this will cause the traced graph to have hard-coded shapes.
-            # Instead we should make max_size a Tensor that depends on these tensors.
-            # Using torch.stack twice seems to be the best way to convert
-            # list[list[ScalarTensor]] to a Tensor
-            torch.stack(
-                [
-                    torch.stack([torch.as_tensor(dim) for dim in size])
-                    for size in [tuple(img.shape) for img in tensors]
-                ]
-            )
-            .max(0)
-            .values
-        )
+            # Instead we convert each shape to a vector with a stack()
+            image_sizes = tuple(torch.stack(x) for x in image_sizes)
+
+            # maximum (H, W) for the last two dims
+            # find the maximum in a tracable way
+            max_size = torch.stack(image_sizes).max(0).values
+        else:
+            max_size = torch.as_tensor([max(s) for s in zip(*[img.shape[-2:] for img in tensors])])
 
         if size_divisibility > 1:
             stride = size_divisibility
             # the last two dims are H,W, both subject to divisibility requirement
-            max_size = torch.cat([max_size[:-2], (max_size[-2:] + (stride - 1)) // stride * stride])
-
-        image_sizes = [tuple(im.shape[-2:]) for im in tensors]
+            max_size = (max_size[-2:] + (stride - 1)) // stride * stride
 
         if len(tensors) == 1:
             # This seems slightly (2%) faster.
             # TODO: check whether it's faster for multiple images as well
             image_size = image_sizes[0]
             padding_size = [0, max_size[-1] - image_size[1], 0, max_size[-2] - image_size[0]]
-            if all(x == 0 for x in padding_size):  # https://github.com/pytorch/pytorch/issues/31734
+            if all(x == 0 for x in padding_size) and not torch.jit.is_tracing():
+                # remove after PT1.5: https://github.com/pytorch/pytorch/issues/31734
                 batched_imgs = tensors[0].unsqueeze(0)
             else:
                 padded = F.pad(tensors[0], padding_size, value=pad_value)
                 batched_imgs = padded.unsqueeze_(0)
         else:
             # max_size can be a tensor in tracing mode, therefore use tuple()
-            batch_shape = (len(tensors),) + tuple(max_size)
+            batch_shape = (len(tensors),) + tuple(tensors[0].shape[:-2]) + tuple(max_size)
             batched_imgs = tensors[0].new_full(batch_shape, pad_value)
             for img, pad_img in zip(tensors, batched_imgs):
                 pad_img[..., : img.shape[-2], : img.shape[-1]].copy_(img)
