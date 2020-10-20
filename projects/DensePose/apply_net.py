@@ -27,7 +27,7 @@ from densepose.vis.densepose_results import (
     DensePoseResultsUVisualizer,
     DensePoseResultsVVisualizer,
 )
-from densepose.vis.extractor import CompoundExtractor, create_extractor
+from densepose.vis.extractor import CompoundExtractor, DensePoseResultExtractor, create_extractor
 
 DOC = """Apply Net - a tool to print / visualize DensePose results
 """
@@ -158,10 +158,7 @@ class DumpAction(InferenceAction):
         if outputs.has("pred_boxes"):
             result["pred_boxes_XYXY"] = outputs.get("pred_boxes").tensor.cpu()
             if outputs.has("pred_densepose"):
-                boxes_XYWH = BoxMode.convert(
-                    result["pred_boxes_XYXY"], BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
-                )
-                result["pred_densepose"] = outputs.get("pred_densepose").to_result(boxes_XYWH)
+                result["pred_densepose"], _ = DensePoseResultExtractor()(outputs)
         context["results"].append(result)
 
     @classmethod
