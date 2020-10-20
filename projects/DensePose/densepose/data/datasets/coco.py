@@ -49,6 +49,26 @@ DATASETS = [
         annotations_fpath="coco/annotations/densepose_valminusminival2014.json",
     ),
     CocoDatasetInfo(
+        name="densepose_coco_2014_train_cse",
+        images_root="coco/train2014",
+        annotations_fpath="coco_cse/densepose_train2014_cse.json",
+    ),
+    CocoDatasetInfo(
+        name="densepose_coco_2014_minival_cse",
+        images_root="coco/val2014",
+        annotations_fpath="coco_cse/densepose_minival2014_cse.json",
+    ),
+    CocoDatasetInfo(
+        name="densepose_coco_2014_minival_100_cse",
+        images_root="coco/val2014",
+        annotations_fpath="coco_cse/densepose_minival2014_100_cse.json",
+    ),
+    CocoDatasetInfo(
+        name="densepose_coco_2014_valminusminival_cse",
+        images_root="coco/val2014",
+        annotations_fpath="coco_cse/densepose_valminusminival2014_cse.json",
+    ),
+    CocoDatasetInfo(
         name="densepose_chimps",
         images_root="densepose_evolution/densepose_chimps",
         annotations_fpath="densepose_evolution/annotations/densepose_chimps_densepose.json",
