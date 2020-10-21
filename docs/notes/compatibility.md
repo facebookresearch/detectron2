@@ -79,5 +79,5 @@ See [Deployment](../tutorials/deployment.md) for the tutorial.
 
 Most ops are available in TensorFlow, although some tiny differences in
 the implementation of resize / ROIAlign / padding need to be addressed.
-A working conversion script is provided by [tensorpack FasterRCNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
+A working conversion script is provided by [tensorpack Faster R-CNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
 to run a standard detectron2 model in TensorFlow.
