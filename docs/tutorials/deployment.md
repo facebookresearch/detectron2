@@ -26,18 +26,18 @@ To convert an official Mask R-CNN trained on COCO, first
 [prepare the COCO dataset](builtin_datasets.md), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
 cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
-	--output ./caffe2_model --run-eval \
-	MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
-	MODEL.DEVICE cpu
+  --output ./caffe2_model --run-eval \
+  MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
+  MODEL.DEVICE cpu
 ```
 
 Note that:
 1. The conversion needs valid weights & sample inputs to trace the model. That's why the script requires the dataset.
-	 You can modify the script to obtain sample inputs in other ways.
+   You can modify the script to obtain sample inputs in other ways.
 2. With the `--run-eval` flag, it will evaluate the converted models to verify its accuracy.
    The accuracy is typically slightly different (within 0.1 AP) from PyTorch due to
-	 numerical precisions between different implementations.
-	 It's recommended to always verify the accuracy in case the conversion is not successful.
+   numerical precisions between different implementations.
+   It's recommended to always verify the accuracy in case the conversion is not successful.
 
 The converted model is available at the specified `caffe2_model/` directory. Two files `model.pb`
 and `model_init.pb` that contain network structure and network parameters are necessary for deployment.
@@ -100,3 +100,8 @@ This method has an interface that's identical to the [pytorch versions of models
 and it internally applies pre/post-processing code to match the formats.
 This wrapper can serve as a reference for how to use caffe2's python API,
 or for how to implement pre/post-processing in actual deployment.
+
+## Conversion to TensorFlow
+[tensorpack Faster R-CNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
+provides scripts to convert a few standard detectron2 R-CNN models to TensorFlow's pb format.
+It works by translating configs and weights, therefore only support a few models.

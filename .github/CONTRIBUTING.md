@@ -37,6 +37,14 @@ factors into consideration:
    need such feature.
 5. Whether the proposed solution breaks existing APIs.
 
+To add a feature to an existing function/class `Func`, there are always two approaches:
+(1) add new arguments to `Func`; (2) write a new `Func_with_new_feature`.
+To meet the above criteria, we often prefer approach (2), because:
+
+1. It does not involve modifying or potentially breaking existing code.
+2. It does not add overhead to users who do not need the new feature.
+3. Keep adding new arguments is not scalable w.r.t. all the possible new research ideas in the future.
+
 When sending a PR, please do:
 
 1. If a PR contains multiple orthogonal changes, split it to several PRs.

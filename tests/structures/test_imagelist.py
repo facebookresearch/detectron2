@@ -9,6 +9,7 @@ from detectron2.utils.env import TORCH_VERSION
 
 
 class TestImageList(unittest.TestCase):
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_imagelist_padding_tracing(self):
         # test that the trace does not contain hard-coded constant sizes
         def to_imagelist(tensors: Sequence[torch.Tensor]):
