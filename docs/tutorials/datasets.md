@@ -88,7 +88,8 @@ and the required fields vary based on what the dataloader or the task needs (see
   + `category_id` (int, required): the category label, an integer in the range [0, num_categories-1] where
     num_categories is the number of distinct labels that will appear in the entire dataset.
     The value num_categories is reserved to represent the "background" category, if applicable.
-    That is, all integer labels must be used, e.g. {0, 1, 2, 3}.
+    That is, unless you are including annotations for the background, you must not skip labels.
+    For example, if you use 3 as a label, your dataset must also use 0, 1, and 2 for labels elsewhere.
     If you use labels {0, 2, 3} then label 3 must only be used for the background.
     Using labels {0, 3, 4} is invalid.
   + `segmentation` (list[list[float]] or dict): the segmentation mask of the instance.
