@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
-from typing import Dict, Union
+from typing import Dict, List, Tuple, Union
 import torch
 from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
@@ -43,7 +43,14 @@ Naming convention:
 """
 
 
-def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image):
+def fast_rcnn_inference(
+    boxes: List[torch.Tensor],
+    scores: List[torch.Tensor],
+    image_shapes: List[Tuple[int, int]],
+    score_thresh: float,
+    nms_thresh: float,
+    topk_per_image: int,
+):
     """
     Call `fast_rcnn_inference_single_image` for all images.
 
@@ -79,7 +86,12 @@ def fast_rcnn_inference(boxes, scores, image_shapes, score_thresh, nms_thresh, t
 
 
 def fast_rcnn_inference_single_image(
-    boxes, scores, image_shape, score_thresh, nms_thresh, topk_per_image
+    boxes,
+    scores,
+    image_shape: Tuple[int, int],
+    score_thresh: float,
+    nms_thresh: float,
+    topk_per_image: int,
 ):
     """
     Single-image inference. Return bounding-box detection results by thresholding
@@ -472,7 +484,7 @@ class FastRCNNOutputLayers(nn.Module):
         ).losses()
         return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
 
-    def inference(self, predictions, proposals):
+    def inference(self, predictions: Tuple[torch.Tensor, torch.Tensor], proposals: List[Instances]):
         """
         Args:
             predictions: return values of :meth:`forward()`.
@@ -531,7 +543,9 @@ class FastRCNNOutputLayers(nn.Module):
         num_prop_per_image = [len(p) for p in proposals]
         return predict_boxes.split(num_prop_per_image)
 
-    def predict_boxes(self, predictions, proposals):
+    def predict_boxes(
+        self, predictions: Tuple[torch.Tensor, torch.Tensor], proposals: List[Instances]
+    ):
         """
         Args:
             predictions: return values of :meth:`forward()`.
@@ -555,7 +569,9 @@ class FastRCNNOutputLayers(nn.Module):
         )  # Nx(KxB)
         return predict_boxes.split(num_prop_per_image)
 
-    def predict_probs(self, predictions, proposals):
+    def predict_probs(
+        self, predictions: Tuple[torch.Tensor, torch.Tensor], proposals: List[Instances]
+    ):
         """
         Args:
             predictions: return values of :meth:`forward()`.

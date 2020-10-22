@@ -226,6 +226,64 @@ class ROIHeadsTest(unittest.TestCase):
                 torch.equal(origin_ins.pred_keypoint_heatmaps, script_ins.pred_keypoint_heatmaps)
             )
 
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_StandardROIHeads_scriptability(self):
+        cfg = get_cfg()
+        cfg.MODEL.ROI_BOX_HEAD.NAME = "FastRCNNConvFCHead"
+        cfg.MODEL.ROI_BOX_HEAD.NUM_FC = 2
+        cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE = "ROIAlignV2"
+        cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_WEIGHTS = (10, 10, 5, 5)
+        cfg.MODEL.MASK_ON = True
+        cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.01
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.01
+        num_images = 2
+        images_tensor = torch.rand(num_images, 20, 30)
+        image_sizes = [(10, 10), (20, 30)]
+        images = ImageList(images_tensor, image_sizes)
+        num_channels = 1024
+        features = {"res4": torch.rand(num_images, num_channels, 1, 2)}
+        feature_shape = {"res4": ShapeSpec(channels=num_channels, stride=16)}
+
+        roi_heads = StandardROIHeads(cfg, feature_shape).eval()
+
+        proposal0 = Instances(image_sizes[0])
+        proposal_boxes0 = torch.tensor([[1, 1, 3, 3], [2, 2, 6, 6]], dtype=torch.float32)
+        proposal0.proposal_boxes = Boxes(proposal_boxes0)
+        proposal0.objectness_logits = torch.tensor([0.5, 0.7], dtype=torch.float32)
+
+        proposal1 = Instances(image_sizes[1])
+        proposal_boxes1 = torch.tensor([[1, 5, 2, 8], [7, 3, 10, 5]], dtype=torch.float32)
+        proposal1.proposal_boxes = Boxes(proposal_boxes1)
+        proposal1.objectness_logits = torch.tensor([0.1, 0.9], dtype=torch.float32)
+        proposals = [proposal0, proposal1]
+
+        pred_instances, _ = roi_heads(images, features, proposals)
+        fields = {
+            "objectness_logits": "Tensor",
+            "proposal_boxes": "Boxes",
+            "pred_classes": "Tensor",
+            "scores": "Tensor",
+            "pred_masks": "Tensor",
+            "pred_boxes": "Boxes",
+            "pred_keypoints": "Tensor",
+            "pred_keypoint_heatmaps": "Tensor",
+        }
+        with patch_instances(fields) as new_instances:
+            proposal0 = new_instances.from_instances(proposal0)
+            proposal1 = new_instances.from_instances(proposal1)
+            proposals = [proposal0, proposal1]
+            scripted_rot_heads = torch.jit.script(roi_heads)
+            scripted_pred_instances, _ = scripted_rot_heads(images, features, proposals)
+
+        for instance, scripted_instance in zip(pred_instances, scripted_pred_instances):
+            self.assertEqual(instance.image_size, scripted_instance.image_size)
+            self.assertTrue(
+                torch.equal(instance.pred_boxes.tensor, scripted_instance.pred_boxes.tensor)
+            )
+            self.assertTrue(torch.equal(instance.scores, scripted_instance.scores))
+            self.assertTrue(torch.equal(instance.pred_classes, scripted_instance.pred_classes))
+            self.assertTrue(torch.equal(instance.pred_masks, scripted_instance.pred_masks))
+
 
 if __name__ == "__main__":
     unittest.main()
