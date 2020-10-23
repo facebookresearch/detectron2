@@ -203,10 +203,6 @@ workflows:
     jobs:
       - linux_cpu_tests
       - linux_gpu_tests:
-          name: linux_gpu_tests_pytorch1.4
-          pytorch_version: '1.4'
-          torchvision_version: '0.5'
-      - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.5
           pytorch_version: '1.5'
           torchvision_version: '0.6'

@@ -12,7 +12,7 @@ from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 from torch.utils.hipify import hipify_python
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 4], "Requires PyTorch >= 1.4"
+assert torch_ver >= [1, 5], "Requires PyTorch >= 1.5"
 
 
 def get_version():
@@ -45,13 +45,11 @@ def get_extensions():
     main_source = path.join(extensions_dir, "vision.cpp")
     sources = glob.glob(path.join(extensions_dir, "**", "*.cpp"))
 
-    is_rocm_pytorch = False
-    if torch_ver >= [1, 5]:
-        from torch.utils.cpp_extension import ROCM_HOME
+    from torch.utils.cpp_extension import ROCM_HOME
 
-        is_rocm_pytorch = (
-            True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
-        )
+    is_rocm_pytorch = (
+        True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
+    )
 
     if is_rocm_pytorch:
         hipify_python.hipify(

@@ -9,12 +9,10 @@ from torch import nn
 from detectron2.config import get_cfg
 from detectron2.export.torchscript import dump_torchscript_IR
 from detectron2.modeling import build_backbone
-from detectron2.utils.env import TORCH_VERSION
 
 
 class TestTorchscript(unittest.TestCase):
     # TODO: add test to dump scripting
-    @unittest.skipIf(TORCH_VERSION < (1, 5), "Insufficient pytorch version")
     def test_dump_IR_tracing(self):
         cfg = get_cfg()
         cfg.MODEL.RESNETS.DEPTH = 18
