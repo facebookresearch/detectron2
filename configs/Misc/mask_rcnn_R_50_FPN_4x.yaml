@@ -1,0 +1,13 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+OUTPUT_DIR: "results/mask_rcnn_R_50_FPN_4x/"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+DATALOADER:
+  NUM_WORKERS: 10
+SOLVER:
+  IMS_PER_BATCH: 8
+  STEPS: (240000, 320000)
+  MAX_ITER: 360000

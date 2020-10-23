@@ -5,7 +5,10 @@ MODEL:
   RESNETS:
     OUT_FEATURES: ["res3", "res4", "res5"]
   ANCHOR_GENERATOR:
-    SIZES: !!python/object/apply:eval ["[[x, x * 2**(1.0/3), x * 2**(2.0/3) ] for x in [32, 64, 128, 256, 512 ]]"]
+    SIZES:
+      !!python/object/apply:eval [
+        "[[x, x * 2**(1.0/3), x * 2**(2.0/3) ] for x in [32, 64, 128, 256, 512 ]]",
+      ]
   FPN:
     IN_FEATURES: ["res3", "res4", "res5"]
   RETINANET:
@@ -16,8 +19,8 @@ DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
 SOLVER:
-  IMS_PER_BATCH: 16
-  BASE_LR: 0.01  # Note that RetinaNet uses a different default learning rate
+  IMS_PER_BATCH: 10
+  BASE_LR: 0.01 # Note that RetinaNet uses a different default learning rate
   STEPS: (60000, 80000)
   MAX_ITER: 90000
 INPUT:

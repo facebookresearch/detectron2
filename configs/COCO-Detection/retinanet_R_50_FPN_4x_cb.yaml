@@ -1,0 +1,17 @@
+_BASE_: "../Base-RetinaNet.yaml"
+OUTPUT_DIR: "results/r50fpn_retinanet_4x_cb_size_3/"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  BACKBONE:
+    CHECKERBOARD_RATE: 0.1
+    CHECKERBOARD_SIZE: 3
+    CHECKERBOARD_SHAPE: "square"
+
+DATALOADER:
+  NUM_WORKERS: 10
+SOLVER:
+  IMS_PER_BATCH: 8
+  STEPS: (240000, 320000)
+  MAX_ITER: 360000

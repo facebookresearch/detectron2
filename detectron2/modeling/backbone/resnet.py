@@ -13,6 +13,7 @@ from detectron2.layers import (
     ModulatedDeformConv,
     ShapeSpec,
     get_norm,
+    Checkerboard
 )
 
 from .backbone import Backbone
@@ -36,7 +37,7 @@ class BasicBlock(CNNBlockBase):
     with two 3x3 conv layers and a projection shortcut if needed.
     """
 
-    def __init__(self, in_channels, out_channels, *, stride=1, norm="BN"):
+    def __init__(self, in_channels, out_channels, *, stride=1, norm="BN", checkerboard_rate=0., checkerboard_size=0, checkerboard_shape=''):
         """
         Args:
             in_channels (int): Number of input channels.
@@ -83,8 +84,16 @@ class BasicBlock(CNNBlockBase):
             if layer is not None:  # shortcut can be None
                 weight_init.c2_msra_fill(layer)
 
+        if checkerboard_rate:
+            self.cb = Checkerboard(checkerboard_rate, checkerboard_size-2, checkerboard_shape) if checkerboard_size != 1 else \
+                Checkerboard(checkerboard_rate, 1, checkerboard_shape)
+        else:
+            self.cb = None
+
     def forward(self, x):
         out = self.conv1(x)
+        if self.cb is not None:
+            out = self.cb(x)
         out = F.relu_(out)
         out = self.conv2(out)
 
@@ -115,7 +124,8 @@ class BottleneckBlock(CNNBlockBase):
         num_groups=1,
         norm="BN",
         stride_in_1x1=False,
-        dilation=1,
+        dilation=1, 
+        checkerboard_rate=0., checkerboard_size=0, checkerboard_shape=''
     ):
         """
         Args:
@@ -180,6 +190,12 @@ class BottleneckBlock(CNNBlockBase):
             if layer is not None:  # shortcut can be None
                 weight_init.c2_msra_fill(layer)
 
+        if checkerboard_rate:
+            self.cb = Checkerboard(checkerboard_rate, checkerboard_size-2, checkerboard_shape) if checkerboard_size != 1 else \
+                Checkerboard(checkerboard_rate, 1, checkerboard_shape)
+        else:
+            self.cb = None
+
         # Zero-initialize the last normalization in each residual branch,
         # so that at the beginning, the residual branch starts with zeros,
         # and each residual block behaves like an identity.
@@ -194,6 +210,8 @@ class BottleneckBlock(CNNBlockBase):
 
     def forward(self, x):
         out = self.conv1(x)
+        if self.cb is not None:
+            out = self.cb(out)
         out = F.relu_(out)
 
         out = self.conv2(out)
@@ -229,7 +247,8 @@ class DeformBottleneckBlock(CNNBlockBase):
         stride_in_1x1=False,
         dilation=1,
         deform_modulated=False,
-        deform_num_groups=1,
+        deform_num_groups=1, 
+        heckerboard_rate=0., checkerboard_size=0, checkerboard_shape=''
     ):
         super().__init__(in_channels, out_channels, stride)
         self.deform_modulated = deform_modulated
@@ -301,8 +320,16 @@ class DeformBottleneckBlock(CNNBlockBase):
         nn.init.constant_(self.conv2_offset.weight, 0)
         nn.init.constant_(self.conv2_offset.bias, 0)
 
+        if checkerboard_rate:
+            self.cb = Checkerboard(checkerboard_rate, checkerboard_size-2, checkerboard_shape) if checkerboard_size != 1 else \
+                Checkerboard(checkerboard_rate, 1, checkerboard_shape)
+        else:
+            self.cb = None
+
     def forward(self, x):
         out = self.conv1(x)
+        if self.cb is not None:
+            out = self.cb(x)
         out = F.relu_(out)
 
         if self.deform_modulated:
@@ -587,6 +614,11 @@ def build_resnet_backbone(cfg, input_shape):
     deform_on_per_stage = cfg.MODEL.RESNETS.DEFORM_ON_PER_STAGE
     deform_modulated    = cfg.MODEL.RESNETS.DEFORM_MODULATED
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
+
+    checkerboard_rate = cfg.MODEL.BACKBONE.CHECKERBOARD_RATE
+    checkerboard_size = cfg.MODEL.BACKBONE.CHECKERBOARD_SIZE
+    checkerboard_shape = cfg.MODEL.BACKBONE.CHECKERBOARD_SHAPE
+
     # fmt: on
     assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
 
@@ -610,9 +642,7 @@ def build_resnet_backbone(cfg, input_shape):
 
     # Avoid creating variables without gradients
     # It consumes extra memory and may cause allreduce to fail
-    out_stage_idx = [
-        {"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features if f != "stem"
-    ]
+    out_stage_idx = [{"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features]
     max_stage_idx = max(out_stage_idx)
     for idx, stage_idx in enumerate(range(2, max_stage_idx + 1)):
         dilation = res5_dilation if stage_idx == 5 else 1
@@ -638,6 +668,11 @@ def build_resnet_backbone(cfg, input_shape):
                 stage_kargs["deform_num_groups"] = deform_num_groups
             else:
                 stage_kargs["block_class"] = BottleneckBlock
+
+        stage_kargs['checkerboard_rate'] = checkerboard_rate
+        stage_kargs['checkerboard_size'] = checkerboard_size
+        stage_kargs['checkerboard_shape'] = checkerboard_shape
+
         blocks = ResNet.make_stage(**stage_kargs)
         in_channels = out_channels
         out_channels *= 2

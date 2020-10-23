@@ -47,7 +47,6 @@ class FPN(Backbone):
         """
         super(FPN, self).__init__()
         assert isinstance(bottom_up, Backbone)
-        assert in_features, in_features
 
         # Feature map strides and channels from the bottom up network (e.g. ResNet)
         input_shapes = bottom_up.output_shape()
