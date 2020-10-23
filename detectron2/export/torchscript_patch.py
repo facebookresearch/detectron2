@@ -4,7 +4,8 @@ import importlib.util
 import os
 import sys
 import tempfile
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
+from unittest import mock
 import torch
 
 # need an explicit import due to https://github.com/pytorch/pytorch/issues/38964
@@ -176,3 +177,26 @@ def _import(path):
     sys.modules[module.__name__] = module
     spec.loader.exec_module(module)
     return module
+
+
+# TODO: this is a private utility. Should be made more useful through a model export api.
+@contextmanager
+def patch_builtin_len():
+    """
+    Patch the builtin len() function of a few detectron2 modules
+    to use __len__ instead, because __len__ does not convert values to
+    integers and therefore is friendly to tracing.
+    """
+
+    def _new_len(obj):
+        return obj.__len__()
+
+    with ExitStack() as stack:
+        MODULES = [
+            "detectron2.modeling.roi_heads.fast_rcnn",
+            "detectron2.modeling.roi_heads.mask_head",
+        ]
+        ctxs = [stack.enter_context(mock.patch(mod + ".len")) for mod in MODULES]
+        for m in ctxs:
+            m.side_effect = _new_len
+        yield

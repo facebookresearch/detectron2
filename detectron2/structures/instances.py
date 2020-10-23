@@ -141,7 +141,8 @@ class Instances:
 
     def __len__(self) -> int:
         for v in self._fields.values():
-            return len(v)
+            # use __len__ because len() has to be int and is not friendly to tracing
+            return v.__len__()
         raise NotImplementedError("Empty Instances does not support __len__!")
 
     def __iter__(self):
