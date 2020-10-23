@@ -135,7 +135,7 @@ class TestROIPooler(unittest.TestCase):
         self.assertEqual(output.shape, (0, C, 14, 14))
 
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
-    def test_fmt_box_list_onnx_export(self):
+    def test_fmt_box_list_tracing(self):
         class Model(torch.nn.Module):
             def forward(self, box_tensor):
                 return _fmt_box_list(box_tensor, 0)
@@ -148,19 +148,19 @@ class TestROIPooler(unittest.TestCase):
             self.assertEqual(func(torch.ones(20, 4)).shape, (20, 5))
 
     @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
-    def test_roi_pooler_onnx_export(self):
+    def test_roi_pooler_tracing(self):
         class Model(torch.nn.Module):
             def __init__(self, roi):
                 super(Model, self).__init__()
                 self.roi = roi
 
             def forward(self, x, boxes):
-                return self.roi([x], [Boxes(boxes)])
+                return self.roi(x, [Boxes(boxes)])
 
         pooler_resolution = 14
         canonical_level = 4
         canonical_scale_factor = 2 ** canonical_level
-        pooler_scales = (1.0 / canonical_scale_factor,)
+        pooler_scales = (1.0 / canonical_scale_factor, 0.5 / canonical_scale_factor)
         sampling_ratio = 0
 
         N, C, H, W = 1, 4, 10, 8
@@ -168,6 +168,7 @@ class TestROIPooler(unittest.TestCase):
         std = 11
         mean = 0
         feature = (torch.rand(N, C, H, W) - 0.5) * 2 * std + mean
+        feature = [feature, feature]
 
         rois = self._rand_boxes(
             num_boxes=N_rois, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
