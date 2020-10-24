@@ -1,9 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 
+import itertools
 import numpy as np
 import unittest
+from contextlib import contextmanager
 import torch
+from torch.cuda.amp import autocast
 
 import detectron2.model_zoo as model_zoo
 from detectron2.config import get_cfg
@@ -22,6 +25,42 @@ def get_model_zoo(config_path):
     if not torch.cuda.is_available():
         cfg.MODEL.DEVICE = "cpu"
     return build_model(cfg)
+
+
+@contextmanager
+def typecheck_hook(model, *, in_dtype=None, out_dtype=None):
+    """
+    Check that the model must be called with the given input/output dtype
+    """
+    if not isinstance(in_dtype, set):
+        in_dtype = {in_dtype}
+    if not isinstance(out_dtype, set):
+        out_dtype = {out_dtype}
+
+    def flatten(x):
+        if isinstance(x, torch.Tensor):
+            return [x]
+        if isinstance(x, (list, tuple)):
+            return list(itertools.chain(*[flatten(t) for t in x]))
+        if isinstance(x, dict):
+            return flatten(list(x.values()))
+        return []
+
+    def hook(module, input, output):
+        if in_dtype is not None:
+            dtypes = {x.dtype for x in flatten(input)}
+            assert (
+                dtypes == in_dtype
+            ), f"Expected input dtype of {type(module)} is {in_dtype}. Got {dtypes} instead!"
+
+        if out_dtype is not None:
+            dtypes = {x.dtype for x in flatten(output)}
+            assert (
+                dtypes == out_dtype
+            ), f"Expected output dtype of {type(module)} is {out_dtype}. Got {dtypes} instead!"
+
+    with model.register_forward_hook(hook):
+        yield
 
 
 def create_model_input(img, inst=None):
@@ -129,6 +168,19 @@ class MaskRCNNE2ETest(ModelE2ETest, unittest.TestCase):
             det, _ = self.model.roi_heads(images, features, props)
             self.assertEqual(len(det[0]), 0)
 
+    def test_autocast(self):
+        inputs = [{"image": torch.rand(3, 100, 100)}]
+        self.model.eval()
+        with autocast(), typecheck_hook(
+            self.model.backbone, in_dtype=torch.float32, out_dtype=torch.float16
+        ), typecheck_hook(
+            self.model.roi_heads.box_predictor, in_dtype=torch.float16, out_dtype=torch.float16
+        ):
+            out = self.model.inference(inputs, do_postprocess=False)[0]
+            self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
+            self.assertEqual(out.pred_masks.dtype, torch.float16)
+            self.assertEqual(out.scores.dtype, torch.float32)  # scores comes from softmax
+
 
 class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
     CONFIG_PATH = "COCO-Detection/retinanet_R_50_FPN_1x.yaml"
@@ -155,3 +207,13 @@ class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
             # all predictions (if any) are infinite or nan
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)
+
+    def test_autocast(self):
+        inputs = [{"image": torch.rand(3, 100, 100)}]
+        self.model.eval()
+        with autocast(), typecheck_hook(
+            self.model.backbone, in_dtype=torch.float32, out_dtype=torch.float16
+        ), typecheck_hook(self.model.head, in_dtype=torch.float16, out_dtype=torch.float16):
+            out = self.model(inputs)[0]["instances"]
+            self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
+            self.assertEqual(out.scores.dtype, torch.float16)

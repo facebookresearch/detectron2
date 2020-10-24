@@ -250,7 +250,8 @@ class RetinaNet(nn.Module):
         pred_logits, pred_anchor_deltas = self.head(features)
         # Transpose the Hi*Wi*A dimension to the middle:
         pred_logits = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits]
-        pred_anchor_deltas = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
+        # ensure fp32 for decoding precision
+        pred_anchor_deltas = [permute_to_N_HWA_K(x.float(), 4) for x in pred_anchor_deltas]
 
         if self.training:
             assert "instances" in batched_inputs[0], "Instance annotations are missing in training!"

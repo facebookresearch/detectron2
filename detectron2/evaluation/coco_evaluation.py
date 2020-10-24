@@ -86,8 +86,8 @@ class COCOEvaluator(DatasetEvaluator):
             )
             self._tasks = self._tasks_from_config(tasks)
             self._logger.warn(
-                "COCO Evaluator instantiated using config, this is deprecated behavior. \
-                Please pass tasks in directly"
+                "COCO Evaluator instantiated using config, this is deprecated behavior."
+                " Please pass tasks in directly"
             )
         else:
             self._tasks = tasks

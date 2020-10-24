@@ -76,8 +76,8 @@ class ROIAlignRotated(nn.Module):
         """
         assert rois.dim() == 2 and rois.size(1) == 6
         return roi_align_rotated(
-            input, rois, self.output_size, self.spatial_scale, self.sampling_ratio
-        )
+            input.float(), rois, self.output_size, self.spatial_scale, self.sampling_ratio
+        ).to(dtype=input.dtype)
 
     def __repr__(self):
         tmpstr = self.__class__.__name__ + "("
