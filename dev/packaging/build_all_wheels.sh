@@ -55,9 +55,4 @@ else
   build_one cu101 1.5
   build_one cu92 1.5
   build_one cpu 1.5
-
-  build_one cu101 1.4
-  build_one cu100 1.4
-  build_one cu92 1.4
-  build_one cpu 1.4
 fi
