@@ -96,7 +96,7 @@ install_linux_dep: &install_linux_dep
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
-        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
+        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/torch_stable.html
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
         gcc --version
 
@@ -187,7 +187,7 @@ jobs:
             pip install numpy cython  # required on windows before pycocotools
             pip install opencv-python-headless pytest-xdist pycocotools tensorboard
             pip install -U git+https://github.com/facebookresearch/fvcore
-            pip install torch==$PYTORCH_VERSION+cpu torchvision==$TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
       - save_cache:
           paths:
@@ -201,17 +201,20 @@ workflows:
   version: 2
   regular_test:
     jobs:
-      - linux_cpu_tests
+      - linux_cpu_tests:
+          name: linux_cpu_tests_pytorch1.7
+          pytorch_version: '1.7+cpu'
+          torchvision_version: '0.8+cpu'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.5
-          pytorch_version: '1.5'
-          torchvision_version: '0.6'
+          pytorch_version: '1.5+cu101'
+          torchvision_version: '0.6+cu101'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.6
-          pytorch_version: '1.6'
-          torchvision_version: '0.7'
+          pytorch_version: '1.6+cu101'
+          torchvision_version: '0.7+cu101'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.7
-          pytorch_version: '1.7'
-          torchvision_version: '0.8'
+          pytorch_version: '1.7+cu101'
+          torchvision_version: '0.8.1+cu101'
       - windows_cpu_build
