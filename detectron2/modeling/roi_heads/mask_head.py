@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from typing import Any, List
+from typing import List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -172,7 +172,7 @@ class BaseMaskRCNNHead(nn.Module):
     def from_config(cls, cfg, input_shape):
         return {"vis_period": cfg.VIS_PERIOD}
 
-    def forward(self, x, instances: List[Instances]) -> Any:
+    def forward(self, x, instances: List[Instances]):
         """
         Args:
             x: input region feature(s) provided by :class:`ROIHeads`.
@@ -188,6 +188,7 @@ class BaseMaskRCNNHead(nn.Module):
         """
         x = self.layers(x)
         if self.training:
+            assert not torch.jit.is_scripting()
             return {"loss_mask": mask_rcnn_loss(x, instances, self.vis_period)}
         else:
             mask_rcnn_inference(x, instances)
