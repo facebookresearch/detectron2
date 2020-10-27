@@ -73,7 +73,7 @@ class COCOEvaluator(DatasetEvaluator):
             use_fast_impl (bool): use a fast but **unofficial** implementation to compute AP.
                 Although the results should be very close to the official implementation in COCO
                 API, it is still recommended to compute results with the official API for use in
-                papers.
+                papers. The faster implementation also uses more RAM.
             kpt_oks_sigmas (list[float]): The sigmas used to calculate keypoint OKS.
                 See http://cocodataset.org/#keypoints-eval
                 When empty, it will use the defaults in COCO.

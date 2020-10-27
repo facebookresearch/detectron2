@@ -167,7 +167,7 @@ jobs:
       - <<: *install_detectron2
       - <<: *run_unittests
 
-  windows_cpu_tests:
+  windows_cpu_build:
     <<: *windows_cpu
     <<: *pytorch_parameters
     steps:
@@ -210,4 +210,4 @@ workflows:
           name: linux_gpu_tests_pytorch1.6
           pytorch_version: '1.6'
           torchvision_version: '0.7'
-      - windows_cpu_tests
+      - windows_cpu_build

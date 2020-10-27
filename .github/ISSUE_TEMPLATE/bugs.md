@@ -6,13 +6,15 @@ title: Please read & provide the following
 ---
 
 ## Instructions To Reproduce the 🐛 Bug:
+1. Full runnable code or full changes you made:
+```
+If making changes to the project itself, please use output of the following command:
+git rev-parse HEAD; git diff
 
-1. what changes you made (`git diff`) or what code you wrote
+<put code or diff here>
 ```
-<put diff or code here>
-```
-2. what exact command you run:
-3. what you observed (including __full logs__):
+2. What exact command you run:
+3. __Full logs__ you observed:
 ```
 <put logs here>
 ```

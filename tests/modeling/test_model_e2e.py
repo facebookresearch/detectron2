@@ -6,12 +6,12 @@ import numpy as np
 import unittest
 from contextlib import contextmanager
 import torch
-from torch.cuda.amp import autocast
 
 import detectron2.model_zoo as model_zoo
 from detectron2.config import get_cfg
 from detectron2.modeling import build_model
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 
 
@@ -168,7 +168,12 @@ class MaskRCNNE2ETest(ModelE2ETest, unittest.TestCase):
             det, _ = self.model.roi_heads(images, features, props)
             self.assertEqual(len(det[0]), 0)
 
+    @unittest.skipIf(
+        TORCH_VERSION < (1, 6) or not torch.cuda.is_available(), "Insufficient pytorch version"
+    )
     def test_autocast(self):
+        from torch.cuda.amp import autocast
+
         inputs = [{"image": torch.rand(3, 100, 100)}]
         self.model.eval()
         with autocast(), typecheck_hook(
@@ -208,7 +213,12 @@ class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)
 
+    @unittest.skipIf(
+        TORCH_VERSION < (1, 6) or not torch.cuda.is_available(), "Insufficient pytorch version"
+    )
     def test_autocast(self):
+        from torch.cuda.amp import autocast
+
         inputs = [{"image": torch.rand(3, 100, 100)}]
         self.model.eval()
         with autocast(), typecheck_hook(

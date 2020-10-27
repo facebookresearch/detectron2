@@ -73,7 +73,6 @@ class ImageList(object):
         Returns:
             an `ImageList`.
         """
-        # https://github.com/pytorch/pytorch/issues/42448
         assert len(tensors) > 0
         assert isinstance(tensors, (tuple, list))
         for t in tensors:
@@ -81,6 +80,7 @@ class ImageList(object):
             assert t.shape[1:-2] == tensors[0].shape[1:-2], t.shape
 
         image_sizes = tuple(im.shape[-2:] for im in tensors)
+        # https://github.com/pytorch/pytorch/issues/42448
         is_tracing = TORCH_VERSION >= (1, 7) and torch.jit.is_tracing()
         if is_tracing:
             # In tracing mode, x.shape[i] is a scalar Tensor, and should not be converted
