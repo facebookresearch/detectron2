@@ -28,10 +28,10 @@ pytorch_parameters: &pytorch_parameters
   parameters:
     pytorch_version:
       type: string
-      default: "1.6"
+      default: "1.7"
     torchvision_version:
       type: string
-      default: "0.7"
+      default: "0.8"
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -130,14 +130,14 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_linux_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -154,7 +154,7 @@ jobs:
       # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -162,7 +162,7 @@ jobs:
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -178,7 +178,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - run:
           name: Install Dependencies
@@ -187,12 +187,12 @@ jobs:
             pip install numpy cython  # required on windows before pycocotools
             pip install opencv-python-headless pytest-xdist pycocotools tensorboard
             pip install -U git+https://github.com/facebookresearch/fvcore
-            pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install torch==$PYTORCH_VERSION+cpu torchvision==$TORCHVISION_VERSION+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
