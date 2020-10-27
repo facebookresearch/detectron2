@@ -24,6 +24,9 @@ class TestInstances(unittest.TestCase):
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_script_new_fields(self):
+        def get_mask(x: Instances) -> torch.Tensor:
+            return x.mask
+
         class f(torch.nn.Module):
             def forward(self, x: Instances):
                 proposal_boxes = x.proposal_boxes  # noqa F841
@@ -32,13 +35,16 @@ class TestInstances(unittest.TestCase):
 
         class g(torch.nn.Module):
             def forward(self, x: Instances):
-                mask = x.mask  # noqa F841
-                return x
+                return get_mask(x)
 
         class g2(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.g = g()
+
             def forward(self, x: Instances):
                 proposal_boxes = x.proposal_boxes  # noqa F841
-                return x
+                return x, self.g(x)
 
         fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
         with patch_instances(fields):
@@ -46,13 +52,24 @@ class TestInstances(unittest.TestCase):
 
         # can't script anymore after exiting the context
         with self.assertRaises(Exception):
+            # will create a ConcreteType for g
             torch.jit.script(g2())
 
         new_fields = {"mask": "Tensor"}
         with patch_instances(new_fields):
+            # will compile g with a different Instances; this should pass
             torch.jit.script(g())
             with self.assertRaises(Exception):
                 torch.jit.script(g2())
+
+        new_fields = {"mask": "Tensor", "proposal_boxes": "Boxes"}
+        with patch_instances(new_fields) as NewInstances:
+            # get_mask will be compiled with a different Instances; this should pass
+            scripted_g2 = torch.jit.script(g2())
+            x = NewInstances((3, 4))
+            x.mask = torch.rand(3)
+            x.proposal_boxes = Boxes(torch.rand(3, 4))
+            scripted_g2(x)  # it should accept the new Instances object and run successfully
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_script_access_fields(self):

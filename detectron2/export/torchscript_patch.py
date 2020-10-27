@@ -14,6 +14,14 @@ from detectron2.structures import Boxes, Instances  # noqa F401
 _counter = 0
 
 
+def _clear_jit_cache():
+    from torch.jit._recursive import concrete_type_store
+    from torch.jit._state import _jit_caching_layer
+
+    concrete_type_store.type_store.clear()  # for modules
+    _jit_caching_layer.clear()  # for free functions
+
+
 @contextmanager
 def patch_instances(fields):
     """
@@ -21,10 +29,15 @@ def patch_instances(fields):
     by a statically-typed scriptable class, defined by `fields`.
     See more in `export_torchscript_with_instances`.
     """
+
     with tempfile.TemporaryDirectory(prefix="detectron2") as dir, tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", suffix=".py", dir=dir, delete=False
     ) as f:
         try:
+            # Objects that use Instances should not reuse previously-compiled
+            # results in cache, because `Instances` could be a new class each time.
+            _clear_jit_cache()
+
             cls_name, s = _gen_module(fields)
             f.write(s)
             f.flush()
