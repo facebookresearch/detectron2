@@ -64,7 +64,7 @@ install_python: &install_python
         pyenv global 3.6.8
         python --version
         which python
-        pip install --upgrade pip setuptools==49.6.0
+        pip install --upgrade pip
 
 setup_venv: &setup_venv
   - run:
@@ -77,7 +77,7 @@ setup_venv: &setup_venv
         python --version
         which python
         which pip
-        pip install --upgrade pip setuptools==49.6.0
+        pip install --upgrade pip
 
 setup_venv_win: &setup_venv_win
   - run:
@@ -210,4 +210,8 @@ workflows:
           name: linux_gpu_tests_pytorch1.6
           pytorch_version: '1.6'
           torchvision_version: '0.7'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.7
+          pytorch_version: '1.7'
+          torchvision_version: '0.8'
       - windows_cpu_build
