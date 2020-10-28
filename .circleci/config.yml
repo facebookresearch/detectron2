@@ -204,7 +204,7 @@ workflows:
       - linux_cpu_tests:
           name: linux_cpu_tests_pytorch1.7
           pytorch_version: '1.7+cpu'
-          torchvision_version: '0.8+cpu'
+          torchvision_version: '0.8.1+cpu'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.5
           pytorch_version: '1.5+cu101'
