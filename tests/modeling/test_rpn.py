@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
+import sys
 import unittest
 import torch
 
@@ -77,7 +78,10 @@ class RPNTest(unittest.TestCase):
             )
             self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    # https://github.com/pytorch/pytorch/issues/46964
+    @unittest.skipIf(
+        TORCH_VERSION < (1, 7) or sys.version_info.minor <= 6, "Insufficient pytorch version"
+    )
     def test_rpn_scriptability(self):
         cfg = get_cfg()
         proposal_generator = RPN(cfg, {"res4": ShapeSpec(channels=1024, stride=16)}).eval()

@@ -28,10 +28,10 @@ pytorch_parameters: &pytorch_parameters
   parameters:
     pytorch_version:
       type: string
-      default: "1.6"
+      default: "1.7"
     torchvision_version:
       type: string
-      default: "0.7"
+      default: "0.8"
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -64,7 +64,7 @@ install_python: &install_python
         pyenv global 3.6.8
         python --version
         which python
-        pip install --upgrade pip setuptools==49.6.0
+        pip install --upgrade pip
 
 setup_venv: &setup_venv
   - run:
@@ -77,7 +77,7 @@ setup_venv: &setup_venv
         python --version
         which python
         which pip
-        pip install --upgrade pip setuptools==49.6.0
+        pip install --upgrade pip
 
 setup_venv_win: &setup_venv_win
   - run:
@@ -96,7 +96,7 @@ install_linux_dep: &install_linux_dep
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
-        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/cu101/torch_stable.html
+        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/torch_stable.html
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
         gcc --version
 
@@ -130,14 +130,14 @@ jobs:
       # Cache the venv directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_linux_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -154,7 +154,7 @@ jobs:
       # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -162,7 +162,7 @@ jobs:
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -178,7 +178,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - run:
           name: Install Dependencies
@@ -187,12 +187,12 @@ jobs:
             pip install numpy cython  # required on windows before pycocotools
             pip install opencv-python-headless pytest-xdist pycocotools tensorboard
             pip install -U git+https://github.com/facebookresearch/fvcore
-            pip install torch==1.6.0+cpu torchvision==0.7.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+            pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20200907
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20201027
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
@@ -201,13 +201,20 @@ workflows:
   version: 2
   regular_test:
     jobs:
-      - linux_cpu_tests
+      - linux_cpu_tests:
+          name: linux_cpu_tests_pytorch1.7
+          pytorch_version: '1.7+cpu'
+          torchvision_version: '0.8.1+cpu'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.5
-          pytorch_version: '1.5'
-          torchvision_version: '0.6'
+          pytorch_version: '1.5+cu101'
+          torchvision_version: '0.6+cu101'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.6
-          pytorch_version: '1.6'
-          torchvision_version: '0.7'
+          pytorch_version: '1.6+cu101'
+          torchvision_version: '0.7+cu101'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.7
+          pytorch_version: '1.7+cu101'
+          torchvision_version: '0.8.1+cu101'
       - windows_cpu_build
