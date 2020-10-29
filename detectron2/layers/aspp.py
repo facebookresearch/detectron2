@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from copy import deepcopy
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -19,6 +20,7 @@ class ASPP(nn.Module):
         in_channels,
         out_channels,
         dilations,
+        *,
         norm,
         activation,
         pool_kernel_size=None,
@@ -60,7 +62,7 @@ class ASPP(nn.Module):
                 kernel_size=1,
                 bias=use_bias,
                 norm=get_norm(norm, out_channels),
-                activation=activation,
+                activation=deepcopy(activation),
             )
         )
         weight_init.c2_xavier_fill(self.convs[-1])
@@ -75,7 +77,7 @@ class ASPP(nn.Module):
                     dilation=dilation,
                     bias=use_bias,
                     norm=get_norm(norm, out_channels),
-                    activation=activation,
+                    activation=deepcopy(activation),
                 )
             )
             weight_init.c2_xavier_fill(self.convs[-1])
@@ -85,12 +87,12 @@ class ASPP(nn.Module):
         if pool_kernel_size is None:
             image_pooling = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
-                Conv2d(in_channels, out_channels, 1, bias=True, activation=activation),
+                Conv2d(in_channels, out_channels, 1, bias=True, activation=deepcopy(activation)),
             )
         else:
             image_pooling = nn.Sequential(
                 nn.AvgPool2d(kernel_size=pool_kernel_size, stride=1),
-                Conv2d(in_channels, out_channels, 1, bias=True, activation=activation),
+                Conv2d(in_channels, out_channels, 1, bias=True, activation=deepcopy(activation)),
             )
         weight_init.c2_xavier_fill(image_pooling[1])
         self.convs.append(image_pooling)
@@ -101,7 +103,7 @@ class ASPP(nn.Module):
             kernel_size=1,
             bias=use_bias,
             norm=get_norm(norm, out_channels),
-            activation=activation,
+            activation=deepcopy(activation),
         )
         weight_init.c2_xavier_fill(self.project)
 

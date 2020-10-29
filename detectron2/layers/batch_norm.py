@@ -134,6 +134,8 @@ def get_norm(norm, out_channels):
     Returns:
         nn.Module or None: the normalization layer
     """
+    if norm is None:
+        return None
     if isinstance(norm, str):
         if len(norm) == 0:
             return None
