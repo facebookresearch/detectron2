@@ -41,7 +41,7 @@ from detectron2.utils.events import CommonMetricPrinter, JSONWriter, Tensorboard
 from detectron2.utils.logger import setup_logger
 
 from . import hooks
-from .train_loop import SimpleTrainer
+from .train_loop import SimpleTrainer, TrainerBase
 
 __all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
 
@@ -224,13 +224,12 @@ class DefaultPredictor:
             return predictions
 
 
-class DefaultTrainer(SimpleTrainer):
+class DefaultTrainer(TrainerBase):
     """
-    A trainer with default training logic.
-    It is a subclass of :class:`SimpleTrainer` and instantiates everything needed from the
-    config. It does the following:
+    A trainer with default training logic. It does the following:
 
-    1. Create model, optimizer, scheduler, dataloader from the given config.
+    1. Create a :class:`SimpleTrainer` using model, optimizer, dataloader
+       defined by the given config. Create a LR scheduler defined by the config.
     2. Load the last checkpoint or `cfg.MODEL.WEIGHTS`, if exists, when
        `resume_or_load` is called.
     3. Register a few common hooks defined by the config.
@@ -273,10 +272,12 @@ class DefaultTrainer(SimpleTrainer):
         Args:
             cfg (CfgNode):
         """
+        super().__init__()
         logger = logging.getLogger("detectron2")
         if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
             setup_logger()
         cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
+
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
         optimizer = self.build_optimizer(cfg, model)
@@ -287,7 +288,7 @@ class DefaultTrainer(SimpleTrainer):
             model = DistributedDataParallel(
                 model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
             )
-        super().__init__(model, data_loader, optimizer)
+        self._trainer = SimpleTrainer(model, data_loader, optimizer)
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
         # Assume no other objects need to be checkpointed.
@@ -414,6 +415,10 @@ class DefaultTrainer(SimpleTrainer):
             ), "No evaluation results obtained during training!"
             verify_results(self.cfg, self._last_eval_results)
             return self._last_eval_results
+
+    def run_step(self):
+        self._trainer.iter = self.iter
+        self._trainer.run_step()
 
     @classmethod
     def build_model(cls, cfg):
@@ -609,3 +614,8 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
         if frozen:
             cfg.freeze()
         return cfg
+
+
+# Access basic attributes from the underlying trainer
+for _attr in ["model", "data_loader", "optimizer"]:
+    setattr(DefaultTrainer, _attr, property(lambda self, x=_attr: getattr(self._trainer, x)))
