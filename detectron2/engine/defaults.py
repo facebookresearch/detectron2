@@ -41,7 +41,7 @@ from detectron2.utils.events import CommonMetricPrinter, JSONWriter, Tensorboard
 from detectron2.utils.logger import setup_logger
 
 from . import hooks
-from .train_loop import SimpleTrainer, TrainerBase
+from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
 
 __all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
 
@@ -288,7 +288,9 @@ class DefaultTrainer(TrainerBase):
             model = DistributedDataParallel(
                 model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
             )
-        self._trainer = SimpleTrainer(model, data_loader, optimizer)
+        self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
+            model, data_loader, optimizer
+        )
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
         # Assume no other objects need to be checkpointed.

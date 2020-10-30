@@ -7,6 +7,7 @@ import time
 import weakref
 from typing import Dict
 import torch
+from torch.nn.parallel import DataParallel, DistributedDataParallel
 
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage, get_event_storage
@@ -283,3 +284,53 @@ class SimpleTrainer(TrainerBase):
             storage.put_scalar("total_loss", total_losses_reduced)
             if len(metrics_dict) > 1:
                 storage.put_scalars(**metrics_dict)
+
+
+class AMPTrainer(SimpleTrainer):
+    """
+    Like :class:`SimpleTrainer`, but uses PyTorch's native automatic mixed precision
+    in the training loop.
+    """
+
+    def __init__(self, model, data_loader, optimizer, grad_scaler=None):
+        """
+        Args:
+            model, data_loader, optimizer: same as in :class:`SimpleTrainer`.
+            grad_scaler: torch GradScaler to automatically scale gradients.
+        """
+        unsupported = "AMPTrainer does not support single-process multi-device training!"
+        if isinstance(model, DistributedDataParallel):
+            assert not (model.device_ids and len(model.device_ids) > 1), unsupported
+        assert not isinstance(model, DataParallel), unsupported
+
+        super().__init__(model, data_loader, optimizer)
+
+        if grad_scaler is None:
+            from torch.cuda.amp import GradScaler
+
+            grad_scaler = GradScaler()
+        self.grad_scaler = grad_scaler
+
+    def run_step(self):
+        """
+        Implement the AMP training logic.
+        """
+        assert self.model.training, "[AMPTrainer] model was changed to eval mode!"
+        assert torch.cuda.is_available(), "[AMPTrainer] CUDA is required for AMP training!"
+        from torch.cuda.amp import autocast
+
+        start = time.perf_counter()
+        data = next(self._data_loader_iter)
+        data_time = time.perf_counter() - start
+
+        with autocast():
+            loss_dict = self.model(data)
+            losses = sum(loss_dict.values())
+
+        self.optimizer.zero_grad()
+        self.grad_scaler.scale(losses).backward()
+
+        self._write_metrics(loss_dict, data_time)
+
+        self.grad_scaler.step(self.optimizer)
+        self.grad_scaler.update()
