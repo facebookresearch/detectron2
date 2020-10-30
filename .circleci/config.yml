@@ -6,6 +6,9 @@ version: 2.1
 cpu: &cpu
   docker:
     - image: circleci/python:3.6.8-stretch
+      auth:
+        username: $DOCKERHUB_USERNAME
+        password: $DOCKERHUB_TOKEN
   resource_class: medium
 
 gpu: &gpu
@@ -205,6 +208,8 @@ workflows:
           name: linux_cpu_tests_pytorch1.7
           pytorch_version: '1.7+cpu'
           torchvision_version: '0.8.1+cpu'
+          context:
+            - DOCKERHUB_TOKEN
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.5
           pytorch_version: '1.5+cu101'
