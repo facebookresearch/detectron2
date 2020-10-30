@@ -17,7 +17,8 @@ def batched_nms(
     # TODO may need better strategy.
     # Investigate after having a fully-cuda NMS op.
     if len(boxes) < 40000:
-        return box_ops.batched_nms(boxes, scores, idxs, iou_threshold)
+        # fp16 does not have enough range for batched NMS
+        return box_ops.batched_nms(boxes.float(), scores, idxs, iou_threshold)
 
     result_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
     for id in torch.jit.annotate(List[int], torch.unique(idxs).cpu().tolist()):
@@ -127,6 +128,7 @@ def batched_nms_rotated(boxes, scores, idxs, iou_threshold):
 
     if boxes.numel() == 0:
         return torch.empty((0,), dtype=torch.int64, device=boxes.device)
+    boxes = boxes.float()  # fp16 does not have enough range for batched NMS
     # Strategy: in order to perform NMS independently per class,
     # we add an offset to all the boxes. The offset is dependent
     # only on the class idx, and is large enough so that boxes

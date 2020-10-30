@@ -527,7 +527,7 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
         N, B = proposal_boxes.shape
         predict_boxes = self.box2box_transform.apply_deltas(
-            proposal_deltas.float(), proposal_boxes
+            proposal_deltas, proposal_boxes
         )  # Nx(KxB)
 
         K = predict_boxes.shape[1] // B
@@ -566,7 +566,7 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
         predict_boxes = self.box2box_transform.apply_deltas(
             # ensure fp32 for decoding precision
-            proposal_deltas.float(),
+            proposal_deltas,
             proposal_boxes,
         )  # Nx(KxB)
         return predict_boxes.split(num_prop_per_image)
