@@ -231,7 +231,7 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
         Where
 
             * batched_inputs (list[dict]): the original input format of the meta arch
-            * c2_inputs (dict[str, Tensor]): the caffe2 inputs.
+            * c2_inputs (tuple[Tensor]): the caffe2 inputs.
             * c2_results (dict[str, Tensor]): the caffe2 output format,
                 corresponding to the outputs of the :meth:`forward` function.
             * detectron2_outputs: the original output format of the meta arch.
@@ -277,7 +277,8 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
     @staticmethod
     def get_outputs_converter(predict_net, init_net):
         def f(batched_inputs, c2_inputs, c2_results):
-            image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
+            _, im_info = c2_inputs
+            image_sizes = [[int(im[0]), int(im[1])] for im in im_info]
             results = assemble_rcnn_outputs_by_name(image_sizes, c2_results)
             return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
 
@@ -349,7 +350,8 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
         )
 
         def f(batched_inputs, c2_inputs, c2_results):
-            image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
+            _, im_info = c2_inputs
+            image_sizes = [[int(im[0]), int(im[1])] for im in im_info]
             detector_results = assemble_rcnn_outputs_by_name(
                 image_sizes, c2_results, force_mask_on=True
             )
@@ -473,7 +475,8 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         )
 
         def f(batched_inputs, c2_inputs, c2_results):
-            image_sizes = [[int(im[0]), int(im[1])] for im in c2_inputs["im_info"]]
+            _, im_info = c2_inputs
+            image_sizes = [[int(im[0]), int(im[1])] for im in im_info]
 
             num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])
             pred_logits = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]

@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import collections
 import logging
 import numpy as np
 from itertools import count
@@ -46,7 +45,7 @@ class ProtobufModel(torch.nn.Module):
         self._error_msgs = set()
         self._input_blobs = uninitialized_external_input
 
-    def _infer_output_devices(self, inputs_dict):
+    def _infer_output_devices(self, inputs):
         """
         Returns:
             list[str]: list of device for each external output
@@ -59,7 +58,7 @@ class ProtobufModel(torch.nn.Module):
 
         predict_net = self.net.Proto()
         input_device_types = {
-            (name, 0): _get_device_type(tensor) for name, tensor in inputs_dict.items()
+            (name, 0): _get_device_type(tensor) for name, tensor in zip(self._input_blobs, inputs)
         }
         device_type_map = infer_device_type(
             predict_net, known_status=input_device_types, device_name_style="pytorch"
@@ -69,20 +68,21 @@ class ProtobufModel(torch.nn.Module):
         output_devices = [device_type_map[outp] for outp in versioned_outputs]
         return output_devices
 
-    def forward(self, inputs_dict):
+    def forward(self, inputs):
         """
         Args:
-            inputs_dict (dict[str->torch.Tensor])
+            inputs (tuple[torch.Tensor])
 
         Returns:
-            dict[str->torch.Tensor]
+            dict[str, torch.Tensor]
         """
-        assert set(inputs_dict.keys()) == set(
-            self._input_blobs
-        ), f"Input dict must match the names {self._input_blobs}! Got f{inputs_dict.keys()}."
+        assert len(inputs) == len(self._input_blobs), (
+            f"Length of inputs ({len(inputs)}) "
+            f"doesn't match the required input blobs: {self._input_blobs}"
+        )
 
         with ScopedWS(self.ws_name, is_reset=False, is_cleanup=False) as ws:
-            for b, tensor in inputs_dict.items():
+            for b, tensor in zip(self._input_blobs, inputs):
                 ws.FeedBlob(b, tensor)
 
             try:
@@ -93,9 +93,7 @@ class ProtobufModel(torch.nn.Module):
                     logger.warning("Encountered new RuntimeError: \n{}".format(str(e)))
                 logger.warning("Catch the error and use partial results.")
 
-            outputs_dict = collections.OrderedDict(
-                [(b, ws.FetchBlob(b)) for b in self.net.Proto().external_output]
-            )
+            c2_outputs = [ws.FetchBlob(b) for b in self.net.Proto().external_output]
             # Remove outputs of current run, this is necessary in order to
             # prevent fetching the result from previous run if the model fails
             # in the middle.
@@ -107,19 +105,22 @@ class ProtobufModel(torch.nn.Module):
 
         # Cast output to torch.Tensor on the desired device
         output_devices = (
-            self._infer_output_devices(inputs_dict)
-            if any(t.device.type != "cpu" for t in inputs_dict.values())
+            self._infer_output_devices(inputs)
+            if any(t.device.type != "cpu" for t in inputs)
             else ["cpu" for _ in self.net.Proto().external_output]
         )
 
-        for name, device in zip(self.net.Proto().external_output, output_devices):
-            c2_output = outputs_dict[name]
+        outputs = []
+        for name, c2_output, device in zip(
+            self.net.Proto().external_output, c2_outputs, output_devices
+        ):
             if not isinstance(c2_output, np.ndarray):
                 raise RuntimeError(
                     "Invalid output for blob {}, received: {}".format(name, c2_output)
                 )
-            outputs_dict[name] = torch.Tensor(c2_output).to(device=device)
-        return outputs_dict
+            outputs.append(torch.Tensor(c2_output).to(device=device))
+        # TODO change to tuple in the future
+        return dict(zip(self.net.Proto().external_output, outputs))
 
 
 class ProtobufDetectionModel(torch.nn.Module):
@@ -150,10 +151,9 @@ class ProtobufDetectionModel(torch.nn.Module):
 
     def _convert_inputs(self, batched_inputs):
         # currently all models convert inputs in the same way
-        data, im_info = convert_batched_inputs_to_c2_format(
+        return convert_batched_inputs_to_c2_format(
             batched_inputs, self.size_divisibility, self.device
         )
-        return {"data": data, "im_info": im_info}
 
     def forward(self, batched_inputs):
         c2_inputs = self._convert_inputs(batched_inputs)
