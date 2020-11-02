@@ -1,14 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
+import itertools
 import logging
 import numpy as np
 import pickle
 import random
 import torch.utils.data as data
+from torch.utils.data.sampler import Sampler
 
 from detectron2.utils.serialize import PicklableWrapper
 
-__all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset"]
+__all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset", "ToIterableDataset"]
 
 
 class MapDataset(data.Dataset):
@@ -110,6 +112,41 @@ class DatasetFromList(data.Dataset):
             return copy.deepcopy(self._lst[idx])
         else:
             return self._lst[idx]
+
+
+class ToIterableDataset(data.IterableDataset):
+    """
+    Convert an old indices-based (also called map-style) dataset
+    to an iterable-style dataset.
+    """
+
+    def __init__(self, dataset, sampler):
+        """
+        Args:
+            dataset (torch.utils.data.Dataset): an old-style dataset with ``__getitem__``
+            sampler (torch.utils.data.sampler.Sampler): a cheap iterable that produces indices
+                to be applied on ``dataset``.
+        """
+        assert not isinstance(dataset, data.IterableDataset), dataset
+        assert isinstance(sampler, Sampler), sampler
+        self.dataset = dataset
+        self.sampler = sampler
+
+    def __iter__(self):
+        worker_info = data.get_worker_info()
+        if worker_info is None or worker_info.num_workers == 1:
+            for idx in self.sampler:
+                yield self.dataset[idx]
+        else:
+            # With map-style dataset, `DataLoader(dataset, sampler)` runs the
+            # sampler in main process only. But `DataLoader(ToIterableDataset(dataset, sampler))`
+            # will run sampler in every of the N worker and only keep 1/N of the ids on each
+            # worker. The assumption is that sampler is cheap to iterate and it's fine to discard
+            # ids in workers.
+            for idx in itertools.islice(
+                self.sampler, worker_info.id, None, worker_info.num_workers
+            ):
+                yield self.dataset[idx]
 
 
 class AspectRatioGroupedDataset(data.IterableDataset):
