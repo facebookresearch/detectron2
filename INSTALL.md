@@ -183,15 +183,20 @@ to match your local CUDA installation, or install a different version of CUDA to
 
 <details>
 <summary>
-C++ compilation errors from NVCC
+C++ compilation errors from NVCC / NVRTC
 </summary>
 
-1. NVCC version has to match the CUDA version of your PyTorch.
+1. Local CUDA/NVCC version has to match the CUDA version of your PyTorch. Both can be found in
+   `python -m detectron2.utils.collect_env`.
+   When they are inconsistent,
+   you need to either install a different build of PyTorch (or build by yourself)
+   to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
 2. The combination of NVCC and GCC you use is incompatible. You need to change one of their versions.
    See [here](https://gist.github.com/ax3l/9489132) for some valid combinations.
 
-The CUDA/GCC version used by PyTorch can be found by `print(torch.__config__.show())`.
+   The CUDA/GCC version used by PyTorch can be found by `print(torch.__config__.show())`.
+
 </details>
 
 

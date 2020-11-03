@@ -14,13 +14,16 @@ Describe what you want to do, including:
 Please link to which API or documentation you're asking about from
 https://detectron2.readthedocs.io/
 
+For meaning of a config, please see
+https://detectron2.readthedocs.io/modules/config.html#config-references
+
 
 NOTE:
 
 1. Only general answers are provided.
-   If you want to ask about "why X did not work", please use the
+   If you want to ask about "why X did not work" for something you did, please use the
    [Unexpected behaviors](https://github.com/facebookresearch/detectron2/issues/new/choose) issue template.
 
 2. About how to implement new models / new dataloader / new training logic, etc., check documentation first.
 
-3. We do not answer general machine learning / computer vision questions that are not specific to detectron2, such as how a model works, how to improve your training/make it converge, or what algorithm/methods can be used to achieve X.
+3. We do not answer machine learning / computer vision questions that are not specific to detectron2, such as how a model works, how to improve your training/make it converge, or what algorithm/methods can be used to achieve X.

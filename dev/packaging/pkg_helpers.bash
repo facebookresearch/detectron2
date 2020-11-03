@@ -17,21 +17,26 @@ setup_cuda() {
   # See more details at https://github.com/pytorch/pytorch/blob/master/torch/utils/cpp_extension.py#L1363
   export FORCE_CUDA=1
   case "$CU_VERSION" in
+    cu110)
+      export CUDA_HOME=/usr/local/cuda-11.0/
+      # NOTE: may need to add 8.6 in the next ver
+      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX;8.0+PTX"
+      ;;
     cu102)
       export CUDA_HOME=/usr/local/cuda-10.2/
-      export TORCH_CUDA_ARCH_LIST="3.5;3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
+      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
       ;;
     cu101)
       export CUDA_HOME=/usr/local/cuda-10.1/
-      export TORCH_CUDA_ARCH_LIST="3.5;3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
+      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
       ;;
     cu100)
       export CUDA_HOME=/usr/local/cuda-10.0/
-      export TORCH_CUDA_ARCH_LIST="3.5;3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
+      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX;7.5+PTX"
       ;;
     cu92)
       export CUDA_HOME=/usr/local/cuda-9.2/
-      export TORCH_CUDA_ARCH_LIST="3.5;3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX"
+      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0+PTX;6.1+PTX;7.0+PTX"
       ;;
     cpu)
       unset FORCE_CUDA
