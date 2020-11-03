@@ -9,7 +9,6 @@ from collections import defaultdict
 import torch
 import tqdm
 from fvcore.common.benchmark import benchmark
-from fvcore.common.file_io import PathManager
 from pycocotools.coco import COCO
 from tabulate import tabulate
 from torch.nn import functional as F
@@ -23,6 +22,7 @@ from detectron2.layers.mask_ops import (
 )
 from detectron2.structures import BitMasks, Boxes, BoxMode, PolygonMasks
 from detectron2.structures.masks import polygons_to_bitmask
+from detectron2.utils.file_io import PathManager
 
 
 def iou_between_full_image_bit_masks(a, b):

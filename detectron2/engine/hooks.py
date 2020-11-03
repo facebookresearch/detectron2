@@ -10,13 +10,13 @@ import time
 from collections import Counter
 import torch
 from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
-from fvcore.common.file_io import PathManager
 from fvcore.common.timer import Timer
 from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.utils.events import EventStorage, EventWriter
+from detectron2.utils.file_io import PathManager
 
 from .train_loop import HookBase
 

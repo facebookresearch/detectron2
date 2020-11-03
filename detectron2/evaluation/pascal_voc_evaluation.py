@@ -9,10 +9,10 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
 from functools import lru_cache
 import torch
-from fvcore.common.file_io import PathManager
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
+from detectron2.utils.file_io import PathManager
 
 from .evaluator import DatasetEvaluator
 

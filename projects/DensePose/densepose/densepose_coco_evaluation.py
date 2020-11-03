@@ -17,10 +17,11 @@ from collections import defaultdict
 from enum import Enum
 from typing import Any, Dict, Tuple
 import scipy.spatial.distance as ssd
-from fvcore.common.file_io import PathManager
 from pycocotools import mask as maskUtils
 from scipy.io import loadmat
 from scipy.ndimage import zoom as spzoom
+
+from detectron2.utils.file_io import PathManager
 
 from .data.structures import DensePoseDataRelative
 

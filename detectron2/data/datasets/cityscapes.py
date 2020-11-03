@@ -7,11 +7,11 @@ import numpy as np
 import os
 from itertools import chain
 import pycocotools.mask as mask_util
-from fvcore.common.file_io import PathManager
 from PIL import Image
 
 from detectron2.structures import BoxMode
 from detectron2.utils.comm import get_world_size
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 try:

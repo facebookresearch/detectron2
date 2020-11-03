@@ -8,13 +8,13 @@ import tempfile
 import unittest
 import cv2
 import torch
-from fvcore.common.file_io import PathManager
 
 from detectron2 import model_zoo
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import DatasetCatalog
 from detectron2.modeling import build_model
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 

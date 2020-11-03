@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import pickle
 from fvcore.common.checkpoint import Checkpointer
-from fvcore.common.file_io import PathManager
 
 import detectron2.utils.comm as comm
+from detectron2.utils.file_io import PathManager
 
 from .c2_model_loading import align_and_update_state_dicts
 
@@ -22,6 +22,18 @@ class DetectionCheckpointer(Checkpointer):
             save_to_disk=is_main_process if save_to_disk is None else save_to_disk,
             **checkpointables,
         )
+        if hasattr(self, "path_manager"):
+            self.path_manager = PathManager
+        else:
+            # This could only happen for open source
+            # TODO remove after upgrading fvcore
+            from fvcore.common.file_io import PathManager as g_PathManager
+
+            for handler in PathManager._path_handlers.values():
+                try:
+                    g_PathManager.register_handler(handler)
+                except KeyError:
+                    pass
 
     def _load_file(self, filename):
         if filename.endswith(".pkl"):

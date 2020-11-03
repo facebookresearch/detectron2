@@ -11,7 +11,6 @@ import pickle
 from collections import OrderedDict
 import pycocotools.mask as mask_util
 import torch
-from fvcore.common.file_io import PathManager
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
@@ -22,6 +21,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.evaluation.fast_eval_api import COCOeval_opt
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
 from .evaluator import DatasetEvaluator

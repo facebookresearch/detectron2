@@ -197,7 +197,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
-        "fvcore>=0.1.1",
+        "fvcore>=0.1.2",
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs

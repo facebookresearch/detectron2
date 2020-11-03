@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from fvcore.common.file_io import PathManager
-
 from detectron2.data import MetadataCatalog
+from detectron2.utils.file_io import PathManager
 
 from densepose import DensePoseTransformData
 

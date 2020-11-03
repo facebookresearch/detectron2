@@ -9,7 +9,6 @@ import logging
 import numpy as np
 import pycocotools.mask as mask_util
 import torch
-from fvcore.common.file_io import PathManager
 from PIL import Image
 
 from detectron2.structures import (
@@ -22,6 +21,7 @@ from detectron2.structures import (
     RotatedBoxes,
     polygons_to_bitmask,
 )
+from detectron2.utils.file_io import PathManager
 
 from . import transforms as T
 from .catalog import MetadataCatalog

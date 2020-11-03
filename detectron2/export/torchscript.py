@@ -2,7 +2,8 @@
 
 import os
 import torch
-from fvcore.common.file_io import PathManager
+
+from detectron2.utils.file_io import PathManager
 
 from .torchscript_patch import patch_instances
 

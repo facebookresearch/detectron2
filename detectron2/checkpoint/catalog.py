@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
-from fvcore.common.file_io import PathHandler, PathManager
+
+from detectron2.utils.file_io import PathHandler, PathManager
 
 
 class ModelCatalog(object):
@@ -111,24 +112,4 @@ class ModelCatalogHandler(PathHandler):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
 
 
-class Detectron2Handler(PathHandler):
-    """
-    Resolve anything that's in Detectron2 model zoo.
-    """
-
-    PREFIX = "detectron2://"
-    S3_DETECTRON2_PREFIX = "https://dl.fbaipublicfiles.com/detectron2/"
-
-    def _get_supported_prefixes(self):
-        return [self.PREFIX]
-
-    def _get_local_path(self, path):
-        name = path[len(self.PREFIX) :]
-        return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name)
-
-    def _open(self, path, mode="r", **kwargs):
-        return PathManager.open(self._get_local_path(path), mode, **kwargs)
-
-
 PathManager.register_handler(ModelCatalogHandler())
-PathManager.register_handler(Detectron2Handler())

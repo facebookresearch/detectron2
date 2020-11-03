@@ -8,9 +8,9 @@ import sys
 from timeit import default_timer as timer
 from typing import Any, ClassVar, Dict, List
 import torch
-from fvcore.common.file_io import PathManager
 
 from detectron2.data.catalog import DatasetCatalog
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 from densepose.data.structures import DensePoseDataRelative

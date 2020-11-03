@@ -5,8 +5,9 @@ import logging
 import numpy as np
 from typing import Callable, List, Optional
 import torch
-from fvcore.common.file_io import PathManager
 from torch.utils.data.dataset import Dataset
+
+from detectron2.utils.file_io import PathManager
 
 import av
 

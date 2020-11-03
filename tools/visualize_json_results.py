@@ -8,10 +8,10 @@ import os
 from collections import defaultdict
 import cv2
 import tqdm
-from fvcore.common.file_io import PathManager
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import Boxes, BoxMode, Instances
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
 

@@ -11,13 +11,13 @@ import os
 from collections import OrderedDict
 import pycocotools.mask as mask_utils
 import torch
-from fvcore.common.file_io import PathManager
 from pycocotools.coco import COCO
 
 from detectron2.data import MetadataCatalog
 from detectron2.evaluation import DatasetEvaluator
 from detectron2.structures import BoxMode
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
 from .converters import ToChartResultConverter, ToMaskConverter

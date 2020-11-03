@@ -15,7 +15,6 @@ import os
 import sys
 from collections import OrderedDict
 import torch
-from fvcore.common.file_io import PathManager
 from fvcore.nn.precise_bn import get_bn_modules
 from torch.nn.parallel import DistributedDataParallel
 
@@ -38,6 +37,7 @@ from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 from . import hooks

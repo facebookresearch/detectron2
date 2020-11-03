@@ -9,12 +9,11 @@ This script is similar to the training script in detectron2/tools.
 It is an example of how a user might use detectron2 for a new project.
 """
 
-from fvcore.common.file_io import PathManager
-
 import detectron2.utils.comm as comm
 from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, hooks, launch
 from detectron2.evaluation import verify_results
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 from densepose import add_densepose_config
