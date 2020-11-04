@@ -5,8 +5,10 @@ import os
 import sys
 import tempfile
 from contextlib import ExitStack, contextmanager
+from copy import deepcopy
 from unittest import mock
 import torch
+from torch import nn
 
 # need an explicit import due to https://github.com/pytorch/pytorch/issues/38964
 from detectron2.structures import Boxes, Instances  # noqa F401
@@ -212,3 +214,25 @@ def patch_builtin_len(modules=()):
         for m in ctxs:
             m.side_effect = _new_len
         yield
+
+
+def patch_nonscriptable_classes():
+    """
+    Apply patches on a few nonscriptable detectron2 classes.
+    Should not have side-effects on eager usage.
+    """
+    # __prepare_scriptable__ can also be added to models for easier maintenance.
+    # But it complicates the clean model code.
+
+    from detectron2.modeling.backbone import ResNet
+
+    def prepare_resnet(self):
+        ret = deepcopy(self)
+        # It has to be a ModuleList for scripting
+        # (note: this changes param names in state_dict)
+        ret.stages = nn.ModuleList(ret.stages)
+        for k in self.stage_names:
+            delattr(ret, k)
+        return ret
+
+    ResNet.__prepare_scriptable__ = prepare_resnet
