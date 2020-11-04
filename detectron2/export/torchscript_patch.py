@@ -38,7 +38,7 @@ def patch_instances(fields):
             # results in cache, because `Instances` could be a new class each time.
             _clear_jit_cache()
 
-            cls_name, s = _gen_module(fields)
+            cls_name, s = _gen_instance_module(fields)
             f.write(s)
             f.flush()
             f.close()
@@ -61,22 +61,7 @@ def patch_instances(fields):
             sys.modules.pop(module.__name__)
 
 
-# TODO: find a more automatic way to enable import of other classes
-def _gen_imports():
-    imports_str = """
-from copy import deepcopy
-import torch
-from torch import Tensor
-import typing
-from typing import *
-
-from detectron2.structures import Boxes, Instances
-
-"""
-    return imports_str
-
-
-def _gen_class(fields):
+def _gen_instance_class(fields):
     def indent(level, s):
         return " " * 4 * level + s
 
@@ -173,10 +158,20 @@ class {cls_name}:
     return cls_name, os.linesep.join(lines)
 
 
-def _gen_module(fields):
-    s = ""
-    s += _gen_imports()
-    cls_name, cls_def = _gen_class(fields)
+def _gen_instance_module(fields):
+    # TODO: find a more automatic way to enable import of other classes
+    s = """
+from copy import deepcopy
+import torch
+from torch import Tensor
+import typing
+from typing import *
+
+from detectron2.structures import Boxes, Instances
+
+"""
+
+    cls_name, cls_def = _gen_instance_class(fields)
     s += cls_def
     return cls_name, s
 
@@ -194,11 +189,15 @@ def _import(path):
 
 # TODO: this is a private utility. Should be made more useful through a model export api.
 @contextmanager
-def patch_builtin_len():
+def patch_builtin_len(modules=()):
     """
     Patch the builtin len() function of a few detectron2 modules
     to use __len__ instead, because __len__ does not convert values to
     integers and therefore is friendly to tracing.
+
+    Args:
+        modules (list[stsr]): names of extra modules to patch len(), in
+            addition to those in detectron2.
     """
 
     def _new_len(obj):
@@ -208,7 +207,7 @@ def patch_builtin_len():
         MODULES = [
             "detectron2.modeling.roi_heads.fast_rcnn",
             "detectron2.modeling.roi_heads.mask_head",
-        ]
+        ] + list(modules)
         ctxs = [stack.enter_context(mock.patch(mod + ".len")) for mod in MODULES]
         for m in ctxs:
             m.side_effect = _new_len
