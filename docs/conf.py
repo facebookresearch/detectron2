@@ -275,6 +275,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "TransformGen",
         "apply_augmentations",
         "StandardAugInput",
+        "build_batch_data_loader",
     }
     try:
         if obj.__doc__.lower().strip().startswith("deprecated") or name in HIDDEN:

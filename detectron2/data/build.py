@@ -8,6 +8,7 @@ import torch.utils.data
 from tabulate import tabulate
 from termcolor import colored
 
+from detectron2.config import configurable
 from detectron2.structures import BoxMode
 from detectron2.utils.comm import get_world_size
 from detectron2.utils.env import seed_all_rng
@@ -257,11 +258,8 @@ def build_batch_data_loader(
     Args:
         dataset (torch.utils.data.Dataset): map-style PyTorch dataset. Can be indexed.
         sampler (torch.utils.data.sampler.Sampler): a sampler that produces indices
-        total_batch_size (int): total batch size across GPUs.
-        aspect_ratio_grouping (bool): whether to group images with similar
-            aspect ratio for efficiency. When enabled, it requires each
-            element in dataset be a dict with keys "width" and "height".
-        num_workers (int): number of parallel data loading workers
+        total_batch_size, aspect_ratio_grouping, num_workers): see
+            :func:`build_detection_train_loader`.
 
     Returns:
         iterable[list]. Length of each list is the batch size of the current
@@ -298,81 +296,98 @@ def build_batch_data_loader(
         )
 
 
-def build_detection_train_loader(cfg, mapper=None):
-    """
-    A data loader is created by the following steps:
-
-    1. Use the dataset names in config to query :class:`DatasetCatalog`, and obtain a list of dicts.
-    2. Coordinate a random shuffle order shared among all processes (all GPUs)
-    3. Each process spawn another few workers to process the dicts. Each worker will:
-       * Map each metadata dict into another format to be consumed by the model.
-       * Batch them by simply putting dicts into a list.
-
-    The batched ``list[mapped_dict]`` is what this dataloader will yield.
-
-    Args:
-        cfg (CfgNode): the config
-        mapper (callable): a callable which takes a sample (dict) from dataset and
-            returns the format to be consumed by the model.
-            By default it will be ``DatasetMapper(cfg, True)``.
-
-    Returns:
-        an infinite iterator of training data
-    """
-    dataset_dicts = get_detection_dataset_dicts(
-        cfg.DATASETS.TRAIN,
-        filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-        min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-        if cfg.MODEL.KEYPOINT_ON
-        else 0,
-        proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
-    )
-    dataset = DatasetFromList(dataset_dicts, copy=False)
+def _train_loader_from_config(cfg, *, mapper=None, dataset=None, sampler=None):
+    if dataset is None:
+        dataset = get_detection_dataset_dicts(
+            cfg.DATASETS.TRAIN,
+            filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
+            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+            if cfg.MODEL.KEYPOINT_ON
+            else 0,
+            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
+        )
 
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
-    dataset = MapDataset(dataset, mapper)
 
-    sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
-    logger = logging.getLogger(__name__)
-    logger.info("Using training sampler {}".format(sampler_name))
-    # TODO avoid if-else?
-    if sampler_name == "TrainingSampler":
+    if sampler is None:
+        sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
+        logger = logging.getLogger(__name__)
+        logger.info("Using training sampler {}".format(sampler_name))
+        if sampler_name == "TrainingSampler":
+            sampler = TrainingSampler(len(dataset))
+        elif sampler_name == "RepeatFactorTrainingSampler":
+            repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
+                dataset, cfg.DATALOADER.REPEAT_THRESHOLD
+            )
+            sampler = RepeatFactorTrainingSampler(repeat_factors)
+        else:
+            raise ValueError("Unknown training sampler: {}".format(sampler_name))
+
+    return {
+        "dataset": dataset,
+        "sampler": sampler,
+        "mapper": mapper,
+        "total_batch_size": cfg.SOLVER.IMS_PER_BATCH,
+        "aspect_ratio_grouping": cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        "num_workers": cfg.DATALOADER.NUM_WORKERS,
+    }
+
+
+# TODO can allow dataset as an iterable or IterableDataset to make this function more general
+@configurable(from_config=_train_loader_from_config)
+def build_detection_train_loader(
+    dataset, *, mapper, sampler=None, total_batch_size, aspect_ratio_grouping=True, num_workers=0
+):
+    """
+    Build a dataloader for object detection with some default features.
+    This interface is experimental.
+
+    Args:
+        dataset (list or torch.utils.data.Dataset): a list of dataset dicts,
+            or a map-style pytorch dataset. They can be obtained by using
+            :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
+        mapper (callable): a callable which takes a sample (dict) from dataset and
+            returns the format to be consumed by the model.
+            When using cfg, the default choice is ``DatasetMapper(cfg, is_train=True)``.
+        sampler (torch.utils.data.sampler.Sampler or None): a sampler that
+            produces indices to be applied on ``dataset``.
+            Default to :class:`TrainingSampler`, which coordinates a random shuffle
+            sequence across all workers.
+        total_batch_size (int): total batch size across all workers. Batching
+            simply puts data into a list.
+        aspect_ratio_grouping (bool): whether to group images with similar
+            aspect ratio for efficiency. When enabled, it requires each
+            element in dataset be a dict with keys "width" and "height".
+        num_workers (int): number of parallel data loading workers
+
+    Returns:
+        torch.utils.data.DataLoader: a dataloader. Each output from it is a
+            ``list[mapped_element]`` of length ``total_batch_size / num_workers``,
+            where ``mapped_element`` is produced by the ``mapper``.
+    """
+    if isinstance(dataset, list):
+        dataset = DatasetFromList(dataset, copy=False)
+    if mapper is not None:
+        dataset = MapDataset(dataset, mapper)
+    if sampler is None:
         sampler = TrainingSampler(len(dataset))
-    elif sampler_name == "RepeatFactorTrainingSampler":
-        repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-            dataset_dicts, cfg.DATALOADER.REPEAT_THRESHOLD
-        )
-        sampler = RepeatFactorTrainingSampler(repeat_factors)
-    else:
-        raise ValueError("Unknown training sampler: {}".format(sampler_name))
+    assert isinstance(sampler, torch.utils.data.sampler.Sampler)
     return build_batch_data_loader(
         dataset,
         sampler,
-        cfg.SOLVER.IMS_PER_BATCH,
-        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
-        num_workers=cfg.DATALOADER.NUM_WORKERS,
+        total_batch_size,
+        aspect_ratio_grouping=aspect_ratio_grouping,
+        num_workers=num_workers,
     )
 
 
-def build_detection_test_loader(cfg, dataset_name, mapper=None):
+def _test_loader_from_config(cfg, dataset_name, mapper=None):
     """
-    Similar to `build_detection_train_loader`.
-    But this function uses the given `dataset_name` argument (instead of the names in cfg),
-    and uses batch size 1.
-
-    Args:
-        cfg: a detectron2 CfgNode
-        dataset_name (str): a name of the dataset that's available in the DatasetCatalog
-        mapper (callable): a callable which takes a sample (dict) from dataset
-           and returns the format to be consumed by the model.
-           By default it will be `DatasetMapper(cfg, False)`.
-
-    Returns:
-        DataLoader: a torch DataLoader, that loads the given detection
-        dataset, with test-time transformation and batching.
+    Uses the given `dataset_name` argument (instead of the names in cfg), because the
+    standard practice is to evaluate each test set individually (not combining them).
     """
-    dataset_dicts = get_detection_dataset_dicts(
+    dataset = get_detection_dataset_dicts(
         [dataset_name],
         filter_empty=False,
         proposal_files=[
@@ -381,20 +396,50 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
     )
-
-    dataset = DatasetFromList(dataset_dicts)
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    dataset = MapDataset(dataset, mapper)
+    return {"dataset": dataset, "mapper": mapper, "num_worker": cfg.DATALOADER.NUM_WORKERS}
 
+
+@configurable(from_config=_test_loader_from_config)
+def build_detection_test_loader(dataset, *, mapper, num_worker=0):
+    """
+    Similar to `build_detection_train_loader`, but uses a batch size of 1.
+    This interface is experimental.
+
+    Args:
+        dataset (list or torch.utils.data.Dataset): a list of dataset dicts,
+            or a map-style pytorch dataset. They can be obtained by using
+            :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
+        mapper (callable): a callable which takes a sample (dict) from dataset
+           and returns the format to be consumed by the model.
+           When using cfg, the default choice is ``DatasetMapper(cfg, is_train=False)``.
+        num_workers (int): number of parallel data loading workers
+
+    Returns:
+        DataLoader: a torch DataLoader, that loads the given detection
+        dataset, with test-time transformation and batching.
+
+    Examples:
+    ::
+        data_loader = build_detection_test_loader(
+            DatasetRegistry.get("my_test"),
+            mapper=DatasetMapper(...))
+
+        # or, instantiate with a CfgNode:
+        data_loader = build_detection_test_loader(cfg, "my_test")
+    """
+    if isinstance(dataset, list):
+        dataset = DatasetFromList(dataset, copy=False)
+    if mapper is not None:
+        dataset = MapDataset(dataset, mapper)
     sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
-
     data_loader = torch.utils.data.DataLoader(
         dataset,
-        num_workers=cfg.DATALOADER.NUM_WORKERS,
+        num_workers=num_worker,
         batch_sampler=batch_sampler,
         collate_fn=trivial_batch_collator,
     )
