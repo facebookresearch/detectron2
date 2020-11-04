@@ -59,6 +59,21 @@ class TestImageList(unittest.TestCase):
         for i in range(image_nums):
             self.assertTrue(torch.equal(ret[i], ret_script[i]))
 
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_imagelist_from_tensors_scriptability(self):
+        image_tensor_0 = torch.randn(10, 20, dtype=torch.float32)
+        image_tensor_1 = torch.randn(12, 22, dtype=torch.float32)
+        inputs = [image_tensor_0, image_tensor_1]
+
+        def f(image_tensor: List[torch.Tensor]):
+            return ImageList.from_tensors(image_tensor, 10)
+
+        ret = f(inputs)
+        ret_script = torch.jit.script(f)(inputs)
+
+        self.assertEqual(len(ret), len(ret_script))
+        self.assertTrue(torch.equal(ret.tensor, ret_script.tensor))
+
 
 if __name__ == "__main__":
     unittest.main()
