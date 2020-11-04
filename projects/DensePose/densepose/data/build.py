@@ -9,15 +9,15 @@ import torch
 from torch.utils.data.dataset import Dataset
 
 from detectron2.config import CfgNode
+from detectron2.data.build import build_detection_test_loader as d2_build_detection_test_loader
+from detectron2.data.build import build_detection_train_loader as d2_build_detection_train_loader
 from detectron2.data.build import (
-    build_batch_data_loader,
     load_proposals_into_dataset,
     print_instances_class_histogram,
     trivial_batch_collator,
 )
 from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
-from detectron2.data.common import DatasetFromList, MapDataset
-from detectron2.data.samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
+from detectron2.data.samplers import TrainingSampler
 from detectron2.utils.comm import get_world_size
 
 from densepose.config import get_bootstrap_dataset_config
@@ -337,32 +337,9 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
         keep_instance_predicate=_get_train_keep_instance_predicate(cfg),
         proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
     )
-    dataset = DatasetFromList(dataset_dicts, copy=False)
-
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
-    dataset = MapDataset(dataset, mapper)
-
-    sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
-    logger = logging.getLogger(__name__)
-    logger.info("Using training sampler {}".format(sampler_name))
-    if sampler_name == "TrainingSampler":
-        sampler = TrainingSampler(len(dataset))
-    elif sampler_name == "RepeatFactorTrainingSampler":
-        repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-            dataset_dicts, cfg.DATALOADER.REPEAT_THRESHOLD
-        )
-        sampler = RepeatFactorTrainingSampler(repeat_factors)
-    else:
-        raise ValueError("Unknown training sampler: {}".format(sampler_name))
-
-    return build_batch_data_loader(
-        dataset,
-        sampler,
-        cfg.SOLVER.IMS_PER_BATCH,
-        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
-        num_workers=cfg.DATALOADER.NUM_WORKERS,
-    )
+    return d2_build_detection_train_loader(cfg, dataset=dataset_dicts, mapper=mapper)
 
 
 def build_detection_test_loader(cfg, dataset_name, mapper=None):
@@ -393,24 +370,11 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
     )
-
-    dataset = DatasetFromList(dataset_dicts)
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    dataset = MapDataset(dataset, mapper)
-
-    sampler = InferenceSampler(len(dataset))
-    # Always use 1 image per worker during inference since this is the
-    # standard when reporting inference time in papers.
-    batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
-
-    data_loader = torch.utils.data.DataLoader(
-        dataset,
-        num_workers=cfg.DATALOADER.NUM_WORKERS,
-        batch_sampler=batch_sampler,
-        collate_fn=trivial_batch_collator,
+    return d2_build_detection_test_loader(
+        dataset_dicts, mapper=mapper, num_worker=cfg.DATALOADER.NUM_WORKERS
     )
-    return data_loader
 
 
 def build_frame_selector(cfg: CfgNode):
