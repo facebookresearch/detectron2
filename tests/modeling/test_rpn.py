@@ -91,7 +91,7 @@ class RPNTest(unittest.TestCase):
         images = ImageList(images_tensor, image_sizes)
         features = {"res4": torch.rand(num_images, 1024, 1, 2)}
 
-        fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+        fields = {"proposal_boxes": Boxes, "objectness_logits": torch.Tensor}
         proposal_generator_ts = export_torchscript_with_instances(proposal_generator, fields)
 
         proposals, _ = proposal_generator(images, features)
