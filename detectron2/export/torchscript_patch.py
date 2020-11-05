@@ -224,15 +224,28 @@ def patch_nonscriptable_classes():
     # __prepare_scriptable__ can also be added to models for easier maintenance.
     # But it complicates the clean model code.
 
-    from detectron2.modeling.backbone import ResNet
+    from detectron2.modeling.backbone import ResNet, FPN
+
+    # Due to https://github.com/pytorch/pytorch/issues/36061,
+    # we change backbone to use ModuleList for scripting.
+    # (note: this changes param names in state_dict)
 
     def prepare_resnet(self):
         ret = deepcopy(self)
-        # It has to be a ModuleList for scripting
-        # (note: this changes param names in state_dict)
         ret.stages = nn.ModuleList(ret.stages)
         for k in self.stage_names:
             delattr(ret, k)
         return ret
 
     ResNet.__prepare_scriptable__ = prepare_resnet
+
+    def prepare_fpn(self):
+        ret = deepcopy(self)
+        ret.lateral_convs = nn.ModuleList(ret.lateral_convs)
+        ret.output_convs = nn.ModuleList(ret.output_convs)
+        for name, _ in self.named_children():
+            if name.startswith("fpn_"):
+                delattr(ret, name)
+        return ret
+
+    FPN.__prepare_scriptable__ = prepare_fpn
