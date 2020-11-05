@@ -151,6 +151,19 @@ class TestInstances(unittest.TestCase):
             x.a = box_tensors
             script_module(x)
 
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_from_to_instances(self):
+        orig = Instances((30, 30))
+        orig.proposal_boxes = Boxes(torch.rand(3, 4))
+
+        fields = {"proposal_boxes": Boxes, "a": Tensor}
+        with patch_instances(fields) as NewInstances:
+            # convert to NewInstances and back
+            new1 = NewInstances.from_instances(orig)
+            new2 = new1.to_instances()
+        self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new1.proposal_boxes.tensor))
+        self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new2.proposal_boxes.tensor))
+
 
 if __name__ == "__main__":
     unittest.main()

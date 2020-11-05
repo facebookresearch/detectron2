@@ -70,6 +70,7 @@ def _gen_instance_class(fields):
 
     class _FieldType:
         def __init__(self, name, type_):
+            assert isinstance(name, str), f"Field name must be str, got {name}"
             self.name = name
             self.type_ = type_
             self.annotation = f"{type_.__module__}.{type_.__name__}"
@@ -86,11 +87,13 @@ def _gen_instance_class(fields):
 
     cls_name = "Instances_patched{}".format(_counter)
 
+    field_names = tuple(x.name for x in fields)
     lines.append(
         f"""
 class {cls_name}:
     def __init__(self, image_size: Tuple[int, int]):
         self.image_size = image_size
+        self._field_names = {field_names}
 """
     )
 
@@ -155,23 +158,6 @@ class {cls_name}:
 """
     )
 
-    # support an additional method `from_instances` to convert from the original Instances class
-    lines.append(
-        f"""
-    @torch.jit.unused
-    @staticmethod
-    def from_instances(instances: Instances) -> "{cls_name}":
-        fields = instances.get_fields()
-        image_size = instances.image_size
-        new_instances = {cls_name}(image_size)
-        for name, val in fields.items():
-            assert hasattr(new_instances, '_{{}}'.format(name)), \\
-                "No attribute named {{}} in {cls_name}".format(name)
-            setattr(new_instances, name, deepcopy(val))
-        return new_instances
-"""
-    )
-
     # support method `to`
     lines.append(
         f"""
@@ -197,6 +183,34 @@ class {cls_name}:
         return ret
 """
     )
+
+    # support additional methods `from_instances` and `to_instances` to
+    # convert from/to the original Instances class
+    lines.append(
+        f"""
+    @torch.jit.unused
+    @staticmethod
+    def from_instances(instances: Instances) -> "{cls_name}":
+        fields = instances.get_fields()
+        image_size = instances.image_size
+        new_instances = {cls_name}(image_size)
+        for name, val in fields.items():
+            assert hasattr(new_instances, '_{{}}'.format(name)), \\
+                "No attribute named {{}} in {cls_name}".format(name)
+            setattr(new_instances, name, deepcopy(val))
+        return new_instances
+
+    @torch.jit.unused
+    def to_instances(self):
+        ret = Instances(self.image_size)
+        for name in self._field_names:
+            val = getattr(self, "_" + name, None)
+            if val is not None:
+                ret.set(name, deepcopy(val))
+        return ret
+"""
+    )
+
     return cls_name, os.linesep.join(lines)
 
 
