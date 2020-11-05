@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from detectron2.layers import ShapeSpec
 
 from .anchor_generator import build_anchor_generator, ANCHOR_GENERATOR_REGISTRY

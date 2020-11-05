@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 [[ -d "dev/packaging" ]] || {
   echo "Please run this script at detectron2 root!"

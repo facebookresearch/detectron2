@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from .chimpnsee import register_dataset as register_chimpnsee_dataset
 from .coco import BASE_DATASETS as BASE_COCO_DATASETS
 from .coco import DATASETS as COCO_DATASETS

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 from .confidence import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from .filter import DensePoseDataFilter

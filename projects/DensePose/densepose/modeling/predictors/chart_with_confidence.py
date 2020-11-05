@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 from . import DensePoseChartConfidencePredictorMixin, DensePoseChartPredictor
 from .registry import DENSEPOSE_PREDICTOR_REGISTRY

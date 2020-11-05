@@ -146,7 +146,7 @@ Two possibilities:
   you need to either install a different build of PyTorch (or build by yourself)
   to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
-* PyTorch/torchvision/Detectron2 is not built for the correct GPU architecture (aka. compute capability).
+* PyTorch/torchvision/Detectron2 is not built for the correct GPU SM architecture (aka. compute capability).
 
   The architecture included by PyTorch/detectron2/torchvision is available in the "architecture flags" in
   `python -m detectron2.utils.collect_env`. It must include
@@ -183,7 +183,7 @@ to match your local CUDA installation, or install a different version of CUDA to
 
 <details>
 <summary>
-C++ compilation errors from NVCC / NVRTC
+C++ compilation errors from NVCC / NVRTC; "Unsupported gpu architecture"
 </summary>
 
 1. Local CUDA/NVCC version has to match the CUDA version of your PyTorch. Both can be found in
@@ -192,7 +192,13 @@ C++ compilation errors from NVCC / NVRTC
    you need to either install a different build of PyTorch (or build by yourself)
    to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
-2. The combination of NVCC and GCC you use is incompatible. You need to change one of their versions.
+2. Local CUDA/NVCC version shall support the SM architecture (a.k.a. compute capability) of your GPU.
+   The capability of your GPU can be found at [developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus).
+   The capability supported by NVCC is listed at [here](https://gist.github.com/ax3l/9489132).
+   If your NVCC version is too old, this can be workaround a lower capability.environment variable
+   `TORCH_CUDA_ARCH_LIST` to a lower, supported capability.
+
+3. The combination of NVCC and GCC you use is incompatible. You need to change one of their versions.
    See [here](https://gist.github.com/ax3l/9489132) for some valid combinations.
 
    The CUDA/GCC version used by PyTorch can be found by `print(torch.__config__.show())`.

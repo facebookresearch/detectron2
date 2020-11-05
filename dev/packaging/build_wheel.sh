@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 set -ex
 
 ldconfig  # https://github.com/NVIDIA/nvidia-docker/issues/854

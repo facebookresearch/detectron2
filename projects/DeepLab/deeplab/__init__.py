@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from .build_solver import build_lr_scheduler
 from .config import add_deeplab_config
 from .resnet import build_resnet_deeplab_backbone

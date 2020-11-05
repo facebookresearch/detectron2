@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import random
 from typing import Any, Callable, Iterable, Iterator, List, Optional, Tuple

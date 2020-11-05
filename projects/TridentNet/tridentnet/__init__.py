@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from .config import add_tridentnet_config
 from .trident_backbone import (
     TridentBottleneckBlock,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import glob
 import os
@@ -115,10 +115,11 @@ def get_extensions():
             define_macros += [("WITH_HIP", None)]
             extra_compile_args["nvcc"] = []
 
-        # It's better if pytorch can do this by default ..
-        CC = os.environ.get("CC", None)
-        if CC is not None:
-            extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
+        if torch_ver < [1, 7]:
+            # supported by https://github.com/pytorch/pytorch/pull/43931
+            CC = os.environ.get("CC", None)
+            if CC is not None:
+                extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
 
     include_dirs = [extensions_dir]
 

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from collections import OrderedDict
 
 from detectron2.checkpoint import DetectionCheckpointer

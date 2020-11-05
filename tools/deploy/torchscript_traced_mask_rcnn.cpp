@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+// Copyright (c) Facebook, Inc. and its affiliates.
 
 #include <opencv2/opencv.hpp>
 #include <iostream>

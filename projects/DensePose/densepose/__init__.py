@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from .data.datasets import builtin  # just to register data
 from .converters import builtin as builtin_converters  # register converters
 from .config import (

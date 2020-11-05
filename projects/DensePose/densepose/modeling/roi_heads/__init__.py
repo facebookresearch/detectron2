@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 from .v1convx import DensePoseV1ConvXHead
 from .deeplab import DensePoseDeepLabHead

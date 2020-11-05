@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 # See https://pytorch.org/tutorials/advanced/cpp_frontend.html
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(caffe2_mask_rcnn)

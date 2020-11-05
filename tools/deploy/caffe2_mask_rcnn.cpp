@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// Copyright (c) Facebook, Inc. and its affiliates.
 
 #include <c10/util/Flags.h>
 #include <caffe2/core/blob.h>

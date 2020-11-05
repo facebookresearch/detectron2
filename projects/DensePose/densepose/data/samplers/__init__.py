@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 from .densepose_uniform import DensePoseUniformSampler
 from .densepose_confidence_based import DensePoseConfidenceBasedSampler

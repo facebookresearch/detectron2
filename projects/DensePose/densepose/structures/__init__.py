@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 from .chart import DensePoseChartPredictorOutput
 from .chart_confidence import decorate_predictor_output_class_with_confidences
