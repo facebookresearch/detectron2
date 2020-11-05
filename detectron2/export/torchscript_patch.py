@@ -118,7 +118,7 @@ class {cls_name}:
 """
         )
 
-    # support function attribute `__len__`
+    # support method `__len__`
     lines.append(
         """
     def __len__(self) -> int:
@@ -138,7 +138,7 @@ class {cls_name}:
 """
     )
 
-    # support function attribute `has`
+    # support method `has`
     lines.append(
         """
     def has(self, name: str) -> bool:
@@ -157,7 +157,7 @@ class {cls_name}:
 """
     )
 
-    # support function attribute `from_instances`
+    # support an additional method `from_instances` to convert from the original Instances class
     lines.append(
         f"""
     @torch.jit.unused
@@ -171,6 +171,32 @@ class {cls_name}:
                 "No attribute named {{}} in {cls_name}".format(name)
             setattr(new_instances, name, deepcopy(val))
         return new_instances
+"""
+    )
+
+    # support method `to`
+    lines.append(
+        f"""
+    def to(self, device: torch.device) -> "{cls_name}":
+        ret = {cls_name}(self.image_size)
+"""
+    )
+    for f in fields:
+        if hasattr(f.type_, "to"):
+            lines.append(
+                f"""
+        t = self._{f.name}
+        if t is not None:
+            ret._{f.name} = t.to(device)
+"""
+            )
+        else:
+            # For now, ignore fields that cannot be moved to devices.
+            # Maybe can support other tensor-like classes (e.g. __torch_function__)
+            pass
+    lines.append(
+        """
+        return ret
 """
     )
     return cls_name, os.linesep.join(lines)
