@@ -2,7 +2,7 @@
 import math
 import numpy as np
 from enum import IntEnum, unique
-from typing import Any, List, Tuple, Union
+from typing import List, Tuple, Union
 import torch
 from torch import device
 
@@ -166,9 +166,10 @@ class Boxes:
         """
         return Boxes(self.tensor.clone())
 
-    @torch.jit.unused
-    def to(self, *args: Any, **kwargs: Any):
-        return Boxes(self.tensor.to(*args, **kwargs))
+    # https://github.com/pytorch/pytorch/issues/47405
+    def to(self, device: "Device" = None):  # noqa
+        # Boxes are assumed float32 and does not support to(dtype)
+        return Boxes(self.tensor.to(device=device))
 
     def area(self) -> torch.Tensor:
         """
