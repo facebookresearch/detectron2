@@ -30,7 +30,7 @@ def export_torchscript_with_instances(model, fields):
         :class:`Tensor` respectively during inference. You can call this function like:
 
         ::
-            fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+            fields = {"proposal_boxes": Boxes, "objectness_logits": torch.Tensor}
             torchscipt_model =  export_torchscript_with_instances(model, fields)
 
     Note:
@@ -38,10 +38,10 @@ def export_torchscript_with_instances(model, fields):
 
     Args:
         model (nn.Module): The input model to be exported to torchscript.
-        fields (Dict[str, str]): Attribute names and corresponding type annotations that
+        fields (Dict[str, type]): Attribute names and corresponding type that
             ``Instances`` will use in the model. Note that all attributes used in ``Instances``
             need to be added, regarldess of whether they are inputs/outputs of the model.
-            Custom data type is not supported for now.
+            Data type not defined in detectron2 is not supported for now.
 
     Returns:
         torch.jit.ScriptModule: the input model in torchscript format

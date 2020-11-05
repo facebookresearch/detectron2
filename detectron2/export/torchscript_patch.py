@@ -10,8 +10,9 @@ from unittest import mock
 import torch
 from torch import nn
 
-# need an explicit import due to https://github.com/pytorch/pytorch/issues/38964
-from detectron2.structures import Boxes, Instances  # noqa F401
+# need some explicit imports due to https://github.com/pytorch/pytorch/issues/38964
+import detectron2  # noqa F401
+from detectron2.structures import Instances
 
 _counter = 0
 
@@ -64,6 +65,19 @@ def patch_instances(fields):
 
 
 def _gen_instance_class(fields):
+    """
+    Args:
+        fields (dict[name: type])
+    """
+
+    class _FieldType:
+        def __init__(self, name, type_):
+            self.name = name
+            self.type_ = type_
+            self.annotation = f"{type_.__module__}.{type_.__name__}"
+
+    fields = [_FieldType(k, v) for k, v in fields.items()]
+
     def indent(level, s):
         return " " * 4 * level + s
 
@@ -82,23 +96,25 @@ class {cls_name}:
 """
     )
 
-    for name, type_ in fields.items():
-        lines.append(indent(2, f"self._{name} = torch.jit.annotate(Optional[{type_}], None)"))
+    for f in fields:
+        lines.append(
+            indent(2, f"self._{f.name} = torch.jit.annotate(Optional[{f.annotation}], None)")
+        )
 
-    for name, type_ in fields.items():
+    for f in fields:
         lines.append(
             f"""
     @property
-    def {name}(self) -> {type_}:
+    def {f.name}(self) -> {f.annotation}:
         # has to use a local for type refinement
         # https://pytorch.org/docs/stable/jit_language_reference.html#optional-type-refinement
-        t = self._{name}
+        t = self._{f.name}
         assert t is not None
         return t
 
-    @{name}.setter
-    def {name}(self, value: {type_}) -> None:
-        self._{name} = value
+    @{f.name}.setter
+    def {f.name}(self, value: {f.annotation}) -> None:
+        self._{f.name} = value
 """
         )
 
@@ -108,10 +124,10 @@ class {cls_name}:
     def __len__(self) -> int:
 """
     )
-    for name, _ in fields.items():
+    for f in fields:
         lines.append(
             f"""
-        t = self._{name}
+        t = self._{f.name}
         if t is not None:
             return len(t)
 """
@@ -128,11 +144,11 @@ class {cls_name}:
     def has(self, name: str) -> bool:
 """
     )
-    for name, _ in fields.items():
+    for f in fields:
         lines.append(
             f"""
-        if name == "{name}":
-            return self._{name} is not None
+        if name == "{f.name}":
+            return self._{f.name} is not None
 """
         )
     lines.append(
@@ -169,6 +185,7 @@ from torch import Tensor
 import typing
 from typing import *
 
+import detectron2
 from detectron2.structures import Boxes, Instances
 
 """

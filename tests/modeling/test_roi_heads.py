@@ -174,7 +174,7 @@ class ROIHeadsTest(unittest.TestCase):
         # process of `MaskRCNNConvUpsampleHead`
         origin_outputs = mask_head(mask_features, deepcopy([pred_instance0, pred_instance1]))
 
-        fields = {"pred_masks": "Tensor", "pred_classes": "Tensor"}
+        fields = {"pred_masks": torch.Tensor, "pred_classes": torch.Tensor}
         with patch_instances(fields) as NewInstances:
             sciript_mask_head = torch.jit.script(mask_head)
             pred_instance0 = NewInstances.from_instances(pred_instance0)
@@ -207,9 +207,9 @@ class ROIHeadsTest(unittest.TestCase):
         )
 
         fields = {
-            "pred_boxes": "Boxes",
-            "pred_keypoints": "Tensor",
-            "pred_keypoint_heatmaps": "Tensor",
+            "pred_boxes": Boxes,
+            "pred_keypoints": torch.Tensor,
+            "pred_keypoint_heatmaps": torch.Tensor,
         }
         with patch_instances(fields) as NewInstances:
             sciript_keypoint_head = torch.jit.script(keypoint_head)
@@ -259,14 +259,14 @@ class ROIHeadsTest(unittest.TestCase):
 
         pred_instances, _ = roi_heads(images, features, proposals)
         fields = {
-            "objectness_logits": "Tensor",
-            "proposal_boxes": "Boxes",
-            "pred_classes": "Tensor",
-            "scores": "Tensor",
-            "pred_masks": "Tensor",
-            "pred_boxes": "Boxes",
-            "pred_keypoints": "Tensor",
-            "pred_keypoint_heatmaps": "Tensor",
+            "objectness_logits": torch.Tensor,
+            "proposal_boxes": Boxes,
+            "pred_classes": torch.Tensor,
+            "scores": torch.Tensor,
+            "pred_masks": torch.Tensor,
+            "pred_boxes": Boxes,
+            "pred_keypoints": torch.Tensor,
+            "pred_keypoint_heatmaps": torch.Tensor,
         }
         with patch_instances(fields) as new_instances:
             proposal0 = new_instances.from_instances(proposal0)

@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import unittest
 import torch
+from torch import Tensor
 
 from detectron2.export.torchscript import patch_instances
 from detectron2.structures import Boxes, Instances
@@ -46,7 +47,7 @@ class TestInstances(unittest.TestCase):
                 proposal_boxes = x.proposal_boxes  # noqa F841
                 return x, self.g(x)
 
-        fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+        fields = {"proposal_boxes": Boxes, "objectness_logits": Tensor}
         with patch_instances(fields):
             torch.jit.script(f())
 
@@ -55,14 +56,14 @@ class TestInstances(unittest.TestCase):
             # will create a ConcreteType for g
             torch.jit.script(g2())
 
-        new_fields = {"mask": "Tensor"}
+        new_fields = {"mask": Tensor}
         with patch_instances(new_fields):
             # will compile g with a different Instances; this should pass
             torch.jit.script(g())
             with self.assertRaises(Exception):
                 torch.jit.script(g2())
 
-        new_fields = {"mask": "Tensor", "proposal_boxes": "Boxes"}
+        new_fields = {"mask": Tensor, "proposal_boxes": Boxes}
         with patch_instances(new_fields) as NewInstances:
             # get_mask will be compiled with a different Instances; this should pass
             scripted_g2 = torch.jit.script(g2())
@@ -79,7 +80,7 @@ class TestInstances(unittest.TestCase):
                 objectness_logits = x.objectness_logits
                 return proposal_boxes.tensor + objectness_logits
 
-        fields = {"proposal_boxes": "Boxes", "objectness_logits": "Tensor"}
+        fields = {"proposal_boxes": Boxes, "objectness_logits": Tensor}
         with patch_instances(fields):
             torch.jit.script(f())
 
@@ -95,7 +96,7 @@ class TestInstances(unittest.TestCase):
 
         image_shape = (15, 15)
 
-        fields = {"proposal_boxes": "Boxes"}
+        fields = {"proposal_boxes": Boxes}
         with patch_instances(fields) as new_instance:
             script_module = torch.jit.script(f())
             x = new_instance(image_shape)
@@ -106,7 +107,7 @@ class TestInstances(unittest.TestCase):
             length = script_module(x)
             self.assertEqual(length, 2)
 
-        fields = {"objectness_logits": "Tensor"}
+        fields = {"objectness_logits": Tensor}
         with patch_instances(fields) as new_instance:
             script_module = torch.jit.script(g())
             x = new_instance(image_shape)
@@ -122,7 +123,7 @@ class TestInstances(unittest.TestCase):
                 return x.has("proposal_boxes")
 
         image_shape = (15, 15)
-        fields = {"proposal_boxes": "Boxes"}
+        fields = {"proposal_boxes": Boxes}
         with patch_instances(fields) as new_instance:
             script_module = torch.jit.script(f())
             x = new_instance(image_shape)
