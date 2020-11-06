@@ -2,7 +2,7 @@
 
 from dataclasses import make_dataclass
 from functools import lru_cache
-from typing import Optional
+from typing import Any, Optional
 import torch
 
 
@@ -72,3 +72,26 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
 
     PredictorOutput.__getitem__ = PredictorOutput_getitem
     return PredictorOutput
+
+    def PredictorOutput_to(self, device: torch.device):
+        """
+        Transfers all tensors to the given device
+        """
+        PredictorOutput = type(self)
+        base_predictor_output_to = super(PredictorOutput, self).to(device)
+
+        def to_device_if_tensor(var: Any):
+            if isinstance(var, torch.Tensor):
+                return var.to(device)
+            return var
+
+        PredictorOutput.to = PredictorOutput_to
+        return PredictorOutput(
+            **base_predictor_output_to.__dict__,
+            sigma_1=to_device_if_tensor(self.sigma_1),
+            sigma_2=to_device_if_tensor(self.sigma_2),
+            kappa_u=to_device_if_tensor(self.kappa_u),
+            kappa_v=to_device_if_tensor(self.kappa_v),
+            fine_segm_confidence=to_device_if_tensor(self.fine_segm_confidence),
+            coarse_segm_confidence=to_device_if_tensor(self.coarse_segm_confidence),
+        )

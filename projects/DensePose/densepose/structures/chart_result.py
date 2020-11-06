@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Any, Tuple
 import torch
 
 
@@ -21,6 +21,14 @@ class DensePoseChartResult:
 
     labels: torch.Tensor
     uv: torch.Tensor
+
+    def to(self, device: torch.device):
+        """
+        Transfers all tensors to the given device
+        """
+        labels = self.labels.to(device)
+        uv = self.uv.to(device)
+        return DensePoseChartResult(labels=labels, uv=uv)
 
 
 @dataclass
@@ -44,6 +52,27 @@ class DensePoseChartResultWithConfidences:
     fine_segm_confidence: torch.Tensor = None
     coarse_segm_confidence: torch.Tensor = None
 
+    def to(self, device: torch.device):
+        """
+        Transfers all tensors to the given device, except if their value is None
+        """
+
+        def to_device_if_tensor(var: Any):
+            if isinstance(var, torch.Tensor):
+                return var.to(device)
+            return var
+
+        return DensePoseChartResultWithConfidences(
+            labels=self.labels.to(device),
+            uv=self.uv.to(device),
+            sigma_1=to_device_if_tensor(self.sigma_1),
+            sigma_2=to_device_if_tensor(self.sigma_2),
+            kappa_u=to_device_if_tensor(self.kappa_u),
+            kappa_v=to_device_if_tensor(self.kappa_v),
+            fine_segm_confidence=to_device_if_tensor(self.fine_segm_confidence),
+            coarse_segm_confidence=to_device_if_tensor(self.coarse_segm_confidence),
+        )
+
 
 @dataclass
 class DensePoseChartResultQuantized:
@@ -62,6 +91,13 @@ class DensePoseChartResultQuantized:
     """
 
     labels_uv_uint8: torch.Tensor
+
+    def to(self, device: torch.device):
+        """
+        Transfers all tensors to the given device
+        """
+        labels_uv_uint8 = self.labels_uv_uint8.to(device)
+        return DensePoseChartResultQuantized(labels_uv_uint8=labels_uv_uint8)
 
 
 @dataclass
