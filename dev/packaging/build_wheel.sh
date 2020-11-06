@@ -24,7 +24,7 @@ pip_install "torch==$PYTORCH_VERSION" \
 	-f https://download.pytorch.org/whl/"$CU_VERSION"/torch_stable.html
 
 # use separate directories to allow parallel build
-BASE_BUILD_DIR=build/cu$CU_VERSION-py$PYTHON_VERSION-pt$PYTORCH_VERSION
+BASE_BUILD_DIR=build/$CU_VERSION-py$PYTHON_VERSION-pt$PYTORCH_VERSION
 python setup.py \
   build -b "$BASE_BUILD_DIR" \
   bdist_wheel -b "$BASE_BUILD_DIR/build_dist" -d "wheels/$CU_VERSION/torch$PYTORCH_VERSION"
