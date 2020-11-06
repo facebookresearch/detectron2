@@ -112,13 +112,13 @@ class ResizeTransform(Transform):
     def apply_image(self, img, interp=None):
         assert img.shape[:2] == (self.h, self.w)
         assert len(img.shape) <= 4
+        interp_method = interp if interp is not None else self.interp
 
         if img.dtype == np.uint8:
             if len(img.shape) > 2 and img.shape[2] == 1:
                 pil_image = Image.fromarray(img[:, :, 0], mode="L")
             else:
                 pil_image = Image.fromarray(img)
-            interp_method = interp if interp is not None else self.interp
             pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
             ret = np.asarray(pil_image)
             if len(img.shape) > 2 and img.shape[2] == 1:
@@ -131,9 +131,16 @@ class ResizeTransform(Transform):
             shape = list(img.shape)
             shape_4d = shape[:2] + [1] * (4 - len(shape)) + shape[2:]
             img = img.view(shape_4d).permute(2, 3, 0, 1)  # hw(c) -> nchw
-            _PIL_RESIZE_TO_INTERPOLATE_MODE = {Image.BILINEAR: "bilinear", Image.BICUBIC: "bicubic"}
-            mode = _PIL_RESIZE_TO_INTERPOLATE_MODE[self.interp]
-            img = F.interpolate(img, (self.new_h, self.new_w), mode=mode, align_corners=False)
+            _PIL_RESIZE_TO_INTERPOLATE_MODE = {
+                Image.NEAREST: "nearest",
+                Image.BILINEAR: "bilinear",
+                Image.BICUBIC: "bicubic",
+            }
+            mode = _PIL_RESIZE_TO_INTERPOLATE_MODE[interp_method]
+            align_corners = None if mode == "nearest" else False
+            img = F.interpolate(
+                img, (self.new_h, self.new_w), mode=mode, align_corners=align_corners
+            )
             shape[:2] = (self.new_h, self.new_w)
             ret = img.permute(2, 3, 0, 1).view(shape).numpy()  # nchw -> hw(c)
 
