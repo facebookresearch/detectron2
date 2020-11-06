@@ -403,6 +403,7 @@ class FastRCNNOutputLayers(nn.Module):
         super().__init__()
         if isinstance(input_shape, int):  # some backward compatibility
             input_shape = ShapeSpec(channels=input_shape)
+        self.num_classes = num_classes
         input_size = input_shape.channels * (input_shape.width or 1) * (input_shape.height or 1)
         # prediction layer for num_classes foreground classes and one background class (hence + 1)
         self.cls_score = Linear(input_size, num_classes + 1)

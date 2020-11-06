@@ -348,6 +348,7 @@ class Caffe2FastRCNNOutputsInference:
 
     def __call__(self, box_predictor, predictions, proposals):
         """ equivalent to FastRCNNOutputLayers.inference """
+        num_classes = box_predictor.num_classes
         score_thresh = box_predictor.test_score_thresh
         nms_thresh = box_predictor.test_nms_thresh
         topk_per_image = box_predictor.test_topk_per_image
@@ -365,7 +366,14 @@ class Caffe2FastRCNNOutputsInference:
             box2box_transform_weights = box_predictor.box2box_transform.weights
 
         class_logits, box_regression = predictions
-        class_prob = F.softmax(class_logits, -1)
+        if num_classes + 1 == class_logits.shape[1]:
+            class_prob = F.softmax(class_logits, -1)
+        else:
+            assert num_classes == class_logits.shape[1]
+            class_prob = F.sigmoid(class_logits)
+            # BoxWithNMSLimit will infer num_classes from the shape of the class_prob
+            # So append a zero column as placeholder for the background class
+            class_prob = torch.cat((class_prob, torch.zeros(class_prob.shape[0], 1)), dim=1)
 
         assert box_regression.shape[1] % box_dim == 0
         cls_agnostic_bbox_reg = box_regression.shape[1] // box_dim == 1
