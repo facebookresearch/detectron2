@@ -73,11 +73,11 @@ class TestVisualizer(unittest.TestCase):
                         330.891438763377,
                         13.148537455410235,
                         13.644708680142685,
-                        45.0
+                        45.0,
                     ],
                     "bbox_mode": BoxMode.XYWHA_ABS,
                     "category_id": 0,
-                    "iscrowd": 1
+                    "iscrowd": 1,
                 }
             ],
             "height": 512,
