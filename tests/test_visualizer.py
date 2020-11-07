@@ -63,6 +63,30 @@ class TestVisualizer(unittest.TestCase):
         v = Visualizer(img, self.metadata)
         v.draw_dataset_dict(dic)
 
+    def test_draw_rotated_dataset_dict(self):
+        img = np.random.rand(512, 512, 3) * 255
+        dic = {
+            "annotations": [
+                {
+                    "bbox": [
+                        368.9946492271106,
+                        330.891438763377,
+                        13.148537455410235,
+                        13.644708680142685,
+                        45.0
+                    ],
+                    "bbox_mode": BoxMode.XYWHA_ABS,
+                    "category_id": 0,
+                    "iscrowd": 1
+                }
+            ],
+            "height": 512,
+            "image_id": 1,
+            "width": 512,
+        }
+        v = Visualizer(img, self.metadata)
+        v.draw_dataset_dict(dic)
+
     def test_overlay_instances(self):
         img, boxes, labels, polygons, masks = self._random_data()
 
