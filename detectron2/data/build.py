@@ -206,7 +206,7 @@ def get_detection_dataset_dicts(
     Load and prepare dataset dicts for instance detection/segmentation and semantic segmentation.
 
     Args:
-        dataset_names (list[str]): a list of dataset names
+        dataset_names (str or list[str]): a dataset name or a list of dataset names
         filter_empty (bool): whether to filter out images without instance annotations
         min_keypoints (int): filter out images with fewer keypoints than
             `min_keypoints`. Set to 0 to do nothing.
@@ -216,6 +216,8 @@ def get_detection_dataset_dicts(
     Returns:
         list[dict]: a list of dicts following the standard dataset dict format.
     """
+    if isinstance(dataset_names, str):
+        dataset_names = [dataset_names]
     assert len(dataset_names)
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
     for dataset_name, dicts in zip(dataset_names, dataset_dicts):
@@ -398,11 +400,11 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    return {"dataset": dataset, "mapper": mapper, "num_worker": cfg.DATALOADER.NUM_WORKERS}
+    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS}
 
 
 @configurable(from_config=_test_loader_from_config)
-def build_detection_test_loader(dataset, *, mapper, num_worker=0):
+def build_detection_test_loader(dataset, *, mapper, num_workers=0):
     """
     Similar to `build_detection_train_loader`, but uses a batch size of 1.
     This interface is experimental.
@@ -439,7 +441,7 @@ def build_detection_test_loader(dataset, *, mapper, num_worker=0):
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
     data_loader = torch.utils.data.DataLoader(
         dataset,
-        num_workers=num_worker,
+        num_workers=num_workers,
         batch_sampler=batch_sampler,
         collate_fn=trivial_batch_collator,
     )
