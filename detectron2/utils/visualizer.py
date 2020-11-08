@@ -527,7 +527,12 @@ class Visualizer:
             else:
                 keypts = None
 
-            boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
+            boxes = [
+                BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS)
+                if len(x["bbox"]) == 4
+                else x["bbox"]
+                for x in annos
+            ]
 
             labels = [x["category_id"] for x in annos]
             colors = None
