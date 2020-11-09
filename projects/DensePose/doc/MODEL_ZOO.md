@@ -59,7 +59,7 @@ Baselines trained using schedules from [Güler et al, 2018](https://arxiv.org/pd
   </tr>
 </tbody></table>
 
-### Improved Baselines, Original Fully Convolutional Haad
+### Improved Baselines, Original Fully Convolutional Head
 
 These models use an improved training schedule and Panoptic FPN head from [Kirillov et al, 2019](https://arxiv.org/abs/1901.02446).
 
