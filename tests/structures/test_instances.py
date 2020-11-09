@@ -152,6 +152,28 @@ class TestInstances(unittest.TestCase):
             script_module(x)
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_script_getitem(self):
+        class f(torch.nn.Module):
+            def forward(self, x: Instances, idx):
+                return x[idx]
+
+        image_shape = (15, 15)
+        fields = {"proposal_boxes": Boxes, "a": Tensor}
+        inst = Instances(image_shape)
+        inst.proposal_boxes = Boxes(torch.rand(4, 4))
+        inst.a = torch.rand(4, 10)
+        idx = torch.tensor([True, False, True, False])
+        with patch_instances(fields) as new_instance:
+            script_module = torch.jit.script(f())
+
+            out = f()(inst, idx)
+            out_scripted = script_module(new_instance.from_instances(inst), idx)
+            self.assertTrue(
+                torch.equal(out.proposal_boxes.tensor, out_scripted.proposal_boxes.tensor)
+            )
+            self.assertTrue(torch.equal(out.a, out_scripted.a))
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_from_to_instances(self):
         orig = Instances((30, 30))
         orig.proposal_boxes = Boxes(torch.rand(3, 4))

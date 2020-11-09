@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 from contextlib import ExitStack, contextmanager
+from copy import deepcopy
 from unittest import mock
 import torch
 
@@ -21,6 +22,41 @@ def _clear_jit_cache():
 
     concrete_type_store.type_store.clear()  # for modules
     _jit_caching_layer.clear()  # for free functions
+
+
+def _add_instances_conversion_methods(newInstances):
+    """
+    Add to_instances/from_instances methods to the scripted Instances class.
+    """
+    cls_name = newInstances.__name__
+
+    @torch.jit.unused
+    def to_instances(self):
+        """
+        Convert scripted Instances to original Instances
+        """
+        ret = Instances(self.image_size)
+        for name in self._field_names:
+            val = getattr(self, "_" + name, None)
+            if val is not None:
+                ret.set(name, deepcopy(val))
+        return ret
+
+    @torch.jit.unused
+    def from_instances(instances: Instances):
+        """
+        Create scripted Instances from original Instances
+        """
+        fields = instances.get_fields()
+        image_size = instances.image_size
+        ret = newInstances(image_size)
+        for name, val in fields.items():
+            assert hasattr(ret, f"_{name}"), f"No attribute named {name} in {cls_name}"
+            setattr(ret, name, deepcopy(val))
+        return ret
+
+    newInstances.to_instances = to_instances
+    newInstances.from_instances = from_instances
 
 
 @contextmanager
@@ -47,11 +83,12 @@ def patch_instances(fields):
             module = _import(f.name)
             new_instances = getattr(module, cls_name)
             _ = torch.jit.script(new_instances)
-
             # let torchscript think Instances was scripted already
             Instances.__torch_script_class__ = True
             # let torchscript find new_instances when looking for the jit type of Instances
             Instances._jit_override_qualname = torch._jit_internal._qualified_name(new_instances)
+
+            _add_instances_conversion_methods(new_instances)
             yield new_instances
         finally:
             try:
@@ -85,7 +122,7 @@ def _gen_instance_class(fields):
     global _counter
     _counter += 1
 
-    cls_name = "Instances_patched{}".format(_counter)
+    cls_name = "ScriptedInstances{}".format(_counter)
 
     field_names = tuple(x.name for x in fields)
     lines.append(
@@ -184,33 +221,26 @@ class {cls_name}:
 """
     )
 
-    # support additional methods `from_instances` and `to_instances` to
-    # convert from/to the original Instances class
+    # support method `getitem`
     lines.append(
         f"""
-    @torch.jit.unused
-    @staticmethod
-    def from_instances(instances: Instances) -> "{cls_name}":
-        fields = instances.get_fields()
-        image_size = instances.image_size
-        new_instances = {cls_name}(image_size)
-        for name, val in fields.items():
-            assert hasattr(new_instances, '_{{}}'.format(name)), \\
-                "No attribute named {{}} in {cls_name}".format(name)
-            setattr(new_instances, name, deepcopy(val))
-        return new_instances
-
-    @torch.jit.unused
-    def to_instances(self):
-        ret = Instances(self.image_size)
-        for name in self._field_names:
-            val = getattr(self, "_" + name, None)
-            if val is not None:
-                ret.set(name, deepcopy(val))
+    def __getitem__(self, item) -> "{cls_name}":
+        ret = {cls_name}(self.image_size)
+"""
+    )
+    for f in fields:
+        lines.append(
+            f"""
+        t = self._{f.name}
+        if t is not None:
+            ret._{f.name} = t[item]
+"""
+        )
+    lines.append(
+        """
         return ret
 """
     )
-
     return cls_name, os.linesep.join(lines)
 
 
