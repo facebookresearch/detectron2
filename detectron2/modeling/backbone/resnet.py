@@ -384,7 +384,7 @@ class ResNet(Backbone):
         self._out_feature_strides = {"stem": current_stride}
         self._out_feature_channels = {"stem": self.stem.out_channels}
 
-        self.stages_and_names = []
+        self.stage_names, self.stages = [], []
         for i, blocks in enumerate(stages):
             assert len(blocks) > 0, len(blocks)
             for block in blocks:
@@ -394,12 +394,14 @@ class ResNet(Backbone):
             stage = nn.Sequential(*blocks)
 
             self.add_module(name, stage)
-            self.stages_and_names.append((stage, name))
+            self.stage_names.append(name)
+            self.stages.append(stage)
 
             self._out_feature_strides[name] = current_stride = int(
                 current_stride * np.prod([k.stride for k in blocks])
             )
             self._out_feature_channels[name] = curr_channels = blocks[-1].out_channels
+        self.stage_names = tuple(self.stage_names)  # Make it static for scripting
 
         if num_classes is not None:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -432,7 +434,7 @@ class ResNet(Backbone):
         x = self.stem(x)
         if "stem" in self._out_features:
             outputs["stem"] = x
-        for stage, name in self.stages_and_names:
+        for name, stage in zip(self.stage_names, self.stages):
             x = stage(x)
             if name in self._out_features:
                 outputs[name] = x
@@ -470,7 +472,7 @@ class ResNet(Backbone):
         """
         if freeze_at >= 1:
             self.stem.freeze()
-        for idx, (stage, _) in enumerate(self.stages_and_names, start=2):
+        for idx, stage in enumerate(self.stages, start=2):
             if freeze_at >= idx:
                 for block in stage.children():
                     block.freeze()
