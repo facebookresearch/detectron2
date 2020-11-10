@@ -83,6 +83,16 @@ DATASETS = [
         images_root="posetrack2017/posetrack_data_2017",
         annotations_fpath="posetrack2017/densepose_posetrack_val2017.json",
     ),
+    CocoDatasetInfo(
+        name="lvis_v05_train",
+        images_root="coco/train2017",
+        annotations_fpath="lvis/lvis_v0.5_plus_dp_train.json",
+    ),
+    CocoDatasetInfo(
+        name="lvis_v05_val",
+        images_root="coco/val2017",
+        annotations_fpath="lvis/lvis_v0.5_plus_dp_val.json",
+    ),
 ]
 
 
