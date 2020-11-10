@@ -234,7 +234,7 @@ void shape_check(
       input.size(1));
 
   TORCH_CHECK(
-      (inputHeight >= kH && inputWidth >= kW),
+      (inputHeight + 2 * padH >= kH && inputWidth + 2 * padW >= kW),
       "input image is smaller than kernel");
 
   TORCH_CHECK(
