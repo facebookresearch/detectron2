@@ -40,7 +40,7 @@ def _add_instances_conversion_methods(newInstances):
         for name in self._field_names:
             val = getattr(self, "_" + name, None)
             if val is not None:
-                ret.set(name, deepcopy(val))
+                ret.set(name, val)
         return ret
 
     @torch.jit.unused

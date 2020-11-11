@@ -9,20 +9,23 @@ from torch import Tensor, nn
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
+from detectron2.export.torchscript_patch import patch_builtin_len
 from detectron2.modeling import build_backbone
-from detectron2.structures import Boxes
+from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image
 
 
 @unittest.skipIf(
     os.environ.get("CIRCLECI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version"
 )
 class TestScripting(unittest.TestCase):
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNN(self):
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
-    def _test_model(self, config_path, device="cpu"):
-        model = model_zoo.get(config_path, trained=True, device=device)
+    def _test_model(self, config_path):
+        model = model_zoo.get(config_path, trained=True)
         model.eval()
 
         fields = {
@@ -33,7 +36,61 @@ class TestScripting(unittest.TestCase):
             "pred_classes": Tensor,
             "pred_masks": Tensor,
         }
-        model = export_torchscript_with_instances(model, fields)
+        script_model = export_torchscript_with_instances(model, fields)
+
+        inputs = [{"image": get_sample_coco_image()}]
+        with torch.no_grad():
+            instance = model.inference(inputs, do_postprocess=False)[0]
+            scripted_instance = script_model(inputs)[0].to_instances()
+        assert_instances_allclose(instance, scripted_instance)
+
+
+@unittest.skipIf(
+    os.environ.get("CIRCLECI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version"
+)
+class TestTracing(unittest.TestCase):
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def testMaskRCNN(self):
+        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+
+    def _test_model(self, config_path):
+        model = model_zoo.get(config_path, trained=True)
+        image = get_sample_coco_image()
+
+        class WrapModel(nn.ModuleList):
+            def forward(self, image):
+                inputs = [{"image": image}]
+                outputs = self[0].inference(inputs, do_postprocess=False)[0]
+                size = outputs.image_size
+                if not torch.jit.is_tracing():
+                    size = torch.as_tensor(size)
+                return (
+                    size,
+                    outputs.pred_classes,
+                    outputs.pred_boxes.tensor,
+                    outputs.scores,
+                    outputs.pred_masks,
+                )
+
+            @staticmethod
+            def convert_output(output):
+                r = Instances(tuple(output[0]))
+                r.pred_classes = output[1]
+                r.pred_boxes = Boxes(output[2])
+                r.scores = output[3]
+                r.pred_masks = output[4]
+                return r
+
+        model = WrapModel([model])
+        model.eval()
+        with torch.no_grad(), patch_builtin_len():
+            small_image = nn.functional.interpolate(image, scale_factor=0.5)
+            # trace with a different image, and the trace must still work
+            traced_model = torch.jit.trace(model, (small_image,))
+
+            output = WrapModel.convert_output(model(image))
+            traced_output = WrapModel.convert_output(traced_model(image))
+        assert_instances_allclose(output, traced_output)
 
 
 class TestTorchscriptUtils(unittest.TestCase):

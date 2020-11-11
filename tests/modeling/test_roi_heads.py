@@ -18,6 +18,7 @@ from detectron2.modeling.roi_heads import (
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
+from detectron2.utils.testing import assert_instances_allclose
 
 logger = logging.getLogger(__name__)
 
@@ -182,9 +183,7 @@ class ROIHeadsTest(unittest.TestCase):
             script_outputs = sciript_mask_head(mask_features, [pred_instance0, pred_instance1])
 
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
-            self.assertEqual(origin_ins.image_size, script_ins.image_size)
-            self.assertTrue(torch.equal(origin_ins.pred_classes, script_ins.pred_classes))
-            self.assertTrue(torch.equal(origin_ins.pred_masks, script_ins.pred_masks))
+            assert_instances_allclose(origin_ins, script_ins.to_instances(), rtol=0)
 
     @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_keypoint_head_scriptability(self):
@@ -220,11 +219,7 @@ class ROIHeadsTest(unittest.TestCase):
             )
 
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
-            self.assertEqual(origin_ins.image_size, script_ins.image_size)
-            self.assertTrue(torch.equal(origin_ins.pred_keypoints, script_ins.pred_keypoints))
-            self.assertTrue(
-                torch.equal(origin_ins.pred_keypoint_heatmaps, script_ins.pred_keypoint_heatmaps)
-            )
+            assert_instances_allclose(origin_ins, script_ins.to_instances(), rtol=0)
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_StandardROIHeads_scriptability(self):
@@ -276,13 +271,7 @@ class ROIHeadsTest(unittest.TestCase):
             scripted_pred_instances, _ = scripted_rot_heads(images, features, proposals)
 
         for instance, scripted_instance in zip(pred_instances, scripted_pred_instances):
-            self.assertEqual(instance.image_size, scripted_instance.image_size)
-            self.assertTrue(
-                torch.equal(instance.pred_boxes.tensor, scripted_instance.pred_boxes.tensor)
-            )
-            self.assertTrue(torch.equal(instance.scores, scripted_instance.scores))
-            self.assertTrue(torch.equal(instance.pred_classes, scripted_instance.pred_classes))
-            self.assertTrue(torch.equal(instance.pred_masks, scripted_instance.pred_masks))
+            assert_instances_allclose(instance, scripted_instance.to_instances(), rtol=0)
 
 
 if __name__ == "__main__":
