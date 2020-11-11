@@ -29,8 +29,7 @@ class TestBackBone(unittest.TestCase):
     @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_fpn_scriptability(self):
         patch_nonscriptable_classes()
-        cfg = get_cfg()
-        cfg.merge_from_file(model_zoo.get_config_file("Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml"))
+        cfg = model_zoo.get_config("Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml")
         bb = build_resnet_fpn_backbone(cfg, ShapeSpec(channels=3))
         bb_s = torch.jit.script(bb)
 

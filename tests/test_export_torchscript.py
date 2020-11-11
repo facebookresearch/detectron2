@@ -7,10 +7,9 @@ import torch
 from torch import Tensor, nn
 
 from detectron2 import model_zoo
-from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
-from detectron2.modeling import build_backbone, build_model
+from detectron2.modeling import build_backbone
 from detectron2.structures import Boxes
 from detectron2.utils.env import TORCH_VERSION
 
@@ -23,11 +22,7 @@ class TestScripting(unittest.TestCase):
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
     def _test_model(self, config_path, device="cpu"):
-        cfg = get_cfg()
-        cfg.merge_from_file(model_zoo.get_config_file(config_path))
-        cfg.MODEL.DEVICE = device
-        model = build_model(cfg)
-        DetectionCheckpointer(model).load(model_zoo.get_checkpoint_url(config_path))
+        model = model_zoo.get(config_path, trained=True, device=device)
         model.eval()
 
         fields = {

@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import os
+from typing import Optional
 import pkg_resources
 import torch
 
@@ -119,33 +120,51 @@ def get_config_file(config_path):
     return cfg_file
 
 
-def get(config_path, trained: bool = False):
+def get_config(config_path, trained: bool = False):
+    """
+    Returns a config object for a model in model zoo.
+
+    Args:
+        config_path (str): config file name relative to detectron2's "configs/"
+            directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+        trained (bool): If True, will set ``MODEL.WEIGHTS`` to trained model zoo weights.
+            If False, the checkpoint specified in the config file's ``MODEL.WEIGHTS`` is used
+            instead; this will typically (though not always) initialize a subset of weights using
+            an ImageNet pre-trained model, while randomly initializing the other weights.
+
+    Returns:
+        CfgNode: a config object
+    """
+    cfg_file = get_config_file(config_path)
+    cfg = get_cfg()
+    cfg.merge_from_file(cfg_file)
+    if trained:
+        cfg.MODEL.WEIGHTS = get_checkpoint_url(config_path)
+    return cfg
+
+
+def get(config_path, trained: bool = False, device: Optional[str] = None):
     """
     Get a model specified by relative path under Detectron2's official ``configs/`` directory.
 
     Args:
         config_path (str): config file name relative to detectron2's "configs/"
             directory, e.g., "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
-        trained (bool): If True, will initialize the model with the trained model zoo weights.
-            If False, the checkpoint specified in the config file's ``MODEL.WEIGHTS`` is used
-            instead; this will typically (though not always) initialize a subset of weights using
-            an ImageNet pre-trained model, while randomly initializing the other weights.
+        trained (bool): see :func:`get_config`.
+        device (str or None): overwrite the device in config, if given.
 
     Returns:
-        nn.Module: a detectron2 model
+        nn.Module: a detectron2 model. Will be in training mode.
 
     Example:
     ::
         from detectron2 import model_zoo
         model = model_zoo.get("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml", trained=True)
     """
-    cfg_file = get_config_file(config_path)
-
-    cfg = get_cfg()
-    cfg.merge_from_file(cfg_file)
-    if trained:
-        cfg.MODEL.WEIGHTS = get_checkpoint_url(config_path)
-    if not torch.cuda.is_available():
+    cfg = get_config(config_path, trained)
+    if device is not None:
+        cfg.MODEL.DEVICE = device
+    elif not torch.cuda.is_available():
         cfg.MODEL.DEVICE = "cpu"
 
     model = build_model(cfg)

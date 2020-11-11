@@ -10,10 +10,7 @@ import cv2
 import torch
 
 from detectron2 import model_zoo
-from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
 from detectron2.data import DatasetCatalog
-from detectron2.modeling import build_model
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
@@ -25,17 +22,15 @@ class TestCaffe2Export(unittest.TestCase):
 
     def _test_model(self, config_path, device="cpu"):
         # requires extra dependencies
-        from detectron2.export import Caffe2Model, add_export_config, export_caffe2_model
+        from detectron2.export import Caffe2Model, add_export_config, Caffe2Tracer
 
-        cfg = get_cfg()
-        cfg.merge_from_file(model_zoo.get_config_file(config_path))
-        cfg = add_export_config(cfg)
+        cfg = model_zoo.get_config(config_path)
+        add_export_config(cfg)
         cfg.MODEL.DEVICE = device
+        model = model_zoo.get(config_path, trained=True, device=device)
 
         inputs = [{"image": self._get_test_image()}]
-        model = build_model(cfg)
-        DetectionCheckpointer(model).load(model_zoo.get_checkpoint_url(config_path))
-        c2_model = export_caffe2_model(cfg, model, copy.deepcopy(inputs))
+        c2_model = Caffe2Tracer(cfg, model, copy.deepcopy(inputs)).export_caffe2()
 
         with tempfile.TemporaryDirectory(prefix="detectron2_unittest") as d:
             c2_model.save_protobuf(d)
