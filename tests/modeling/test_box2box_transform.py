@@ -5,20 +5,17 @@ import torch
 
 from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransformRotated
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.testing import random_boxes
 
 logger = logging.getLogger(__name__)
-
-
-def random_boxes(mean_box, stdev, N):
-    return torch.rand(N, 4) * stdev + torch.tensor(mean_box, dtype=torch.float)
 
 
 class TestBox2BoxTransform(unittest.TestCase):
     def test_reconstruction(self):
         weights = (5, 5, 10, 10)
         b2b_tfm = Box2BoxTransform(weights=weights)
-        src_boxes = random_boxes([10, 10, 20, 20], 1, 10)
-        dst_boxes = random_boxes([10, 10, 20, 20], 1, 10)
+        src_boxes = random_boxes(10)
+        dst_boxes = random_boxes(10)
 
         devices = [torch.device("cpu")]
         if torch.cuda.is_available():

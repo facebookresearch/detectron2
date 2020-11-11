@@ -5,16 +5,12 @@ import torch
 
 from detectron2.layers import batched_nms
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.testing import random_boxes
 
 
 class TestNMS(unittest.TestCase):
     def _create_tensors(self, N):
-        boxes = torch.rand(N, 4) * 100
-        # Note: the implementation of this function in torchvision is:
-        # boxes[:, 2:] += torch.rand(N, 2) * 100
-        # but it does not guarantee non-negative widths/heights constraints:
-        # boxes[:, 2] >= boxes[:, 0] and boxes[:, 3] >= boxes[:, 1]:
-        boxes[:, 2:] += boxes[:, :2]
+        boxes = random_boxes(N, 200)
         scores = torch.rand(N)
         return boxes, scores
 

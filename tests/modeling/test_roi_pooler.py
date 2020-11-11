@@ -6,24 +6,12 @@ import torch
 from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.testing import random_boxes
 
 logger = logging.getLogger(__name__)
 
 
 class TestROIPooler(unittest.TestCase):
-    def _rand_boxes(self, num_boxes, x_max, y_max):
-        coords = torch.rand(num_boxes, 4)
-        coords[:, 0] *= x_max
-        coords[:, 1] *= y_max
-        coords[:, 2] *= x_max
-        coords[:, 3] *= y_max
-        boxes = torch.zeros(num_boxes, 4)
-        boxes[:, 0] = torch.min(coords[:, 0], coords[:, 2])
-        boxes[:, 1] = torch.min(coords[:, 1], coords[:, 3])
-        boxes[:, 2] = torch.max(coords[:, 0], coords[:, 2])
-        boxes[:, 3] = torch.max(coords[:, 1], coords[:, 3])
-        return boxes
-
     def _test_roialignv2_roialignrotated_match(self, device):
         pooler_resolution = 14
         canonical_level = 4
@@ -42,10 +30,7 @@ class TestROIPooler(unittest.TestCase):
         rois = []
         rois_rotated = []
         for _ in range(N):
-            boxes = self._rand_boxes(
-                num_boxes=N_rois, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
-            )
-
+            boxes = random_boxes(N_rois, W * canonical_scale_factor)
             rotated_boxes = torch.zeros(N_rois, 5)
             rotated_boxes[:, 0] = (boxes[:, 0] + boxes[:, 2]) / 2.0
             rotated_boxes[:, 1] = (boxes[:, 1] + boxes[:, 3]) / 2.0
@@ -98,9 +83,7 @@ class TestROIPooler(unittest.TestCase):
 
         rois = []
         for _ in range(N):
-            boxes = self._rand_boxes(
-                num_boxes=N_rois, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
-            )
+            boxes = random_boxes(N_rois, W * canonical_scale_factor)
 
             rois.append(Boxes(boxes).to(device))
 
@@ -170,9 +153,7 @@ class TestROIPooler(unittest.TestCase):
         feature = (torch.rand(N, C, H, W) - 0.5) * 2 * std + mean
         feature = [feature, feature]
 
-        rois = self._rand_boxes(
-            num_boxes=N_rois, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
-        )
+        rois = random_boxes(N_rois, W * canonical_scale_factor)
 
         model = Model(
             ROIPooler(
@@ -189,12 +170,7 @@ class TestROIPooler(unittest.TestCase):
             self.assertEqual(o.shape, (10, 4, 14, 14))
             o = func(feature, rois[:5])
             self.assertEqual(o.shape, (5, 4, 14, 14))
-            o = func(
-                feature,
-                self._rand_boxes(
-                    num_boxes=20, x_max=W * canonical_scale_factor, y_max=H * canonical_scale_factor
-                ),
-            )
+            o = func(feature, random_boxes(20, W * canonical_scale_factor))
             self.assertEqual(o.shape, (20, 4, 14, 14))
 
 

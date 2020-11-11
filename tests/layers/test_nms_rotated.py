@@ -6,6 +6,7 @@ import torch
 from torchvision import ops
 
 from detectron2.layers import batched_nms, batched_nms_rotated, nms_rotated
+from detectron2.utils.testing import random_boxes
 
 
 def nms_edit_distance(keep1, keep2):
@@ -64,12 +65,7 @@ class TestNMSRotated(unittest.TestCase):
         return torch.as_tensor(picked)
 
     def _create_tensors(self, N, device="cpu"):
-        boxes = torch.rand(N, 4, device=device) * 100
-        # Note: the implementation of this function in torchvision is:
-        # boxes[:, 2:] += torch.rand(N, 2) * 100
-        # but it does not guarantee non-negative widths/heights constraints:
-        # boxes[:, 2] >= boxes[:, 0] and boxes[:, 3] >= boxes[:, 1]:
-        boxes[:, 2:] += boxes[:, :2]
+        boxes = random_boxes(N, 200, device=device)
         scores = torch.rand(N, device=device)
         return boxes, scores
 
