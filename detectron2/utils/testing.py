@@ -34,7 +34,9 @@ def random_boxes(num_boxes, max_coord=100, device="cpu"):
     # but it does not guarantee non-negative widths/heights constraints:
     # boxes[:, 2] >= boxes[:, 0] and boxes[:, 3] >= boxes[:, 1]:
     boxes[:, 2:] += boxes[:, :2]
-    return boxes
+    # +0.1 to stay away from 0.0, so that allclose() can compare with a more
+    # reasonable tolerance
+    return boxes + 0.1
 
 
 def get_sample_coco_image(tensor=True):

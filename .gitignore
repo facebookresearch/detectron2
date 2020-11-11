@@ -37,6 +37,7 @@ wheels/
 # editor settings
 .idea
 .vscode
+_darcs
 
 # project dirs
 /detectron2/model_zoo/configs

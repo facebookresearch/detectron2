@@ -25,7 +25,7 @@ class TestBox2BoxTransform(unittest.TestCase):
             dst_boxes = dst_boxes.to(device=device)
             deltas = b2b_tfm.get_deltas(src_boxes, dst_boxes)
             dst_boxes_reconstructed = b2b_tfm.apply_deltas(deltas, src_boxes)
-            assert torch.allclose(dst_boxes, dst_boxes_reconstructed)
+            self.assertTrue(torch.allclose(dst_boxes, dst_boxes_reconstructed))
 
     @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_apply_deltas_tracing(self):

@@ -41,7 +41,9 @@ class TestScripting(unittest.TestCase):
         inputs = [{"image": get_sample_coco_image()}]
         with torch.no_grad():
             instance = model.inference(inputs, do_postprocess=False)[0]
-            scripted_instance = script_model(inputs)[0].to_instances()
+            scripted_instance = script_model.inference(inputs, do_postprocess=False)[
+                0
+            ].to_instances()
         assert_instances_allclose(instance, scripted_instance)
 
 
@@ -51,18 +53,14 @@ class TestScripting(unittest.TestCase):
 class TestTracing(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNN(self):
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
-
-    def _test_model(self, config_path):
-        model = model_zoo.get(config_path, trained=True)
-        image = get_sample_coco_image()
-
         class WrapModel(nn.ModuleList):
             def forward(self, image):
                 inputs = [{"image": image}]
                 outputs = self[0].inference(inputs, do_postprocess=False)[0]
                 size = outputs.image_size
-                if not torch.jit.is_tracing():
+                if torch.jit.is_tracing():
+                    assert isinstance(size, torch.Tensor)
+                else:
                     size = torch.as_tensor(size)
                 return (
                     size,
@@ -81,15 +79,50 @@ class TestTracing(unittest.TestCase):
                 r.pred_masks = output[4]
                 return r
 
-        model = WrapModel([model])
+        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", WrapModel)
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def testRetinaNet(self):
+        class WrapModel(nn.ModuleList):
+            def forward(self, image):
+                inputs = [{"image": image}]
+                outputs = self[0].forward(inputs)[0]["instances"]
+                size = outputs.image_size
+                if torch.jit.is_tracing():
+                    assert isinstance(size, torch.Tensor)
+                else:
+                    size = torch.as_tensor(size)
+                return (
+                    size,
+                    outputs.pred_classes,
+                    outputs.pred_boxes.tensor,
+                    outputs.scores,
+                )
+
+            @staticmethod
+            def convert_output(output):
+                r = Instances(tuple(output[0]))
+                r.pred_classes = output[1]
+                r.pred_boxes = Boxes(output[2])
+                r.scores = output[3]
+                return r
+
+        self._test_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml", WrapModel)
+
+    def _test_model(self, config_path, WrapperCls):
+        # TODO wrapper should be handled by export API in the future
+        model = model_zoo.get(config_path, trained=True)
+        image = get_sample_coco_image()
+
+        model = WrapperCls([model])
         model.eval()
         with torch.no_grad(), patch_builtin_len():
             small_image = nn.functional.interpolate(image, scale_factor=0.5)
             # trace with a different image, and the trace must still work
             traced_model = torch.jit.trace(model, (small_image,))
 
-            output = WrapModel.convert_output(model(image))
-            traced_output = WrapModel.convert_output(traced_model(image))
+            output = WrapperCls.convert_output(model(image))
+            traced_output = WrapperCls.convert_output(traced_model(image))
         assert_instances_allclose(output, traced_output)
 
 

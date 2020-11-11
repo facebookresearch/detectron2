@@ -409,7 +409,7 @@ class RetinaNet(nn.Module):
             pred_logits_per_image = [x[img_idx] for x in pred_logits]
             deltas_per_image = [x[img_idx] for x in pred_anchor_deltas]
             results_per_image = self.inference_single_image(
-                anchors, pred_logits_per_image, deltas_per_image, tuple(image_size)
+                anchors, pred_logits_per_image, deltas_per_image, image_size
             )
             results.append(results_per_image)
         return results

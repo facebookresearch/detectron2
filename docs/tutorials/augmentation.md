@@ -103,7 +103,7 @@ for common use cases.
 
 ### Custom transform strategy
 
-Instead of only returning the augmented data, detectron'2 `Augmentation` returns the __operations__ as `T.Transform`.
+Instead of only returning the augmented data, detectron2's `Augmentation` returns the __operations__ as `T.Transform`.
 This allows users to apply custom transform strategy on their data.
 We use keypoints as an example.
 
