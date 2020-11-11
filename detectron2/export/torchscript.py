@@ -5,7 +5,7 @@ import torch
 
 from detectron2.utils.file_io import PathManager
 
-from .torchscript_patch import patch_instances
+from .torchscript_patch import patch_instances, patch_nonscriptable_classes
 
 
 def export_torchscript_with_instances(model, fields):
@@ -46,6 +46,7 @@ def export_torchscript_with_instances(model, fields):
     Returns:
         torch.jit.ScriptModule: the input model in torchscript format
     """
+    patch_nonscriptable_classes()
 
     assert (
         not model.training
