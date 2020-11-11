@@ -85,7 +85,7 @@ class Conv2d(torch.nn.Conv2d):
 
 ConvTranspose2d = torch.nn.ConvTranspose2d
 BatchNorm2d = torch.nn.BatchNorm2d
-interpolate = torch.nn.functional.interpolate
+interpolate = F.interpolate
 
 
 if TORCH_VERSION > (1, 5):

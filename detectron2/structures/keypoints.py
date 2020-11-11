@@ -2,8 +2,7 @@
 import numpy as np
 from typing import Any, List, Tuple, Union
 import torch
-
-from detectron2.layers import interpolate
+from torch.nn import functional as F
 
 
 class Keypoints:
@@ -181,7 +180,9 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
 
     for i in range(num_rois):
         outsize = (int(heights_ceil[i]), int(widths_ceil[i]))
-        roi_map = interpolate(maps[[i]], size=outsize, mode="bicubic", align_corners=False).squeeze(
+        roi_map = F.interpolate(
+            maps[[i]], size=outsize, mode="bicubic", align_corners=False
+        ).squeeze(
             0
         )  # #keypoints x H x W
 

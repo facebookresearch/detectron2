@@ -23,6 +23,7 @@ from detectron2.layers.mask_ops import (
 from detectron2.structures import BitMasks, Boxes, BoxMode, PolygonMasks
 from detectron2.structures.masks import polygons_to_bitmask
 from detectron2.utils.file_io import PathManager
+from detectron2.utils.testing import random_boxes
 
 
 def iou_between_full_image_bit_masks(a, b):
@@ -151,6 +152,17 @@ class TestMaskCropPaste(unittest.TestCase):
             area = polygon.area()[0]
             target = d ** 2 / 2
             self.assertEqual(area, target)
+
+    def test_paste_mask_scriptable(self):
+        scripted_f = torch.jit.script(paste_masks_in_image)
+        N = 10
+        masks = torch.rand(N, 28, 28)
+        boxes = Boxes(random_boxes(N, 100))
+        image_shape = (150, 150)
+
+        out = paste_masks_in_image(masks, boxes, image_shape)
+        scripted_out = scripted_f(masks, boxes, image_shape)
+        self.assertTrue(torch.equal(out, scripted_out))
 
 
 def benchmark_paste():
