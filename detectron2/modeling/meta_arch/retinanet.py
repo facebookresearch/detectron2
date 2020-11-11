@@ -2,15 +2,15 @@
 import logging
 import math
 import numpy as np
-from typing import List
+from typing import Dict, List, Tuple
 import torch
 from fvcore.nn import giou_loss, sigmoid_focal_loss_jit, smooth_l1_loss
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
 
 from detectron2.config import configurable
 from detectron2.data.detection_utils import convert_image_to_rgb
-from detectron2.layers import ShapeSpec, batched_nms, cat, get_norm
+from detectron2.layers import ShapeSpec, batched_nms, cat, get_norm, nonzero_tuple
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 
@@ -24,7 +24,7 @@ from .build import META_ARCH_REGISTRY
 __all__ = ["RetinaNet"]
 
 
-def permute_to_N_HWA_K(tensor, K):
+def permute_to_N_HWA_K(tensor, K: int):
     """
     Transpose/reshape a tensor from (N, (Ai x K), H, W) to (N, (HxWxAi), K)
     """
@@ -224,7 +224,7 @@ class RetinaNet(nn.Module):
         vis_name = f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
         storage.put_image(vis_name, vis_img)
 
-    def forward(self, batched_inputs):
+    def forward(self, batched_inputs: Tuple[Dict[str, Tensor]]):
         """
         Args:
             batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
@@ -253,6 +253,7 @@ class RetinaNet(nn.Module):
         pred_anchor_deltas = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
 
         if self.training:
+            assert not torch.jit.is_scripting(), "Not supported"
             assert "instances" in batched_inputs[0], "Instance annotations are missing in training!"
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
 
@@ -270,6 +271,8 @@ class RetinaNet(nn.Module):
             return losses
         else:
             results = self.inference(anchors, pred_logits, pred_anchor_deltas, images.image_sizes)
+            if torch.jit.is_scripting():
+                return results
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
                 results, batched_inputs, images.image_sizes
@@ -392,19 +395,25 @@ class RetinaNet(nn.Module):
 
         return gt_labels, matched_gt_boxes
 
-    def inference(self, anchors, pred_logits, pred_anchor_deltas, image_sizes):
+    def inference(
+        self,
+        anchors: List[Boxes],
+        pred_logits: List[Tensor],
+        pred_anchor_deltas: List[Tensor],
+        image_sizes: List[Tuple[int, int]],
+    ):
         """
         Arguments:
             anchors (list[Boxes]): A list of #feature level Boxes.
                 The Boxes contain anchors of this image on the specific feature level.
             pred_logits, pred_anchor_deltas: list[Tensor], one per level. Each
                 has shape (N, Hi * Wi * Ai, K or 4)
-            image_sizes (List[torch.Size]): the input image sizes
+            image_sizes (List[(h, w)]): the input image sizes
 
         Returns:
             results (List[Instances]): a list of #images elements.
         """
-        results = []
+        results: List[Instances] = []
         for img_idx, image_size in enumerate(image_sizes):
             pred_logits_per_image = [x[img_idx] for x in pred_logits]
             deltas_per_image = [x[img_idx] for x in pred_anchor_deltas]
@@ -414,7 +423,13 @@ class RetinaNet(nn.Module):
             results.append(results_per_image)
         return results
 
-    def inference_single_image(self, anchors, box_cls, box_delta, image_size):
+    def inference_single_image(
+        self,
+        anchors: List[Boxes],
+        box_cls: List[Tensor],
+        box_delta: List[Tensor],
+        image_size: Tuple[int, int],
+    ):
         """
         Single-image inference. Return bounding-box detection results by thresholding
         on scores and applying non-maximum suppression (NMS).
@@ -443,7 +458,7 @@ class RetinaNet(nn.Module):
             # 1. Keep boxes with confidence score higher than threshold
             keep_idxs = predicted_prob > self.test_score_thresh
             predicted_prob = predicted_prob[keep_idxs]
-            topk_idxs = torch.nonzero(keep_idxs, as_tuple=True)[0]
+            topk_idxs = nonzero_tuple(keep_idxs)[0]
 
             # 2. Keep top k top scoring boxes only
             num_topk = min(self.test_topk_candidates, topk_idxs.size(0))
@@ -476,7 +491,7 @@ class RetinaNet(nn.Module):
         result.pred_classes = class_idxs_all[keep]
         return result
 
-    def preprocess_image(self, batched_inputs):
+    def preprocess_image(self, batched_inputs: Tuple[Dict[str, Tensor]]):
         """
         Normalize, pad and batch the input images.
         """
@@ -575,7 +590,7 @@ class RetinaNetHead(nn.Module):
             "num_anchors": num_anchors,
         }
 
-    def forward(self, features):
+    def forward(self, features: List[Tensor]):
         """
         Arguments:
             features (list[Tensor]): FPN feature map tensors in high to low resolution.

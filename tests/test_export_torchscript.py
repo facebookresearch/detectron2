@@ -11,6 +11,7 @@ from detectron2.config import get_cfg
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
 from detectron2.export.torchscript_patch import patch_builtin_len
 from detectron2.modeling import build_backbone
+from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image
@@ -22,9 +23,13 @@ from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_
 class TestScripting(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNN(self):
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+        self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
-    def _test_model(self, config_path):
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def testRetinaNet(self):
+        self._test_retinanet_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml")
+
+    def _test_rcnn_model(self, config_path):
         model = model_zoo.get(config_path, trained=True)
         model.eval()
 
@@ -44,6 +49,25 @@ class TestScripting(unittest.TestCase):
             scripted_instance = script_model.inference(inputs, do_postprocess=False)[
                 0
             ].to_instances()
+        assert_instances_allclose(instance, scripted_instance)
+
+    def _test_retinanet_model(self, config_path):
+        model = model_zoo.get(config_path, trained=True)
+        model.eval()
+
+        fields = {
+            "pred_boxes": Boxes,
+            "scores": Tensor,
+            "pred_classes": Tensor,
+        }
+        script_model = export_torchscript_with_instances(model, fields)
+
+        img = get_sample_coco_image()
+        inputs = [{"image": img}]
+        with torch.no_grad():
+            instance = model(inputs)[0]["instances"]
+            scripted_instance = script_model(inputs)[0].to_instances()
+            scripted_instance = detector_postprocess(scripted_instance, img.shape[1], img.shape[2])
         assert_instances_allclose(instance, scripted_instance)
 
 

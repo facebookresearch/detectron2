@@ -213,7 +213,7 @@ class Boxes:
         keep = (widths > threshold) & (heights > threshold)
         return keep
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> "Boxes":
         """
         Args:
             item: int, slice, or a BoolTensor
