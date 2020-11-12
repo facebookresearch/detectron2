@@ -77,7 +77,6 @@ class Trainer(DefaultTrainer):
             return SemSegEvaluator(
                 dataset_name,
                 distributed=True,
-                num_classes=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES,
                 ignore_label=cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
                 output_dir=output_folder,
             )
