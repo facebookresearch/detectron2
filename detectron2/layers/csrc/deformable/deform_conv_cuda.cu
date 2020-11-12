@@ -821,6 +821,23 @@ void modulated_deform_conv_cuda_forward(
     const int group,
     const int deformable_group,
     const bool with_bias) {
+
+  shape_check(
+      input,
+      offset,
+      NULL,
+      weight,
+      kernel_h,
+      kernel_w,
+      stride_h,
+      stride_w,
+      pad_h,
+      pad_w,
+      dilation_h,
+      dilation_w,
+      group,
+      deformable_group);
+
   TORCH_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
   TORCH_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
 
@@ -851,6 +868,20 @@ void modulated_deform_conv_cuda_forward(
       (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
   const int width_out =
       (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
+
+  // mask shape check
+  TORCH_CHECK(
+      (mask.size(2) == height_out && mask.size(3) == width_out),
+      "invalid spatial size of mask, expected height: %d width: %d, but "
+      "got height: %d width: %d",
+      height_out,
+      width_out,
+      mask.size(2),
+      mask.size(3));
+
+  TORCH_CHECK(
+      (mask.size(1) == deformable_group * kernel_h * kernel_w),
+      "invalid number of channels of mask");
 
   if (ones.ndimension() != 2 ||
       ones.size(0) * ones.size(1) < height_out * width_out) {
@@ -951,6 +982,23 @@ void modulated_deform_conv_cuda_backward(
     int group,
     int deformable_group,
     const bool with_bias) {
+
+  shape_check(
+      input,
+      offset,
+      &grad_output,
+      weight,
+      kernel_h,
+      kernel_w,
+      stride_h,
+      stride_w,
+      pad_h,
+      pad_w,
+      dilation_h,
+      dilation_w,
+      group,
+      deformable_group);
+
   TORCH_CHECK(input.is_contiguous(), "input tensor has to be contiguous");
   TORCH_CHECK(weight.is_contiguous(), "weight tensor has to be contiguous");
 
@@ -979,6 +1027,20 @@ void modulated_deform_conv_cuda_backward(
       (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
   const int width_out =
       (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
+
+  // mask shape check
+  TORCH_CHECK(
+      (mask.size(2) == height_out && mask.size(3) == width_out),
+      "invalid spatial size of mask, expected height: %d width: %d, but "
+      "got height: %d width: %d",
+      height_out,
+      width_out,
+      mask.size(2),
+      mask.size(3));
+
+  TORCH_CHECK(
+      (mask.size(1) == deformable_group * kernel_h * kernel_w),
+      "invalid number of channels of mask");
 
   if (ones.ndimension() != 2 ||
       ones.size(0) * ones.size(1) < height_out * width_out) {
