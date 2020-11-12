@@ -7,7 +7,6 @@ from detectron2.layers import DeformConv, ModulatedDeformConv
 
 
 class DeformableTest(unittest.TestCase):
-
     @unittest.skipIf(not torch.cuda.is_available(), "Deformable not supported for cpu")
     def test_forward_output(self):
         device = torch.device("cuda")
@@ -31,21 +30,23 @@ class DeformableTest(unittest.TestCase):
         deform.weight = torch.nn.Parameter(torch.ones_like(deform.weight))
         output = deform(inputs, offset)
         output = output.detach().cpu().numpy()
-        deform_results = np.array([
-            [30, 41.25, 48.75, 45, 28.75],
-            [62.25, 81, 90, 80.25, 50.25],
-            [99.75, 126, 135, 117.75, 72.75],
-            [105, 131.25, 138.75, 120, 73.75],
-            [71.75, 89.25, 93.75, 80.75, 49.5],
-        ])
+        deform_results = np.array(
+            [
+                [30, 41.25, 48.75, 45, 28.75],
+                [62.25, 81, 90, 80.25, 50.25],
+                [99.75, 126, 135, 117.75, 72.75],
+                [105, 131.25, 138.75, 120, 73.75],
+                [71.75, 89.25, 93.75, 80.75, 49.5],
+            ]
+        )
         self.assertTrue(np.allclose(output.flatten(), deform_results.flatten()))
 
         # Test DCN v2
         mask_channels = kernel_size * kernel_size
         mask = torch.full((N, mask_channels, H, W), 0.5, dtype=torch.float32).to(device)
-        modulate_deform = ModulatedDeformConv(
-            C, C, kernel_size, padding=padding, bias=False
-        ).to(device)
+        modulate_deform = ModulatedDeformConv(C, C, kernel_size, padding=padding, bias=False).to(
+            device
+        )
         modulate_deform.weight = deform.weight
         output = modulate_deform(inputs, offset, mask)
         output = output.detach().cpu().numpy()
@@ -91,9 +92,9 @@ class DeformableTest(unittest.TestCase):
         offset = torch.randn((N, offset_channels, H, W), dtype=torch.float32).to(device)
         mask_channels = kernel_size * kernel_size * 2  # This is wrong channels for mask
         mask = torch.ones((N, mask_channels, H, W), dtype=torch.float32).to(device)
-        modulate_deform = ModulatedDeformConv(
-            C, C, kernel_size, padding=padding, bias=False
-        ).to(device)
+        modulate_deform = ModulatedDeformConv(C, C, kernel_size, padding=padding, bias=False).to(
+            device
+        )
         self.assertRaises(RuntimeError, modulate_deform, inputs, offset, mask)
 
     def test_repr(self):
