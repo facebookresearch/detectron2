@@ -145,7 +145,7 @@ class RotatedCOCOEvaluator(COCOEvaluator):
             results.append(result)
         return results
 
-    def _eval_predictions(self, tasks, predictions):
+    def _eval_predictions(self, predictions):
         """
         Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
@@ -173,18 +173,21 @@ class RotatedCOCOEvaluator(COCOEvaluator):
             return
 
         self._logger.info("Evaluating predictions ...")
-        for task in sorted(tasks):
-            assert task == "bbox", "Task {} is not supported".format(task)
-            coco_eval = (
-                self._evaluate_predictions_on_coco(self._coco_api, coco_results)
-                if len(coco_results) > 0
-                else None  # cocoapi does not handle empty results very well
-            )
 
-            res = self._derive_coco_results(
-                coco_eval, task, class_names=self._metadata.get("thing_classes")
-            )
-            self._results[task] = res
+        assert self._task is None or set(self._task) == {
+            "bbox"
+        }, "[RotatedCOCOEvaluator] Only bbox evaluation is supported"
+        coco_eval = (
+            self._evaluate_predictions_on_coco(self._coco_api, coco_results)
+            if len(coco_results) > 0
+            else None  # cocoapi does not handle empty results very well
+        )
+
+        task = "bbox"
+        res = self._derive_coco_results(
+            coco_eval, task, class_names=self._metadata.get("thing_classes")
+        )
+        self._results[task] = res
 
     def _evaluate_predictions_on_coco(self, coco_gt, coco_results):
         """

@@ -68,7 +68,7 @@ class Trainer(DefaultTrainer):
     def build_evaluator(cls, cfg: CfgNode, dataset_name, output_folder=None):
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        evaluators = [COCOEvaluator(dataset_name, cfg, True, output_folder)]
+        evaluators = [COCOEvaluator(dataset_name, output_dir=output_folder)]
         if cfg.MODEL.DENSEPOSE_ON:
             evaluators.append(DensePoseCOCOEvaluator(dataset_name, True, output_folder))
         return DatasetEvaluators(evaluators)

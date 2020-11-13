@@ -41,8 +41,8 @@ class COCOEvaluator(DatasetEvaluator):
     def __init__(
         self,
         dataset_name,
-        tasks,
-        distributed,
+        tasks=None,
+        distributed=True,
         output_dir=None,
         *,
         use_fast_impl=True,
@@ -57,9 +57,9 @@ class COCOEvaluator(DatasetEvaluator):
 
                 Or it must be in detectron2's standard dataset format
                 so it can be converted to COCO format automatically.
-            tasks (tuple[str]): tasks that can be evaluated under the given configuration.
-                A task is one of "bbox", "segm", "keypoints".
-                DEPRECATED pass cfgNode here to generate tasks from config
+            tasks (tuple[str]): tasks that can be evaluated under the given
+                configuration. A task is one of "bbox", "segm", "keypoints".
+                By default, will infer this automatically from predictions.
             distributed (True): if True, will collect results from all ranks and run evaluation
                 in the main process.
                 Otherwise, will only evaluate the results in the current process.
@@ -80,21 +80,21 @@ class COCOEvaluator(DatasetEvaluator):
                 Otherwise it should be the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
         """
         self._logger = logging.getLogger(__name__)
-        if isinstance(tasks, CfgNode):
-            kpt_oks_sigmas = (
-                tasks.TEST.KEYPOINT_OKS_SIGMAS if not kpt_oks_sigmas else kpt_oks_sigmas
-            )
-            self._tasks = self._tasks_from_config(tasks)
-            self._logger.warn(
-                "COCO Evaluator instantiated using config, this is deprecated behavior."
-                " Please pass tasks in directly"
-            )
-        else:
-            self._tasks = tasks
-
         self._distributed = distributed
         self._output_dir = output_dir
         self._use_fast_impl = use_fast_impl
+
+        if tasks is not None and isinstance(tasks, CfgNode):
+            kpt_oks_sigmas = (
+                tasks.TEST.KEYPOINT_OKS_SIGMAS if not kpt_oks_sigmas else kpt_oks_sigmas
+            )
+            self._logger.warn(
+                "COCO Evaluator instantiated using config, this is deprecated behavior."
+                " Please pass in explicit arguments instead."
+            )
+            self._tasks = None  # Infering it from predictions should be better
+        else:
+            self._tasks = tasks
 
         self._cpu_device = torch.device("cpu")
 
@@ -113,26 +113,14 @@ class COCOEvaluator(DatasetEvaluator):
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)
 
-        self._kpt_oks_sigmas = kpt_oks_sigmas
         # Test set json files do not contain annotations (evaluation must be
         # performed using the COCO evaluation server).
         self._do_evaluation = "annotations" in self._coco_api.dataset
+        if self._do_evaluation:
+            self._kpt_oks_sigmas = kpt_oks_sigmas
 
     def reset(self):
         self._predictions = []
-
-    @staticmethod
-    def _tasks_from_config(cfg):
-        """
-        Returns:
-            tuple[str]: tasks that can be evaluated under the given configuration.
-        """
-        tasks = ("bbox",)
-        if cfg.MODEL.MASK_ON:
-            tasks = tasks + ("segm",)
-        if cfg.MODEL.KEYPOINT_ON:
-            tasks = tasks + ("keypoints",)
-        return tasks
 
     def process(self, inputs, outputs):
         """
@@ -182,17 +170,29 @@ class COCOEvaluator(DatasetEvaluator):
         if "proposals" in predictions[0]:
             self._eval_box_proposals(predictions)
         if "instances" in predictions[0]:
-            self._eval_predictions(set(self._tasks), predictions, img_ids=img_ids)
+            self._eval_predictions(predictions, img_ids=img_ids)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
-    def _eval_predictions(self, tasks, predictions, img_ids=None):
+    def _tasks_from_predictions(self, predictions):
         """
-        Evaluate predictions on the given tasks.
-        Fill self._results with the metrics of the tasks.
+        Get COCO API "tasks" (i.e. iou_type) from COCO-format predictions.
+        """
+        tasks = {"bbox"}
+        for pred in predictions:
+            if "segmentation" in pred:
+                tasks.add("segm")
+            if "keypoints" in pred:
+                tasks.add("keypoints")
+        return sorted(tasks)
+
+    def _eval_predictions(self, predictions, img_ids=None):
+        """
+        Evaluate predictions. Fill self._results with the metrics of the tasks.
         """
         self._logger.info("Preparing results for COCO format ...")
         coco_results = list(itertools.chain(*[x["instances"] for x in predictions]))
+        tasks = self._tasks or self._tasks_from_predictions(coco_results)
 
         # unmap the category ids for COCO
         if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):

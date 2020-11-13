@@ -72,12 +72,7 @@ class Trainer(DefaultTrainer):
             evaluator_list.append(CityscapesSemSegEvaluator(dataset_name))
             evaluator_list.append(CityscapesInstanceEvaluator(dataset_name))
         if evaluator_type == "coco_panoptic_seg":
-            # Evaluate bbox and segm.
-            cfg.defrost()
-            cfg.MODEL.MASK_ON = True
-            cfg.MODEL.KEYPOINT_ON = False
-            cfg.freeze()
-            evaluator_list.append(COCOEvaluator(dataset_name, cfg, True, output_folder))
+            evaluator_list.append(COCOEvaluator(dataset_name, output_dir=output_folder))
         if len(evaluator_list) == 0:
             raise NotImplementedError(
                 "no Evaluator for the dataset {} with the type {}".format(

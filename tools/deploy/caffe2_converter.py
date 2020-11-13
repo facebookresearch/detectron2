@@ -79,6 +79,6 @@ if __name__ == "__main__":
         dataset = cfg.DATASETS.TEST[0]
         data_loader = build_detection_test_loader(cfg, dataset)
         # NOTE: hard-coded evaluator. change to the evaluator for your dataset
-        evaluator = COCOEvaluator(dataset, cfg, True, args.output)
+        evaluator = COCOEvaluator(dataset, output_dir=args.output)
         metrics = inference_on_dataset(caffe2_model, data_loader, evaluator)
         print_csv_format(metrics)
