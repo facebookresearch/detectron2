@@ -74,7 +74,6 @@ def get_evaluator(cfg, dataset_name, output_folder=None):
             SemSegEvaluator(
                 dataset_name,
                 distributed=True,
-                ignore_label=cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
                 output_dir=output_folder,
             )
         )

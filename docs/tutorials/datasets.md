@@ -203,6 +203,10 @@ unavailable to you:
 * `stuff_colors` (list[tuple(r, g, b)]): Pre-defined color (in [0, 255]) for each stuff category.
   Used for visualization. If not given, random colors are used.
 
+* `ignore_label` (int): Used by semantic and panoptic segmentation tasks. Pixels in ground-truth
+  annotations with this category label should be ignored in evaluation. Typically these are "unlabeled"
+  pixels.
+
 * `keypoint_names` (list[str]): Used by keypoint detection. A list of names for each keypoint.
 
 * `keypoint_flip_map` (list[tuple[str]]): Used by keypoint detection. A list of pairs of names,

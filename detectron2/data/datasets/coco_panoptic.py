@@ -151,13 +151,18 @@ def register_coco_panoptic_separated(
         sem_seg_root=sem_seg_root,
         json_file=instances_json,  # TODO rename
         evaluator_type="coco_panoptic_seg",
+        ignore_label=255,
         **metadata,
     )
 
     semantic_name = name + "_stuffonly"
     DatasetCatalog.register(semantic_name, lambda: load_sem_seg(sem_seg_root, image_root))
     MetadataCatalog.get(semantic_name).set(
-        sem_seg_root=sem_seg_root, image_root=image_root, evaluator_type="sem_seg", **metadata
+        sem_seg_root=sem_seg_root,
+        image_root=image_root,
+        evaluator_type="sem_seg",
+        ignore_label=255,
+        **metadata,
     )
 
 
