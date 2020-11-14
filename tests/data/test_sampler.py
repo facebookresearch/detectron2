@@ -1,13 +1,19 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
+import math
 import operator
 import unittest
+import torch
 from torch.utils import data
 from torch.utils.data.sampler import SequentialSampler
 
 from detectron2.data.build import worker_init_reset_seed
 from detectron2.data.common import DatasetFromList, ToIterableDataset
-from detectron2.data.samplers import GroupedBatchSampler, TrainingSampler
+from detectron2.data.samplers import (
+    GroupedBatchSampler,
+    RepeatFactorTrainingSampler,
+    TrainingSampler,
+)
 from detectron2.utils.env import seed_all_rng
 
 
@@ -60,3 +66,21 @@ class TestSamplerDeterministic(unittest.TestCase):
         seed_all_rng(999)  # should be ineffective
         data2 = list(itertools.islice(sampler, 65))
         self.assertEqual(data, data2)
+
+
+class TestRepeatFactorTrainingSampler(unittest.TestCase):
+    def test_repeat_factors_from_category_frequency(self):
+        repeat_thresh = 0.5
+
+        dataset_dicts = [
+            {"annotations": [{"category_id": 0}, {"category_id": 1}]},
+            {"annotations": [{"category_id": 0}]},
+            {"annotations": []},
+        ]
+
+        rep_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
+            dataset_dicts, repeat_thresh
+        )
+
+        expected_rep_factors = torch.tensor([math.sqrt(3 / 2), 1.0, 1.0])
+        self.assertTrue(torch.allclose(rep_factors, expected_rep_factors))
