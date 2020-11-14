@@ -65,6 +65,26 @@ python train_net.py --config-file configs/InstanceSegmentation/pointrend_rcnn_R_
 <td align="center">164955410</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/InstanceSegmentation/pointrend_rcnn_R_50_FPN_3x_coco/164955410/model_final_edd263.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/InstanceSegmentation/pointrend_rcnn_R_50_FPN_3x_coco/164955410/metrics.json">metrics</a></td>
 </tr>
+</tr>
+ <tr><td align="left"><a href="configs/InstanceSegmentation/pointrend_rcnn_R_101_FPN_3x_coco.yaml">PointRend</a></td>
+<td align="center">R101-FPN</td>
+<td align="center">3&times;</td>
+<td align="center">224&times;224</td>
+<td align="center">40.1</td>
+<td align="center">43.8</td>
+<td align="center"></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/InstanceSegmentation/pointrend_rcnn_R_101_FPN_3x_coco/28119983/model_final_3f4d2a.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/InstanceSegmentation/pointrend_rcnn_R_101_FPN_3x_coco/28119983/metrics.json">metrics</a></td>
+</tr>
+</tr>
+ <tr><td align="left"><a href="configs/InstanceSegmentation/pointrend_rcnn_X_101_32x8d_FPN_3x_coco.yaml">PointRend</a></td>
+<td align="center">X101-FPN</td>
+<td align="center">3&times;</td>
+<td align="center">224&times;224</td>
+<td align="center">41.1</td>
+<td align="center">44.7</td>
+<td align="center"></td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/InstanceSegmentation/pointrend_rcnn_X_101_32x8d_FPN_3x_coco/28119989/model_final_ba17b9.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PointRend/InstanceSegmentation/pointrend_rcnn_X_101_32x8d_FPN_3x_coco/28119989/metrics.json">metrics</a></td>
+</tr>
 </tbody></table>
 
 AP&ast; is COCO mask AP evaluated against the higher-quality LVIS annotations; see the paper for details.
