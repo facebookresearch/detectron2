@@ -47,6 +47,8 @@ class _DeformConv(Function):
         ctx.bufs_ = [input.new_empty(0), input.new_empty(0)]  # columns, ones
 
         if not input.is_cuda:
+            if deformable_groups != 1:
+                raise NotImplementedError("Deformable Conv with deformable_groups != 1 is not supported on CPUs!")
             return deform_conv2d(
                 input, offset, weight, stride=stride, padding=padding, dilation=dilation
             )
