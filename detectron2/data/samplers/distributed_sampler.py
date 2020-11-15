@@ -124,11 +124,7 @@ class RepeatFactorTrainingSampler(Sampler):
         rep_factors = []
         for dataset_dict in dataset_dicts:
             cat_ids = {ann["category_id"] for ann in dataset_dict["annotations"]}
-
-            if len(cat_ids) > 0:
-                rep_factor = max({category_rep[cat_id] for cat_id in cat_ids})
-            else:
-                rep_factor = 1.0
+            rep_factor = max({category_rep[cat_id] for cat_id in cat_ids}, default=1.0)
             rep_factors.append(rep_factor)
 
         return torch.tensor(rep_factors, dtype=torch.float32)
