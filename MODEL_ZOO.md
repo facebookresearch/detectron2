@@ -66,6 +66,8 @@ Pretrained models in Detectron's format can still be used. For example:
 * [R-101-GN.pkl](https://dl.fbaipublicfiles.com/detectron/ImageNetPretrained/47592356/R-101-GN.pkl):
   ResNet-101 with Group Normalization.
 
+These models require slightly different settings regarding normalization and architecture. See the model zoo configs for reference.
+
 #### License
 
 All models available for download through this document are licensed under the

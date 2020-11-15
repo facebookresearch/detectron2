@@ -41,9 +41,9 @@ class RotatedBoxes(Boxes):
         Mathematically, since the right-handed coordinate system for image space
         is (y, x), where y is top->down and x is left->right, the 4 vertices of the
         rotated rectangle :math:`(yr_i, xr_i)` (i = 1, 2, 3, 4) can be obtained from
-        the vertices of the horizontal rectangle (y_i, x_i) (i = 1, 2, 3, 4)
+        the vertices of the horizontal rectangle :math:`(y_i, x_i)` (i = 1, 2, 3, 4)
         in the following way (:math:`\\theta = angle*\\pi/180` is the angle in radians,
-        (y_c, x_c) is the center of the rectangle):
+        :math:`(y_c, x_c)` is the center of the rectangle):
 
         .. math::
 
