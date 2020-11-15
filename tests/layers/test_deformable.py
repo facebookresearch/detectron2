@@ -7,8 +7,8 @@ from detectron2.layers import DeformConv, ModulatedDeformConv
 
 
 class DeformableTest(unittest.TestCase):
-    @unittest.skipIf(not torch.cuda.is_available(), "ModulatedDeformConv not supported for cpu")
-    def test_forward_output_on_gpu(self):
+    @unittest.skipIf(not torch.cuda.is_available(), "Deformable not supported for cpu")
+    def test_forward_output(self):
         device = torch.device("cuda")
         N, C, H, W = shape = 1, 1, 5, 5
         kernel_size = 3
