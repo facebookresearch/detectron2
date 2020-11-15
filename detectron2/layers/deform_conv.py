@@ -374,11 +374,7 @@ class DeformConv(nn.Module):
             output_shape = [
                 (i + 2 * p - (di * (k - 1) + 1)) // s + 1
                 for i, p, di, k, s in zip(
-                    x.shape[-2:],
-                    self.padding,
-                    self.dilation,
-                    self.kernel_size,
-                    self.stride,
+                    x.shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
                 )
             ]
             output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
@@ -468,11 +464,7 @@ class ModulatedDeformConv(nn.Module):
             output_shape = [
                 (i + 2 * p - (di * (k - 1) + 1)) // s + 1
                 for i, p, di, k, s in zip(
-                    x.shape[-2:],
-                    self.padding,
-                    self.dilation,
-                    self.kernel_size,
-                    self.stride,
+                    x.shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
                 )
             ]
             output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
