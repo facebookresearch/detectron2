@@ -373,7 +373,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
     return d2_build_detection_test_loader(
-        dataset_dicts, mapper=mapper, num_worker=cfg.DATALOADER.NUM_WORKERS
+        dataset_dicts, mapper=mapper, num_workers=cfg.DATALOADER.NUM_WORKERS
     )
 
 
