@@ -327,6 +327,11 @@ class DefaultTrainer(TrainerBase):
             self.start_iter = checkpoint.get("iteration", -1) + 1
             # The checkpoint stores the training iteration that just finished, thus we start
             # at the next iteration (or iter zero if there's no checkpoint).
+        if isinstance(self.model, DistributedDataParallel):
+            # broadcast loaded data/model from the first rank, because other
+            # machines may not have access to the checkpoint file
+            self.model._sync_params_and_buffers()
+            self.start_iter = comm.all_gather(self.start_iter)[0]
 
     def build_hooks(self):
         """
