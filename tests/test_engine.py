@@ -82,6 +82,7 @@ class TestTrainer(unittest.TestCase):
 
             self.assertIn("eta: 0:00:00", all_logs[-1], "Last ETA must be 0!")
 
+    @unittest.skipIf(os.environ.get("CI"), "Require COCO data.")
     def test_default_trainer(self):
         cfg = get_cfg()
         cfg.MODEL.META_ARCHITECTURE = "_SimpleModel"

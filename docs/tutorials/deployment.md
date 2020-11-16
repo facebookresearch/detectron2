@@ -1,16 +1,42 @@
 # Deployment
 
+## TorchScript Deployment
+
+Models can be exported to TorchScript format, by either
+[tracing or scripting](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html).
+The output model file can be loaded without detectron2 dependency in either Python or C++.
+The exported model likely require torchvision (or its C library) dependency for some custom ops.
+
+This feature requires PyTorch ≥ 1.8 (or latest on github before 1.8 is released).
+
+### Coverage
+Most official models under the meta architectures `GeneralizedRCNN` and `RetinaNet`
+are supported in both tracing and scripting mode.
+Users' custom extensions are supported if they are also scriptable or traceable.
+
+For models exported with tracing, dynamic input resolution is allowed, but batch size
+(number of input images) must be fixed.
+Scripting can support dynamic batch size.
+
+### Usage
+
+The usage is currently demonstrated in [test_export_torchscript.py](https://github.com/facebookresearch/detectron2/blob/master/tests/test_export_torchscript.py)
+(see `TestScripting` and `TestTracing`).
+Note that the feature is still experimental and the high-level API may be subject to change.
+
+A complete export and deployment example is not yet available.
+
 ## Caffe2 Deployment
-We currently support converting a detectron2 model to Caffe2 format through ONNX.
+We support converting a detectron2 model to Caffe2 format through ONNX.
 The converted Caffe2 model is able to run without detectron2 dependency in either Python or C++.
 It has a runtime optimized for CPU & mobile inference, but not for GPU inference.
 
-Caffe2 conversion requires PyTorch ≥ 1.4 and ONNX ≥ 1.6.
+Caffe2 conversion requires ONNX ≥ 1.6.
 
 ### Coverage
 
-It supports 3 most common meta architectures: `GeneralizedRCNN`, `RetinaNet`, `PanopticFPN`,
-and most official models under these 3 meta architectures.
+Most official models under these 3 common meta architectures: `GeneralizedRCNN`, `RetinaNet`, `PanopticFPN`
+are supported.
 
 Users' custom extensions under these architectures (added through registration) are supported
 as long as they do not contain control flow or operators not available in Caffe2 (e.g. deformable convolution).
@@ -54,10 +80,10 @@ which performs CPU/GPU inference using `COCO-InstanceSegmentation/mask_rcnn_R_50
 The C++ example needs to be built with:
 * PyTorch with caffe2 inside
 * gflags, glog, opencv
-* protobuf library that match the version used by PyTorch (3.6 for PyTorch 1.5, 3.11 for PyTorch 1.6)
+* protobuf library that match the version used by PyTorch (version defined in `include/caffe2/proto/caffe2.pb.h` of your PyTorch installation)
 * MKL headers if caffe2 is built with MKL
 
-The following can compile the example inside [official detectron2 docker](../../docker/):
+The following steps can build the C++ example inside [official detectron2 docker](../../docker/):
 ```
 # install dependencies
 sudo apt update && sudo apt install libgflags-dev libgoogle-glog-dev libopencv-dev
@@ -66,7 +92,7 @@ pip install mkl-include
 # install the correct version of protobuf:
 wget https://github.com/protocolbuffers/protobuf/releases/download/v3.11.4/protobuf-cpp-3.11.4.tar.gz && tar xf protobuf-cpp-3.11.4.tar.gz
 cd protobuf-3.11.4
-export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
+export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=$(python3 -c 'import torch; print(int(torch.compiled_with_cxx11_abi()))')
 ./configure --prefix=$HOME/.local && make && make install
 export CPATH=$HOME/.local/include
 export LIBRARY_PATH=$HOME/.local/lib

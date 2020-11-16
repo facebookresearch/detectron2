@@ -17,9 +17,7 @@ from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image
 
 
-@unittest.skipIf(
-    os.environ.get("CIRCLECI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version"
-)
+@unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestScripting(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNN(self):
@@ -71,9 +69,7 @@ class TestScripting(unittest.TestCase):
         assert_instances_allclose(instance, scripted_instance)
 
 
-@unittest.skipIf(
-    os.environ.get("CIRCLECI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version"
-)
+@unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestTracing(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNN(self):

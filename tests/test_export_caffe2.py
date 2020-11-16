@@ -12,7 +12,7 @@ from detectron2.utils.logger import setup_logger
 from detectron2.utils.testing import get_sample_coco_image
 
 
-@unittest.skipIf(os.environ.get("CIRCLECI"), "Require COCO data and model zoo.")
+@unittest.skipIf(os.environ.get("CI"), "Require COCO data and model zoo.")
 class TestCaffe2Export(unittest.TestCase):
     def setUp(self):
         setup_logger()

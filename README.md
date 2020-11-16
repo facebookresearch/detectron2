@@ -17,6 +17,7 @@ and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/
 * Can be used as a library to support [different projects](projects/) on top of it.
   We'll open source more research projects in this way.
 * It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
+* Models can be exported to torchscript format or caffe2 format for deployment.
 
 See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
 to see more demos and learn about detectron2.
