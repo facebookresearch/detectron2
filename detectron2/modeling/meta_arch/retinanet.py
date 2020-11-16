@@ -239,8 +239,9 @@ class RetinaNet(nn.Module):
                 * "height", "width" (int): the output resolution of the model, used in inference.
                   See :meth:`postprocess` for details.
         Returns:
-            dict[str: Tensor]:
+            in training, dict[str: Tensor]:
                 mapping from a named loss to a tensor storing the loss. Used during training only.
+            in inference, the standard output format, described in :doc:`/tutorials/models`.
         """
         images = self.preprocess_image(batched_inputs)
         features = self.backbone(images.tensor)

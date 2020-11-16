@@ -9,15 +9,23 @@ from unittest.mock import MagicMock
 import torch
 from torch import nn
 
-from detectron2.engine import SimpleTrainer, hooks
+from detectron2.config import configurable, get_cfg
+from detectron2.engine import DefaultTrainer, SimpleTrainer, hooks
+from detectron2.modeling.meta_arch import META_ARCH_REGISTRY
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter
 
 
-class SimpleModel(nn.Module):
+@META_ARCH_REGISTRY.register()
+class _SimpleModel(nn.Module):
+    @configurable
     def __init__(self, sleep_sec=0):
         super().__init__()
         self.mod = nn.Linear(10, 20)
         self.sleep_sec = sleep_sec
+
+    @classmethod
+    def from_config(cls, cfg):
+        return {}
 
     def forward(self, x):
         if self.sleep_sec > 0:
@@ -32,7 +40,7 @@ class TestTrainer(unittest.TestCase):
             yield torch.rand(3, 3).to(device)
 
     def test_simple_trainer(self, device="cpu"):
-        model = SimpleModel().to(device=device)
+        model = _SimpleModel().to(device=device)
         trainer = SimpleTrainer(
             model, self._data_loader(device), torch.optim.SGD(model.parameters(), 0.1)
         )
@@ -43,7 +51,7 @@ class TestTrainer(unittest.TestCase):
         self.test_simple_trainer(device="cuda")
 
     def test_writer_hooks(self):
-        model = SimpleModel(sleep_sec=0.1)
+        model = _SimpleModel(sleep_sec=0.1)
         trainer = SimpleTrainer(
             model, self._data_loader("cpu"), torch.optim.SGD(model.parameters(), 0.1)
         )
@@ -73,3 +81,14 @@ class TestTrainer(unittest.TestCase):
                 self.assertIn(f"iter: {iter}", log)
 
             self.assertIn("eta: 0:00:00", all_logs[-1], "Last ETA must be 0!")
+
+    def test_default_trainer(self):
+        cfg = get_cfg()
+        cfg.MODEL.META_ARCHITECTURE = "_SimpleModel"
+        cfg.DATASETS.TRAIN = ("coco_2017_val_100",)
+        trainer = DefaultTrainer(cfg)
+
+        # test property
+        self.assertIs(trainer.model, trainer._trainer.model)
+        trainer.model = _SimpleModel()
+        self.assertIs(trainer.model, trainer._trainer.model)
