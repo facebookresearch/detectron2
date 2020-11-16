@@ -7,14 +7,18 @@ import numpy as np
 import os
 import tempfile
 import unittest
+import torch
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+from detectron2.data import DatasetCatalog
+from detectron2.evaluation import COCOEvaluator
 from detectron2.evaluation.fast_eval_api import COCOeval_opt
+from detectron2.structures import Boxes, Instances
 
 
 class TestCOCOeval(unittest.TestCase):
-    def test(self):
+    def test_fast_eval(self):
         # A small set of images/categories from COCO val
         # fmt: off
         detections = [{"image_id": 139, "category_id": 1, "bbox": [417.3332824707031, 159.27003479003906, 47.66064453125, 143.00193786621094], "score": 0.9949821829795837, "segmentation": {"size": [426, 640], "counts": "Tc`52W=3N0N4aNN^E7]:4XE1g:8kDMT;U100000001O1gE[Nk8h1dFiNY9Z1aFkN]9g2J3NdN`FlN`9S1cFRN07]9g1bFoM6;X9c1cFoM=8R9g1bFQN>3U9Y30O01OO1O001N2O1N1O4L4L5UNoE3V:CVF6Q:@YF9l9@ZF<k9[O`F=];HYnX2"}}, {"image_id": 139, "category_id": 1, "bbox": [383.5909118652344, 172.0777587890625, 17.959075927734375, 36.94813537597656], "score": 0.7685421705245972, "segmentation": {"size": [426, 640], "counts": "lZP5m0Z<300O100O100000001O00]OlC0T<OnCOT<OnCNX<JnC2bQT3"}}, {"image_id": 139, "category_id": 1, "bbox": [457.8359069824219, 158.88027954101562, 9.89764404296875, 8.771820068359375], "score": 0.07092753797769547, "segmentation": {"size": [426, 640], "counts": "bSo54T=2N2O1001O006ImiW2"}}] # noqa
@@ -118,3 +122,18 @@ class TestCOCOeval(unittest.TestCase):
                         abs_diff = np.max(diff) if diff.size > 0 else 0.0
                         msg = "%s: comparing COCO APIs, %s differs by %f" % (name, k, abs_diff)
                         self.assertTrue(abs_diff < 1e-4, msg=msg)
+
+    @unittest.skipIf(os.environ.get("CIRCLECI"), "Require COCO data.")
+    def test_unknown_category(self):
+        dataset = "coco_2017_val_100"
+        evaluator = COCOEvaluator(dataset)
+        evaluator.reset()
+        inputs = DatasetCatalog.get(dataset)[:2]
+        pred = Instances((100, 100))
+        pred.pred_boxes = Boxes(torch.rand(2, 4))
+        pred.scores = torch.rand(2)
+        pred.pred_classes = torch.tensor([10, 80])
+        output = {"instances": pred}
+        evaluator.process(inputs, [output, output])
+        with self.assertRaises(AssertionError):
+            evaluator.evaluate()
