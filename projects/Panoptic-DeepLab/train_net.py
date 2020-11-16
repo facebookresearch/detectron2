@@ -112,18 +112,16 @@ class Trainer(DefaultTrainer):
 
         optimizer_type = cfg.SOLVER.OPTIMIZER
         if optimizer_type == "SGD":
-            optimizer = torch.optim.SGD(
+            return maybe_add_gradient_clipping(torch.optim.SGD)(
                 params,
                 cfg.SOLVER.BASE_LR,
                 momentum=cfg.SOLVER.MOMENTUM,
                 nesterov=cfg.SOLVER.NESTEROV,
             )
         elif optimizer_type == "ADAM":
-            optimizer = torch.optim.Adam(params, cfg.SOLVER.BASE_LR)
+            return maybe_add_gradient_clipping(torch.optim.Adam)(params, cfg.SOLVER.BASE_LR)
         else:
             raise NotImplementedError(f"no optimizer type {optimizer_type}")
-        optimizer = maybe_add_gradient_clipping(cfg, optimizer)
-        return optimizer
 
 
 def setup(args):
