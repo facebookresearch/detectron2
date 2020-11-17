@@ -133,23 +133,24 @@ class TestInstances(unittest.TestCase):
             x.proposal_boxes = Boxes(box_tensors)
             self.assertTrue(script_module(x))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
-    def test_script_to(self):
-        class f(torch.nn.Module):
-            def forward(self, x: Instances):
-                return x.to(torch.device("cpu"))
+    # require https://github.com/pytorch/pytorch/pull/47734
+    # @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    # def test_script_to(self):
+    #     class f(torch.nn.Module):
+    #         def forward(self, x: Instances):
+    #             return x.to(torch.device("cpu"))
 
-        image_shape = (15, 15)
-        fields = {"proposal_boxes": Boxes, "a": Tensor}
-        with patch_instances(fields) as new_instance:
-            script_module = torch.jit.script(f())
-            x = new_instance(image_shape)
-            script_module(x)
+    #     image_shape = (15, 15)
+    #     fields = {"proposal_boxes": Boxes, "a": Tensor}
+    #     with patch_instances(fields) as new_instance:
+    #         script_module = torch.jit.script(f())
+    #         x = new_instance(image_shape)
+    #         script_module(x)
 
-            box_tensors = torch.tensor([[5, 5, 10, 10], [1, 1, 2, 3]])
-            x.proposal_boxes = Boxes(box_tensors)
-            x.a = box_tensors
-            script_module(x)
+    #         box_tensors = torch.tensor([[5, 5, 10, 10], [1, 1, 2, 3]])
+    #         x.proposal_boxes = Boxes(box_tensors)
+    #         x.a = box_tensors
+    #         script_module(x)
 
     @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_script_getitem(self):
