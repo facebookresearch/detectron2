@@ -177,6 +177,7 @@ class SemSegFPNHead(nn.Module):
         return x
 
     def losses(self, predictions, targets):
+        predictions = predictions.float()  # https://github.com/pytorch/pytorch/issues/48163
         predictions = F.interpolate(
             predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
         )

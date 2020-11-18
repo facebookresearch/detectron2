@@ -21,7 +21,7 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.engine import SimpleTrainer, default_argument_parser, hooks, launch
+from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser, hooks, launch
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
 from detectron2.utils import comm
@@ -100,17 +100,17 @@ def benchmark_train(args):
     checkpointer.load(cfg.MODEL.WEIGHTS)
 
     cfg.defrost()
-    cfg.DATALOADER.NUM_WORKERS = 0
+    cfg.DATALOADER.NUM_WORKERS = 2
     data_loader = build_detection_train_loader(cfg)
     dummy_data = list(itertools.islice(data_loader, 100))
 
     def f():
-        data = DatasetFromList(dummy_data, copy=False)
+        data = DatasetFromList(dummy_data, copy=False, serialize=False)
         while True:
             yield from data
 
     max_iter = 400
-    trainer = SimpleTrainer(model, f(), optimizer)
+    trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(model, f(), optimizer)
     trainer.register_hooks(
         [hooks.IterationTimer(), hooks.PeriodicWriter([CommonMetricPrinter(max_iter)])]
     )
