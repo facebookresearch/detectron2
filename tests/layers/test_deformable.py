@@ -52,6 +52,58 @@ class DeformableTest(unittest.TestCase):
         output = output.detach().cpu().numpy()
         self.assertTrue(np.allclose(output.flatten(), deform_results.flatten() * 0.5))
 
+    def test_forward_output_on_cpu(self):
+        device = torch.device("cpu")
+        N, C, H, W = shape = 1, 1, 5, 5
+        kernel_size = 3
+        padding = 1
+
+        inputs = torch.arange(np.prod(shape), dtype=torch.float32).reshape(*shape).to(device)
+
+        offset_channels = kernel_size * kernel_size * 2
+        offset = torch.full((N, offset_channels, H, W), 0.5, dtype=torch.float32).to(device)
+
+        # Test DCN v1 on cpu
+        deform = DeformConv(C, C, kernel_size=kernel_size, padding=padding).to(device)
+        deform.weight = torch.nn.Parameter(torch.ones_like(deform.weight))
+        output = deform(inputs, offset)
+        output = output.detach().cpu().numpy()
+        deform_results = np.array(
+            [
+                [30, 41.25, 48.75, 45, 28.75],
+                [62.25, 81, 90, 80.25, 50.25],
+                [99.75, 126, 135, 117.75, 72.75],
+                [105, 131.25, 138.75, 120, 73.75],
+                [71.75, 89.25, 93.75, 80.75, 49.5],
+            ]
+        )
+        self.assertTrue(np.allclose(output.flatten(), deform_results.flatten()))
+
+    @unittest.skipIf(not torch.cuda.is_available(), "This test requires gpu access")
+    def test_forward_output_on_cpu_equals_output_on_gpu(self):
+        N, C, H, W = shape = 2, 4, 10, 10
+        kernel_size = 3
+        padding = 1
+
+        for groups in [1, 2]:
+            inputs = torch.arange(np.prod(shape), dtype=torch.float32).reshape(*shape)
+            offset_channels = kernel_size * kernel_size * 2
+            offset = torch.full((N, offset_channels, H, W), 0.5, dtype=torch.float32)
+
+            deform_gpu = DeformConv(
+                C, C, kernel_size=kernel_size, padding=padding, groups=groups
+            ).to("cuda")
+            deform_gpu.weight = torch.nn.Parameter(torch.ones_like(deform_gpu.weight))
+            output_gpu = deform_gpu(inputs.to("cuda"), offset.to("cuda")).detach().cpu().numpy()
+
+            deform_cpu = DeformConv(
+                C, C, kernel_size=kernel_size, padding=padding, groups=groups
+            ).to("cpu")
+            deform_cpu.weight = torch.nn.Parameter(torch.ones_like(deform_cpu.weight))
+            output_cpu = deform_cpu(inputs.to("cpu"), offset.to("cpu")).detach().numpy()
+
+        self.assertTrue(np.allclose(output_gpu.flatten(), output_cpu.flatten()))
+
     @unittest.skipIf(not torch.cuda.is_available(), "Deformable not supported for cpu")
     def test_small_input(self):
         device = torch.device("cuda")

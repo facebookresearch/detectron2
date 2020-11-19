@@ -6,6 +6,7 @@ from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
+from torchvision.ops import deform_conv2d
 
 from detectron2 import _C
 
@@ -46,7 +47,13 @@ class _DeformConv(Function):
         ctx.bufs_ = [input.new_empty(0), input.new_empty(0)]  # columns, ones
 
         if not input.is_cuda:
-            raise NotImplementedError("Deformable Conv is not supported on CPUs!")
+            if deformable_groups != 1:
+                raise NotImplementedError(
+                    "Deformable Conv with deformable_groups != 1 is not supported on CPUs!"
+                )
+            return deform_conv2d(
+                input, offset, weight, stride=stride, padding=padding, dilation=dilation
+            )
         else:
             cur_im2col_step = _DeformConv._cal_im2col_step(input.shape[0], ctx.im2col_step)
             assert (input.shape[0] % cur_im2col_step) == 0, "im2col step must divide batchsize"
