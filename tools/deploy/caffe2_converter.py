@@ -76,6 +76,7 @@ if __name__ == "__main__":
     # run evaluation with the converted model
     if args.run_eval:
         assert args.format == "caffe2", "Python inference in other format is not yet supported."
+        logger.info("Running evaluation ... this takes a long time if you export to CPU.")
         dataset = cfg.DATASETS.TEST[0]
         data_loader = build_detection_test_loader(cfg, dataset)
         # NOTE: hard-coded evaluator. change to the evaluator for your dataset

@@ -66,7 +66,7 @@ class COCOEvaluator(DatasetEvaluator):
             output_dir (str): optional, an output directory to dump all
                 results predicted on the dataset. The dump contains two files:
 
-                1. "instance_predictions.pth" a file in torch serialization
+                1. "instances_predictions.pth" a file in torch serialization
                    format that contains all the raw original predictions.
                 2. "coco_instances_results.json" a json file in COCO's result
                    format.

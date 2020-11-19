@@ -87,9 +87,11 @@ class TestTrainer(unittest.TestCase):
         cfg = get_cfg()
         cfg.MODEL.META_ARCHITECTURE = "_SimpleModel"
         cfg.DATASETS.TRAIN = ("coco_2017_val_100",)
-        trainer = DefaultTrainer(cfg)
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            cfg.OUTPUT_DIR = d
+            trainer = DefaultTrainer(cfg)
 
-        # test property
-        self.assertIs(trainer.model, trainer._trainer.model)
-        trainer.model = _SimpleModel()
-        self.assertIs(trainer.model, trainer._trainer.model)
+            # test property
+            self.assertIs(trainer.model, trainer._trainer.model)
+            trainer.model = _SimpleModel()
+            self.assertIs(trainer.model, trainer._trainer.model)

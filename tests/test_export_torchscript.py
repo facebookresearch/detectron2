@@ -17,6 +17,12 @@ from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image
 
 
+"""
+https://detectron2.readthedocs.io/tutorials/deployment.html
+contains some explanations of this file.
+"""
+
+
 @unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestScripting(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
