@@ -3,9 +3,13 @@
 import os
 import torch
 
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 
-from .torchscript_patch import patch_instances, patch_nonscriptable_classes
+from .torchscript_patch import freeze_training_mode, patch_instances, patch_nonscriptable_classes
+
+# These patches are not supposed to have side-effects.
+patch_nonscriptable_classes()
 
 
 def export_torchscript_with_instances(model, fields):
@@ -40,19 +44,18 @@ def export_torchscript_with_instances(model, fields):
         model (nn.Module): The input model to be exported to torchscript.
         fields (Dict[str, type]): Attribute names and corresponding type that
             ``Instances`` will use in the model. Note that all attributes used in ``Instances``
-            need to be added, regarldess of whether they are inputs/outputs of the model.
+            need to be added, regardless of whether they are inputs/outputs of the model.
             Data type not defined in detectron2 is not supported for now.
 
     Returns:
         torch.jit.ScriptModule: the input model in torchscript format
     """
-    patch_nonscriptable_classes()
-
+    assert TORCH_VERSION >= (1, 8), "This feature is not available in PyTorch < 1.8"
     assert (
         not model.training
     ), "Currently we only support exporting models in evaluation mode to torchscript"
 
-    with patch_instances(fields):
+    with freeze_training_mode(model), patch_instances(fields):
         scripted_model = torch.jit.script(model)
         return scripted_model
 

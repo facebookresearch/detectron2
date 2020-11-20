@@ -6,6 +6,7 @@ import torch
 
 from detectron2.config import get_cfg
 from detectron2.export.torchscript import patch_instances
+from detectron2.export.torchscript_patch import freeze_training_mode
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.roi_heads import (
@@ -176,7 +177,7 @@ class ROIHeadsTest(unittest.TestCase):
         origin_outputs = mask_head(mask_features, deepcopy([pred_instance0, pred_instance1]))
 
         fields = {"pred_masks": torch.Tensor, "pred_classes": torch.Tensor}
-        with patch_instances(fields) as NewInstances:
+        with freeze_training_mode(mask_head), patch_instances(fields) as NewInstances:
             sciript_mask_head = torch.jit.script(mask_head)
             pred_instance0 = NewInstances.from_instances(pred_instance0)
             pred_instance1 = NewInstances.from_instances(pred_instance1)
@@ -210,7 +211,7 @@ class ROIHeadsTest(unittest.TestCase):
             "pred_keypoints": torch.Tensor,
             "pred_keypoint_heatmaps": torch.Tensor,
         }
-        with patch_instances(fields) as NewInstances:
+        with freeze_training_mode(keypoint_head), patch_instances(fields) as NewInstances:
             sciript_keypoint_head = torch.jit.script(keypoint_head)
             pred_instance0 = NewInstances.from_instances(pred_instance0)
             pred_instance1 = NewInstances.from_instances(pred_instance1)
@@ -263,7 +264,7 @@ class ROIHeadsTest(unittest.TestCase):
             "pred_keypoints": torch.Tensor,
             "pred_keypoint_heatmaps": torch.Tensor,
         }
-        with patch_instances(fields) as new_instances:
+        with freeze_training_mode(roi_heads), patch_instances(fields) as new_instances:
             proposal0 = new_instances.from_instances(proposal0)
             proposal1 = new_instances.from_instances(proposal1)
             proposals = [proposal0, proposal1]

@@ -678,13 +678,11 @@ class StandardROIHeads(ROIHeads):
         """
         del images
         if self.training:
-            assert not torch.jit.is_scripting()
             assert targets, "'targets' argument is required during training"
             proposals = self.label_and_sample_proposals(proposals, targets)
         del targets
 
         if self.training:
-            assert not torch.jit.is_scripting()
             losses = self._forward_box(features, proposals)
             # Usually the original proposals used by the box head are used by the mask, keypoint
             # heads. But when `self.train_on_pred_boxes is True`, proposals will contain boxes
@@ -750,7 +748,6 @@ class StandardROIHeads(ROIHeads):
         del box_features
 
         if self.training:
-            assert not torch.jit.is_scripting()
             losses = self.box_predictor.losses(predictions, proposals)
             # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
@@ -783,16 +780,11 @@ class StandardROIHeads(ROIHeads):
         if not self.mask_on:
             # https://github.com/pytorch/pytorch/issues/43942
             if self.training:
-                assert not torch.jit.is_scripting()
                 return {}
             else:
                 return instances
 
-        # https://github.com/pytorch/pytorch/issues/46703
-        assert hasattr(self, "mask_head")
-
         if self.training:
-            assert not torch.jit.is_scripting()
             # head is only trained on positive proposals.
             instances, _ = select_foreground_proposals(instances, self.num_classes)
 
@@ -822,15 +814,11 @@ class StandardROIHeads(ROIHeads):
         """
         if not self.keypoint_on:
             if self.training:
-                assert not torch.jit.is_scripting()
                 return {}
             else:
                 return instances
 
-        assert hasattr(self, "keypoint_head")
-
         if self.training:
-            assert not torch.jit.is_scripting()
             # head is only trained on positive proposals with >=1 visible keypoints.
             instances, _ = select_foreground_proposals(instances, self.num_classes)
             instances = select_proposals_with_visible_keypoints(instances)

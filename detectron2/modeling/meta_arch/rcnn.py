@@ -147,7 +147,6 @@ class GeneralizedRCNN(nn.Module):
         """
         if not self.training:
             return self.inference(batched_inputs)
-        assert not torch.jit.is_scripting(), "Scripting for training mode is not supported."
 
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:

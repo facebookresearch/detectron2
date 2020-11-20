@@ -192,7 +192,6 @@ class BaseKeypointRCNNHead(nn.Module):
         """
         x = self.layers(x)
         if self.training:
-            assert not torch.jit.is_scripting()
             num_images = len(instances)
             normalizer = (
                 None if self.loss_normalizer == "visible" else num_images * self.loss_normalizer
