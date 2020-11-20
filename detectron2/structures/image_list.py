@@ -8,6 +8,19 @@ from torch.nn import functional as F
 from detectron2.utils.env import TORCH_VERSION
 
 
+def _as_tensor(x: Tuple[int, int]) -> torch.Tensor:
+    """
+    An equivalent of `torch.as_tensor`, but works under tracing if input
+    is a list of tensor. `torch.as_tensor` will record a constant in tracing,
+    but this function will use `torch.stack` instead.
+    """
+    if torch.jit.is_scripting():
+        return torch.as_tensor(x)
+    if isinstance(x, (list, tuple)) and all([isinstance(t, torch.Tensor) for t in x]):
+        return torch.stack(x)
+    return torch.as_tensor(x)
+
+
 class ImageList(object):
     """
     Structure that holds a list of images (of possibly
@@ -77,41 +90,22 @@ class ImageList(object):
             assert isinstance(t, torch.Tensor), type(t)
             assert t.shape[1:-2] == tensors[0].shape[1:-2], t.shape
 
-        # Magic code below that handles dynamic shapes for both scripting and tracing ...
-
         image_sizes = [(im.shape[-2], im.shape[-1]) for im in tensors]
+        image_sizes_tensor = [_as_tensor(x) for x in image_sizes]
+        max_size = torch.stack(image_sizes_tensor).max(0).values
 
+        if size_divisibility > 1:
+            stride = size_divisibility
+            # the last two dims are H,W, both subject to divisibility requirement
+            max_size = (max_size + (stride - 1)) // stride * stride
+
+        # handle weirdness of scripting and tracing ...
         if torch.jit.is_scripting():
-            max_size = torch.stack([torch.as_tensor(x) for x in image_sizes]).max(0).values
-            if size_divisibility > 1:
-                stride = size_divisibility
-                # the last two dims are H,W, both subject to divisibility requirement
-                max_size = (max_size + (stride - 1)) // stride * stride
-
             max_size: List[int] = max_size.to(dtype=torch.long).tolist()
         else:
             # https://github.com/pytorch/pytorch/issues/42448
             if TORCH_VERSION >= (1, 7) and torch.jit.is_tracing():
-                # In tracing mode, x.shape[i] is a scalar Tensor, and should not be converted
-                # to int: this will cause the traced graph to have hard-coded shapes.
-                # Instead we convert each shape to a vector with a stack()
-                image_sizes = [torch.stack(x) for x in image_sizes]
-
-                # maximum (H, W) for the last two dims
-                # find the maximum in a tracable way
-                max_size = torch.stack(image_sizes).max(0).values
-            else:
-                # Original eager logic here -- not scripting, not tracing:
-                # (can be unified with scripting after
-                # https://github.com/pytorch/pytorch/issues/47379)
-                max_size = torch.as_tensor(
-                    [max(s) for s in zip(*[img.shape[-2:] for img in tensors])]
-                )
-
-            if size_divisibility > 1:
-                stride = size_divisibility
-                # the last two dims are H,W, both subject to divisibility requirement
-                max_size = (max_size + (stride - 1)) // stride * stride
+                image_sizes = image_sizes_tensor
 
         if len(tensors) == 1:
             # This seems slightly (2%) faster.
