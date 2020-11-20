@@ -71,7 +71,6 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
         )
 
     PredictorOutput.__getitem__ = PredictorOutput_getitem
-    return PredictorOutput
 
     def PredictorOutput_to(self, device: torch.device):
         """
@@ -85,7 +84,6 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
                 return var.to(device)
             return var
 
-        PredictorOutput.to = PredictorOutput_to
         return PredictorOutput(
             **base_predictor_output_to.__dict__,
             sigma_1=to_device_if_tensor(self.sigma_1),
@@ -95,3 +93,6 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
             fine_segm_confidence=to_device_if_tensor(self.fine_segm_confidence),
             coarse_segm_confidence=to_device_if_tensor(self.coarse_segm_confidence),
         )
+
+    PredictorOutput.to = PredictorOutput_to
+    return PredictorOutput
