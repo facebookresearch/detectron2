@@ -298,7 +298,7 @@ def build_batch_data_loader(
         )
 
 
-def _train_loader_from_config(cfg, *, mapper=None, dataset=None, sampler=None):
+def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
     if dataset is None:
         dataset = get_detection_dataset_dicts(
             cfg.DATASETS.TRAIN,
