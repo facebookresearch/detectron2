@@ -166,8 +166,6 @@ class Boxes:
         """
         return Boxes(self.tensor.clone())
 
-    # https://github.com/pytorch/pytorch/issues/47405
-    @torch.jit.unused
     def to(self, device: torch.device = None):  # noqa
         # Boxes are assumed float32 and does not support to(dtype)
         return Boxes(self.tensor.to(device=device))

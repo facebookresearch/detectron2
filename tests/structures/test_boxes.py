@@ -192,14 +192,11 @@ class TestBoxes(unittest.TestCase):
         x = Boxes(torch.rand(3, 4))
         self.assertEqual(x.to(device="cpu").tensor.device.type, "cpu")
 
-    # require https://github.com/pytorch/pytorch/pull/39821
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_scriptability(self):
         def func(x):
             boxes = Boxes(x)
-            # https://github.com/pytorch/pytorch/pull/47734
-            # test = boxes.to(torch.device("cpu")).tensor
-            test = x
+            test = boxes.to(torch.device("cpu")).tensor
             return boxes.area(), test
 
         f = torch.jit.script(func)
