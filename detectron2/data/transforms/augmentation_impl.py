@@ -236,7 +236,7 @@ class RandomCrop(Augmentation):
         Args:
             crop_type (str): one of "relative_range", "relative", "absolute", "absolute_range".
                 See `config/defaults.py` for explanation.
-            crop_size (tuple[float]): the relative ratio or absolute pixels of
+            crop_size (tuple[float, float]): the relative ratio or absolute pixels of
                 height and width
         """
         super().__init__()

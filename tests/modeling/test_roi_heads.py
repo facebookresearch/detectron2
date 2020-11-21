@@ -156,7 +156,7 @@ class ROIHeadsTest(unittest.TestCase):
         script_output = script_box_head(box_features)
         self.assertTrue(torch.equal(origin_output, script_output))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_mask_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024)
         mask_features = torch.randn(4, 1024, 14, 14)
@@ -222,7 +222,7 @@ class ROIHeadsTest(unittest.TestCase):
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
             assert_instances_allclose(origin_ins, script_ins.to_instances(), rtol=0)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_StandardROIHeads_scriptability(self):
         cfg = get_cfg()
         cfg.MODEL.ROI_BOX_HEAD.NAME = "FastRCNNConvFCHead"

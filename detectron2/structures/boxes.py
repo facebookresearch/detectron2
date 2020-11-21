@@ -6,7 +6,17 @@ from typing import List, Tuple, Union
 import torch
 from torch import device
 
+from detectron2.utils.env import TORCH_VERSION
+
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
+
+
+if TORCH_VERSION < (1, 8):
+    _maybe_jit_unused = torch.jit.unused
+else:
+
+    def _maybe_jit_unused(x):
+        return x
 
 
 @unique
@@ -166,6 +176,7 @@ class Boxes:
         """
         return Boxes(self.tensor.clone())
 
+    @_maybe_jit_unused
     def to(self, device: torch.device = None):  # noqa
         # Boxes are assumed float32 and does not support to(dtype)
         return Boxes(self.tensor.to(device=device))

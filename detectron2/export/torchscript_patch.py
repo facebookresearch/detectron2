@@ -340,8 +340,9 @@ def patch_nonscriptable_classes():
     # even though they are not constants in eager mode.
     from detectron2.modeling.roi_heads import StandardROIHeads
 
-    StandardROIHeads.__annotations__["mask_on"] = torch.jit.Final[bool]
-    StandardROIHeads.__annotations__["keypoint_on"] = torch.jit.Final[bool]
+    if hasattr(StandardROIHeads, "__annotations__"):
+        StandardROIHeads.__annotations__["mask_on"] = torch.jit.Final[bool]
+        StandardROIHeads.__annotations__["keypoint_on"] = torch.jit.Final[bool]
 
 
 @contextmanager
