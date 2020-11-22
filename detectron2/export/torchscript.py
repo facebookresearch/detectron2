@@ -6,10 +6,7 @@ import torch
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 
-from .torchscript_patch import freeze_training_mode, patch_instances, patch_nonscriptable_classes
-
-# These patches are not supposed to have side-effects.
-patch_nonscriptable_classes()
+from .torchscript_patch import freeze_training_mode, patch_instances
 
 
 def export_torchscript_with_instances(model, fields):

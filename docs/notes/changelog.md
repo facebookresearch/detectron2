@@ -21,6 +21,8 @@ But we try to reduce users' disruption by the following ways:
   They may be promoted to stable when we're ready.
 * Projects under "detectron2/projects" or imported with "detectron2.projects" are research projects
   and are all considered experimental.
+* Classes/functions that contain the word "default" or are explicitly documented to produce
+  "default behavior" may change their behaviors when new features are added.
 
 Despite of the possible breakage, if a third-party project would like to keep up with the latest updates
 in detectron2, using it as a library will still be less disruptive than forking, because

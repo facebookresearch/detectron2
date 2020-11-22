@@ -3,10 +3,15 @@ import logging
 import unittest
 from copy import deepcopy
 import torch
+from torch import nn
 
+from detectron2 import model_zoo
 from detectron2.config import get_cfg
-from detectron2.export.torchscript import patch_instances
-from detectron2.export.torchscript_patch import freeze_training_mode
+from detectron2.export.torchscript_patch import (
+    freeze_training_mode,
+    patch_builtin_len,
+    patch_instances,
+)
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.proposal_generator.build import build_proposal_generator
 from detectron2.modeling.roi_heads import (
@@ -16,10 +21,11 @@ from detectron2.modeling.roi_heads import (
     StandardROIHeads,
     build_roi_heads,
 )
+from detectron2.projects import point_rend
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
-from detectron2.utils.testing import assert_instances_allclose
+from detectron2.utils.testing import assert_instances_allclose, random_boxes
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +162,7 @@ class ROIHeadsTest(unittest.TestCase):
         script_output = script_box_head(box_features)
         self.assertTrue(torch.equal(origin_output, script_output))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_mask_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024)
         mask_features = torch.randn(4, 1024, 14, 14)
@@ -222,7 +228,7 @@ class ROIHeadsTest(unittest.TestCase):
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
             assert_instances_allclose(origin_ins, script_ins.to_instances(), rtol=0)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_StandardROIHeads_scriptability(self):
         cfg = get_cfg()
         cfg.MODEL.ROI_BOX_HEAD.NAME = "FastRCNNConvFCHead"
@@ -273,6 +279,50 @@ class ROIHeadsTest(unittest.TestCase):
 
         for instance, scripted_instance in zip(pred_instances, scripted_pred_instances):
             assert_instances_allclose(instance, scripted_instance.to_instances(), rtol=0)
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_PointRend_mask_head_tracing(self):
+        cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
+        point_rend.add_pointrend_config(cfg)
+        cfg.MODEL.ROI_HEADS.IN_FEATURES = ["p2", "p3"]
+        cfg.MODEL.ROI_MASK_HEAD.NAME = "PointRendMaskHead"
+        cfg.MODEL.ROI_MASK_HEAD.POOLER_TYPE = ""
+        cfg.MODEL.ROI_MASK_HEAD.POINT_HEAD_ON = True
+        chan = 256
+        head = point_rend.PointRendMaskHead(
+            cfg,
+            {
+                "p2": ShapeSpec(channels=chan, stride=4),
+                "p3": ShapeSpec(channels=chan, stride=8),
+            },
+        )
+
+        def gen_inputs(h, w, N):
+            p2 = torch.rand(1, chan, h, w)
+            p3 = torch.rand(1, chan, h // 2, w // 2)
+            boxes = random_boxes(N, max_coord=h)
+            return p2, p3, boxes
+
+        class Wrap(nn.ModuleDict):
+            def forward(self, p2, p3, boxes):
+                features = {
+                    "p2": p2,
+                    "p3": p3,
+                }
+                inst = Instances((p2.shape[2] * 4, p2.shape[3] * 4))
+                inst.pred_boxes = Boxes(boxes)
+                inst.pred_classes = torch.zeros(inst.__len__(), dtype=torch.long)
+                out = self.head(features, [inst])[0]
+                return out.pred_masks
+
+        model = Wrap({"head": head})
+        model.eval()
+        with torch.no_grad(), patch_builtin_len():
+            traced = torch.jit.trace(model, gen_inputs(302, 208, 20))
+            inputs = gen_inputs(100, 120, 30)
+            out_eager = model(*inputs)
+            out_trace = traced(*inputs)
+            self.assertTrue(torch.allclose(out_eager, out_trace))
 
 
 if __name__ == "__main__":
