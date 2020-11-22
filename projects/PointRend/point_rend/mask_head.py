@@ -192,7 +192,7 @@ class PointRendMaskHead(nn.Module):
 
     def _forward_mask_coarse(self, features, boxes):
         point_coords = generate_regular_grid_point_coords(
-            np.sum(len(x) for x in boxes), self.mask_coarse_side_size, boxes[0].device
+            sum(x.tensor.size(0) for x in boxes), self.mask_coarse_side_size, boxes[0].device
         )
         mask_coarse_features_list = [features[k] for k in self.mask_coarse_in_features]
         features_scales = [self._feature_scales[k] for k in self.mask_coarse_in_features]

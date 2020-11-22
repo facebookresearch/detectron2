@@ -345,6 +345,10 @@ def patch_nonscriptable_classes():
         StandardROIHeads.__annotations__["keypoint_on"] = torch.jit.Final[bool]
 
 
+# These patches are not supposed to have side-effects.
+patch_nonscriptable_classes()
+
+
 @contextmanager
 def freeze_training_mode(model):
     """
