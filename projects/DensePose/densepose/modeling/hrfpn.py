@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 """
 MIT License
 Copyright (c) 2019 Microsoft

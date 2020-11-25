@@ -199,6 +199,7 @@ class {cls_name}:
     # support method `to`
     lines.append(
         f"""
+    @torch.jit.unused  # https://github.com/pytorch/pytorch/issues/47570
     def to(self, device: torch.device) -> "{cls_name}":
         ret = {cls_name}(self.image_size)
 """

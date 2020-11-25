@@ -280,7 +280,7 @@ class ROIHeadsTest(unittest.TestCase):
         for instance, scripted_instance in zip(pred_instances, scripted_pred_instances):
             assert_instances_allclose(instance, scripted_instance.to_instances(), rtol=0)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_PointRend_mask_head_tracing(self):
         cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
         point_rend.add_pointrend_config(cfg)

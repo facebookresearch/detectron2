@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 import fvcore.nn.weight_init as weight_init
 import torch.nn.functional as F
 

@@ -19,6 +19,7 @@ def setup(args):
     if args.config_file:
         cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
+    cfg.DATALOADER.NUM_WORKERS = 0
     cfg.freeze()
     return cfg
 
@@ -63,7 +64,7 @@ if __name__ == "__main__":
             print("Saving to {} ...".format(filepath))
             vis.save(filepath)
 
-    scale = 2.0 if args.show else 1.0
+    scale = 1.0
     if args.source == "dataloader":
         train_data_loader = build_detection_train_loader(cfg)
         for batch in train_data_loader:

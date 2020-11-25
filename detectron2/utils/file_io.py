@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 from fvcore.common.file_io import HTTPURLHandler, OneDrivePathHandler, PathHandler, PathManagerBase
 
 __all__ = ["PathManager", "PathHandler"]

@@ -11,7 +11,8 @@ from detectron2.utils.env import TORCH_VERSION
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
 
-if TORCH_VERSION < (1, 8):
+# https://github.com/pytorch/pytorch/issues/47570
+if True or TORCH_VERSION < (1, 8):
     _maybe_jit_unused = torch.jit.unused
 else:
 

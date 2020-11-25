@@ -196,7 +196,8 @@ class TestBoxes(unittest.TestCase):
     def test_scriptability(self):
         def func(x):
             boxes = Boxes(x)
-            test = boxes.to(torch.device("cpu")).tensor
+            test = x
+            # test = boxes.to(torch.device("cpu")).tensor
             return boxes.area(), test
 
         f = torch.jit.script(func)

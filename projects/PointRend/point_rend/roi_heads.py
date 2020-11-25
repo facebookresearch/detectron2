@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 
 from detectron2.modeling import ROI_HEADS_REGISTRY, StandardROIHeads
