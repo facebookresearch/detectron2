@@ -145,7 +145,7 @@ class RotatedCOCOEvaluator(COCOEvaluator):
             results.append(result)
         return results
 
-    def _eval_predictions(self, predictions):
+    def _eval_predictions(self, predictions, **kwargs):
         """
         Evaluate predictions on the given tasks.
         Fill self._results with the metrics of the tasks.
