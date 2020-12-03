@@ -349,39 +349,84 @@ class Res5ROIHeads(ROIHeads):
     the per-region feature computation by a Res5 block.
     """
 
-    def __init__(self, cfg, input_shape):
-        super().__init__(cfg)
+    @configurable
+    def __init__(
+        self,
+        *,
+        in_features: List[str],
+        pooler: ROIPooler,
+        res5: nn.Module,
+        box_predictor: nn.Module,
+        mask_head: Optional[nn.Module] = None,
+        **kwargs
+    ):
+        """
+        NOTE: this interface is experimental.
 
+        Args:
+            in_features (list[str]): list of backbone feature map names to use for
+                feature extraction
+            pooler (ROIPooler): pooler to extra region features from backbone
+            res5 (nn.Sequential): a CNN to compute per-region features, to be used by
+                ``box_predictor`` and ``mask_head``. Typically this is a "res5"
+                block from a ResNet.
+            box_predictor (nn.Module): make box predictions from the feature.
+                Should have the same interface as :class:`FastRCNNOutputLayers`.
+            mask_head (nn.Module): transform features to make mask predictions
+        """
+        super().__init__(**kwargs)
+        self.in_features = in_features
+        self.pooler = pooler
+        self.res5 = res5
+        self.box_predictor = box_predictor
+        self.mask_on = mask_head is not None
+        if self.mask_on:
+            self.mask_head = mask_head
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
         # fmt: off
-        self.in_features  = cfg.MODEL.ROI_HEADS.IN_FEATURES
+        ret = super().from_config(cfg)
+        in_features = ret["in_features"] = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
-        pooler_scales     = (1.0 / input_shape[self.in_features[0]].stride, )
+        pooler_scales     = (1.0 / input_shape[in_features[0]].stride, )
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
-        self.mask_on      = cfg.MODEL.MASK_ON
+        mask_on           = cfg.MODEL.MASK_ON
         # fmt: on
         assert not cfg.MODEL.KEYPOINT_ON
-        assert len(self.in_features) == 1
+        assert len(in_features) == 1
 
-        self.pooler = ROIPooler(
+        ret["pooler"] = ROIPooler(
             output_size=pooler_resolution,
             scales=pooler_scales,
             sampling_ratio=sampling_ratio,
             pooler_type=pooler_type,
         )
 
-        self.res5, out_channels = self._build_res5_block(cfg)
-        self.box_predictor = FastRCNNOutputLayers(
+        # Compatbility with old moco code. Might be useful.
+        # See notes in StandardROIHeads.from_config
+        if not inspect.ismethod(cls._build_res5_block):
+            logger.warning(
+                "The behavior of _build_res5_block may change. "
+                "Please do not depend on private methods."
+            )
+            cls._build_res5_block = classmethod(cls._build_res5_block)
+
+        ret["res5"], out_channels = cls._build_res5_block(cfg)
+        ret["box_predictor"] = FastRCNNOutputLayers(
             cfg, ShapeSpec(channels=out_channels, height=1, width=1)
         )
 
-        if self.mask_on:
-            self.mask_head = build_mask_head(
+        if mask_on:
+            ret["mask_head"] = build_mask_head(
                 cfg,
                 ShapeSpec(channels=out_channels, width=pooler_resolution, height=pooler_resolution),
             )
+        return ret
 
-    def _build_res5_block(self, cfg):
+    @classmethod
+    def _build_res5_block(cls, cfg):
         # fmt: off
         stage_channel_factor = 2 ** 3  # res5 is 8x res2
         num_groups           = cfg.MODEL.RESNETS.NUM_GROUPS
