@@ -11,8 +11,7 @@ from detectron2.utils.env import TORCH_VERSION
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
 
-# https://github.com/pytorch/pytorch/issues/47570
-if True or TORCH_VERSION < (1, 8):
+if TORCH_VERSION < (1, 8):
     _maybe_jit_unused = torch.jit.unused
 else:
 
@@ -178,7 +177,7 @@ class Boxes:
         return Boxes(self.tensor.clone())
 
     @_maybe_jit_unused
-    def to(self, device: torch.device = None):  # noqa
+    def to(self, device: torch.device):
         # Boxes are assumed float32 and does not support to(dtype)
         return Boxes(self.tensor.to(device=device))
 

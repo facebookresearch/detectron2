@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import io
 import numpy as np
 import torch
 
@@ -94,3 +95,14 @@ def assert_instances_allclose(input, other, rtol=1e-5, msg=""):
                 assert torch.equal(val1, val2), msg + f"Field {f} is different!"
         else:
             raise ValueError(f"Don't know how to compare type {type(val1)}")
+
+
+def reload_script_model(module):
+    """
+    Save a jit module and load it back.
+    Similar to the `getExportImportCopy` function in torch/testing/
+    """
+    buffer = io.BytesIO()
+    torch.jit.save(module, buffer)
+    buffer.seek(0)
+    return torch.jit.load(buffer)
