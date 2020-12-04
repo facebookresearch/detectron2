@@ -8,7 +8,7 @@ from torch.nn import functional as F
 
 from detectron2.config import configurable
 from detectron2.data import MetadataCatalog
-from detectron2.layers import Conv2d, ShapeSpec, get_norm
+from detectron2.layers import Conv2d, DepthwiseSeparableConv2d, ShapeSpec, get_norm
 from detectron2.modeling import (
     META_ARCH_REGISTRY,
     SEM_SEG_HEADS_REGISTRY,
@@ -52,6 +52,11 @@ class PanopticDeepLab(nn.Module):
         self.nms_kernel = cfg.MODEL.PANOPTIC_DEEPLAB.NMS_KERNEL
         self.top_k = cfg.MODEL.PANOPTIC_DEEPLAB.TOP_K_INSTANCE
         self.predict_instances = cfg.MODEL.PANOPTIC_DEEPLAB.PREDICT_INSTANCES
+        self.use_depthwise_separable_conv = cfg.MODEL.PANOPTIC_DEEPLAB.USE_DEPTHWISE_SEPARABLE_CONV
+        assert (
+            cfg.MODEL.SEM_SEG_HEAD.USE_DEPTHWISE_SEPARABLE_CONV
+            == cfg.MODEL.PANOPTIC_DEEPLAB.USE_DEPTHWISE_SEPARABLE_CONV
+        )
 
     @property
     def device(self):
@@ -253,28 +258,42 @@ class PanopticDeepLabSemSegHead(DeepLabV3PlusHead):
         self.loss_weight = loss_weight
         use_bias = norm == ""
         # `head` is additional transform before predictor
-        self.head = nn.Sequential(
-            Conv2d(
-                decoder_channels[0],
-                decoder_channels[0],
-                kernel_size=3,
-                padding=1,
-                bias=use_bias,
-                norm=get_norm(norm, decoder_channels[0]),
-                activation=F.relu,
-            ),
-            Conv2d(
+        if self.use_depthwise_separable_conv:
+            # We use a single 5x5 DepthwiseSeparableConv2d to replace
+            # 2 3x3 Conv2d since they have the same receptive field.
+            self.head = DepthwiseSeparableConv2d(
                 decoder_channels[0],
                 head_channels,
-                kernel_size=3,
-                padding=1,
-                bias=use_bias,
-                norm=get_norm(norm, head_channels),
-                activation=F.relu,
-            ),
-        )
-        weight_init.c2_xavier_fill(self.head[0])
-        weight_init.c2_xavier_fill(self.head[1])
+                kernel_size=5,
+                padding=2,
+                norm1=norm,
+                activation1=F.relu,
+                norm2=norm,
+                activation2=F.relu,
+            )
+        else:
+            self.head = nn.Sequential(
+                Conv2d(
+                    decoder_channels[0],
+                    decoder_channels[0],
+                    kernel_size=3,
+                    padding=1,
+                    bias=use_bias,
+                    norm=get_norm(norm, decoder_channels[0]),
+                    activation=F.relu,
+                ),
+                Conv2d(
+                    decoder_channels[0],
+                    head_channels,
+                    kernel_size=3,
+                    padding=1,
+                    bias=use_bias,
+                    norm=get_norm(norm, head_channels),
+                    activation=F.relu,
+                ),
+            )
+            weight_init.c2_xavier_fill(self.head[0])
+            weight_init.c2_xavier_fill(self.head[1])
         self.predictor = Conv2d(head_channels, num_classes, kernel_size=1)
         nn.init.normal_(self.predictor.weight, 0, 0.001)
         nn.init.constant_(self.predictor.bias, 0)
@@ -400,28 +419,42 @@ class PanopticDeepLabInsEmbedHead(DeepLabV3PlusHead):
 
         # offset prediction
         # `head` is additional transform before predictor
-        self.offset_head = nn.Sequential(
-            Conv2d(
-                decoder_channels[0],
-                decoder_channels[0],
-                kernel_size=3,
-                padding=1,
-                bias=use_bias,
-                norm=get_norm(norm, decoder_channels[0]),
-                activation=F.relu,
-            ),
-            Conv2d(
+        if self.use_depthwise_separable_conv:
+            # We use a single 5x5 DepthwiseSeparableConv2d to replace
+            # 2 3x3 Conv2d since they have the same receptive field.
+            self.offset_head = DepthwiseSeparableConv2d(
                 decoder_channels[0],
                 head_channels,
-                kernel_size=3,
-                padding=1,
-                bias=use_bias,
-                norm=get_norm(norm, head_channels),
-                activation=F.relu,
-            ),
-        )
-        weight_init.c2_xavier_fill(self.offset_head[0])
-        weight_init.c2_xavier_fill(self.offset_head[1])
+                kernel_size=5,
+                padding=2,
+                norm1=norm,
+                activation1=F.relu,
+                norm2=norm,
+                activation2=F.relu,
+            )
+        else:
+            self.offset_head = nn.Sequential(
+                Conv2d(
+                    decoder_channels[0],
+                    decoder_channels[0],
+                    kernel_size=3,
+                    padding=1,
+                    bias=use_bias,
+                    norm=get_norm(norm, decoder_channels[0]),
+                    activation=F.relu,
+                ),
+                Conv2d(
+                    decoder_channels[0],
+                    head_channels,
+                    kernel_size=3,
+                    padding=1,
+                    bias=use_bias,
+                    norm=get_norm(norm, head_channels),
+                    activation=F.relu,
+                ),
+            )
+            weight_init.c2_xavier_fill(self.offset_head[0])
+            weight_init.c2_xavier_fill(self.offset_head[1])
         self.offset_predictor = Conv2d(head_channels, 2, kernel_size=1)
         nn.init.normal_(self.offset_predictor.weight, 0, 0.001)
         nn.init.constant_(self.offset_predictor.bias, 0)
@@ -452,6 +485,7 @@ class PanopticDeepLabInsEmbedHead(DeepLabV3PlusHead):
             head_channels=cfg.MODEL.INS_EMBED_HEAD.HEAD_CHANNELS,
             center_loss_weight=cfg.MODEL.INS_EMBED_HEAD.CENTER_LOSS_WEIGHT,
             offset_loss_weight=cfg.MODEL.INS_EMBED_HEAD.OFFSET_LOSS_WEIGHT,
+            use_depthwise_separable_conv=cfg.MODEL.SEM_SEG_HEAD.USE_DEPTHWISE_SEPARABLE_CONV,
         )
         return ret
 

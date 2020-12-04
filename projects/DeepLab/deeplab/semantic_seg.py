@@ -6,7 +6,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import configurable
-from detectron2.layers import ASPP, Conv2d, ShapeSpec, get_norm
+from detectron2.layers import ASPP, Conv2d, DepthwiseSeparableConv2d, ShapeSpec, get_norm
 from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
 
 from .loss import DeepLabCE
@@ -35,6 +35,7 @@ class DeepLabV3PlusHead(nn.Module):
         loss_type: str = "cross_entropy",
         ignore_value: int = -1,
         num_classes: Optional[int] = None,
+        use_depthwise_separable_conv: bool = False,
     ):
         """
         NOTE: this interface is experimental.
@@ -65,6 +66,8 @@ class DeepLabV3PlusHead(nn.Module):
             ignore_value (int): category to be ignored during training.
             num_classes (int): number of classes, if set to None, the decoder
                 will not construct a predictor.
+            use_depthwise_separable_conv (bool): use DepthwiseSeparableConv2d
+                in ASPP and decoder.
         """
         super().__init__()
 
@@ -77,6 +80,7 @@ class DeepLabV3PlusHead(nn.Module):
         self.loss_weight      = loss_weight
         self.loss_type        = loss_type
         self.decoder_only     = num_classes is None
+        self.use_depthwise_separable_conv = use_depthwise_separable_conv
         # fmt: on
 
         assert (
@@ -115,6 +119,7 @@ class DeepLabV3PlusHead(nn.Module):
                     activation=F.relu,
                     pool_kernel_size=pool_kernel_size,
                     dropout=aspp_dropout,
+                    use_depthwise_separable_conv=use_depthwise_separable_conv,
                 )
                 fuse_conv = None
             else:
@@ -126,29 +131,44 @@ class DeepLabV3PlusHead(nn.Module):
                     norm=get_norm(norm, project_channels[idx]),
                     activation=F.relu,
                 )
-                fuse_conv = nn.Sequential(
-                    Conv2d(
+                weight_init.c2_xavier_fill(project_conv)
+                if use_depthwise_separable_conv:
+                    # We use a single 5x5 DepthwiseSeparableConv2d to replace
+                    # 2 3x3 Conv2d since they have the same receptive field,
+                    # proposed in :paper:`Panoptic-DeepLab`.
+                    fuse_conv = DepthwiseSeparableConv2d(
                         project_channels[idx] + decoder_channels[idx + 1],
                         decoder_channels[idx],
-                        kernel_size=3,
-                        padding=1,
-                        bias=use_bias,
-                        norm=get_norm(norm, decoder_channels[idx]),
-                        activation=F.relu,
-                    ),
-                    Conv2d(
-                        decoder_channels[idx],
-                        decoder_channels[idx],
-                        kernel_size=3,
-                        padding=1,
-                        bias=use_bias,
-                        norm=get_norm(norm, decoder_channels[idx]),
-                        activation=F.relu,
-                    ),
-                )
-                weight_init.c2_xavier_fill(project_conv)
-                weight_init.c2_xavier_fill(fuse_conv[0])
-                weight_init.c2_xavier_fill(fuse_conv[1])
+                        kernel_size=5,
+                        padding=2,
+                        norm1=norm,
+                        activation1=F.relu,
+                        norm2=norm,
+                        activation2=F.relu,
+                    )
+                else:
+                    fuse_conv = nn.Sequential(
+                        Conv2d(
+                            project_channels[idx] + decoder_channels[idx + 1],
+                            decoder_channels[idx],
+                            kernel_size=3,
+                            padding=1,
+                            bias=use_bias,
+                            norm=get_norm(norm, decoder_channels[idx]),
+                            activation=F.relu,
+                        ),
+                        Conv2d(
+                            decoder_channels[idx],
+                            decoder_channels[idx],
+                            kernel_size=3,
+                            padding=1,
+                            bias=use_bias,
+                            norm=get_norm(norm, decoder_channels[idx]),
+                            activation=F.relu,
+                        ),
+                    )
+                    weight_init.c2_xavier_fill(fuse_conv[0])
+                    weight_init.c2_xavier_fill(fuse_conv[1])
 
             decoder_stage["project_conv"] = project_conv
             decoder_stage["fuse_conv"] = fuse_conv
@@ -193,6 +213,7 @@ class DeepLabV3PlusHead(nn.Module):
             loss_type=cfg.MODEL.SEM_SEG_HEAD.LOSS_TYPE,
             ignore_value=cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
             num_classes=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES,
+            use_depthwise_separable_conv=cfg.MODEL.SEM_SEG_HEAD.USE_DEPTHWISE_SEPARABLE_CONV,
         )
         return ret
 
@@ -263,6 +284,7 @@ class DeepLabV3Head(nn.Module):
         self.loss_type        = cfg.MODEL.SEM_SEG_HEAD.LOSS_TYPE
         train_crop_size       = cfg.INPUT.CROP.SIZE
         aspp_dropout          = cfg.MODEL.SEM_SEG_HEAD.ASPP_DROPOUT
+        use_depthwise_separable_conv = cfg.MODEL.SEM_SEG_HEAD.USE_DEPTHWISE_SEPARABLE_CONV
         # fmt: on
 
         assert len(self.in_features) == 1
@@ -287,6 +309,7 @@ class DeepLabV3Head(nn.Module):
             activation=F.relu,
             pool_kernel_size=pool_kernel_size,
             dropout=aspp_dropout,
+            use_depthwise_separable_conv=use_depthwise_separable_conv,
         )
 
         self.predictor = Conv2d(conv_dims, num_classes, kernel_size=1, stride=1, padding=0)

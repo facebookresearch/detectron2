@@ -48,3 +48,4 @@ def add_panoptic_deeplab_config(cfg):
     cfg.MODEL.PANOPTIC_DEEPLAB.TOP_K_INSTANCE = 200
     # If set to False, Panoptic-DeepLab will not evaluate instance segmentation.
     cfg.MODEL.PANOPTIC_DEEPLAB.PREDICT_INSTANCES = True
+    cfg.MODEL.PANOPTIC_DEEPLAB.USE_DEPTHWISE_SEPARABLE_CONV = False
