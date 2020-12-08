@@ -9,6 +9,7 @@ from collections import OrderedDict
 import torch
 
 import detectron2.utils.comm as comm
+from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.file_io import PathManager
@@ -24,25 +25,36 @@ class LVISEvaluator(DatasetEvaluator):
     LVIS's metrics and evaluation API.
     """
 
-    def __init__(self, dataset_name, cfg, distributed, output_dir=None):
+    def __init__(self, dataset_name, tasks=None, distributed=True, output_dir=None):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
                 It must have the following corresponding metadata:
                 "json_file": the path to the LVIS format annotation
-            cfg (CfgNode): config instance
+            tasks (tuple[str]): tasks that can be evaluated under the given
+                configuration. A task is one of "bbox", "segm".
+                By default, will infer this automatically from predictions.
             distributed (True): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
             output_dir (str): optional, an output directory to dump results.
         """
         from lvis import LVIS
 
-        self._tasks = self._tasks_from_config(cfg)
+        self._logger = logging.getLogger(__name__)
+
+        if tasks is not None and isinstance(tasks, CfgNode):
+            self._logger.warn(
+                "COCO Evaluator instantiated using config, this is deprecated behavior."
+                " Please pass in explicit arguments instead."
+            )
+            self._tasks = None  # Infering it from predictions should be better
+        else:
+            self._tasks = tasks
+
         self._distributed = distributed
         self._output_dir = output_dir
 
         self._cpu_device = torch.device("cpu")
-        self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
         json_file = PathManager.get_local_path(self._metadata.json_file)
@@ -53,16 +65,6 @@ class LVISEvaluator(DatasetEvaluator):
 
     def reset(self):
         self._predictions = []
-
-    def _tasks_from_config(self, cfg):
-        """
-        Returns:
-            tuple[str]: tasks that can be evaluated under the given configuration.
-        """
-        tasks = ("bbox",)
-        if cfg.MODEL.MASK_ON:
-            tasks = tasks + ("segm",)
-        return tasks
 
     def process(self, inputs, outputs):
         """
@@ -108,20 +110,26 @@ class LVISEvaluator(DatasetEvaluator):
         if "proposals" in predictions[0]:
             self._eval_box_proposals(predictions)
         if "instances" in predictions[0]:
-            self._eval_predictions(set(self._tasks), predictions)
+            self._eval_predictions(predictions)
         # Copy so the caller can do whatever with results
         return copy.deepcopy(self._results)
 
-    def _eval_predictions(self, tasks, predictions):
+    def _tasks_from_predictions(self, predictions):
+        for pred in predictions:
+            if "segmentation" in pred:
+                return ("bbox", "segm")
+        return ("bbox",)
+
+    def _eval_predictions(self, predictions):
         """
-        Evaluate predictions on the given tasks.
-        Fill self._results with the metrics of the tasks.
+        Evaluate predictions. Fill self._results with the metrics of the tasks.
 
         Args:
             predictions (list[dict]): list of outputs from the model
         """
         self._logger.info("Preparing results in the LVIS format ...")
         lvis_results = list(itertools.chain(*[x["instances"] for x in predictions]))
+        tasks = self._tasks or self._tasks_from_predictions(lvis_results)
 
         # LVIS evaluator can be used to evaluate results for COCO dataset categories.
         # In this case `_metadata` variable will have a field with COCO-specific category mapping.

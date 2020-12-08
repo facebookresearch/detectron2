@@ -70,7 +70,7 @@ class Trainer(DefaultTrainer):
         evaluator_list = []
         evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
         if evaluator_type == "lvis":
-            return LVISEvaluator(dataset_name, cfg, True, output_folder)
+            return LVISEvaluator(dataset_name, output_dir=output_folder)
         if evaluator_type == "coco":
             return COCOEvaluator(dataset_name, output_dir=output_folder)
         if evaluator_type == "sem_seg":
