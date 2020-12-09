@@ -73,7 +73,7 @@ class ImageList(object):
     ) -> "ImageList":
         """
         Args:
-            tensors: a tuple or list of `torch.Tensors`, each of shape (Hi, Wi) or
+            tensors: a tuple or list of `torch.Tensor`, each of shape (Hi, Wi) or
                 (C_1, ..., C_K, Hi, Wi) where K >= 1. The Tensors will be padded
                 to the same shape with `pad_value`.
             size_divisibility (int): If `size_divisibility > 0`, add padding to ensure
@@ -88,7 +88,7 @@ class ImageList(object):
         assert isinstance(tensors, (tuple, list))
         for t in tensors:
             assert isinstance(t, torch.Tensor), type(t)
-            assert t.shape[1:-2] == tensors[0].shape[1:-2], t.shape
+            assert t.shape[:-2] == tensors[0].shape[:-2], t.shape
 
         image_sizes = [(im.shape[-2], im.shape[-1]) for im in tensors]
         image_sizes_tensor = [_as_tensor(x) for x in image_sizes]
