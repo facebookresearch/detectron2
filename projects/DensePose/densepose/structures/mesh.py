@@ -17,6 +17,7 @@ class Mesh:
         faces: torch.Tensor,
         geodists: Optional[torch.Tensor] = None,
         symmetry: Optional[Dict[str, torch.Tensor]] = None,
+        texcoords: Optional[torch.Tensor] = None,
     ):
         """
         Args:
@@ -29,16 +30,21 @@ class Mesh:
                 - "vertex_transforms": vertex mapping under horizontal flip,
                   tensor of size [N] of type long; vertex `i` is mapped to
                   vertex `tensor[i]` (optional, default: None)
+            texcoords (tensor [N, 2] of float32): texture coordinates, i.e. global
+                and normalized mesh UVs (optional, default: None)
         """
         self.vertices = vertices
         self.faces = faces
         self.geodists = geodists
         self.symmetry = symmetry
+        self.texcoords = texcoords
         assert self.vertices.device == self.faces.device
         assert geodists is None or self.vertices.device == self.geodists.device
         assert symmetry is None or all(
             self.vertices.device == self.symmetry[key].device for key in self.symmetry
         )
+        assert texcoords is None or self.vertices.device == self.texcoords.device
+        assert texcoords is None or len(self.vertices) == len(self.texcoords)
         self.device = self.vertices.device
 
     def to(self, device: torch.device):
@@ -49,6 +55,7 @@ class Mesh:
             {key: value.to(device) for key, value in self.symmetry.items()}
             if self.symmetry is not None
             else None,
+            self.texcoords.to(device) if self.texcoords is not None else None,
         )
 
     def get_geodists(self):
@@ -71,9 +78,11 @@ def load_mesh_data(mesh_fpath: str) -> Tuple[Optional[torch.Tensor], Optional[to
     return None, None
 
 
-def load_mesh_geodists(geodists_fpath: str) -> Optional[torch.Tensor]:
-    geodists_fpath_local = PathManager.get_local_path(geodists_fpath, timeout_sec=600)
-    with PathManager.open(geodists_fpath_local, "rb") as hFile:
+def load_mesh_auxiliary_data(
+    fpath: str, timeout_sec: Optional[int] = None
+) -> Optional[torch.Tensor]:
+    fpath_local = PathManager.get_local_path(fpath, timeout_sec)
+    with PathManager.open(fpath_local, "rb") as hFile:
         return torch.as_tensor(pickle.load(hFile), dtype=torch.float)
 
 
@@ -93,7 +102,14 @@ def load_mesh_symmetry(symmetry_fpath: str) -> Optional[Dict[str, torch.Tensor]]
 def create_mesh(mesh_name: str, device: torch.device):
     mesh_info = MeshCatalog[mesh_name]
     vertices, faces = load_mesh_data(mesh_info.data)
-    geodists = load_mesh_geodists(mesh_info.geodists) if mesh_info.geodists is not None else None
+    geodists = (
+        load_mesh_auxiliary_data(mesh_info.geodists, timeout_sec=600)
+        if mesh_info.geodists is not None
+        else None
+    )
     symmetry = load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
-    mesh = Mesh(vertices, faces, geodists, symmetry)
+    texcoords = (
+        load_mesh_auxiliary_data(mesh_info.texcoords) if mesh_info.texcoords is not None else None
+    )
+    mesh = Mesh(vertices, faces, geodists, symmetry, texcoords)
     return mesh.to(device)

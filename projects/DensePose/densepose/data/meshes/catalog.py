@@ -14,6 +14,7 @@ class MeshInfo:
     data: str
     geodists: Optional[str] = None
     symmetry: Optional[str] = None
+    texcoords: Optional[str] = None
 
 
 class _MeshCatalog(UserDict):
