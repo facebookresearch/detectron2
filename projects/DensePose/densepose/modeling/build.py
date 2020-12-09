@@ -4,7 +4,6 @@ from detectron2.config import CfgNode
 
 from .filter import DensePoseDataFilter
 from .losses import *  # noqa
-from .predictors import *  # noqa
 
 
 def build_densepose_predictor(cfg: CfgNode, input_channels: int):
@@ -17,7 +16,7 @@ def build_densepose_predictor(cfg: CfgNode, input_channels: int):
     Return:
         An instance of DensePose predictor
     """
-    from .predictors.registry import DENSEPOSE_PREDICTOR_REGISTRY
+    from .predictors import DENSEPOSE_PREDICTOR_REGISTRY
 
     predictor_name = cfg.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME
     return DENSEPOSE_PREDICTOR_REGISTRY.get(predictor_name)(cfg, input_channels)

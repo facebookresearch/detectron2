@@ -66,6 +66,16 @@ def load_bootstrap_config(cfg: CN):
     cfg.BOOTSTRAP_DATASETS = bootstrap_datasets_cfgnodes
 
 
+def add_densepose_head_cse_config(cfg: CN):
+    """
+    Add configuration options for Continuous Surface Embeddings (CSE)
+    """
+    _C = cfg
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE = CN()
+    # Dimensionality D of the embedding space
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE = 16
+
+
 def add_densepose_head_config(cfg: CN):
     """
     Add config for densepose head.
@@ -139,6 +149,8 @@ def add_densepose_head_config(cfg: CN):
     # List of angles for rotation in data augmentation during training
     _C.INPUT.ROTATION_ANGLES = [0]
     _C.TEST.AUG.ROTATION_ANGLES = ()  # Rotation TTA
+
+    add_densepose_head_cse_config(cfg)
 
 
 def add_hrnet_config(cfg: CN):
