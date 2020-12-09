@@ -7,9 +7,8 @@ from torch.nn import functional as F
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
-from .mask import MaskLoss
+from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
-from .segm import SegmentationLoss
 from .utils import BilinearInterpolationHelper, LossDict, SingleTensorsHelper
 
 
@@ -55,9 +54,7 @@ class DensePoseChartLoss:
         self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # fmt: on
         self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
-        if self.segm_trained_by_masks:
-            self.mask_loss = MaskLoss()
-        self.segm_loss = SegmentationLoss(cfg)
+        self.segm_loss = MaskOrSegmentationLoss(cfg)
 
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any
@@ -78,24 +75,47 @@ class DensePoseChartLoss:
             coarse segmentation channels.
 
         Return:
-            (dict: str -> tensor): dict of losses with the following entries:
-                * loss_densepose_I: fine segmentation loss (cross-entropy)
-                * loss_densepose_S: coarse segmentation loss (cross-entropy)
-                * loss_densepose_U: loss for U coordinates (smooth L1)
-                * loss_densepose_V: loss for V coordinates (smooth L1)
+            dict: str -> tensor: dict of losses with the following entries:
+             * `loss_densepose_U`: smooth L1 loss for U coordinate estimates
+             * `loss_densepose_V`: smooth L1 loss for V coordinate estimates
+             * `loss_densepose_I`: cross entropy for raw unnormalized scores for fine
+                 segmentation estimates given ground truth labels;
+             * `loss_densepose_S`: cross entropy for raw unnormalized scores for coarse
+                 segmentation estimates given ground truth labels;
         """
-        if not self.segm_trained_by_masks:
-            return self.produce_densepose_losses(proposals_with_gt, densepose_predictor_outputs)
-        else:
-            losses_densepose = self.produce_densepose_losses(
-                proposals_with_gt, densepose_predictor_outputs
-            )
-            return {
-                "loss_densepose_S": (
-                    self.w_segm * self.mask_loss(proposals_with_gt, densepose_predictor_outputs)
-                ),
-                **losses_densepose,
-            }
+        # densepose outputs are computed for all images and all bounding boxes;
+        # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
+        # the outputs will have size(0) == 3+1+2+1 == 7
+        densepose_outputs_size = densepose_predictor_outputs.u.size()
+
+        if not len(proposals_with_gt):
+            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
+
+        tensors_helper = SingleTensorsHelper(proposals_with_gt)
+        n_batch = len(tensors_helper.index_with_dp)
+
+        # NOTE: we need to keep the same computation graph on all the GPUs to
+        # perform reduction properly. Hence even if we have no data on one
+        # of the GPUs, we still need to generate the computation graph.
+        # Add fake (zero) loss in the form Tensor.sum() * 0
+        if not n_batch:
+            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
+
+        interpolator = BilinearInterpolationHelper.from_matches(
+            tensors_helper, densepose_outputs_size
+        )
+
+        j_valid_fg = interpolator.j_valid * (tensors_helper.fine_segm_labels_gt > 0)
+
+        losses_uv = self.produce_densepose_losses_uv(
+            proposals_with_gt, densepose_predictor_outputs, tensors_helper, interpolator, j_valid_fg
+        )
+
+        losses_segm = self.produce_densepose_losses_segm(
+            proposals_with_gt, densepose_predictor_outputs, tensors_helper, interpolator, j_valid_fg
+        )
+
+        return {**losses_uv, **losses_segm}
 
     def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any) -> LossDict:
         """
@@ -116,7 +136,7 @@ class DensePoseChartLoss:
              * `loss_densepose_U`: has value 0
              * `loss_densepose_V`: has value 0
              * `loss_densepose_I`: has value 0
-             * `loss_densepose_S`: has value 0, added only if `segm_trained_by_masks` is False
+             * `loss_densepose_S`: has value 0
         """
         losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs)
         losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs)
@@ -163,73 +183,11 @@ class DensePoseChartLoss:
              * `loss_densepose_I`: has value 0
              * `loss_densepose_S`: has value 0, added only if `segm_trained_by_masks` is False
         """
-        losses = {"loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0}
-        if not self.segm_trained_by_masks:
-            losses["loss_densepose_S"] = self.segm_loss.fake_value(densepose_predictor_outputs)
+        losses = {
+            "loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0,
+            "loss_densepose_S": self.segm_loss.fake_value(densepose_predictor_outputs),
+        }
         return losses
-
-    def produce_densepose_losses(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any
-    ) -> LossDict:
-        """
-        Losses for segmentation and U/V coordinates computed as cross-entropy
-        for segmentation unnormalized scores given ground truth labels at
-        annotated points and smooth L1 loss for U and V coordinate estimates at
-        annotated points.
-
-        Args:
-            proposals_with_gt (list of Instances): detections with associated ground truth data
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * fine_segm - fine segmentation estimates, tensor of shape [N, C, S, S]
-             * u - U coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-             * v - V coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_U`: smooth L1 loss for U coordinate estimates
-             * `loss_densepose_V`: smooth L1 loss for V coordinate estimates
-             * `loss_densepose_I`: cross entropy for raw unnormalized scores for fine
-                 segmentation estimates given ground truth labels
-             * `loss_densepose_S`: cross entropy for raw unnormalized scores for coarse
-                 segmentation estimates given ground truth labels;
-                 may be included if coarse segmentation is only trained
-                 using DensePose ground truth; if additional supervision through
-                 instance segmentation data is performed (`segm_trained_by_masks` is True),
-                 this loss is handled by `produce_mask_losses` instead
-        """
-        # densepose outputs are computed for all images and all bounding boxes;
-        # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
-        # the outputs will have size(0) == 3+1+2+1 == 7
-        densepose_outputs_size = densepose_predictor_outputs.u.size()
-
-        if not len(proposals_with_gt):
-            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
-
-        tensors_helper = SingleTensorsHelper(proposals_with_gt)
-        n_batch = len(tensors_helper.index_with_dp)
-
-        # NOTE: we need to keep the same computation graph on all the GPUs to
-        # perform reduction properly. Hence even if we have no data on one
-        # of the GPUs, we still need to generate the computation graph.
-        # Add fake (zero) loss in the form Tensor.sum() * 0
-        if not n_batch:
-            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
-
-        interpolator = BilinearInterpolationHelper.from_matches(
-            tensors_helper, densepose_outputs_size
-        )
-
-        j_valid_fg = interpolator.j_valid * (tensors_helper.fine_segm_labels_gt > 0)
-
-        losses_uv = self.produce_densepose_losses_uv(
-            proposals_with_gt, densepose_predictor_outputs, tensors_helper, interpolator, j_valid_fg
-        )
-
-        losses_segm = self.produce_densepose_losses_segm(
-            proposals_with_gt, densepose_predictor_outputs, tensors_helper, interpolator, j_valid_fg
-        )
-
-        return {**losses_uv, **losses_segm}
 
     def produce_densepose_losses_uv(
         self,
@@ -308,13 +266,10 @@ class DensePoseChartLoss:
             w_yhi_xlo=interpolator.w_yhi_xlo[:, None],
             w_yhi_xhi=interpolator.w_yhi_xhi[:, None],
         )[interpolator.j_valid, :]
-        losses = {
-            "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long()) * self.w_part
-        }
-
-        if not self.segm_trained_by_masks:
-            losses["loss_densepose_S"] = (
-                self.segm_loss(proposals_with_gt, densepose_predictor_outputs, tensors_helper)
-                * self.w_segm
+        return {
+            "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long()) * self.w_part,
+            "loss_densepose_S": self.segm_loss(
+                proposals_with_gt, densepose_predictor_outputs, tensors_helper
             )
-        return losses
+            * self.w_segm,
+        }
