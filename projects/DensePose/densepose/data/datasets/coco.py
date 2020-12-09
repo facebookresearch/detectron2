@@ -12,6 +12,8 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
 
+from densepose.data.meshes.catalog import MeshCatalog
+
 from ..utils import maybe_prepend_base_path
 
 DENSEPOSE_MASK_KEY = "dp_masks"
@@ -217,6 +219,13 @@ def _maybe_add_densepose(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
             obj[key] = ann_dict[key]
 
 
+def _maybe_add_cse_data(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
+    if "dp_vertex" in ann_dict:
+        obj["vertex_ids"] = ann_dict["dp_vertex"]
+    if "ref_model" in ann_dict:
+        obj["mesh_id"] = MeshCatalog.get_mesh_id(ann_dict["ref_model"])
+
+
 def _combine_images_with_annotations(
     dataset_name: str,
     image_root: str,
@@ -248,6 +257,7 @@ def _combine_images_with_annotations(
             _maybe_add_segm(obj, ann_dict)
             _maybe_add_keypoints(obj, ann_dict)
             _maybe_add_densepose(obj, ann_dict)
+            _maybe_add_cse_data(obj, ann_dict)
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)
