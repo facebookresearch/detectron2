@@ -82,6 +82,11 @@ def add_densepose_head_cse_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.GEODESIC_DIST_GAUSS_SIGMA = 0.01
     # embedding loss weight
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_WEIGHT = 0.6
+    # embedding loss name, currently the following options are supported:
+    # - EmbeddingLoss: cross-entropy on vertex labels
+    # - SoftEmbeddingLoss: cross-entropy on vertex label combined with
+    #    Gaussian penalty on distance between vertices
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_NAME = "EmbeddingLoss"
 
 
 def add_densepose_head_config(cfg: CN):

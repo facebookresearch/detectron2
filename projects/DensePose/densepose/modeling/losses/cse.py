@@ -10,12 +10,18 @@ from .embed import EmbeddingLoss
 from .embed_utils import CseAnnotationsAccumulator
 from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
+from .soft_embed import SoftEmbeddingLoss
 from .utils import BilinearInterpolationHelper, LossDict, extract_packed_annotations_from_matches
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()
 class DensePoseCseLoss:
     """"""
+
+    _EMBED_LOSS_REGISTRY = {
+        EmbeddingLoss.__name__: EmbeddingLoss,
+        SoftEmbeddingLoss.__name__: SoftEmbeddingLoss,
+    }
 
     def __init__(self, cfg: CfgNode):
         """
@@ -27,7 +33,13 @@ class DensePoseCseLoss:
         self.w_segm = cfg.MODEL.ROI_DENSEPOSE_HEAD.INDEX_WEIGHTS
         self.w_embed = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_WEIGHT
         self.segm_loss = MaskOrSegmentationLoss(cfg)
-        self.embed_loss = EmbeddingLoss(cfg)
+        self.embed_loss = DensePoseCseLoss.create_embed_loss(cfg)
+
+    @classmethod
+    def create_embed_loss(cls, cfg: CfgNode):
+        # registry not used here, since embedding losses are currently local
+        # and are not used anywhere else
+        return cls._EMBED_LOSS_REGISTRY[cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_NAME](cfg)
 
     def __call__(
         self,
