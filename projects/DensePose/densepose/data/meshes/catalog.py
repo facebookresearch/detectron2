@@ -13,6 +13,7 @@ class MeshInfo:
     name: str
     data: str
     geodists: Optional[str] = None
+    symmetry: Optional[str] = None
 
 
 class _MeshCatalog(UserDict):
@@ -54,6 +55,11 @@ def register_mesh(mesh_info: MeshInfo, base_path: Optional[str]):
         geodists=(
             maybe_prepend_base_path(base_path, mesh_info.geodists)
             if mesh_info.geodists is not None
+            else None
+        ),
+        symmetry=(
+            maybe_prepend_base_path(base_path, mesh_info.symmetry)
+            if mesh_info.symmetry is not None
             else None
         ),
     )
