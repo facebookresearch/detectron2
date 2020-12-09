@@ -87,6 +87,9 @@ def add_densepose_head_cse_config(cfg: CN):
     # - SoftEmbeddingLoss: cross-entropy on vertex label combined with
     #    Gaussian penalty on distance between vertices
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_NAME = "EmbeddingLoss"
+    # optimizer hyperparameters
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.FEATURES_LR_FACTOR = 1.0
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR = 1.0
 
 
 def add_densepose_head_config(cfg: CN):
