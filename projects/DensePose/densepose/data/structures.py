@@ -118,7 +118,9 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.VERTEX_IDS_KEY in annotation
             and DensePoseDataRelative.MESH_ID_KEY in annotation
         ):
-            self.vertex_ids = torch.as_tensor(annotation[DensePoseDataRelative.VERTEX_IDS_KEY])
+            self.vertex_ids = torch.as_tensor(
+                annotation[DensePoseDataRelative.VERTEX_IDS_KEY], dtype=torch.long
+            )
             self.mesh_id = annotation[DensePoseDataRelative.MESH_ID_KEY]
         self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
         self.device = torch.device("cpu")
@@ -143,19 +145,23 @@ class DensePoseDataRelative(object):
 
     @staticmethod
     def extract_segmentation_mask(annotation):
+        import pycocotools.mask as mask_utils
+
         poly_specs = annotation[DensePoseDataRelative.S_KEY]
         if isinstance(poly_specs, torch.Tensor):
             # data is already given as mask tensors, no need to decode
             return poly_specs
-
-        import pycocotools.mask as mask_utils
-
         segm = torch.zeros((DensePoseDataRelative.MASK_SIZE,) * 2, dtype=torch.float32)
-        for i in range(DensePoseDataRelative.N_BODY_PARTS):
-            poly_i = poly_specs[i]
-            if poly_i:
-                mask_i = mask_utils.decode(poly_i)
-                segm[mask_i > 0] = i + 1
+        if isinstance(poly_specs, dict):
+            if poly_specs:
+                mask = mask_utils.decode(poly_specs)
+                segm[mask > 0] = 1
+        else:
+            for i in range(len(poly_specs)):
+                poly_i = poly_specs[i]
+                if poly_i:
+                    mask_i = mask_utils.decode(poly_i)
+                    segm[mask_i > 0] = i + 1
         return segm
 
     @staticmethod
