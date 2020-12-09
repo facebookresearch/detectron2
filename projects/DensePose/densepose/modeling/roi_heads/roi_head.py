@@ -15,6 +15,7 @@ from detectron2.structures import ImageList, Instances
 
 from .. import (
     build_densepose_data_filter,
+    build_densepose_embedder,
     build_densepose_head,
     build_densepose_losses,
     build_densepose_predictor,
@@ -121,6 +122,7 @@ class DensePoseROIHeads(StandardROIHeads):
             cfg, self.densepose_head.n_out_channels
         )
         self.densepose_losses = build_densepose_losses(cfg)
+        self.embedder = build_densepose_embedder(cfg)
 
     def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances]):
         """
@@ -156,7 +158,9 @@ class DensePoseROIHeads(StandardROIHeads):
                 features_dp = self.densepose_pooler(features, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
                 densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
-                densepose_loss_dict = self.densepose_losses(proposals, densepose_predictor_outputs)
+                densepose_loss_dict = self.densepose_losses(
+                    proposals, densepose_predictor_outputs, embedder=self.embedder
+                )
                 return densepose_loss_dict
         else:
             pred_boxes = [x.pred_boxes for x in instances]

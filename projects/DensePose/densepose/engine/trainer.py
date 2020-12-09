@@ -3,11 +3,14 @@
 import logging
 import os
 from collections import OrderedDict
+import torch
+from torch import nn
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import COCOEvaluator, DatasetEvaluators
+from detectron2.solver.build import get_default_optimizer_params, maybe_add_gradient_clipping
 from detectron2.utils.events import EventWriter, get_event_storage
 
 from densepose import (
@@ -72,6 +75,29 @@ class Trainer(DefaultTrainer):
         if cfg.MODEL.DENSEPOSE_ON:
             evaluators.append(DensePoseCOCOEvaluator(dataset_name, True, output_folder))
         return DatasetEvaluators(evaluators)
+
+    @classmethod
+    def build_optimizer(cls, cfg: CfgNode, model: nn.Module):
+        params = get_default_optimizer_params(
+            model,
+            base_lr=cfg.SOLVER.BASE_LR,
+            weight_decay=cfg.SOLVER.WEIGHT_DECAY,
+            weight_decay_norm=cfg.SOLVER.WEIGHT_DECAY_NORM,
+            bias_lr_factor=cfg.SOLVER.BIAS_LR_FACTOR,
+            weight_decay_bias=cfg.SOLVER.WEIGHT_DECAY_BIAS,
+            overrides={
+                "features": {
+                    "lr": cfg.SOLVER.BASE_LR * cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.FEATURES_LR_FACTOR,
+                },
+                "embeddings": {
+                    "lr": cfg.SOLVER.BASE_LR * cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR,
+                },
+            },
+        )
+        optimizer = torch.optim.SGD(
+            params, cfg.SOLVER.BASE_LR, momentum=cfg.SOLVER.MOMENTUM, nesterov=cfg.SOLVER.NESTEROV
+        )
+        return maybe_add_gradient_clipping(cfg, optimizer)
 
     @classmethod
     def build_test_loader(cls, cfg: CfgNode, dataset_name):

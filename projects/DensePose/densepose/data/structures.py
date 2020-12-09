@@ -4,6 +4,10 @@ from typing import BinaryIO, Dict, Union
 import torch
 from torch.nn import functional as F
 
+from densepose.structures.mesh import load_mesh_symmetry
+
+from .meshes.catalog import MeshCatalog
+
 
 class DensePoseTransformData(object):
 
@@ -81,14 +85,18 @@ class DensePoseDataRelative(object):
     X_KEY = "dp_x"
     # Key for normalized Y coordinates in annotation dict
     Y_KEY = "dp_y"
-    # Key for U part coordinates in annotation dict
+    # Key for U part coordinates in annotation dict (used in chart-based annotations)
     U_KEY = "dp_U"
-    # Key for V part coordinates in annotation dict
+    # Key for V part coordinates in annotation dict (used in chart-based annotations)
     V_KEY = "dp_V"
-    # Key for I point labels in annotation dict
+    # Key for I point labels in annotation dict (used in chart-based annotations)
     I_KEY = "dp_I"
     # Key for segmentation mask in annotation dict
     S_KEY = "dp_masks"
+    # Key for vertex ids (used in continuous surface embeddings annotations)
+    VERTEX_IDS_KEY = "vertex_ids"
+    # Key for mesh id (used in continuous surface embeddings annotations)
+    MESH_ID_KEY = "mesh_id"
     # Number of body parts in segmentation masks
     N_BODY_PARTS = 14
     # Number of parts in point labels
@@ -96,13 +104,24 @@ class DensePoseDataRelative(object):
     MASK_SIZE = 256
 
     def __init__(self, annotation, cleanup=False):
-        is_valid, reason_not_valid = DensePoseDataRelative.validate_annotation(annotation)
-        assert is_valid, "Invalid DensePose annotations: {}".format(reason_not_valid)
         self.x = torch.as_tensor(annotation[DensePoseDataRelative.X_KEY])
         self.y = torch.as_tensor(annotation[DensePoseDataRelative.Y_KEY])
-        self.i = torch.as_tensor(annotation[DensePoseDataRelative.I_KEY])
-        self.u = torch.as_tensor(annotation[DensePoseDataRelative.U_KEY])
-        self.v = torch.as_tensor(annotation[DensePoseDataRelative.V_KEY])
+        if (
+            DensePoseDataRelative.I_KEY in annotation
+            and DensePoseDataRelative.U_KEY in annotation
+            and DensePoseDataRelative.V_KEY in annotation
+        ):
+            self.i = torch.as_tensor(annotation[DensePoseDataRelative.I_KEY])
+            self.u = torch.as_tensor(annotation[DensePoseDataRelative.U_KEY])
+            self.v = torch.as_tensor(annotation[DensePoseDataRelative.V_KEY])
+        if (
+            DensePoseDataRelative.VERTEX_IDS_KEY in annotation
+            and DensePoseDataRelative.MESH_ID_KEY in annotation
+        ):
+            self.vertex_ids = torch.as_tensor(
+                annotation[DensePoseDataRelative.VERTEX_IDS_KEY], dtype=torch.long
+            )
+            self.mesh_id = annotation[DensePoseDataRelative.MESH_ID_KEY]
         self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
         self.device = torch.device("cpu")
         if cleanup:
@@ -115,28 +134,34 @@ class DensePoseDataRelative(object):
         new_data.x = self.x
         new_data.x = self.x.to(device)
         new_data.y = self.y.to(device)
-        new_data.i = self.i.to(device)
-        new_data.u = self.u.to(device)
-        new_data.v = self.v.to(device)
+        for attr in ["i", "u", "v", "vertex_ids"]:
+            if hasattr(self, attr):
+                setattr(new_data, attr, getattr(self, attr).to(device))
+        if hasattr(self, "mesh_id"):
+            new_data.mesh_id = self.mesh_id
         new_data.segm = self.segm.to(device)
         new_data.device = device
         return new_data
 
     @staticmethod
     def extract_segmentation_mask(annotation):
+        import pycocotools.mask as mask_utils
+
         poly_specs = annotation[DensePoseDataRelative.S_KEY]
         if isinstance(poly_specs, torch.Tensor):
             # data is already given as mask tensors, no need to decode
             return poly_specs
-
-        import pycocotools.mask as mask_utils
-
         segm = torch.zeros((DensePoseDataRelative.MASK_SIZE,) * 2, dtype=torch.float32)
-        for i in range(DensePoseDataRelative.N_BODY_PARTS):
-            poly_i = poly_specs[i]
-            if poly_i:
-                mask_i = mask_utils.decode(poly_i)
-                segm[mask_i > 0] = i + 1
+        if isinstance(poly_specs, dict):
+            if poly_specs:
+                mask = mask_utils.decode(poly_specs)
+                segm[mask > 0] = 1
+        else:
+            for i in range(len(poly_specs)):
+                poly_i = poly_specs[i]
+                if poly_i:
+                    mask_i = mask_utils.decode(poly_i)
+                    segm[mask_i > 0] = i + 1
         return segm
 
     @staticmethod
@@ -162,6 +187,8 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.U_KEY,
             DensePoseDataRelative.V_KEY,
             DensePoseDataRelative.S_KEY,
+            DensePoseDataRelative.VERTEX_IDS_KEY,
+            DensePoseDataRelative.MESH_ID_KEY,
         ]:
             if key in annotation:
                 del annotation[key]
@@ -178,6 +205,7 @@ class DensePoseDataRelative(object):
         if do_hflip:
             self.x = self.segm.size(1) - self.x
             self._flip_iuv_semantics(dp_transform_data)
+            self._flip_vertices()
 
         for t in transforms.transforms:
             if isinstance(t, T.RotationTransform):
@@ -202,6 +230,14 @@ class DensePoseDataRelative(object):
                 self.v[annot_indices_i] = uv_symmetries["V_transforms"][i][v_loc, u_loc].to(
                     device=self.v.device
                 )
+
+    def _flip_vertices(self):
+        if hasattr(self, "vertex_ids"):
+            mesh_info = MeshCatalog[MeshCatalog.get_mesh_name(self.mesh_id)]
+            mesh_symmetry = (
+                load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
+            )
+            self.vertex_ids = mesh_symmetry["vertex_transforms"][self.vertex_ids]
 
     def _transform_segm(self, transforms, dp_transform_data):
         import detectron2.data.transforms as T

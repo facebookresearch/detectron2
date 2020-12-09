@@ -66,6 +66,32 @@ def load_bootstrap_config(cfg: CN):
     cfg.BOOTSTRAP_DATASETS = bootstrap_datasets_cfgnodes
 
 
+def add_densepose_head_cse_config(cfg: CN):
+    """
+    Add configuration options for Continuous Surface Embeddings (CSE)
+    """
+    _C = cfg
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE = CN()
+    # Dimensionality D of the embedding space
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE = 16
+    # Embedder specifications for various mesh IDs
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS = CN(new_allowed=True)
+    # normalization coefficient for embedding distances
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_DIST_GAUSS_SIGMA = 0.01
+    # normalization coefficient for geodesic distances
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.GEODESIC_DIST_GAUSS_SIGMA = 0.01
+    # embedding loss weight
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_WEIGHT = 0.6
+    # embedding loss name, currently the following options are supported:
+    # - EmbeddingLoss: cross-entropy on vertex labels
+    # - SoftEmbeddingLoss: cross-entropy on vertex label combined with
+    #    Gaussian penalty on distance between vertices
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_NAME = "EmbeddingLoss"
+    # optimizer hyperparameters
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.FEATURES_LR_FACTOR = 1.0
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR = 1.0
+
+
 def add_densepose_head_config(cfg: CN):
     """
     Add config for densepose head.
@@ -139,6 +165,8 @@ def add_densepose_head_config(cfg: CN):
     # List of angles for rotation in data augmentation during training
     _C.INPUT.ROTATION_ANGLES = [0]
     _C.TEST.AUG.ROTATION_ANGLES = ()  # Rotation TTA
+
+    add_densepose_head_cse_config(cfg)
 
 
 def add_hrnet_config(cfg: CN):
