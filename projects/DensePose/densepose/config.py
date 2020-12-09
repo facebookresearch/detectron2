@@ -76,6 +76,12 @@ def add_densepose_head_cse_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE = 16
     # Embedder specifications for various mesh IDs
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS = CN(new_allowed=True)
+    # normalization coefficient for embedding distances
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_DIST_GAUSS_SIGMA = 0.01
+    # normalization coefficient for geodesic distances
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.GEODESIC_DIST_GAUSS_SIGMA = 0.01
+    # embedding loss weight
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_WEIGHT = 0.6
 
 
 def add_densepose_head_config(cfg: CN):

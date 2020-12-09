@@ -62,7 +62,7 @@ class DensePoseChartLoss:
         self.segm_loss = MaskOrSegmentationLoss(cfg)
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any
+        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, **kwargs
     ) -> LossDict:
         """
         Produce chart-based DensePose losses
