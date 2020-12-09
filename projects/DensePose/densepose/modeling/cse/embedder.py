@@ -101,7 +101,8 @@ class Embedder(nn.Module):
             for key in state_dict["model"]:
                 if key.startswith(prefix):
                     state_dict_local[key[len(prefix) :]] = state_dict["model"][key]
-            self.load_state_dict(state_dict_local)
+            # non-strict loading to finetune on different meshes
+            self.load_state_dict(state_dict_local, strict=False)
 
     def forward(self, mesh_name: str) -> torch.Tensor:
         """
