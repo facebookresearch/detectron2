@@ -12,9 +12,11 @@ from .base import Boxes, Image, MatrixVisualizer
 
 class DensePoseResultsVisualizer(object):
     def visualize(
-        self, image_bgr: Image, results_and_boxes_xywh: Optional[Tuple[DensePoseChartResult, Boxes]]
+        self,
+        image_bgr: Image,
+        results_and_boxes_xywh: Tuple[Optional[DensePoseChartResult], Optional[Boxes]],
     ) -> Image:
-        if results_and_boxes_xywh is None:
+        if results_and_boxes_xywh[0] is None:
             return image_bgr
         densepose_result, boxes_xywh = results_and_boxes_xywh
         boxes_xywh = boxes_xywh.cpu().numpy()
@@ -35,6 +37,7 @@ class DensePoseMaskedColormapResultsVisualizer(DensePoseResultsVisualizer):
         cmap=cv2.COLORMAP_PARULA,
         alpha=0.7,
         val_scale=1.0,
+        **kwargs,
     ):
         self.mask_visualizer = MatrixVisualizer(
             inplace=inplace, cmap=cmap, val_scale=val_scale, alpha=alpha
@@ -314,7 +317,7 @@ except ModuleNotFoundError:
 
 
 class DensePoseResultsFineSegmentationVisualizer(DensePoseMaskedColormapResultsVisualizer):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
         super(DensePoseResultsFineSegmentationVisualizer, self).__init__(
             _extract_i_from_iuvarr,
             _extract_i_from_iuvarr,
@@ -322,18 +325,31 @@ class DensePoseResultsFineSegmentationVisualizer(DensePoseMaskedColormapResultsV
             cmap,
             alpha,
             val_scale=255.0 / DensePoseDataRelative.N_PART_LABELS,
+            **kwargs,
         )
 
 
 class DensePoseResultsUVisualizer(DensePoseMaskedColormapResultsVisualizer):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
         super(DensePoseResultsUVisualizer, self).__init__(
-            _extract_u_from_iuvarr, _extract_i_from_iuvarr, inplace, cmap, alpha, val_scale=1.0
+            _extract_u_from_iuvarr,
+            _extract_i_from_iuvarr,
+            inplace,
+            cmap,
+            alpha,
+            val_scale=1.0,
+            **kwargs,
         )
 
 
 class DensePoseResultsVVisualizer(DensePoseMaskedColormapResultsVisualizer):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
         super(DensePoseResultsVVisualizer, self).__init__(
-            _extract_v_from_iuvarr, _extract_i_from_iuvarr, inplace, cmap, alpha, val_scale=1.0
+            _extract_v_from_iuvarr,
+            _extract_i_from_iuvarr,
+            inplace,
+            cmap,
+            alpha,
+            val_scale=1.0,
+            **kwargs,
         )

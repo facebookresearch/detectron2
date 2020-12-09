@@ -10,7 +10,7 @@ import sys
 from typing import Any, ClassVar, Dict, List
 import torch
 
-from detectron2.config import get_cfg
+from detectron2.config import CfgNode, get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.engine.defaults import DefaultPredictor
 from detectron2.structures.instances import Instances
@@ -20,6 +20,7 @@ from densepose import add_densepose_config, add_hrnet_config
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer
+from densepose.vis.densepose_outputs_vertex import DensePoseOutputsVertexVisualizer
 from densepose.vis.densepose_results import (
     DensePoseResultsContourVisualizer,
     DensePoseResultsFineSegmentationVisualizer,
@@ -83,7 +84,7 @@ class InferenceAction(Action):
         if len(file_list) == 0:
             logger.warning(f"No input images for {args.input}")
             return
-        context = cls.create_context(args)
+        context = cls.create_context(args, cfg)
         for file_name in file_list:
             img = read_image(file_name, format="BGR")  # predictor expects BGR image.
             with torch.no_grad():
@@ -188,6 +189,7 @@ class ShowAction(InferenceAction):
         "dp_segm": DensePoseResultsFineSegmentationVisualizer,
         "dp_u": DensePoseResultsUVisualizer,
         "dp_v": DensePoseResultsVVisualizer,
+        "dp_vertex": DensePoseOutputsVertexVisualizer,
         "bbox": ScoredBoundingBoxVisualizer,
     }
 
@@ -269,12 +271,12 @@ class ShowAction(InferenceAction):
         return base + ".{0:04d}".format(entry_idx) + ext
 
     @classmethod
-    def create_context(cls: type, args: argparse.Namespace) -> Dict[str, Any]:
+    def create_context(cls: type, args: argparse.Namespace, cfg: CfgNode) -> Dict[str, Any]:
         vis_specs = args.visualizations.split(",")
         visualizers = []
         extractors = []
         for vis_spec in vis_specs:
-            vis = cls.VISUALIZERS[vis_spec]()
+            vis = cls.VISUALIZERS[vis_spec](cfg=cfg)
             visualizers.append(vis)
             extractor = create_extractor(vis)
             extractors.append(extractor)

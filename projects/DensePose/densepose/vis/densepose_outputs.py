@@ -9,7 +9,9 @@ from .base import Boxes, Image, MatrixVisualizer
 
 
 class DensePoseOutputsVisualizer(object):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, to_visualize=None):
+    def __init__(
+        self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, to_visualize=None, **kwargs
+    ):
         assert to_visualize in "IUV", "can only visualize IUV"
         self.to_visualize = to_visualize
 
@@ -24,9 +26,9 @@ class DensePoseOutputsVisualizer(object):
     def visualize(
         self,
         image_bgr: Image,
-        dp_output_with_bboxes: Optional[Tuple[DensePoseChartPredictorOutput, Boxes]],
+        dp_output_with_bboxes: Tuple[Optional[DensePoseChartPredictorOutput], Optional[Boxes]],
     ) -> Image:
-        if dp_output_with_bboxes is None:
+        if dp_output_with_bboxes[0] is None:
             return image_bgr
         densepose_output, bboxes_xywh = dp_output_with_bboxes
 
@@ -83,15 +85,15 @@ class DensePoseOutputsVisualizer(object):
 
 
 class DensePoseOutputsUVisualizer(DensePoseOutputsVisualizer):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
-        super().__init__(inplace=inplace, cmap=cmap, alpha=alpha, to_visualize="U")
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
+        super().__init__(inplace=inplace, cmap=cmap, alpha=alpha, to_visualize="U", **kwargs)
 
 
 class DensePoseOutputsVVisualizer(DensePoseOutputsVisualizer):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
-        super().__init__(inplace=inplace, cmap=cmap, alpha=alpha, to_visualize="V")
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
+        super().__init__(inplace=inplace, cmap=cmap, alpha=alpha, to_visualize="V", **kwargs)
 
 
 class DensePoseOutputsFineSegmentationVisualizer(DensePoseOutputsVisualizer):
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
-        super().__init__(inplace=inplace, cmap=cmap, alpha=alpha, to_visualize="I")
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
+        super().__init__(inplace=inplace, cmap=cmap, alpha=alpha, to_visualize="I", **kwargs)

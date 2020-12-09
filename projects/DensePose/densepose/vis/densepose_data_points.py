@@ -12,7 +12,7 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
     Visualizer for ground truth segmentation
     """
 
-    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7):
+    def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
         self.mask_visualizer = MatrixVisualizer(
             inplace=inplace,
             cmap=cmap,
@@ -36,7 +36,7 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
 
 
 class DensePoseDataPointsVisualizer(object):
-    def __init__(self, densepose_data_to_value_fn=None, cmap=cv2.COLORMAP_PARULA):
+    def __init__(self, densepose_data_to_value_fn=None, cmap=cv2.COLORMAP_PARULA, **kwargs):
         self.points_visualizer = PointsVisualizer()
         self.densepose_data_to_value_fn = densepose_data_to_value_fn
         self.cmap = cmap
@@ -85,21 +85,21 @@ def _densepose_data_i_for_cmap(densepose_data):
 
 
 class DensePoseDataPointsUVisualizer(DensePoseDataPointsVisualizer):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(DensePoseDataPointsUVisualizer, self).__init__(
-            densepose_data_to_value_fn=_densepose_data_u_for_cmap
+            densepose_data_to_value_fn=_densepose_data_u_for_cmap, **kwargs
         )
 
 
 class DensePoseDataPointsVVisualizer(DensePoseDataPointsVisualizer):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(DensePoseDataPointsVVisualizer, self).__init__(
-            densepose_data_to_value_fn=_densepose_data_v_for_cmap
+            densepose_data_to_value_fn=_densepose_data_v_for_cmap, **kwargs
         )
 
 
 class DensePoseDataPointsIVisualizer(DensePoseDataPointsVisualizer):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(DensePoseDataPointsIVisualizer, self).__init__(
-            densepose_data_to_value_fn=_densepose_data_i_for_cmap
+            densepose_data_to_value_fn=_densepose_data_i_for_cmap, **kwargs
         )

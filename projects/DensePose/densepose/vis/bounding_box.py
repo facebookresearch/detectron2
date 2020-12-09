@@ -13,7 +13,7 @@ class BoundingBoxVisualizer(object):
 
 
 class ScoredBoundingBoxVisualizer(object):
-    def __init__(self, bbox_visualizer_params=None, score_visualizer_params=None):
+    def __init__(self, bbox_visualizer_params=None, score_visualizer_params=None, **kwargs):
         if bbox_visualizer_params is None:
             bbox_visualizer_params = {}
         if score_visualizer_params is None:
