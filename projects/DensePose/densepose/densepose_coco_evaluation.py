@@ -23,6 +23,8 @@ from scipy.ndimage import zoom as spzoom
 
 from detectron2.utils.file_io import PathManager
 
+from densepose.structures.mesh import create_mesh
+
 from .data.structures import DensePoseDataRelative
 
 logger = logging.getLogger(__name__)
@@ -522,8 +524,11 @@ class DensePoseCocoEval(object):
         return ious
 
     def _extract_mask(self, dt: Dict[str, Any]) -> np.ndarray:
-        densepose_results_quantized = dt["densepose"]
-        return densepose_results_quantized.labels_uv_uint8[0].numpy()
+        if "densepose" in dt:
+            densepose_results_quantized = dt["densepose"]
+            return densepose_results_quantized.labels_uv_uint8[0].numpy()
+        elif "cse_mask" in dt:
+            return dt["cse_mask"]
 
     def _extract_iuv(
         self, densepose_data: np.ndarray, py: np.ndarray, px: np.ndarray, gt: Dict[str, Any]
@@ -602,21 +607,37 @@ class DensePoseCocoEval(object):
                     else:
                         px[pts == -1] = 0
                         py[pts == -1] = 0
-                        densepose_results_quantized = dt["densepose"]
-                        ipoints, upoints, vpoints = self._extract_iuv(
-                            densepose_results_quantized.labels_uv_uint8.numpy(), py, px, gt
-                        )
-                        ipoints[pts == -1] = 0
                         # Find closest vertices in subsampled mesh.
-                        cVerts, cVertsGT = self.findAllClosestVerts(gt, upoints, vpoints, ipoints)
-                        # Get pairwise geodesic distances between gt and estimated mesh points.
-                        dist = self.getDistances(cVertsGT, cVerts)
-                        # Compute the Ogps measure.
-                        # Find the mean geodesic normalization distance for
-                        # each GT point, based on which part it is on.
-                        Current_Mean_Distances = self.Mean_Distances[
-                            self.CoarseParts[self.Part_ids[cVertsGT[cVertsGT > 0].astype(int) - 1]]
-                        ]
+                        if "densepose" in dt:
+                            cVertsGT, ClosestVertsGTTransformed = self.findAllClosestVertsGT(gt)
+                            densepose_results_quantized = dt["densepose"]
+                            ipoints, upoints, vpoints = self._extract_iuv(
+                                densepose_results_quantized.labels_uv_uint8.numpy(), py, px, gt
+                            )
+                            ipoints[pts == -1] = 0
+                            cVerts = self.findAllClosestVertsUV(upoints, vpoints, ipoints)
+                            # Get pairwise geodesic distances between gt and estimated mesh points.
+                            dist = self.getDistancesUV(ClosestVertsGTTransformed, cVerts)
+                            # Compute the Ogps measure.
+                            # Find the mean geodesic normalization distance for
+                            # each GT point, based on which part it is on.
+                            Current_Mean_Distances = self.Mean_Distances[
+                                self.CoarseParts[
+                                    self.Part_ids[cVertsGT[cVertsGT > 0].astype(int) - 1]
+                                ]
+                            ]
+                        elif "cse_indices" in dt:
+                            cVertsGT = np.array(gt["dp_vertex"])
+                            cse_mask, cse_indices = dt["cse_mask"], dt["cse_indices"]
+                            cVerts = self.findAllClosestVertsCSE(
+                                cse_indices[py, px],
+                                cse_mask[py, px],
+                            )
+                            # Get pairwise geodesic distances between gt and estimated mesh points.
+                            dist = self.getDistancesCSE(cVertsGT, cVerts, gt["ref_model"])
+                            Current_Mean_Distances = self.Mean_Distances[
+                                self.CoarseParts[np.array(gt["dp_I"], dtype=int)]
+                            ]
                         # Compute gps
                         ogps_values = np.exp(-(dist ** 2) / (2 * (Current_Mean_Distances ** 2)))
                         #
@@ -1017,14 +1038,7 @@ class DensePoseCocoEval(object):
         self.summarize()
 
     # ================ functions for dense pose ==============================
-    def findAllClosestVerts(self, gt, U_points, V_points, Index_points):
-        #
-        I_gt = np.array(gt["dp_I"])
-        U_gt = np.array(gt["dp_U"])
-        V_gt = np.array(gt["dp_V"])
-        #
-        # print(I_gt)
-        #
+    def findAllClosestVertsUV(self, U_points, V_points, Index_points):
         ClosestVerts = np.ones(Index_points.shape) * -1
         for i in np.arange(24):
             #
@@ -1038,8 +1052,24 @@ class DensePoseCocoEval(object):
                 ClosestVerts[Index_points == (i + 1)] = Current_Part_ClosestVertInds[
                     np.argmin(D, axis=0)
                 ]
+        ClosestVertsTransformed = self.PDIST_transform[ClosestVerts.astype(int) - 1]
+        ClosestVertsTransformed[ClosestVerts < 0] = 0
+        return ClosestVertsTransformed
+
+    def findAllClosestVertsCSE(self, cse_indices, mask):
+        ClosestVerts = np.ones(cse_indices.shape) * -1
+        ClosestVerts[mask == 1] = cse_indices[mask == 1]
+        return ClosestVerts
+
+    def findAllClosestVertsGT(self, gt):
         #
-        ClosestVertsGT = np.ones(Index_points.shape) * -1
+        I_gt = np.array(gt["dp_I"])
+        U_gt = np.array(gt["dp_U"])
+        V_gt = np.array(gt["dp_V"])
+        #
+        # print(I_gt)
+        #
+        ClosestVertsGT = np.ones(I_gt.shape) * -1
         for i in np.arange(24):
             if (i + 1) in I_gt:
                 UVs = np.array([U_gt[I_gt == (i + 1)], V_gt[I_gt == (i + 1)]])
@@ -1048,18 +1078,18 @@ class DensePoseCocoEval(object):
                 D = ssd.cdist(Current_Part_UVs.transpose(), UVs.transpose()).squeeze()
                 ClosestVertsGT[I_gt == (i + 1)] = Current_Part_ClosestVertInds[np.argmin(D, axis=0)]
         #
-        return ClosestVerts, ClosestVertsGT
+        ClosestVertsGTTransformed = self.PDIST_transform[ClosestVertsGT.astype(int) - 1]
+        ClosestVertsGTTransformed[ClosestVertsGT < 0] = 0
+        return ClosestVertsGT, ClosestVertsGTTransformed
 
-    def getDistances(self, cVertsGT, cVerts):
+    def getDistancesCSE(self, cVertsGT, cVerts, mesh_name):
+        geodists_vertices = np.ones(len(cVertsGT)) * np.inf
+        mask = (cVertsGT >= 0) * (cVerts >= 0)
+        mesh = create_mesh(mesh_name, "cpu")
+        geodists_vertices[mask] = mesh.geodists[cVertsGT[mask], cVerts[mask]]
+        return geodists_vertices
 
-        ClosestVertsTransformed = self.PDIST_transform[cVerts.astype(int) - 1]
-        ClosestVertsGTTransformed = self.PDIST_transform[cVertsGT.astype(int) - 1]
-        #
-        ClosestVertsTransformed[cVerts < 0] = 0
-        ClosestVertsGTTransformed[cVertsGT < 0] = 0
-        #
-        cVertsGT = ClosestVertsGTTransformed
-        cVerts = ClosestVertsTransformed
+    def getDistancesUV(self, cVertsGT, cVerts):
         #
         n = 27554
         dists = []
