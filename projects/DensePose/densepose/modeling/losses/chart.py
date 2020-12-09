@@ -9,7 +9,8 @@ from detectron2.structures import Instances
 
 from .mask import MaskLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
-from .utils import BilinearInterpolationHelper, LossDict, SingleTensorsHelper, resample_data
+from .segm import SegmentationLoss
+from .utils import BilinearInterpolationHelper, LossDict, SingleTensorsHelper
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()
@@ -54,7 +55,9 @@ class DensePoseChartLoss:
         self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # fmt: on
         self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
-        self.mask_loss = MaskLoss()
+        if self.segm_trained_by_masks:
+            self.mask_loss = MaskLoss()
+        self.segm_loss = SegmentationLoss(cfg)
 
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any
@@ -162,7 +165,7 @@ class DensePoseChartLoss:
         """
         losses = {"loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0}
         if not self.segm_trained_by_masks:
-            losses["loss_densepose_S"] = densepose_predictor_outputs.coarse_segm.sum() * 0
+            losses["loss_densepose_S"] = self.segm_loss.fake_value(densepose_predictor_outputs)
         return losses
 
     def produce_densepose_losses(
@@ -310,22 +313,8 @@ class DensePoseChartLoss:
         }
 
         if not self.segm_trained_by_masks:
-            # Resample everything to the estimated data size, no need to resample
-            # S_est then:
-            coarse_segm_est = densepose_predictor_outputs.coarse_segm[tensors_helper.index_with_dp]
-            with torch.no_grad():
-                coarse_segm_gt = resample_data(
-                    tensors_helper.coarse_segm_gt.unsqueeze(1),
-                    tensors_helper.bbox_xywh_gt,
-                    tensors_helper.bbox_xywh_est,
-                    self.heatmap_size,
-                    self.heatmap_size,
-                    mode="nearest",
-                    padding_mode="zeros",
-                ).squeeze(1)
-            if self.n_segm_chan == 2:
-                coarse_segm_gt = coarse_segm_gt > 0
             losses["loss_densepose_S"] = (
-                F.cross_entropy(coarse_segm_est, coarse_segm_gt.long()) * self.w_segm
+                self.segm_loss(proposals_with_gt, densepose_predictor_outputs, tensors_helper)
+                * self.w_segm
             )
         return losses
