@@ -27,6 +27,10 @@ from densepose.vis.densepose_results import (
     DensePoseResultsUVisualizer,
     DensePoseResultsVVisualizer,
 )
+from densepose.vis.densepose_results_textures import (
+    DensePoseResultsVisualizerWithTexture,
+    get_texture_atlas,
+)
 from densepose.vis.extractor import CompoundExtractor, DensePoseResultExtractor, create_extractor
 
 DOC = """Apply Net - a tool to print / visualize DensePose results
@@ -189,6 +193,7 @@ class ShowAction(InferenceAction):
         "dp_segm": DensePoseResultsFineSegmentationVisualizer,
         "dp_u": DensePoseResultsUVisualizer,
         "dp_v": DensePoseResultsVVisualizer,
+        "dp_iuv_texture": DensePoseResultsVisualizerWithTexture,
         "dp_vertex": DensePoseOutputsVertexVisualizer,
         "bbox": ScoredBoundingBoxVisualizer,
     }
@@ -217,6 +222,9 @@ class ShowAction(InferenceAction):
         )
         parser.add_argument(
             "--nms_thresh", metavar="<threshold>", default=None, type=float, help="NMS threshold"
+        )
+        parser.add_argument(
+            "--texture_atlas", metavar="<texture_atlas>", default=None, help="Texture atlas file"
         )
         parser.add_argument(
             "--output",
@@ -276,7 +284,8 @@ class ShowAction(InferenceAction):
         visualizers = []
         extractors = []
         for vis_spec in vis_specs:
-            vis = cls.VISUALIZERS[vis_spec](cfg=cfg)
+            texture_atlas = get_texture_atlas(args.texture_atlas)
+            vis = cls.VISUALIZERS[vis_spec](cfg=cfg, texture_atlas=texture_atlas)
             visualizers.append(vis)
             extractor = create_extractor(vis)
             extractors.append(extractor)
