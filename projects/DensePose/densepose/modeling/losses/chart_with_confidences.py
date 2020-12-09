@@ -11,7 +11,7 @@ from detectron2.structures import Instances
 from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from .chart import DensePoseChartLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
-from .utils import BilinearInterpolationHelper, LossDict, SingleTensorsHelper
+from .utils import BilinearInterpolationHelper, LossDict
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()
@@ -72,24 +72,19 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
         self,
         proposals_with_gt: List[Instances],
         densepose_predictor_outputs: Any,
-        tensors_helper: SingleTensorsHelper,
+        packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
     ) -> LossDict:
         conf_type = self.confidence_model_cfg.uv_confidence.type
         if self.confidence_model_cfg.uv_confidence.enabled:
-            u_gt = tensors_helper.u_gt[j_valid_fg]
-            u_est = interpolator.extract_at_points(
-                densepose_predictor_outputs.u[tensors_helper.index_with_dp]
-            )[j_valid_fg]
-
-            v_gt = tensors_helper.v_gt[j_valid_fg]
-            v_est = interpolator.extract_at_points(
-                densepose_predictor_outputs.v[tensors_helper.index_with_dp]
-            )[j_valid_fg]
-            sigma_2_est = interpolator.extract_at_points(
-                densepose_predictor_outputs.sigma_2[tensors_helper.index_with_dp]
-            )[j_valid_fg]
+            u_gt = packed_annotations.u_gt[j_valid_fg]
+            u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
+            v_gt = packed_annotations.v_gt[j_valid_fg]
+            v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
+            sigma_2_est = interpolator.extract_at_points(densepose_predictor_outputs.sigma_2)[
+                j_valid_fg
+            ]
             if conf_type == DensePoseUVConfidenceType.IID_ISO:
                 return {
                     "loss_densepose_UV": (
@@ -98,12 +93,12 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                     )
                 }
             elif conf_type in [DensePoseUVConfidenceType.INDEP_ANISO]:
-                kappa_u_est = interpolator.extract_at_points(
-                    densepose_predictor_outputs.kappa_u[tensors_helper.index_with_dp]
-                )[j_valid_fg]
-                kappa_v_est = interpolator.extract_at_points(
-                    densepose_predictor_outputs.kappa_v[tensors_helper.index_with_dp]
-                )[j_valid_fg]
+                kappa_u_est = interpolator.extract_at_points(densepose_predictor_outputs.kappa_u)[
+                    j_valid_fg
+                ]
+                kappa_v_est = interpolator.extract_at_points(densepose_predictor_outputs.kappa_v)[
+                    j_valid_fg
+                ]
                 return {
                     "loss_densepose_UV": (
                         self.uv_loss_with_confidences(
@@ -116,7 +111,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
             return super().produce_densepose_losses_uv(
                 proposals_with_gt,
                 densepose_predictor_outputs,
-                tensors_helper,
+                packed_annotations,
                 interpolator,
                 j_valid_fg,
             )

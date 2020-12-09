@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import Any, List, Optional
+from typing import Any, List
 import torch
 
 from detectron2.config import CfgNode
@@ -8,7 +8,6 @@ from detectron2.structures import Instances
 
 from .mask import MaskLoss
 from .segm import SegmentationLoss
-from .utils import SingleTensorsHelper
 
 
 class MaskOrSegmentationLoss:
@@ -35,7 +34,7 @@ class MaskOrSegmentationLoss:
         self,
         proposals_with_gt: List[Instances],
         densepose_predictor_outputs: Any,
-        tensors_helper: Optional[SingleTensorsHelper] = None,
+        packed_annotations: Any,
     ) -> torch.Tensor:
         """
         Compute segmentation loss as cross-entropy between aligned unnormalized
@@ -47,15 +46,14 @@ class MaskOrSegmentationLoss:
             densepose_predictor_outputs: an object of a dataclass that contains predictor outputs
                 with estimated values; assumed to have the following attributes:
                 * coarse_segm - coarse segmentation estimates, tensor of shape [N, D, S, S]
-            tensors_helper (SingleTensorsHelper or None): if not None, used to obtain
-                packed data for efficient loss computation
+            packed_annotations: packed annotations for efficient loss computation
         Return:
             tensor: loss value as cross-entropy for raw unnormalized scores
                 given ground truth labels
         """
         if self.segm_trained_by_masks:
             return self.mask_loss(proposals_with_gt, densepose_predictor_outputs)
-        return self.segm_loss(proposals_with_gt, densepose_predictor_outputs, tensors_helper)
+        return self.segm_loss(proposals_with_gt, densepose_predictor_outputs, packed_annotations)
 
     def fake_value(self, densepose_predictor_outputs: Any) -> torch.Tensor:
         """

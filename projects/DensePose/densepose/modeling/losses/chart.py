@@ -9,7 +9,12 @@ from detectron2.structures import Instances
 
 from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
-from .utils import BilinearInterpolationHelper, LossDict, SingleTensorsHelper
+from .utils import (
+    BilinearInterpolationHelper,
+    ChartBasedAnnotationsAccumulator,
+    LossDict,
+    extract_packed_annotations_from_matches,
+)
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()
@@ -86,33 +91,40 @@ class DensePoseChartLoss:
         # densepose outputs are computed for all images and all bounding boxes;
         # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
         # the outputs will have size(0) == 3+1+2+1 == 7
-        densepose_outputs_size = densepose_predictor_outputs.u.size()
 
         if not len(proposals_with_gt):
             return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
-        tensors_helper = SingleTensorsHelper(proposals_with_gt)
-        n_batch = len(tensors_helper.index_with_dp)
+        accumulator = ChartBasedAnnotationsAccumulator()
+        packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
 
         # NOTE: we need to keep the same computation graph on all the GPUs to
         # perform reduction properly. Hence even if we have no data on one
         # of the GPUs, we still need to generate the computation graph.
         # Add fake (zero) loss in the form Tensor.sum() * 0
-        if not n_batch:
+        if packed_annotations is None:
             return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
         interpolator = BilinearInterpolationHelper.from_matches(
-            tensors_helper, densepose_outputs_size
+            packed_annotations, tuple(densepose_predictor_outputs.u.shape[2:])
         )
 
-        j_valid_fg = interpolator.j_valid * (tensors_helper.fine_segm_labels_gt > 0)
+        j_valid_fg = interpolator.j_valid * (packed_annotations.fine_segm_labels_gt > 0)
 
         losses_uv = self.produce_densepose_losses_uv(
-            proposals_with_gt, densepose_predictor_outputs, tensors_helper, interpolator, j_valid_fg
+            proposals_with_gt,
+            densepose_predictor_outputs,
+            packed_annotations,
+            interpolator,
+            j_valid_fg,
         )
 
         losses_segm = self.produce_densepose_losses_segm(
-            proposals_with_gt, densepose_predictor_outputs, tensors_helper, interpolator, j_valid_fg
+            proposals_with_gt,
+            densepose_predictor_outputs,
+            packed_annotations,
+            interpolator,
+            j_valid_fg,
         )
 
         return {**losses_uv, **losses_segm}
@@ -193,7 +205,7 @@ class DensePoseChartLoss:
         self,
         proposals_with_gt: List[Instances],
         densepose_predictor_outputs: Any,
-        tensors_helper: SingleTensorsHelper,
+        packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
     ) -> LossDict:
@@ -212,15 +224,10 @@ class DensePoseChartLoss:
              * `loss_densepose_U`: smooth L1 loss for U coordinate estimates
              * `loss_densepose_V`: smooth L1 loss for V coordinate estimates
         """
-        u_gt = tensors_helper.u_gt[j_valid_fg]
-        u_est = interpolator.extract_at_points(
-            densepose_predictor_outputs.u[tensors_helper.index_with_dp]
-        )[j_valid_fg]
-
-        v_gt = tensors_helper.v_gt[j_valid_fg]
-        v_est = interpolator.extract_at_points(
-            densepose_predictor_outputs.v[tensors_helper.index_with_dp]
-        )[j_valid_fg]
+        u_gt = packed_annotations.u_gt[j_valid_fg]
+        u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
+        v_gt = packed_annotations.v_gt[j_valid_fg]
+        v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
         return {
             "loss_densepose_U": F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points,
             "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points,
@@ -230,7 +237,7 @@ class DensePoseChartLoss:
         self,
         proposals_with_gt: List[Instances],
         densepose_predictor_outputs: Any,
-        tensors_helper: SingleTensorsHelper,
+        packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
     ) -> LossDict:
@@ -257,9 +264,9 @@ class DensePoseChartLoss:
                  instance segmentation data is performed (`segm_trained_by_masks` is True),
                  this loss is handled by `produce_mask_losses` instead
         """
-        fine_segm_gt = tensors_helper.fine_segm_labels_gt[interpolator.j_valid]
+        fine_segm_gt = packed_annotations.fine_segm_labels_gt[interpolator.j_valid]
         fine_segm_est = interpolator.extract_at_points(
-            densepose_predictor_outputs.fine_segm[tensors_helper.index_with_dp],
+            densepose_predictor_outputs.fine_segm,
             slice_fine_segm=slice(None),
             w_ylo_xlo=interpolator.w_ylo_xlo[:, None],
             w_ylo_xhi=interpolator.w_ylo_xhi[:, None],
@@ -269,7 +276,7 @@ class DensePoseChartLoss:
         return {
             "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long()) * self.w_part,
             "loss_densepose_S": self.segm_loss(
-                proposals_with_gt, densepose_predictor_outputs, tensors_helper
+                proposals_with_gt, densepose_predictor_outputs, packed_annotations
             )
             * self.w_segm,
         }

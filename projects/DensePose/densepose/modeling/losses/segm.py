@@ -1,13 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import Any, List, Optional
+from typing import Any, List
 import torch
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
-from .utils import SingleTensorsHelper, resample_data
+from .utils import resample_data
 
 
 class SegmentationLoss:
@@ -32,7 +32,7 @@ class SegmentationLoss:
         self,
         proposals_with_gt: List[Instances],
         densepose_predictor_outputs: Any,
-        tensors_helper: Optional[SingleTensorsHelper] = None,
+        packed_annotations: Any,
     ) -> torch.Tensor:
         """
         Compute segmentation loss as cross-entropy on aligned segmentation
@@ -43,16 +43,18 @@ class SegmentationLoss:
             densepose_predictor_outputs: an object of a dataclass that contains predictor outputs
                 with estimated values; assumed to have the following attributes:
                 * coarse_segm - coarse segmentation estimates, tensor of shape [N, D, S, S]
-            tensors_helper (SingleTensorsHelper or None): if not None, used to obtain
-                packed data for efficient loss computation"""
-        if tensors_helper is None:
-            tensors_helper = SingleTensorsHelper(proposals_with_gt)
-        coarse_segm_est = densepose_predictor_outputs.coarse_segm[tensors_helper.index_with_dp]
+            packed_annotations: packed annotations for efficient loss computation;
+                the following attributes are used:
+                 - coarse_segm_gt
+                 - bbox_xywh_gt
+                 - bbox_xywh_est
+        """
+        coarse_segm_est = densepose_predictor_outputs.coarse_segm[packed_annotations.bbox_indices]
         with torch.no_grad():
             coarse_segm_gt = resample_data(
-                tensors_helper.coarse_segm_gt.unsqueeze(1),
-                tensors_helper.bbox_xywh_gt,
-                tensors_helper.bbox_xywh_est,
+                packed_annotations.coarse_segm_gt.unsqueeze(1),
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
                 self.heatmap_size,
                 self.heatmap_size,
                 mode="nearest",
