@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import pickle
+from enum import Enum
 from functools import lru_cache
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Set, Tuple
 import torch
 
 from detectron2.utils.file_io import PathManager
@@ -78,10 +79,8 @@ def load_mesh_data(mesh_fpath: str) -> Tuple[Optional[torch.Tensor], Optional[to
     return None, None
 
 
-def load_mesh_auxiliary_data(
-    fpath: str, timeout_sec: Optional[int] = None
-) -> Optional[torch.Tensor]:
-    fpath_local = PathManager.get_local_path(fpath, timeout_sec)
+def load_mesh_auxiliary_data(fpath: str) -> Optional[torch.Tensor]:
+    fpath_local = PathManager.get_local_path(fpath)
     with PathManager.open(fpath_local, "rb") as hFile:
         return torch.as_tensor(pickle.load(hFile), dtype=torch.float)
 
@@ -98,18 +97,28 @@ def load_mesh_symmetry(symmetry_fpath: str) -> Optional[Dict[str, torch.Tensor]]
         return symmetry
 
 
+class MeshAuxiliaryDataType(Enum):
+    GEODISTS = 0
+    TEXCOORDS = 1
+
+    @staticmethod
+    def all():
+        return {MeshAuxiliaryDataType.GEODISTS, MeshAuxiliaryDataType.TEXCOORDS}
+
+
 @lru_cache()
-def create_mesh(mesh_name: str, device: torch.device):
+def create_mesh(
+    mesh_name: str,
+    device: torch.device,
+    auxiliary_data_types: Set[MeshAuxiliaryDataType] = MeshAuxiliaryDataType.all(),
+):
     mesh_info = MeshCatalog[mesh_name]
     vertices, faces = load_mesh_data(mesh_info.data)
-    geodists = (
-        load_mesh_auxiliary_data(mesh_info.geodists, timeout_sec=600)
-        if mesh_info.geodists is not None
-        else None
-    )
+    geodists, texcoords = None, None
+    if MeshAuxiliaryDataType.GEODISTS in auxiliary_data_types:
+        geodists = load_mesh_auxiliary_data(mesh_info.geodists)
+    if MeshAuxiliaryDataType.TEXCOORDS in auxiliary_data_types:
+        texcoords = load_mesh_auxiliary_data(mesh_info.texcoords)
     symmetry = load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
-    texcoords = (
-        load_mesh_auxiliary_data(mesh_info.texcoords) if mesh_info.texcoords is not None else None
-    )
     mesh = Mesh(vertices, faces, geodists, symmetry, texcoords)
     return mesh.to(device)

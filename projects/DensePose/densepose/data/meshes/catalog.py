@@ -63,6 +63,11 @@ def register_mesh(mesh_info: MeshInfo, base_path: Optional[str]):
             if mesh_info.symmetry is not None
             else None
         ),
+        texcoords=(
+            maybe_prepend_base_path(base_path, mesh_info.texcoords)
+            if mesh_info.texcoords is not None
+            else None
+        ),
     )
 
 
