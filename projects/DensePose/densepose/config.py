@@ -74,6 +74,8 @@ def add_densepose_head_cse_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE = CN()
     # Dimensionality D of the embedding space
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE = 16
+    # Embedder specifications for various mesh IDs
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS = CN(new_allowed=True)
 
 
 def add_densepose_head_config(cfg: CN):

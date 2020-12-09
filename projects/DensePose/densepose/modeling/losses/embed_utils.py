@@ -70,7 +70,7 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
             # no densepose GT for the detections, just increase the bbox index
             self.nxt_bbox_index += n_matches
         for box_xywh_est, box_xywh_gt, dp_gt in zip(
-            boxes_xywh_est.tensor, boxes_xywh_gt.tensor, instances_one_image.gt_densepose
+            boxes_xywh_est, boxes_xywh_gt, instances_one_image.gt_densepose
         ):
             if (dp_gt is not None) and (len(dp_gt.x) > 0):
                 self._do_accumulate(box_xywh_gt, box_xywh_est, dp_gt)
@@ -117,14 +117,14 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
         return PackedCseAnnotations(
             x_gt=torch.cat(self.x_gt, 0),
             y_gt=torch.cat(self.y_gt, 0),
-            vertex_mesh_ids_gt=torch.cat(self.vertex_ids_gt, 0),
-            vertex_ids_gt=torch.cat(self.vertex_mesh_ids_gt, 0),
+            vertex_mesh_ids_gt=torch.cat(self.vertex_mesh_ids_gt, 0),
+            vertex_ids_gt=torch.cat(self.vertex_ids_gt, 0),
             coarse_segm_gt=torch.cat(self.s_gt, 0),
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),
             point_bbox_with_dp_indices=torch.cat(self.point_bbox_with_dp_indices, 0),
             point_bbox_indices=torch.cat(self.point_bbox_indices, 0),
             bbox_indices=torch.as_tensor(
-                self.bbox_indices, dtype=torch.long, device=self.x_gt.device
+                self.bbox_indices, dtype=torch.long, device=self.x_gt[0].device
             ),
         )
