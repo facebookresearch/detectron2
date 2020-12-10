@@ -110,7 +110,7 @@ class MeshAuxiliaryDataType(Enum):
 def create_mesh(
     mesh_name: str,
     device: torch.device,
-    auxiliary_data_types: Set[MeshAuxiliaryDataType] = MeshAuxiliaryDataType.all(),
+    auxiliary_data_types: Set[MeshAuxiliaryDataType] = MeshAuxiliaryDataType.all(),  # noqa
 ):
     mesh_info = MeshCatalog[mesh_name]
     vertices, faces = load_mesh_data(mesh_info.data)
