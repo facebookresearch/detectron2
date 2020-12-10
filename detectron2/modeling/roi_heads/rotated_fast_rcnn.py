@@ -258,11 +258,6 @@ class RROIHeads(StandardROIHeads):
             if has_gt:
                 sampled_targets = matched_idxs[sampled_idxs]
                 proposals_per_image.gt_boxes = targets_per_image.gt_boxes[sampled_targets]
-            else:
-                gt_boxes = RotatedBoxes(
-                    targets_per_image.gt_boxes.tensor.new_zeros((len(sampled_idxs), 5))
-                )
-                proposals_per_image.gt_boxes = gt_boxes
 
             num_bg_samples.append((gt_classes == self.num_classes).sum().item())
             num_fg_samples.append(gt_classes.numel() - num_bg_samples[-1])

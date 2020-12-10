@@ -196,11 +196,19 @@ class FastRCNNOutputs:
                 not self.proposals.tensor.requires_grad
             ), "Proposals should not require gradients!"
 
-            # The following fields should exist only when training.
-            if proposals[0].has("gt_boxes"):
-                self.gt_boxes = box_type.cat([p.gt_boxes for p in proposals])
-                assert proposals[0].has("gt_classes")
+            # "gt_classes" exists if and only if training. But other gt fields may
+            # not necessarily exist in training for images that have no groundtruth.
+            if proposals[0].has("gt_classes"):
                 self.gt_classes = cat([p.gt_classes for p in proposals], dim=0)
+
+                # If "gt_boxes" does not exist, the proposals must be all negative and
+                # should not be included in regression loss computation.
+                # Here we just use proposal_boxes as an arbitrary placeholder because its
+                # value won't be used in self.box_reg_loss().
+                gt_boxes = [
+                    p.gt_boxes if p.has("gt_boxes") else p.proposal_boxes for p in proposals
+                ]
+                self.gt_boxes = box_type.cat(gt_boxes)
         else:
             self.proposals = Boxes(torch.zeros(0, 4, device=self.pred_proposal_deltas.device))
         self._no_instances = len(self.proposals) == 0  # no instances found
@@ -252,7 +260,7 @@ class FastRCNNOutputs:
         if self._no_instances:
             return 0.0 * self.pred_proposal_deltas.sum()
 
-        box_dim = self.gt_boxes.tensor.size(1)  # 4 or 5
+        box_dim = self.proposals.tensor.size(1)  # 4 or 5
         cls_agnostic_bbox_reg = self.pred_proposal_deltas.size(1) == box_dim
         device = self.pred_proposal_deltas.device
 
