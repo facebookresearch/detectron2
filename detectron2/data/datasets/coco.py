@@ -8,8 +8,8 @@ import numpy as np
 import os
 import shutil
 import pycocotools.mask as mask_util
-from fvcore.common.file_io import file_lock
 from fvcore.common.timer import Timer
+from iopath.common.file_io import file_lock
 from PIL import Image
 
 from detectron2.structures import Boxes, BoxMode, PolygonMasks
