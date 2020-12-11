@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from fvcore.common.file_io import HTTPURLHandler, OneDrivePathHandler, PathHandler, PathManagerBase
+from iopath.common.file_io import HTTPURLHandler, OneDrivePathHandler, PathHandler
+from iopath.common.file_io import PathManager as PathManagerBase
 
 __all__ = ["PathManager", "PathHandler"]
 

@@ -26,12 +26,12 @@ class DetectionCheckpointer(Checkpointer):
             self.path_manager = PathManager
         else:
             # This could only happen for open source
-            # TODO remove after upgrading fvcore
-            from fvcore.common.file_io import PathManager as g_PathManager
+            # TODO remove after upgrading fvcore version
+            from iopath.common.file_io import g_pathmgr
 
             for handler in PathManager._path_handlers.values():
                 try:
-                    g_PathManager.register_handler(handler)
+                    g_pathmgr.register_handler(handler)
                 except KeyError:
                     pass
 
