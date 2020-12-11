@@ -20,7 +20,11 @@ from densepose import add_densepose_config, add_hrnet_config
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer
-from densepose.vis.densepose_outputs_vertex import DensePoseOutputsVertexVisualizer
+from densepose.vis.densepose_outputs_vertex import (
+    DensePoseOutputsTextureVisualizer,
+    DensePoseOutputsVertexVisualizer,
+    get_texture_atlases,
+)
 from densepose.vis.densepose_results import (
     DensePoseResultsContourVisualizer,
     DensePoseResultsFineSegmentationVisualizer,
@@ -194,6 +198,7 @@ class ShowAction(InferenceAction):
         "dp_u": DensePoseResultsUVisualizer,
         "dp_v": DensePoseResultsVVisualizer,
         "dp_iuv_texture": DensePoseResultsVisualizerWithTexture,
+        "dp_cse_texture": DensePoseOutputsTextureVisualizer,
         "dp_vertex": DensePoseOutputsVertexVisualizer,
         "bbox": ScoredBoundingBoxVisualizer,
     }
@@ -224,7 +229,16 @@ class ShowAction(InferenceAction):
             "--nms_thresh", metavar="<threshold>", default=None, type=float, help="NMS threshold"
         )
         parser.add_argument(
-            "--texture_atlas", metavar="<texture_atlas>", default=None, help="Texture atlas file"
+            "--texture_atlas",
+            metavar="<texture_atlas>",
+            default=None,
+            help="Texture atlas file (for IUV texture transfer)",
+        )
+        parser.add_argument(
+            "--texture_atlases_map",
+            metavar="<texture_atlases_map>",
+            default=None,
+            help="JSON string of a dict containing texture atlas files for each mesh",
         )
         parser.add_argument(
             "--output",
@@ -285,7 +299,12 @@ class ShowAction(InferenceAction):
         extractors = []
         for vis_spec in vis_specs:
             texture_atlas = get_texture_atlas(args.texture_atlas)
-            vis = cls.VISUALIZERS[vis_spec](cfg=cfg, texture_atlas=texture_atlas)
+            texture_atlases_dict = get_texture_atlases(args.texture_atlases_map)
+            vis = cls.VISUALIZERS[vis_spec](
+                cfg=cfg,
+                texture_atlas=texture_atlas,
+                texture_atlases_dict=texture_atlases_dict,
+            )
             visualizers.append(vis)
             extractor = create_extractor(vis)
             extractors.append(extractor)
