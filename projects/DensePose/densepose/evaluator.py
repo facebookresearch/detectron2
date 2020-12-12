@@ -172,17 +172,21 @@ def densepose_cse_predictions_to_dict(instances, embedder, mesh_name):
         cse = instances.pred_densepose[k]
         box_xyxy = instances.pred_boxes[k].tensor.int().tolist()[0]
         w, h = max(box_xyxy[2] - box_xyxy[0], 1), max(box_xyxy[3] - box_xyxy[1], 1)
-        coarse_segm_resized = F.interpolate(cse.coarse_segm, (h, w))
-        embedding_resized = F.interpolate(cse.embedding, (h, w))
+        coarse_segm_resized = F.interpolate(
+            cse.coarse_segm, (h, w), mode="bilinear", align_corners=False
+        )
+        embedding_resized = F.interpolate(
+            cse.embedding, (h, w), mode="bilinear", align_corners=False
+        )
         mesh_vertex_embeddings = embedder(mesh_name).to(embedding_resized.device)
         # computing the closest mesh vertex for each pixel of the instance
-        idxs = np.zeros((h, w))
+        pixel_vertex_indices = np.zeros((h, w))
         for i in range(h):
             local_embeddings = embedding_resized[0, :, i, :].t()
             edm = squared_euclidean_distance_matrix(local_embeddings, mesh_vertex_embeddings)
-            idxs[i] = edm.min(1)[1].int().cpu().numpy()
+            pixel_vertex_indices[i] = edm.argmin(dim=1).int().cpu().numpy()
         cse_mask = coarse_segm_resized[0].argmax(0).cpu().numpy().astype(np.int8)
-        results.append({"cse_mask": cse_mask, "cse_indices": idxs})
+        results.append({"cse_mask": cse_mask, "cse_indices": pixel_vertex_indices})
     return results
 
 
