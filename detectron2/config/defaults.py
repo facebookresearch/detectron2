@@ -52,11 +52,11 @@ _C.INPUT.MIN_SIZE_TRAIN = (800,)
 # INPUT.MIN_SIZE_TRAIN
 _C.INPUT.MIN_SIZE_TRAIN_SAMPLING = "choice"
 # Maximum size of the side of the image during training
-_C.INPUT.MAX_SIZE_TRAIN = 1333
+_C.INPUT.MAX_SIZE_TRAIN = 4000
 # Size of the smallest side of the image during testing. Set to zero to disable resize in testing.
 _C.INPUT.MIN_SIZE_TEST = 800
 # Maximum size of the side of the image during testing
-_C.INPUT.MAX_SIZE_TEST = 1333
+_C.INPUT.MAX_SIZE_TEST = 4000
 # Mode for flipping images used in data augmentation during training
 # choose one of ["horizontal, "vertical", "none"]
 _C.INPUT.RANDOM_FLIP = "horizontal"
