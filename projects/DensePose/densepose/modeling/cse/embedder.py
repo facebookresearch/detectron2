@@ -116,3 +116,6 @@ class Embedder(nn.Module):
             Vertex embeddings, a tensor of shape [N, D]
         """
         return getattr(self, f"embedder_{mesh_name}")()
+
+    def has_embeddings(self, mesh_name: str) -> bool:
+        return hasattr(self, f"embedder_{mesh_name}")

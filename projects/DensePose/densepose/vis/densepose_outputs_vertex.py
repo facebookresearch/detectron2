@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import json
 import numpy as np
+from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 import cv2
 import torch
@@ -17,12 +18,23 @@ from .base import Boxes, Image, MatrixVisualizer
 from .densepose_results_textures import get_texture_atlas
 
 
-def get_smpl_euclidean_vertex_embedding():
-    embed_path = PathManager.get_local_path(
-        "https://dl.fbaipublicfiles.com/densepose/data/cse/mds_d=256.npy"
-    )
-    embed_map, _ = np.load(embed_path, allow_pickle=True)
-    return torch.tensor(embed_map).float()
+@lru_cache()
+def get_xyz_vertex_embedding(mesh_name: str, device: torch.device):
+    if mesh_name == "smpl_27554":
+        embed_path = PathManager.get_local_path(
+            "https://dl.fbaipublicfiles.com/densepose/data/cse/mds_d=256.npy"
+        )
+        embed_map, _ = np.load(embed_path, allow_pickle=True)
+        embed_map = torch.tensor(embed_map).float()[:, 0]
+        embed_map -= embed_map.min()
+        embed_map /= embed_map.max()
+    else:
+        mesh = create_mesh(mesh_name, device)
+        embed_map = mesh.vertices.sum(dim=1)
+        embed_map -= embed_map.min()
+        embed_map /= embed_map.max()
+        embed_map = embed_map ** 2
+    return embed_map
 
 
 DEFAULT_CLASS_TO_MESH_NAME = {
@@ -58,13 +70,10 @@ class DensePoseOutputsVertexVisualizer(object):
         self.device = torch.device(device)
         self.default_class = default_class
 
-        self.embed_map_rescaled = get_smpl_euclidean_vertex_embedding()[:, 0]
-        self.embed_map_rescaled -= self.embed_map_rescaled.min()
-        self.embed_map_rescaled /= self.embed_map_rescaled.max()
-
         self.mesh_vertex_embeddings = {
             mesh_name: self.embedder(mesh_name).to(self.device)
             for mesh_name in self.class_to_mesh_name.values()
+            if self.embedder.has_embeddings(mesh_name)
         }
 
     def visualize(
@@ -83,10 +92,12 @@ class DensePoseOutputsVertexVisualizer(object):
 
         for n in range(N):
             x, y, w, h = bboxes_xywh[n].int().tolist()
+            mesh_name = self.class_to_mesh_name[pred_classes[n]]
             closest_vertices, mask = self.get_closest_vertices_mask_from_ES(
-                E[[n]], S[[n]], h, w, self.class_to_mesh_name[pred_classes[n]]
+                E[[n]], S[[n]], h, w, mesh_name
             )
-            vis = (self.embed_map_rescaled[closest_vertices].clip(0, 1) * 255.0).cpu().numpy()
+            embed_map = get_xyz_vertex_embedding(mesh_name, self.device)
+            vis = (embed_map[closest_vertices].clip(0, 1) * 255.0).cpu().numpy()
             mask_numpy = mask.cpu().numpy().astype(dtype=np.uint8)
             image_bgr = self.mask_visualizer.visualize(image_bgr, mask_numpy, vis, [x, y, w, h])
 
@@ -138,9 +149,9 @@ class DensePoseOutputsVertexVisualizer(object):
             edm.append(
                 squared_euclidean_distance_matrix(
                     chunk_embeddings, self.mesh_vertex_embeddings[mesh_name]
-                )
+                ).argmin(dim=1)
             )
-        closest_vertices[mask] = torch.cat([x.argmin(dim=1) for x in edm])
+        closest_vertices[mask] = torch.cat(edm)
         return closest_vertices, mask
 
 
