@@ -6,7 +6,7 @@ MODEL:
   ROI_DENSEPOSE_HEAD:
     NAME: "DensePoseDeepLabHead"
     CSE:
-      EMBED_LOSS_NAME: "EmbeddingLoss"
+      EMBED_LOSS_NAME: "SoftEmbeddingLoss"
 SOLVER:
   MAX_ITER: 130000
   STEPS: (100000, 120000)
