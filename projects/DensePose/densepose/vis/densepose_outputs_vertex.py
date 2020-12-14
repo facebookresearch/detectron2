@@ -218,22 +218,28 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
             )
             uv_array = meshes[pred_classes[n]].texcoords[closest_vertices].permute((2, 0, 1))
             uv_array = uv_array.cpu().numpy().clip(0, 1)
-            image_target_bgr[y : y + h, x : x + w] = self.generate_image_with_texture(
+            textured_image = self.generate_image_with_texture(
                 image_target_bgr[y : y + h, x : x + w],
                 uv_array,
                 mask.cpu().numpy(),
                 self.class_to_mesh_name[pred_classes[n]],
             )
+            if textured_image is None:
+                continue
+            image_target_bgr[y : y + h, x : x + w] = textured_image
 
         return image_target_bgr
 
     def generate_image_with_texture(self, bbox_image_bgr, uv_array, mask, mesh_name):
+        alpha = self.alpha_dict.get(mesh_name)
+        texture_image = self.texture_image_dict.get(mesh_name)
+        if alpha is None or texture_image is None:
+            return None
         U, V = uv_array
-        texture_image = self.texture_image_dict[mesh_name]
         x_index = (U * texture_image.shape[1]).astype(int)
         y_index = (V * texture_image.shape[0]).astype(int)
         local_texture = texture_image[y_index, x_index][mask]
-        local_alpha = np.expand_dims(self.alpha_dict[mesh_name][y_index, x_index][mask], -1)
+        local_alpha = np.expand_dims(alpha[y_index, x_index][mask], -1)
         output_image = bbox_image_bgr.copy()
         output_image[mask] = output_image[mask] * (1 - local_alpha) + local_texture * local_alpha
         return output_image.astype(np.uint8)
