@@ -149,7 +149,7 @@ class ROIHeads(torch.nn.Module):
         NOTE: this interface is experimental.
 
         Args:
-            num_classes (int): number of classes. Used to label background proposals.
+            num_classes (int): number of foreground classes (i.e. background is not included)
             batch_size_per_image (int): number of proposals to sample for training
             positive_fraction (float): fraction of positive (foreground) proposals
                 to sample for training.

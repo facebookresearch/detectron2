@@ -41,15 +41,15 @@ First, convert a model:
 ```
 # caffe2 format:
 ./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
---output ./output --format caffe2 --run-eval \
-MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
-MODEL.DEVICE cpu
+    --output ./output --format caffe2 --run-eval \
+    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
+    MODEL.DEVICE cpu
 
 # torchscript format:
 ./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
---output ./output --format torchscript \
-MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
-MODEL.DEVICE cpu
+    --output ./output --format torchscript \
+    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
+    MODEL.DEVICE cpu
 ```
 
 Then, run the C++ applications:

@@ -96,9 +96,9 @@ class DefaultAnchorGenerator(nn.Module):
 
         Args:
             sizes (list[list[float]] or list[float]):
-                If sizes is list[list[float]], sizes[i] is the list of anchor sizes
+                If ``sizes`` is list[list[float]], ``sizes[i]`` is the list of anchor sizes
                 (i.e. sqrt of anchor area) to use for the i-th feature map.
-                If sizes is list[float], the sizes are used for all feature maps.
+                If ``sizes`` is list[float], ``sizes`` is used for all feature maps.
                 Anchor sizes are given in absolute lengths in units of
                 the input image; they do not dynamically scale if the input image size changes.
             aspect_ratios (list[list[float]] or list[float]): list of aspect ratios

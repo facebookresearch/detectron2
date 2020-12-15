@@ -22,13 +22,13 @@ Scripting can support dynamic batch size.
 
 The usage is currently demonstrated in [test_export_torchscript.py](https://github.com/facebookresearch/detectron2/blob/master/tests/test_export_torchscript.py)
 (see `TestScripting` and `TestTracing`).
-It shows that the current usage requires some user effort (and necessary knowledge) for each model to workaround the limitation of scripting and tracing.
+The usage now requires some user effort and necessary knowledge for each model to workaround the limitation of scripting and tracing.
 In the future we plan to wrap these under simpler APIs, and provide a complete export and deployment example to lower the bar to use them.
 
 ## Caffe2 Deployment
 We support converting a detectron2 model to Caffe2 format through ONNX.
-The converted Caffe2 model is able to run without detectron2 dependency in either Python or C++.
-It has a runtime optimized for CPU & mobile inference, but not for GPU inference.
+The converted Caffe2 model is able to run in either Python or C++, without detectron2/torchvision dependency.
+It has a runtime optimized for CPU & mobile inference, but not optimized for GPU inference.
 
 Caffe2 conversion requires ONNX ≥ 1.6.
 
@@ -45,7 +45,7 @@ For example, custom backbones and heads are often supported out of the box.
 
 The conversion APIs are documented at [the API documentation](../modules/export).
 We provide a tool, `caffe2_converter.py` as an example that uses
-these APIs to convert a standard model.
+these APIs to convert a standard model. For custom models/datasets, you can add them to this script.
 
 To convert an official Mask R-CNN trained on COCO, first
 [prepare the COCO dataset](builtin_datasets.md), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
@@ -74,7 +74,7 @@ You can also load `model.pb` to tools such as [netron](https://github.com/lutzro
 ### Use the model in C++/Python
 
 The model can be loaded in C++. [C++ examples](../../tools/deploy/) for Mask R-CNN
-are given as references. Note that:
+are given as a reference. Note that:
 
 * All converted models (the .pb files) take two input tensors:
   "data" is an NCHW image, and "im_info" is an Nx3 tensor consisting of (height, width, 1.0) for

@@ -71,11 +71,11 @@ def export_scripting(torch_model):
 # experimental. API not yet final
 def export_tracing(torch_model, inputs):
     assert TORCH_VERSION >= (1, 8)
-    # RetinaNet needs a slightly different wrapper.
+    # RetinaNet is supported but needs a slightly different wrapper.
+    # TODO wrapper should be automatically generated
     assert isinstance(torch_model, GeneralizedRCNN)
     image = inputs[0]["image"]
 
-    # TODO wrapper should be automatically generated
     class WrapModel(nn.Module):
         def __init__(self):
             super().__init__()

@@ -323,11 +323,11 @@ class Visualizer:
     of objects themselves (e.g. when the object is too small) may change according
     to different heuristics, as long as the results still look visually reasonable.
 
-    To obtain a consistent style, you can implement custom drawing functions with the primitive
-    methods instead. If you need more customized visualization styles, you can process the data
-    yourself following their format documented in tutorials (:doc:`/tutorials/models`,
-    :doc`/tutorials/datasets`). This class does not intend to satisfy everyone's preference on
-    drawing styles.
+    To obtain a consistent style, you can implement custom drawing functions with the
+    abovementioned primitive methods instead. If you need more customized visualization
+    styles, you can process the data yourself following their format documented in
+    tutorials (:doc:`/tutorials/models`, :doc:`/tutorials/datasets`). This class does not
+    intend to satisfy everyone's preference on drawing styles.
 
     This visualizer focuses on high rendering quality rather than performance. It is not
     designed to be used for real-time applications.

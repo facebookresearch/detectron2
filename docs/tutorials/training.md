@@ -43,7 +43,7 @@ To customize a `DefaultTrainer`:
    ```
 3. Using a trainer+hook system means there will always be some non-standard behaviors that cannot be supported, especially in research.
    For this reason, we intentionally keep the trainer & hook system minimal, rather than powerful.
-   If anything cannot be achieved by such a system, it's eaiser to start from [tools/plain_train_net.py](../../tools/plain_train_net.py) to implement custom training logic manually.
+   If anything cannot be achieved by such a system, it's easier to start from [tools/plain_train_net.py](../../tools/plain_train_net.py) to implement custom training logic manually.
 
 ### Logging of Metrics
 

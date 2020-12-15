@@ -228,17 +228,27 @@ class RandomRotation(Augmentation):
 
 class RandomCrop(Augmentation):
     """
-    Randomly crop a subimage out of an image.
+    Randomly crop a rectangle region out of an image.
     """
 
     def __init__(self, crop_type: str, crop_size):
         """
         Args:
             crop_type (str): one of "relative_range", "relative", "absolute", "absolute_range".
-                See `config/defaults.py` for explanation.
-            crop_size (tuple[float, float]): the relative ratio or absolute pixels of
-                height and width
+            crop_size (tuple[float, float]): two floats, explained below.
+
+        - "relative": crop a (H * crop_size[0], W * crop_size[1]) region from an input image of
+          size (H, W). crop size should be in (0, 1]
+        - "relative_range": uniformly sample two values from [crop_size[0], 1]
+          and [crop_size[1]], 1], and use them as in "relative" crop type.
+        - "absolute" crop a (crop_size[0], crop_size[1]) region from input image.
+          crop_size must be smaller than the input image size.
+        - "absolute_range", for an input of size (H, W), uniformly sample H_crop in
+          [crop_size[0], min(H, crop_size[1])] and W_crop in [crop_size[0], min(W, crop_size[1])].
+          Then crop a region (H_crop, W_crop).
         """
+        # TODO style of relative_range and absolute_range are not consistent:
+        # one takes (h, w) but another takes (min, max)
         super().__init__()
         assert crop_type in ["relative_range", "relative", "absolute", "absolute_range"]
         self._init(locals())
