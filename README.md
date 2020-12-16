@@ -1,6 +1,6 @@
 <img src=".github/Detectron2-Logo-Horz.svg" width="300" >
 
-Detectron2 is Facebook AI Research's next generation software system
+Detectron2 is Facebook AI Research's it is a next generation software system
 that implements state-of-the-art object detection algorithms.
 It is a ground-up rewrite of the previous version,
 [Detectron](https://github.com/facebookresearch/Detectron/),
@@ -12,10 +12,14 @@ and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/
 
 ### What's New
 * It is powered by the [PyTorch](https://pytorch.org) deep learning framework.
+
 * Includes more features such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
   DeepLab, etc.
+  
 * Can be used as a library to support [different projects](projects/) on top of it.
+
   We'll open source more research projects in this way.
+  
 * It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
 
 See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
