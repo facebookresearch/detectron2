@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 from detectron2.utils.file_io import PathManager
 
+from densepose.data.build import get_class_to_mesh_name_mapping
 from densepose.modeling import build_densepose_embedder
 
 from ..modeling.cse.utils import squared_euclidean_distance_matrix
@@ -37,19 +38,6 @@ def get_xyz_vertex_embedding(mesh_name: str, device: torch.device):
     return embed_map
 
 
-DEFAULT_CLASS_TO_MESH_NAME = {
-    0: "bear_4936",
-    1: "cow_5002",
-    2: "cat_7466",
-    3: "dog_7466",
-    4: "elephant_5002",
-    5: "giraffe_5002",
-    6: "horse_5004",
-    7: "sheep_5004",
-    8: "zebra_5002",
-}
-
-
 class DensePoseOutputsVertexVisualizer(object):
     def __init__(
         self,
@@ -59,13 +47,12 @@ class DensePoseOutputsVertexVisualizer(object):
         alpha=0.7,
         device="cuda",
         default_class=0,
-        class_to_mesh_name=DEFAULT_CLASS_TO_MESH_NAME,
         **kwargs,
     ):
         self.mask_visualizer = MatrixVisualizer(
             inplace=inplace, cmap=cmap, val_scale=1.0, alpha=alpha
         )
-        self.class_to_mesh_name = class_to_mesh_name
+        self.class_to_mesh_name = get_class_to_mesh_name_mapping(cfg)
         self.embedder = build_densepose_embedder(cfg)
         self.device = torch.device(device)
         self.default_class = default_class
@@ -173,7 +160,6 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         texture_atlases_dict,
         device="cuda",
         default_class=0,
-        class_to_mesh_name=DEFAULT_CLASS_TO_MESH_NAME,
         **kwargs,
     ):
         self.embedder = build_densepose_embedder(cfg)
@@ -190,7 +176,7 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
                 self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name]
 
         self.device = torch.device(device)
-        self.class_to_mesh_name = class_to_mesh_name
+        self.class_to_mesh_name = get_class_to_mesh_name_mapping(cfg)
         self.default_class = default_class
 
         self.mesh_vertex_embeddings = {

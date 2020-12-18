@@ -13,6 +13,8 @@ def add_dataset_category_config(cfg: CN):
     _C = cfg
     _C.DATASETS.CATEGORY_MAPS = CN(new_allowed=True)
     _C.DATASETS.WHITELISTED_CATEGORIES = CN(new_allowed=True)
+    # class to mesh mapping
+    _C.DATASETS.CLASS_TO_MESH_NAME_MAPPING = CN(new_allowed=True)
 
 
 def add_bootstrap_config(cfg: CN):

@@ -45,9 +45,6 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)
-        self.mesh_name = self._coco_api.anns[list(self._coco_api.anns.keys())[0]].get(
-            "ref_model", "smpl_27554"
-        )
 
     def reset(self):
         self._predictions = []
@@ -67,7 +64,9 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             if not instances.has("pred_densepose"):
                 continue
             self._predictions.extend(
-                prediction_to_dict(instances, input["image_id"], self._embedder, self.mesh_name)
+                prediction_to_dict(
+                    instances, input["image_id"], self._embedder, self._metadata.class_to_mesh_name
+                )
             )
 
     def evaluate(self, img_ids=None):
@@ -109,7 +108,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         return res
 
 
-def prediction_to_dict(instances, img_id, embedder, mesh_name):
+def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name):
     """
     Args:
         instances (Instances): the output of the model
@@ -124,7 +123,9 @@ def prediction_to_dict(instances, img_id, embedder, mesh_name):
     )
 
     if isinstance(instances.pred_densepose, DensePoseEmbeddingPredictorOutput):
-        results_densepose = densepose_cse_predictions_to_dict(instances, embedder, mesh_name)
+        results_densepose = densepose_cse_predictions_to_dict(
+            instances, embedder, class_to_mesh_name
+        )
     elif isinstance(instances.pred_densepose, DensePoseChartPredictorOutput):
         results_densepose = densepose_chart_predictions_to_dict(instances)
 
@@ -166,8 +167,9 @@ def densepose_chart_predictions_to_dict(instances):
     return results
 
 
-def densepose_cse_predictions_to_dict(instances, embedder, mesh_name):
+def densepose_cse_predictions_to_dict(instances, embedder, class_to_mesh_name):
     results = []
+    pred_classes = instances.pred_classes.tolist()
     for k in range(len(instances)):
         cse = instances.pred_densepose[k]
         box_xyxy = instances.pred_boxes[k].tensor.int().tolist()[0]
@@ -178,6 +180,7 @@ def densepose_cse_predictions_to_dict(instances, embedder, mesh_name):
         embedding_resized = F.interpolate(
             cse.embedding, (h, w), mode="bilinear", align_corners=False
         )
+        mesh_name = class_to_mesh_name[pred_classes[k]]
         mesh_vertex_embeddings = embedder(mesh_name).to(embedding_resized.device)
         # computing the closest mesh vertex for each pixel of the instance
         pixel_vertex_indices = np.zeros((h, w))

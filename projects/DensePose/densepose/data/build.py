@@ -285,6 +285,20 @@ def _add_category_maps_to_metadata(cfg: CfgNode):
         logger.info("Category maps for dataset {}: {}".format(dataset_name, meta.category_map))
 
 
+def get_class_to_mesh_name_mapping(cfg):
+    return {
+        int(class_id): mesh_name
+        for class_id, mesh_name in cfg.DATASETS.CLASS_TO_MESH_NAME_MAPPING.items()
+    }
+
+
+def _maybe_add_class_to_mesh_name_map_to_metadata(dataset_names: List[str], cfg: CfgNode):
+    for dataset_name in dataset_names:
+        meta = MetadataCatalog.get(dataset_name)
+        if not hasattr(meta, "class_to_mesh_name"):
+            meta.class_to_mesh_name = get_class_to_mesh_name_mapping(cfg)
+
+
 def _merge_categories(dataset_names: Collection[str]) -> _MergedCategoriesT:
     merged_categories = defaultdict(list)
     category_names = {}
@@ -421,6 +435,7 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
 
     _add_category_whitelists_to_metadata(cfg)
     _add_category_maps_to_metadata(cfg)
+    _maybe_add_class_to_mesh_name_map_to_metadata(cfg.DATASETS.TRAIN, cfg)
     dataset_dicts = combine_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
         keep_instance_predicate=_get_train_keep_instance_predicate(cfg),
@@ -450,6 +465,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     """
     _add_category_whitelists_to_metadata(cfg)
     _add_category_maps_to_metadata(cfg)
+    _maybe_add_class_to_mesh_name_map_to_metadata([dataset_name], cfg)
     dataset_dicts = combine_detection_dataset_dicts(
         [dataset_name],
         keep_instance_predicate=_get_test_keep_instance_predicate(cfg),

@@ -53,6 +53,8 @@ MODEL:
 DATASETS:
   TRAIN: ("densepose_coco_2014_train_cse", "densepose_coco_2014_valminusminival_cse")
   TEST: ("densepose_coco_2014_minival_cse",)
+  CLASS_TO_MESH_NAME_MAPPING:
+    "0": "smpl_27554"
 SOLVER:
   IMS_PER_BATCH: 16
   BASE_LR: 0.01
