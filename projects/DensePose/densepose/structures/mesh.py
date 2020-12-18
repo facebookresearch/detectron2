@@ -1,24 +1,25 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import pickle
-from enum import Enum
 from functools import lru_cache
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Tuple
 import torch
 
 from detectron2.utils.file_io import PathManager
 
-from densepose.data.meshes.catalog import MeshCatalog
+from densepose.data.meshes.catalog import MeshCatalog, MeshInfo
 
 
 class Mesh:
     def __init__(
         self,
-        vertices: torch.Tensor,
-        faces: torch.Tensor,
+        vertices: Optional[torch.Tensor] = None,
+        faces: Optional[torch.Tensor] = None,
         geodists: Optional[torch.Tensor] = None,
         symmetry: Optional[Dict[str, torch.Tensor]] = None,
         texcoords: Optional[torch.Tensor] = None,
+        mesh_info: Optional[MeshInfo] = None,
+        device: Optional[torch.device] = None,
     ):
         """
         Args:
@@ -33,31 +34,82 @@ class Mesh:
                   vertex `tensor[i]` (optional, default: None)
             texcoords (tensor [N, 2] of float32): texture coordinates, i.e. global
                 and normalized mesh UVs (optional, default: None)
+            mesh_info (MeshInfo type): necessary to load the attributes on-the-go,
+                can be used instead of passing all the variables one by one
+            device (torch.device): device of the Mesh. If not provided, will use
+                the device of the vertices
         """
-        self.vertices = vertices
-        self.faces = faces
-        self.geodists = geodists
-        self.symmetry = symmetry
-        self.texcoords = texcoords
-        assert self.vertices.device == self.faces.device
-        assert geodists is None or self.vertices.device == self.geodists.device
+        self._vertices = vertices
+        self._faces = faces
+        self._geodists = geodists
+        self._symmetry = symmetry
+        self._texcoords = texcoords
+        self.mesh_info = mesh_info
+        self.device = device
+
+        assert self._vertices is not None or self.mesh_info is not None
+
+        all_fields = [self._vertices, self._faces, self._geodists, self._texcoords]
+
+        if self.device is None:
+            for field in all_fields:
+                if field is not None:
+                    self.device = field.device
+                    break
+            if self.device is None and self._symmetry is not None:
+                for key in self._symmetry:
+                    self.device = self._symmetry[key].device
+                    break
+            self.device = torch.device("cpu") if self.device is None else self.device
+
+        assert all([var.device == self.device for var in all_fields if var is not None])
         assert symmetry is None or all(
-            self.vertices.device == self.symmetry[key].device for key in self.symmetry
+            self._symmetry[key].device == self.device for key in self._symmetry
         )
-        assert texcoords is None or self.vertices.device == self.texcoords.device
-        assert texcoords is None or len(self.vertices) == len(self.texcoords)
-        self.device = self.vertices.device
+        assert texcoords is None or vertices is None or len(self._vertices) == len(self._texcoords)
 
     def to(self, device: torch.device):
         return Mesh(
-            self.vertices.to(device),
-            self.faces.to(device),
-            self.geodists.to(device) if self.geodists is not None else None,
-            {key: value.to(device) for key, value in self.symmetry.items()}
-            if self.symmetry is not None
+            self._vertices.to(device) if self._vertices is not None else None,
+            self._faces.to(device) if self._faces is not None else None,
+            self._geodists.to(device) if self._geodists is not None else None,
+            {key: value.to(device) for key, value in self._symmetry.items()}
+            if self._symmetry is not None
             else None,
-            self.texcoords.to(device) if self.texcoords is not None else None,
+            self._texcoords.to(device) if self._texcoords is not None else None,
+            self.mesh_info,
+            device,
         )
+
+    @property
+    def vertices(self):
+        if self._vertices is None and self.mesh_info is not None:
+            self._vertices = load_mesh_data(self.mesh_info.data, "vertices", self.device)
+        return self._vertices
+
+    @property
+    def faces(self):
+        if self._faces is None and self.mesh_info is not None:
+            self._faces = load_mesh_data(self.mesh_info.data, "faces", self.device)
+        return self._faces
+
+    @property
+    def geodists(self):
+        if self._geodists is None and self.mesh_info is not None:
+            self._geodists = load_mesh_auxiliary_data(self.mesh_info.geodists, self.device)
+        return self._geodists
+
+    @property
+    def symmetry(self):
+        if self._symmetry is None and self.mesh_info is not None:
+            self._symmetry = load_mesh_symmetry(self.mesh_info.symmetry, self.device)
+        return self._symmetry
+
+    @property
+    def texcoords(self):
+        if self._texcoords is None and self.mesh_info is not None:
+            self._texcoords = load_mesh_auxiliary_data(self.mesh_info.texcoords, self.device)
+        return self._texcoords
 
     def get_geodists(self):
         if self.geodists is None:
@@ -70,57 +122,38 @@ class Mesh:
         return geodists
 
 
-def load_mesh_data(mesh_fpath: str) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
+def load_mesh_data(
+    mesh_fpath: str, field: str, device: Optional[torch.device] = None
+) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
     with PathManager.open(mesh_fpath, "rb") as hFile:
-        mesh_data = pickle.load(hFile)
-        vertices = torch.as_tensor(mesh_data["vertices"], dtype=torch.float)
-        faces = torch.as_tensor(mesh_data["faces"], dtype=torch.long)
-        return vertices, faces
-    return None, None
+        return torch.as_tensor(pickle.load(hFile)[field], dtype=torch.float).to(device)
+    return None
 
 
-def load_mesh_auxiliary_data(fpath: str) -> Optional[torch.Tensor]:
+def load_mesh_auxiliary_data(
+    fpath: str, device: Optional[torch.device] = None
+) -> Optional[torch.Tensor]:
     fpath_local = PathManager.get_local_path(fpath)
     with PathManager.open(fpath_local, "rb") as hFile:
-        return torch.as_tensor(pickle.load(hFile), dtype=torch.float)
+        return torch.as_tensor(pickle.load(hFile), dtype=torch.float).to(device)
+    return None
 
 
 @lru_cache()
-def load_mesh_symmetry(symmetry_fpath: str) -> Optional[Dict[str, torch.Tensor]]:
+def load_mesh_symmetry(
+    symmetry_fpath: str, device: Optional[torch.device] = None
+) -> Optional[Dict[str, torch.Tensor]]:
     with PathManager.open(symmetry_fpath, "rb") as hFile:
         symmetry_loaded = pickle.load(hFile)
         symmetry = {
             "vertex_transforms": torch.as_tensor(
                 symmetry_loaded["vertex_transforms"], dtype=torch.long
-            ),
+            ).to(device),
         }
         return symmetry
-
-
-class MeshAuxiliaryDataType(Enum):
-    GEODISTS = 0
-    TEXCOORDS = 1
-
-    @staticmethod
-    def all():
-        return {MeshAuxiliaryDataType.GEODISTS, MeshAuxiliaryDataType.TEXCOORDS}
+    return None
 
 
 @lru_cache()
-def create_mesh(
-    mesh_name: str,
-    device: torch.device,
-    auxiliary_data_types: Optional[Set[MeshAuxiliaryDataType]] = None,
-):
-    if auxiliary_data_types is None:
-        auxiliary_data_types = MeshAuxiliaryDataType.all()
-    mesh_info = MeshCatalog[mesh_name]
-    vertices, faces = load_mesh_data(mesh_info.data)
-    geodists, texcoords = None, None
-    if MeshAuxiliaryDataType.GEODISTS in auxiliary_data_types:
-        geodists = load_mesh_auxiliary_data(mesh_info.geodists)
-    if MeshAuxiliaryDataType.TEXCOORDS in auxiliary_data_types:
-        texcoords = load_mesh_auxiliary_data(mesh_info.texcoords)
-    symmetry = load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
-    mesh = Mesh(vertices, faces, geodists, symmetry, texcoords)
-    return mesh.to(device)
+def create_mesh(mesh_name: str, device: torch.device = None):
+    return Mesh(mesh_info=MeshCatalog[mesh_name], device=device)

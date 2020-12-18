@@ -14,7 +14,7 @@ from densepose.modeling import build_densepose_embedder
 
 from ..modeling.cse.utils import squared_euclidean_distance_matrix
 from ..structures import DensePoseEmbeddingPredictorOutput
-from ..structures.mesh import MeshAuxiliaryDataType, create_mesh
+from ..structures.mesh import create_mesh
 from .base import Boxes, Image, MatrixVisualizer
 from .densepose_results_textures import get_texture_atlas
 
@@ -200,12 +200,7 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         )
 
         meshes = {
-            p: create_mesh(
-                self.class_to_mesh_name[p],
-                self.device,
-                auxiliary_data_types=frozenset({MeshAuxiliaryDataType.TEXCOORDS}),
-            )
-            for p in np.unique(pred_classes)
+            p: create_mesh(self.class_to_mesh_name[p], self.device) for p in np.unique(pred_classes)
         }
 
         for n in range(N):
