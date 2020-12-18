@@ -419,7 +419,7 @@ class DensePoseCocoEval(object):
             dtmasks.append(rle_mask)
 
         # compute iou between each dt and gt region
-        iscrowd = [int(o["iscrowd"]) for o in gt]
+        iscrowd = [int(o.get("iscrowd", 0)) for o in gt]
         iousDP = maskUtils.iou(dtmasks, gtmasks, iscrowd)
         return iousDP
 
@@ -448,7 +448,7 @@ class DensePoseCocoEval(object):
             raise Exception("unknown iouType for iou computation")
 
         # compute iou between each dt and gt region
-        iscrowd = [int(o["iscrowd"]) for o in gt]
+        iscrowd = [int(o.get("iscrowd", 0)) for o in gt]
         ious = maskUtils.iou(d, g, iscrowd)
         return ious
 
@@ -649,7 +649,7 @@ class DensePoseCocoEval(object):
         dbb = [dt["bbox"] for dt in d]
 
         # compute iou between each dt and gt region
-        iscrowd = [int(o["iscrowd"]) for o in g]
+        iscrowd = [int(o.get("iscrowd", 0)) for o in g]
         ious_bb = maskUtils.iou(dbb, gbb, iscrowd)
         return ious, ious_bb
 
@@ -681,7 +681,7 @@ class DensePoseCocoEval(object):
         gt = [gt[i] for i in gtind]
         dtind = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in dtind[0:maxDet]]
-        iscrowd = [int(o["iscrowd"]) for o in gt]
+        iscrowd = [int(o.get("iscrowd", 0)) for o in gt]
         # load computed ious
         if p.iouType == "densepose":
             # print('Checking the length', len(self.ious[imgId, catId]))
