@@ -57,6 +57,8 @@ class PanopticDeepLab(nn.Module):
             cfg.MODEL.SEM_SEG_HEAD.USE_DEPTHWISE_SEPARABLE_CONV
             == cfg.MODEL.PANOPTIC_DEEPLAB.USE_DEPTHWISE_SEPARABLE_CONV
         )
+        self.size_divisibility = cfg.MODEL.PANOPTIC_DEEPLAB.SIZE_DIVISIBILITY
+        self.benchmark_network_speed = cfg.MODEL.PANOPTIC_DEEPLAB.BENCHMARK_NETWORK_SPEED
 
     @property
     def device(self):
@@ -86,7 +88,12 @@ class PanopticDeepLab(nn.Module):
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        size_divisibility = self.backbone.size_divisibility
+        # To avoid error in ASPP layer when input has different size.
+        size_divisibility = (
+            self.size_divisibility
+            if self.size_divisibility > 0
+            else self.backbone.size_divisibility
+        )
         images = ImageList.from_tensors(images, size_divisibility)
 
         features = self.backbone(images.tensor)
@@ -137,6 +144,9 @@ class PanopticDeepLab(nn.Module):
 
         if self.training:
             return losses
+
+        if self.benchmark_network_speed:
+            return []
 
         processed_results = []
         for sem_seg_result, center_result, offset_result, input_per_image, image_size in zip(

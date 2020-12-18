@@ -49,3 +49,11 @@ def add_panoptic_deeplab_config(cfg):
     # If set to False, Panoptic-DeepLab will not evaluate instance segmentation.
     cfg.MODEL.PANOPTIC_DEEPLAB.PREDICT_INSTANCES = True
     cfg.MODEL.PANOPTIC_DEEPLAB.USE_DEPTHWISE_SEPARABLE_CONV = False
+    # This is the padding parameter for images with various sizes. ASPP layers
+    # requires input images to be divisible by the average pooling size and we
+    # can use `MODEL.PANOPTIC_DEEPLAB.SIZE_DIVISIBILITY` to pad all images to
+    # a fixed resolution (e.g. 640x640 for COCO) to avoid having a image size
+    # that is not divisible by ASPP average pooling size.
+    cfg.MODEL.PANOPTIC_DEEPLAB.SIZE_DIVISIBILITY = -1
+    # Only evaluates network speed (ignores post-processing).
+    cfg.MODEL.PANOPTIC_DEEPLAB.BENCHMARK_NETWORK_SPEED = False

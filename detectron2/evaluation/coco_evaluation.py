@@ -139,7 +139,8 @@ class COCOEvaluator(DatasetEvaluator):
                 prediction["instances"] = instances_to_coco_json(instances, input["image_id"])
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
-            self._predictions.append(prediction)
+            if len(prediction) > 1:
+                self._predictions.append(prediction)
 
     def evaluate(self, img_ids=None):
         """
