@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import logging
+import numpy as np
 import pickle
 from enum import Enum
 from typing import Optional
@@ -80,7 +82,9 @@ class Embedder(nn.Module):
         super(Embedder, self).__init__()
         self.mesh_names = set()
         embedder_dim = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE
+        logger = logging.getLogger(__name__)
         for mesh_name, embedder_spec in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
+            logger.info(f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}")
             self.add_module(f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim))
             self.mesh_names.add(mesh_name)
         if cfg.MODEL.WEIGHTS != "":
@@ -100,7 +104,10 @@ class Embedder(nn.Module):
             state_dict_local = {}
             for key in state_dict["model"]:
                 if key.startswith(prefix):
-                    state_dict_local[key[len(prefix) :]] = state_dict["model"][key]
+                    v_key = state_dict["model"][key]
+                    if isinstance(v_key, np.ndarray):
+                        v_key = torch.from_numpy(v_key)
+                    state_dict_local[key[len(prefix) :]] = v_key
             # non-strict loading to finetune on different meshes
             self.load_state_dict(state_dict_local, strict=False)
 
