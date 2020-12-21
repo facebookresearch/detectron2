@@ -836,8 +836,7 @@ class StandardROIHeads(ROIHeads):
             boxes = [x.proposal_boxes if self.training else x.pred_boxes for x in instances]
             features = self.mask_pooler(features, boxes)
         else:
-            # https://github.com/pytorch/pytorch/issues/41448
-            features = dict([(f, features[f]) for f in self.mask_in_features])
+            features = {f: features[f] for f in self.mask_in_features}
         return self.mask_head(features, instances)
 
     def _forward_keypoint(self, features: Dict[str, torch.Tensor], instances: List[Instances]):
