@@ -60,7 +60,7 @@ def export_scripting(torch_model):
         "pred_keypoint_heatmaps": torch.Tensor,
     }
     # maybe can export to onnx format?
-    assert args.format == "torchscript"
+    assert args.format == "torchscript", "Scripting only supports torchscript format."
     ts_model = export_torchscript_with_instances(torch_model, fields)
     ts_model.save(os.path.join(args.output, "model.ts"))
     dump_torchscript_IR(ts_model, args.output)
@@ -92,7 +92,9 @@ def export_tracing(torch_model, inputs):
     from detectron2.export.torchscript_patch import patch_builtin_len
 
     with torch.no_grad(), patch_builtin_len():
-        assert args.format == "torchscript"
+        assert (
+            args.format == "torchscript"
+        ), "Tracing method only supports torchscript format for now."
         ts_model = torch.jit.trace(WrapModel(), (image,))
         ts_model.save(os.path.join(args.output, "model.ts"))
         dump_torchscript_IR(ts_model, args.output)
@@ -105,7 +107,7 @@ def export_tracing(torch_model, inputs):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert a model using caffe2 tracing.")
+    parser = argparse.ArgumentParser(description="Export a model for deployment.")
     parser.add_argument(
         "--format",
         choices=["caffe2", "onnx", "torchscript"],
@@ -154,7 +156,7 @@ if __name__ == "__main__":
     # run evaluation with the converted model
     if args.run_eval:
         assert exported_model is not None, (
-            "Python inference is not implemented for "
+            "Python inference is not yet implemented for "
             f"export_method={args.export_method}, format={args.format}."
         )
         logger.info("Running evaluation ... this takes a long time if you export to CPU.")

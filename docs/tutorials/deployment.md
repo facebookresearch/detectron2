@@ -1,6 +1,14 @@
 # Deployment
 
-## TorchScript Deployment
+Models written in Python needs to go through an export process to become a deployable artifact.
+We support the following export methods:
+
+* `tracing`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) for details.
+* `scripting`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) for details.
+* `caffe2_tracing`: replace parts of the model by caffe2 operators, then use tracing.
+
+
+## Deployment with Tracing or Scripting
 
 Models can be exported to TorchScript format, by either
 [tracing or scripting](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html).
@@ -11,7 +19,8 @@ This feature requires PyTorch ≥ 1.8 (or latest on github before 1.8 is release
 
 ### Coverage
 Most official models under the meta architectures `GeneralizedRCNN` and `RetinaNet`
-are supported in both tracing and scripting mode. Cascade R-CNN is not supported.
+are supported in both tracing and scripting mode. Cascade R-CNN is currently not supported.
+PointRend is currently supported in tracing.
 Users' custom extensions are supported if they are also scriptable or traceable.
 
 For models exported with tracing, dynamic input resolution is allowed, but batch size
@@ -25,12 +34,16 @@ The usage is currently demonstrated in [test_export_torchscript.py](https://gith
 The usage now requires some user effort and necessary knowledge for each model to workaround the limitation of scripting and tracing.
 In the future we plan to wrap these under simpler APIs, and provide a complete export and deployment example to lower the bar to use them.
 
-## Caffe2 Deployment
-We support converting a detectron2 model to Caffe2 format through ONNX.
-The converted Caffe2 model is able to run in either Python or C++, without detectron2/torchvision dependency.
+## Deployment with Caffe2-tracing
+We provide [Caffe2Tracer](../modules/export.html#detectron2.export.Caffe2Tracer)
+that performs the export logic.
+It replaces parts of the model with Caffe2 operators,
+and can export the model into Caffe2, ONNX or TorchScript format.
+
+The converted model is able to run in either Python or C++ without detectron2/torchvision dependency.
 It has a runtime optimized for CPU & mobile inference, but not optimized for GPU inference.
 
-Caffe2 conversion requires ONNX ≥ 1.6.
+This feature requires ONNX ≥ 1.6.
 
 ### Coverage
 
@@ -44,14 +57,14 @@ For example, custom backbones and heads are often supported out of the box.
 ### Usage
 
 The conversion APIs are documented at [the API documentation](../modules/export).
-We provide a tool, `caffe2_converter.py` as an example that uses
+We provide a tool, `export_model.py` as an example that uses
 these APIs to convert a standard model. For custom models/datasets, you can add them to this script.
 
 To convert an official Mask R-CNN trained on COCO, first
 [prepare the COCO dataset](builtin_datasets.md), then pick the model from [Model Zoo](../../MODEL_ZOO.md), and run:
 ```
-cd tools/deploy/ && ./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
-  --output ./caffe2_model --run-eval \
+cd tools/deploy/ && ./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+  --output ./caffe2_model --run-eval --export-method caffe2_tracing --format caffe2 \
   MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
   MODEL.DEVICE cpu
 ```
@@ -76,7 +89,7 @@ You can also load `model.pb` to tools such as [netron](https://github.com/lutzro
 The model can be loaded in C++. [C++ examples](../../tools/deploy/) for Mask R-CNN
 are given as a reference. Note that:
 
-* All converted models (the .pb files) take two input tensors:
+* Models exported with `caffe2_tracing` method take two input tensors:
   "data" is an NCHW image, and "im_info" is an Nx3 tensor consisting of (height, width, 1.0) for
   each image (the shape of "data" might be larger than that in "im_info" due to padding).
   This was taken care of in the C++ example.

@@ -3,10 +3,10 @@ for some high-level background about deployment.
 
 This directory contains:
 
-1. A script `caffe2_converter.py` that converts a detectron2 model using caffe2-style tracing,
-   into caffe2, onnx, or torchscript format.
+1. An example script `export_model.py` (previously called `caffe2_converter.py`)
+   that exports a detectron2 model for deployment using different methods and formats.
 
-2. Two C++ examples that run inference with Mask R-CNN model in caffe2/torchscript format.
+2. A few C++ examples that run inference with Mask R-CNN model in caffe2/torchscript format.
 
 ## Build
 The C++ examples need to be built with:
@@ -40,13 +40,13 @@ cmake -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST .. && make
 First, convert a model:
 ```
 # caffe2 format:
-./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
     --output ./output --format caffe2 --run-eval \
     MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
     MODEL.DEVICE cpu
 
 # torchscript format:
-./caffe2_converter.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
     --output ./output --format torchscript \
     MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
     MODEL.DEVICE cpu
