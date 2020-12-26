@@ -154,6 +154,10 @@ class TestROIPooler(unittest.TestCase):
         feature = [feature, feature]
 
         rois = random_boxes(N_rois, W * canonical_scale_factor)
+        # Add one larger box so that this level has only one box.
+        # This may trigger the bug https://github.com/pytorch/pytorch/issues/49852
+        # that we shall workaround.
+        rois = torch.cat([rois, torch.tensor([[0, 0, 448, 448]])])
 
         model = Model(
             ROIPooler(
@@ -167,7 +171,7 @@ class TestROIPooler(unittest.TestCase):
         with torch.no_grad():
             func = torch.jit.trace(model, (feature, rois))
             o = func(feature, rois)
-            self.assertEqual(o.shape, (10, 4, 14, 14))
+            self.assertEqual(o.shape, (11, 4, 14, 14))
             o = func(feature, rois[:5])
             self.assertEqual(o.shape, (5, 4, 14, 14))
             o = func(feature, random_boxes(20, W * canonical_scale_factor))
