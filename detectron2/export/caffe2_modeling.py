@@ -320,7 +320,6 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"PanopticFPN")
 
         # Inference parameters:
-        check_set_pb_arg(predict_net, "combine_on", "i", self._wrapped_model.combine_on)
         check_set_pb_arg(
             predict_net,
             "combine_overlap_threshold",
@@ -342,7 +341,6 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
 
     @staticmethod
     def get_outputs_converter(predict_net, init_net):
-        combine_on = get_pb_arg_vali(predict_net, "combine_on", None)
         combine_overlap_threshold = get_pb_arg_valf(predict_net, "combine_overlap_threshold", None)
         combine_stuff_area_limit = get_pb_arg_vali(predict_net, "combine_stuff_area_limit", None)
         combine_instances_confidence_threshold = get_pb_arg_valf(
@@ -369,15 +367,14 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
 
                 processed_results.append({"sem_seg": sem_seg_r, "instances": detector_r})
 
-                if combine_on:
-                    panoptic_r = combine_semantic_and_instance_outputs(
-                        detector_r,
-                        sem_seg_r.argmax(dim=0),
-                        combine_overlap_threshold,
-                        combine_stuff_area_limit,
-                        combine_instances_confidence_threshold,
-                    )
-                    processed_results[-1]["panoptic_seg"] = panoptic_r
+                panoptic_r = combine_semantic_and_instance_outputs(
+                    detector_r,
+                    sem_seg_r.argmax(dim=0),
+                    combine_overlap_threshold,
+                    combine_stuff_area_limit,
+                    combine_instances_confidence_threshold,
+                )
+                processed_results[-1]["panoptic_seg"] = panoptic_r
             return processed_results
 
         return f
