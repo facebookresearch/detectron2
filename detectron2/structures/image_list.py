@@ -29,7 +29,8 @@ class ImageList(object):
     and storing in a field the original sizes of each image
 
     Attributes:
-        image_sizes (list[tuple[int, int]]): each tuple is (h, w)
+        image_sizes (list[tuple[int, int]]): each tuple is (h, w).
+            During tracing, it becomes list[Tensor] instead.
     """
 
     def __init__(self, tensor: torch.Tensor, image_sizes: List[Tuple[int, int]]):

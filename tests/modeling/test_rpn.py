@@ -248,12 +248,41 @@ class RPNTest(unittest.TestCase):
                 err_msg,
             )
 
-    def test_rpn_proposals_inf(self):
+    def test_find_rpn_proposals_inf(self):
         N, Hi, Wi, A = 3, 3, 3, 3
         proposals = [torch.rand(N, Hi * Wi * A, 4)]
         pred_logits = [torch.rand(N, Hi * Wi * A)]
         pred_logits[0][1][3:5].fill_(float("inf"))
         find_top_rpn_proposals(proposals, pred_logits, [(10, 10)], 0.5, 1000, 1000, 0, False)
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_find_rpn_proposals_tracing(self):
+        N, Hi, Wi, A = 3, 50, 50, 9
+        proposal = torch.rand(N, Hi * Wi * A, 4)
+        pred_logit = torch.rand(N, Hi * Wi * A)
+
+        def func(proposal, logit, image_size):
+            r = find_top_rpn_proposals(
+                [proposal], [logit], [image_size], 0.7, 1000, 1000, 0, False
+            )[0]
+            size = r.image_size
+            if not isinstance(size, torch.Tensor):
+                size = torch.tensor(size)
+            return (size, r.proposal_boxes.tensor, r.objectness_logits)
+
+        other_inputs = []
+        # test that it generalizes to other shapes
+        for Hi, Wi, shp in [(30, 30, 60), (10, 10, 800)]:
+            other_inputs.append(
+                (
+                    torch.rand(N, Hi * Wi * A, 4),
+                    torch.rand(N, Hi * Wi * A),
+                    torch.tensor([shp, shp]),
+                )
+            )
+        torch.jit.trace(
+            func, (proposal, pred_logit, torch.tensor([100, 100])), check_inputs=other_inputs
+        )
 
 
 if __name__ == "__main__":

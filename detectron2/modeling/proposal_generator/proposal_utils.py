@@ -6,8 +6,17 @@ import torch
 
 from detectron2.layers import batched_nms, cat
 from detectron2.structures import Boxes, Instances
+from detectron2.utils.env import TORCH_VERSION
 
 logger = logging.getLogger(__name__)
+
+
+def _is_tracing():
+    if torch.jit.is_scripting():
+        # https://github.com/pytorch/pytorch/issues/47379
+        return False
+    else:
+        return TORCH_VERSION >= (1, 7) and torch.jit.is_tracing()
 
 
 def find_top_rpn_proposals(
@@ -58,13 +67,16 @@ def find_top_rpn_proposals(
     batch_idx = torch.arange(num_images, device=device)
     for level_id, (proposals_i, logits_i) in enumerate(zip(proposals, pred_objectness_logits)):
         Hi_Wi_A = logits_i.shape[1]
-        num_proposals_i = min(pre_nms_topk, Hi_Wi_A)
+        if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
+            num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
+        else:
+            num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
 
-        # sort is faster than topk (https://github.com/pytorch/pytorch/issues/22812)
+        # sort is faster than topk: https://github.com/pytorch/pytorch/issues/22812
         # topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
         logits_i, idx = logits_i.sort(descending=True, dim=1)
-        topk_scores_i = logits_i[batch_idx, :num_proposals_i]
-        topk_idx = idx[batch_idx, :num_proposals_i]
+        topk_scores_i = logits_i.narrow(1, 0, num_proposals_i)
+        topk_idx = idx.narrow(1, 0, num_proposals_i)
 
         # each is N x topk
         topk_proposals_i = proposals_i[batch_idx[:, None], topk_idx]  # N x topk x 4
@@ -98,7 +110,7 @@ def find_top_rpn_proposals(
 
         # filter empty boxes
         keep = boxes.nonempty(threshold=min_box_size)
-        if keep.sum().item() != len(boxes):
+        if _is_tracing() or keep.sum().item() != len(boxes):
             boxes, scores_per_img, lvl = boxes[keep], scores_per_img[keep], lvl[keep]
 
         keep = batched_nms(boxes.tensor, scores_per_img, lvl, nms_thresh)
