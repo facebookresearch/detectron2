@@ -28,7 +28,8 @@ def add_export_config(cfg):
         cfg (CfgNode): a detectron2 config
 
     Returns:
-        CfgNode: an updated config with new options that will be used
+        CfgNode:
+            an updated config with new options that will be used
             by :class:`Caffe2Tracer`.
     """
     is_frozen = cfg.is_frozen()
@@ -143,47 +144,6 @@ class Caffe2Tracer:
             return torch.jit.trace(model, (inputs,))
 
 
-def export_caffe2_model(cfg, model, inputs):
-    """
-    Export a detectron2 model to caffe2 format.
-
-    Args:
-        cfg (CfgNode): a detectron2 config, with extra export-related options
-            added by :func:`add_export_config`.
-        model (nn.Module): a model built by
-            :func:`detectron2.modeling.build_model`.
-            It will be modified by this function.
-        inputs: sample inputs that the given model takes for inference.
-            Will be used to trace the model.
-
-    Returns:
-        Caffe2Model
-    """
-    return Caffe2Tracer(cfg, model, inputs).export_caffe2()
-
-
-def export_onnx_model(cfg, model, inputs):
-    """
-    Export a detectron2 model to ONNX format.
-    Note that the exported model contains custom ops only available in caffe2, therefore it
-    cannot be directly executed by other runtime. Post-processing or transformation passes
-    may be applied on the model to accommodate different runtimes, but we currently do not
-    provide support for them.
-
-    Args:
-        cfg (CfgNode): a detectron2 config, with extra export-related options
-            added by :func:`add_export_config`.
-        model (nn.Module): a model built by
-            :func:`detectron2.modeling.build_model`.
-            It will be modified by this function.
-        inputs: sample inputs that the given model takes for inference.
-            Will be used to trace the model.
-    Returns:
-        onnx.ModelProto: an onnx model.
-    """
-    return Caffe2Tracer(cfg, model, inputs).export_onnx()
-
-
 class Caffe2Model(nn.Module):
     """
     A wrapper around the traced model in caffe2's pb format.
@@ -296,3 +256,19 @@ class Caffe2Model(nn.Module):
         if self._predictor is None:
             self._predictor = ProtobufDetectionModel(self._predict_net, self._init_net)
         return self._predictor(inputs)
+
+
+def export_caffe2_model(cfg, model, inputs):
+    logger = logging.getLogger(__name__)
+    logger.warning(
+        "export_caffe2_model() is deprecated. Please use `Caffe2Tracer().export_caffe2() instead."
+    )
+    return Caffe2Tracer(cfg, model, inputs).export_caffe2()
+
+
+def export_onnx_model(cfg, model, inputs):
+    logger = logging.getLogger(__name__)
+    logger.warning(
+        "export_caffe2_model() is deprecated. Please use `Caffe2Tracer().export_onnx() instead."
+    )
+    return Caffe2Tracer(cfg, model, inputs).export_onnx()
