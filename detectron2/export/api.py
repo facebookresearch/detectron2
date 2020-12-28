@@ -29,8 +29,7 @@ def add_export_config(cfg):
 
     Returns:
         CfgNode:
-            an updated config with new options that will be used
-            by :class:`Caffe2Tracer`.
+            an updated config with new options that will be used by :class:`Caffe2Tracer`.
     """
     is_frozen = cfg.is_frozen()
     cfg.defrost()

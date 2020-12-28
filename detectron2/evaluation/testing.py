@@ -15,7 +15,8 @@ def print_csv_format(results):
     Args:
         results (OrderedDict[dict]): task_name -> {metric -> score}
     """
-    assert isinstance(results, OrderedDict), results  # unordered results cannot be properly printed
+    # unordered results cannot be properly printed
+    assert isinstance(results, OrderedDict) or not len(results), results
     logger = logging.getLogger(__name__)
     for task, res in results.items():
         # Don't print "AP-category" metrics since they are usually not tracked.

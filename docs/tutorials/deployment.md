@@ -1,7 +1,7 @@
 # Deployment
 
 Models written in Python needs to go through an export process to become a deployable artifact.
-We support the following export methods:
+We implement the following export methods:
 
 * `tracing`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) for details.
 * `scripting`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) for details.

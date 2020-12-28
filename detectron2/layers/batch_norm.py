@@ -78,6 +78,9 @@ class FrozenBatchNorm2d(nn.Module):
             if prefix + "running_var" not in state_dict:
                 state_dict[prefix + "running_var"] = torch.ones_like(self.running_var)
 
+        # NOTE: if a checkpoint is trained with BatchNorm and loaded (together with
+        # version number) to FrozenBatchNorm, running_var will be wrong. One solution
+        # is to remove the version number from the checkpoint.
         if version is not None and version < 3:
             logger = logging.getLogger(__name__)
             logger.info("FrozenBatchNorm {} is upgraded to version 3.".format(prefix.rstrip(".")))
@@ -94,7 +97,7 @@ class FrozenBatchNorm2d(nn.Module):
     @classmethod
     def convert_frozen_batchnorm(cls, module):
         """
-        Convert BatchNorm/SyncBatchNorm in module into FrozenBatchNorm.
+        Convert all BatchNorm/SyncBatchNorm in module into FrozenBatchNorm.
 
         Args:
             module (torch.nn.Module):

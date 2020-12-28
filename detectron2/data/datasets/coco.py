@@ -36,17 +36,26 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
     Args:
         json_file (str): full path to the json file in COCO instances annotation format.
         image_root (str or path-like): the directory where the images in this json file exists.
-        dataset_name (str): the name of the dataset (e.g., coco_2017_train).
-            If provided, this function will also put "thing_classes" into
-            the metadata associated with this dataset.
+        dataset_name (str or None): the name of the dataset (e.g., coco_2017_train).
+            When provided, this function will also do the following:
+
+            * Put "thing_classes" into the metadata associated with this dataset.
+            * Map the category ids into a contiguous range (needed by standard dataset format),
+              and add "thing_dataset_id_to_contiguous_id" to the metadata associated
+              with this dataset.
+
+            This option should usually be provided, unless users need to load
+            the original json content and apply more processing manually.
         extra_annotation_keys (list[str]): list of per-annotation keys that should also be
             loaded into the dataset dict (besides "iscrowd", "bbox", "keypoints",
             "category_id", "segmentation"). The values for these keys will be returned as-is.
             For example, the densepose annotations are loaded in this way.
 
     Returns:
-        list[dict]: a list of dicts in Detectron2 standard dataset dicts format. (See
-        `Using Custom Datasets </tutorials/datasets.html>`_ )
+        list[dict]: a list of dicts in Detectron2 standard dataset dicts format (See
+        `Using Custom Datasets </tutorials/datasets.html>`_ ) when `dataset_name` is not None.
+        If `dataset_name` is None, the returned `category_ids` may be
+        incontiguous and may not conform to the Detectron2 standard format.
 
     Notes:
         1. This function does not read the image files.
@@ -190,7 +199,14 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             obj["bbox_mode"] = BoxMode.XYWH_ABS
             if id_map:
-                obj["category_id"] = id_map[obj["category_id"]]
+                annotation_category_id = obj["category_id"]
+                try:
+                    obj["category_id"] = id_map[annotation_category_id]
+                except KeyError as e:
+                    raise KeyError(
+                        f"Encountered category_id={annotation_category_id} "
+                        "but this id does not exist in 'categories' of the json file."
+                    ) from e
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)

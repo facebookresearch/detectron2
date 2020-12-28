@@ -1,0 +1,22 @@
+name: Remove needs-more-info label
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [edited]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove needs-more-info label
+        uses: octokit/request-action@v2.x
+        continue-on-error: true
+        with:
+          route: DELETE /repos/:repository/issues/:issue/labels/:label
+          repository: ${{ github.repository }}
+          issue: ${{ github.event.issue.number }}
+          label: needs-more-info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

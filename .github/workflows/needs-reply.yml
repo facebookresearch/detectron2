@@ -1,0 +1,17 @@
+name: Close old issues that need more info
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close old issues that need reply
+        uses: dwieeb/needs-reply@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-label: needs-more-info
+          days-before-close: 7
+          close-message: Requested information was not provided in 7 days, so we're closing this issue.
