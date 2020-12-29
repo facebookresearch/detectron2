@@ -385,7 +385,8 @@ class TestRotatedBoxesStructure(unittest.TestCase):
         def func_cat(x: torch.Tensor):
             boxes1 = RotatedBoxes(x)
             boxes2 = RotatedBoxes(x)
-            # boxes3 = RotatedBoxes.cat([boxes1, boxes2])  # this is not supported by torchscript for now.
+            # this is not supported by torchscript for now.
+            # boxes3 = RotatedBoxes.cat([boxes1, boxes2])
             boxes3 = boxes1.cat([boxes1, boxes2])
             return boxes3
 

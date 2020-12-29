@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
-from typing import Any, Iterator, List, Tuple, Union
+from typing import List, Tuple
 import torch
 
 from detectron2.layers.rotated_boxes import pairwise_iou_rotated
