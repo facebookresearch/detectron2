@@ -7,7 +7,7 @@ on:
     types: [edited]
 
 jobs:
-  build:
+  remove-needs-more-info-label:
     runs-on: ubuntu-latest
     steps:
       - name: Remove needs-more-info label

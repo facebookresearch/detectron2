@@ -69,7 +69,7 @@ def collect_env_info():
     has_cuda = has_gpu and (not has_rocm)
 
     data = []
-    data.append(("sys.platform", sys.platform))
+    data.append(("sys.platform", sys.platform))  # check-template.yml depends on it
     data.append(("Python", sys.version.replace("\n", "")))
     data.append(("numpy", np.__version__))
 

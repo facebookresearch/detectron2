@@ -42,31 +42,25 @@ def add_export_config(cfg):
 
 class Caffe2Tracer:
     """
-    Make a detectron2 model traceable with caffe2 style.
+    Make a detectron2 model traceable with Caffe2 operators.
+    This class creates a traceable version of a detectron2 model which:
 
-    An original detectron2 model may not be traceable, or
-    cannot be deployed directly after being traced, due to some reasons:
-
-    1. control flow in some ops
-    2. custom ops
-    3. complicated pre/post processing
-
-    This class provides a traceable version of a detectron2 model by:
-
-    1. Rewrite parts of the model using ops in caffe2. Note that some ops do
-       not have GPU implementation.
-    2. Define the inputs "after pre-processing" as inputs to the model
-    3. Remove post-processing and produce raw layer outputs
-
-    More specifically about inputs: all builtin models take two input tensors.
-
-    1. NCHW float "data" which is an image (usually in [0, 255])
-    2. Nx3 float "im_info", each row of which is (height, width, 1.0)
+    1. Rewrite parts of the model using ops in Caffe2. Note that some ops do
+       not have GPU implementation in Caffe2.
+    2. Remove post-processing and only produce raw layer outputs
 
     After making a traceable model, the class provide methods to export such a
     model to different deployment formats.
+    Exported graph produced by this class take two input tensors:
+
+    1. (1, C, H, W) float "data" which is an image (usually in [0, 255]).
+       (H, W) often has to be padded to multiple of 32 (depend on the model
+       architecture).
+    2. 1x3 float "im_info", each row of which is (height, width, 1.0).
+       Height and width are true image shapes before padding.
 
     The class currently only supports models using builtin meta architectures.
+    Batch inference is not supported, and contributions are welcome.
     """
 
     def __init__(self, cfg, model, inputs):
@@ -78,8 +72,8 @@ class Caffe2Tracer:
                 :func:`detectron2.modeling.build_model`. Weights have to be already
                 loaded to this model.
             inputs: sample inputs that the given model takes for inference.
-                Will be used to trace the model. Random input with no detected objects
-                will not work if the model has data-dependent control flow (e.g., R-CNN).
+                Will be used to trace the model. For most models, random inputs with
+                no detected objects will not work as they lead to wrong traces.
         """
         assert isinstance(cfg, CN), cfg
         assert isinstance(model, torch.nn.Module), type(model)
@@ -100,11 +94,11 @@ class Caffe2Tracer:
     def export_caffe2(self):
         """
         Export the model to Caffe2's protobuf format.
-        The returned object can be saved with ``.save_protobuf()`` method.
+        The returned object can be saved with its :meth:`.save_protobuf()` method.
         The result can be loaded and executed using Caffe2 runtime.
 
         Returns:
-            Caffe2Model
+            :class:`Caffe2Model`
         """
         from .caffe2_export import export_caffe2_detection_model
 
@@ -145,7 +139,11 @@ class Caffe2Tracer:
 
 class Caffe2Model(nn.Module):
     """
-    A wrapper around the traced model in caffe2's pb format.
+    A wrapper around the traced model in Caffe2's protobuf format.
+    The exported graph has different inputs/outputs from the original Pytorch
+    model, as explained in :class:`Caffe2Tracer`. This class wraps around the
+    exported graph to simulate the same interface as the original Pytorch model.
+    It also provides functions to save/load models in Caffe2's format.'
 
     Examples:
     ::
@@ -167,22 +165,27 @@ class Caffe2Model(nn.Module):
     @property
     def predict_net(self):
         """
-        Returns:
-            core.Net: the underlying caffe2 predict net
+        caffe2.core.Net: the underlying caffe2 predict net
         """
         return self._predict_net
 
     @property
     def init_net(self):
         """
-        Returns:
-            core.Net: the underlying caffe2 init net
+        caffe2.core.Net: the underlying caffe2 init net
         """
         return self._init_net
 
     def save_protobuf(self, output_dir):
         """
         Save the model as caffe2's protobuf format.
+        It saves the following files:
+
+            * "model.pb": definition of the graph. Can be visualized with
+              tools like `netron <https://github.com/lutzroeder/netron>`_.
+            * "model_init.pb": model parameters
+            * "model.pbtxt": human-readable definition of the graph. Not
+              needed for deployment.
 
         Args:
             output_dir (str): the output directory to save protobuf files.
@@ -244,11 +247,11 @@ class Caffe2Model(nn.Module):
 
     def __call__(self, inputs):
         """
-        An interface that wraps around a caffe2 model and mimics detectron2's models'
+        An interface that wraps around a Caffe2 model and mimics detectron2's models'
         input/output format. See details about the format at :doc:`/tutorials/models`.
         This is used to compare the outputs of caffe2 model with its original torch model.
 
-        Due to the extra conversion between torch/caffe2, this method is not meant for
+        Due to the extra conversion between Pytorch/Caffe2, this method is not meant for
         benchmark. Because of the conversion, this method also has dependency
         on detectron2 in order to convert to detectron2's output format.
         """

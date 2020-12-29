@@ -1,4 +1,4 @@
-detectron2.utils package
+detectron2.utils 
 ========================
 
 detectron2.utils.colormap module

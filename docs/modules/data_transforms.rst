@@ -1,4 +1,4 @@
-detectron2.data.transforms package
+detectron2.data.transforms 
 ====================================
 
 Related tutorial: :doc:`../tutorials/augmentation`.

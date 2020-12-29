@@ -17,7 +17,7 @@
 #
 import os
 import sys
-import mock
+from unittest import mock
 from sphinx.domains import Domain
 from typing import Dict, List, Tuple
 
@@ -279,7 +279,9 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "draw_panoptic_seg_predictions",
     }
     try:
-        if obj.__doc__.lower().strip().startswith("deprecated") or name in HIDDEN:
+        if name in HIDDEN or (
+            hasattr(obj, "__doc__") and obj.__doc__.lower().strip().startswith("deprecated")
+        ):
             print("Skipping deprecated object: {}".format(name))
             return True
     except:

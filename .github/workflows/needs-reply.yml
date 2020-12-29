@@ -5,7 +5,7 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  build:
+  close-issues-needs-more-info:
     runs-on: ubuntu-latest
     steps:
       - name: Close old issues that need reply
