@@ -5,10 +5,10 @@
 cd docker/
 # Build:
 docker build --build-arg USER_ID=$UID -t detectron2:v0 .
-# Run:
+# Launch:
 docker run --gpus all -it \
-	--shm-size=8gb --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-	--name=detectron2 detectron2:v0
+  --shm-size=8gb --env="DISPLAY" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --name=detectron2 detectron2:v0
 
 # Grant docker access to host X server to show images
 xhost +local:`docker inspect --format='{{ .Config.Hostname }}' detectron2`
@@ -19,6 +19,15 @@ xhost +local:`docker inspect --format='{{ .Config.Hostname }}' detectron2`
 Install docker-compose and nvidia-docker2, then run:
 ```
 cd docker && USER_ID=$UID docker-compose run detectron2
+```
+
+## Use the deployment container (to test C++ examples)
+After building the base detectron2 container as above, do:
+```
+# Build:
+docker build -t detectron2-deploy:v0 -f deploy.Dockerfile
+# Launch:
+docker run --gpus all -it detectron2-deploy:v0
 ```
 
 #### Using a persistent cache directory
