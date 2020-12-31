@@ -2,7 +2,7 @@ name: Check issue template
 
 on:
   issues:
-    types: [created]
+    types: [opened]
 
 jobs:
   check-template:
@@ -41,7 +41,7 @@ jobs:
             let message = "You've chosen to report an unexpected problem or bug. Please include details about it by filling the [issue template](https://github.com/facebookresearch/detectron2/issues/new/choose).\n";
             message += "The following information is missing: ";
             if (!hasInstructions) {
-              message += "\"Instructions To Reproduce the Issue\"; ";
+              message += "\"Instructions To Reproduce the Issue and Full Logs\"; ";
             }
             if (!hasEnvironment) {
               message += "\"Your Environment\"; ";
