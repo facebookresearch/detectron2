@@ -6,7 +6,7 @@ import torch
 from caffe2.proto import caffe2_pb2
 from torch import nn
 
-from detectron2.config import CfgNode as CN
+from detectron2.config import CfgNode
 from detectron2.utils.file_io import PathManager
 
 from .caffe2_inference import ProtobufDetectionModel
@@ -33,7 +33,7 @@ def add_export_config(cfg):
     """
     is_frozen = cfg.is_frozen()
     cfg.defrost()
-    cfg.EXPORT_CAFFE2 = CN()
+    cfg.EXPORT_CAFFE2 = CfgNode()
     cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT = False
     if is_frozen:
         cfg.freeze()
@@ -63,33 +63,29 @@ class Caffe2Tracer:
     Batch inference is not supported, and contributions are welcome.
     """
 
-    def __init__(self, cfg, model, inputs):
+    def __init__(self, cfg: CfgNode, model: nn.Module, inputs):
         """
         Args:
             cfg (CfgNode): a detectron2 config, with extra export-related options
-                added by :func:`add_export_config`.
-            model (nn.Module): a model built by
-                :func:`detectron2.modeling.build_model`. Weights have to be already
-                loaded to this model.
+                added by :func:`add_export_config`. It's used to construct
+                caffe2-compatible model.
+            model (nn.Module): An original pytorch model. Must be among a few official models
+                in detectron2 that can be converted to become caffe2-compatible automatically.
+                Weights have to be already loaded to this model.
             inputs: sample inputs that the given model takes for inference.
                 Will be used to trace the model. For most models, random inputs with
                 no detected objects will not work as they lead to wrong traces.
         """
-        assert isinstance(cfg, CN), cfg
+        assert isinstance(cfg, CfgNode), cfg
         assert isinstance(model, torch.nn.Module), type(model)
+
         if "EXPORT_CAFFE2" not in cfg:
             cfg = add_export_config(cfg)  # will just the defaults
-
-        self.cfg = cfg
-        self.model = model
+        # TODO make it support custom models, by passing in c2 model directly
+        C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[cfg.MODEL.META_ARCHITECTURE]
+        self.traceable_model = C2MetaArch(cfg, copy.deepcopy(model))
         self.inputs = inputs
-
-    def _get_traceable(self):
-        # TODO how to make it extensible to support custom models
-        C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[self.cfg.MODEL.META_ARCHITECTURE]
-        traceable_model = C2MetaArch(self.cfg, copy.deepcopy(self.model))
-        traceable_inputs = traceable_model.get_caffe2_inputs(self.inputs)
-        return traceable_model, traceable_inputs
+        self.traceable_inputs = self.traceable_model.get_caffe2_inputs(inputs)
 
     def export_caffe2(self):
         """
@@ -102,8 +98,9 @@ class Caffe2Tracer:
         """
         from .caffe2_export import export_caffe2_detection_model
 
-        model, inputs = self._get_traceable()
-        predict_net, init_net = export_caffe2_detection_model(model, inputs)
+        predict_net, init_net = export_caffe2_detection_model(
+            self.traceable_model, self.traceable_inputs
+        )
         return Caffe2Model(predict_net, init_net)
 
     def export_onnx(self):
@@ -119,8 +116,7 @@ class Caffe2Tracer:
         """
         from .caffe2_export import export_onnx_model as export_onnx_model_impl
 
-        model, inputs = self._get_traceable()
-        return export_onnx_model_impl(model, (inputs,))
+        return export_onnx_model_impl(self.traceable_model, (self.traceable_inputs,))
 
     def export_torchscript(self):
         """
@@ -130,11 +126,10 @@ class Caffe2Tracer:
         Returns:
             torch.jit.TracedModule: a torch TracedModule
         """
-        model, inputs = self._get_traceable()
         logger = logging.getLogger(__name__)
         logger.info("Tracing the model with torch.jit.trace ...")
         with torch.no_grad():
-            return torch.jit.trace(model, (inputs,))
+            return torch.jit.trace(self.traceable_model, (self.traceable_inputs,))
 
 
 class Caffe2Model(nn.Module):

@@ -18,6 +18,7 @@ jobs:
 
   lock-issues-after-closed:
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'facebookresearch' }}
     steps:
       - name: Lock closed issues that have no activity for a while
         uses: dessant/lock-threads@v2
