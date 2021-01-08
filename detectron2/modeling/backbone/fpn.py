@@ -88,7 +88,7 @@ class FPN(Backbone):
         self.lateral_convs = lateral_convs[::-1]
         self.output_convs = output_convs[::-1]
         self.top_block = top_block
-        self.in_features = in_features
+        self.in_features = tuple(in_features)
         self.bottom_up = bottom_up
         # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
         self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
@@ -102,10 +102,6 @@ class FPN(Backbone):
         self._size_divisibility = strides[-1]
         assert fuse_type in {"avg", "sum"}
         self._fuse_type = fuse_type
-
-        # Scripting does not support this: https://github.com/pytorch/pytorch/issues/47334
-        # have to do it in __init__ instead.
-        self.rev_in_features = tuple(in_features[::-1])
 
     @property
     def size_divisibility(self):
@@ -131,7 +127,7 @@ class FPN(Backbone):
 
         # Reverse feature maps into top-down order (from low to high resolution)
         for features, lateral_conv, output_conv in zip(
-            self.rev_in_features[1:], self.lateral_convs[1:], self.output_convs[1:]
+            self.in_features[-2::-1], self.lateral_convs[1:], self.output_convs[1:]
         ):
             features = bottom_up_features[features]
             top_down_features = F.interpolate(prev_features, scale_factor=2.0, mode="nearest")
