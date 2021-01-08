@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'facebookresearch' }}
     steps:
-      - uses: actions/github-script@v2
+      - uses: actions/github-script@v3
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -24,11 +24,11 @@ jobs:
               owner: context.issue.owner,
               repo: context.issue.repo,
               issue_number: context.issue.number,
-            })
+            });
             const isFeatureOrSupport = issue.data.labels.filter(label => label.name == kSupportLabel || label.name == kFeatureLabel).length > 0;
-            if (isFeatureOrSupport) {
+            if (isFeatureOrSupport || issue.state === "closed") {
               // don't require template on them
-              core.debug("Issue " + issue.data.title + " has support label.");
+              core.debug("Issue " + issue.data.title + " was skipped.");
               return;
             }
             const body = issue.data.body;
@@ -49,15 +49,15 @@ jobs:
             }
 
             core.info("Processing " + issue.data.title + " with message " + message);
-            // await github.issues.addLabels({
-            //   owner: context.issue.owner,
-            //   repo: context.issue.repo,
-            //   issue_number: context.issue.number,
-            //   labels: ["needs-more-info"],
-            // })
-            // await github.issues.createComment({
-            //   owner: context.issue.owner,
-            //   repo: context.issue.repo,
-            //   issue_number: context.issue.number,
-            //   body: message,
-            // })
+            await github.issues.addLabels({
+              owner: context.issue.owner,
+              repo: context.issue.repo,
+              issue_number: context.issue.number,
+              labels: ["needs-more-info"],
+            });
+            await github.issues.createComment({
+              owner: context.issue.owner,
+              repo: context.issue.repo,
+              issue_number: context.issue.number,
+              body: message,
+            });

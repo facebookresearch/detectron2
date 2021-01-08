@@ -326,11 +326,6 @@ class FastRCNNOutputs:
         """
         return self.box2box_transform.apply_deltas(self.pred_proposal_deltas, self.proposals.tensor)
 
-    """
-    A subclass is expected to have the following methods because
-    they are used to query information about the head predictions.
-    """
-
     def losses(self):
         """
         Compute the default losses for box head in Fast(er) R-CNN,
@@ -353,17 +348,6 @@ class FastRCNNOutputs:
         """
         probs = F.softmax(self.pred_class_logits, dim=-1)
         return probs.split(self.num_preds_per_image, dim=0)
-
-    def inference(self, score_thresh, nms_thresh, topk_per_image):
-        """
-        Deprecated
-        """
-        boxes = self.predict_boxes()
-        scores = self.predict_probs()
-        image_shapes = self.image_shapes
-        return fast_rcnn_inference(
-            boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image
-        )
 
 
 class FastRCNNOutputLayers(nn.Module):
@@ -574,7 +558,6 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_boxes = [p.proposal_boxes for p in proposals]
         proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
         predict_boxes = self.box2box_transform.apply_deltas(
-            # ensure fp32 for decoding precision
             proposal_deltas,
             proposal_boxes,
         )  # Nx(KxB)
