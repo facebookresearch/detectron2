@@ -316,8 +316,6 @@ def patch_nonscriptable_classes():
     # we change backbone to use ModuleList for scripting.
     # (note: this changes param names in state_dict)
 
-    # TODO: __prepare_scriptable__ was reverted from pytorch: D25061862
-    # We hack it here until it's added back
     def prepare_resnet(self):
         ret = deepcopy(self)
         ret.stages = nn.ModuleList(ret.stages)
@@ -325,7 +323,7 @@ def patch_nonscriptable_classes():
             delattr(ret, k)
         return ret
 
-    ResNet.__tmp_prepare_scriptable__ = prepare_resnet
+    ResNet.__prepare_scriptable__ = prepare_resnet
 
     def prepare_fpn(self):
         ret = deepcopy(self)
@@ -336,7 +334,7 @@ def patch_nonscriptable_classes():
                 delattr(ret, name)
         return ret
 
-    FPN.__tmp_prepare_scriptable__ = prepare_fpn
+    FPN.__prepare_scriptable__ = prepare_fpn
 
     # Annotate some attributes to be constants for the purpose of scripting,
     # even though they are not constants in eager mode.
