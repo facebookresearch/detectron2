@@ -490,11 +490,12 @@ py::dict Accumulate(
       buffer.data(), 200, "%Y-%m-%d %H:%num_max_detections:%S", &local_time);
   return py::dict(
       "params"_a = params,
-      "counts"_a = std::vector<int64_t>({num_iou_thresholds,
-                                         num_recall_thresholds,
-                                         num_categories,
-                                         num_area_ranges,
-                                         num_max_detections}),
+      "counts"_a = std::vector<int64_t>(
+          {num_iou_thresholds,
+           num_recall_thresholds,
+           num_categories,
+           num_area_ranges,
+           num_max_detections}),
       "date"_a = buffer,
       "precision"_a = precisions_out,
       "recall"_a = recalls_out,
