@@ -465,14 +465,6 @@ class RotatedBoxes(Boxes):
         Returns:
             RotatedBoxes: the concatenated RotatedBoxes
         """
-        if torch.jit.is_scripting():
-            # https://github.com/pytorch/pytorch/issues/18627
-            # 1. staticmethod can be used in torchscript, But we can not use
-            # `type(boxes).staticmethod` because torchscript only supports function
-            # `type` with input type `torch.Tensor`.
-            # 2. classmethod is not fully supported by torchscript. We explicitly assign
-            # cls to Box as a workaround to get torchscript support.
-            cls = RotatedBoxes
         assert isinstance(boxes_list, (list, tuple))
         if len(boxes_list) == 0:
             return cls(torch.empty(0))
