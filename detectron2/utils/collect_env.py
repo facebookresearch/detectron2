@@ -56,20 +56,16 @@ def collect_env_info():
     has_gpu = torch.cuda.is_available()  # true for both CUDA & ROCM
     torch_version = torch.__version__
 
-    # NOTE: the use of CUDA_HOME and ROCM_HOME requires the CUDA/ROCM build deps, though in
-    # theory detectron2 should be made runnable with only the corresponding runtimes
-    from torch.utils.cpp_extension import CUDA_HOME
+    # NOTE that CUDA_HOME/ROCM_HOME could be None even when CUDA runtime libs are functional
+    from torch.utils.cpp_extension import CUDA_HOME, ROCM_HOME
 
     has_rocm = False
-    if tuple(map(int, torch_version.split(".")[:2])) >= (1, 5):
-        from torch.utils.cpp_extension import ROCM_HOME
-
-        if (getattr(torch.version, "hip", None) is not None) and (ROCM_HOME is not None):
-            has_rocm = True
+    if (getattr(torch.version, "hip", None) is not None) and (ROCM_HOME is not None):
+        has_rocm = True
     has_cuda = has_gpu and (not has_rocm)
 
     data = []
-    data.append(("sys.platform", sys.platform))
+    data.append(("sys.platform", sys.platform))  # check-template.yml depends on it
     data.append(("Python", sys.version.replace("\n", "")))
     data.append(("numpy", np.__version__))
 
@@ -130,10 +126,10 @@ def collect_env_info():
             data.append(("GPU " + ",".join(devids), name))
 
         if has_rocm:
-            msg = " - invalid!" if not os.path.isdir(ROCM_HOME) else ""
+            msg = " - invalid!" if not (ROCM_HOME and os.path.isdir(ROCM_HOME)) else ""
             data.append(("ROCM_HOME", str(ROCM_HOME) + msg))
         else:
-            msg = " - invalid!" if not os.path.isdir(CUDA_HOME) else ""
+            msg = " - invalid!" if not (CUDA_HOME and os.path.isdir(CUDA_HOME)) else ""
             data.append(("CUDA_HOME", str(CUDA_HOME) + msg))
 
             cuda_arch_list = os.environ.get("TORCH_CUDA_ARCH_LIST", None)

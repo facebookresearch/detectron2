@@ -7,7 +7,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import configurable
-from detectron2.layers import Linear, ShapeSpec, batched_nms, cat, nonzero_tuple
+from detectron2.layers import Linear, ShapeSpec, batched_nms, cat, cross_entropy, nonzero_tuple
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
@@ -83,6 +83,36 @@ def fast_rcnn_inference(
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
     return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
+
+
+def _log_classification_stats(pred_logits, gt_classes, prefix="fast_rcnn"):
+    """
+    Log the classification metrics to EventStorage.
+
+    Args:
+        pred_logits: Nx(K+1) logits. The last column is for background class.
+        gt_classes: N labels
+    """
+    num_instances = gt_classes.numel()
+    if num_instances == 0:
+        return
+    pred_classes = pred_logits.argmax(dim=1)
+    bg_class_ind = pred_logits.shape[1] - 1
+
+    fg_inds = (gt_classes >= 0) & (gt_classes < bg_class_ind)
+    num_fg = fg_inds.nonzero().numel()
+    fg_gt_classes = gt_classes[fg_inds]
+    fg_pred_classes = pred_classes[fg_inds]
+
+    num_false_negative = (fg_pred_classes == bg_class_ind).nonzero().numel()
+    num_accurate = (pred_classes == gt_classes).nonzero().numel()
+    fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
+
+    storage = get_event_storage()
+    storage.put_scalar(f"{prefix}/cls_accuracy", num_accurate / num_instances)
+    if num_fg > 0:
+        storage.put_scalar(f"{prefix}/fg_cls_accuracy", fg_num_accurate / num_fg)
+        storage.put_scalar(f"{prefix}/false_negative", num_false_negative / num_fg)
 
 
 def fast_rcnn_inference_single_image(
@@ -213,42 +243,12 @@ class FastRCNNOutputs:
             self.proposals = Boxes(torch.zeros(0, 4, device=self.pred_proposal_deltas.device))
         self._no_instances = len(self.proposals) == 0  # no instances found
 
-    def _log_accuracy(self):
-        """
-        Log the accuracy metrics to EventStorage.
-        """
-        num_instances = self.gt_classes.numel()
-        pred_classes = self.pred_class_logits.argmax(dim=1)
-        bg_class_ind = self.pred_class_logits.shape[1] - 1
-
-        fg_inds = (self.gt_classes >= 0) & (self.gt_classes < bg_class_ind)
-        num_fg = fg_inds.nonzero().numel()
-        fg_gt_classes = self.gt_classes[fg_inds]
-        fg_pred_classes = pred_classes[fg_inds]
-
-        num_false_negative = (fg_pred_classes == bg_class_ind).nonzero().numel()
-        num_accurate = (pred_classes == self.gt_classes).nonzero().numel()
-        fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
-
-        storage = get_event_storage()
-        if num_instances > 0:
-            storage.put_scalar("fast_rcnn/cls_accuracy", num_accurate / num_instances)
-            if num_fg > 0:
-                storage.put_scalar("fast_rcnn/fg_cls_accuracy", fg_num_accurate / num_fg)
-                storage.put_scalar("fast_rcnn/false_negative", num_false_negative / num_fg)
-
     def softmax_cross_entropy_loss(self):
         """
-        Compute the softmax cross entropy loss for box classification.
-
-        Returns:
-            scalar Tensor
+        Deprecated
         """
-        if self._no_instances:
-            return 0.0 * self.pred_class_logits.sum()
-        else:
-            self._log_accuracy()
-            return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
+        _log_classification_stats(self.pred_class_logits, self.gt_classes)
+        return cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
 
     def box_reg_loss(self):
         """
@@ -326,11 +326,6 @@ class FastRCNNOutputs:
         """
         return self.box2box_transform.apply_deltas(self.pred_proposal_deltas, self.proposals.tensor)
 
-    """
-    A subclass is expected to have the following methods because
-    they are used to query information about the head predictions.
-    """
-
     def losses(self):
         """
         Compute the default losses for box head in Fast(er) R-CNN,
@@ -353,17 +348,6 @@ class FastRCNNOutputs:
         """
         probs = F.softmax(self.pred_class_logits, dim=-1)
         return probs.split(self.num_preds_per_image, dim=0)
-
-    def inference(self, score_thresh, nms_thresh, topk_per_image):
-        """
-        Deprecated
-        """
-        boxes = self.predict_boxes()
-        scores = self.predict_probs()
-        image_shapes = self.image_shapes
-        return fast_rcnn_inference(
-            boxes, scores, image_shapes, score_thresh, nms_thresh, topk_per_image
-        )
 
 
 class FastRCNNOutputLayers(nn.Module):
@@ -470,7 +454,6 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_deltas = self.bbox_pred(x)
         return scores, proposal_deltas
 
-    # TODO: move the implementation to this class.
     def losses(self, predictions, proposals):
         """
         Args:
@@ -483,14 +466,24 @@ class FastRCNNOutputLayers(nn.Module):
             Dict[str, Tensor]: dict of losses
         """
         scores, proposal_deltas = predictions
-        losses = FastRCNNOutputs(
+        gt_classes = (
+            cat([p.gt_classes for p in proposals], dim=0) if len(proposals) else torch.empty(0)
+        )
+        _log_classification_stats(scores, gt_classes)
+        # TODO: move the regression implementation to this class.
+        reg_losses = FastRCNNOutputs(
             self.box2box_transform,
             scores,
             proposal_deltas,
             proposals,
             self.smooth_l1_beta,
             self.box_reg_loss_type,
-        ).losses()
+        ).box_reg_loss()
+
+        losses = {
+            "loss_cls": cross_entropy(scores, gt_classes, reduction="mean"),
+            "loss_box_reg": reg_losses,
+        }
         return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
 
     def inference(self, predictions: Tuple[torch.Tensor, torch.Tensor], proposals: List[Instances]):
@@ -574,7 +567,6 @@ class FastRCNNOutputLayers(nn.Module):
         proposal_boxes = [p.proposal_boxes for p in proposals]
         proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
         predict_boxes = self.box2box_transform.apply_deltas(
-            # ensure fp32 for decoding precision
             proposal_deltas,
             proposal_boxes,
         )  # Nx(KxB)

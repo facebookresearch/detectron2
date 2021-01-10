@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 # This file defines a container that compiles the C++ examples of detectron2.
 # See docker/README.md for usage.
 

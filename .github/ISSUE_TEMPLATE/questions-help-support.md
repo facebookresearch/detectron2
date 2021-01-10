@@ -1,6 +1,7 @@
 ---
 name: "How to do something❓"
 about: How to do something using detectron2? What does an API do?
+labels: support
 
 ---
 

@@ -1,4 +1,4 @@
-detectron2.engine package
+detectron2.engine 
 =========================
 
 Related tutorial: :doc:`../tutorials/training`.

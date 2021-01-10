@@ -7,6 +7,8 @@ inference_test_output
 *.png
 *.json
 *.diff
+*.jpg
+!/projects/DensePose/doc/images/*.jpg
 
 # compilation and distribution
 __pycache__
@@ -14,7 +16,7 @@ _ext
 *.pyc
 *.pyd
 *.so
-detectron2.egg-info/
+*.egg-info/
 build/
 dist/
 wheels/
@@ -23,6 +25,8 @@ wheels/
 *.pth
 *.pkl
 *.npy
+*.ts
+model_ts*.txt
 
 # ipython/jupyter notebooks
 *.ipynb
@@ -45,3 +49,4 @@ _darcs
 !/datasets/*.*
 /projects/*/datasets
 /models
+/snippet

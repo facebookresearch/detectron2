@@ -1,4 +1,4 @@
-detectron2.data package
+detectron2.data 
 =======================
 
 .. autodata:: detectron2.data.DatasetCatalog(dict)

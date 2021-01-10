@@ -6,7 +6,6 @@ docutils==0.16
 git+git://github.com/sphinx-doc/sphinx.git@7acd3ada3f38076af7b2b5c9f3b60bb9c2587a3d
 recommonmark==0.6.0
 sphinx_rtd_theme
-mock
 matplotlib
 termcolor
 yacs

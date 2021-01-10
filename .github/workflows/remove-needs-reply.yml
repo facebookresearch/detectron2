@@ -7,8 +7,11 @@ on:
     types: [edited]
 
 jobs:
-  build:
+  remove-needs-more-info-label:
     runs-on: ubuntu-latest
+    # 1. issue_comment events could include PR comment, filter them out
+    # 2. Only trigger action if even was produced by the original author
+    if: ${{ !github.event.issue.pull_request && github.event.sender.login == github.event.issue.user.login }}
     steps:
       - name: Remove needs-more-info label
         uses: octokit/request-action@v2.x

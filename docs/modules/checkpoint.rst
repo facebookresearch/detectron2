@@ -1,4 +1,4 @@
-detectron2.checkpoint package
+detectron2.checkpoint 
 =============================
 
 .. automodule:: detectron2.checkpoint

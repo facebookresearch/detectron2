@@ -12,9 +12,6 @@ from detectron2.modeling.backbone.fpn import build_resnet_fpn_backbone
 from detectron2.utils.env import TORCH_VERSION
 
 
-# TODO: __prepare_scriptable__ was reverted from pytorch: D25061862
-# Reenable the test when it's added back.
-@unittest.skipIf(True, "Temporary disable")
 class TestBackBone(unittest.TestCase):
     @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_resnet_scriptability(self):

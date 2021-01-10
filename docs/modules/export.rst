@@ -1,4 +1,4 @@
-detectron2.export package
+detectron2.export 
 =========================
 
 Related tutorial: :doc:`../tutorials/deployment`.

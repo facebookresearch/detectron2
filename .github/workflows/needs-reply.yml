@@ -1,17 +1,29 @@
-name: Close old issues that need more info
+name: Close/Lock issues after inactivity
 
 on:
   schedule:
     - cron: "0 0 * * *"
 
 jobs:
-  build:
+  close-issues-needs-more-info:
     runs-on: ubuntu-latest
     steps:
       - name: Close old issues that need reply
-        uses: dwieeb/needs-reply@v1
+        uses: dwieeb/needs-reply@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-label: needs-more-info
           days-before-close: 7
           close-message: Requested information was not provided in 7 days, so we're closing this issue.
+
+  lock-issues-after-closed:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'facebookresearch' }}
+    steps:
+      - name: Lock closed issues that have no activity for a while
+        uses: dessant/lock-threads@v2
+        with:
+          github-token: ${{ github.token }}
+          issue-lock-inactive-days: '300'
+          process-only: 'issues'
+          issue-exclude-labels: 'enhancement,bug,documentation'

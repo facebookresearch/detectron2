@@ -1,0 +1,63 @@
+name: Check issue template
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  check-template:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'facebookresearch' }}
+    steps:
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            // Arguments available:
+            // - github: A pre-authenticated octokit/rest.js client
+            // - context: An object containing the context of the workflow run
+            // - core: A reference to the @actions/core package
+            // - io: A reference to the @actions/io package
+            const kSupportLabel = "support";
+            const kFeatureLabel = "enhancement";
+            issue = await github.issues.get({
+              owner: context.issue.owner,
+              repo: context.issue.repo,
+              issue_number: context.issue.number,
+            });
+            const isFeatureOrSupport = issue.data.labels.filter(label => label.name == kSupportLabel || label.name == kFeatureLabel).length > 0;
+            if (isFeatureOrSupport || issue.state === "closed") {
+              // don't require template on them
+              core.debug("Issue " + issue.data.title + " was skipped.");
+              return;
+            }
+            const body = issue.data.body;
+            const hasInstructions = body.toLowerCase().indexOf("reproduce") != -1;
+            const hasEnvironment = body.indexOf("sys.platform") != -1;
+            if (hasInstructions && hasEnvironment) {
+              core.debug("Issue " + issue.data.title + " follows template.");
+              return;
+            }
+
+            let message = "You've chosen to report an unexpected problem or bug. Please include details about it by filling the [issue template](https://github.com/facebookresearch/detectron2/issues/new/choose).\n";
+            message += "The following information is missing: ";
+            if (!hasInstructions) {
+              message += "\"Instructions To Reproduce the Issue and Full Logs\"; ";
+            }
+            if (!hasEnvironment) {
+              message += "\"Your Environment\"; ";
+            }
+
+            core.info("Processing " + issue.data.title + " with message " + message);
+            await github.issues.addLabels({
+              owner: context.issue.owner,
+              repo: context.issue.repo,
+              issue_number: context.issue.number,
+              labels: ["needs-more-info"],
+            });
+            await github.issues.createComment({
+              owner: context.issue.owner,
+              repo: context.issue.repo,
+              issue_number: context.issue.number,
+              body: message,
+            });

@@ -55,8 +55,8 @@ def flop_count_operators(
 ) -> typing.DefaultDict[str, float]:
     """
     Implement operator-level flops counting using jit.
-    This is a wrapper of fvcore.nn.flop_count, that supports standard detection models
-    in detectron2.
+    This is a wrapper of :func:`fvcore.nn.flop_count` and adds supports for standard
+    detection models in detectron2.
 
     Note:
         The function runs the input through the model to compute flops.

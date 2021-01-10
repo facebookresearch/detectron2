@@ -221,6 +221,7 @@ setup(
         "all": [
             "shapely",
             "psutil",
+            "hydra-core",
             "panopticapi @ https://github.com/cocodataset/panopticapi/archive/master.zip",
         ],
         "dev": [
