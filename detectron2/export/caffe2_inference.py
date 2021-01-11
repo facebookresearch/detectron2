@@ -13,12 +13,12 @@ from .shared import ScopedWS, get_pb_arg_vali, get_pb_arg_vals, infer_device_typ
 logger = logging.getLogger(__name__)
 
 
-# ===== ref: mobile-vision's 'Caffe2Wrapper' class ======
+# ===== ref: mobile-vision predictor's 'Caffe2Wrapper' class ======
 class ProtobufModel(torch.nn.Module):
     """
     Wrapper of a caffe2's protobuf model.
     It works just like nn.Module, but running caffe2 under the hood.
-    Input/Output are Dict[str, tensor] whose keys are in external_input/output.
+    Input/Output are tuple[tensor] that match the caffe2 net's external_input/output.
     """
 
     _ids = count(0)
@@ -74,7 +74,7 @@ class ProtobufModel(torch.nn.Module):
             inputs (tuple[torch.Tensor])
 
         Returns:
-            dict[str, torch.Tensor]
+            tuple[torch.Tensor]
         """
         assert len(inputs) == len(self._input_blobs), (
             f"Length of inputs ({len(inputs)}) "
@@ -119,8 +119,7 @@ class ProtobufModel(torch.nn.Module):
                     "Invalid output for blob {}, received: {}".format(name, c2_output)
                 )
             outputs.append(torch.Tensor(c2_output).to(device=device))
-        # TODO change to tuple in the future
-        return dict(zip(self.net.Proto().external_output, outputs))
+        return tuple(outputs)
 
 
 class ProtobufDetectionModel(torch.nn.Module):
@@ -158,4 +157,5 @@ class ProtobufDetectionModel(torch.nn.Module):
     def forward(self, batched_inputs):
         c2_inputs = self._convert_inputs(batched_inputs)
         c2_results = self.protobuf_model(c2_inputs)
+        c2_results = dict(zip(self.protobuf_model.net.Proto().external_output, c2_results))
         return self._convert_outputs(batched_inputs, c2_inputs, c2_results)
