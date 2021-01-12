@@ -170,7 +170,7 @@ class DumpAction(InferenceAction):
         context["results"].append(result)
 
     @classmethod
-    def create_context(cls: type, args: argparse.Namespace):
+    def create_context(cls: type, args: argparse.Namespace, cfg: CfgNode):
         context = {"results": [], "out_fname": args.output}
         return context
 
