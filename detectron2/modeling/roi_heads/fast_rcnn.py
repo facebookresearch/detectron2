@@ -90,8 +90,8 @@ def _log_classification_stats(pred_logits, gt_classes, prefix="fast_rcnn"):
     Log the classification metrics to EventStorage.
 
     Args:
-        pred_logits: Nx(K+1) logits. The last column is for background class.
-        gt_classes: N labels
+        pred_logits: Rx(K+1) logits. The last column is for background class.
+        gt_classes: R labels
     """
     num_instances = gt_classes.numel()
     if num_instances == 0:
@@ -252,10 +252,7 @@ class FastRCNNOutputs:
 
     def box_reg_loss(self):
         """
-        Compute the smooth L1 loss for box regression.
-
-        Returns:
-            scalar Tensor
+        Deprecated
         """
         if self._no_instances:
             return 0.0 * self.pred_proposal_deltas.sum()
@@ -265,24 +262,23 @@ class FastRCNNOutputs:
         device = self.pred_proposal_deltas.device
 
         bg_class_ind = self.pred_class_logits.shape[1] - 1
-
         # Box delta loss is only computed between the prediction for the gt class k
         # (if 0 <= k < bg_class_ind) and the target; there is no loss defined on predictions
         # for non-gt classes and background.
-        # Empty fg_inds produces a valid loss of zero as long as the size_average
-        # arg to smooth_l1_loss is False (otherwise it uses torch.mean internally
-        # and would produce a nan loss).
+        # Empty fg_inds should produce a valid loss of zero because reduction=sum.
         fg_inds = nonzero_tuple((self.gt_classes >= 0) & (self.gt_classes < bg_class_ind))[0]
+
         if cls_agnostic_bbox_reg:
             # pred_proposal_deltas only corresponds to foreground class for agnostic
             gt_class_cols = torch.arange(box_dim, device=device)
         else:
-            fg_gt_classes = self.gt_classes[fg_inds]
             # pred_proposal_deltas for class k are located in columns [b * k : b * k + b],
             # where b is the dimension of box representation (4 or 5)
             # Note that compared to Detectron1,
             # we do not perform bounding box regression for background classes.
-            gt_class_cols = box_dim * fg_gt_classes[:, None] + torch.arange(box_dim, device=device)
+            gt_class_cols = box_dim * self.gt_classes[fg_inds, None] + torch.arange(
+                box_dim, device=device
+            )
 
         if self.box_reg_loss_type == "smooth_l1":
             gt_proposal_deltas = self.box2box_transform.get_deltas(
@@ -295,44 +291,24 @@ class FastRCNNOutputs:
                 reduction="sum",
             )
         elif self.box_reg_loss_type == "giou":
+            fg_pred_boxes = self.box2box_transform.apply_deltas(
+                self.pred_proposal_deltas[fg_inds[:, None], gt_class_cols],
+                self.proposals.tensor[fg_inds],
+            )
             loss_box_reg = giou_loss(
-                self._predict_boxes()[fg_inds[:, None], gt_class_cols],
+                fg_pred_boxes,
                 self.gt_boxes.tensor[fg_inds],
                 reduction="sum",
             )
         else:
             raise ValueError(f"Invalid bbox reg loss type '{self.box_reg_loss_type}'")
 
-        # The loss is normalized using the total number of regions (R), not the number
-        # of foreground regions even though the box regression loss is only defined on
-        # foreground regions. Why? Because doing so gives equal training influence to
-        # each foreground example. To see how, consider two different minibatches:
-        #  (1) Contains a single foreground region
-        #  (2) Contains 100 foreground regions
-        # If we normalize by the number of foreground regions, the single example in
-        # minibatch (1) will be given 100 times as much influence as each foreground
-        # example in minibatch (2). Normalizing by the total number of regions, R,
-        # means that the single example in minibatch (1) and each of the 100 examples
-        # in minibatch (2) are given equal influence.
         loss_box_reg = loss_box_reg / self.gt_classes.numel()
         return loss_box_reg
 
-    def _predict_boxes(self):
-        """
-        Returns:
-            Tensor: A Tensors of predicted class-specific or class-agnostic boxes
-                for all images in a batch. Element i has shape (Ri, K * B) or (Ri, B), where Ri is
-                the number of predicted objects for image i and B is the box dimension (4 or 5)
-        """
-        return self.box2box_transform.apply_deltas(self.pred_proposal_deltas, self.proposals.tensor)
-
     def losses(self):
         """
-        Compute the default losses for box head in Fast(er) R-CNN,
-        with softmax cross entropy loss and smooth L1 loss.
-
-        Returns:
-            A dict of losses (scalar tensors) containing keys "loss_cls" and "loss_box_reg".
+        Deprecated
         """
         return {"loss_cls": self.softmax_cross_entropy_loss(), "loss_box_reg": self.box_reg_loss()}
 
@@ -340,7 +316,8 @@ class FastRCNNOutputs:
         """
         Deprecated
         """
-        return self._predict_boxes().split(self.num_preds_per_image, dim=0)
+        pred = self.box2box_transform.apply_deltas(self.pred_proposal_deltas, self.proposals.tensor)
+        return pred.split(self.num_preds_per_image, dim=0)
 
     def predict_probs(self):
         """
@@ -466,25 +443,80 @@ class FastRCNNOutputLayers(nn.Module):
             Dict[str, Tensor]: dict of losses
         """
         scores, proposal_deltas = predictions
+
+        # parse classification outputs
         gt_classes = (
             cat([p.gt_classes for p in proposals], dim=0) if len(proposals) else torch.empty(0)
         )
         _log_classification_stats(scores, gt_classes)
-        # TODO: move the regression implementation to this class.
-        reg_losses = FastRCNNOutputs(
-            self.box2box_transform,
-            scores,
-            proposal_deltas,
-            proposals,
-            self.smooth_l1_beta,
-            self.box_reg_loss_type,
-        ).box_reg_loss()
+
+        # parse box regression outputs
+        if len(proposals):
+            proposal_boxes = cat([p.proposal_boxes.tensor for p in proposals], dim=0)  # Nx4
+            assert not proposal_boxes.requires_grad, "Proposals should not require gradients!"
+            # If "gt_boxes" does not exist, the proposals must be all negative and
+            # should not be included in regression loss computation.
+            # Here we just use proposal_boxes as an arbitrary placeholder because its
+            # value won't be used in self.box_reg_loss().
+            gt_boxes = cat(
+                [(p.gt_boxes if p.has("gt_boxes") else p.proposal_boxes).tensor for p in proposals],
+                dim=0,
+            )
+        else:
+            proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
 
         losses = {
             "loss_cls": cross_entropy(scores, gt_classes, reduction="mean"),
-            "loss_box_reg": reg_losses,
+            "loss_box_reg": self.box_reg_loss(
+                proposal_boxes, gt_boxes, proposal_deltas, gt_classes
+            ),
         }
         return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
+
+    def box_reg_loss(self, proposal_boxes, gt_boxes, pred_deltas, gt_classes):
+        """
+        Args:
+            All boxes are tensors with the same shape Rx(4 or 5).
+            gt_classes is a long tensor of shape R, the gt class label of each proposal.
+            R shall be the number of proposals.
+        """
+        box_dim = proposal_boxes.shape[1]  # 4 or 5
+        # Regression loss is only computed for foreground proposals (those matched to a GT)
+        fg_inds = nonzero_tuple((gt_classes >= 0) & (gt_classes < self.num_classes))[0]
+        if pred_deltas.shape[1] == box_dim:  # cls-agnostic regression
+            fg_pred_deltas = pred_deltas[fg_inds]
+        else:
+            fg_pred_deltas = pred_deltas.view(-1, self.num_classes, box_dim)[
+                fg_inds, gt_classes[fg_inds]
+            ]
+
+        if self.box_reg_loss_type == "smooth_l1":
+            gt_pred_deltas = self.box2box_transform.get_deltas(
+                proposal_boxes[fg_inds],
+                gt_boxes[fg_inds],
+            )
+            loss_box_reg = smooth_l1_loss(
+                fg_pred_deltas, gt_pred_deltas, self.smooth_l1_beta, reduction="sum"
+            )
+        elif self.box_reg_loss_type == "giou":
+            fg_pred_boxes = self.box2box_transform.apply_deltas(
+                fg_pred_deltas, proposal_boxes[fg_inds]
+            )
+            loss_box_reg = giou_loss(fg_pred_boxes, gt_boxes[fg_inds], reduction="sum")
+        else:
+            raise ValueError(f"Invalid bbox reg loss type '{self.box_reg_loss_type}'")
+        # The reg loss is normalized using the total number of regions (R), not the number
+        # of foreground regions even though the box regression loss is only defined on
+        # foreground regions. Why? Because doing so gives equal training influence to
+        # each foreground example. To see how, consider two different minibatches:
+        #  (1) Contains a single foreground region
+        #  (2) Contains 100 foreground regions
+        # If we normalize by the number of foreground regions, the single example in
+        # minibatch (1) will be given 100 times as much influence as each foreground
+        # example in minibatch (2). Normalizing by the total number of regions, R,
+        # means that the single example in minibatch (1) and each of the 100 examples
+        # in minibatch (2) are given equal influence.
+        return loss_box_reg / max(gt_classes.numel(), 1.0)  # return 0 if empty
 
     def inference(self, predictions: Tuple[torch.Tensor, torch.Tensor], proposals: List[Instances]):
         """
@@ -525,8 +557,7 @@ class FastRCNNOutputLayers(nn.Module):
         if not len(proposals):
             return []
         scores, proposal_deltas = predictions
-        proposal_boxes = [p.proposal_boxes for p in proposals]
-        proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
+        proposal_boxes = cat([p.proposal_boxes.tensor for p in proposals], dim=0)
         N, B = proposal_boxes.shape
         predict_boxes = self.box2box_transform.apply_deltas(
             proposal_deltas, proposal_boxes
@@ -564,8 +595,7 @@ class FastRCNNOutputLayers(nn.Module):
             return []
         _, proposal_deltas = predictions
         num_prop_per_image = [len(p) for p in proposals]
-        proposal_boxes = [p.proposal_boxes for p in proposals]
-        proposal_boxes = proposal_boxes[0].cat(proposal_boxes).tensor
+        proposal_boxes = cat([p.proposal_boxes.tensor for p in proposals], dim=0)
         predict_boxes = self.box2box_transform.apply_deltas(
             proposal_deltas,
             proposal_boxes,
