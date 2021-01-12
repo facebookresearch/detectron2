@@ -287,6 +287,7 @@ class Boxes:
         self.tensor[:, 1::2] *= scale_y
 
     @classmethod
+    @_maybe_jit_unused
     def cat(cls, boxes_list: List["Boxes"]) -> "Boxes":
         """
         Concatenates a list of Boxes into a single Boxes
