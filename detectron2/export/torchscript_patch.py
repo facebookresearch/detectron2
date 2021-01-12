@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import importlib.util
 import os
 import sys
 import tempfile
@@ -13,6 +12,7 @@ from torch import nn
 # need some explicit imports due to https://github.com/pytorch/pytorch/issues/38964
 import detectron2  # noqa F401
 from detectron2.structures import Instances
+from detectron2.utils.env import _import_file
 
 _counter = 0
 
@@ -265,14 +265,9 @@ from detectron2.structures import Boxes, Instances
 
 
 def _import(path):
-    # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-    spec = importlib.util.spec_from_file_location(
-        "{}{}".format(sys.modules[__name__].__name__, _counter), path
+    return _import_file(
+        "{}{}".format(sys.modules[__name__].__name__, _counter), path, make_importable=True
     )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module.__name__] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 # TODO: this is a private utility. Should be made more useful through a model export api.
