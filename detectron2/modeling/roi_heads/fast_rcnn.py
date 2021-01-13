@@ -164,11 +164,14 @@ def fast_rcnn_inference_single_image(
         keep = keep[:topk_per_image]
     boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
 
+    # account for non-finite inputs
+    kept_inds = valid_mask.nonzero()[filter_inds[:, 0], 0]
+
     result = Instances(image_shape)
     result.pred_boxes = Boxes(boxes)
     result.scores = scores
     result.pred_classes = filter_inds[:, 1]
-    return result, filter_inds[:, 0]
+    return result, kept_inds
 
 
 class FastRCNNOutputs:
