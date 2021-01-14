@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
-from typing import Any, Iterator, Tuple, Union
+from typing import List, Tuple
 import torch
 
 from detectron2.layers.rotated_boxes import pairwise_iou_rotated
 
-from .boxes import Boxes
+from .boxes import Boxes, _maybe_jit_unused
 
 
 class RotatedBoxes(Boxes):
@@ -229,8 +229,10 @@ class RotatedBoxes(Boxes):
         """
         return RotatedBoxes(self.tensor.clone())
 
-    def to(self, *args: Any, **kwargs: Any) -> "RotatedBoxes":
-        return RotatedBoxes(self.tensor.to(*args, **kwargs))
+    @_maybe_jit_unused
+    def to(self, device: torch.device):
+        # Boxes are assumed float32 and does not support to(dtype)
+        return RotatedBoxes(self.tensor.to(device=device))
 
     def area(self) -> torch.Tensor:
         """
@@ -314,7 +316,7 @@ class RotatedBoxes(Boxes):
         keep = (widths > threshold) & (heights > threshold)
         return keep
 
-    def __getitem__(self, item: Union[int, slice, torch.BoolTensor]) -> "RotatedBoxes":
+    def __getitem__(self, item) -> "RotatedBoxes":
         """
         Returns:
             RotatedBoxes: Create a new :class:`RotatedBoxes` by indexing.
@@ -452,11 +454,33 @@ class RotatedBoxes(Boxes):
         # when sfx == sfy, angle(new) == atan2(s, c) == angle(old)
         self.tensor[:, 4] = torch.atan2(scale_x * s, scale_y * c) * 180 / math.pi
 
+    @classmethod
+    @_maybe_jit_unused
+    def cat(cls, boxes_list: List["RotatedBoxes"]) -> "RotatedBoxes":
+        """
+        Concatenates a list of RotatedBoxes into a single RotatedBoxes
+
+        Arguments:
+            boxes_list (list[RotatedBoxes])
+
+        Returns:
+            RotatedBoxes: the concatenated RotatedBoxes
+        """
+        assert isinstance(boxes_list, (list, tuple))
+        if len(boxes_list) == 0:
+            return cls(torch.empty(0))
+        assert all([isinstance(box, RotatedBoxes) for box in boxes_list])
+
+        # use torch.cat (v.s. layers.cat) so the returned boxes never share storage with input
+        cat_boxes = cls(torch.cat([b.tensor for b in boxes_list], dim=0))
+        return cat_boxes
+
     @property
-    def device(self) -> str:
+    def device(self) -> torch.device:
         return self.tensor.device
 
-    def __iter__(self) -> Iterator[torch.Tensor]:
+    @torch.jit.unused
+    def __iter__(self):
         """
         Yield a box as a Tensor of shape (5,) at a time.
         """
