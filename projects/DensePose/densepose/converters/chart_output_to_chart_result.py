@@ -25,7 +25,7 @@ def resample_uv_to_bbox(
     Args:
         predictor_output (DensePoseChartPredictorOutput): DensePose predictor
             output to be resampled
-        labels (tensor [H, W] of uint8): labels obtained by resampling segmentation
+        labels (tensor [H, W] of long): labels obtained by resampling segmentation
             outputs for the given bounding box
         box_xywh_abs (tuple of 4 int): bounding box that corresponds to predictor outputs
     Return:
@@ -82,7 +82,7 @@ def resample_confidences_to_bbox(
     Args:
         predictor_output (DensePoseChartPredictorOutput): DensePose predictor
             output to be resampled
-        labels (tensor [H, W] of uint8): labels obtained by resampling segmentation
+        labels (tensor [H, W] of long): labels obtained by resampling segmentation
             outputs for the given bounding box
         box_xywh_abs (tuple of 4 int): bounding box that corresponds to predictor outputs
     Return:

@@ -13,7 +13,7 @@ class DensePoseChartResult:
     that has an associated label and is parameterized by two coordinates U and V.
     Both U and V take values in [0, 1].
     Thus the results are represented by two tensors:
-    - labels (tensor [H, W] of uint8): contains estimated label for each pixel of
+    - labels (tensor [H, W] of long): contains estimated label for each pixel of
         the detection bounding box of size (H, W)
     - uv (tensor [2, H, W] of float): contains estimated U and V coordinates
         for each pixel of the detection bounding box of size (H, W)
@@ -36,7 +36,7 @@ class DensePoseChartResultWithConfidences:
     """
     We add confidence values to DensePoseChartResult
     Thus the results are represented by two tensors:
-    - labels (tensor [H, W] of uint8): contains estimated label for each pixel of
+    - labels (tensor [H, W] of long): contains estimated label for each pixel of
         the detection bounding box of size (H, W)
     - uv (tensor [2, H, W] of float): contains estimated U and V coordinates
         for each pixel of the detection bounding box of size (H, W)

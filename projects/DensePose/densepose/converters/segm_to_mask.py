@@ -22,7 +22,7 @@ def resample_fine_and_coarse_segm_to_bbox(
         box_xywh_abs (tuple of 4 int): bounding box given by its upper-left
             corner coordinates, width (W) and height (H)
     Return:
-        Labels for each pixel of the bounding box, a uint8 tensor of size [1, H, W]
+        Labels for each pixel of the bounding box, a long tensor of size [1, H, W]
     """
     x, y, w, h = box_xywh_abs
     w = max(int(w), 1)
