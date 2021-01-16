@@ -1,12 +1,11 @@
 ---
-name: "Unexpected behaviors"
+name: "😩 Unexpected behaviors"
 about: Run into unexpected behaviors when using detectron2
 title: Please read & provide the following
 
 ---
 
-If you do not know the root cause of the problem, and wish someone to help you, please
-post according to this template:
+If you do not know the root cause of the problem, please post according to this template:
 
 ## Instructions To Reproduce the Issue:
 
@@ -21,7 +20,7 @@ git rev-parse HEAD; git diff
 <put code or diff here>
 ```
 2. What exact command you run:
-3. __Full logs__ you observed:
+3. __Full logs__ or other relevant observations:
 ```
 <put logs here>
 ```

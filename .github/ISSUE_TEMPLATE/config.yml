@@ -2,6 +2,9 @@
 blank_issues_enabled: false
 
 contact_links:
+  - name: How-To / Other Questions
+    url: https://github.com/facebookresearch/detectron2/discussions
+    about: Use discussions for more general questions and support
   - name: Detectron2 Documentation
     url: https://detectron2.readthedocs.io/index.html
     about: Check if your question is answered in docs

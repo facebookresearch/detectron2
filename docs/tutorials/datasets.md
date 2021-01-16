@@ -74,7 +74,7 @@ and the required fields vary based on what the dataloader or the task needs (see
     - pan_seg_file_name, segments_info
 ```
 
-+ `file_name`: the full path to the image file. Rotation or flipping may be applied if the image has EXIF metadata.
++ `file_name`: the full path to the image file.
 + `height`, `width`: integer. The shape of the image.
 + `image_id` (str or int): a unique id that identifies this image. Required by many
   evaluators to identify the images, but a dataset may use it for different purposes.

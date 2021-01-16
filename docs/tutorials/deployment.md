@@ -1,18 +1,18 @@
 # Deployment
 
-Models written in Python needs to go through an export process to become a deployable artifact.
+Models written in Python need to go through an export process to become a deployable artifact.
 A few basic concepts about this process:
 
-__"Export method"__ is how a Python model is turned into a serialized graph.
+__"Export method"__ is how a Python model is fully serialized to a deployable format.
 We support the following export methods:
 
 * `tracing`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) for details.
 * `scripting`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) for details.
 * `caffe2_tracing`: replace parts of the model by caffe2 operators, then use tracing.
 
-__"Format"__ is how a serialized graph is described in a file, e.g.
+__"Format"__ is how a serialized model is described in a file, e.g.
 TorchScript, Caffe2 protobuf, ONNX format.
-__"Runtime"__ is an engine that loads a serialized graph and executes it,
+__"Runtime"__ is an engine that loads a serialized model and executes it,
 e.g., PyTorch, Caffe2, TensorFlow, onnxruntime, TensorRT, etc.
 A runtime is often tied to a specific format
 (e.g. PyTorch needs TorchScript format, Caffe2 needs protobuf format).

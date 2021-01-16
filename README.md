@@ -17,7 +17,7 @@ and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/
 * Can be used as a library to support [different projects](projects/) on top of it.
   We'll open source more research projects in this way.
 * It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
-* Models can be exported to torchscript format or caffe2 format for deployment.
+* Models can be exported to TorchScript format or Caffe2 format for deployment.
 
 See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
 to see more demos and learn about detectron2.
@@ -26,10 +26,14 @@ to see more demos and learn about detectron2.
 
 See [INSTALL.md](INSTALL.md).
 
-## Quick Start
+## Getting Started
 
-See [GETTING_STARTED.md](GETTING_STARTED.md),
-or the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5).
+Follow the [installation instructions](https://detectron2.readthedocs.io/tutorials/install.html) to
+install detectron2.
+
+See [Getting Started with Detectron2](https://detectron2.readthedocs.io/tutorials/getting_started.html),
+and the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
+to learn about basic usage.
 
 Learn more at our [documentation](https://detectron2.readthedocs.org).
 And see [projects/](projects/) for some projects that are built on top of detectron2.

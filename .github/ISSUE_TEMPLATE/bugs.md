@@ -14,7 +14,7 @@ git rev-parse HEAD; git diff
 <put code or diff here>
 ```
 2. What exact command you run:
-3. __Full logs__ you observed:
+3. __Full logs__ or other relevant observations:
 ```
 <put logs here>
 ```

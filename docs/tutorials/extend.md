@@ -33,7 +33,7 @@ In detectron2, there are two types of interfaces that address this tension toget
    When you need to implement something not supported by the "standard defaults"
    included in detectron2, these well-defined components can be reused.
 
-3. (experimental) A few classes are implemented with the
+3. A few classes are implemented with the
    [@configurable](../../modules/config.html#detectron2.config.configurable)
    decorator - they can be called with either a config, or with explicit arguments.
    Their explicit argument interfaces are currently __experimental__ and subject to change.
