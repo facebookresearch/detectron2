@@ -165,7 +165,7 @@ def fast_rcnn_inference_single_image(
     boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
 
     # account for non-finite inputs
-    if not valid_mask.all(): 
+    if not valid_mask.all():
         filter_inds[:, 0] = valid_mask.nonzero()[filter_inds[:, 0], 0]
 
     result = Instances(image_shape)
