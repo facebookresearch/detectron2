@@ -8,7 +8,8 @@
 #include <torch/csrc/autograd/grad_mode.h>
 #include <torch/script.h>
 
-#include <torchvision/vision.h> // only needed for export_method=tracing
+// only needed for export_method=tracing
+#include <torchvision/vision.h> // @oss-only
 
 using namespace std;
 
