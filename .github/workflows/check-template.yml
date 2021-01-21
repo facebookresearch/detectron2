@@ -18,15 +18,13 @@ jobs:
             // - context: An object containing the context of the workflow run
             // - core: A reference to the @actions/core package
             // - io: A reference to the @actions/io package
-            const kSupportLabel = "support";
-            const kFeatureLabel = "enhancement";
             issue = await github.issues.get({
               owner: context.issue.owner,
               repo: context.issue.repo,
               issue_number: context.issue.number,
             });
-            const isFeatureOrSupport = issue.data.labels.filter(label => label.name == kSupportLabel || label.name == kFeatureLabel).length > 0;
-            if (isFeatureOrSupport || issue.state === "closed") {
+            const hasLabel = issue.data.labels.length > 0;
+            if (hasLabel || issue.state === "closed") {
               // don't require template on them
               core.debug("Issue " + issue.data.title + " was skipped.");
               return;
