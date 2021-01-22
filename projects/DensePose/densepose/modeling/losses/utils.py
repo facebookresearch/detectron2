@@ -346,6 +346,7 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         ):
             # no densepose GT for the detections, just increase the bbox index
             self.nxt_bbox_index += n_matches
+            return
         for box_xywh_est, box_xywh_gt, dp_gt in zip(
             boxes_xywh_est, boxes_xywh_gt, instances_one_image.gt_densepose
         ):
