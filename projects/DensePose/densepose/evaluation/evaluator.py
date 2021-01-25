@@ -21,14 +21,15 @@ from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
-from .converters import ToChartResultConverter, ToMaskConverter
-from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
-from .modeling.cse.utils import squared_euclidean_distance_matrix
-from .structures import (
+from densepose.converters import ToChartResultConverter, ToMaskConverter
+from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
+from densepose.structures import (
     DensePoseChartPredictorOutput,
     DensePoseEmbeddingPredictorOutput,
     quantize_densepose_chart_result,
 )
+
+from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
 
 
 class DensePoseCOCOEvaluator(DatasetEvaluator):

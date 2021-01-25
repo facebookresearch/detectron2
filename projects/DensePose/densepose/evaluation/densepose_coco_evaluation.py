@@ -23,9 +23,8 @@ from scipy.ndimage import zoom as spzoom
 
 from detectron2.utils.file_io import PathManager
 
+from densepose.data.structures import DensePoseDataRelative
 from densepose.structures.mesh import create_mesh
-
-from .data.structures import DensePoseDataRelative
 
 logger = logging.getLogger(__name__)
 

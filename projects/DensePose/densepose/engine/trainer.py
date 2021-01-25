@@ -23,12 +23,7 @@ from detectron2.solver.build import get_default_optimizer_params, maybe_add_grad
 from detectron2.utils import comm
 from detectron2.utils.events import EventWriter, get_event_storage
 
-from densepose import (
-    DensePoseCOCOEvaluator,
-    DensePoseDatasetMapperTTA,
-    DensePoseGeneralizedRCNNWithTTA,
-    load_from_cfg,
-)
+from densepose import DensePoseDatasetMapperTTA, DensePoseGeneralizedRCNNWithTTA, load_from_cfg
 from densepose.data import (
     DatasetMapper,
     build_combined_loader,
@@ -37,6 +32,7 @@ from densepose.data import (
     build_inference_based_loaders,
     has_inference_based_loaders,
 )
+from densepose.evaluation import DensePoseCOCOEvaluator
 from densepose.modeling.cse import Embedder
 
 
