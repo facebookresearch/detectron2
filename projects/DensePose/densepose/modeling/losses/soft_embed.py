@@ -114,7 +114,9 @@ class SoftEmbeddingLoss:
 
         for mesh_name in embedder.mesh_names:
             if mesh_name not in losses:
-                losses[mesh_name] = self.fake_value(densepose_predictor_outputs, embedder, mesh_id)
+                losses[mesh_name] = self.fake_value(
+                    densepose_predictor_outputs, embedder, mesh_name
+                )
         return losses
 
     def fake_values(self, densepose_predictor_outputs: Any, embedder: nn.Module):
