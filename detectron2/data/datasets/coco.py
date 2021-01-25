@@ -12,7 +12,7 @@ from fvcore.common.timer import Timer
 from iopath.common.file_io import file_lock
 from PIL import Image
 
-from detectron2.structures import Boxes, BoxMode, PolygonMasks
+from detectron2.structures import Boxes, BoxMode, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
 
 from .. import DatasetCatalog, MetadataCatalog
@@ -351,7 +351,7 @@ def convert_to_coco_dict(dataset_name):
             # create a new dict with only COCO fields
             coco_annotation = {}
 
-            # COCO requirement: XYWH box format
+            # COCO requirement: XYWH box format for axis-align and XYWHA for rotated
             bbox = annotation["bbox"]
             from_bbox_mode = annotation["bbox_mode"]
             to_bbox_mode = BoxMode.XYWH_ABS if len(bbox) == 4 else BoxMode.XYWHA_ABS
@@ -371,8 +371,11 @@ def convert_to_coco_dict(dataset_name):
                     raise TypeError(f"Unknown segmentation type {type(segmentation)}!")
             else:
                 # Computing areas using bounding boxes
-                bbox_xy = BoxMode.convert(bbox, to_bbox_mode, BoxMode.XYXY_ABS)
-                area = Boxes([bbox_xy]).area()[0].item()
+                if to_bbox_mode == BoxMode.XYWH_ABS:
+                    bbox_xy = BoxMode.convert(bbox, to_bbox_mode, BoxMode.XYXY_ABS)
+                    area = Boxes([bbox_xy]).area()[0].item()
+                else:
+                    area = RotatedBoxes([bbox]).area()[0].item()
 
             if "keypoints" in annotation:
                 keypoints = annotation["keypoints"]  # list[int]
