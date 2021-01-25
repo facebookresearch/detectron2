@@ -34,7 +34,7 @@ INPUT:
   MIN_SIZE_TRAIN: !!python/object/apply:eval ["[int(x * 0.1 * 640) for x in range(5, 16)]"]
   MIN_SIZE_TRAIN_SAMPLING: "choice"
   MIN_SIZE_TEST: 640
-  MAX_SIZE_TRAIN: 640
+  MAX_SIZE_TRAIN: 960
   MAX_SIZE_TEST: 640
   CROP:
     ENABLED: True

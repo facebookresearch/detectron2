@@ -107,7 +107,7 @@ Note:
 - DSConv refers to using DepthwiseSeparableConv2d in ASPP and decoder. The implementation with DSConv is identical to the original paper.
 
 ## COCO Panoptic Segmentation
-COCO models are trained with ImageNet pretraining.
+COCO models are trained with ImageNet pretraining on 16 V100s.
 
 <table><tbody>
 <!-- START TABLE -->
@@ -127,14 +127,14 @@ COCO models are trained with ImageNet pretraining.
  <tr><td align="left"><a href="configs/COCO-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_200k_bs64_crop_640_640_coco_dsconv.yaml">Panoptic-DeepLab (DSConv)</a></td>
 <td align="center">R52-DC5</td>
 <td align="center">640&times;640</td>
-<td align="center"> 34.2 </td>
-<td align="center"> 75.5 </td>
-<td align="center"> 43.2 </td>
-<td align="center"> 17.3 </td>
-<td align="center"> 18.5 </td>
+<td align="center"> 35.5 </td>
+<td align="center"> 77.3 </td>
+<td align="center"> 44.7 </td>
+<td align="center"> 18.6 </td>
+<td align="center"> 19.7 </td>
 <td align="center">  </td>
-<td align="center"> 33424667 </td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PanopticDeepLab/COCO-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_200k_bs64_crop_640_640_coco_dsconv/model_final_dee2af.pkl
+<td align="center"> 246448865 </td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/PanopticDeepLab/COCO-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_200k_bs64_crop_640_640_coco_dsconv/model_final_5e6da2.pkl
 ">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/PanopticDeepLab/COCO-PanopticSegmentation/panoptic_deeplab_R_52_os16_mg124_poly_200k_bs64_crop_640_640_coco_dsconv/metrics.json
 ">metrics</a></td>
 </tr>
@@ -143,7 +143,7 @@ COCO models are trained with ImageNet pretraining.
 Note:
 - [R52](https://dl.fbaipublicfiles.com/detectron2/DeepLab/R-52.pkl): a ResNet-50 with its first 7x7 convolution replaced by 3 3x3 convolutions. This modification has been used in most semantic segmentation papers. We pre-train this backbone on ImageNet using the default recipe of [pytorch examples](https://github.com/pytorch/examples/tree/master/imagenet).
 - DC5 means using dilated convolution in `res5`.
-- This reproduced number is slightly lower than the original paper (34.2 PQ vs. 35.1 PQ with R52) due to slightly different data preprocessing.
+- This reproduced number matches the original paper (35.5 vs. 35.1 PQ).
 - This implementation does not include optimized post-processing code needed for deployment. Post-processing the network
   outputs now takes more time than the network itself. Please refer to speed in the original paper for comparison.
 - DSConv refers to using DepthwiseSeparableConv2d in ASPP and decoder.
