@@ -9,11 +9,13 @@ from torch import nn
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode
+from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import (
     COCOEvaluator,
     DatasetEvaluator,
     DatasetEvaluators,
+    LVISEvaluator,
     inference_on_dataset,
     print_csv_format,
 )
@@ -150,7 +152,12 @@ class Trainer(DefaultTrainer):
     ) -> DatasetEvaluators:
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        evaluators = [COCOEvaluator(dataset_name, output_dir=output_folder)]
+        evaluators = []
+        evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
+        if evaluator_type == "coco":
+            evaluators.append(COCOEvaluator(dataset_name, output_dir=output_folder))
+        elif evaluator_type == "lvis":
+            evaluators.append(LVISEvaluator(dataset_name, output_dir=output_folder))
         if cfg.MODEL.DENSEPOSE_ON:
             evaluators.append(
                 DensePoseCOCOEvaluator(dataset_name, True, output_folder, embedder=embedder)

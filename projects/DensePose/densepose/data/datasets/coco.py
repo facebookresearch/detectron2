@@ -344,6 +344,7 @@ def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[os.P
     MetadataCatalog.get(dataset_data.name).set(
         json_file=annotations_fpath,
         image_root=images_root,
+        evaluator_type="coco",
         **get_metadata(DENSEPOSE_METADATA_URL_PREFIX)
     )
 
