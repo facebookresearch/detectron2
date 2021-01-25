@@ -2,7 +2,6 @@
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
-from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
 
 from detectron2.config import configurable
@@ -13,7 +12,7 @@ from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
 
 from ..anchor_generator import build_anchor_generator
-from ..box_regression import Box2BoxTransform
+from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
 from ..matcher import Matcher
 from ..sampling import subsample_labels
 from .build import PROPOSAL_GENERATOR_REGISTRY
@@ -364,26 +363,15 @@ class RPN(nn.Module):
         storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / num_images)
         storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / num_images)
 
-        if self.box_reg_loss_type == "smooth_l1":
-            anchors = type(anchors[0]).cat(anchors).tensor  # Ax(4 or 5)
-            gt_anchor_deltas = [self.box2box_transform.get_deltas(anchors, k) for k in gt_boxes]
-            gt_anchor_deltas = torch.stack(gt_anchor_deltas)  # (N, sum(Hi*Wi*Ai), 4 or 5)
-            localization_loss = smooth_l1_loss(
-                cat(pred_anchor_deltas, dim=1)[pos_mask],
-                gt_anchor_deltas[pos_mask],
-                self.smooth_l1_beta,
-                reduction="sum",
-            )
-        elif self.box_reg_loss_type == "giou":
-            pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
-            pred_proposals = cat(pred_proposals, dim=1)
-            pred_proposals = pred_proposals.view(-1, pred_proposals.shape[-1])
-            pos_mask = pos_mask.view(-1)
-            localization_loss = giou_loss(
-                pred_proposals[pos_mask], cat(gt_boxes)[pos_mask], reduction="sum"
-            )
-        else:
-            raise ValueError(f"Invalid rpn box reg loss type '{self.box_reg_loss_type}'")
+        localization_loss = _dense_box_regression_loss(
+            anchors,
+            self.box2box_transform,
+            pred_anchor_deltas,
+            gt_boxes,
+            pos_mask,
+            box_reg_loss_type=self.box_reg_loss_type,
+            smooth_l1_beta=self.smooth_l1_beta,
+        )
 
         valid_mask = gt_labels >= 0
         objectness_loss = F.binary_cross_entropy_with_logits(

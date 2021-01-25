@@ -4,7 +4,7 @@ import math
 import numpy as np
 from typing import Dict, List, Tuple
 import torch
-from fvcore.nn import giou_loss, sigmoid_focal_loss_jit, smooth_l1_loss
+from fvcore.nn import sigmoid_focal_loss_jit
 from torch import Tensor, nn
 from torch.nn import functional as F
 
@@ -16,7 +16,7 @@ from detectron2.utils.events import get_event_storage
 
 from ..anchor_generator import build_anchor_generator
 from ..backbone import build_backbone
-from ..box_regression import Box2BoxTransform
+from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
 from ..matcher import Matcher
 from ..postprocessing import detector_postprocess
 from .build import META_ARCH_REGISTRY
@@ -303,9 +303,6 @@ class RetinaNet(nn.Module):
         """
         num_images = len(gt_labels)
         gt_labels = torch.stack(gt_labels)  # (N, R)
-        anchors = type(anchors[0]).cat(anchors).tensor  # (R, 4)
-        gt_anchor_deltas = [self.box2box_transform.get_deltas(anchors, k) for k in gt_boxes]
-        gt_anchor_deltas = torch.stack(gt_anchor_deltas)  # (N, R, 4)
 
         valid_mask = gt_labels >= 0
         pos_mask = (gt_labels >= 0) & (gt_labels != self.num_classes)
@@ -327,23 +324,15 @@ class RetinaNet(nn.Module):
             reduction="sum",
         )
 
-        if self.box_reg_loss_type == "smooth_l1":
-            loss_box_reg = smooth_l1_loss(
-                cat(pred_anchor_deltas, dim=1)[pos_mask],
-                gt_anchor_deltas[pos_mask],
-                beta=self.smooth_l1_beta,
-                reduction="sum",
-            )
-        elif self.box_reg_loss_type == "giou":
-            pred_boxes = [
-                self.box2box_transform.apply_deltas(k, anchors)
-                for k in cat(pred_anchor_deltas, dim=1)
-            ]
-            loss_box_reg = giou_loss(
-                torch.stack(pred_boxes)[pos_mask], torch.stack(gt_boxes)[pos_mask], reduction="sum"
-            )
-        else:
-            raise ValueError(f"Invalid bbox reg loss type '{self.box_reg_loss_type}'")
+        loss_box_reg = _dense_box_regression_loss(
+            anchors,
+            self.box2box_transform,
+            pred_anchor_deltas,
+            gt_boxes,
+            pos_mask,
+            box_reg_loss_type=self.box_reg_loss_type,
+            smooth_l1_beta=self.smooth_l1_beta,
+        )
 
         return {
             "loss_cls": loss_cls / self.loss_normalizer,
