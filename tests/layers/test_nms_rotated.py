@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 import unittest
+from copy import deepcopy
 import torch
 from torchvision import ops
 
@@ -147,6 +148,23 @@ class TestNMSRotated(unittest.TestCase):
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
             self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
+
+
+class TestScriptable(unittest.TestCase):
+    def setUp(self):
+        class TestingModule(torch.nn.Module):
+            def forward(self, boxes, scores, threshold):
+                return nms_rotated(boxes, scores, threshold)
+        self.module = TestingModule()
+
+    def test_scriptable_cpu(self):
+        m = deepcopy(self.module).cpu()
+        _ = torch.jit.script(m)
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def test_scriptable_cuda(self):
+        m = deepcopy(self.module).cuda()
+        _ = torch.jit.script(m)
 
 
 if __name__ == "__main__":

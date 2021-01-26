@@ -7,13 +7,13 @@ namespace detectron2 {
 at::Tensor nms_rotated_cpu(
     const at::Tensor& dets,
     const at::Tensor& scores,
-    const float iou_threshold);
+    const double iou_threshold);
 
 #if defined(WITH_CUDA) || defined(WITH_HIP)
 at::Tensor nms_rotated_cuda(
     const at::Tensor& dets,
     const at::Tensor& scores,
-    const float iou_threshold);
+    const double iou_threshold);
 #endif
 
 // Interface for Python
@@ -22,7 +22,7 @@ at::Tensor nms_rotated_cuda(
 inline at::Tensor nms_rotated(
     const at::Tensor& dets,
     const at::Tensor& scores,
-    const float iou_threshold) {
+    const double iou_threshold) {
   assert(dets.device().is_cuda() == scores.device().is_cuda());
   if (dets.device().is_cuda()) {
 #if defined(WITH_CUDA) || defined(WITH_HIP)

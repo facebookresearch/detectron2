@@ -91,8 +91,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       &modulated_deform_conv_backward,
       "modulated_deform_conv_backward");
 
-  m.def("nms_rotated", &nms_rotated, "NMS for rotated boxes");
-
   m.def("roi_align_forward", &ROIAlign_forward, "ROIAlign_forward");
   m.def("roi_align_backward", &ROIAlign_backward, "ROIAlign_backward");
 
@@ -114,5 +112,9 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       .def(pybind11::init<uint64_t, double, double, bool, bool>());
   pybind11::class_<COCOeval::ImageEvaluation>(m, "ImageEvaluation")
       .def(pybind11::init<>());
+}
+
+TORCH_LIBRARY(detectron2, m) {
+  m.def("nms_rotated", &nms_rotated);
 }
 } // namespace detectron2

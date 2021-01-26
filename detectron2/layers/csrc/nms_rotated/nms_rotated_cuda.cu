@@ -20,7 +20,7 @@ int const threadsPerBlock = sizeof(unsigned long long) * 8;
 template <typename T>
 __global__ void nms_rotated_cuda_kernel(
     const int n_boxes,
-    const float iou_threshold,
+    const double iou_threshold,
     const T* dev_boxes,
     unsigned long long* dev_mask) {
   // nms_rotated_cuda_kernel is modified from torchvision's nms_cuda_kernel
@@ -81,7 +81,7 @@ at::Tensor nms_rotated_cuda(
     // input must be contiguous
     const at::Tensor& dets,
     const at::Tensor& scores,
-    float iou_threshold) {
+    double iou_threshold) {
   // using scalar_t = float;
   AT_ASSERTM(dets.is_cuda(), "dets must be a CUDA tensor");
   AT_ASSERTM(scores.is_cuda(), "scores must be a CUDA tensor");
