@@ -73,6 +73,8 @@ class TestScripting(unittest.TestCase):
             scripted_instance = script_model(inputs)[0].to_instances()
             scripted_instance = detector_postprocess(scripted_instance, img.shape[1], img.shape[2])
         assert_instances_allclose(instance, scripted_instance)
+        # Note that the model currently cannot be saved and loaded into a new process:
+        # https://github.com/pytorch/pytorch/issues/46944
 
 
 @unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")

@@ -244,7 +244,7 @@ class ROIPooler(nn.Module):
         for level, pooler in enumerate(self.level_poolers):
             inds = nonzero_tuple(level_assignments == level)[0]
             pooler_fmt_boxes_level = pooler_fmt_boxes[inds]
-            # Use index_put_ instead of advance indexing, to avoid pytorch/issues#49852
+            # Use index_put_ instead of advance indexing, to avoid pytorch/issues/49852
             output.index_put_((inds,), pooler(x[level], pooler_fmt_boxes_level))
 
         return output

@@ -158,7 +158,7 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
     Heckbert 1990: c = d + 0.5, where d is a discrete coordinate and c is a continuous coordinate.
     """
     # The decorator use of torch.no_grad() was not supported by torchscript.
-    # https://github.com/pytorch/pytorch/pull/41371
+    # https://github.com/pytorch/pytorch/issues/44768
     maps = maps.detach()
     rois = rois.detach()
 

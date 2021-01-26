@@ -1,6 +1,6 @@
 Thanks for your contribution!
 
-If you're sending a large PR (e.g., >50 lines),
+If you're sending a large PR (e.g., >100 lines),
 please open an issue first about the feature / bug, and indicate how you want to contribute.
 
 We do not always accept features.
