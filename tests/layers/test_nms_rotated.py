@@ -155,6 +155,7 @@ class TestScriptable(unittest.TestCase):
         class TestingModule(torch.nn.Module):
             def forward(self, boxes, scores, threshold):
                 return nms_rotated(boxes, scores, threshold)
+
         self.module = TestingModule()
 
     def test_scriptable_cpu(self):
