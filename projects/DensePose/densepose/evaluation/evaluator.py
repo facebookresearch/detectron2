@@ -22,6 +22,7 @@ from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
 from densepose.converters import ToChartResultConverter, ToMaskConverter
+from densepose.data.datasets.coco import maybe_filter_and_map_categories_cocoapi
 from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures import (
     DensePoseChartPredictorOutput,
@@ -46,6 +47,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)
+        maybe_filter_and_map_categories_cocoapi(dataset_name, self._coco_api)
 
     def reset(self):
         self._predictions = []
@@ -119,6 +121,7 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name):
         list[dict]: the results in densepose evaluation format
     """
     scores = instances.scores.tolist()
+    classes = instances.pred_classes.tolist()
     raw_boxes_xywh = BoxMode.convert(
         instances.pred_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
     )
@@ -134,7 +137,7 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name):
     for k in range(len(instances)):
         result = {
             "image_id": img_id,
-            "category_id": 1,  # densepose only has one class
+            "category_id": classes[k],
             "bbox": raw_boxes_xywh[k].tolist(),
             "score": scores[k],
         }

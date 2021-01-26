@@ -266,6 +266,31 @@ def _combine_images_with_annotations(
     return dataset_dicts
 
 
+def maybe_filter_and_map_categories_cocoapi(dataset_name, coco_api):
+    meta = MetadataCatalog.get(dataset_name)
+    category_id_map = meta.thing_dataset_id_to_contiguous_id
+    # map categories
+    cats = []
+    for cat in coco_api.dataset["categories"]:
+        cat_id = cat["id"]
+        if cat_id not in category_id_map:
+            continue
+        cat["id"] = category_id_map[cat_id]
+        cats.append(cat)
+    coco_api.dataset["categories"] = cats
+    # map annotation categories
+    anns = []
+    for ann in coco_api.dataset["annotations"]:
+        cat_id = ann["category_id"]
+        if cat_id not in category_id_map:
+            continue
+        ann["category_id"] = category_id_map[cat_id]
+        anns.append(ann)
+    coco_api.dataset["annotations"] = anns
+    # recreate index
+    coco_api.createIndex()
+
+
 def create_video_frame_mapping(dataset_name, dataset_dicts):
     mapping = defaultdict(dict)
     for d in dataset_dicts:
