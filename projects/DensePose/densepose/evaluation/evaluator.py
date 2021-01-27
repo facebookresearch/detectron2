@@ -200,18 +200,17 @@ def densepose_cse_predictions_to_dict(instances, embedder, class_to_mesh_name):
 def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5, img_ids=None):
     logger = logging.getLogger(__name__)
 
-    segm_metrics = _get_segmentation_metrics()
     densepose_metrics = _get_densepose_metrics(min_threshold)
     if len(coco_results) == 0:  # cocoapi does not handle empty results very well
         logger.warn("No predictions from the model! Set scores to -1")
         results_gps = {metric: -1 for metric in densepose_metrics}
         results_gpsm = {metric: -1 for metric in densepose_metrics}
-        results_segm = {metric: -1 for metric in segm_metrics}
+        results_segm = {metric: -1 for metric in densepose_metrics}
         return results_gps, results_gpsm, results_segm
 
     coco_dt = coco_gt.loadRes(coco_results)
     results_segm = _evaluate_predictions_on_coco_segm(
-        coco_gt, coco_dt, segm_metrics, min_threshold, img_ids
+        coco_gt, coco_dt, densepose_metrics, min_threshold, img_ids
     )
     logger.info("Evaluation results for densepose segm: \n" + create_small_table(results_segm))
     results_gps = _evaluate_predictions_on_coco_gps(
@@ -239,23 +238,6 @@ def _get_densepose_metrics(min_threshold=0.5):
         metrics += ["AP40"]
     metrics.extend(["AP50", "AP75", "APm", "APl", "AR", "AR50", "AR75", "ARm", "ARl"])
     return metrics
-
-
-def _get_segmentation_metrics():
-    return [
-        "AP",
-        "AP50",
-        "AP75",
-        "APs",
-        "APm",
-        "APl",
-        "AR@1",
-        "AR@10",
-        "AR@100",
-        "ARs",
-        "ARm",
-        "ARl",
-    ]
 
 
 def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
@@ -287,7 +269,7 @@ def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=
 
 
 def _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
-    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "segm")
+    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.IOU)
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
