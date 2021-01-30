@@ -91,6 +91,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       &modulated_deform_conv_backward,
       "modulated_deform_conv_backward");
 
+  m.def("nms_rotated", &nms_rotated, "NMS for rotated boxes");
+
   m.def("roi_align_forward", &ROIAlign_forward, "ROIAlign_forward");
   m.def("roi_align_backward", &ROIAlign_backward, "ROIAlign_backward");
 
@@ -114,7 +116,9 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       .def(pybind11::init<>());
 }
 
+#ifdef TORCH_LIBRARY
 TORCH_LIBRARY(detectron2, m) {
   m.def("nms_rotated", &nms_rotated);
 }
+#endif
 } // namespace detectron2
