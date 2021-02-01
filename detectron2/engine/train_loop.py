@@ -244,7 +244,12 @@ class SimpleTrainer(TrainerBase):
         """
         self.optimizer.step()
 
-    def _write_metrics(self, loss_dict: Dict[str, torch.Tensor], data_time: float):
+    def _write_metrics(
+        self,
+        loss_dict: Dict[str, torch.Tensor],
+        data_time: float,
+        prefix: str = "",
+    ):
         """
         Args:
             loss_dict (dict): dict of scalar losses
@@ -281,7 +286,7 @@ class SimpleTrainer(TrainerBase):
                     f"loss_dict = {metrics_dict}"
                 )
 
-            storage.put_scalar("total_loss", total_losses_reduced)
+            storage.put_scalar("{}total_loss".format(prefix), total_losses_reduced)
             if len(metrics_dict) > 1:
                 storage.put_scalars(**metrics_dict)
 
