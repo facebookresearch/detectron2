@@ -1,10 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import copy
+import logging
 import numpy as np
 import time
 from pycocotools.cocoeval import COCOeval
 
 from detectron2 import _C
+
+logger = logging.getLogger(__name__)
 
 
 class COCOeval_opt(COCOeval):
@@ -23,20 +26,18 @@ class COCOeval_opt(COCOeval):
         """
         tic = time.time()
 
-        print("Running per image evaluation...")
         p = self.params
         # add backward compatibility if useSegm is specified in params
         if p.useSegm is not None:
             p.iouType = "segm" if p.useSegm == 1 else "bbox"
-            print("useSegm (deprecated) is not None. Running {} evaluation".format(p.iouType))
-        print("Evaluate annotation type *{}*".format(p.iouType))
+        logger.info("Evaluate annotation type *{}*".format(p.iouType))
         p.imgIds = list(np.unique(p.imgIds))
         if p.useCats:
             p.catIds = list(np.unique(p.catIds))
         p.maxDets = sorted(p.maxDets)
         self.params = p
 
-        self._prepare()
+        self._prepare()  # bottleneck
 
         # loop through images, area range, max detection number
         catIds = p.catIds if p.useCats else [-1]
@@ -47,7 +48,7 @@ class COCOeval_opt(COCOeval):
             computeIoU = self.computeOks
         self.ious = {
             (imgId, catId): computeIoU(imgId, catId) for imgId in p.imgIds for catId in catIds
-        }
+        }  # bottleneck
 
         maxDet = p.maxDets[-1]
 
@@ -91,7 +92,7 @@ class COCOeval_opt(COCOeval):
 
         self._paramsEval = copy.deepcopy(self.params)
         toc = time.time()
-        print("COCOeval_opt.evaluate() finished in {:0.2f} seconds.".format(toc - tic))
+        logger.info("COCOeval_opt.evaluate() finished in {:0.2f} seconds.".format(toc - tic))
         # >>>> End of code differences with original COCO API
 
     def accumulate(self):
@@ -99,10 +100,11 @@ class COCOeval_opt(COCOeval):
         Accumulate per image evaluation results and store the result in self.eval.  Does not
         support changing parameter settings from those used by self.evaluate()
         """
-        print("Accumulating evaluation results...")
+        logger.info("Accumulating evaluation results...")
         tic = time.time()
-        if not hasattr(self, "_evalImgs_cpp"):
-            print("Please run evaluate() first")
+        assert hasattr(
+            self, "_evalImgs_cpp"
+        ), "evaluate() must be called before accmulate() is called."
 
         self.eval = _C.COCOevalAccumulate(self._paramsEval, self._evalImgs_cpp)
 
@@ -116,4 +118,4 @@ class COCOeval_opt(COCOeval):
         self.eval["precision"] = np.array(self.eval["precision"]).reshape(self.eval["counts"])
         self.eval["scores"] = np.array(self.eval["scores"]).reshape(self.eval["counts"])
         toc = time.time()
-        print("COCOeval_opt.accumulate() finished in {:0.2f} seconds.".format(toc - tic))
+        logger.info("COCOeval_opt.accumulate() finished in {:0.2f} seconds.".format(toc - tic))
