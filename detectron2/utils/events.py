@@ -6,6 +6,7 @@ import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from typing import Optional
 from fvcore.common.history_buffer import HistoryBuffer
 
 from detectron2.utils.file_io import PathManager
@@ -186,15 +187,35 @@ class CommonMetricPrinter(EventWriter):
     To print something in more customized ways, please implement a similar printer by yourself.
     """
 
-    def __init__(self, max_iter):
+    def __init__(self, max_iter: Optional[int] = None):
         """
         Args:
-            max_iter (int): the maximum number of iterations to train.
-                Used to compute ETA.
+            max_iter: the maximum number of iterations to train.
+                Used to compute ETA. If not given, ETA will not be printed.
         """
         self.logger = logging.getLogger(__name__)
         self._max_iter = max_iter
-        self._last_write = None
+        self._last_write = None  # (step, time) of last call to write(). Used to compute ETA
+
+    def _get_eta(self, storage) -> Optional[str]:
+        if self._max_iter is None:
+            return ""
+        iteration = storage.iter
+        try:
+            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration - 1)
+            storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
+            return str(datetime.timedelta(seconds=int(eta_seconds)))
+        except KeyError:
+            # estimate eta on our own - more noisy
+            eta_string = None
+            if self._last_write is not None:
+                estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
+                    iteration - self._last_write[0]
+                )
+                eta_seconds = estimate_iter_time * (self._max_iter - iteration - 1)
+                eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
+            self._last_write = (iteration, time.perf_counter())
+            return eta_string
 
     def write(self):
         import torch
@@ -213,28 +234,16 @@ class CommonMetricPrinter(EventWriter):
             # they may not exist in the first few iterations (due to warmup)
             # or when SimpleTrainer is not used
             data_time = None
-
-        eta_string = None
         try:
             iter_time = storage.history("time").global_avg()
-            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration - 1)
-            storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
-            eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
         except KeyError:
             iter_time = None
-            # estimate eta on our own - more noisy
-            if self._last_write is not None:
-                estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
-                    iteration - self._last_write[0]
-                )
-                eta_seconds = estimate_iter_time * (self._max_iter - iteration - 1)
-                eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-            self._last_write = (iteration, time.perf_counter())
-
         try:
             lr = "{:.5g}".format(storage.history("lr").latest())
         except KeyError:
             lr = "N/A"
+
+        eta_string = self._get_eta(storage)
 
         if torch.cuda.is_available():
             max_mem_mb = torch.cuda.max_memory_allocated() / 1024.0 / 1024.0
