@@ -1,8 +1,87 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import logging
 import math
 from bisect import bisect_right
 from typing import List
 import torch
+from fvcore.common.param_scheduler import ParamScheduler
+
+logger = logging.getLogger(__name__)
+
+
+class LRMultiplier(torch.optim.lr_scheduler._LRScheduler):
+    """
+    A LRScheduler which uses fvcore :class:`ParamScheduler` to multiply the
+    learning rate of each param in the optimizer.
+    Every step, the learning rate of each parameter becomes its initial value
+    multiplied by the output of the given :class:`ParamScheduler`.
+
+    The absolute learning rate value of each parameter can be different.
+    This scheduler can be used as long as the relative scale among them do
+    not change during training.
+
+    Examples:
+
+    ::
+        LRMultiplier(
+            opt,
+            CompositeParamScheduler([
+                LinearParamScheduler(0.001, 1),  # warmup
+                MultiStepParamScheduler(
+                    [1, 0.1, 0.01],
+                    milestones=[60000, 80000],
+                    num_updates=90000,
+                )],
+                interval_scaling=["rescaled", "fixed"],
+                lengths=[100 / 90000, 89900 / 90000],
+            ),
+            max_iter=90000
+        )
+    """
+
+    # NOTES: in the most general case, every LR can use its own scheduler.
+    # Supporting this requires interaction with the optimizer when its parameter
+    # group is initialized. For example, classyvision implements its own optimizer
+    # that allows different schedulers for every parameter group.
+    # To avoid this complexity, we use this class to support the most common cases
+    # where the relative scale among all LRs stay unchanged during training.  In this
+    # case we only need a total of one scheduler that defines the relative LR multiplier.
+
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        multiplier: ParamScheduler,
+        max_iter: int,
+        last_epoch: int = -1,
+    ):
+        """
+        Args:
+            optimizer, last_epoch: See `torch.optim.lr_scheduler._LRScheduler`
+            multiplier: a fvcore ParamScheduler that defines the multiplier on
+                every LR of the optimizer
+            max_iter: the total number of training iterations
+        """
+        if not isinstance(multiplier, ParamScheduler):
+            raise ValueError(
+                "_LRMultiplier(multiplier=) must be an instance of fvcore "
+                f"ParamScheduler. Got {multiplier} instead."
+            )
+        self._multiplier = multiplier
+        self._max_iter = max_iter
+        super().__init__(optimizer, last_epoch=last_epoch)
+
+    def state_dict(self):
+        # fvcore schedulers are stateless. Only keep pytorch scheduler states
+        return {"base_lrs": self.base_lrs, "last_epoch": self.last_epoch}
+
+    def get_lr(self) -> List[float]:
+        multiplier = self._multiplier(self.last_epoch / self._max_iter)
+        return [base_lr * multiplier for base_lr in self.base_lrs]
+
+
+"""
+Content below is no longer needed!
+"""
 
 # NOTE: PyTorch's LR scheduler interface uses names that assume the LR changes
 # only on epoch boundaries. We typically use iteration based schedules instead.
@@ -24,6 +103,9 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
         warmup_method: str = "linear",
         last_epoch: int = -1,
     ):
+        logger.warning(
+            "WarmupMultiStepLR is deprecated! Use LRMultipilier with fvcore ParamScheduler instead!"
+        )
         if not list(milestones) == sorted(milestones):
             raise ValueError(
                 "Milestones should be a list of" " increasing integers. Got {}", milestones
@@ -59,6 +141,9 @@ class WarmupCosineLR(torch.optim.lr_scheduler._LRScheduler):
         warmup_method: str = "linear",
         last_epoch: int = -1,
     ):
+        logger.warning(
+            "WarmupCosineLR is deprecated! Use LRMultipilier with fvcore ParamScheduler instead!"
+        )
         self.max_iters = max_iters
         self.warmup_factor = warmup_factor
         self.warmup_iters = warmup_iters

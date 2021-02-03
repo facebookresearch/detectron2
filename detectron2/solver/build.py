@@ -3,10 +3,17 @@ import itertools
 from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 import torch
+from fvcore.common.param_scheduler import (
+    CompositeParamScheduler,
+    ConstantParamScheduler,
+    CosineParamScheduler,
+    LinearParamScheduler,
+    MultiStepParamScheduler,
+)
 
 from detectron2.config import CfgNode
 
-from .lr_scheduler import WarmupCosineLR, WarmupMultiStepLR
+from .lr_scheduler import LRMultiplier
 
 _GradientClipperInput = Union[torch.Tensor, Iterable[torch.Tensor]]
 _GradientClipper = Callable[[_GradientClipperInput], None]
@@ -41,7 +48,7 @@ def _generate_optimizer_class_with_gradient_clipping(
     optimizer: Type[torch.optim.Optimizer],
     *,
     per_param_clipper: Optional[_GradientClipper] = None,
-    global_clipper: Optional[_GradientClipper] = None
+    global_clipper: Optional[_GradientClipper] = None,
 ) -> Type[torch.optim.Optimizer]:
     """
     Dynamically creates a new type that inherits the type of a given instance
@@ -202,22 +209,30 @@ def build_lr_scheduler(
     Build a LR scheduler from config.
     """
     name = cfg.SOLVER.LR_SCHEDULER_NAME
+
     if name == "WarmupMultiStepLR":
-        return WarmupMultiStepLR(
-            optimizer,
-            cfg.SOLVER.STEPS,
-            cfg.SOLVER.GAMMA,
-            warmup_factor=cfg.SOLVER.WARMUP_FACTOR,
-            warmup_iters=cfg.SOLVER.WARMUP_ITERS,
-            warmup_method=cfg.SOLVER.WARMUP_METHOD,
+        sched = MultiStepParamScheduler(
+            values=[cfg.SOLVER.GAMMA ** k for k in range(len(cfg.SOLVER.STEPS) + 1)],
+            milestones=cfg.SOLVER.STEPS,
+            num_updates=cfg.SOLVER.MAX_ITER,
         )
     elif name == "WarmupCosineLR":
-        return WarmupCosineLR(
-            optimizer,
-            cfg.SOLVER.MAX_ITER,
-            warmup_factor=cfg.SOLVER.WARMUP_FACTOR,
-            warmup_iters=cfg.SOLVER.WARMUP_ITERS,
-            warmup_method=cfg.SOLVER.WARMUP_METHOD,
-        )
+        sched = CosineParamScheduler(1, 0)
     else:
         raise ValueError("Unknown LR scheduler: {}".format(name))
+
+    # Add warmup
+    warmup_method = cfg.SOLVER.WARMUP_METHOD
+    if warmup_method == "constant":
+        warmup = ConstantParamScheduler(cfg.SOLVER.WARMUP_FACTOR)
+    elif warmup_method == "linear":
+        warmup = LinearParamScheduler(cfg.SOLVER.WARMUP_FACTOR, 1.0)
+    else:
+        raise ValueError("Unknown warmup method: {}".format(warmup_method))
+    warmup_ratio = cfg.SOLVER.WARMUP_ITERS / cfg.SOLVER.MAX_ITER
+    sched = CompositeParamScheduler(
+        [warmup, sched],
+        interval_scaling=["rescaled", "fixed"],
+        lengths=[warmup_ratio, 1 - warmup_ratio],
+    )
+    return LRMultiplier(optimizer, multiplier=sched, max_iter=cfg.SOLVER.MAX_ITER)
