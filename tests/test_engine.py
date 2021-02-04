@@ -5,7 +5,6 @@ import os
 import tempfile
 import time
 import unittest
-from unittest.mock import MagicMock
 import torch
 from torch import nn
 
@@ -61,12 +60,12 @@ class TestTrainer(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
             json_file = os.path.join(d, "metrics.json")
             writers = [CommonMetricPrinter(max_iter), JSONWriter(json_file)]
-            logger_info = writers[0].logger.info = MagicMock()
 
             trainer.register_hooks(
                 [hooks.EvalHook(0, lambda: {"metric": 100}), hooks.PeriodicWriter(writers)]
             )
-            trainer.train(0, max_iter)
+            with self.assertLogs(writers[0].logger) as logs:
+                trainer.train(0, max_iter)
 
             with open(json_file, "r") as f:
                 data = [json.loads(line.strip()) for line in f]
@@ -75,12 +74,11 @@ class TestTrainer(unittest.TestCase):
                 self.assertIn("metric", data[-1], "Eval metric must be in last line of JSON!")
 
             # test logged messages from CommonMetricPrinter
-            all_logs = [str(x) for x in logger_info.call_args_list]
-            self.assertEqual(len(all_logs), 3)
-            for log, iter in zip(all_logs, [19, 39, 49]):
+            self.assertEqual(len(logs.output), 3)
+            for log, iter in zip(logs.output, [19, 39, 49]):
                 self.assertIn(f"iter: {iter}", log)
 
-            self.assertIn("eta: 0:00:00", all_logs[-1], "Last ETA must be 0!")
+            self.assertIn("eta: 0:00:00", logs.output[-1], "Last ETA must be 0!")
 
     @unittest.skipIf(os.environ.get("CI"), "Require COCO data.")
     def test_default_trainer(self):

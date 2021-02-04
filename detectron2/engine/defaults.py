@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 from collections import OrderedDict
+from typing import Optional
 import torch
 from fvcore.nn.precise_bn import get_bn_modules
 from torch.nn.parallel import DistributedDataParallel
@@ -43,7 +44,13 @@ from detectron2.utils.logger import setup_logger
 from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
 
-__all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
+__all__ = [
+    "default_argument_parser",
+    "default_setup",
+    "default_writers",
+    "DefaultPredictor",
+    "DefaultTrainer",
+]
 
 
 def default_argument_parser(epilog=None):
@@ -155,6 +162,27 @@ def default_setup(cfg, args):
     # typical validation set.
     if not (hasattr(args, "eval_only") and args.eval_only):
         torch.backends.cudnn.benchmark = cfg.CUDNN_BENCHMARK
+
+
+def default_writers(output_dir: str, max_iter: Optional[int] = None):
+    """
+    Build a list of :class:`EventWriter` to be used.
+    It now consists of a :class:`CommonMetricPrinter`,
+    :class:`TensorboardXWriter` and :class:`JSONWriter`.
+
+    Args:
+        output_dir: directory to store JSON metrics and tensorboard events
+        max_iter: the total number of iterations
+
+    Returns:
+        list[EventWriter]: a list of :class:`EventWriter` objects.
+    """
+    return [
+        # It may not always print what you want to see, since it prints "common" metrics only.
+        CommonMetricPrinter(max_iter),
+        JSONWriter(os.path.join(output_dir, "metrics.json")),
+        TensorboardXWriter(output_dir),
+    ]
 
 
 class DefaultPredictor:
@@ -377,37 +405,21 @@ class DefaultTrainer(TrainerBase):
         ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
 
         if comm.is_main_process():
+            # Here the default print/log frequency of each writer is used.
             # run writers in the end, so that evaluation metrics are written
             ret.append(hooks.PeriodicWriter(self.build_writers(), period=20))
         return ret
 
     def build_writers(self):
         """
-        Build a list of writers to be used. By default it contains
-        writers that write metrics to the screen,
-        a json file, and a tensorboard event file respectively.
+        Build a list of writers to be used using :func:`default_writers()`.
         If you'd like a different list of writers, you can overwrite it in
         your trainer.
 
         Returns:
             list[EventWriter]: a list of :class:`EventWriter` objects.
-
-        It is now implemented by:
-        ::
-            return [
-                CommonMetricPrinter(self.max_iter),
-                JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),
-                TensorboardXWriter(self.cfg.OUTPUT_DIR),
-            ]
-
         """
-        # Here the default print/log frequency of each writer is used.
-        return [
-            # It may not always print what you want to see, since it prints "common" metrics only.
-            CommonMetricPrinter(self.max_iter),
-            JSONWriter(os.path.join(self.cfg.OUTPUT_DIR, "metrics.json")),
-            TensorboardXWriter(self.cfg.OUTPUT_DIR),
-        ]
+        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter)
 
     def train(self):
         """

@@ -57,8 +57,8 @@ class TestEventWriter(unittest.TestCase):
 
             with self.assertLogs("detectron2.utils.events") as logs:
                 p1.write()
-            assert "eta" in logs.output[0]
+            self.assertIn("eta", logs.output[0])
 
             with self.assertLogs("detectron2.utils.events") as logs:
                 p2.write()
-            assert "eta" not in logs.output[0]
+            self.assertNotIn("eta", logs.output[0])
