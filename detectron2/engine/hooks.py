@@ -206,7 +206,10 @@ class LRScheduler(HookBase):
     def __init__(self, optimizer=None, scheduler=None):
         """
         Args:
-            No args needed. Will obtain optimizer and scheduler from trainer.
+            optimizer (torch.optim.Optimizer):
+            scheduler (torch.optim.LRScheduler):
+
+        If any argument is not given, will try to obtain it from the trainer.
         """
         self._optimizer = optimizer
         self._scheduler = scheduler
