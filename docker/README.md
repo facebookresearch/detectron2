@@ -25,7 +25,7 @@ cd docker && USER_ID=$UID docker-compose run detectron2
 After building the base detectron2 container as above, do:
 ```
 # Build:
-docker build -t detectron2-deploy:v0 -f deploy.Dockerfile
+docker build -t detectron2-deploy:v0 -f deploy.Dockerfile .
 # Launch:
 docker run --gpus all -it detectron2-deploy:v0
 ```

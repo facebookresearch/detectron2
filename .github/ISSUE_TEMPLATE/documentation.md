@@ -1,6 +1,6 @@
 ---
 name: "\U0001F4DA Documentation Issues"
-about: Issues or enhancements about docs and comments
+about: Docs and comments are missing, incorrect, or not clear enough
 labels: documentation
 
 ---

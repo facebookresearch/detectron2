@@ -345,6 +345,7 @@ class Res5ROIHeads(ROIHeads):
     The ROIHeads in a typical "C4" R-CNN model, where
     the box and mask head share the cropping and
     the per-region feature computation by a Res5 block.
+    See :paper:`ResNet` Appendix A.
     """
 
     @configurable

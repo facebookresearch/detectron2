@@ -25,6 +25,7 @@ from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
 from detectron2.utils import comm
+from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.events import CommonMetricPrinter
 from detectron2.utils.logger import setup_logger
 
@@ -154,6 +155,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     assert not args.eval_only
 
+    logger.info("Environment info:\n" + collect_env_info())
     if args.task == "data":
         f = benchmark_data
         print("Initial " + RAM_msg())

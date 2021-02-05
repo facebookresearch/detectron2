@@ -187,5 +187,8 @@ if __name__ == "__main__":
             try:
                 x = torch.tensor([1, 2.0], dtype=torch.float32)
                 x = x.to(device)
-            except Exception:
-                print(f"Unable to copy tensor to device={device}")
+            except Exception as e:
+                print(
+                    f"Unable to copy tensor to device={device}: {e}. "
+                    "Your CUDA environment is broken."
+                )

@@ -255,17 +255,13 @@ class SimpleTrainer(TrainerBase):
             loss_dict (dict): dict of scalar losses
             data_time (float): time taken by the dataloader iteration
         """
-        device = next(iter(loss_dict.values())).device
+        metrics_dict = {k: v.detach().cpu().item() for k, v in loss_dict.items()}
+        metrics_dict["data_time"] = data_time
 
-        # Use a new stream so these ops don't wait for DDP or backward
-        with torch.cuda.stream(torch.cuda.Stream() if device.type == "cuda" else None):
-            metrics_dict = {k: v.detach().cpu().item() for k, v in loss_dict.items()}
-            metrics_dict["data_time"] = data_time
-
-            # Gather metrics among all workers for logging
-            # This assumes we do DDP-style training, which is currently the only
-            # supported method in detectron2.
-            all_metrics_dict = comm.gather(metrics_dict)
+        # Gather metrics among all workers for logging
+        # This assumes we do DDP-style training, which is currently the only
+        # supported method in detectron2.
+        all_metrics_dict = comm.gather(metrics_dict)
 
         if comm.is_main_process():
             storage = get_event_storage()

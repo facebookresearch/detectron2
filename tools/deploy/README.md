@@ -12,7 +12,7 @@ This directory contains the following examples:
 All C++ examples depend on libtorch and OpenCV. Some require more dependencies:
 
 * Running caffe2-format models requires:
-  * PyTorch with caffe2 inside
+  * libtorch built with caffe2 inside
   * gflags, glog
   * protobuf library that matches the version used by PyTorch (version defined in `include/caffe2/proto/caffe2.pb.h` of your PyTorch installation)
   * MKL headers if caffe2 is built with MKL

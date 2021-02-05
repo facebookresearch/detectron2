@@ -33,10 +33,10 @@ def locate(name: str) -> Any:
     # Should use _locate directly if it's public.
     if obj is None:
         try:
-            from hydra._internal.utils import _locate
+            from hydra.utils import get_method
         except ImportError as e:
             raise ImportError(f"Cannot dynamically locate object {name}!") from e
         else:
-            obj = _locate(name)  # it raises if fails
+            obj = get_method(name)  # it raises if fails
 
     return obj
