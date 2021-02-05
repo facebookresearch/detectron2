@@ -3,17 +3,11 @@ import itertools
 from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 import torch
-from fvcore.common.param_scheduler import (
-    CompositeParamScheduler,
-    ConstantParamScheduler,
-    CosineParamScheduler,
-    LinearParamScheduler,
-    MultiStepParamScheduler,
-)
+from fvcore.common.param_scheduler import CosineParamScheduler, MultiStepParamScheduler
 
 from detectron2.config import CfgNode
 
-from .lr_scheduler import LRMultiplier
+from .lr_scheduler import LRMultiplier, WarmupParamScheduler
 
 _GradientClipperInput = Union[torch.Tensor, Iterable[torch.Tensor]]
 _GradientClipper = Callable[[_GradientClipperInput], None]
@@ -221,18 +215,10 @@ def build_lr_scheduler(
     else:
         raise ValueError("Unknown LR scheduler: {}".format(name))
 
-    # Add warmup
-    warmup_method = cfg.SOLVER.WARMUP_METHOD
-    if warmup_method == "constant":
-        warmup = ConstantParamScheduler(cfg.SOLVER.WARMUP_FACTOR)
-    elif warmup_method == "linear":
-        warmup = LinearParamScheduler(cfg.SOLVER.WARMUP_FACTOR, 1.0)
-    else:
-        raise ValueError("Unknown warmup method: {}".format(warmup_method))
-    warmup_ratio = cfg.SOLVER.WARMUP_ITERS / cfg.SOLVER.MAX_ITER
-    sched = CompositeParamScheduler(
-        [warmup, sched],
-        interval_scaling=["rescaled", "fixed"],
-        lengths=[warmup_ratio, 1 - warmup_ratio],
+    sched = WarmupParamScheduler(
+        sched,
+        cfg.SOLVER.WARMUP_FACTOR,
+        cfg.SOLVER.WARMUP_ITERS / cfg.SOLVER.MAX_ITER,
+        cfg.SOLVER.WARMUP_METHOD,
     )
     return LRMultiplier(optimizer, multiplier=sched, max_iter=cfg.SOLVER.MAX_ITER)

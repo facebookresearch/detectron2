@@ -4,9 +4,49 @@ import math
 from bisect import bisect_right
 from typing import List
 import torch
-from fvcore.common.param_scheduler import ParamScheduler
+from fvcore.common.param_scheduler import (
+    CompositeParamScheduler,
+    ConstantParamScheduler,
+    LinearParamScheduler,
+    ParamScheduler,
+)
 
 logger = logging.getLogger(__name__)
+
+
+class WarmupParamScheduler(CompositeParamScheduler):
+    """
+    Add an initial warmup stage to another scheduler.
+    """
+
+    def __init__(
+        self,
+        scheduler: ParamScheduler,
+        warmup_factor: float,
+        warmup_length: float,
+        warmup_method: str = "linear",
+    ):
+        """
+        Args:
+            scheduler: warmup will be added at the beginning of this scheduler
+            warmup_factor: the factor w.r.t the initial value of ``scheduler``, e.g. 0.001
+            warmup_length: the relative length (in [0, 1]) of warmup steps w.r.t the entire
+                training, e.g. 0.01
+            warmup_method: one of "linear" or "constant"
+        """
+        end_value = scheduler(warmup_length)  # the value to reach when warmup ends
+        start_value = warmup_factor * scheduler(0.0)
+        if warmup_method == "constant":
+            warmup = ConstantParamScheduler(start_value)
+        elif warmup_method == "linear":
+            warmup = LinearParamScheduler(start_value, end_value)
+        else:
+            raise ValueError("Unknown warmup method: {}".format(warmup_method))
+        super().__init__(
+            [warmup, scheduler],
+            interval_scaling=["rescaled", "fixed"],
+            lengths=[warmup_length, 1 - warmup_length],
+        )
 
 
 class LRMultiplier(torch.optim.lr_scheduler._LRScheduler):
@@ -25,15 +65,12 @@ class LRMultiplier(torch.optim.lr_scheduler._LRScheduler):
     ::
         LRMultiplier(
             opt,
-            CompositeParamScheduler([
-                LinearParamScheduler(0.001, 1),  # warmup
+            WarmupParamScheduler(
                 MultiStepParamScheduler(
                     [1, 0.1, 0.01],
                     milestones=[60000, 80000],
                     num_updates=90000,
-                )],
-                interval_scaling=["rescaled", "fixed"],
-                lengths=[100 / 90000, 89900 / 90000],
+                ), 0.001, 100 / 90000
             ),
             max_iter=90000
         )

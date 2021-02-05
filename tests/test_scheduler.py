@@ -4,15 +4,10 @@ import math
 import numpy as np
 from unittest import TestCase
 import torch
-from fvcore.common.param_scheduler import (
-    CompositeParamScheduler,
-    CosineParamScheduler,
-    LinearParamScheduler,
-    MultiStepParamScheduler,
-)
+from fvcore.common.param_scheduler import CosineParamScheduler, MultiStepParamScheduler
 from torch import nn
 
-from detectron2.solver import LRMultiplier
+from detectron2.solver import LRMultiplier, WarmupParamScheduler
 
 
 class TestScheduler(TestCase):
@@ -20,17 +15,14 @@ class TestScheduler(TestCase):
         p = nn.Parameter(torch.zeros(0))
         opt = torch.optim.SGD([p], lr=5)
 
-        multiplier = CompositeParamScheduler(
-            [
-                LinearParamScheduler(0.001, 1),  # warmup
-                MultiStepParamScheduler(
-                    [1, 0.1, 0.01, 0.001],
-                    milestones=[10, 15, 20],
-                    num_updates=30,
-                ),
-            ],
-            interval_scaling=["rescaled", "fixed"],
-            lengths=[5 / 30, 25 / 30],
+        multiplier = WarmupParamScheduler(
+            MultiStepParamScheduler(
+                [1, 0.1, 0.01, 0.001],
+                milestones=[10, 15, 20],
+                num_updates=30,
+            ),
+            0.001,
+            5 / 30,
         )
         sched = LRMultiplier(opt, multiplier, 30)
         # This is an equivalent of:
@@ -53,13 +45,10 @@ class TestScheduler(TestCase):
     def test_warmup_cosine(self):
         p = nn.Parameter(torch.zeros(0))
         opt = torch.optim.SGD([p], lr=5)
-        multiplier = CompositeParamScheduler(
-            [
-                LinearParamScheduler(0.001, 1),  # warmup
-                CosineParamScheduler(1, 0),
-            ],
-            interval_scaling=["rescaled", "fixed"],
-            lengths=[5 / 30, 25 / 30],
+        multiplier = WarmupParamScheduler(
+            CosineParamScheduler(1, 0),
+            0.001,
+            5 / 30,
         )
         sched = LRMultiplier(opt, multiplier, 30)
 
