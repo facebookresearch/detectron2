@@ -10,6 +10,7 @@
 
 // only needed for export_method=tracing
 #include <torchvision/vision.h> // @oss-only
+// @fb-only: #include <torchvision/csrc/vision.h>
 
 using namespace std;
 
