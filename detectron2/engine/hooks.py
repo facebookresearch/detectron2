@@ -10,11 +10,13 @@ import time
 from collections import Counter
 import torch
 from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
+from fvcore.common.param_scheduler import ParamScheduler
 from fvcore.common.timer import Timer
 from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
+from detectron2.solver import LRMultiplier
 from detectron2.utils.events import EventStorage, EventWriter
 from detectron2.utils.file_io import PathManager
 
@@ -207,7 +209,9 @@ class LRScheduler(HookBase):
         """
         Args:
             optimizer (torch.optim.Optimizer):
-            scheduler (torch.optim.LRScheduler):
+            scheduler (torch.optim.LRScheduler or fvcore.common.param_scheduler.ParamScheduler):
+                if a :class:`ParamScheduler` object, it defines the multiplier over the base LR
+                in the optimizer.
 
         If any argument is not given, will try to obtain it from the trainer.
         """
@@ -217,6 +221,13 @@ class LRScheduler(HookBase):
     def before_train(self):
         self._optimizer = self._optimizer or self.trainer.optimizer
         self._scheduler = self._scheduler or self.trainer.scheduler
+        if isinstance(self._scheduler, ParamScheduler):
+            self._scheduler = LRMultiplier(
+                self._optimizer,
+                self._scheduler,
+                self.trainer.max_iter,
+                last_iter=self.trainer.iter - 1,
+            )
 
         # NOTE: some heuristics on what LR to summarize
         # summarize the param group with most parameters
