@@ -21,3 +21,6 @@ services:
     environment:
       - DISPLAY=$DISPLAY
       - NVIDIA_VISIBLE_DEVICES=all
+    # Uncomment with proper source to access webcam from docker
+    # devices: 
+    #   - /dev/video0:/dev/video0
