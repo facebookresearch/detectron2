@@ -822,11 +822,7 @@ class StandardROIHeads(ROIHeads):
             In inference, update `instances` with new fields "pred_masks" and return it.
         """
         if not self.mask_on:
-            # https://github.com/pytorch/pytorch/issues/49728
-            if self.training:
-                return {}
-            else:
-                return instances
+            return {} if self.training else instances
 
         if self.training:
             # head is only trained on positive proposals.
@@ -856,11 +852,7 @@ class StandardROIHeads(ROIHeads):
             In inference, update `instances` with new fields "pred_keypoints" and return it.
         """
         if not self.keypoint_on:
-            # https://github.com/pytorch/pytorch/issues/49728
-            if self.training:
-                return {}
-            else:
-                return instances
+            return {} if self.training else instances
 
         if self.training:
             # head is only trained on positive proposals with >=1 visible keypoints.
