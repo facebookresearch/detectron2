@@ -115,11 +115,8 @@ class Trainer(DefaultTrainer):
         """
         params = get_default_optimizer_params(
             model,
-            base_lr=cfg.SOLVER.BASE_LR,
             weight_decay=cfg.SOLVER.WEIGHT_DECAY,
             weight_decay_norm=cfg.SOLVER.WEIGHT_DECAY_NORM,
-            bias_lr_factor=cfg.SOLVER.BIAS_LR_FACTOR,
-            weight_decay_bias=cfg.SOLVER.WEIGHT_DECAY_BIAS,
         )
 
         optimizer_type = cfg.SOLVER.OPTIMIZER
