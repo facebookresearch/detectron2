@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import time
 import weakref
-from typing import Dict
+from typing import Dict, List, Optional
 import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
@@ -94,10 +94,14 @@ class TrainerBase:
         storage(EventStorage): An EventStorage that's opened during the course of training.
     """
 
-    def __init__(self):
-        self._hooks = []
+    def __init__(self) -> None:
+        self._hooks: List[HookBase] = []
+        self.iter: int
+        self.start_iter: int
+        self.max_iter: int
+        self.storage: EventStorage
 
-    def register_hooks(self, hooks):
+    def register_hooks(self, hooks: List[Optional[HookBase]]) -> None:
         """
         Register hooks to the trainer. The hooks are executed in the order
         they are registered.
