@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import copy
 import itertools
+import logging
 from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 import torch
@@ -227,9 +228,16 @@ def build_lr_scheduler(
     name = cfg.SOLVER.LR_SCHEDULER_NAME
 
     if name == "WarmupMultiStepLR":
+        steps = [x for x in cfg.SOLVER.STEPS if x <= cfg.SOLVER.MAX_ITER]
+        if len(steps) != len(cfg.SOLVER.STEPS):
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "SOLVER.STEPS contains values larger than SOLVER.MAX_ITER. "
+                "These values will be ignored."
+            )
         sched = MultiStepParamScheduler(
-            values=[cfg.SOLVER.GAMMA ** k for k in range(len(cfg.SOLVER.STEPS) + 1)],
-            milestones=cfg.SOLVER.STEPS,
+            values=[cfg.SOLVER.GAMMA ** k for k in range(len(steps) + 1)],
+            milestones=steps,
             num_updates=cfg.SOLVER.MAX_ITER,
         )
     elif name == "WarmupCosineLR":
