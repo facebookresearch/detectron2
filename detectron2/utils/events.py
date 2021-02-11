@@ -187,14 +187,16 @@ class CommonMetricPrinter(EventWriter):
     To print something in more customized ways, please implement a similar printer by yourself.
     """
 
-    def __init__(self, max_iter: Optional[int] = None):
+    def __init__(self, max_iter: Optional[int] = None, window_size: int = 20):
         """
         Args:
             max_iter: the maximum number of iterations to train.
                 Used to compute ETA. If not given, ETA will not be printed.
+            window_size (int): the losses will be median-smoothed by this window size
         """
         self.logger = logging.getLogger(__name__)
         self._max_iter = max_iter
+        self._window_size = window_size
         self._last_write = None  # (step, time) of last call to write(). Used to compute ETA
 
     def _get_eta(self, storage) -> Optional[str]:
@@ -257,7 +259,7 @@ class CommonMetricPrinter(EventWriter):
                 iter=iteration,
                 losses="  ".join(
                     [
-                        "{}: {:.4g}".format(k, v.median(20))
+                        "{}: {:.4g}".format(k, v.median(self._window_size))
                         for k, v in storage.histories().items()
                         if "loss" in k
                     ]
