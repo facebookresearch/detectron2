@@ -10,11 +10,13 @@ from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
 from detectron2.export.torchscript_patch import patch_builtin_len
+from detectron2.layers import ShapeSpec
 from detectron2.modeling import build_backbone
 from detectron2.modeling.postprocessing import detector_postprocess
+from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
-from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image
+from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image, random_boxes
 
 
 """
@@ -152,6 +154,40 @@ class TestTracing(unittest.TestCase):
             output = WrapperCls.convert_output(model(image))
             traced_output = WrapperCls.convert_output(traced_model(image))
         assert_instances_allclose(output, traced_output)
+
+    def testKeypointHead(self):
+        class M(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.model = KRCNNConvDeconvUpsampleHead(
+                    ShapeSpec(channels=4, height=14, width=14), num_keypoints=17, conv_dims=(4,)
+                )
+
+            def forward(self, x, predbox1, predbox2):
+                inst = [
+                    Instances((100, 100), pred_boxes=Boxes(predbox1)),
+                    Instances((100, 100), pred_boxes=Boxes(predbox2)),
+                ]
+                ret = self.model(x, inst)
+                return tuple(x.pred_keypoints for x in ret)
+
+        model = M()
+        model.eval()
+
+        def gen_input(num1, num2):
+            feat = torch.randn((num1 + num2, 4, 14, 14))
+            box1 = random_boxes(num1)
+            box2 = random_boxes(num2)
+            return feat, box1, box2
+
+        with torch.no_grad(), patch_builtin_len():
+            trace = torch.jit.trace(model, gen_input(15, 15), check_trace=False)
+
+            inputs = gen_input(12, 10)
+            trace_outputs = trace(*inputs)
+            true_outputs = model(*inputs)
+            for trace_output, true_output in zip(trace_outputs, true_outputs):
+                self.assertTrue(torch.allclose(trace_output, true_output))
 
 
 class TestTorchscriptUtils(unittest.TestCase):

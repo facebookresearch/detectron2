@@ -179,7 +179,7 @@ class BaseKeypointRCNNHead(nn.Module):
     def forward(self, x, instances: List[Instances]):
         """
         Args:
-            x: input region feature(s) provided by :class:`ROIHeads`.
+            x: input 4D region feature(s) provided by :class:`ROIHeads`.
             instances (list[Instances]): contains the boxes & labels corresponding
                 to the input features.
                 Exact format is up to its caller to decide.

@@ -290,6 +290,7 @@ def patch_builtin_len(modules=()):
         MODULES = [
             "detectron2.modeling.roi_heads.fast_rcnn",
             "detectron2.modeling.roi_heads.mask_head",
+            "detectron2.modeling.roi_heads.keypoint_head",
         ] + list(modules)
         ctxs = [stack.enter_context(mock.patch(mod + ".len")) for mod in MODULES]
         for m in ctxs:
