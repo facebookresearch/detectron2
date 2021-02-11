@@ -78,6 +78,11 @@ except ImportError:
     ]:
         sys.modules[m] = mock.Mock(name=m)
     sys.modules['torch'].__version__ = "1.5"  # fake version
+else:
+    try:
+        torch.ops.detectron2 = mock.Mock(name="torch.ops.detectron2")
+    except:
+        pass
 
 for m in [
     "cv2", "scipy", "portalocker", "detectron2._C",
