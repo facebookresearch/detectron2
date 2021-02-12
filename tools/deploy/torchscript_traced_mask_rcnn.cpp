@@ -28,7 +28,8 @@ c10::IValue get_caffe2_tracing_inputs(cv::Mat& img, c10::Device device) {
   input = input.to(device, torch::kFloat).permute({0, 3, 1, 2}).contiguous();
 
   std::array<float, 3> im_info_data{height * 1.0f, width * 1.0f, 1.0f};
-  auto im_info = torch::from_blob(im_info_data.data(), {1, 3}).clone().to(device);
+  auto im_info =
+      torch::from_blob(im_info_data.data(), {1, 3}).clone().to(device);
   return std::make_tuple(input, im_info);
 }
 
