@@ -364,7 +364,7 @@ class ResNet(Backbone):
     Implement :paper:`ResNet`.
     """
 
-    def __init__(self, stem, stages, num_classes=None, out_features=None):
+    def __init__(self, stem, stages, num_classes=None, out_features=None, freeze_at=0):
         """
         Args:
             stem (nn.Module): a stem module
@@ -375,6 +375,8 @@ class ResNet(Backbone):
             out_features (list[str]): name of the layers whose outputs should
                 be returned in forward. Can be anything in "stem", "linear", or "res2" ...
                 If None, will return the output of the last layer.
+            freeze_at (int): The number of stages at the beginning to freeze.
+                see :meth:`freeze` for detailed explanation.
         """
         super().__init__()
         self.stem = stem
@@ -420,6 +422,7 @@ class ResNet(Backbone):
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
             assert out_feature in children, "Available children: {}".format(", ".join(children))
+        self.freeze(freeze_at)
 
     def forward(self, x):
         """
@@ -646,4 +649,4 @@ def build_resnet_backbone(cfg, input_shape):
         out_channels *= 2
         bottleneck_channels *= 2
         stages.append(blocks)
-    return ResNet(stem, stages, out_features=out_features).freeze(freeze_at)
+    return ResNet(stem, stages, out_features=out_features, freeze_at=freeze_at)
