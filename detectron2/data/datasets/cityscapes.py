@@ -315,9 +315,9 @@ if __name__ == "__main__":
         dicts = load_cityscapes_semantic(args.image_dir, args.gt_dir)
         logger.info("Done loading {} samples.".format(len(dicts)))
 
-        stuff_names = [k.name for k in labels if k.trainId != 255]
+        stuff_classes = [k.name for k in labels if k.trainId != 255]
         stuff_colors = [k.color for k in labels if k.trainId != 255]
-        meta = Metadata().set(stuff_names=stuff_names, stuff_colors=stuff_colors)
+        meta = Metadata().set(stuff_classes=stuff_classes, stuff_colors=stuff_colors)
 
     for d in dicts:
         img = np.array(Image.open(PathManager.open(d["file_name"], "rb")))
