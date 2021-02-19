@@ -295,7 +295,7 @@ class DefaultTrainer(TrainerBase):
         cfg (CfgNode):
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg,model=None,optimizer=None,data_loader=None):
         """
         Args:
             cfg (CfgNode):
@@ -307,9 +307,12 @@ class DefaultTrainer(TrainerBase):
         cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
 
         # Assume these objects must be constructed in this order.
-        model = self.build_model(cfg)
-        optimizer = self.build_optimizer(cfg, model)
-        data_loader = self.build_train_loader(cfg)
+        if not model:
+            model = self.build_model(cfg)
+        if not optimizer:    
+            optimizer = self.build_optimizer(cfg, model)
+        if not data_loader:    
+            data_loader = self.build_train_loader(cfg)
 
         # For training, wrap with DDP. But don't need this for inference.
         if comm.get_world_size() > 1:
