@@ -60,17 +60,13 @@ class DetectionCheckpointer(Checkpointer):
         if checkpoint.get("matching_heuristics", False):
             self._convert_ndarray_to_tensor(checkpoint["model"])
             # convert weights by name-matching heuristics
-            model_state_dict = self.model.state_dict()
-            align_and_update_state_dicts(
-                model_state_dict,
+            checkpoint["model"] = align_and_update_state_dicts(
+                self.model.state_dict(),
                 checkpoint["model"],
                 c2_conversion=checkpoint.get("__author__", None) == "Caffe2",
             )
-            checkpoint["model"] = model_state_dict
         # for non-caffe2 models, use standard ways to load it
         incompatible = super()._load_model(checkpoint)
-        if incompatible is None:  # support older versions of fvcore
-            return None
 
         model_buffers = dict(self.model.named_buffers(recurse=False))
         for k in ["pixel_mean", "pixel_std"]:

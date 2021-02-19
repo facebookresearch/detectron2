@@ -2,11 +2,9 @@
 import copy
 import logging
 import re
+from typing import Dict, List
 import torch
-from fvcore.common.checkpoint import (
-    get_missing_parameters_message,
-    get_unexpected_parameters_message,
-)
+from tabulate import tabulate
 
 
 def convert_basic_c2_names(original_keys):
@@ -77,7 +75,7 @@ def convert_c2_detectron_names(weights):
         dict: detectron2 names -> C2 names
     """
     logger = logging.getLogger(__name__)
-    logger.info("Remapping C2 weights ......")
+    logger.info("Renaming Caffe2 weights ......")
     original_keys = sorted(weights.keys())
     layer_keys = copy.deepcopy(original_keys)
 
@@ -210,8 +208,9 @@ def convert_c2_detectron_names(weights):
 # it assumes model_state_dict will have longer names.
 def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversion=True):
     """
-    Match names between the two state-dict, and update the values of model_state_dict in-place with
-    copies of the matched tensor in ckpt_state_dict.
+    Match names between the two state-dict, and returns a new chkpt_state_dict with names
+    converted to match model_state_dict with heuristics. The returned dict can be later
+    loaded with fvcore checkpointer.
     If `c2_conversion==True`, `ckpt_state_dict` is assumed to be a Caffe2
     model and will be renamed at first.
 
@@ -251,13 +250,10 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
     # remove indices that correspond to no-match
     idxs[max_match_size == 0] = -1
 
-    # used for logging
-    max_len_model = max(len(key) for key in model_keys) if model_keys else 1
-    max_len_ckpt = max(len(key) for key in ckpt_keys) if ckpt_keys else 1
-    log_str_template = "{: <{}} loaded from {: <{}} of shape {}"
     logger = logging.getLogger(__name__)
     # matched_pairs (matched checkpoint key --> matched model key)
     matched_keys = {}
+    result_state_dict = {}
     for idx_model, idx_ckpt in enumerate(idxs.tolist()):
         if idx_ckpt == -1:
             continue
@@ -279,7 +275,8 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
             )
             continue
 
-        model_state_dict[key_model] = value_ckpt.clone()
+        assert key_model not in result_state_dict
+        result_state_dict[key_model] = value_ckpt
         if key_ckpt in matched_keys:  # already added to matched_keys
             logger.error(
                 "Ambiguity found for {} in checkpoint!"
@@ -290,24 +287,118 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
             raise ValueError("Cannot match one checkpoint key to multiple keys in the model.")
 
         matched_keys[key_ckpt] = key_model
-        logger.info(
-            log_str_template.format(
-                key_model,
-                max_len_model,
-                original_keys[key_ckpt],
-                max_len_ckpt,
-                tuple(shape_in_model),
-            )
-        )
-    matched_model_keys = matched_keys.values()
-    matched_ckpt_keys = matched_keys.keys()
-    # print warnings about unmatched keys on both side
-    unmatched_model_keys = [k for k in model_keys if k not in matched_model_keys]
-    if len(unmatched_model_keys):
-        logger.info(get_missing_parameters_message(unmatched_model_keys))
 
-    unmatched_ckpt_keys = [k for k in ckpt_keys if k not in matched_ckpt_keys]
-    if len(unmatched_ckpt_keys):
-        logger.info(
-            get_unexpected_parameters_message(original_keys[x] for x in unmatched_ckpt_keys)
-        )
+    # logging:
+    matched_model_keys = sorted(matched_keys.values())
+    common_prefix = _longest_common_prefix(matched_model_keys)
+    rev_matched_keys = {v: k for k, v in matched_keys.items()}
+    original_keys = {k: original_keys[rev_matched_keys[k]] for k in matched_model_keys}
+
+    model_key_groups = _group_keys_by_module(matched_model_keys, original_keys)
+    table = []
+    memo = set()
+    for key_model in matched_model_keys:
+        if key_model in memo:
+            continue
+        if key_model in model_key_groups:
+            group = model_key_groups[key_model]
+            memo |= set(group)
+            shapes = [tuple(model_state_dict[k].shape) for k in group]
+            table.append(
+                (
+                    _longest_common_prefix([k[len(common_prefix) :] for k in group]) + "*",
+                    _group_str([original_keys[k] for k in group]),
+                    " ".join([str(x).replace(" ", "") for x in shapes]),
+                )
+            )
+        else:
+            key_checkpoint = original_keys[key_model]
+            shape = str(tuple(model_state_dict[key_model].shape))
+            table.append((key_model[len(common_prefix) :], key_checkpoint, shape))
+    table_str = tabulate(
+        table, tablefmt="pipe", headers=["Names in Model", "Names in Checkpoint", "Shapes"]
+    )
+    logger.info(
+        "Following weights matched with "
+        + (f"submodule {common_prefix[:-1]}" if common_prefix else "model")
+        + ":\n"
+        + table_str
+    )
+
+    unmatched_ckpt_keys = [k for k in ckpt_keys if k not in set(matched_keys.keys())]
+    for k in unmatched_ckpt_keys:
+        result_state_dict[k] = ckpt_state_dict[k]
+    return result_state_dict
+
+
+def _group_keys_by_module(keys: List[str], original_names: Dict[str, str]):
+    """
+    Params in the same submodule are grouped together.
+
+    Args:
+        keys: names of all parameters
+        original_names: mapping from parameter name to their name in the checkpoint
+
+    Returns:
+        dict[name -> all other names in the same group]
+    """
+
+    def _submodule_name(key):
+        pos = key.rfind(".")
+        if pos < 0:
+            return None
+        prefix = key[: pos + 1]
+        return prefix
+
+    all_submodules = [_submodule_name(k) for k in keys]
+    all_submodules = [x for x in all_submodules if x]
+    all_submodules = sorted(all_submodules, key=len)
+
+    ret = {}
+    for prefix in all_submodules:
+        group = [k for k in keys if k.startswith(prefix)]
+        if len(group) <= 1:
+            continue
+        original_name_lcp = _longest_common_prefix_str([original_names[k] for k in group])
+        if len(original_name_lcp) == 0:
+            # don't group weights if original names don't share prefix
+            continue
+
+        for k in group:
+            if k in ret:
+                continue
+            ret[k] = group
+    return ret
+
+
+def _longest_common_prefix(names: List[str]) -> str:
+    """
+    ["abc.zfg", "abc.zef"] -> "abc."
+    """
+    names = [n.split(".") for n in names]
+    m1, m2 = min(names), max(names)
+    ret = [a for a, b in zip(m1, m2) if a == b]
+    ret = ".".join(ret) + "." if len(ret) else ""
+    return ret
+
+
+def _longest_common_prefix_str(names: List[str]) -> str:
+    m1, m2 = min(names), max(names)
+    lcp = [a for a, b in zip(m1, m2) if a == b]
+    lcp = "".join(lcp)
+    return lcp
+
+
+def _group_str(names: List[str]) -> str:
+    """
+    Turn "common1", "common2", "common3" into "common{1,2,3}"
+    """
+    lcp = _longest_common_prefix_str(names)
+    rest = [x[len(lcp) :] for x in names]
+    rest = "{" + ",".join(rest) + "}"
+    ret = lcp + rest
+
+    # add some simplification for BN specifically
+    ret = ret.replace("bn_{beta,running_mean,running_var,gamma}", "bn_*")
+    ret = ret.replace("bn_beta,bn_running_mean,bn_running_var,bn_gamma", "bn_*")
+    return ret
