@@ -62,18 +62,25 @@ def get_sample_coco_image(tensor=True):
     return ret
 
 
-def assert_instances_allclose(input, other, rtol=1e-5, msg=""):
+def assert_instances_allclose(input, other, *, rtol=1e-5, msg="", size_as_tensor=False):
     """
     Args:
         input, other (Instances):
+        size_as_tensor: compare image_size of the Instances as tensors (instead of tuples).
+             Useful for comparing outputs of tracing.
     """
     if not msg:
         msg = "Two Instances are different! "
     else:
         msg = msg.rstrip() + " "
-    assert input.image_size == other.image_size, (
-        msg + f"image_size is {input.image_size} vs. {other.image_size}!"
-    )
+
+    size_error_msg = msg + f"image_size is {input.image_size} vs. {other.image_size}!"
+    if size_as_tensor:
+        assert torch.equal(
+            torch.tensor(input.image_size), torch.tensor(other.image_size)
+        ), size_error_msg
+    else:
+        assert input.image_size == other.image_size, size_error_msg
     fields = sorted(input.get_fields().keys())
     fields_other = sorted(other.get_fields().keys())
     assert fields == fields_other, msg + f"Fields are {fields} vs {fields_other}!"
