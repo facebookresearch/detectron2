@@ -42,7 +42,7 @@ class TestCheckpointer(unittest.TestCase):
                 # different tensor references
                 self.assertFalse(id(loaded) == id(stored))
                 # same content
-                self.assertTrue(loaded.equal(stored))
+                self.assertTrue(loaded.to(stored).equal(stored))
 
 
 if __name__ == "__main__":

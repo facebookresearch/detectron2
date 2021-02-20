@@ -99,7 +99,14 @@ install_linux_dep: &install_linux_dep
       command: |
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
-        pip install --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+        # install from pytorch's test wheels index to have access to RC wheels
+        pip install --progress-bar off torch==$PYTORCH_VERSION -f https://download.pytorch.org/whl/test/torch_test.html
+        if [[ "$TORCHVISION_VERSION" == "master" ]]; then
+          pip install git+https://github.com/pytorch/vision.git
+        else
+          pip install --progress-bar off torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/test/torch_test.html
+        fi
+
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
         gcc --version
 
@@ -222,4 +229,8 @@ workflows:
           name: linux_gpu_tests_pytorch1.7
           pytorch_version: '1.7+cu101'
           torchvision_version: '0.8.1+cu101'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.8
+          pytorch_version: '1.8+cu101'
+          torchvision_version: 'master'
       - windows_cpu_build
