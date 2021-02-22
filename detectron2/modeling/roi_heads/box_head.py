@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from detectron2.config import configurable
-from detectron2.layers import Conv2d, Linear, ShapeSpec, get_norm
+from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.utils.registry import Registry
 
 __all__ = ["FastRCNNConvFCHead", "build_box_head", "ROI_BOX_HEAD_REGISTRY"]
@@ -67,7 +67,7 @@ class FastRCNNConvFCHead(nn.Sequential):
         for k, fc_dim in enumerate(fc_dims):
             if k == 0:
                 self.add_module("flatten", nn.Flatten())
-            fc = Linear(int(np.prod(self._output_size)), fc_dim)
+            fc = nn.Linear(int(np.prod(self._output_size)), fc_dim)
             self.add_module("fc{}".format(k + 1), fc)
             self.add_module("fc_relu{}".format(k + 1), nn.ReLU())
             self.fcs.append(fc)

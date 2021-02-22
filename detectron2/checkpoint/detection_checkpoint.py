@@ -22,18 +22,7 @@ class DetectionCheckpointer(Checkpointer):
             save_to_disk=is_main_process if save_to_disk is None else save_to_disk,
             **checkpointables,
         )
-        if hasattr(self, "path_manager"):
-            self.path_manager = PathManager
-        else:
-            # This could only happen for open source
-            # TODO remove after upgrading fvcore version
-            from iopath.common.file_io import g_pathmgr
-
-            for handler in PathManager._path_handlers.values():
-                try:
-                    g_pathmgr.register_handler(handler)
-                except KeyError:
-                    pass
+        self.path_manager = PathManager
 
     def _load_file(self, filename):
         if filename.endswith(".pkl"):

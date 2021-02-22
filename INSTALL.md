@@ -2,7 +2,7 @@
 
 ### Requirements
 - Linux or macOS with Python ≥ 3.6
-- PyTorch ≥ 1.5 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
+- PyTorch ≥ 1.6 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
   Install them together at [pytorch.org](https://pytorch.org) to make sure of this
 - OpenCV is optional but needed by demo and visualization
 
@@ -61,7 +61,7 @@ Choose from this table to install [v0.3 (Nov 2020)](https://github.com/facebookr
 
 Note that:
 1. The pre-built package has to be used with corresponding version of CUDA and the official package of PyTorch.
-	 Otherwise, please build detectron2 from source.
+   Otherwise, please build detectron2 from source.
 2. New packages are released every few months. Therefore, packages may not contain latest features in the master
    branch and may not be compatible with the master branch of a research project that uses detectron2
    (e.g. those in [projects](projects)).

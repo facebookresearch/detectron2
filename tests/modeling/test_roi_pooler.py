@@ -117,7 +117,6 @@ class TestROIPooler(unittest.TestCase):
         output = pooler.forward(features, [])
         self.assertEqual(output.shape, (0, C, 14, 14))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_fmt_box_list_tracing(self):
         class Model(torch.nn.Module):
             def forward(self, box_tensor):
@@ -130,7 +129,6 @@ class TestROIPooler(unittest.TestCase):
             self.assertEqual(func(torch.ones(5, 4)).shape, (5, 5))
             self.assertEqual(func(torch.ones(20, 4)).shape, (20, 5))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_roi_pooler_tracing(self):
         class Model(torch.nn.Module):
             def __init__(self, roi):

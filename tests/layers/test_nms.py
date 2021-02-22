@@ -4,7 +4,6 @@ import unittest
 import torch
 
 from detectron2.layers import batched_nms
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import random_boxes
 
 
@@ -14,7 +13,6 @@ class TestNMS(unittest.TestCase):
         scores = torch.rand(N)
         return boxes, scores
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_nms_scriptability(self):
         N = 2000
         num_classes = 50

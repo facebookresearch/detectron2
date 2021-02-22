@@ -6,7 +6,6 @@ import torch
 from detectron2.config import get_cfg
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.anchor_generator import DefaultAnchorGenerator, RotatedAnchorGenerator
-from detectron2.utils.env import TORCH_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class TestAnchorGenerator(unittest.TestCase):
             ]
         )
 
-        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
+        self.assertTrue(torch.allclose(anchors[0].tensor, expected_anchor_tensor))
 
     def test_default_anchor_generator_centered(self):
         # test explicit args
@@ -69,11 +68,10 @@ class TestAnchorGenerator(unittest.TestCase):
         )
 
         anchors = anchor_generator([features["stage3"]])
-        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
+        self.assertTrue(torch.allclose(anchors[0].tensor, expected_anchor_tensor))
 
-        if TORCH_VERSION >= (1, 6):
-            anchors = torch.jit.script(anchor_generator)([features["stage3"]])
-            assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
+        anchors = torch.jit.script(anchor_generator)([features["stage3"]])
+        self.assertTrue(torch.allclose(anchors[0].tensor, expected_anchor_tensor))
 
     def test_rrpn_anchor_generator(self):
         cfg = get_cfg()
@@ -115,7 +113,7 @@ class TestAnchorGenerator(unittest.TestCase):
             ]
         )
 
-        assert torch.allclose(anchors[0].tensor, expected_anchor_tensor)
+        self.assertTrue(torch.allclose(anchors[0].tensor, expected_anchor_tensor))
 
 
 if __name__ == "__main__":

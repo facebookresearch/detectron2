@@ -218,10 +218,6 @@ workflows:
           context:
             - DOCKERHUB_TOKEN
       - linux_gpu_tests:
-          name: linux_gpu_tests_pytorch1.5
-          pytorch_version: '1.5+cu101'
-          torchvision_version: '0.6+cu101'
-      - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.6
           pytorch_version: '1.6+cu101'
           torchvision_version: '0.7+cu101'

@@ -77,7 +77,7 @@ except ImportError:
         "torchvision", "torchvision.ops",
     ]:
         sys.modules[m] = mock.Mock(name=m)
-    sys.modules['torch'].__version__ = "1.5"  # fake version
+    sys.modules['torch'].__version__ = "1.7"  # fake version
 else:
     try:
         torch.ops.detectron2 = mock.Mock(name="torch.ops.detectron2")
