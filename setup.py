@@ -216,6 +216,7 @@ setup(
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
+        "dataclasses; python_version<'3.7'",
     ],
     extras_require={
         "all": [
