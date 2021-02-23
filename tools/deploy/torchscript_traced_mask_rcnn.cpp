@@ -1,4 +1,5 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
+// @lint-ignore-every CLANGTIDY
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -94,16 +95,24 @@ Usage:
        << ms * 1.0 / 1e6 / N_benchmark << " seconds" << endl;
 
   auto outputs = output.toTuple()->elements();
+  cout << "Number of output tensors: " << outputs.size() << endl;
+  at::Tensor bbox, pred_classes, pred_masks, scores;
   // parse Mask R-CNN outputs
-  // NOTE: for export-method=tracing, the order of outputs may change in the
-  // future
-  auto bbox = outputs[0].toTensor(), scores = outputs[1].toTensor(),
-       labels = outputs[2].toTensor(), mask_probs = outputs[3].toTensor();
+  if (is_caffe2) {
+    bbox = outputs[0].toTensor(), scores = outputs[1].toTensor(),
+    pred_classes = outputs[2].toTensor(), pred_masks = outputs[3].toTensor();
+  } else {
+    bbox = outputs[0].toTensor(), pred_classes = outputs[1].toTensor(),
+    pred_masks = outputs[2].toTensor(), scores = outputs[3].toTensor();
+    // outputs[-1] is image_size, others fields ordered by their field name in
+    // Instances
+  }
 
   cout << "bbox: " << bbox.toString() << " " << bbox.sizes() << endl;
   cout << "scores: " << scores.toString() << " " << scores.sizes() << endl;
-  cout << "labels: " << labels.toString() << " " << labels.sizes() << endl;
-  cout << "mask_probs: " << mask_probs.toString() << " " << mask_probs.sizes()
+  cout << "pred_classes: " << pred_classes.toString() << " "
+       << pred_classes.sizes() << endl;
+  cout << "pred_masks: " << pred_masks.toString() << " " << pred_masks.sizes()
        << endl;
 
   int num_instances = bbox.sizes()[0];

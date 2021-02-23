@@ -65,12 +65,12 @@ We show a few example commands to export and execute a Mask R-CNN model in C++.
 ## Notes:
 
 1. Tracing/Caffe2-tracing requires valid weights & sample inputs.
-   Therefore the above commands require [setting up the COCO dataset](https://detectron2.readthedocs.io/tutorials/builtin_datasets.html).
+   Therefore the above commands require pre-trained models and [COCO dataset](https://detectron2.readthedocs.io/tutorials/builtin_datasets.html).
    You can modify the script to obtain sample inputs in other ways instead of from COCO.
 
-2. `--run-eval` flag is supported with caffe2 format.
-   This flag will evaluate the converted models to verify its accuracy.
-   The accuracy is typically slightly different (within 0.1 AP) from original model due to
-   numerical precisions between different implementations.
+2. `--run-eval` flag can be used under certain modes
+   (caffe2_tracing with caffe2 format, or tracing with torchscript format)
+   to evaluate the exported model using the dataset in the config.
    It's recommended to always verify the accuracy in case the conversion is not successful.
-   Evaluation can be slow if model is exported to CPU.
+   Evaluation can be slow if model is exported to CPU or dataset is too large ("coco_2017_val_100" is a small subset of COCO useful for evaluation).
+   Caffe2 accuracy may be slightly different (within 0.1 AP) from original model due to numerical precisions between different runtime.

@@ -1,15 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # -*- coding: utf-8 -*-
 
-import logging
 import typing
-import torch
 from fvcore.nn import activation_count, flop_count, parameter_count, parameter_count_table
 from torch import nn
 
-from detectron2.structures import BitMasks, Boxes, ImageList, Instances
-
-from .logger import log_first_n
+from detectron2.export import TracingAdapter
 
 __all__ = [
     "activation_count_operators",
@@ -64,11 +60,13 @@ def flop_count_operators(
         the flops of box & mask head depends on the number of proposals &
         the number of detected objects.
         Therefore, the flops counting using a single input may not accurately
-        reflect the computation cost of a model.
+        reflect the computation cost of a model. It's recommended to average
+        across a number of inputs.
 
     Args:
         model: a detectron2 model that takes `list[dict]` as input.
         inputs (list[dict]): inputs to model, in detectron2's standard format.
+            Only "image" key will be used.
     """
     return _wrapper_count_operators(model=model, inputs=inputs, mode=FLOPS_MODE, **kwargs)
 
@@ -90,37 +88,14 @@ def activation_count_operators(
     Args:
         model: a detectron2 model that takes `list[dict]` as input.
         inputs (list[dict]): inputs to model, in detectron2's standard format.
+            Only "image" key will be used.
     """
     return _wrapper_count_operators(model=model, inputs=inputs, mode=ACTIVATIONS_MODE, **kwargs)
-
-
-def _flatten_to_tuple(outputs):
-    result = []
-    if isinstance(outputs, torch.Tensor):
-        result.append(outputs)
-    elif isinstance(outputs, (list, tuple)):
-        for v in outputs:
-            result.extend(_flatten_to_tuple(v))
-    elif isinstance(outputs, dict):
-        for _, v in outputs.items():
-            result.extend(_flatten_to_tuple(v))
-    elif isinstance(outputs, Instances):
-        result.extend(_flatten_to_tuple(outputs.get_fields()))
-    elif isinstance(outputs, (Boxes, BitMasks, ImageList)):
-        result.append(outputs.tensor)
-    else:
-        log_first_n(
-            logging.WARN,
-            f"Output of type {type(outputs)} not included in flops/activations count.",
-            n=10,
-        )
-    return tuple(result)
 
 
 def _wrapper_count_operators(
     model: nn.Module, inputs: list, mode: str, **kwargs
 ) -> typing.DefaultDict[str, float]:
-
     # ignore some ops
     supported_ops = {k: lambda *args, **kwargs: {} for k in _IGNORED_OPS}
     supported_ops.update(kwargs.pop("supported_ops", {}))
@@ -128,33 +103,19 @@ def _wrapper_count_operators(
 
     assert len(inputs) == 1, "Please use batch size=1"
     tensor_input = inputs[0]["image"]
-
-    class WrapModel(nn.Module):
-        def __init__(self, model):
-            super().__init__()
-            if isinstance(
-                model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
-            ):
-                self.model = model.module
-            else:
-                self.model = model
-
-        def forward(self, image):
-            # jit requires the input/output to be Tensors
-            inputs = [{"image": image}]
-            outputs = self.model.forward(inputs)
-            # Only the subgraph that computes the returned tuple of tensor will be
-            # counted. So we flatten everything we found to tuple of tensors.
-            return _flatten_to_tuple(outputs)
+    inputs = [{"image": tensor_input}]  # remove other keys, in case there are any
 
     old_train = model.training
-    with torch.no_grad():
-        if mode == FLOPS_MODE:
-            ret = flop_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
-        elif mode == ACTIVATIONS_MODE:
-            ret = activation_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
-        else:
-            raise NotImplementedError("Count for mode {} is not supported yet.".format(mode))
+    if isinstance(model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)):
+        model = model.module
+    wrapper = TracingAdapter(model, inputs)
+    wrapper.eval()
+    if mode == FLOPS_MODE:
+        ret = flop_count(wrapper, (tensor_input,), **kwargs)
+    elif mode == ACTIVATIONS_MODE:
+        ret = activation_count(wrapper, (tensor_input,), **kwargs)
+    else:
+        raise NotImplementedError("Count for mode {} is not supported yet.".format(mode))
     # compatible with change in fvcore
     if isinstance(ret, tuple):
         ret = ret[0]

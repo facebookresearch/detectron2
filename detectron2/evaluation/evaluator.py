@@ -3,8 +3,9 @@ import datetime
 import logging
 import time
 from collections import OrderedDict
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import torch
+from torch import nn
 
 from detectron2.utils.comm import get_world_size, is_main_process
 from detectron2.utils.logger import log_every_n_seconds
@@ -101,13 +102,14 @@ class DatasetEvaluators(DatasetEvaluator):
 def inference_on_dataset(model, data_loader, evaluator):
     """
     Run model on the data_loader and evaluate the metrics with evaluator.
-    Also benchmark the inference speed of `model.forward` accurately.
+    Also benchmark the inference speed of `model.__call__` accurately.
     The model will be used in eval mode.
 
     Args:
-        model (nn.Module): a module which accepts an object from
-            `data_loader` and returns some outputs. It will be temporarily set to `eval` mode.
+        model (callable): a callable which takes an object from
+            `data_loader` and returns some outputs.
 
+            If it's an nn.Module, it will be temporarily set to `eval` mode.
             If you wish to evaluate a model in `training` mode instead, you can
             wrap the given model and override its behavior of `.eval()` and `.train()`.
         data_loader: an iterable object with a length.
@@ -131,7 +133,11 @@ def inference_on_dataset(model, data_loader, evaluator):
     num_warmup = min(5, total - 1)
     start_time = time.perf_counter()
     total_compute_time = 0
-    with inference_context(model), torch.no_grad():
+    with ExitStack() as stack:
+        if isinstance(model, nn.Module):
+            stack.enter_context(inference_context(model))
+        stack.enter_context(torch.no_grad())
+
         for idx, inputs in enumerate(data_loader):
             if idx == num_warmup:
                 start_time = time.perf_counter()

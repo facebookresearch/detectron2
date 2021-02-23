@@ -4,18 +4,20 @@ import argparse
 import os
 import onnx
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
-from detectron2.export import Caffe2Tracer, add_export_config
+from detectron2.export import Caffe2Tracer, TracingAdapter, add_export_config
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
-from detectron2.modeling import GeneralizedRCNN, build_model
+from detectron2.modeling import GeneralizedRCNN, RetinaNet, build_model
+from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.projects.point_rend import add_pointrend_config
 from detectron2.structures import Boxes
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 
@@ -44,7 +46,8 @@ def export_caffe2_tracing(cfg, torch_model, inputs):
         onnx.save(onnx_model, os.path.join(args.output, "model.onnx"))
     elif args.format == "torchscript":
         ts_model = tracer.export_torchscript()
-        ts_model.save(os.path.join(args.output, "model.ts"))
+        with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
+            torch.jit.save(ts_model, f)
         dump_torchscript_IR(ts_model, args.output)
 
 
@@ -61,10 +64,10 @@ def export_scripting(torch_model):
         "pred_keypoints": torch.Tensor,
         "pred_keypoint_heatmaps": torch.Tensor,
     }
-    # maybe can export to onnx format?
     assert args.format == "torchscript", "Scripting only supports torchscript format."
     ts_model = export_torchscript_with_instances(torch_model, fields)
-    ts_model.save(os.path.join(args.output, "model.ts"))
+    with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
+        torch.jit.save(ts_model, f)
     dump_torchscript_IR(ts_model, args.output)
     # TODO inference in Python now missing postprocessing glue code
     return None
@@ -73,39 +76,52 @@ def export_scripting(torch_model):
 # experimental. API not yet final
 def export_tracing(torch_model, inputs):
     assert TORCH_VERSION >= (1, 8)
-    # RetinaNet is supported but needs a slightly different wrapper.
-    # TODO wrapper should be automatically generated
-    assert isinstance(torch_model, GeneralizedRCNN)
     image = inputs[0]["image"]
+    inputs = [{"image": image}]  # remove other unused keys
 
-    class WrapModel(nn.Module):
-        def __init__(self):
-            super().__init__()
-            self.torch_model = torch_model
+    if isinstance(torch_model, GeneralizedRCNN):
 
-        def forward(self, image):
-            inputs = [{"image": image}]
-            outputs = self.torch_model.inference(inputs, do_postprocess=False)[0]
-            outputs = outputs.get_fields()
-            from detectron2.utils.analysis import _flatten_to_tuple
+        def inference(model, inputs):
+            # use do_postprocess=False so it returns ROI mask
+            inst = model.inference(inputs, do_postprocess=False)[0]
+            return [{"instances": inst}]
 
-            return _flatten_to_tuple(outputs)
+    else:
+        inference = None  # assume that we just call the model directly
+
+    traceable_model = TracingAdapter(torch_model, inputs, inference)
 
     from detectron2.export.torchscript_patch import patch_builtin_len
 
-    with torch.no_grad(), patch_builtin_len():
-        assert (
-            args.format == "torchscript"
-        ), "Tracing method only supports torchscript format for now."
-        ts_model = torch.jit.trace(WrapModel(), (image,))
-        ts_model.save(os.path.join(args.output, "model.ts"))
-        dump_torchscript_IR(ts_model, args.output)
-        # NOTE onnx export fails in pytorch
-        # if args.format == "onnx":
-        #     torch.onnx.export(WrapModel(), (image,), os.path.join(args.output, "model.onnx"))
+    with patch_builtin_len():
+        if args.format == "torchscript":
+            ts_model = torch.jit.trace(traceable_model, (image,))
+            with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
+                torch.jit.save(ts_model, f)
+            dump_torchscript_IR(ts_model, args.output)
+        elif args.format == "onnx":
+            # NOTE onnx export currently failing in pytorch
+            with PathManager.open(os.path.join(args.output, "model.onnx"), "wb") as f:
+                torch.onnx.export(traceable_model, (image,), f)
+    logger.info("Inputs schema: " + str(traceable_model.inputs_schema))
+    logger.info("Outputs schema: " + str(traceable_model.outputs_schema))
 
-    # TODO inference in Python now missing postprocessing glue code
-    return None
+    if args.format != "torchscript":
+        return None
+    if not isinstance(torch_model, (GeneralizedRCNN, RetinaNet)):
+        return None
+
+    def eval_wrapper(inputs):
+        """
+        The exported model does not contain the final resize step, which is typically
+        useless for deployment but needed for evaluation. We add it manually here.
+        """
+        input = inputs[0]
+        instances = traceable_model.outputs_schema(ts_model(input["image"]))[0]["instances"]
+        postprocessed = detector_postprocess(instances, input["height"], input["width"])
+        return [{"instances": postprocessed}]
+
+    return eval_wrapper
 
 
 if __name__ == "__main__":
@@ -134,7 +150,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logger = setup_logger()
     logger.info("Command line arguments: " + str(args))
-    os.makedirs(args.output, exist_ok=True)
+    PathManager.mkdirs(args.output)
+    # Disable respecialization on new shapes. Otherwise --run-eval will be slow
+    torch._C._jit_set_bailout_depth(1)
 
     cfg = setup_cfg(args)
 

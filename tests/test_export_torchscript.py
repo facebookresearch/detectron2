@@ -8,7 +8,7 @@ from torch import Tensor, nn
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
-from detectron2.export.flatten import flatten_to_tuple
+from detectron2.export.flatten import TracingAdapter, flatten_to_tuple
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
 from detectron2.export.torchscript_patch import patch_builtin_len
 from detectron2.layers import ShapeSpec
@@ -86,8 +86,7 @@ class TestTracing(unittest.TestCase):
     def testMaskRCNN(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
-            outputs = model.inference(inputs, do_postprocess=False)[0]
-            return outputs
+            return model.inference(inputs, do_postprocess=False)[0]
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
@@ -102,18 +101,7 @@ class TestTracing(unittest.TestCase):
         model = model_zoo.get(config_path, trained=True)
         image = get_sample_coco_image()
 
-        class Wrapper(nn.ModuleList):  # a wrapper to make the model traceable
-            def forward(self, image):
-                outputs = inference_func(self[0], image)
-                flattened_outputs, schema = flatten_to_tuple(outputs)
-                if not hasattr(self, "schema"):
-                    self.schema = schema
-                return flattened_outputs
-
-            def rebuild(self, flattened_outputs):
-                return self.schema(flattened_outputs)
-
-        wrapper = Wrapper([model])
+        wrapper = TracingAdapter(model, image, inference_func)
         wrapper.eval()
         with torch.no_grad(), patch_builtin_len():
             small_image = nn.functional.interpolate(image, scale_factor=0.5)
@@ -121,7 +109,7 @@ class TestTracing(unittest.TestCase):
             traced_model = torch.jit.trace(wrapper, (small_image,))
 
             output = inference_func(model, image)
-            traced_output = wrapper.rebuild(traced_model(image))
+            traced_output = wrapper.outputs_schema(traced_model(image))
         assert_instances_allclose(output, traced_output, size_as_tensor=True)
 
     def testKeypointHead(self):
@@ -190,6 +178,9 @@ class TestTorchscriptUtils(unittest.TestCase):
         self.assertEqual(res, (3, 5, 6, 7, 9, 3))
         new_obj = schema(res)
         self.assertEqual(new_obj, obj)
+
+        _, new_schema = flatten_to_tuple(new_obj)
+        self.assertEqual(schema, new_schema)  # test __eq__
 
     def test_flatten_instances_boxes(self):
         inst = Instances(

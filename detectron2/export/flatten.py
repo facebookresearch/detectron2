@@ -1,7 +1,8 @@
 import collections
 from dataclasses import dataclass
-from typing import List
+from typing import Callable, List, Optional, Tuple
 import torch
+from torch import nn
 
 from detectron2.structures import Boxes, Instances
 
@@ -171,3 +172,99 @@ def flatten_to_tuple(obj):
         F = IdentitySchema
 
     return F.flatten(obj)
+
+
+class TracingAdapter(nn.Module):
+    """
+    A model may take rich input/output format (e.g. dict or custom classes).
+    This adapter flattens input/output format of a model so it becomes traceable.
+
+    It also records the necessary schema to rebuild model's inputs/outputs from flattened
+    inputs/outputs.
+
+    Example:
+
+    ::
+        outputs = model(inputs)   # inputs/outputs may be rich structure
+        adapter = TracingAdapter(model, inputs)
+
+        # can now trace the model, with adapter.flattened_inputs, or another
+        # tuple of tensors with the same length and meaning
+        traced = torch.jit.trace(adapter, adapter.flattened_inputs)
+
+        # traced model can only produce flattened outputs (tuple of tensors)
+        flattened_outputs = traced(*adapter.flattened_inputs)
+        # adapter knows the schema to convert it back (new_outputs == outputs)
+        new_outputs = adapter.outputs_schema(flattened_outputs)
+    """
+
+    flattened_inputs: Tuple[torch.Tensor] = None
+    """
+    Flattened version of inputs given to this class's constructor.
+    """
+
+    inputs_schema: Schema = None
+    """
+    Schema of the inputs given to this class's constructor.
+    """
+
+    outputs_schema: Schema = None
+    """
+    Schema of the output produced by calling the given model with inputs.
+    """
+
+    def __init__(self, model: nn.Module, inputs, inference_func: Optional[Callable] = None):
+        """
+        Args:
+            model: an nn.Module
+            inputs: An input argument or a tuple of input arguments used to call model.
+                After flattening, it has to only consist of tensors.
+            inference_func: a callable that takes (model, *inputs), calls the
+                model with inputs, and return outputs. By default it
+                is ``lambda model, *inputs: model(*inputs)``. Can be override
+                if you need to call the model differently.
+        """
+        super().__init__()
+        if isinstance(model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)):
+            model = model.module
+        self.model = model
+        if not isinstance(inputs, tuple):
+            inputs = (inputs,)
+        self.inputs = inputs
+
+        if inference_func is None:
+            inference_func = lambda model, *inputs: model(*inputs)  # noqa
+        self.inference_func = inference_func
+
+        self.flattened_inputs, self.inputs_schema = flatten_to_tuple(inputs)
+        for input in self.flattened_inputs:
+            if not isinstance(input, torch.Tensor):
+                raise ValueError(
+                    f"Inputs for tracing must only contain tensors. Got a {type(input)} instead."
+                )
+
+    def forward(self, *args: torch.Tensor):
+        with torch.no_grad():
+            inputs_orig_format = self.inputs_schema(args)
+            outputs = self.inference_func(self.model, *inputs_orig_format)
+            flattened_outputs, schema = flatten_to_tuple(outputs)
+            if self.outputs_schema is None:
+                self.outputs_schema = schema
+            else:
+                assert (
+                    self.outputs_schema == schema
+                ), "Model should always return outputs with the same structure so it can be traced!"
+            return flattened_outputs
+
+    def _create_wrapper(self, traced_model):
+        """
+        Return a function that has an input/output interface the same as the
+        original model, but it calls the given traced model under the hood.
+        """
+
+        def forward(*args):
+            flattened_inputs, _ = flatten_to_tuple(args)
+            flattened_outputs = traced_model(*flattened_inputs)
+            return self.outputs_schema(flattened_outputs)
+
+        return forward
