@@ -31,7 +31,7 @@ jobs:
             }
             const body = issue.data.body.toLowerCase();
             const hasInstructions = body.indexOf("reproduce") != -1;
-            const hasEnvironment = (body.indexOf("environment") != -1) || (body.indexOf("colab") != -1);
+            const hasEnvironment = (body.indexOf("environment") != -1) || (body.indexOf("colab") != -1) || (body.indexOf("docker") != -1);
             if (hasInstructions && hasEnvironment) {
               core.debug("Issue " + issue.data.title + " follows template.");
               return;

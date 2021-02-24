@@ -76,8 +76,8 @@ def register_coco_panoptic(
             e.g. "coco_2017_train_panoptic"
         metadata (dict): extra metadata associated with this dataset.
         image_root (str): directory which contains all the images
-        panoptic_root (str): directory which contains panoptic annotation images
-        panoptic_json (str): path to the json panoptic annotation file
+        panoptic_root (str): directory which contains panoptic annotation images in COCO format
+        panoptic_json (str): path to the json panoptic annotation file in COCO format
         sem_seg_root (none): not used, to be consistent with
             `register_coco_panoptic_separated`.
         instances_json (str): path to the json instance annotation file

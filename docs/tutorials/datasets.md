@@ -227,7 +227,7 @@ Some additional metadata that are specific to the evaluation of certain datasets
   to contiguous ids in [0, num_categories). It is useful for evaluation only.
 
 * `json_file`: The COCO annotation json file. Used by COCO evaluation for COCO-format datasets.
-* `panoptic_root`, `panoptic_json`: Used by panoptic evaluation.
+* `panoptic_root`, `panoptic_json`: Used by COCO-format panoptic evaluation.
 * `evaluator_type`: Used by the builtin main training script to select
    evaluator. Don't use it in a new training script.
    You can just provide the [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator)

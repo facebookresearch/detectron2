@@ -92,7 +92,7 @@ def collect_env_info():
                 cxx = cxx.decode("utf-8").strip().split("\n")[0]
             except subprocess.SubprocessError:
                 cxx = "Not found"
-            data.append(("Compiler", cxx))
+            data.append(("Compiler ($CXX)", cxx))
 
             if has_cuda and CUDA_HOME is not None:
                 try:
