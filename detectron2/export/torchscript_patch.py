@@ -270,7 +270,6 @@ def _import(path):
     )
 
 
-# TODO: this is a private utility. Should be made more useful through a model export api.
 @contextmanager
 def patch_builtin_len(modules=()):
     """

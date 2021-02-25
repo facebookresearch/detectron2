@@ -103,7 +103,7 @@ class TestTracing(unittest.TestCase):
 
         wrapper = TracingAdapter(model, image, inference_func)
         wrapper.eval()
-        with torch.no_grad(), patch_builtin_len():
+        with torch.no_grad():
             small_image = nn.functional.interpolate(image, scale_factor=0.5)
             # trace with a different image, and the trace must still work
             traced_model = torch.jit.trace(wrapper, (small_image,))

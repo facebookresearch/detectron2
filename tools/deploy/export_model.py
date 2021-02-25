@@ -91,18 +91,15 @@ def export_tracing(torch_model, inputs):
 
     traceable_model = TracingAdapter(torch_model, inputs, inference)
 
-    from detectron2.export.torchscript_patch import patch_builtin_len
-
-    with patch_builtin_len():
-        if args.format == "torchscript":
-            ts_model = torch.jit.trace(traceable_model, (image,))
-            with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
-                torch.jit.save(ts_model, f)
-            dump_torchscript_IR(ts_model, args.output)
-        elif args.format == "onnx":
-            # NOTE onnx export currently failing in pytorch
-            with PathManager.open(os.path.join(args.output, "model.onnx"), "wb") as f:
-                torch.onnx.export(traceable_model, (image,), f)
+    if args.format == "torchscript":
+        ts_model = torch.jit.trace(traceable_model, (image,))
+        with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
+            torch.jit.save(ts_model, f)
+        dump_torchscript_IR(ts_model, args.output)
+    elif args.format == "onnx":
+        # NOTE onnx export currently failing in pytorch
+        with PathManager.open(os.path.join(args.output, "model.onnx"), "wb") as f:
+            torch.onnx.export(traceable_model, (image,), f)
     logger.info("Inputs schema: " + str(traceable_model.inputs_schema))
     logger.info("Outputs schema: " + str(traceable_model.outputs_schema))
 
@@ -114,7 +111,7 @@ def export_tracing(torch_model, inputs):
     def eval_wrapper(inputs):
         """
         The exported model does not contain the final resize step, which is typically
-        useless for deployment but needed for evaluation. We add it manually here.
+        unused in deployment but needed for evaluation. We add it manually here.
         """
         input = inputs[0]
         instances = traceable_model.outputs_schema(ts_model(input["image"]))[0]["instances"]

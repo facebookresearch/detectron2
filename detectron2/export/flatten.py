@@ -5,6 +5,9 @@ import torch
 from torch import nn
 
 from detectron2.structures import Boxes, Instances
+from detectron2.utils.registry import _convert_target_to_string, locate
+
+from .torchscript_patch import patch_builtin_len
 
 
 @dataclass
@@ -39,48 +42,52 @@ class Schema:
     @staticmethod
     def _concat(values):
         ret = ()
-        idx_mapping = []
+        sizes = []
         for v in values:
             assert isinstance(v, tuple), "Flattened results must be a tuple"
-            oldlen = len(ret)
             ret = ret + v
-            idx_mapping.append([oldlen, len(ret)])
-        return ret, idx_mapping
+            sizes.append(len(v))
+        return ret, sizes
 
     @staticmethod
-    def _split(values, idx_mapping):
-        if len(idx_mapping):
-            expected_len = idx_mapping[-1][-1]
+    def _split(values, sizes):
+        if len(sizes):
+            expected_len = sum(sizes)
             assert (
                 len(values) == expected_len
             ), f"Values has length {len(values)} but expect length {expected_len}."
         ret = []
-        for (start, end) in idx_mapping:
-            ret.append(values[start:end])
+        for k in range(len(sizes)):
+            begin, end = sum(sizes[:k]), sum(sizes[: k + 1])
+            ret.append(values[begin:end])
         return ret
 
 
 @dataclass
 class ListSchema(Schema):
-    schemas: List[Schema]
-    idx_mapping: List[List[int]]
-    is_tuple: bool
+    schemas: List[Schema]  # the schemas that define how to flatten each element in the list
+    sizes: List[int]  # the flattened length of each element
 
     def __call__(self, values):
-        values = self._split(values, self.idx_mapping)
+        values = self._split(values, self.sizes)
         if len(values) != len(self.schemas):
             raise ValueError(
                 f"Values has length {len(values)} but schemas " f"has length {len(self.schemas)}!"
             )
         values = [m(v) for m, v in zip(self.schemas, values)]
-        return list(values) if not self.is_tuple else tuple(values)
+        return list(values)
 
     @classmethod
     def flatten(cls, obj):
-        is_tuple = isinstance(obj, tuple)
         res = [flatten_to_tuple(k) for k in obj]
-        values, idx = cls._concat([k[0] for k in res])
-        return values, cls([k[1] for k in res], idx, is_tuple)
+        values, sizes = cls._concat([k[0] for k in res])
+        return values, cls([k[1] for k in res], sizes)
+
+
+@dataclass
+class TupleSchema(ListSchema):
+    def __call__(self, values):
+        return tuple(super().__call__(values))
 
 
 @dataclass
@@ -94,12 +101,11 @@ class IdentitySchema(Schema):
 
 
 @dataclass
-class DictSchema(Schema):
+class DictSchema(ListSchema):
     keys: List[str]
-    value_schema: ListSchema
 
     def __call__(self, values):
-        values = self.value_schema(values)
+        values = super().__call__(values)
         return dict(zip(self.keys, values))
 
     @classmethod
@@ -110,39 +116,40 @@ class DictSchema(Schema):
         keys = sorted(obj.keys())
         values = [obj[k] for k in keys]
         ret, schema = ListSchema.flatten(values)
-        return ret, cls(keys, schema)
+        return ret, cls(schema.schemas, schema.sizes, keys)
 
 
 @dataclass
-class InstancesSchema(Schema):
-    field_names: List[str]
-    field_schema: ListSchema
-
+class InstancesSchema(DictSchema):
     def __call__(self, values):
         image_size, fields = values[-1], values[:-1]
-        fields = self.field_schema(fields)
-        fields = dict(zip(self.field_names, fields))
+        fields = super().__call__(fields)
         return Instances(image_size, **fields)
 
     @classmethod
     def flatten(cls, obj):
-        field_names = sorted(obj.get_fields().keys())
-        values = [obj.get(f) for f in field_names]
-        ret, schema = ListSchema.flatten(values)
+        ret, schema = super().flatten(obj.get_fields())
         size = obj.image_size
         if not isinstance(size, torch.Tensor):
             size = torch.tensor(size)
-        return ret + (size,), cls(field_names, schema)
+        return ret + (size,), schema
 
 
 @dataclass
-class BoxesSchema(Schema):
+class TensorWrapSchema(Schema):
+    """
+    For classes that are simple wrapper of tensors, e.g.
+    Boxes, RotatedBoxes, BitMasks
+    """
+
+    class_name: str
+
     def __call__(self, values):
-        return Boxes(values[0])
+        return locate(self.class_name)(values[0])
 
     @classmethod
     def flatten(cls, obj):
-        return (obj.tensor,), cls()
+        return (obj.tensor,), cls(_convert_target_to_string(type(obj)))
 
 
 # if more custom structures needed in the future, can allow
@@ -159,10 +166,11 @@ def flatten_to_tuple(obj):
     """
     schemas = [
         ((str, bytes), IdentitySchema),
-        (collections.abc.Sequence, ListSchema),
+        (list, ListSchema),
+        (tuple, TupleSchema),
         (collections.abc.Mapping, DictSchema),
         (Instances, InstancesSchema),
-        (Boxes, BoxesSchema),
+        (Boxes, TensorWrapSchema),
     ]
     for klass, schema in schemas:
         if isinstance(obj, klass):
@@ -244,7 +252,7 @@ class TracingAdapter(nn.Module):
                 )
 
     def forward(self, *args: torch.Tensor):
-        with torch.no_grad():
+        with torch.no_grad(), patch_builtin_len():
             inputs_orig_format = self.inputs_schema(args)
             outputs = self.inference_func(self.model, *inputs_orig_format)
             flattened_outputs, schema = flatten_to_tuple(outputs)
