@@ -42,6 +42,10 @@ cfg = ...   # read a config
 cfg.MODEL.BACKBONE.NAME = 'ToyBackbone'   # or set it in the config file
 model = build_model(cfg)  # it will find `ToyBackbone` defined above
 ```
+Note that, if we would like to train all the parameters of our new backbone, we would need to set the `FREEZE_AT` parameter to 0:
+```
+cfg.MODEL.BACKBONE.FREEZE_AT = 0
+```
 
 As another example, to add new abilities to the ROI heads in the Generalized R-CNN meta-architecture,
 you can implement a new
