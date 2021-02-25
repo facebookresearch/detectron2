@@ -9,7 +9,6 @@ from copy import deepcopy
 import torch
 
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import get_model_no_weights
 
@@ -155,9 +154,7 @@ class MaskRCNNE2ETest(ModelE2ETest, unittest.TestCase):
             det, _ = self.model.roi_heads(images, features, props)
             self.assertEqual(len(det[0]), 0)
 
-    @unittest.skipIf(
-        TORCH_VERSION < (1, 6) or not torch.cuda.is_available(), "Insufficient pytorch version"
-    )
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_autocast(self):
         from torch.cuda.amp import autocast
 
@@ -200,9 +197,7 @@ class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)
 
-    @unittest.skipIf(
-        TORCH_VERSION < (1, 6) or not torch.cuda.is_available(), "Insufficient pytorch version"
-    )
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_autocast(self):
         from torch.cuda.amp import autocast
 

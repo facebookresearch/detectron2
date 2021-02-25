@@ -136,7 +136,6 @@ class FastRCNNTest(unittest.TestCase):
             o = func(torch.randn(20, 20), torch.randn(20, 4))
             self.assertEqual(o[0].shape, (20, 20))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 6), "Insufficient pytorch version")
     def test_predict_probs_tracing(self):
         class Model(torch.nn.Module):
             def __init__(self, output_layer):

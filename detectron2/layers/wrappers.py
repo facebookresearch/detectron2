@@ -12,8 +12,6 @@ from typing import List
 import torch
 from torch.nn import functional as F
 
-from detectron2.utils.env import TORCH_VERSION
-
 
 def cat(tensors: List[torch.Tensor], dim: int = 0):
     """
@@ -96,33 +94,7 @@ class Conv2d(torch.nn.Conv2d):
 ConvTranspose2d = torch.nn.ConvTranspose2d
 BatchNorm2d = torch.nn.BatchNorm2d
 interpolate = F.interpolate
-
-
-if TORCH_VERSION > (1, 5):
-    Linear = torch.nn.Linear
-else:
-
-    class Linear(torch.nn.Linear):
-        """
-        A wrapper around :class:`torch.nn.Linear` to support empty inputs and more features.
-        Because of https://github.com/pytorch/pytorch/issues/34202
-        """
-
-        def forward(self, x):
-            if x.numel() == 0:
-                output_shape = [x.shape[0], self.weight.shape[0]]
-
-                empty = _NewEmptyTensorOp.apply(x, output_shape)
-                if self.training:
-                    # This is to make DDP happy.
-                    # DDP expects all workers to have gradient w.r.t the same set of parameters.
-                    _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
-                    return empty + _dummy
-                else:
-                    return empty
-
-            x = super().forward(x)
-            return x
+Linear = torch.nn.Linear
 
 
 def nonzero_tuple(x):
