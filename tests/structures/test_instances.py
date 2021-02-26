@@ -6,6 +6,7 @@ from torch import Tensor
 from detectron2.export.torchscript import patch_instances
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
+from detectron2.utils.testing import convert_scripted_instances
 
 
 class TestInstances(unittest.TestCase):
@@ -182,7 +183,7 @@ class TestInstances(unittest.TestCase):
         with patch_instances(fields) as NewInstances:
             # convert to NewInstances and back
             new1 = NewInstances.from_instances(orig)
-            new2 = new1.to_instances()
+            new2 = convert_scripted_instances(new1)
         self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new1.proposal_boxes.tensor))
         self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new2.proposal_boxes.tensor))
 

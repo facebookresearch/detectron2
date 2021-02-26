@@ -27,21 +27,9 @@ def _clear_jit_cache():
 
 def _add_instances_conversion_methods(newInstances):
     """
-    Add to_instances/from_instances methods to the scripted Instances class.
+    Add from_instances methods to the scripted Instances class.
     """
     cls_name = newInstances.__name__
-
-    @torch.jit.unused
-    def to_instances(self):
-        """
-        Convert scripted Instances to original Instances
-        """
-        ret = Instances(self.image_size)
-        for name in self._field_names:
-            val = getattr(self, "_" + name, None)
-            if val is not None:
-                ret.set(name, val)
-        return ret
 
     @torch.jit.unused
     def from_instances(instances: Instances):
@@ -56,7 +44,6 @@ def _add_instances_conversion_methods(newInstances):
             setattr(ret, name, deepcopy(val))
         return ret
 
-    newInstances.to_instances = to_instances
     newInstances.from_instances = from_instances
 
 

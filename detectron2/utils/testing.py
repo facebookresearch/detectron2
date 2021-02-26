@@ -7,7 +7,7 @@ from detectron2 import model_zoo
 from detectron2.data import DatasetCatalog
 from detectron2.data.detection_utils import read_image
 from detectron2.modeling import build_model
-from detectron2.structures import Boxes
+from detectron2.structures import Boxes, Instances
 from detectron2.utils.file_io import PathManager
 
 
@@ -50,7 +50,7 @@ def get_sample_coco_image(tensor=True):
         an image, in BGR color.
     """
     try:
-        file_name = DatasetCatalog.get("coco_2017_train")[0]["file_name"]
+        file_name = DatasetCatalog.get("coco_2017_val_100")[0]["file_name"]
         if not PathManager.exists(file_name):
             raise FileNotFoundError()
     except IOError:
@@ -62,6 +62,18 @@ def get_sample_coco_image(tensor=True):
     return ret
 
 
+def convert_scripted_instances(instances):
+    """
+    Convert a scripted Instances object to a regular :class:`Instances` object
+    """
+    ret = Instances(instances.image_size)
+    for name in instances._field_names:
+        val = getattr(instances, "_" + name, None)
+        if val is not None:
+            ret.set(name, val)
+    return ret
+
+
 def assert_instances_allclose(input, other, *, rtol=1e-5, msg="", size_as_tensor=False):
     """
     Args:
@@ -69,6 +81,11 @@ def assert_instances_allclose(input, other, *, rtol=1e-5, msg="", size_as_tensor
         size_as_tensor: compare image_size of the Instances as tensors (instead of tuples).
              Useful for comparing outputs of tracing.
     """
+    if not isinstance(input, Instances):
+        input = convert_scripted_instances(input)
+    if not isinstance(other, Instances):
+        other = convert_scripted_instances(other)
+
     if not msg:
         msg = "Two Instances are different! "
     else:

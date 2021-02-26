@@ -17,7 +17,12 @@ from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
-from detectron2.utils.testing import assert_instances_allclose, get_sample_coco_image, random_boxes
+from detectron2.utils.testing import (
+    assert_instances_allclose,
+    convert_scripted_instances,
+    get_sample_coco_image,
+    random_boxes,
+)
 
 
 """
@@ -53,9 +58,7 @@ class TestScripting(unittest.TestCase):
         inputs = [{"image": get_sample_coco_image()}]
         with torch.no_grad():
             instance = model.inference(inputs, do_postprocess=False)[0]
-            scripted_instance = script_model.inference(inputs, do_postprocess=False)[
-                0
-            ].to_instances()
+            scripted_instance = script_model.inference(inputs, do_postprocess=False)[0]
         assert_instances_allclose(instance, scripted_instance)
 
     def _test_retinanet_model(self, config_path):
@@ -73,7 +76,7 @@ class TestScripting(unittest.TestCase):
         inputs = [{"image": img}]
         with torch.no_grad():
             instance = model(inputs)[0]["instances"]
-            scripted_instance = script_model(inputs)[0].to_instances()
+            scripted_instance = convert_scripted_instances(script_model(inputs)[0])
             scripted_instance = detector_postprocess(scripted_instance, img.shape[1], img.shape[2])
         assert_instances_allclose(instance, scripted_instance)
         # Note that the model currently cannot be saved and loaded into a new process:
