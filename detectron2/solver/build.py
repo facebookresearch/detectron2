@@ -25,7 +25,7 @@ def _create_gradient_clipper(cfg: CfgNode) -> _GradientClipper:
     Creates gradient clipping closure to clip by value or by norm,
     according to the provided config.
     """
-    cfg = cfg.clone()
+    cfg = copy.deepcopy(cfg)
 
     def clip_grad_norm(p: _GradientClipperInput):
         torch.nn.utils.clip_grad_norm_(p, cfg.CLIP_VALUE, cfg.NORM_TYPE)
