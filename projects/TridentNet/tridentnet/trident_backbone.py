@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from detectron2.layers import Conv2d, FrozenBatchNorm2d, get_norm
-from detectron2.modeling import BACKBONE_REGISTRY, ResNet, ResNetBlockBase, make_stage
+from detectron2.modeling import BACKBONE_REGISTRY, ResNet, ResNetBlockBase
 from detectron2.modeling.backbone.resnet import BasicStem, BottleneckBlock, DeformBottleneckBlock
 
 from .trident_conv import TridentConv
@@ -116,16 +116,13 @@ class TridentBottleneckBlock(ResNetBlockBase):
         return out
 
 
-def make_trident_stage(block_class, num_blocks, first_stride, **kwargs):
+def make_trident_stage(block_class, num_blocks, **kwargs):
     """
     Create a resnet stage by creating many blocks for TridentNet.
     """
-    blocks = []
-    for i in range(num_blocks - 1):
-        blocks.append(block_class(stride=first_stride if i == 0 else 1, **kwargs))
-        kwargs["in_channels"] = kwargs["out_channels"]
-    blocks.append(block_class(stride=1, concat_output=True, **kwargs))
-    return blocks
+    concat_output = [False] * (num_blocks - 1) + [True]
+    kwargs["concat_output_per_block"] = concat_output
+    return ResNet.make_stage(block_class, num_blocks, **kwargs)
 
 
 @BACKBONE_REGISTRY.register()
@@ -183,7 +180,7 @@ def build_trident_resnet_backbone(cfg, input_shape):
         first_stride = 1 if idx == 0 or (stage_idx == 5 and dilation == 2) else 2
         stage_kargs = {
             "num_blocks": num_blocks_per_stage[idx],
-            "first_stride": first_stride,
+            "stride_per_block": [first_stride] + [1] * (num_blocks_per_stage[idx] - 1),
             "in_channels": in_channels,
             "bottleneck_channels": bottleneck_channels,
             "out_channels": out_channels,
@@ -210,7 +207,7 @@ def build_trident_resnet_backbone(cfg, input_shape):
         blocks = (
             make_trident_stage(**stage_kargs)
             if stage_idx == trident_stage_idx
-            else make_stage(**stage_kargs)
+            else ResNet.make_stage(**stage_kargs)
         )
         in_channels = out_channels
         out_channels *= 2

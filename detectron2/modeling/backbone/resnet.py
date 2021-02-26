@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
 import numpy as np
 import fvcore.nn.weight_init as weight_init
 import torch
@@ -482,9 +481,7 @@ class ResNet(Backbone):
         return self
 
     @staticmethod
-    def make_stage(
-        block_class, num_blocks, first_stride=None, *, in_channels, out_channels, **kwargs
-    ):
+    def make_stage(block_class, num_blocks, *, in_channels, out_channels, **kwargs):
         """
         Create a list of blocks of the same type that forms one ResNet stage.
 
@@ -493,7 +490,6 @@ class ResNet(Backbone):
                 stage. A module of this type must not change spatial resolution of inputs unless its
                 stride != 1.
             num_blocks (int): number of blocks in this stage
-            first_stride (int): deprecated
             in_channels (int): input channels of the entire stage.
             out_channels (int): output channels of **every block** in the stage.
             kwargs: other arguments passed to the constructor of
@@ -507,7 +503,7 @@ class ResNet(Backbone):
 
         Examples:
         ::
-            stages = ResNet.make_stage(
+            stage = ResNet.make_stage(
                 BottleneckBlock, 3, in_channels=16, out_channels=64,
                 bottleneck_channels=16, num_groups=1,
                 stride_per_block=[2, 1, 1],
@@ -518,15 +514,6 @@ class ResNet(Backbone):
         "stage" (in :paper:`FPN`). Under such definition, ``stride_per_block[1:]`` should
         all be 1.
         """
-        if first_stride is not None:
-            assert "stride" not in kwargs and "stride_per_block" not in kwargs
-            kwargs["stride_per_block"] = [first_stride] + [1] * (num_blocks - 1)
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                "ResNet.make_stage(first_stride=) is deprecated!  "
-                "Use 'stride_per_block' or 'stride' instead."
-            )
-
         blocks = []
         for i in range(num_blocks):
             curr_kwargs = {}
