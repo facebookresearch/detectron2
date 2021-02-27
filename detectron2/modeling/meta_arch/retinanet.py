@@ -24,6 +24,9 @@ from .build import META_ARCH_REGISTRY
 __all__ = ["RetinaNet"]
 
 
+logger = logging.getLogger(__name__)
+
+
 def permute_to_N_HWA_K(tensor, K: int):
     """
     Transpose/reshape a tensor from (N, (Ai x K), H, W) to (N, (HxWxAi), K)
@@ -55,7 +58,7 @@ class RetinaNet(nn.Module):
         num_classes,
         focal_loss_alpha=0.25,
         focal_loss_gamma=2.0,
-        smooth_l1_beta=0.1,
+        smooth_l1_beta=0.0,
         box_reg_loss_type="smooth_l1",
         test_score_thresh=0.05,
         test_topk_candidates=1000,
@@ -116,6 +119,8 @@ class RetinaNet(nn.Module):
         self.backbone = backbone
         self.head = head
         self.head_in_features = head_in_features
+        if len(self.backbone.output_shape()) != len(self.head_in_features):
+            logger.warning("[RetinaNet] Backbone produces unused features.")
 
         # Anchors
         self.anchor_generator = anchor_generator
@@ -524,8 +529,7 @@ class RetinaNetHead(nn.Module):
         super().__init__()
 
         if norm == "BN" or norm == "SyncBN":
-            logger = logging.getLogger(__name__)
-            logger.warn("Shared norm does not work well for BN, SyncBN, expect poor results")
+            logger.warning("Shared norm does not work well for BN, SyncBN, expect poor results")
 
         cls_subnet = []
         bbox_subnet = []
