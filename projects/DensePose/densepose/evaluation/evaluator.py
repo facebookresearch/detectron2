@@ -13,6 +13,7 @@ from typing import Optional
 import pycocotools.mask as mask_utils
 import torch
 from pycocotools.coco import COCO
+from tabulate import tabulate
 
 from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
@@ -136,6 +137,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             predictions,
             multi_storage,
             self._embedder,
+            class_names=self._metadata.get("thing_classes"),
             min_threshold=self._min_threshold,
             img_ids=img_ids,
         )
@@ -236,7 +238,13 @@ def densepose_cse_predictions_to_dict(instances, embedder, class_to_mesh_name, u
 
 
 def _evaluate_predictions_on_coco(
-    coco_gt, coco_results, multi_storage=None, embedder=None, min_threshold=0.5, img_ids=None
+    coco_gt,
+    coco_results,
+    multi_storage=None,
+    embedder=None,
+    class_names=None,
+    min_threshold=0.5,
+    img_ids=None,
 ):
     logger = logging.getLogger(__name__)
 
@@ -249,23 +257,18 @@ def _evaluate_predictions_on_coco(
         return results_gps, results_gpsm, results_segm
 
     coco_dt = coco_gt.loadRes(coco_results)
-    results_segm = _evaluate_predictions_on_coco_segm(
-        coco_gt, coco_dt, densepose_metrics, multi_storage, embedder, min_threshold, img_ids
-    )
-    logger.info("Evaluation results for densepose segm: \n" + create_small_table(results_segm))
-    results_gps = _evaluate_predictions_on_coco_gps(
-        coco_gt, coco_dt, densepose_metrics, multi_storage, embedder, min_threshold, img_ids
-    )
-    logger.info(
-        "Evaluation results for densepose, GPS metric: \n" + create_small_table(results_gps)
-    )
-    results_gpsm = _evaluate_predictions_on_coco_gpsm(
-        coco_gt, coco_dt, densepose_metrics, multi_storage, embedder, min_threshold, img_ids
-    )
-    logger.info(
-        "Evaluation results for densepose, GPSm metric: \n" + create_small_table(results_gpsm)
-    )
-    return results_gps, results_gpsm, results_segm
+
+    results = []
+    for eval_mode_name in ["GPS", "GPSM", "IOU"]:
+        eval_mode = getattr(DensePoseEvalMode, eval_mode_name)
+        coco_eval = DensePoseCocoEval(
+            coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode
+        )
+        result = _derive_results_from_coco_eval(
+            coco_eval, eval_mode_name, densepose_metrics, class_names, min_threshold, img_ids
+        )
+        results.append(result)
+    return results
 
 
 def _get_densepose_metrics(min_threshold=0.5):
@@ -280,12 +283,9 @@ def _get_densepose_metrics(min_threshold=0.5):
     return metrics
 
 
-def _evaluate_predictions_on_coco_gps(
-    coco_gt, coco_dt, metrics, multi_storage, embedder, min_threshold=0.5, img_ids=None
+def _derive_results_from_coco_eval(
+    coco_eval, eval_mode_name, metrics, class_names, min_threshold, img_ids
 ):
-    coco_eval = DensePoseCocoEval(
-        coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=DensePoseEvalMode.GPS
-    )
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
@@ -295,42 +295,43 @@ def _evaluate_predictions_on_coco_gps(
     coco_eval.accumulate()
     coco_eval.summarize()
     results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
-    return results
-
-
-def _evaluate_predictions_on_coco_gpsm(
-    coco_gt, coco_dt, metrics, multi_storage, embedder, min_threshold=0.5, img_ids=None
-):
-    coco_eval = DensePoseCocoEval(
-        coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=DensePoseEvalMode.GPSM
+    logger = logging.getLogger(__name__)
+    logger.info(
+        f"Evaluation results for densepose, {eval_mode_name} metric: \n"
+        + create_small_table(results)
     )
-    if img_ids is not None:
-        coco_eval.params.imgIds = img_ids
-    coco_eval.params.iouThrs = np.linspace(
-        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
-    )
-    coco_eval.evaluate()
-    coco_eval.accumulate()
-    coco_eval.summarize()
-    results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
-    return results
+    if class_names is None or len(class_names) <= 1:
+        return results
 
+    # Compute per-category AP, the same way as it is done in D2
+    # (see detectron2/evaluation/coco_evaluation.py):
+    precisions = coco_eval.eval["precision"]
+    # precision has dims (iou, recall, cls, area range, max dets)
+    assert len(class_names) == precisions.shape[2]
 
-def _evaluate_predictions_on_coco_segm(
-    coco_gt, coco_dt, metrics, multi_storage, embedder, min_threshold=0.5, img_ids=None
-):
-    coco_eval = DensePoseCocoEval(
-        coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=DensePoseEvalMode.IOU
+    results_per_category = []
+    for idx, name in enumerate(class_names):
+        # area range index 0: all area ranges
+        # max dets index -1: typically 100 per image
+        precision = precisions[:, :, idx, 0, -1]
+        precision = precision[precision > -1]
+        ap = np.mean(precision) if precision.size else float("nan")
+        results_per_category.append((f"{name}", float(ap * 100)))
+
+    # tabulate it
+    n_cols = min(6, len(results_per_category) * 2)
+    results_flatten = list(itertools.chain(*results_per_category))
+    results_2d = itertools.zip_longest(*[results_flatten[i::n_cols] for i in range(n_cols)])
+    table = tabulate(
+        results_2d,
+        tablefmt="pipe",
+        floatfmt=".3f",
+        headers=["category", "AP"] * (n_cols // 2),
+        numalign="left",
     )
-    if img_ids is not None:
-        coco_eval.params.imgIds = img_ids
-    coco_eval.params.iouThrs = np.linspace(
-        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
-    )
-    coco_eval.evaluate()
-    coco_eval.accumulate()
-    coco_eval.summarize()
-    results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
+    logger.info(f"Per-category {eval_mode_name} AP: \n" + table)
+
+    results.update({"AP-" + name: ap for name, ap in results_per_category})
     return results
 
 
