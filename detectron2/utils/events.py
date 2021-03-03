@@ -7,6 +7,7 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 from typing import Optional
+import torch
 from fvcore.common.history_buffer import HistoryBuffer
 
 from detectron2.utils.file_io import PathManager
@@ -220,8 +221,6 @@ class CommonMetricPrinter(EventWriter):
             return eta_string
 
     def write(self):
-        import torch
-
         storage = get_event_storage()
         iteration = storage.iter
         if iteration == self._max_iter:
@@ -355,8 +354,6 @@ class EventStorage:
                 into a histogram.
             bins (int): Number of histogram bins.
         """
-        import torch
-
         ht_min, ht_max = hist_tensor.min().item(), hist_tensor.max().item()
 
         # Create a histogram with PyTorch
