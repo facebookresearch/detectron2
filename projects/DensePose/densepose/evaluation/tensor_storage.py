@@ -9,7 +9,7 @@ from operator import mul
 from typing import BinaryIO, Dict, Tuple
 import torch
 
-from detectron2.utils.comm import gather
+from detectron2.utils.comm import gather, get_rank
 from detectron2.utils.file_io import PathManager
 
 
@@ -208,6 +208,8 @@ def _ram_storage_gather(
     # TODO: overhead, pickling a bytes object, can just pass bytes in a tensor directly
     # see detectron2/utils.comm.py
     data_list = gather(storage.storage_impl.read(), dst=dst_rank)
+    if get_rank() != dst_rank:
+        return None
     rank_to_buffer = {i: io.BytesIO(data_list[i]) for i in range(len(data_list))}
     storage = MultiProcessRamTensorStorage(storage.data_schema, rank_to_buffer)
     return storage
@@ -218,10 +220,12 @@ def _file_storage_gather(
     dst_rank: int = 0,
     mode: str = "rb",
 ) -> MultiProcessFileTensorStorage:
+    storage.storage_impl.close()
     fpath_list = gather(storage.fpath, dst=dst_rank)
+    if get_rank() != dst_rank:
+        return None
     rank_to_fpath = {i: fpath_list[i] for i in range(len(fpath_list))}
-    storage = MultiProcessFileTensorStorage(storage.data_schema, rank_to_fpath, mode)
-    return storage
+    return MultiProcessFileTensorStorage(storage.data_schema, rank_to_fpath, mode)
 
 
 def storage_gather(

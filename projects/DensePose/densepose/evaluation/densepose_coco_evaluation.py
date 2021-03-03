@@ -17,13 +17,21 @@ from collections import defaultdict
 from enum import Enum
 from typing import Any, Dict, Tuple
 import scipy.spatial.distance as ssd
+import torch
+import torch.nn.functional as F
 from pycocotools import mask as maskUtils
 from scipy.io import loadmat
 from scipy.ndimage import zoom as spzoom
 
 from detectron2.utils.file_io import PathManager
 
+from densepose.converters.chart_output_to_chart_result import resample_uv_tensors_to_bbox
+from densepose.converters.segm_to_mask import (
+    resample_coarse_segm_tensor_to_bbox,
+    resample_fine_and_coarse_segm_tensors_to_bbox,
+)
 from densepose.data.structures import DensePoseDataRelative
+from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures.mesh import create_mesh
 
 logger = logging.getLogger(__name__)
@@ -106,6 +114,8 @@ class DensePoseCocoEval(object):
         cocoGt=None,
         cocoDt=None,
         iouType: str = "densepose",
+        multi_storage=None,
+        embedder=None,
         dpEvalMode: DensePoseEvalMode = DensePoseEvalMode.GPS,
         dpDataMode: DensePoseDataMode = DensePoseDataMode.IUV_DT,
     ):
@@ -117,6 +127,8 @@ class DensePoseCocoEval(object):
         """
         self.cocoGt = cocoGt  # ground truth COCO API
         self.cocoDt = cocoDt  # detections COCO API
+        self.multi_storage = multi_storage
+        self.embedder = embedder
         self._dpEvalMode = dpEvalMode
         self._dpDataMode = dpDataMode
         self.params = {}  # evaluation parameters
@@ -528,6 +540,37 @@ class DensePoseCocoEval(object):
             return densepose_results_quantized.labels_uv_uint8[0].numpy()
         elif "cse_mask" in dt:
             return dt["cse_mask"]
+        elif "coarse_segm" in dt:
+            dy = max(int(dt["bbox"][3]), 1)
+            dx = max(int(dt["bbox"][2]), 1)
+            return (
+                F.interpolate(
+                    dt["coarse_segm"].unsqueeze(0), (dy, dx), mode="bilinear", align_corners=False
+                )
+                .squeeze(0)
+                .argmax(0)
+                .numpy()
+                .astype(np.uint8)
+            )
+        elif "record_id" in dt:
+            assert (
+                self.multi_storage is not None
+            ), f"Storage record id encountered in a detection {dt}, but no storage provided!"
+            record = self.multi_storage.get(dt["rank"], dt["record_id"])
+            coarse_segm = record["coarse_segm"]
+            dy = max(int(dt["bbox"][3]), 1)
+            dx = max(int(dt["bbox"][2]), 1)
+            return (
+                F.interpolate(
+                    coarse_segm.unsqueeze(0), (dy, dx), mode="bilinear", align_corners=False
+                )
+                .squeeze(0)
+                .argmax(0)
+                .numpy()
+                .astype(np.uint8)
+            )
+        else:
+            raise Exception(f"No mask data in the detection: {dt}")
 
     def _extract_iuv(
         self, densepose_data: np.ndarray, py: np.ndarray, px: np.ndarray, gt: Dict[str, Any]
@@ -564,6 +607,108 @@ class DensePoseCocoEval(object):
         else:
             raise ValueError(f"Unknown data mode: {self._dpDataMode}")
         return ipoints, upoints, vpoints
+
+    def computeOgps_single_pair(self, dt, gt, py, px, pt_mask):
+        if "densepose" in dt:
+            ipoints, upoints, vpoints = self.extract_iuv_from_quantized(dt, gt, py, px, pt_mask)
+            return self.computeOgps_single_pair_iuv(dt, gt, ipoints, upoints, vpoints)
+        elif "u" in dt:
+            ipoints, upoints, vpoints = self.extract_iuv_from_raw(dt, gt, py, px, pt_mask)
+            return self.computeOgps_single_pair_iuv(dt, gt, ipoints, upoints, vpoints)
+        elif "record_id" in dt:
+            assert (
+                self.multi_storage is not None
+            ), f"Storage record id encountered in detection {dt}, but no storage provided!"
+            record = self.multi_storage.get(dt["rank"], dt["record_id"])
+            record["bbox"] = dt["bbox"]
+            if "u" in record:
+                ipoints, upoints, vpoints = self.extract_iuv_from_raw(record, gt, py, px, pt_mask)
+                return self.computeOgps_single_pair_iuv(dt, gt, ipoints, upoints, vpoints)
+            elif "embedding" in record:
+                return self.computeOgps_single_pair_cse(
+                    dt,
+                    gt,
+                    py,
+                    px,
+                    pt_mask,
+                    record["coarse_segm"],
+                    record["embedding"],
+                    record["bbox"],
+                )
+            else:
+                raise Exception(f"Unknown record format: {record}")
+        elif "embedding" in dt:
+            return self.computeOgps_single_pair_cse(
+                dt, gt, py, px, pt_mask, dt["coarse_segm"], dt["embedding"], dt["bbox"]
+            )
+        raise Exception(f"Unknown detection format: {dt}")
+
+    def extract_iuv_from_quantized(self, dt, gt, py, px, pt_mask):
+        densepose_results_quantized = dt["densepose"]
+        ipoints, upoints, vpoints = self._extract_iuv(
+            densepose_results_quantized.labels_uv_uint8.numpy(), py, px, gt
+        )
+        ipoints[pt_mask == -1] = 0
+        return ipoints, upoints, vpoints
+
+    def extract_iuv_from_raw(self, dt, gt, py, px, pt_mask):
+        labels_dt = resample_fine_and_coarse_segm_tensors_to_bbox(
+            dt["fine_segm"].unsqueeze(0),
+            dt["coarse_segm"].unsqueeze(0),
+            dt["bbox"],
+        )
+        uv = resample_uv_tensors_to_bbox(
+            dt["u"].unsqueeze(0), dt["v"].unsqueeze(0), labels_dt.squeeze(0), dt["bbox"]
+        )
+        labels_uv_uint8 = torch.cat((labels_dt.byte(), (uv * 255).clamp(0, 255).byte()))
+        ipoints, upoints, vpoints = self._extract_iuv(labels_uv_uint8.numpy(), py, px, gt)
+        ipoints[pt_mask == -1] = 0
+        return ipoints, upoints, vpoints
+
+    def computeOgps_single_pair_iuv(self, dt, gt, ipoints, upoints, vpoints):
+        cVertsGT, ClosestVertsGTTransformed = self.findAllClosestVertsGT(gt)
+        cVerts = self.findAllClosestVertsUV(upoints, vpoints, ipoints)
+        # Get pairwise geodesic distances between gt and estimated mesh points.
+        dist = self.getDistancesUV(ClosestVertsGTTransformed, cVerts)
+        # Compute the Ogps measure.
+        # Find the mean geodesic normalization distance for
+        # each GT point, based on which part it is on.
+        Current_Mean_Distances = self.Mean_Distances[
+            self.CoarseParts[self.Part_ids[cVertsGT[cVertsGT > 0].astype(int) - 1]]
+        ]
+        return dist, Current_Mean_Distances
+
+    def computeOgps_single_pair_cse(
+        self, dt, gt, py, px, pt_mask, coarse_segm, embedding, bbox_xywh_abs
+    ):
+        # 0-based mesh vertex indices
+        cVertsGT = torch.as_tensor(gt["dp_vertex"], dtype=torch.int64)
+        # label for each pixel of the bbox, [H, W] tensor of long
+        labels_dt = resample_coarse_segm_tensor_to_bbox(
+            coarse_segm.unsqueeze(0), bbox_xywh_abs
+        ).squeeze(0)
+        x, y, w, h = bbox_xywh_abs
+        # embedding for each pixel of the bbox, [D, H, W] tensor of float32
+        embedding = F.interpolate(
+            embedding.unsqueeze(0), (int(h), int(w)), mode="bilinear", align_corners=False
+        ).squeeze(0)
+        # valid locations py, px
+        py_pt = torch.from_numpy(py[pt_mask > -1])
+        px_pt = torch.from_numpy(px[pt_mask > -1])
+        cVerts = torch.ones_like(cVertsGT) * -1
+        cVerts[pt_mask > -1] = self.findClosestVertsCse(
+            embedding, py_pt, px_pt, labels_dt, gt["ref_model"]
+        )
+        # Get pairwise geodesic distances between gt and estimated mesh points.
+        dist = self.getDistancesCse(cVertsGT, cVerts, gt["ref_model"])
+        # normalize distances
+        if "dp_I" in gt:
+            Current_Mean_Distances = self.Mean_Distances[
+                self.CoarseParts[np.array(gt["dp_I"], dtype=int)]
+            ]
+        else:
+            Current_Mean_Distances = 0.255
+        return dist, Current_Mean_Distances
 
     def computeOgps(self, imgId, catId):
         p = self.params
@@ -606,42 +751,15 @@ class DensePoseCocoEval(object):
                     else:
                         px[pts == -1] = 0
                         py[pts == -1] = 0
-                        # Find closest vertices in subsampled mesh.
-                        if "densepose" in dt:
-                            cVertsGT, ClosestVertsGTTransformed = self.findAllClosestVertsGT(gt)
-                            densepose_results_quantized = dt["densepose"]
-                            ipoints, upoints, vpoints = self._extract_iuv(
-                                densepose_results_quantized.labels_uv_uint8.numpy(), py, px, gt
-                            )
-                            ipoints[pts == -1] = 0
-                            cVerts = self.findAllClosestVertsUV(upoints, vpoints, ipoints)
-                            # Get pairwise geodesic distances between gt and estimated mesh points.
-                            dist = self.getDistancesUV(ClosestVertsGTTransformed, cVerts)
-                            # Compute the Ogps measure.
-                            # Find the mean geodesic normalization distance for
-                            # each GT point, based on which part it is on.
-                            Current_Mean_Distances = self.Mean_Distances[
-                                self.CoarseParts[
-                                    self.Part_ids[cVertsGT[cVertsGT > 0].astype(int) - 1]
-                                ]
-                            ]
-                        elif "cse_indices" in dt:
-                            cVertsGT = np.array(gt["dp_vertex"])
-                            cse_mask, cse_indices = dt["cse_mask"], dt["cse_indices"]
-                            cVerts = self.findAllClosestVertsCSE(
-                                cse_indices[py, px],
-                                cse_mask[py, px],
-                            )
-                            # Get pairwise geodesic distances between gt and estimated mesh points.
-                            dist = self.getDistancesCSE(cVertsGT, cVerts, gt["ref_model"])
-                            Current_Mean_Distances = self.Mean_Distances[
-                                self.CoarseParts[np.array(gt["dp_I"], dtype=int)]
-                            ]
+                        dists_between_matches, dist_norm_coeffs = self.computeOgps_single_pair(
+                            dt, gt, py, px, pts
+                        )
                         # Compute gps
-                        ogps_values = np.exp(-(dist ** 2) / (2 * (Current_Mean_Distances ** 2)))
+                        ogps_values = np.exp(
+                            -(dists_between_matches ** 2) / (2 * (dist_norm_coeffs ** 2))
+                        )
                         #
-                        if len(dist) > 0:
-                            ogps = np.sum(ogps_values) / len(dist)
+                        ogps = np.mean(ogps_values) if len(ogps_values) > 0 else 0.0
                     ious[i, j] = ogps
 
         gbb = [gt["bbox"] for gt in g]
@@ -1055,10 +1173,14 @@ class DensePoseCocoEval(object):
         ClosestVertsTransformed[ClosestVerts < 0] = 0
         return ClosestVertsTransformed
 
-    def findAllClosestVertsCSE(self, cse_indices, mask):
-        ClosestVerts = np.ones(cse_indices.shape) * -1
-        ClosestVerts[mask == 1] = cse_indices[mask == 1]
-        return ClosestVerts
+    def findClosestVertsCse(self, embedding, py, px, mask, mesh_name):
+        mesh_vertex_embeddings = self.embedder(mesh_name)
+        pixel_embeddings = embedding[:, py, px].t().to(device="cuda")
+        mask_vals = mask[py, px]
+        edm = squared_euclidean_distance_matrix(pixel_embeddings, mesh_vertex_embeddings)
+        vertex_indices = edm.argmin(dim=1).cpu()
+        vertex_indices[mask_vals <= 0] = -1
+        return vertex_indices
 
     def findAllClosestVertsGT(self, gt):
         #
@@ -1081,12 +1203,12 @@ class DensePoseCocoEval(object):
         ClosestVertsGTTransformed[ClosestVertsGT < 0] = 0
         return ClosestVertsGT, ClosestVertsGTTransformed
 
-    def getDistancesCSE(self, cVertsGT, cVerts, mesh_name):
-        geodists_vertices = np.ones(len(cVertsGT)) * np.inf
-        mask = (cVertsGT >= 0) * (cVerts >= 0)
+    def getDistancesCse(self, cVertsGT, cVerts, mesh_name):
+        geodists_vertices = torch.ones_like(cVertsGT) * float("inf")
+        selected = (cVertsGT >= 0) * (cVerts >= 0)
         mesh = create_mesh(mesh_name, "cpu")
-        geodists_vertices[mask] = mesh.geodists[cVertsGT[mask], cVerts[mask]]
-        return geodists_vertices
+        geodists_vertices[selected] = mesh.geodists[cVertsGT[selected], cVerts[selected]]
+        return geodists_vertices.numpy()
 
     def getDistancesUV(self, cVertsGT, cVerts):
         #

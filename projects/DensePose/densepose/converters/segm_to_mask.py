@@ -9,6 +9,57 @@ from detectron2.structures import BitMasks, Boxes, BoxMode
 from .to_mask import ImageSizeType
 
 
+def resample_coarse_segm_tensor_to_bbox(
+    coarse_segm: torch.Tensor, box_xywh_abs: Tuple[int, int, int, int]
+):
+    """
+    Resample coarse segmentation tensor to the given
+    bounding box and derive labels for each pixel of the bounding box
+
+    Args:
+        coarse_segm: float tensor of shape [1, K, Hout, Wout]
+        box_xywh_abs (tuple of 4 int): bounding box given by its upper-left
+            corner coordinates, width (W) and height (H)
+    Return:
+        Labels for each pixel of the bounding box, a long tensor of size [1, H, W]
+    """
+    x, y, w, h = box_xywh_abs
+    w = max(int(w), 1)
+    h = max(int(h), 1)
+    labels = F.interpolate(coarse_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
+    return labels
+
+
+def resample_fine_and_coarse_segm_tensors_to_bbox(
+    fine_segm: torch.Tensor, coarse_segm: torch.Tensor, box_xywh_abs: Tuple[int, int, int, int]
+):
+    """
+    Resample fine and coarse segmentation tensors to the given
+    bounding box and derive labels for each pixel of the bounding box
+
+    Args:
+        fine_segm: float tensor of shape [1, C, Hout, Wout]
+        coarse_segm: float tensor of shape [1, K, Hout, Wout]
+        box_xywh_abs (tuple of 4 int): bounding box given by its upper-left
+            corner coordinates, width (W) and height (H)
+    Return:
+        Labels for each pixel of the bounding box, a long tensor of size [1, H, W]
+    """
+    x, y, w, h = box_xywh_abs
+    w = max(int(w), 1)
+    h = max(int(h), 1)
+    # coarse segmentation
+    coarse_segm_bbox = F.interpolate(
+        coarse_segm, (h, w), mode="bilinear", align_corners=False
+    ).argmax(dim=1)
+    # combined coarse and fine segmentation
+    labels = (
+        F.interpolate(fine_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
+        * (coarse_segm_bbox > 0).long()
+    )
+    return labels
+
+
 def resample_fine_and_coarse_segm_to_bbox(
     predictor_output: Any, box_xywh_abs: Tuple[int, int, int, int]
 ):
@@ -24,21 +75,11 @@ def resample_fine_and_coarse_segm_to_bbox(
     Return:
         Labels for each pixel of the bounding box, a long tensor of size [1, H, W]
     """
-    x, y, w, h = box_xywh_abs
-    w = max(int(w), 1)
-    h = max(int(h), 1)
-    # coarse segmentation
-    coarse_segm_bbox = F.interpolate(
-        predictor_output.coarse_segm, (h, w), mode="bilinear", align_corners=False
-    ).argmax(dim=1)
-    # combined coarse and fine segmentation
-    labels = (
-        F.interpolate(
-            predictor_output.fine_segm, (h, w), mode="bilinear", align_corners=False
-        ).argmax(dim=1)
-        * (coarse_segm_bbox > 0).long()
+    return resample_fine_and_coarse_segm_tensors_to_bbox(
+        predictor_output.fine_segm,
+        predictor_output.coarse_segm,
+        box_xywh_abs,
     )
-    return labels
 
 
 def predictor_output_with_fine_and_coarse_segm_to_mask(

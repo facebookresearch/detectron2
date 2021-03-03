@@ -32,7 +32,7 @@ from densepose.data import (
     build_inference_based_loaders,
     has_inference_based_loaders,
 )
-from densepose.evaluation import DensePoseCOCOEvaluator
+from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, build_densepose_evaluator_storage
 from densepose.modeling.cse import Embedder
 
 
@@ -155,8 +155,16 @@ class Trainer(DefaultTrainer):
         elif evaluator_type == "lvis":
             evaluators.append(LVISEvaluator(dataset_name, output_dir=output_folder))
         if cfg.MODEL.DENSEPOSE_ON:
+            storage = build_densepose_evaluator_storage(cfg, output_folder)
             evaluators.append(
-                DensePoseCOCOEvaluator(dataset_name, True, output_folder, embedder=embedder)
+                DensePoseCOCOEvaluator(
+                    dataset_name,
+                    True,
+                    output_folder,
+                    evaluator_type=cfg.DENSEPOSE_EVALUATION.TYPE,
+                    storage=storage,
+                    embedder=embedder,
+                )
             )
         return DatasetEvaluators(evaluators)
 

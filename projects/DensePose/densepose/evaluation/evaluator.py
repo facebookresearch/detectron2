@@ -9,21 +9,21 @@ import logging
 import numpy as np
 import os
 from collections import OrderedDict
+from typing import Optional
 import pycocotools.mask as mask_utils
 import torch
-import torch.nn.functional as F
 from pycocotools.coco import COCO
 
+from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
 from detectron2.evaluation import DatasetEvaluator
 from detectron2.structures import BoxMode
-from detectron2.utils.comm import gather, is_main_process, synchronize
+from detectron2.utils.comm import gather, get_rank, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
 from densepose.converters import ToChartResultConverter, ToMaskConverter
 from densepose.data.datasets.coco import maybe_filter_and_map_categories_cocoapi
-from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures import (
     DensePoseChartPredictorOutput,
     DensePoseEmbeddingPredictorOutput,
@@ -31,13 +31,30 @@ from densepose.structures import (
 )
 
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
+from .tensor_storage import (
+    SingleProcessFileTensorStorage,
+    SingleProcessRamTensorStorage,
+    SingleProcessTensorStorage,
+    SizeData,
+    storage_gather,
+)
 
 
 class DensePoseCOCOEvaluator(DatasetEvaluator):
-    def __init__(self, dataset_name, distributed, output_dir=None, embedder=None):
+    def __init__(
+        self,
+        dataset_name,
+        distributed,
+        output_dir=None,
+        evaluator_type: str = "iuv",
+        storage: Optional[SingleProcessTensorStorage] = None,
+        embedder=None,
+    ):
         self._embedder = embedder
         self._distributed = distributed
         self._output_dir = output_dir
+        self._evaluator_type = evaluator_type
+        self._storage = storage
 
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
@@ -66,25 +83,40 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             instances = output["instances"].to(self._cpu_device)
             if not instances.has("pred_densepose"):
                 continue
-            self._predictions.extend(
-                prediction_to_dict(
-                    instances, input["image_id"], self._embedder, self._metadata.class_to_mesh_name
-                )
+            prediction_list = prediction_to_dict(
+                instances,
+                input["image_id"],
+                self._embedder,
+                self._metadata.class_to_mesh_name,
+                self._storage is not None,
             )
+            if self._storage is not None:
+                for prediction_dict in prediction_list:
+                    dict_to_store = {}
+                    for field_name in self._storage.data_schema:
+                        dict_to_store[field_name] = prediction_dict[field_name]
+                    record_id = self._storage.put(dict_to_store)
+                    prediction_dict["record_id"] = record_id
+                    prediction_dict["rank"] = get_rank()
+                    for field_name in self._storage.data_schema:
+                        del prediction_dict[field_name]
+            self._predictions.extend(prediction_list)
 
     def evaluate(self, img_ids=None):
         if self._distributed:
             synchronize()
             predictions = gather(self._predictions)
             predictions = list(itertools.chain(*predictions))
-            if not is_main_process():
-                return
         else:
             predictions = self._predictions
 
-        return copy.deepcopy(self._eval_predictions(predictions, img_ids))
+        multi_storage = storage_gather(self._storage) if self._storage is not None else None
 
-    def _eval_predictions(self, predictions, img_ids=None):
+        if not is_main_process():
+            return
+        return copy.deepcopy(self._eval_predictions(predictions, multi_storage, img_ids))
+
+    def _eval_predictions(self, predictions, multi_storage=None, img_ids=None):
         """
         Evaluate predictions on densepose.
         Return results with the metrics of the tasks.
@@ -102,6 +134,8 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         results_gps, results_gpsm, results_segm = _evaluate_predictions_on_coco(
             self._coco_api,
             predictions,
+            multi_storage,
+            self._embedder,
             min_threshold=self._min_threshold,
             img_ids=img_ids,
         )
@@ -111,7 +145,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         return res
 
 
-def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name):
+def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_storage):
     """
     Args:
         instances (Instances): the output of the model
@@ -128,10 +162,13 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name):
 
     if isinstance(instances.pred_densepose, DensePoseEmbeddingPredictorOutput):
         results_densepose = densepose_cse_predictions_to_dict(
-            instances, embedder, class_to_mesh_name
+            instances, embedder, class_to_mesh_name, use_storage
         )
     elif isinstance(instances.pred_densepose, DensePoseChartPredictorOutput):
-        results_densepose = densepose_chart_predictions_to_dict(instances)
+        if not use_storage:
+            results_densepose = densepose_chart_predictions_to_dict(instances)
+        else:
+            results_densepose = densepose_chart_predictions_to_storage_dict(instances)
 
     results = []
     for k in range(len(instances)):
@@ -171,33 +208,36 @@ def densepose_chart_predictions_to_dict(instances):
     return results
 
 
-def densepose_cse_predictions_to_dict(instances, embedder, class_to_mesh_name):
+def densepose_chart_predictions_to_storage_dict(instances):
     results = []
-    pred_classes = instances.pred_classes.tolist()
     for k in range(len(instances)):
-        cse = instances.pred_densepose[k]
-        box_xyxy = instances.pred_boxes[k].tensor.int().tolist()[0]
-        w, h = max(box_xyxy[2] - box_xyxy[0], 1), max(box_xyxy[3] - box_xyxy[1], 1)
-        coarse_segm_resized = F.interpolate(
-            cse.coarse_segm, (h, w), mode="bilinear", align_corners=False
-        )
-        embedding_resized = F.interpolate(
-            cse.embedding, (h, w), mode="bilinear", align_corners=False
-        )
-        mesh_name = class_to_mesh_name[pred_classes[k]]
-        mesh_vertex_embeddings = embedder(mesh_name).to(embedding_resized.device)
-        # computing the closest mesh vertex for each pixel of the instance
-        pixel_vertex_indices = np.zeros((h, w))
-        for i in range(h):
-            local_embeddings = embedding_resized[0, :, i, :].t()
-            edm = squared_euclidean_distance_matrix(local_embeddings, mesh_vertex_embeddings)
-            pixel_vertex_indices[i] = edm.argmin(dim=1).int().cpu().numpy()
-        cse_mask = coarse_segm_resized[0].argmax(0).cpu().numpy().astype(np.int8)
-        results.append({"cse_mask": cse_mask, "cse_indices": pixel_vertex_indices})
+        densepose_predictor_output = instances.pred_densepose[k]
+        result = {
+            "coarse_segm": densepose_predictor_output.coarse_segm.squeeze(0).cpu(),
+            "fine_segm": densepose_predictor_output.fine_segm.squeeze(0).cpu(),
+            "u": densepose_predictor_output.u.squeeze(0).cpu(),
+            "v": densepose_predictor_output.v.squeeze(0).cpu(),
+        }
+        results.append(result)
     return results
 
 
-def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5, img_ids=None):
+def densepose_cse_predictions_to_dict(instances, embedder, class_to_mesh_name, use_storage):
+    results = []
+    for k in range(len(instances)):
+        cse = instances.pred_densepose[k]
+        results.append(
+            {
+                "coarse_segm": cse.coarse_segm[0].cpu(),
+                "embedding": cse.embedding[0].cpu(),
+            }
+        )
+    return results
+
+
+def _evaluate_predictions_on_coco(
+    coco_gt, coco_results, multi_storage=None, embedder=None, min_threshold=0.5, img_ids=None
+):
     logger = logging.getLogger(__name__)
 
     densepose_metrics = _get_densepose_metrics(min_threshold)
@@ -210,17 +250,17 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, min_threshold=0.5, img_
 
     coco_dt = coco_gt.loadRes(coco_results)
     results_segm = _evaluate_predictions_on_coco_segm(
-        coco_gt, coco_dt, densepose_metrics, min_threshold, img_ids
+        coco_gt, coco_dt, densepose_metrics, multi_storage, embedder, min_threshold, img_ids
     )
     logger.info("Evaluation results for densepose segm: \n" + create_small_table(results_segm))
     results_gps = _evaluate_predictions_on_coco_gps(
-        coco_gt, coco_dt, densepose_metrics, min_threshold, img_ids
+        coco_gt, coco_dt, densepose_metrics, multi_storage, embedder, min_threshold, img_ids
     )
     logger.info(
         "Evaluation results for densepose, GPS metric: \n" + create_small_table(results_gps)
     )
     results_gpsm = _evaluate_predictions_on_coco_gpsm(
-        coco_gt, coco_dt, densepose_metrics, min_threshold, img_ids
+        coco_gt, coco_dt, densepose_metrics, multi_storage, embedder, min_threshold, img_ids
     )
     logger.info(
         "Evaluation results for densepose, GPSm metric: \n" + create_small_table(results_gpsm)
@@ -240,8 +280,12 @@ def _get_densepose_metrics(min_threshold=0.5):
     return metrics
 
 
-def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
-    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPS)
+def _evaluate_predictions_on_coco_gps(
+    coco_gt, coco_dt, metrics, multi_storage, embedder, min_threshold=0.5, img_ids=None
+):
+    coco_eval = DensePoseCocoEval(
+        coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=DensePoseEvalMode.GPS
+    )
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
@@ -254,8 +298,12 @@ def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics, min_threshold=0
     return results
 
 
-def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
-    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPSM)
+def _evaluate_predictions_on_coco_gpsm(
+    coco_gt, coco_dt, metrics, multi_storage, embedder, min_threshold=0.5, img_ids=None
+):
+    coco_eval = DensePoseCocoEval(
+        coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=DensePoseEvalMode.GPSM
+    )
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
@@ -268,8 +316,12 @@ def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics, min_threshold=
     return results
 
 
-def _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold=0.5, img_ids=None):
-    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.IOU)
+def _evaluate_predictions_on_coco_segm(
+    coco_gt, coco_dt, metrics, multi_storage, embedder, min_threshold=0.5, img_ids=None
+):
+    coco_eval = DensePoseCocoEval(
+        coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=DensePoseEvalMode.IOU
+    )
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
@@ -280,3 +332,41 @@ def _evaluate_predictions_on_coco_segm(coco_gt, coco_dt, metrics, min_threshold=
     coco_eval.summarize()
     results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
     return results
+
+
+def build_densepose_evaluator_storage(cfg: CfgNode, output_folder: str):
+    storage_spec = cfg.DENSEPOSE_EVALUATION.STORAGE
+    if storage_spec == "none":
+        return None
+    evaluator_type = cfg.DENSEPOSE_EVALUATION.TYPE
+    # common output tensor sizes
+    hout = cfg.MODEL.ROI_DENSEPOSE_HEAD.HEATMAP_SIZE
+    wout = cfg.MODEL.ROI_DENSEPOSE_HEAD.HEATMAP_SIZE
+    n_csc = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
+    # specific output tensors
+    if evaluator_type == "iuv":
+        n_fsc = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
+        schema = {
+            "coarse_segm": SizeData(dtype="float32", shape=(n_csc, hout, wout)),
+            "fine_segm": SizeData(dtype="float32", shape=(n_fsc, hout, wout)),
+            "u": SizeData(dtype="float32", shape=(n_fsc, hout, wout)),
+            "v": SizeData(dtype="float32", shape=(n_fsc, hout, wout)),
+        }
+    elif evaluator_type == "cse":
+        embed_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE
+        schema = {
+            "coarse_segm": SizeData(dtype="float32", shape=(n_csc, hout, wout)),
+            "embedding": SizeData(dtype="float32", shape=(embed_size, hout, wout)),
+        }
+    else:
+        raise ValueError(f"Unknown evaluator type: {evaluator_type}")
+    # storage types
+    if storage_spec == "ram":
+        storage = SingleProcessRamTensorStorage(schema, io.BytesIO())
+    elif storage_spec == "file":
+        fpath = os.path.join(output_folder, f"DensePoseEvaluatorStorage.{get_rank()}.bin")
+        PathManager.mkdirs(output_folder)
+        storage = SingleProcessFileTensorStorage(schema, fpath, "wb")
+    else:
+        raise ValueError(f"Unknown storage specification: {storage_spec}")
+    return storage

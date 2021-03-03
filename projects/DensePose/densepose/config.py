@@ -17,6 +17,26 @@ def add_dataset_category_config(cfg: CN):
     _C.DATASETS.CLASS_TO_MESH_NAME_MAPPING = CN(new_allowed=True)
 
 
+def add_evaluation_config(cfg: CN):
+    _C = cfg
+    _C.DENSEPOSE_EVALUATION = CN()
+    # evaluator type, possible values:
+    #  - "iou": evaluator for models that produce iou data
+    #  - "cse": evaluator for models that produce cse data
+    _C.DENSEPOSE_EVALUATION.TYPE = "iou"
+    # storage for DensePose results, possible values:
+    #  - "none": no explicit storage, all the results are stored in the
+    #            dictionary with predictions, memory intensive;
+    #            historically the default storage type
+    #  - "ram": RAM storage, uses per-process RAM storage, which is
+    #           reduced to a single process storage on later stages,
+    #           less memory intensive
+    #  - "file": file storage, uses per-process file-based storage,
+    #            the least memory intensive, but may create bottlenecks
+    #            on file system accesses
+    _C.DENSEPOSE_EVALUATION.STORAGE = "none"
+
+
 def add_bootstrap_config(cfg: CN):
     """"""
     _C = cfg
@@ -211,3 +231,4 @@ def add_densepose_config(cfg: CN):
     add_hrnet_config(cfg)
     add_bootstrap_config(cfg)
     add_dataset_category_config(cfg)
+    add_evaluation_config(cfg)

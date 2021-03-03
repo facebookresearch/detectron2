@@ -14,6 +14,36 @@ from ..structures import (
 from . import resample_fine_and_coarse_segm_to_bbox
 
 
+def resample_uv_tensors_to_bbox(
+    u: torch.Tensor,
+    v: torch.Tensor,
+    labels: torch.Tensor,
+    box_xywh_abs: Tuple[int, int, int, int],
+) -> torch.Tensor:
+    """
+    Resamples U and V coordinate estimates for the given bounding box
+
+    Args:
+        u (tensor [1, C, H, W] of float): U coordinates
+        v (tensor [1, C, H, W] of float): V coordinates
+        labels (tensor [H, W] of long): labels obtained by resampling segmentation
+            outputs for the given bounding box
+        box_xywh_abs (tuple of 4 int): bounding box that corresponds to predictor outputs
+    Return:
+       Resampled U and V coordinates - a tensor [2, H, W] of float
+    """
+    x, y, w, h = box_xywh_abs
+    w = max(int(w), 1)
+    h = max(int(h), 1)
+    u_bbox = F.interpolate(u, (h, w), mode="bilinear", align_corners=False)
+    v_bbox = F.interpolate(v, (h, w), mode="bilinear", align_corners=False)
+    uv = torch.zeros([2, h, w], dtype=torch.float32, device=u.device)
+    for part_id in range(1, u_bbox.size(1)):
+        uv[0][labels == part_id] = u_bbox[0, part_id][labels == part_id]
+        uv[1][labels == part_id] = v_bbox[0, part_id][labels == part_id]
+    return uv
+
+
 def resample_uv_to_bbox(
     predictor_output: DensePoseChartPredictorOutput,
     labels: torch.Tensor,
@@ -31,16 +61,12 @@ def resample_uv_to_bbox(
     Return:
        Resampled U and V coordinates - a tensor [2, H, W] of float
     """
-    x, y, w, h = box_xywh_abs
-    w = max(int(w), 1)
-    h = max(int(h), 1)
-    u_bbox = F.interpolate(predictor_output.u, (h, w), mode="bilinear", align_corners=False)
-    v_bbox = F.interpolate(predictor_output.v, (h, w), mode="bilinear", align_corners=False)
-    uv = torch.zeros([2, h, w], dtype=torch.float32, device=predictor_output.u.device)
-    for part_id in range(1, u_bbox.size(1)):
-        uv[0][labels == part_id] = u_bbox[0, part_id][labels == part_id]
-        uv[1][labels == part_id] = v_bbox[0, part_id][labels == part_id]
-    return uv
+    return resample_uv_tensors_to_bbox(
+        predictor_output.u,
+        predictor_output.v,
+        labels,
+        box_xywh_abs,
+    )
 
 
 def densepose_chart_predictor_output_to_result(
