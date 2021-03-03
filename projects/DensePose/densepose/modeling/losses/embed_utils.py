@@ -13,7 +13,7 @@ from .utils import AnnotationsAccumulator
 class PackedCseAnnotations:
     x_gt: torch.Tensor
     y_gt: torch.Tensor
-    coarse_segm_gt: torch.Tensor
+    coarse_segm_gt: Optional[torch.Tensor]
     vertex_mesh_ids_gt: torch.Tensor
     vertex_ids_gt: torch.Tensor
     bbox_xywh_gt: torch.Tensor
@@ -92,7 +92,8 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
         """
         self.x_gt.append(dp_gt.x)
         self.y_gt.append(dp_gt.y)
-        self.s_gt.append(dp_gt.segm.unsqueeze(0))
+        if hasattr(dp_gt, "segm"):
+            self.s_gt.append(dp_gt.segm.unsqueeze(0))
         self.vertex_ids_gt.append(dp_gt.vertex_ids)
         self.vertex_mesh_ids_gt.append(torch.full_like(dp_gt.vertex_ids, dp_gt.mesh_id))
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
@@ -120,7 +121,10 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
             y_gt=torch.cat(self.y_gt, 0),
             vertex_mesh_ids_gt=torch.cat(self.vertex_mesh_ids_gt, 0),
             vertex_ids_gt=torch.cat(self.vertex_ids_gt, 0),
-            coarse_segm_gt=torch.cat(self.s_gt, 0),
+            # ignore segmentation annotations, if not all the instances contain those
+            coarse_segm_gt=torch.cat(self.s_gt, 0)
+            if len(self.s_gt) == len(self.bbox_xywh_gt)
+            else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),
             point_bbox_with_dp_indices=torch.cat(self.point_bbox_with_dp_indices, 0),

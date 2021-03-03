@@ -122,7 +122,8 @@ class DensePoseDataRelative(object):
                 annotation[DensePoseDataRelative.VERTEX_IDS_KEY], dtype=torch.long
             )
             self.mesh_id = MeshCatalog.get_mesh_id(annotation[DensePoseDataRelative.MESH_NAME_KEY])
-        self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
+        if DensePoseDataRelative.S_KEY in annotation:
+            self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
         self.device = torch.device("cpu")
         if cleanup:
             DensePoseDataRelative.cleanup_annotation(annotation)
@@ -131,15 +132,13 @@ class DensePoseDataRelative(object):
         if self.device == device:
             return self
         new_data = DensePoseDataRelative.__new__(DensePoseDataRelative)
-        new_data.x = self.x
         new_data.x = self.x.to(device)
         new_data.y = self.y.to(device)
-        for attr in ["i", "u", "v", "vertex_ids"]:
+        for attr in ["i", "u", "v", "vertex_ids", "segm"]:
             if hasattr(self, attr):
                 setattr(new_data, attr, getattr(self, attr).to(device))
         if hasattr(self, "mesh_id"):
             new_data.mesh_id = self.mesh_id
-        new_data.segm = self.segm.to(device)
         new_data.device = device
         return new_data
 
@@ -175,15 +174,6 @@ class DensePoseDataRelative(object):
         ]:
             if key not in annotation:
                 return False, "no {key} data in the annotation".format(key=key)
-        has_segmentation = any(
-            key in annotation
-            for key in [
-                DensePoseDataRelative.S_KEY,
-                "segmentation",
-            ]
-        )
-        if not has_segmentation:
-            return (False, "no segmentation data in DensePose annotation")
         valid_for_iuv_setting = all(
             key in annotation
             for key in [
@@ -237,7 +227,8 @@ class DensePoseDataRelative(object):
 
     def apply_transform(self, transforms, densepose_transform_data):
         self._transform_pts(transforms, densepose_transform_data)
-        self._transform_segm(transforms, densepose_transform_data)
+        if hasattr(self, "segm"):
+            self._transform_segm(transforms, densepose_transform_data)
 
     def _transform_pts(self, transforms, dp_transform_data):
         import detectron2.data.transforms as T
@@ -245,7 +236,7 @@ class DensePoseDataRelative(object):
         # NOTE: This assumes that HorizFlipTransform is the only one that does flip
         do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
         if do_hflip:
-            self.x = self.segm.size(1) - self.x
+            self.x = self.MASK_SIZE - self.x
             if hasattr(self, "i"):
                 self._flip_iuv_semantics(dp_transform_data)
             if hasattr(self, "vertex_ids"):

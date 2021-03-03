@@ -291,7 +291,7 @@ class PackedChartBasedAnnotations:
     y_gt: torch.Tensor
     u_gt: torch.Tensor
     v_gt: torch.Tensor
-    coarse_segm_gt: torch.Tensor
+    coarse_segm_gt: Optional[torch.Tensor]
     bbox_xywh_gt: torch.Tensor
     bbox_xywh_est: torch.Tensor
     point_bbox_with_dp_indices: torch.Tensor
@@ -370,7 +370,8 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         self.y_gt.append(dp_gt.y)
         self.u_gt.append(dp_gt.u)
         self.v_gt.append(dp_gt.v)
-        self.s_gt.append(dp_gt.segm.unsqueeze(0))
+        if hasattr(dp_gt, "segm"):
+            self.s_gt.append(dp_gt.segm.unsqueeze(0))
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
         self.bbox_xywh_est.append(box_xywh_est.view(-1, 4))
         self.point_bbox_with_dp_indices.append(
@@ -397,7 +398,10 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             y_gt=torch.cat(self.y_gt, 0),
             u_gt=torch.cat(self.u_gt, 0),
             v_gt=torch.cat(self.v_gt, 0),
-            coarse_segm_gt=torch.cat(self.s_gt, 0),
+            # ignore segmentation annotations, if not all the instances contain those
+            coarse_segm_gt=torch.cat(self.s_gt, 0)
+            if len(self.s_gt) == len(self.bbox_xywh_gt)
+            else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),
             point_bbox_with_dp_indices=torch.cat(self.point_bbox_with_dp_indices, 0).long(),

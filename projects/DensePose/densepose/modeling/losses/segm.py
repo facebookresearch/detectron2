@@ -49,6 +49,8 @@ class SegmentationLoss:
                  - bbox_xywh_gt
                  - bbox_xywh_est
         """
+        if packed_annotations.coarse_segm_gt is None:
+            return self.fake_value(densepose_predictor_outputs)
         coarse_segm_est = densepose_predictor_outputs.coarse_segm[packed_annotations.bbox_indices]
         with torch.no_grad():
             coarse_segm_gt = resample_data(

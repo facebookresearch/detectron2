@@ -26,7 +26,6 @@ from densepose.config import get_bootstrap_dataset_config
 from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper
 from .datasets.coco import DENSEPOSE_CSE_KEYS_WITHOUT_MASK, DENSEPOSE_IUV_KEYS_WITHOUT_MASK
-from .datasets.coco import DENSEPOSE_MASK_KEY as DENSEPOSE_COCO_MASK_KEY
 from .datasets.dataset_type import DatasetType
 from .inference_based_loader import InferenceBasedLoader, ScoreBasedFilter
 from .samplers import (
@@ -194,10 +193,9 @@ def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[In
 
     def has_densepose_annotations(instance: Instance) -> bool:
         for ann in instance["annotations"]:
-            if (
-                all(key in ann for key in DENSEPOSE_IUV_KEYS_WITHOUT_MASK)
-                or all(key in ann for key in DENSEPOSE_CSE_KEYS_WITHOUT_MASK)
-            ) and ((DENSEPOSE_COCO_MASK_KEY in ann) or ("segmentation" in ann)):
+            if all(key in ann for key in DENSEPOSE_IUV_KEYS_WITHOUT_MASK) or all(
+                key in ann for key in DENSEPOSE_CSE_KEYS_WITHOUT_MASK
+            ):
                 return True
             if use_masks and "segmentation" in ann:
                 return True
