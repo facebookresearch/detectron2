@@ -12,13 +12,14 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
 
-from densepose.data.meshes.catalog import MeshCatalog
-
 from ..utils import maybe_prepend_base_path
 
 DENSEPOSE_MASK_KEY = "dp_masks"
-DENSEPOSE_KEYS_WITHOUT_MASK = ["dp_x", "dp_y", "dp_I", "dp_U", "dp_V"]
-DENSEPOSE_KEYS = DENSEPOSE_KEYS_WITHOUT_MASK + [DENSEPOSE_MASK_KEY]
+DENSEPOSE_IUV_KEYS_WITHOUT_MASK = ["dp_x", "dp_y", "dp_I", "dp_U", "dp_V"]
+DENSEPOSE_CSE_KEYS_WITHOUT_MASK = ["dp_x", "dp_y", "dp_vertex", "ref_model"]
+DENSEPOSE_ALL_POSSIBLE_KEYS = set(
+    DENSEPOSE_IUV_KEYS_WITHOUT_MASK + DENSEPOSE_CSE_KEYS_WITHOUT_MASK + [DENSEPOSE_MASK_KEY]
+)
 DENSEPOSE_METADATA_URL_PREFIX = "https://dl.fbaipublicfiles.com/densepose/data/"
 
 
@@ -165,7 +166,7 @@ def _add_categories_metadata(dataset_name: str, categories: Dict[str, Any]):
     meta = MetadataCatalog.get(dataset_name)
     meta.categories = {c["id"]: c["name"] for c in categories}
     logger = logging.getLogger(__name__)
-    logger.info("Dataset {} categories: {}".format(dataset_name, categories))
+    logger.info("Dataset {} categories: {}".format(dataset_name, meta.categories))
 
 
 def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str, Any]]]):
@@ -214,16 +215,9 @@ def _maybe_add_keypoints(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
 
 
 def _maybe_add_densepose(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
-    for key in DENSEPOSE_KEYS:
+    for key in DENSEPOSE_ALL_POSSIBLE_KEYS:
         if key in ann_dict:
             obj[key] = ann_dict[key]
-
-
-def _maybe_add_cse_data(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
-    if "dp_vertex" in ann_dict:
-        obj["vertex_ids"] = ann_dict["dp_vertex"]
-    if "ref_model" in ann_dict:
-        obj["mesh_id"] = MeshCatalog.get_mesh_id(ann_dict["ref_model"])
 
 
 def _combine_images_with_annotations(
@@ -257,7 +251,6 @@ def _combine_images_with_annotations(
             _maybe_add_segm(obj, ann_dict)
             _maybe_add_keypoints(obj, ann_dict)
             _maybe_add_densepose(obj, ann_dict)
-            _maybe_add_cse_data(obj, ann_dict)
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)

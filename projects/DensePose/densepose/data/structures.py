@@ -94,9 +94,9 @@ class DensePoseDataRelative(object):
     # Key for segmentation mask in annotation dict
     S_KEY = "dp_masks"
     # Key for vertex ids (used in continuous surface embeddings annotations)
-    VERTEX_IDS_KEY = "vertex_ids"
+    VERTEX_IDS_KEY = "dp_vertex"
     # Key for mesh id (used in continuous surface embeddings annotations)
-    MESH_ID_KEY = "mesh_id"
+    MESH_NAME_KEY = "ref_model"
     # Number of body parts in segmentation masks
     N_BODY_PARTS = 14
     # Number of parts in point labels
@@ -116,12 +116,12 @@ class DensePoseDataRelative(object):
             self.v = torch.as_tensor(annotation[DensePoseDataRelative.V_KEY])
         if (
             DensePoseDataRelative.VERTEX_IDS_KEY in annotation
-            and DensePoseDataRelative.MESH_ID_KEY in annotation
+            and DensePoseDataRelative.MESH_NAME_KEY in annotation
         ):
             self.vertex_ids = torch.as_tensor(
                 annotation[DensePoseDataRelative.VERTEX_IDS_KEY], dtype=torch.long
             )
-            self.mesh_id = annotation[DensePoseDataRelative.MESH_ID_KEY]
+            self.mesh_id = MeshCatalog.get_mesh_id(annotation[DensePoseDataRelative.MESH_NAME_KEY])
         self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
         self.device = torch.device("cpu")
         if cleanup:
@@ -147,6 +147,9 @@ class DensePoseDataRelative(object):
     def extract_segmentation_mask(annotation):
         import pycocotools.mask as mask_utils
 
+        # TODO: annotation instance is accepted if it contains either
+        # DensePose segmentation or instance segmentation. However, here we
+        # only rely on DensePose segmentation
         poly_specs = annotation[DensePoseDataRelative.S_KEY]
         if isinstance(poly_specs, torch.Tensor):
             # data is already given as mask tensors, no need to decode
@@ -169,13 +172,52 @@ class DensePoseDataRelative(object):
         for key in [
             DensePoseDataRelative.X_KEY,
             DensePoseDataRelative.Y_KEY,
-            DensePoseDataRelative.I_KEY,
-            DensePoseDataRelative.U_KEY,
-            DensePoseDataRelative.V_KEY,
-            DensePoseDataRelative.S_KEY,
         ]:
             if key not in annotation:
                 return False, "no {key} data in the annotation".format(key=key)
+        has_segmentation = any(
+            key in annotation
+            for key in [
+                DensePoseDataRelative.S_KEY,
+                "segmentation",
+            ]
+        )
+        if not has_segmentation:
+            return (False, "no segmentation data in DensePose annotation")
+        valid_for_iuv_setting = all(
+            key in annotation
+            for key in [
+                DensePoseDataRelative.I_KEY,
+                DensePoseDataRelative.U_KEY,
+                DensePoseDataRelative.V_KEY,
+            ]
+        )
+        valid_for_cse_setting = all(
+            key in annotation
+            for key in [
+                DensePoseDataRelative.VERTEX_IDS_KEY,
+                DensePoseDataRelative.MESH_NAME_KEY,
+            ]
+        )
+        if not valid_for_iuv_setting and not valid_for_cse_setting:
+            return (
+                False,
+                "expected either {} (IUV setting) or {} (CSE setting) annotations".format(
+                    ", ".join(
+                        [
+                            DensePoseDataRelative.I_KEY,
+                            DensePoseDataRelative.U_KEY,
+                            DensePoseDataRelative.V_KEY,
+                        ]
+                    ),
+                    ", ".join(
+                        [
+                            DensePoseDataRelative.VERTEX_IDS_KEY,
+                            DensePoseDataRelative.MESH_NAME_KEY,
+                        ]
+                    ),
+                ),
+            )
         return True, None
 
     @staticmethod
@@ -188,7 +230,7 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.V_KEY,
             DensePoseDataRelative.S_KEY,
             DensePoseDataRelative.VERTEX_IDS_KEY,
-            DensePoseDataRelative.MESH_ID_KEY,
+            DensePoseDataRelative.MESH_NAME_KEY,
         ]:
             if key in annotation:
                 del annotation[key]
@@ -204,8 +246,10 @@ class DensePoseDataRelative(object):
         do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
         if do_hflip:
             self.x = self.segm.size(1) - self.x
-            self._flip_iuv_semantics(dp_transform_data)
-            self._flip_vertices()
+            if hasattr(self, "i"):
+                self._flip_iuv_semantics(dp_transform_data)
+            if hasattr(self, "vertex_ids"):
+                self._flip_vertices()
 
         for t in transforms.transforms:
             if isinstance(t, T.RotationTransform):
@@ -232,12 +276,11 @@ class DensePoseDataRelative(object):
                 )
 
     def _flip_vertices(self):
-        if hasattr(self, "vertex_ids"):
-            mesh_info = MeshCatalog[MeshCatalog.get_mesh_name(self.mesh_id)]
-            mesh_symmetry = (
-                load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
-            )
-            self.vertex_ids = mesh_symmetry["vertex_transforms"][self.vertex_ids]
+        mesh_info = MeshCatalog[MeshCatalog.get_mesh_name(self.mesh_id)]
+        mesh_symmetry = (
+            load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
+        )
+        self.vertex_ids = mesh_symmetry["vertex_transforms"][self.vertex_ids]
 
     def _transform_segm(self, transforms, dp_transform_data):
         import detectron2.data.transforms as T

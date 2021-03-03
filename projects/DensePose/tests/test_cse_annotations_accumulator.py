@@ -95,8 +95,8 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                     {
                         "dp_x": [81.69, 153.47, 151.00],
                         "dp_y": [162.24, 128.71, 113.81],
-                        "vertex_ids": [0, 1, 2],
-                        "mesh_id": 0,
+                        "dp_vertex": [0, 1, 2],
+                        "ref_model": "zebra_5002",
                         "dp_masks": [],
                     },
                     {"c": (166, 133), "r": 64},
@@ -135,8 +135,8 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                     {
                         "dp_x": [149.99, 198.62, 157.59],
                         "dp_y": [170.74, 197.73, 123.12],
-                        "vertex_ids": [3, 4, 5],
-                        "mesh_id": 1,
+                        "dp_vertex": [3, 4, 5],
+                        "ref_model": "cat_5001",
                         "dp_masks": [],
                     },
                     {"c": (100, 100), "r": 50},
@@ -145,8 +145,8 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                     {
                         "dp_x": [234.53, 116.72, 71.66],
                         "dp_y": [107.53, 11.31, 142.32],
-                        "vertex_ids": [6, 7, 8],
-                        "mesh_id": 2,
+                        "dp_vertex": [6, 7, 8],
+                        "ref_model": "dog_5002",
                         "dp_masks": [],
                     },
                     {"c": (200, 150), "r": 40},
@@ -155,8 +155,8 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                     {
                         "dp_x": [225.54, 202.61, 135.90],
                         "dp_y": [167.46, 181.00, 211.47],
-                        "vertex_ids": [9, 10, 11],
-                        "mesh_id": 3,
+                        "dp_vertex": [9, 10, 11],
+                        "ref_model": "elephant_5002",
                         "dp_masks": [],
                     },
                     {"c": (100, 200), "r": 45},
