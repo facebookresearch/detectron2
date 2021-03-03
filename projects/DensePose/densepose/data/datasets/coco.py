@@ -73,8 +73,18 @@ DATASETS = [
     ),
     CocoDatasetInfo(
         name="densepose_chimps",
-        images_root="densepose_evolution/densepose_chimps",
-        annotations_fpath="densepose_evolution/annotations/densepose_chimps_densepose.json",
+        images_root="densepose_chimps/images",
+        annotations_fpath="densepose_chimps/densepose_chimps_densepose.json",
+    ),
+    CocoDatasetInfo(
+        name="densepose_chimps_cse_train",
+        images_root="densepose_chimps/images",
+        annotations_fpath="densepose_chimps/densepose_chimps_cse_train.json",
+    ),
+    CocoDatasetInfo(
+        name="densepose_chimps_cse_val",
+        images_root="densepose_chimps/images",
+        annotations_fpath="densepose_chimps/densepose_chimps_cse_val.json",
     ),
     CocoDatasetInfo(
         name="posetrack2017_train",
