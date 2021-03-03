@@ -259,6 +259,45 @@ def _combine_images_with_annotations(
     return dataset_dicts
 
 
+def get_contiguous_id_to_category_id_map(metadata):
+    cat_id_2_cont_id = metadata.thing_dataset_id_to_contiguous_id
+    cont_id_2_cat_id = {}
+    for cat_id, cont_id in cat_id_2_cont_id.items():
+        if cont_id in cont_id_2_cat_id:
+            continue
+        cont_id_2_cat_id[cont_id] = cat_id
+    return cont_id_2_cat_id
+
+
+def maybe_filter_categories_cocoapi(dataset_name, coco_api):
+    meta = MetadataCatalog.get(dataset_name)
+    cont_id_2_cat_id = get_contiguous_id_to_category_id_map(meta)
+    cat_id_2_cont_id = meta.thing_dataset_id_to_contiguous_id
+    # filter categories
+    cats = []
+    for cat in coco_api.dataset["categories"]:
+        cat_id = cat["id"]
+        if cat_id not in cat_id_2_cont_id:
+            continue
+        cont_id = cat_id_2_cont_id[cat_id]
+        if (cont_id in cont_id_2_cat_id) and (cont_id_2_cat_id[cont_id] == cat_id):
+            cats.append(cat)
+    coco_api.dataset["categories"] = cats
+    # filter annotations, if multiple categories are mapped to a single
+    # contiguous ID, use only one category ID and map all annotations to that category ID
+    anns = []
+    for ann in coco_api.dataset["annotations"]:
+        cat_id = ann["category_id"]
+        if cat_id not in cat_id_2_cont_id:
+            continue
+        cont_id = cat_id_2_cont_id[cat_id]
+        ann["category_id"] = cont_id_2_cat_id[cont_id]
+        anns.append(ann)
+    coco_api.dataset["annotations"] = anns
+    # recreate index
+    coco_api.createIndex()
+
+
 def maybe_filter_and_map_categories_cocoapi(dataset_name, coco_api):
     meta = MetadataCatalog.get(dataset_name)
     category_id_map = meta.thing_dataset_id_to_contiguous_id

@@ -9,13 +9,10 @@ from torch import nn
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode
-from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import (
-    COCOEvaluator,
     DatasetEvaluator,
     DatasetEvaluators,
-    LVISEvaluator,
     inference_on_dataset,
     print_csv_format,
 )
@@ -32,6 +29,7 @@ from densepose.data import (
     build_inference_based_loaders,
     has_inference_based_loaders,
 )
+from densepose.evaluation.d2_evaluator_adapter import Detectron2COCOEvaluatorAdapter
 from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, build_densepose_evaluator_storage
 from densepose.modeling.cse import Embedder
 
@@ -149,11 +147,15 @@ class Trainer(DefaultTrainer):
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
         evaluators = []
-        evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
-        if evaluator_type == "coco":
-            evaluators.append(COCOEvaluator(dataset_name, output_dir=output_folder))
-        elif evaluator_type == "lvis":
-            evaluators.append(LVISEvaluator(dataset_name, output_dir=output_folder))
+        # Note: we currently use COCO evaluator for both COCO and LVIS datasets
+        # to have compatible metrics. LVIS bbox evaluator could also be used
+        # with an adapter to properly handle filtered / mapped categories
+        # evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
+        # if evaluator_type == "coco":
+        #     evaluators.append(COCOEvaluator(dataset_name, output_dir=output_folder))
+        # elif evaluator_type == "lvis":
+        #     evaluators.append(LVISEvaluator(dataset_name, output_dir=output_folder))
+        evaluators.append(Detectron2COCOEvaluatorAdapter(dataset_name, output_dir=output_folder))
         if cfg.MODEL.DENSEPOSE_ON:
             storage = build_densepose_evaluator_storage(cfg, output_folder)
             evaluators.append(

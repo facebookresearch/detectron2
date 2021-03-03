@@ -702,7 +702,7 @@ class DensePoseCocoEval(object):
         # Get pairwise geodesic distances between gt and estimated mesh points.
         dist = self.getDistancesCse(cVertsGT, cVerts, gt["ref_model"])
         # normalize distances
-        if "dp_I" in gt:
+        if (gt["ref_model"] == "smpl_27554") and ("dp_I" in gt):
             Current_Mean_Distances = self.Mean_Distances[
                 self.CoarseParts[np.array(gt["dp_I"], dtype=int)]
             ]
