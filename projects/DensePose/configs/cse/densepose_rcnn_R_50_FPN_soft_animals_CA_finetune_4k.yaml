@@ -1,0 +1,151 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_s1x/250533982/model_final_2c4512.pkl"
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseV1ConvXHead"
+    COARSE_SEGM_TRAINED_BY_MASKS: True
+    CSE:
+      EMBED_LOSS_NAME: "SoftEmbeddingLoss"
+      EMBEDDING_DIST_GAUSS_SIGMA: 0.1
+      GEODESIC_DIST_GAUSS_SIGMA: 0.1
+      EMBEDDERS:
+        "cat_5001":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5001
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_cat_5001_256.pkl"
+        "dog_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_dog_5002_256.pkl"
+        "sheep_5004":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5004
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_sheep_5004_256.pkl"
+        "horse_5004":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5004
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_horse_5004_256.pkl"
+        "zebra_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_zebra_5002_256.pkl"
+        "giraffe_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_giraffe_5002_256.pkl"
+        "elephant_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_elephant_5002_256.pkl"
+        "cow_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_cow_5002_256.pkl"
+        "bear_4936":
+          TYPE: vertex_feature
+          NUM_VERTICES: 4936
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_bear_4936_256.pkl"
+DATASETS:
+  TRAIN:
+    - "densepose_lvis_v1_train1"
+    - "densepose_lvis_v1_train2"
+  TEST:
+    - "densepose_lvis_v1_val"
+  WHITELISTED_CATEGORIES:
+    "densepose_lvis_v1_train1":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+      - 225  # cat
+      - 378  # dog
+    "densepose_lvis_v1_train2":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+      - 225  # cat
+      - 378  # dog
+    "densepose_lvis_v1_val":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+      - 225  # cat
+      - 378  # dog
+  CATEGORY_MAPS:
+    "densepose_lvis_v1_train1":
+      "1202": 943 # zebra -> sheep
+      "569": 943  # horse -> sheep
+      "496": 943  # giraffe -> sheep
+      "422": 943  # elephant -> sheep
+      "80": 943   # cow -> sheep
+      "76": 943   # bear -> sheep
+      "225": 943  # cat -> sheep
+      "378": 943  # dog -> sheep
+    "densepose_lvis_v1_train2":
+      "1202": 943 # zebra -> sheep
+      "569": 943  # horse -> sheep
+      "496": 943  # giraffe -> sheep
+      "422": 943  # elephant -> sheep
+      "80": 943   # cow -> sheep
+      "76": 943   # bear -> sheep
+      "225": 943  # cat -> sheep
+      "378": 943  # dog -> sheep
+    "densepose_lvis_v1_val":
+      "1202": 943 # zebra -> sheep
+      "569": 943  # horse -> sheep
+      "496": 943  # giraffe -> sheep
+      "422": 943  # elephant -> sheep
+      "80": 943   # cow -> sheep
+      "76": 943   # bear -> sheep
+      "225": 943  # cat -> sheep
+      "378": 943  # dog -> sheep
+  CLASS_TO_MESH_NAME_MAPPING:
+    # Note: different classes are mapped to a single class
+    # mesh is chosen based on GT data, so this is just some
+    # value which has no particular meaning
+    "0": "sheep_5004"
+SOLVER:
+  MAX_ITER: 4000
+  STEPS: (3000, 3500)
