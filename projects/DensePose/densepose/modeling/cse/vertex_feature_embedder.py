@@ -44,8 +44,8 @@ class VertexFeatureEmbedder(nn.Module):
 
     @torch.no_grad()
     def reset_parameters(self):
-        torch.nn.init.uniform_(self.features, a=-0.5, b=0.5)
-        torch.nn.init.uniform_(self.embeddings, a=-0.5, b=0.5)
+        self.features.zero_()
+        self.embeddings.zero_()
 
     def forward(self) -> torch.Tensor:
         """

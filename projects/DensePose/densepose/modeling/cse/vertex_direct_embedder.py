@@ -34,7 +34,7 @@ class VertexDirectEmbedder(nn.Module):
         """
         Reset embeddings to random values
         """
-        torch.nn.init.uniform_(self.embeddings, a=-0.5, b=0.5)
+        self.embeddings.zero_()
 
     def forward(self) -> torch.Tensor:
         """
