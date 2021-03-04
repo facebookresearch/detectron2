@@ -35,6 +35,9 @@ def add_evaluation_config(cfg: CN):
     #            the least memory intensive, but may create bottlenecks
     #            on file system accesses
     _C.DENSEPOSE_EVALUATION.STORAGE = "none"
+    # minimum threshold for IOU values: the lower its values is,
+    # the more matches are produced (and the higher the AP score)
+    _C.DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD = 0.5
 
 
 def add_bootstrap_config(cfg: CN):

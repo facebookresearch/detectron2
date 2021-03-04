@@ -164,6 +164,7 @@ class Trainer(DefaultTrainer):
                     True,
                     output_folder,
                     evaluator_type=cfg.DENSEPOSE_EVALUATION.TYPE,
+                    min_iou_threshold=cfg.DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD,
                     storage=storage,
                     embedder=embedder,
                 )

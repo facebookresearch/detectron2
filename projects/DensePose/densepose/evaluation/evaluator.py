@@ -48,6 +48,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         distributed,
         output_dir=None,
         evaluator_type: str = "iuv",
+        min_iou_threshold: float = 0.5,
         storage: Optional[SingleProcessTensorStorage] = None,
         embedder=None,
     ):
@@ -61,7 +62,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
         self._metadata = MetadataCatalog.get(dataset_name)
-        self._min_threshold = 0.5
+        self._min_threshold = min_iou_threshold
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
             self._coco_api = COCO(json_file)
