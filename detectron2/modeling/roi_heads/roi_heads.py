@@ -376,6 +376,8 @@ class Res5ROIHeads(ROIHeads):
         super().__init__(**kwargs)
         self.in_features = in_features
         self.pooler = pooler
+        if isinstance(res5, (list, tuple)):
+            res5 = nn.Sequential(*res5)
         self.res5 = res5
         self.box_predictor = box_predictor
         self.mask_on = mask_head is not None
