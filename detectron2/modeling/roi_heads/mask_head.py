@@ -158,15 +158,17 @@ class BaseMaskRCNNHead(nn.Module):
     """
 
     @configurable
-    def __init__(self, *, vis_period=0):
+    def __init__(self, *, loss_weight: float = 1.0, vis_period: int = 0):
         """
         NOTE: this interface is experimental.
 
         Args:
+            loss_weight (float): multiplier of the loss
             vis_period (int): visualization period
         """
         super().__init__()
         self.vis_period = vis_period
+        self.loss_weight = loss_weight
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -188,7 +190,7 @@ class BaseMaskRCNNHead(nn.Module):
         """
         x = self.layers(x)
         if self.training:
-            return {"loss_mask": mask_rcnn_loss(x, instances, self.vis_period)}
+            return {"loss_mask": mask_rcnn_loss(x, instances, self.vis_period) * self.loss_weight}
         else:
             mask_rcnn_inference(x, instances)
             return instances
