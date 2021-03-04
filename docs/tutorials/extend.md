@@ -49,20 +49,7 @@ In detectron2, there are two types of interfaces that address this tension toget
        backbone=FPN(
            ResNet(
                BasicStem(3, 64),
-               [
-                   ResNet.make_stage(
-                       BottleneckBlock,
-                       n,
-                       s,
-                       in_channels=i,
-                       bottleneck_channels=o // 4,
-                       out_channels=o,
-                       stride_in_1x1=True,
-                   )
-                   for (n, s, i, o) in zip(
-                       [3, 4, 6, 3], [1, 2, 2, 2], [64, 256, 512, 1024], [256, 512, 1024, 2048]
-                   )
-               ],
+               ResNet.make_default_stages(50, stride_in_1x1=True, norm="FrozenBN"),
                out_features=["res2", "res3", "res4", "res5"],
            ).freeze(2),
            ["res2", "res3", "res4", "res5"],
