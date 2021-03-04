@@ -386,6 +386,14 @@ class ResNet(Backbone):
         self._out_feature_channels = {"stem": self.stem.out_channels}
 
         self.stage_names, self.stages = [], []
+
+        if out_features is not None:
+            # Avoid keeping unused layers in this module. They consume extra memory
+            # and may cause allreduce to fail
+            num_stages = max(
+                [{"res2": 1, "res3": 2, "res4": 3, "res5": 4}.get(f, 0) for f in out_features]
+            )
+            stages = stages[:num_stages]
         for i, blocks in enumerate(stages):
             assert len(blocks) > 0, len(blocks)
             for block in blocks:
@@ -652,13 +660,7 @@ def build_resnet_backbone(cfg, input_shape):
 
     stages = []
 
-    # Avoid creating variables without gradients
-    # It consumes extra memory and may cause allreduce to fail
-    out_stage_idx = [
-        {"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features if f != "stem"
-    ]
-    max_stage_idx = max(out_stage_idx)
-    for idx, stage_idx in enumerate(range(2, max_stage_idx + 1)):
+    for idx, stage_idx in enumerate(range(2, 6)):
         # res5_dilation is used this way as a convention in R-FCN & Deformable Conv paper
         dilation = res5_dilation if stage_idx == 5 else 1
         first_stride = 1 if idx == 0 or (stage_idx == 5 and dilation == 2) else 2

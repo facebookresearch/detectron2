@@ -39,8 +39,8 @@ class RPNTest(unittest.TestCase):
             )
 
         expected_losses = {
-            "loss_rpn_cls": torch.tensor(0.0804563984),
-            "loss_rpn_loc": torch.tensor(0.0990132466),
+            "loss_rpn_cls": torch.tensor(0.08011703193),
+            "loss_rpn_loc": torch.tensor(0.101470276),
         }
         for name in expected_losses.keys():
             err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
@@ -48,35 +48,18 @@ class RPNTest(unittest.TestCase):
             )
             self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
 
-        expected_proposal_boxes = [
-            Boxes(torch.tensor([[0, 0, 10, 10], [7.3365392685, 0, 10, 10]])),
-            Boxes(
-                torch.tensor(
-                    [
-                        [0, 0, 30, 20],
-                        [0, 0, 16.7862777710, 13.1362524033],
-                        [0, 0, 30, 13.3173446655],
-                        [0, 0, 10.8602609634, 20],
-                        [7.7165775299, 0, 27.3875980377, 20],
-                    ]
-                )
-            ),
-        ]
-
-        expected_objectness_logits = [
-            torch.tensor([0.1225359365, -0.0133192837]),
-            torch.tensor([0.1415634006, 0.0989848152, 0.0565387346, -0.0072308783, -0.0428492837]),
-        ]
-
-        for proposal, expected_proposal_box, im_size, expected_objectness_logit in zip(
-            proposals, expected_proposal_boxes, image_sizes, expected_objectness_logits
-        ):
-            self.assertEqual(len(proposal), len(expected_proposal_box))
+        self.assertEqual(len(proposals), len(image_sizes))
+        for proposal, im_size in zip(proposals, image_sizes):
             self.assertEqual(proposal.image_size, im_size)
-            self.assertTrue(
-                torch.allclose(proposal.proposal_boxes.tensor, expected_proposal_box.tensor)
-            )
-            self.assertTrue(torch.allclose(proposal.objectness_logits, expected_objectness_logit))
+
+        expected_proposal_box = torch.tensor([[0, 0, 10, 10], [7.2702, 0, 10, 10]])
+        expected_objectness_logit = torch.tensor([0.1596, -0.0007])
+        self.assertTrue(
+            torch.allclose(proposals[0].proposal_boxes.tensor, expected_proposal_box, atol=1e-4)
+        )
+        self.assertTrue(
+            torch.allclose(proposals[0].objectness_logits, expected_objectness_logit, atol=1e-4)
+        )
 
     # https://github.com/pytorch/pytorch/issues/46964
     @unittest.skipIf(
@@ -132,8 +115,8 @@ class RPNTest(unittest.TestCase):
             )
 
         expected_losses = {
-            "loss_rpn_cls": torch.tensor(0.043263837695121765),
-            "loss_rpn_loc": torch.tensor(0.14432406425476074),
+            "loss_rpn_cls": torch.tensor(0.04291602224),
+            "loss_rpn_loc": torch.tensor(0.145077362),
         }
         for name in expected_losses.keys():
             err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
@@ -141,112 +124,41 @@ class RPNTest(unittest.TestCase):
             )
             self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
 
-        expected_proposal_boxes = [
-            RotatedBoxes(
-                torch.tensor(
-                    [
-                        [0.60189795, 1.24095452, 61.98131943, 18.03621292, -4.07244873],
-                        [15.64940453, 1.69624567, 59.59749603, 16.34339333, 2.62692475],
-                        [-3.02982378, -2.69752932, 67.90952301, 59.62455750, 59.97010040],
-                        [16.71863365, 1.98309708, 35.61507797, 32.81484985, 62.92267227],
-                        [0.49432933, -7.92979717, 67.77606201, 62.93098450, -1.85656738],
-                        [8.00880814, 1.36017394, 121.81007385, 32.74150467, 50.44297409],
-                        [16.44299889, -4.82221127, 63.39775848, 61.22503662, 54.12270737],
-                        [5.00000000, 5.00000000, 10.00000000, 10.00000000, -0.76943970],
-                        [17.64130402, -0.98095351, 61.40377808, 16.28918839, 55.53118134],
-                        [0.13016054, 4.60568953, 35.80157471, 32.30180359, 62.52872086],
-                        [-4.26460743, 0.39604485, 124.30079651, 31.84611320, -1.58203125],
-                        [7.52815342, -0.91636634, 62.39784622, 15.45565224, 60.79549789],
-                    ]
-                )
-            ),
-            RotatedBoxes(
-                torch.tensor(
-                    [
-                        [0.07734215, 0.81635046, 65.33510590, 17.34688377, -1.51821899],
-                        [-3.41833067, -3.11320257, 64.17595673, 60.55617905, 58.27033234],
-                        [20.67383385, -6.16561556, 63.60531998, 62.52315903, 54.85546494],
-                        [15.00000000, 10.00000000, 30.00000000, 20.00000000, -0.18218994],
-                        [9.22646523, -6.84775209, 62.09895706, 65.46472931, -2.74307251],
-                        [15.00000000, 4.93451595, 30.00000000, 9.86903191, -0.60272217],
-                        [8.88342094, 2.65560246, 120.95362854, 32.45022202, 55.75970078],
-                        [16.39088631, 2.33887148, 34.78761292, 35.61492920, 60.81977463],
-                        [9.78298569, 10.00000000, 19.56597137, 20.00000000, -0.86660767],
-                        [1.28576660, 5.49873352, 34.93610382, 33.22600174, 60.51599884],
-                        [17.58912468, -1.63270092, 62.96052551, 16.45713997, 52.91245270],
-                        [5.64749718, -1.90428460, 62.37649155, 16.19474792, 61.09543991],
-                        [0.82255805, 2.34931135, 118.83985901, 32.83671188, 56.50753784],
-                        [-5.33874989, 1.64404404, 125.28501892, 33.35424042, -2.80731201],
-                    ]
-                )
-            ),
-        ]
+        expected_proposal_box = torch.tensor(
+            [
+                [-1.77999556, 0.78155339, 68.04367828, 14.78156471, 60.59333801],
+                [13.82740974, -1.50282836, 34.67269897, 29.19676590, -3.81942749],
+                [8.10392570, -0.99071521, 145.39100647, 32.13126373, 3.67242432],
+                [5.00000000, 4.57370186, 10.00000000, 9.14740372, 0.89196777],
+            ]
+        )
 
-        expected_objectness_logits = [
-            torch.tensor(
-                [
-                    0.10111768,
-                    0.09112845,
-                    0.08466332,
-                    0.07589971,
-                    0.06650183,
-                    0.06350251,
-                    0.04299347,
-                    0.01864817,
-                    0.00986163,
-                    0.00078543,
-                    -0.04573630,
-                    -0.04799230,
-                ]
-            ),
-            torch.tensor(
-                [
-                    0.11373727,
-                    0.09377633,
-                    0.05281663,
-                    0.05143715,
-                    0.04040275,
-                    0.03250912,
-                    0.01307789,
-                    0.01177734,
-                    0.00038105,
-                    -0.00540255,
-                    -0.01194804,
-                    -0.01461012,
-                    -0.03061717,
-                    -0.03599222,
-                ]
-            ),
-        ]
+        expected_objectness_logit = torch.tensor([0.10924313, 0.09881870, 0.07649877, 0.05858029])
 
         torch.set_printoptions(precision=8, sci_mode=False)
 
-        for proposal, expected_proposal_box, im_size, expected_objectness_logit in zip(
-            proposals, expected_proposal_boxes, image_sizes, expected_objectness_logits
-        ):
-            self.assertEqual(len(proposal), len(expected_proposal_box))
-            self.assertEqual(proposal.image_size, im_size)
-            # It seems that there's some randomness in the result across different machines:
-            # This test can be run on a local machine for 100 times with exactly the same result,
-            # However, a different machine might produce slightly different results,
-            # thus the atol here.
-            err_msg = "computed proposal boxes = {}, expected {}".format(
-                proposal.proposal_boxes.tensor, expected_proposal_box.tensor
-            )
-            self.assertTrue(
-                torch.allclose(
-                    proposal.proposal_boxes.tensor, expected_proposal_box.tensor, atol=1e-5
-                ),
-                err_msg,
-            )
+        self.assertEqual(len(proposals), len(image_sizes))
 
-            err_msg = "computed objectness logits = {}, expected {}".format(
-                proposal.objectness_logits, expected_objectness_logit
-            )
-            self.assertTrue(
-                torch.allclose(proposal.objectness_logits, expected_objectness_logit, atol=1e-5),
-                err_msg,
-            )
+        proposal = proposals[0]
+        # It seems that there's some randomness in the result across different machines:
+        # This test can be run on a local machine for 100 times with exactly the same result,
+        # However, a different machine might produce slightly different results,
+        # thus the atol here.
+        err_msg = "computed proposal boxes = {}, expected {}".format(
+            proposal.proposal_boxes.tensor, expected_proposal_box
+        )
+        self.assertTrue(
+            torch.allclose(proposal.proposal_boxes.tensor[:4], expected_proposal_box, atol=1e-5),
+            err_msg,
+        )
+
+        err_msg = "computed objectness logits = {}, expected {}".format(
+            proposal.objectness_logits, expected_objectness_logit
+        )
+        self.assertTrue(
+            torch.allclose(proposal.objectness_logits[:4], expected_objectness_logit, atol=1e-5),
+            err_msg,
+        )
 
     def test_find_rpn_proposals_inf(self):
         N, Hi, Wi, A = 3, 3, 3, 3
