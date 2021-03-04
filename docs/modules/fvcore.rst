@@ -10,6 +10,7 @@ fvcore.nn
 
 .. automodule:: fvcore.nn
     :members:
+    :inherited-members:
     :undoc-members:
     :show-inheritance:
 
