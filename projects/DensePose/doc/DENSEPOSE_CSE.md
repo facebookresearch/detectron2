@@ -8,7 +8,7 @@
 
 The pipeline uses [Faster R-CNN](https://arxiv.org/abs/1506.01497)
 with [Feature Pyramid Network](https://arxiv.org/abs/1612.03144) meta architecture
-outlined in Figure 2. For each detected object, the model predicts
+outlined in Figure 1. For each detected object, the model predicts
 its coarse segmentation `S` (2 channels: foreground / background)
 and the embedding `E` (16 channels). At the same time, the embedder produces vertex
 embeddings `Ê` for the corresponding mesh. Universal positional embeddings `E`
@@ -18,7 +18,7 @@ surface embedding.
 <div align="center">
   <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_pipeline_cse.png" width="700px" />
 </div>
-<p class="image-caption">Figure 2. DensePose continuous surface embeddings architecture based on Faster R-CNN with Feature Pyramid Network (FPN).</p>
+<p class="image-caption"><b>Figure 1.</b> DensePose continuous surface embeddings architecture based on Faster R-CNN with Feature Pyramid Network (FPN).</p>
 
 ## <a name="ModelZoo"></a> Model Zoo and Baselines
 

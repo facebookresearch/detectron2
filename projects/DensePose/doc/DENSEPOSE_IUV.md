@@ -17,7 +17,7 @@ coordinates, each taking values in `[0, 1]`.
 <div align="center">
   <img src="https://dl.fbaipublicfiles.com/densepose/web/coords.png" width="500px" />
 </div>
-<p class="image-caption">Figure 1. Partitioning and parametrization of human body surface.</p>
+<p class="image-caption"><b>Figure 1.</b> Partitioning and parametrization of human body surface.</p>
 
 The pipeline uses [Faster R-CNN](https://arxiv.org/abs/1506.01497)
 with [Feature Pyramid Network](https://arxiv.org/abs/1612.03144) meta architecture
@@ -29,7 +29,35 @@ background + 24 predefined body parts) and local chart coordinates `U` and `V`.
 <div align="center">
   <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_pipeline_iuv.png" width="500px" />
 </div>
-<p class="image-caption">Figure 2. DensePose chart-based architecture based on Faster R-CNN with Feature Pyramid Network (FPN).</p>
+<p class="image-caption"><b>Figure 2.</b> DensePose chart-based architecture based on Faster R-CNN with Feature Pyramid Network (FPN).</p>
+
+### <a name="Bootstrap"></a> Bootstrapping Chart-Based Models
+
+[Sanakoyeu et al., 2020](https://arxiv.org/pdf/2003.00080.pdf) introduced a pipeline
+to transfer DensePose models trained on humans to proximal animal classes (chimpanzees),
+which is summarized in Figure 3. The training proceeds in two stages:
+
+First, a *master* model is trained on data from source domain (humans with full
+DensePose annotation `S`, `I`, `U` and `V`)
+and supporting domain (animals with segmentation annotation only).
+Only selected animal classes are chosen from the supporting
+domain through *category filters* to guarantee the quality of target domain results.
+The training is done in *class-agnostic manner*: all selected categories are mapped
+to a single category (human).
+
+Second, a *student* model is trained on data from source and supporting domains,
+as well as data from target domain obtained by applying the master model, selecting
+high-confidence detections and sampling the results.
+
+<div align="center">
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_pipeline_bootstrap_iuv.png" width="700px" />
+</div>
+<p class="image-caption"><b>Figure 3.</b> Domain adaptation: <i>master</i> model is trained on data from source and
+supporting domains to produce predictions in target domain; <i>student</i> model combines data from source and
+supporting domains, as well as sampled predictions from the master model on target domain to improve
+target domain predictions quality.</p>
+
+Examples of pretrained master and student models are available in the [Model Zoo](#ModelZooBootstrap). For more details on the bootstrapping pipeline, please see [Bootstrapping Pipeline](doc/BOOTSTRAPPING_PIPELINE.md).
 
 ## <a name="ModelZoo"></a> Model Zoo and Baselines
 
@@ -174,7 +202,7 @@ These models use an improved training schedule, Panoptic FPN head from [Kirillov
 </tr>
 </tbody></table>
 
-### Baselines with Confidence Estimation
+### <a name="ModelZooConfidence"> Baselines with Confidence Estimation
 
 These models perform additional estimation of confidence in regressed UV coodrinates, along the lines of [Neverova et al., 2019](https://papers.nips.cc/paper/8378-correlated-uncertainty-for-learning-dense-correspondences-from-noisy-labels).
 
@@ -299,7 +327,13 @@ These models perform additional estimation of confidence in regressed UV coodrin
 </tr>
 </tbody></table>
 
-### Baselines with Mask Confidence Estimation
+Acronyms:
+
+`WC1`: with confidence estimation model type 1 for `U` and `V`
+
+`WC2`: with confidence estimation model type 2 for `U` and `V`
+
+### <a name="ModelZooMaskConfidence"> Baselines with Mask Confidence Estimation
 
 Models that perform estimation of confidence in regressed UV coodrinates
 as well as confidences associated with coarse and fine segmentation,
@@ -425,6 +459,129 @@ see [Sanakoyeu et al., 2020](https://arxiv.org/pdf/2003.00080.pdf) for details.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2M_s1x/216245790/model_final_de6e7a.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC2M_s1x/216245790/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
+
+Acronyms:
+
+`WC1M`: with confidence estimation model type 1 for `U` and `V` and mask confidence estimation
+
+`WC2M`: with confidence estimation model type 2 for `U` and `V` and mask confidence estimation
+
+### <a name="ModelZooBootstrap"></a> Bootstrapping Baselines
+
+Master and student models trained using the bootstrapping pipeline with chimpanzee as the target category,
+see [Sanakoyeu et al., 2020](https://arxiv.org/pdf/2003.00080.pdf)
+and [Bootstrapping Pipeline](BOOTSTRAPPING_PIPELINE.md) for details.
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom">lr<br/>sched</th>
+<th valign="bottom">train<br/>time<br/>(s/iter)</th>
+<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">train<br/>mem<br/>(GB)</th>
+<th valign="bottom">box<br/>AP</th>
+<th valign="bottom">segm<br/>AP</th>
+<th valign="bottom">dp. APex<br/>GPS</th>
+<th valign="bottom">dp. AP<br/>GPS</th>
+<th valign="bottom">dp. AP<br/>GPSm</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+<!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA -->
+<tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA</a></td>
+<td align="center">3x</td>
+<td align="center">0.522</td>
+<td align="center">0.073</td>
+<td align="center">9.7</td>
+<td align="center">61.3</td>
+<td align="center">59.1</td>
+<td align="center">36.2</td>
+<td align="center">20.0</td>
+<td align="center">30.2</td>
+<td align="center">217578784</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA/217578784/model_final_9fe1cc.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10
+P_CA/217578784/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform -->
+<tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform</a></td>
+<td align="center">3x</td>
+<td align="center">0.585</td>
+<td align="center">0.071</td>
+<td align="center">10.3</td>
+<td align="center">62.3</td>
+<td align="center">60.1</td>
+<td align="center">37.3</td>
+<td align="center">21.2</td>
+<td align="center">31.6</td>
+<td align="center">222174689</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform/222174689/model_final_7978e1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M
+_3x_Atop10P_CA_B_uniform/222174689/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv -->
+<tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv</a></td>
+<td align="center">3x</td>
+<td align="center">0.588</td>
+<td align="center">0.071</td>
+<td align="center">10.4</td>
+<td align="center">62.0</td>
+<td align="center">59.6</td>
+<td align="center">35.9</td>
+<td align="center">20.2</td>
+<td align="center">29.9</td>
+<td align="center">222178938</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv/222178938/model_final_b47a20.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_A
+top10P_CA_B_uv/222178938/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm -->
+<tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm</a></td>
+<td align="center">3x</td>
+<td align="center">0.585</td>
+<td align="center">0.070</td>
+<td align="center">9.8</td>
+<td align="center">61.2</td>
+<td align="center">59.3</td>
+<td align="center">35.9</td>
+<td align="center">20.0</td>
+<td align="center">29.9</td>
+<td align="center">222179553</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm/222179553/model_final_1e51d0.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1
+M_3x_Atop10P_CA_B_finesegm/222179553/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm -->
+<tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm</a></td>
+<td align="center">3x</td>
+<td align="center">0.590</td>
+<td align="center">0.070</td>
+<td align="center">10.3</td>
+<td align="center">62.0</td>
+<td align="center">59.5</td>
+<td align="center">37.2</td>
+<td align="center">21.2</td>
+<td align="center">31.2</td>
+<td align="center">222181312</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm/222181312/model_final_17f42f.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_W
+C1M_3x_Atop10P_CA_B_coarsesegm/222181312/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
+
+Acronyms:
+
+`WC1M`: with confidence estimation model type 1 for `U` and `V` and mask confidence estimation
+
+`Atop10P`: humans and animals from the 10 best suitable categories are used for training
+
+`CA`: class agnostic training, where all annotated instances are mapped into a single category
+
+`B_<...>`: schedule with bootstrapping with the specified results sampling strategy
+
+Note:
+
+The relaxed `dp. APex GPS` metric was used in
+[Sanakoyeu et al., 2020](https://arxiv.org/pdf/2003.00080.pdf) to evaluate DensePose
+results. This metric considers matches at thresholds 0.2, 0.3 and 0.4 additionally
+to the standard ones used in the evaluation protocol. The minimum threshold is
+controlled by `DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD` config option.
 
 ### License
 
