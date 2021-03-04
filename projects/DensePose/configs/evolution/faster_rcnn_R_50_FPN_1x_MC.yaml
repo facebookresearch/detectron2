@@ -1,7 +1,0 @@
-_BASE_: "Base-RCNN-FPN-MC.yaml"
-MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
-  MASK_ON: False
-  DENSEPOSE_ON: False
-  RESNETS:
-    DEPTH: 50

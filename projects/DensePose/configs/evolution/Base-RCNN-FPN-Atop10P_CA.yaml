@@ -31,8 +31,8 @@ MODEL:
     NUM_CONV: 4
     POOLER_RESOLUTION: 14
 DATASETS:
-  TRAIN: ("base_coco_2017_train",)
-  TEST: ("base_coco_2017_val", "densepose_chimps")
+  TRAIN: ("base_coco_2017_train", "densepose_coco_2014_train")
+  TEST: ("densepose_chimps",)
   CATEGORY_MAPS:
     "base_coco_2017_train":
       "16": 1 # bird -> person
@@ -81,36 +81,6 @@ DATASETS:
       - 23 # bear
       - 24 # zebra
       - 25 # girafe
-BOOTSTRAP_DATASETS:
-  - DATASET: "chimpnsee"
-    RATIO: 1.0
-    IMAGE_LOADER:
-      TYPE: "video_keyframe"
-      SELECT:
-        STRATEGY: "random_k"
-        NUM_IMAGES: 4
-      TRANSFORM:
-        TYPE: "resize"
-        MIN_SIZE: 800
-        MAX_SIZE: 1333
-      BATCH_SIZE: 8
-      NUM_WORKERS: 1
-    INFERENCE:
-      INPUT_BATCH_SIZE: 1
-      OUTPUT_BATCH_SIZE: 1
-    DATA_SAMPLER:
-      # supported types:
-      #   densepose_uniform
-      #   densepose_UV_confidence
-      #   densepose_fine_segm_confidence
-      #   densepose_coarse_segm_confidence
-      TYPE: "densepose_uniform"
-      COUNT_PER_CLASS: 8
-    FILTER:
-      TYPE: "detection_score"
-      MIN_VALUE: 0.8
-BOOTSTRAP_MODEL:
-  WEIGHTS: ""
 SOLVER:
   IMS_PER_BATCH: 16
   BASE_LR: 0.02
