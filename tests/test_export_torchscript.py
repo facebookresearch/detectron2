@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import json
 import os
 import tempfile
 import unittest
@@ -8,6 +9,7 @@ from torch import Tensor, nn
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
+from detectron2.config.instantiate import dump_dataclass, instantiate
 from detectron2.export.flatten import TracingAdapter, flatten_to_tuple
 from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
 from detectron2.export.torchscript_patch import patch_builtin_len
@@ -184,6 +186,17 @@ class TestTorchscriptUtils(unittest.TestCase):
 
         _, new_schema = flatten_to_tuple(new_obj)
         self.assertEqual(schema, new_schema)  # test __eq__
+        self._check_schema(schema)
+
+    def _check_schema(self, schema):
+        dumped_schema = dump_dataclass(schema)
+        # Check that the schema is json-serializable
+        # Although in reality you might want to use yaml because it often has many levels
+        json.dumps(dumped_schema)
+
+        # Check that the schema can be deserialized
+        new_schema = instantiate(dumped_schema)
+        self.assertEqual(schema, new_schema)
 
     def test_flatten_instances_boxes(self):
         inst = Instances(
@@ -196,3 +209,5 @@ class TestTorchscriptUtils(unittest.TestCase):
             self.assertIs(r, expected)
         new_obj = schema(res)
         assert_instances_allclose(new_obj[1][1], inst, rtol=0.0, size_as_tensor=True)
+
+        self._check_schema(schema)
