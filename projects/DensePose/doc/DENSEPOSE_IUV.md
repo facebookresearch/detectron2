@@ -1,19 +1,37 @@
-# Model Zoo and Baselines
+# Chart-based Dense Pose Estimation for Humans and Animals
 
-# Introduction
+## <a name="Overview"></a> Overview
 
-We provide baselines trained with Detectron2 DensePose. The corresponding
-configuration files can be found in the [configs](../configs) directory.
-All models were trained on COCO `train2014` + `valminusminival2014` and
-evaluated on COCO `minival2014`. For the details on common settings in which
-baselines were trained, please check [Detectron 2 Model Zoo](../../../MODEL_ZOO.md).
+The goal of chart-based DensePose methods is to establish dense correspondences
+between image pixels and 3D object mesh by splitting the latter into charts and estimating
+for each pixel the corresponding chart index `I` and local chart coordinates `(U, V)`.
 
-## License
+<div align="center">
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_teaser.gif" width="700px" />
+</div>
 
-All models available for download through this document are licensed under the
-[Creative Commons Attribution-ShareAlike 3.0 license](https://creativecommons.org/licenses/by-sa/3.0/)
+The charts used for human DensePose estimation are shown in Figure 1.
+The human body is split into 24 parts, each part is parametrized by `U` and `V`
+coordinates, each taking values in `[0, 1]`.
 
-## COCO DensePose Baselines with DensePose-RCNN
+<div align="center">
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/coords.png" width="500px" />
+</div>
+<p class="image-caption">Figure 1. Partitioning and parametrization of human body surface.</p>
+
+The pipeline uses [Faster R-CNN](https://arxiv.org/abs/1506.01497)
+with [Feature Pyramid Network](https://arxiv.org/abs/1612.03144) meta architecture
+outlined in Figure 2. For each detected object, the model predicts
+its coarse segmentation `S` (2 or 15 channels: foreground / background or
+background + 14 predefined body parts), fine segmentation `I` (25 channels:
+background + 24 predefined body parts) and local chart coordinates `U` and `V`.
+
+<div align="center">
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_pipeline_iuv.png" width="500px" />
+</div>
+<p class="image-caption">Figure 2. DensePose chart-based architecture based on Faster R-CNN with Feature Pyramid Network (FPN).</p>
+
+## <a name="ModelZoo"></a> Model Zoo and Baselines
 
 ### Legacy Models
 
@@ -164,8 +182,8 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <th valign="bottom">dp. AP<br/>GPSm</th>
 <th valign="bottom">model id</th>
 <th valign="bottom">download</th>
-<!-- TABLE BODY --> 
-<!-- ROW: densepose_rcnn_R_50_FPN_WC1_s1x --> 
+<!-- TABLE BODY -->
+<!-- ROW: densepose_rcnn_R_50_FPN_WC1_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_WC1_s1x.yaml">R_50_FPN_WC1_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.353</td>
@@ -177,7 +195,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">173862049</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC1_s1x/173862049/model_final_289019.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC1_s1x/173862049/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_50_FPN_WC2_s1x --> 
+<!-- ROW: densepose_rcnn_R_50_FPN_WC2_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_WC2_s1x.yaml">R_50_FPN_WC2_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.364</td>
@@ -189,7 +207,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">173861455</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC2_s1x/173861455/model_final_3abe14.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_WC2_s1x/173861455/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC1_s1x --> 
+<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC1_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_DL_WC1_s1x.yaml">R_50_FPN_DL_WC1_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.397</td>
@@ -201,7 +219,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">173067973</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC1_s1x/173067973/model_final_b1e525.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC1_s1x/173067973/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC2_s1x --> 
+<!-- ROW: densepose_rcnn_R_50_FPN_DL_WC2_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_50_FPN_DL_WC2_s1x.yaml">R_50_FPN_DL_WC2_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.410</td>
@@ -213,7 +231,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">173859335</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC2_s1x/173859335/model_final_60fed4.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_50_FPN_DL_WC2_s1x/173859335/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_101_FPN_WC1_s1x --> 
+<!-- ROW: densepose_rcnn_R_101_FPN_WC1_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_WC1_s1x.yaml">R_101_FPN_WC1_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.435</td>
@@ -225,7 +243,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">171402969</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC1_s1x/171402969/model_final_9e47f0.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC1_s1x/171402969/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_101_FPN_WC2_s1x --> 
+<!-- ROW: densepose_rcnn_R_101_FPN_WC2_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_WC2_s1x.yaml">R_101_FPN_WC2_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.450</td>
@@ -237,7 +255,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">173860702</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC2_s1x/173860702/model_final_5ea023.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_WC2_s1x/173860702/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC1_s1x --> 
+<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC1_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_DL_WC1_s1x.yaml">R_101_FPN_DL_WC1_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.479</td>
@@ -249,7 +267,7 @@ These models perform additional estimation of confidence in regressed UV coodrin
 <td align="center">173858525</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC1_s1x/173858525/model_final_f359f3.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/densepose_rcnn_R_101_FPN_DL_WC1_s1x/173858525/metrics.json">metrics</a></td>
 </tr>
-<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC2_s1x --> 
+<!-- ROW: densepose_rcnn_R_101_FPN_DL_WC2_s1x -->
  <tr><td align="left"><a href="../configs/densepose_rcnn_R_101_FPN_DL_WC2_s1x.yaml">R_101_FPN_DL_WC2_s1x</a></td>
 <td align="center">s1x</td>
 <td align="center">0.491</td>
@@ -263,15 +281,42 @@ These models perform additional estimation of confidence in regressed UV coodrin
 </tr>
 </tbody></table>
 
-## Old Baselines
+### License
 
-It is still possible to use some baselines from [DensePose 1](https://github.com/facebookresearch/DensePose).
-Below are evaluation metrics for the baselines recomputed in the current framework:
+All models available for download are licensed under the
+[Creative Commons Attribution-ShareAlike 3.0 license](https://creativecommons.org/licenses/by-sa/3.0/)
 
-| Model | bbox AP | AP  |  AP50 | AP75  | APm  |APl |
-|-----|-----|-----|---    |---    |---   |--- |
-| [`ResNet50_FPN_s1x-e2e`](https://dl.fbaipublicfiles.com/densepose/DensePose_ResNet50_FPN_s1x-e2e.pkl) | 54.673 | 48.894 | 84.963 | 50.717 | 43.132 | 50.433 |
-| [`ResNet101_FPN_s1x-e2e`](https://dl.fbaipublicfiles.com/densepose/DensePose_ResNet101_FPN_s1x-e2e.pkl) | 56.032 | 51.088 | 86.250 | 55.057 | 46.542 | 52.563 |
+## <a name="References"></a> References
 
-Note: these scores are close, but not strictly equal to the ones reported in the [DensePose 1 Model Zoo](https://github.com/facebookresearch/DensePose/blob/master/MODEL_ZOO.md),
-which is due to small incompatibilities between the frameworks.
+If you use chart-based DensePose methods, please take the references from the following
+BibTeX entries:
+
+DensePose bootstrapping pipeline:
+```
+@InProceedings{Sanakoyeu2020TransferringDensePose,
+    title = {Transferring Dense Pose to Proximal Animal Classes},
+    author = {Artsiom Sanakoyeu and Vasil Khalidov and Maureen S. McCarthy and Andrea Vedaldi and Natalia Neverova},
+    journal = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+    year = {2020},
+}
+```
+
+DensePose with confidence estimation:
+```
+@InProceedings{Neverova2019DensePoseConfidences,
+    title = {Correlated Uncertainty for Learning Dense Correspondences from Noisy Labels},
+    author = {Neverova, Natalia and Novotny, David and Vedaldi, Andrea},
+    journal = {Advances in Neural Information Processing Systems},
+    year = {2019},
+}
+```
+
+Original DensePose:
+```
+@InProceedings{Guler2018DensePose,
+  title={DensePose: Dense Human Pose Estimation In The Wild},
+  author={R\{i}za Alp G\"uler, Natalia Neverova, Iasonas Kokkinos},
+  journal={The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2018}
+}
+```

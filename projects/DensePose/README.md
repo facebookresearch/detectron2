@@ -1,26 +1,47 @@
 # DensePose in Detectron2
-**Dense Human Pose Estimation In The Wild**
 
-_Rıza Alp Güler, Natalia Neverova, Iasonas Kokkinos_
+DensePose aims at learning and establishing dense correspondences between image pixels
+and 3D object geometry for deformable objects, such as humans or animals.
+In this repository, we provide the code to train and evaluate DensePose R-CNN and
+various tools to visualize DensePose annotations and results.
 
-[[`densepose.org`](https://densepose.org)] [[`arXiv`](https://arxiv.org/abs/1802.00434)] [[`BibTeX`](#CitingDensePose)]
+There are two main paradigms that are used within DensePose project.
 
-Dense human pose estimation aims at mapping all human pixels of an RGB image to the 3D surface of the human body.
+## [Chart-based Dense Pose Estimation for Humans and Animals](doc/DENSEPOSE_IUV.md)
 
 <div align="center">
-  <img src="https://drive.google.com/uc?export=view&id=1qfSOkpueo1kVZbXOuQJJhyagKjMgepsz" width="700px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_teaser.gif" width="700px" />
 </div>
 
-In this repository, we provide the code to train and evaluate DensePose-RCNN. We also provide tools to visualize
-DensePose annotation and results.
+For chart-based estimation, 3D object mesh is split into charts and
+for each pixel the model estimates chart index `I` and local chart coordinates `(U, V)`.
+Please follow the link above to find a [detailed overview](doc/DENSEPOSE_IUV.md#Overview)
+of the method, links to trained models along with their performance evaluation in the
+[Model Zoo](doc/DENSEPOSE_IUV.md#ModelZoo) and
+[references](doc/DENSEPOSE_IUV.md#References) to the corresponding papers.
+
+## [Continuous Surface Embeddings for Dense Pose Estimation for Humans and Animals](doc/DENSEPOSE_CSE.md)
+
+<div align="center">
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_cse_teaser.gif" width="700px" />
+</div>
+
+To establish continuous surface embeddings, the model simultaneously learns
+descriptors for mesh vertices and for image pixels, so that
+Please follow the link above to find a [detailed overview](doc/DENSEPOSE_CSE.md#Overview)
+of the method, links to trained models along with their performance evaluation in the
+[Model Zoo](doc/DENSEPOSE_CSE.md#ModelZoo) and
+[references](doc/DENSEPOSE_CSE.md#References) to the corresponding papers.
 
 # Quick Start
 
 See [ Getting Started ](doc/GETTING_STARTED.md)
 
-# Model Zoo and Baselines
+# Model Zoo
 
-We provide a number of baseline results and trained models available for download. See [Model Zoo](doc/MODEL_ZOO.md) for details.
+Please check the dedicated pages
+for [chart-based model zoo](doc/DENSEPOSE_IUV.md#ModelZoo)
+and for [continuous surface embeddings model zoo](doc/DENSEPOSE_CSE.md#ModelZoo).
 
 # License
 
@@ -28,27 +49,7 @@ Detectron2 is released under the [Apache 2.0 license](../../LICENSE)
 
 ## <a name="CitingDensePose"></a>Citing DensePose
 
-If you use DensePose, please take the references from the following BibTeX entries:
-
-For DensePose with estimated confidences:
-
-```
-@InProceedings{Neverova2019DensePoseConfidences,
-    title = {Correlated Uncertainty for Learning Dense Correspondences from Noisy Labels},
-    author = {Neverova, Natalia and Novotny, David and Vedaldi, Andrea},
-    journal = {Advances in Neural Information Processing Systems},
-    year = {2019},
-}
-```
-
-For the original DensePose:
-
-```
-@InProceedings{Guler2018DensePose,
-  title={DensePose: Dense Human Pose Estimation In The Wild},
-  author={R\{i}za Alp G\"uler, Natalia Neverova, Iasonas Kokkinos},
-  journal={The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year={2018}
-}
-```
+If you use DensePose, please refer to the BibTeX entries
+for [chart-based models](doc/DENSEPOSE_IUV.md#References)
+and for [continuous surface embeddings](doc/DENSEPOSE_CSE.md#References).
 
