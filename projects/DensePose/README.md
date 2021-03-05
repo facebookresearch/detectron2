@@ -10,7 +10,7 @@ There are two main paradigms that are used within DensePose project.
 ## [Chart-based Dense Pose Estimation for Humans and Animals](doc/DENSEPOSE_IUV.md)
 
 <div align="center">
-  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_teaser.gif" width="700px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_teaser_compressed_25.gif" width="700px" />
 </div>
 
 For chart-based estimation, 3D object mesh is split into charts and

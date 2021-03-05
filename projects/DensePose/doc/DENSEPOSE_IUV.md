@@ -7,7 +7,7 @@ between image pixels and 3D object mesh by splitting the latter into charts and 
 for each pixel the corresponding chart index `I` and local chart coordinates `(U, V)`.
 
 <div align="center">
-  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_teaser.gif" width="700px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_teaser_compressed_25.gif" width="700px" />
 </div>
 
 The charts used for human DensePose estimation are shown in Figure 1.
@@ -15,7 +15,7 @@ The human body is split into 24 parts, each part is parametrized by `U` and `V`
 coordinates, each taking values in `[0, 1]`.
 
 <div align="center">
-  <img src="https://dl.fbaipublicfiles.com/densepose/web/coords.png" width="500px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/coords.png" width="400px" />
 </div>
 <p class="image-caption"><b>Figure 1.</b> Partitioning and parametrization of human body surface.</p>
 
@@ -50,7 +50,7 @@ as well as data from target domain obtained by applying the master model, select
 high-confidence detections and sampling the results.
 
 <div align="center">
-  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_pipeline_bootstrap_iuv.png" width="700px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_pipeline_bootstrap_iuv.png" width="1000px" />
 </div>
 <p class="image-caption"><b>Figure 3.</b> Domain adaptation: <i>master</i> model is trained on data from source and
 supporting domains to produce predictions in target domain; <i>student</i> model combines data from source and
