@@ -16,6 +16,7 @@ of support or stability as detectron2.
 + [Momentum Contrast for Unsupervised Visual Representation Learning](https://github.com/facebookresearch/moco/tree/master/detection)
 + [DETR: End-to-End Object Detection with Transformers](https://github.com/facebookresearch/detr/tree/master/d2)
 + [Panoptic-DeepLab: A Simple, Strong, and Fast Baseline for Bottom-Up Panoptic Segmentation](Panoptic-DeepLab)
++ [D2Go (Detectron2Go)](https://github.com/facebookresearch/d2go), an end-to-end production system for training and deployment for mobile platforms.
 
 
 ## External Projects
