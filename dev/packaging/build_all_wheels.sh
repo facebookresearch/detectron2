@@ -25,7 +25,12 @@ build_one() {
 
   echo "Launching container $container_name ..."
 
-  for py in 3.6 3.7 3.8; do
+  py_versions=(3.6 3.7 3.8)
+  if [[ $pytorch_ver == "1.8" ]]; then
+    py_versions+=(3.9)
+  fi
+
+  for py in "${py_versions[@]}"; do
     docker run -itd \
       --name $container_name \
       --mount type=bind,source="$(pwd)",target=/detectron2 \
@@ -46,6 +51,11 @@ EOF
 if [[ -n "$1" ]] && [[ -n "$2" ]]; then
   build_one "$1" "$2"
 else
+  build_one cu111 1.8
+  build_one cu102 1.8
+  build_one cu101 1.8
+  build_one cpu 1.8
+
   build_one cu110 1.7
   build_one cu102 1.7
   build_one cu101 1.7

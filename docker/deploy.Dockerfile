@@ -21,7 +21,7 @@ RUN export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=$(python3 -c 'import torch; print(i
 	./configure --prefix=$HOME/.local && make && make install
 
 # install libtorchvision
-RUN git clone --branch v0.8.2 https://github.com/pytorch/vision/
+RUN git clone --branch v0.9 https://github.com/pytorch/vision/
 RUN mkdir vision/build && cd vision/build && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release -DWITH_CUDA=on -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST && \
 	make && make install
