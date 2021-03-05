@@ -18,10 +18,12 @@ FLOPS_MODE = "flops"
 ACTIVATIONS_MODE = "activations"
 
 
-# some extra ops to ignore from counting.
+# Some extra ops to ignore from counting, including elementwise and reduction ops
 _IGNORED_OPS = {
     "aten::add",
     "aten::add_",
+    "aten::argmax",
+    "aten::argsort",
     "aten::batch_norm",
     "aten::constant_pad_nd",
     "aten::div",
@@ -32,7 +34,9 @@ _IGNORED_OPS = {
     "aten::meshgrid",
     "aten::mul",
     "aten::mul_",
+    "aten::neg",
     "aten::nonzero_numpy",
+    "aten::reciprocal",
     "aten::rsub",
     "aten::sigmoid",
     "aten::sigmoid_",
@@ -41,7 +45,6 @@ _IGNORED_OPS = {
     "aten::sqrt",
     "aten::sub",
     "aten::upsample_nearest2d",
-    "prim::PythonOp",
     "torchvision::nms",  # TODO estimate flop for nms
 }
 
