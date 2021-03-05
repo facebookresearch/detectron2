@@ -43,6 +43,12 @@ Please check the dedicated pages
 for [chart-based model zoo](doc/DENSEPOSE_IUV.md#ModelZoo)
 and for [continuous surface embeddings model zoo](doc/DENSEPOSE_CSE.md#ModelZoo).
 
+# What's New
+
+* March 2021: [DensePose CSE (a framework to extend DensePose to various categories using 3D models)
+  and DensePose Evolution (a framework to bootstrap DensePose on unlabeled data) released](doc/RELEASE_2021_03.md)
+* April 2020: [DensePose Confidence Estimation and Model Zoo Improvements](doc/RELEASE_2020_04.md)
+
 # License
 
 Detectron2 is released under the [Apache 2.0 license](../../LICENSE)
