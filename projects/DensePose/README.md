@@ -27,7 +27,9 @@ of the method, links to trained models along with their performance evaluation i
 </div>
 
 To establish continuous surface embeddings, the model simultaneously learns
-descriptors for mesh vertices and for image pixels, so that
+descriptors for mesh vertices and for image pixels.
+The embeddings are put into correspondence, thus the location
+of each pixel on the 3D model is derived.
 Please follow the link above to find a [detailed overview](doc/DENSEPOSE_CSE.md#Overview)
 of the method, links to trained models along with their performance evaluation in the
 [Model Zoo](doc/DENSEPOSE_CSE.md#ModelZoo) and
