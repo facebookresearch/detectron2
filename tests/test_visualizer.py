@@ -60,6 +60,9 @@ class TestVisualizer(unittest.TestCase):
             "image_id": 1,
             "width": 512,
         }
+        v = Visualizer(img)
+        v.draw_dataset_dict(dic)
+
         v = Visualizer(img, self.metadata)
         v.draw_dataset_dict(dic)
 
@@ -117,6 +120,9 @@ class TestVisualizer(unittest.TestCase):
         inst.scores = torch.rand(num_inst)
         inst.pred_boxes = torch.from_numpy(boxes)
         inst.pred_masks = torch.from_numpy(np.asarray(masks))
+
+        v = Visualizer(img)
+        v.draw_instance_predictions(inst)
 
         v = Visualizer(img, self.metadata)
         v.draw_instance_predictions(inst)

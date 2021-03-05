@@ -64,7 +64,7 @@ In detectron2, there are two types of interfaces that address this tension toget
    model = GeneralizedRCNN(
        backbone=FPN(
            ResNet(
-               BasicStem(3, 64),
+               BasicStem(3, 64, norm="FrozenBN"),
                ResNet.make_default_stages(50, stride_in_1x1=True, norm="FrozenBN"),
                out_features=["res2", "res3", "res4", "res5"],
            ).freeze(2),
