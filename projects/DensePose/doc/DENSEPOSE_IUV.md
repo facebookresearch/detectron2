@@ -57,7 +57,7 @@ supporting domains to produce predictions in target domain; <i>student</i> model
 supporting domains, as well as sampled predictions from the master model on target domain to improve
 target domain predictions quality.</p>
 
-Examples of pretrained master and student models are available in the [Model Zoo](#ModelZooBootstrap). For more details on the bootstrapping pipeline, please see [Bootstrapping Pipeline](doc/BOOTSTRAPPING_PIPELINE.md).
+Examples of pretrained master and student models are available in the [Model Zoo](#ModelZooBootstrap). For more details on the bootstrapping pipeline, please see [Bootstrapping Pipeline](BOOTSTRAPPING_PIPELINE.md).
 
 ## <a name="ModelZoo"></a> Model Zoo and Baselines
 

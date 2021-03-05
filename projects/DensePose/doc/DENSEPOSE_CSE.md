@@ -228,6 +228,10 @@ Models obtained by finetuning human CSE models on animals data with soft assignm
 </tr>
 </tbody></table>
 
+Acronyms:
+
+`CA`: class agnostic training, where all annotated instances are mapped into a single category
+
 ## <a name="References"></a> References
 
 If you use DensePose methods based on continuous surface embeddings, please take the

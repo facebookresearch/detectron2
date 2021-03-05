@@ -4,7 +4,7 @@ Bootstrapping pipeline for DensePose was proposed in
 [Sanakoyeu et al., 2020](https://arxiv.org/pdf/2003.00080.pdf)
 to extend DensePose from humans to proximal animal classes
 (chimpanzees). Currently, the pipeline is only implemented for
-[chart-based models](doc/DENSEPOSE_IUV.md).
+[chart-based models](DENSEPOSE_IUV.md).
 Bootstrapping proceeds in two steps.
 
 ## Master Model Training
@@ -16,7 +16,7 @@ instances from the supporting domain have segmentation annotations only.
 To ensure segmentation quality in the target domain, only a subset of
 supporting domain classes is included into the training. This is achieved
 through category filters, e.g.
-(see [configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml](configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml)):
+(see [configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml](../configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml)):
 
 ```
   WHITELISTED_CATEGORIES:
@@ -38,7 +38,7 @@ only contain top 10 animals and person.
 
 The training is performed in a *class-agnostic* manner: all instances
 are mapped into the same class (person), e.g.
-(see [configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml](configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml)):
+(see [configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml](../configs/evolution/Base-RCNN-FPN-Atop10P_CA.yaml)):
 
 ```
   CATEGORY_MAPS:
@@ -70,8 +70,8 @@ Below we give details on how the bootstrapping pipeline is implemented.
 ### Data Loaders
 
 The central components that enable bootstrapping are
-[`InferenceBasedLoader`](densepose/data/inference_based_loader.py) and
-[`CombinedDataLoader`](densepose/data/combined_loader.py).
+[`InferenceBasedLoader`](../densepose/data/inference_based_loader.py) and
+[`CombinedDataLoader`](../densepose/data/combined_loader.py).
 
 `InferenceBasedLoader` takes images from a data loader, applies a model
 to the images, filters the model outputs based on the selected criteria and
@@ -84,7 +84,7 @@ The higher the ratio the higher the probability to include samples from the
 particular data loader into a batch.
 
 Here is an example of the bootstrapping configuration taken from
-[`configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform.yaml`](configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform.yaml):
+[`configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform.yaml`](../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform.yaml):
 ```
 BOOTSTRAP_DATASETS:
   - DATASET: "chimpnsee"
@@ -119,7 +119,7 @@ BOOTSTRAP_MODEL:
 ```
 
 The above example has one bootstrap dataset (`chimpnsee`). This dataset is registered as
-a [VIDEO_LIST](densepose/data/datasets/chimpnsee.py) dataset, which means that
+a [VIDEO_LIST](../densepose/data/datasets/chimpnsee.py) dataset, which means that
 it consists of a number of videos specified in a text file. For videos there can be
 different strategies to sample individual images. Here we use `video_keyframe` strategy
 which considers only keyframes; this ensures temporal offset between sampled images and
@@ -171,7 +171,10 @@ DATA_SAMPLER:
   COUNT_PER_CLASS: 8
 ```
 
-The current implementation supports [uniform sampling](densepose/data/samplers/densepose_uniform.py) and [confidence-based sampling](densepose/data/samplers/densepose_confidence_based.py) to obtain sparse annotations from dense results. For confidence-based
+The current implementation supports
+[uniform sampling](../densepose/data/samplers/densepose_uniform.py) and
+[confidence-based sampling](../densepose/data/samplers/densepose_confidence_based.py)
+to obtain sparse annotations from dense results. For confidence-based
 sampling one needs to use the master model which produces confidence estimates.
 The `WC1M` master model used in the example above produces all three types of confidence
 estimates.
