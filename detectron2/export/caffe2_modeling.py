@@ -324,19 +324,19 @@ class Caffe2PanopticFPN(Caffe2MetaArch):
             predict_net,
             "combine_overlap_threshold",
             "f",
-            _cast_to_f32(self._wrapped_model.combine_overlap_threshold),
+            _cast_to_f32(self._wrapped_model.combine_overlap_thresh),
         )
         check_set_pb_arg(
             predict_net,
             "combine_stuff_area_limit",
             "i",
-            self._wrapped_model.combine_stuff_area_limit,
+            self._wrapped_model.combine_stuff_area_thresh,
         )
         check_set_pb_arg(
             predict_net,
             "combine_instances_confidence_threshold",
             "f",
-            _cast_to_f32(self._wrapped_model.combine_instances_confidence_threshold),
+            _cast_to_f32(self._wrapped_model.combine_instances_score_thresh),
         )
 
     @staticmethod
