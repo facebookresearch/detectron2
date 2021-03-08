@@ -323,6 +323,8 @@ def patch_nonscriptable_classes():
     from detectron2.modeling.roi_heads import StandardROIHeads
 
     if hasattr(StandardROIHeads, "__annotations__"):
+        # copy first to avoid editing annotations of base class
+        StandardROIHeads.__annotations__ = deepcopy(StandardROIHeads.__annotations__)
         StandardROIHeads.__annotations__["mask_on"] = torch.jit.Final[bool]
         StandardROIHeads.__annotations__["keypoint_on"] = torch.jit.Final[bool]
 
