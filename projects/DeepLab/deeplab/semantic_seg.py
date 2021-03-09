@@ -23,7 +23,6 @@ class DeepLabV3PlusHead(nn.Module):
         self,
         input_shape: Dict[str, ShapeSpec],
         *,
-        in_features: List[str],
         project_channels: List[int],
         aspp_dilations: List[int],
         aspp_dropout: float,
@@ -41,13 +40,10 @@ class DeepLabV3PlusHead(nn.Module):
         NOTE: this interface is experimental.
 
         Args:
-            input_shape (ShapeSpec): shape of the input feature
-            in_features (list[str]): a list of input feature names, the last
-                name of "in_features" is used as the input to the decoder (i.e.
-                the ASPP module) and rest of "in_features" are low-level feature
-                the the intermediate levels of decoder. "in_features" should be
-                ordered from highest resolution to lowest resolution. For
-                example: ["res2", "res3", "res4", "res5"].
+            input_shape: shape of the input features. They will be ordered by stride
+                and the last one (with largest stride) is used as the input to the
+                decoder (i.e.  the ASPP module); the rest are low-level feature for
+                the intermediate levels of decoder.
             project_channels (list[int]): a list of low-level feature channels.
                 The length should be len(in_features) - 1.
             aspp_dilations (list(int)): a list of 3 dilations in ASPP.
@@ -70,10 +66,12 @@ class DeepLabV3PlusHead(nn.Module):
                 in ASPP and decoder.
         """
         super().__init__()
+        input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
 
         # fmt: off
-        self.in_features      = in_features  # starting from "res2" to "res5"
-        in_channels           = [input_shape[f].channels for f in self.in_features]
+        self.in_features      = [k for k, v in input_shape]  # starting from "res2" to "res5"
+        in_channels           = [x[1].channels for x in input_shape]
+        in_strides            = [x[1].stride for x in input_shape]
         aspp_channels         = decoder_channels[-1]
         self.ignore_value     = ignore_value
         self.common_stride    = common_stride  # output stride
@@ -103,7 +101,7 @@ class DeepLabV3PlusHead(nn.Module):
                 # ASPP module
                 if train_size is not None:
                     train_h, train_w = train_size
-                    encoder_stride = input_shape[self.in_features[-1]].stride
+                    encoder_stride = in_strides[-1]
                     if train_h % encoder_stride or train_w % encoder_stride:
                         raise ValueError("Crop size need to be divisible by encoder stride.")
                     pool_h = train_h // encoder_stride
@@ -200,8 +198,9 @@ class DeepLabV3PlusHead(nn.Module):
             len(cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES) - 1
         ) + [cfg.MODEL.SEM_SEG_HEAD.ASPP_CHANNELS]
         ret = dict(
-            input_shape=input_shape,
-            in_features=cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES,
+            input_shape={
+                k: v for k, v in input_shape.items() if k in cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES
+            },
             project_channels=cfg.MODEL.SEM_SEG_HEAD.PROJECT_CHANNELS,
             aspp_dilations=cfg.MODEL.SEM_SEG_HEAD.ASPP_DILATIONS,
             aspp_dropout=cfg.MODEL.SEM_SEG_HEAD.ASPP_DROPOUT,

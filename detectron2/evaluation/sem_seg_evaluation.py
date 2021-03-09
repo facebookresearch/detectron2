@@ -22,12 +22,18 @@ class SemSegEvaluator(DatasetEvaluator):
     """
 
     def __init__(
-        self, dataset_name, distributed, output_dir=None, *, num_classes=None, ignore_label=None
+        self,
+        dataset_name,
+        distributed=True,
+        output_dir=None,
+        *,
+        num_classes=None,
+        ignore_label=None,
     ):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
-            distributed (True): if True, will collect results from all ranks for evaluation.
+            distributed (bool): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
             output_dir (str): an output directory to dump results.
             num_classes, ignore_label: deprecated argument

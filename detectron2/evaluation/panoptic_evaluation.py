@@ -8,6 +8,7 @@ import numpy as np
 import os
 import tempfile
 from collections import OrderedDict
+from typing import Optional
 from PIL import Image
 from tabulate import tabulate
 
@@ -28,11 +29,11 @@ class COCOPanopticEvaluator(DatasetEvaluator):
     It contains a synchronize call and has to be called from all workers.
     """
 
-    def __init__(self, dataset_name, output_dir):
+    def __init__(self, dataset_name: str, output_dir: Optional[str] = None):
         """
         Args:
-            dataset_name (str): name of the dataset
-            output_dir (str): output directory to save results for evaluation
+            dataset_name: name of the dataset
+            output_dir: output directory to save results for evaluation.
         """
         self._metadata = MetadataCatalog.get(dataset_name)
         self._thing_contiguous_id_to_dataset_id = {
@@ -42,8 +43,9 @@ class COCOPanopticEvaluator(DatasetEvaluator):
             v: k for k, v in self._metadata.stuff_dataset_id_to_contiguous_id.items()
         }
 
-        PathManager.mkdirs(output_dir)
-        self._predictions_json = os.path.join(output_dir, "predictions.json")
+        self._output_dir = output_dir
+        if self._output_dir is not None:
+            PathManager.mkdirs(self._output_dir)
 
     def reset(self):
         self._predictions = []
@@ -130,7 +132,10 @@ class COCOPanopticEvaluator(DatasetEvaluator):
             with open(gt_json, "r") as f:
                 json_data = json.load(f)
             json_data["annotations"] = self._predictions
-            with PathManager.open(self._predictions_json, "w") as f:
+
+            output_dir = self._output_dir or pred_dir
+            predictions_json = os.path.join(output_dir, "predictions.json")
+            with PathManager.open(predictions_json, "w") as f:
                 f.write(json.dumps(json_data))
 
             from panopticapi.evaluation import pq_compute
@@ -138,7 +143,7 @@ class COCOPanopticEvaluator(DatasetEvaluator):
             with contextlib.redirect_stdout(io.StringIO()):
                 pq_res = pq_compute(
                     gt_json,
-                    PathManager.get_local_path(self._predictions_json),
+                    PathManager.get_local_path(predictions_json),
                     gt_folder=gt_folder,
                     pred_folder=pred_dir,
                 )
