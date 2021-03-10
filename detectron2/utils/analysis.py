@@ -44,7 +44,6 @@ _IGNORED_OPS = {
     "aten::sort",
     "aten::sqrt",
     "aten::sub",
-    "aten::upsample_nearest2d",
     "torchvision::nms",  # TODO estimate flop for nms
 }
 
