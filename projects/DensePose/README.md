@@ -23,7 +23,7 @@ of the method, links to trained models along with their performance evaluation i
 ## [Continuous Surface Embeddings for Dense Pose Estimation for Humans and Animals](doc/DENSEPOSE_CSE.md)
 
 <div align="center">
-  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_cse_teaser.gif" width="700px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_cse_teaser.png" width="700px" />
 </div>
 
 To establish continuous surface embeddings, the model simultaneously learns

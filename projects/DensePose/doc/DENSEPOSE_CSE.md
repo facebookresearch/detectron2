@@ -3,7 +3,7 @@
 ## <a name="Overview"></a> Overview
 
 <div align="center">
-  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_cse_teaser.gif" width="700px" />
+  <img src="https://dl.fbaipublicfiles.com/densepose/web/densepose_cse_teaser.png" width="700px" />
 </div>
 
 The pipeline uses [Faster R-CNN](https://arxiv.org/abs/1506.01497)
