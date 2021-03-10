@@ -30,19 +30,17 @@ git rev-parse HEAD; git diff
 If there are no obvious error in "what you observed" provided above,
 please tell us the expected behavior.
 
-If you expect the model to converge / work better, note that we do not give suggestions
-on how to train a new model.
+If you expect the model to converge / work better, note that we do not give suggestions on how to train a new model.
 Only in one of the two conditions we will help with it:
 (1) You're unable to reproduce the results in detectron2 model zoo.
 (2) It indicates a detectron2 bug.
 
 ## Environment:
 
-Provide your environment information using the following command:
+Paste the output of the following command:
 ```
 wget -nc -q https://github.com/facebookresearch/detectron2/raw/master/detectron2/utils/collect_env.py && python collect_env.py
 ```
 
 If your issue looks like an installation issue / environment issue,
-please first try to solve it with the instructions in
-https://detectron2.readthedocs.io/tutorials/install.html#common-installation-issues
+please first check common issues in https://detectron2.readthedocs.io/tutorials/install.html#common-installation-issues

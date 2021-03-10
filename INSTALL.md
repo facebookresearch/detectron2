@@ -183,10 +183,8 @@ to match your local CUDA installation, or install a different version of CUDA to
 C++ compilation errors from NVCC / NVRTC; "Unsupported gpu architecture"
 </summary>
 
-1. Local CUDA/NVCC version has to match the CUDA version of your PyTorch. Both can be found in
-   `python -m detectron2.utils.collect_env`.
-   When they are inconsistent,
-   you need to either install a different build of PyTorch (or build by yourself)
+1. Local CUDA/NVCC version has to match the CUDA version of your PyTorch. Both can be found in `python collect_env.py`.
+   When they are inconsistent, you need to either install a different build of PyTorch (or build by yourself)
    to match your local CUDA installation, or install a different version of CUDA to match PyTorch.
 
 2. Local CUDA/NVCC version shall support the SM architecture (a.k.a. compute capability) of your GPU.
@@ -197,6 +195,7 @@ C++ compilation errors from NVCC / NVRTC; "Unsupported gpu architecture"
 
 3. The combination of NVCC and GCC you use is incompatible. You need to change one of their versions.
    See [here](https://gist.github.com/ax3l/9489132) for some valid combinations.
+   Notably, CUDA<=10.1.105 doesn't support GCC>7.3.
 
    The CUDA/GCC version used by PyTorch can be found by `print(torch.__config__.show())`.
 
