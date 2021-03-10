@@ -22,7 +22,8 @@
     mesh vertex embeddings;
   * [Storage](../densepose/evaluation/tensor_storage.py) for evaluation with high volumes of data;
   * [Pretrained models](DENSEPOSE_CSE.md#ModelZoo) for DensePose CSE estimation on humans and animals;
-  * [DensePose Chimps]() and [DensePose LVIS]() datasets for CSE finetuning and evaluation;
+  * [DensePose Chimps](DENSEPOSE_DATASETS.md#densepose-chimps) and
+    [DensePose LVIS](DENSEPOSE_DATASETS.md#densepose-lvis) datasets for CSE finetuning and evaluation;
   * [Vertex and texture mapping visualizers](../densepose/vis/densepose_outputs_vertex.py);
 * Refactoring of all major components: losses, predictors, model outputs, model results, visualizers;
   * Dedicated structures for [chart outputs](../densepose/structures/chart.py),
@@ -40,5 +41,5 @@
     and [CSE setting](../densepose/modeling/losses/embed_utils.py);
   * Splitting visualizers into separate modules;
 * [HRNet](../densepose/modeling/hrnet.py) and [HRFPN](../densepose/modeling/hrfpn.py) backbones;
-* [PoseTrack]() dataset;
+* [PoseTrack](DENSEPOSE_DATASETS.md#densepose-posetrack) dataset;
 * [IUV texture visualizer](../densepose/vis/densepose_results_textures.py)

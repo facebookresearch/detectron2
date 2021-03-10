@@ -57,7 +57,13 @@ supporting domains to produce predictions in target domain; <i>student</i> model
 supporting domains, as well as sampled predictions from the master model on target domain to improve
 target domain predictions quality.</p>
 
-Examples of pretrained master and student models are available in the [Model Zoo](#ModelZooBootstrap). For more details on the bootstrapping pipeline, please see [Bootstrapping Pipeline](BOOTSTRAPPING_PIPELINE.md).
+Examples of pretrained master and student models are available in the [Model Zoo](#ModelZooBootstrap).
+For more details on the bootstrapping pipeline, please see [Bootstrapping Pipeline](BOOTSTRAPPING_PIPELINE.md).
+
+### Datasets
+
+For more details on datasets used for chart-based model training and validation,
+please refer to the [DensePose Datasets](DENSEPOSE_DATASETS.md) page.
 
 ## <a name="ModelZoo"></a> Model Zoo and Baselines
 
@@ -471,6 +477,7 @@ Acronyms:
 Master and student models trained using the bootstrapping pipeline with chimpanzee as the target category,
 see [Sanakoyeu et al., 2020](https://arxiv.org/pdf/2003.00080.pdf)
 and [Bootstrapping Pipeline](BOOTSTRAPPING_PIPELINE.md) for details.
+Evaluation is performed on [DensePose Chimps](DENSEPOSE_DATASETS.md#densepose-chimps) dataset.
 
 <table><tbody>
 <!-- START TABLE -->
