@@ -3,6 +3,20 @@
 We summarize the datasets used in various DensePose training
 schedules and describe different available annotation types.
 
+## Table of Contents
+
+[General Information](#general-information)
+
+[DensePose COCO](#densepose-coco)
+
+[DensePose PoseTrack](#densepose-posetrack)
+
+[DensePose Chimps](#densepose-chimps)
+
+[DensePose LVIS](#densepose-lvis)
+
+## General Information
+
 DensePose annotations are typically stored in JSON files. Their
 structure follows the [COCO Data Format](https://cocodataset.org/#format-data),
 the basic data structure is outlined below:
