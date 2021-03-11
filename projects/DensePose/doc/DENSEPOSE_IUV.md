@@ -513,62 +513,58 @@ P_CA/217578784/metrics.json">metrics</a></td>
 <!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform -->
 <tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform</a></td>
 <td align="center">3x</td>
-<td align="center">0.585</td>
-<td align="center">0.071</td>
-<td align="center">10.3</td>
-<td align="center">62.3</td>
-<td align="center">60.1</td>
-<td align="center">37.3</td>
-<td align="center">21.2</td>
-<td align="center">31.6</td>
-<td align="center">222174689</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform/222174689/model_final_7978e1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M
-_3x_Atop10P_CA_B_uniform/222174689/metrics.json">metrics</a></td>
+<td align="center">1.939</td>
+<td align="center">0.072</td>
+<td align="center">10.1</td>
+<td align="center">60.9</td>
+<td align="center">58.5</td>
+<td align="center">37.2</td>
+<td align="center">21.5</td>
+<td align="center">31.0</td>
+<td align="center">256453729</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform/256453729/model_final_241ff5.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uniform/256453729/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv -->
 <tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv</a></td>
 <td align="center">3x</td>
-<td align="center">0.588</td>
-<td align="center">0.071</td>
-<td align="center">10.4</td>
-<td align="center">62.0</td>
-<td align="center">59.6</td>
-<td align="center">35.9</td>
-<td align="center">20.2</td>
-<td align="center">29.9</td>
-<td align="center">222178938</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv/222178938/model_final_b47a20.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_A
-top10P_CA_B_uv/222178938/metrics.json">metrics</a></td>
+<td align="center">1.985</td>
+<td align="center">0.072</td>
+<td align="center">9.6</td>
+<td align="center">61.4</td>
+<td align="center">58.9</td>
+<td align="center">38.3</td>
+<td align="center">22.2</td>
+<td align="center">32.1</td>
+<td align="center">256452095</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv/256452095/model_final_d689e2.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_uv/256452095/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm -->
 <tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm</a></td>
 <td align="center">3x</td>
-<td align="center">0.585</td>
-<td align="center">0.070</td>
-<td align="center">9.8</td>
-<td align="center">61.2</td>
-<td align="center">59.3</td>
-<td align="center">35.9</td>
-<td align="center">20.0</td>
-<td align="center">29.9</td>
-<td align="center">222179553</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm/222179553/model_final_1e51d0.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1
-M_3x_Atop10P_CA_B_finesegm/222179553/metrics.json">metrics</a></td>
+<td align="center">2.047</td>
+<td align="center">0.072</td>
+<td align="center">10.3</td>
+<td align="center">60.9</td>
+<td align="center">58.5</td>
+<td align="center">36.7</td>
+<td align="center">20.7</td>
+<td align="center">30.7</td>
+<td align="center">256452819</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm/256452819/model_final_cb4ac6.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_finesegm/256452819/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm -->
 <tr><td align="left"><a href="../configs/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm.yaml">R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm</a></td>
 <td align="center">3x</td>
-<td align="center">0.590</td>
+<td align="center">1.830</td>
 <td align="center">0.070</td>
-<td align="center">10.3</td>
-<td align="center">62.0</td>
-<td align="center">59.5</td>
-<td align="center">37.2</td>
-<td align="center">21.2</td>
-<td align="center">31.2</td>
-<td align="center">222181312</td>
-<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm/222181312/model_final_17f42f.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_W
-C1M_3x_Atop10P_CA_B_coarsesegm/222181312/metrics.json">metrics</a></td>
+<td align="center">9.6</td>
+<td align="center">61.3</td>
+<td align="center">59.2</td>
+<td align="center">37.9</td>
+<td align="center">21.5</td>
+<td align="center">31.6</td>
+<td align="center">256455697</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm/256455697/model_final_a6a4bf.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA_B_coarsesegm/256455697/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 
