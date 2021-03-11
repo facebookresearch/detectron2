@@ -247,9 +247,11 @@ def _called_with_cfg(*args, **kwargs):
         bool: whether the arguments contain CfgNode and should be considered
             forwarded to from_config.
     """
-    if len(args) and isinstance(args[0], _CfgNode):
+    from omegaconf import DictConfig
+
+    if len(args) and isinstance(args[0], (_CfgNode, DictConfig)):
         return True
-    if isinstance(kwargs.pop("cfg", None), _CfgNode):
+    if isinstance(kwargs.pop("cfg", None), (_CfgNode, DictConfig)):
         return True
     # `from_config`'s first argument is forced to be "cfg".
     # So the above check covers all cases.

@@ -6,9 +6,12 @@ import os
 import tempfile
 import unittest
 import torch
+from omegaconf import OmegaConf
 
+from detectron2 import model_zoo
 from detectron2.config import configurable, downgrade_config, get_cfg, upgrade_config
 from detectron2.layers import ShapeSpec
+from detectron2.modeling import build_model
 
 _V0_CFG = """
 MODEL:
@@ -255,3 +258,11 @@ class TestConfigurable(unittest.TestCase):
         self.assertEqual(_test_func(cfg, arg2=2), (10, 2, 30, 4))
         self.assertEqual(_test_func(cfg, arg1=100, arg2=20), (100, 20, 30, 4))
         self.assertEqual(_test_func(cfg, arg1=100, arg2=20, arg4=40), (100, 20, 30, 40))
+
+    def testOmegaConf(self):
+        cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
+        cfg = OmegaConf.create(cfg.dump())
+        if not torch.cuda.is_available():
+            cfg.MODEL.DEVICE = "cpu"
+        # test that a model can be built with omegaconf config as well
+        build_model(cfg)
