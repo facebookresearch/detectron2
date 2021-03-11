@@ -38,6 +38,14 @@ std::string get_cuda_version() {
 #endif
 }
 
+bool has_cuda() {
+#if defined(WITH_CUDA)
+  return true;
+#else
+  return false;
+#endif
+}
+
 // similar to
 // https://github.com/pytorch/pytorch/blob/master/aten/src/ATen/Version.cpp
 std::string get_compiler_version() {
@@ -69,6 +77,7 @@ std::string get_compiler_version() {
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("get_compiler_version", &get_compiler_version, "get_compiler_version");
   m.def("get_cuda_version", &get_cuda_version, "get_cuda_version");
+  m.def("has_cuda", &has_cuda, "has_cuda");
 
   m.def("box_iou_rotated", &box_iou_rotated, "IoU for rotated boxes");
 

@@ -106,7 +106,7 @@ def collect_env_info():
         # print compilers that are used to build extension
         data.append(("Compiler", _C.get_compiler_version()))
         data.append(("CUDA compiler", _C.get_cuda_version()))  # cuda or hip
-        if has_cuda:
+        if has_cuda and getattr(_C, "has_cuda", lambda: True)():
             data.append(
                 ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
             )
