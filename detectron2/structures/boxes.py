@@ -202,10 +202,11 @@ class Boxes:
         """
         assert torch.isfinite(self.tensor).all(), "Box tensor contains infinite or NaN!"
         h, w = box_size
-        self.tensor[:, 0].clamp_(min=0, max=w)
-        self.tensor[:, 1].clamp_(min=0, max=h)
-        self.tensor[:, 2].clamp_(min=0, max=w)
-        self.tensor[:, 3].clamp_(min=0, max=h)
+        x1 = self.tensor[:, 0].clamp(min=0, max=w)
+        y1 = self.tensor[:, 1].clamp(min=0, max=h)
+        x2 = self.tensor[:, 2].clamp(min=0, max=w)
+        y2 = self.tensor[:, 3].clamp(min=0, max=h)
+        self.tensor = torch.stack((x1, y1, x2, y2), dim=-1)
 
     def nonempty(self, threshold: float = 0.0) -> torch.Tensor:
         """
