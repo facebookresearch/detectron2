@@ -33,10 +33,11 @@ data: List[Dict] = DatasetCatalog.get("my_dataset")
 ```
 
 Here, the snippet associates a dataset named "my_dataset" with a function that returns the data.
-The function must return the same data if called multiple times.
+The function must return the same data (with same order) if called multiple times.
 The registration stays effective until the process exits.
 
-The function can do arbitrary things and should return the data in either of the following formats:
+The function can do arbitrary things and should return the data in `list[dict]`, each dict in either
+of the following formats:
 1. Detectron2's standard dataset dict, described below. This will make it work with many other builtin
    features in detectron2, so it's recommended to use it when it's sufficient.
 2. Any custom format. You can also return arbitrary dicts in your own format,

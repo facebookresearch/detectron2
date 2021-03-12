@@ -52,7 +52,7 @@ def patch_instances(fields):
     """
     A contextmanager, under which the Instances class in detectron2 is replaced
     by a statically-typed scriptable class, defined by `fields`.
-    See more in `export_torchscript_with_instances`.
+    See more in `scripting_with_instances`.
     """
 
     with tempfile.TemporaryDirectory(prefix="detectron2") as dir, tempfile.NamedTemporaryFile(

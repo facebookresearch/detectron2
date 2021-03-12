@@ -26,7 +26,7 @@ We currently support the following combination and each has some limitations:
 +----------------------------+-------------+-------------+-----------------------------+
 | **Runtime**                | PyTorch     | PyTorch     | Caffe2, PyTorch             |
 +----------------------------+-------------+-------------+-----------------------------+
-| C++ inference              | ✅          | ❌ (WIP)    | ✅                          |
+| C++/Python inference       | ✅          | ❌ (WIP_)   | ✅                          |
 +----------------------------+-------------+-------------+-----------------------------+
 | Dynamic resolution         | ✅          | ✅          | ✅                          |
 +----------------------------+-------------+-------------+-----------------------------+
@@ -42,6 +42,9 @@ We currently support the following combination and each has some limitations:
 +----------------------------+-------------+-------------+-----------------------------+
 | PointRend R-CNN            | ✅          | ❌          | ❌                          |
 +----------------------------+-------------+-------------+-----------------------------+
+
+.. _WIP: https://github.com/pytorch/pytorch/issues/46944
+
 ```
 
 We don't plan to work on additional support for other formats/runtime, but contributions are welcome.
@@ -68,7 +71,9 @@ Scripting can support dynamic batch size.
 
 ### Usage
 
-The usage is currently demonstrated in [test_export_torchscript.py](../../tests/test_export_torchscript.py)
+The main export APIs for tracing and scripting are [TracingAdapter](../modules/export.html#detectron2.export.TracingAdapter)
+and [scripting_with_instances](../modules/export.html#detectron2.export.scripting_with_instances).
+Their usage is currently demonstrated in [test_export_torchscript.py](../../tests/test_export_torchscript.py)
 (see `TestScripting` and `TestTracing`)
 as well as the [deployment example](../../tools/deploy).
 Please check that these examples can run, and then modify for your use cases.

@@ -5,7 +5,7 @@ import unittest
 import torch
 
 from detectron2.config import get_cfg
-from detectron2.export.torchscript import export_torchscript_with_instances
+from detectron2.export import scripting_with_instances
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator import RPN, build_proposal_generator
@@ -75,7 +75,7 @@ class RPNTest(unittest.TestCase):
         features = {"res4": torch.rand(num_images, 1024, 1, 2)}
 
         fields = {"proposal_boxes": Boxes, "objectness_logits": torch.Tensor}
-        proposal_generator_ts = export_torchscript_with_instances(proposal_generator, fields)
+        proposal_generator_ts = scripting_with_instances(proposal_generator, fields)
 
         proposals, _ = proposal_generator(images, features)
         proposals_ts, _ = proposal_generator_ts(images, features)

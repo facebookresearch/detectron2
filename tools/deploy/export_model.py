@@ -10,8 +10,13 @@ from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
-from detectron2.export import Caffe2Tracer, TracingAdapter, add_export_config
-from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
+from detectron2.export import (
+    Caffe2Tracer,
+    TracingAdapter,
+    add_export_config,
+    dump_torchscript_IR,
+    scripting_with_instances,
+)
 from detectron2.modeling import GeneralizedRCNN, RetinaNet, build_model
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.projects.point_rend import add_pointrend_config
@@ -65,7 +70,7 @@ def export_scripting(torch_model):
         "pred_keypoint_heatmaps": torch.Tensor,
     }
     assert args.format == "torchscript", "Scripting only supports torchscript format."
-    ts_model = export_torchscript_with_instances(torch_model, fields)
+    ts_model = scripting_with_instances(torch_model, fields)
     with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
         torch.jit.save(ts_model, f)
     dump_torchscript_IR(ts_model, args.output)

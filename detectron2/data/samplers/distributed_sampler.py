@@ -172,7 +172,7 @@ class RepeatFactorTrainingSampler(Sampler):
 
 class InferenceSampler(Sampler):
     """
-    Produce indices for inference.
+    Produce indices for inference across all workers.
     Inference needs to run on the __exact__ set of samples,
     therefore when the total number of samples is not divisible by the number of workers,
     this sampler produces different number of samples on different workers.

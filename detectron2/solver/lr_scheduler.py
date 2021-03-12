@@ -61,7 +61,6 @@ class LRMultiplier(torch.optim.lr_scheduler._LRScheduler):
     not change during training.
 
     Examples:
-
     ::
         LRMultiplier(
             opt,

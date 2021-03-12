@@ -491,7 +491,7 @@ def pairwise_iou(boxes1: RotatedBoxes, boxes2: RotatedBoxes) -> None:
     """
     Given two lists of rotated boxes of size N and M,
     compute the IoU (intersection over union)
-    between __all__ N x M pairs of boxes.
+    between **all** N x M pairs of boxes.
     The box order must be (x_center, y_center, width, height, angle).
 
     Args:

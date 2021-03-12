@@ -24,6 +24,8 @@ __all__ = [
 
 def add_export_config(cfg):
     """
+    Add options needed by caffe2 export.
+
     Args:
         cfg (CfgNode): a detectron2 config
 

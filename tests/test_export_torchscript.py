@@ -10,8 +10,8 @@ from torch import Tensor, nn
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.config.instantiate import dump_dataclass, instantiate
+from detectron2.export import dump_torchscript_IR, scripting_with_instances
 from detectron2.export.flatten import TracingAdapter, flatten_to_tuple
-from detectron2.export.torchscript import dump_torchscript_IR, export_torchscript_with_instances
 from detectron2.export.torchscript_patch import patch_builtin_len
 from detectron2.layers import ShapeSpec
 from detectron2.modeling import build_backbone
@@ -55,7 +55,7 @@ class TestScripting(unittest.TestCase):
             "pred_classes": Tensor,
             "pred_masks": Tensor,
         }
-        script_model = export_torchscript_with_instances(model, fields)
+        script_model = scripting_with_instances(model, fields)
 
         inputs = [{"image": get_sample_coco_image()}]
         with torch.no_grad():
@@ -72,7 +72,7 @@ class TestScripting(unittest.TestCase):
             "scores": Tensor,
             "pred_classes": Tensor,
         }
-        script_model = export_torchscript_with_instances(model, fields)
+        script_model = scripting_with_instances(model, fields)
 
         img = get_sample_coco_image()
         inputs = [{"image": img}]

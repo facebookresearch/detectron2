@@ -348,10 +348,10 @@ def pairwise_intersection(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
 # with slight modifications
 def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     """
-    Given two lists of boxes of size N and M,
-    compute the IoU (intersection over union)
-    between __all__ N x M pairs of boxes.
+    Given two lists of boxes of size N and M, compute the IoU
+    (intersection over union) between **all** N x M pairs of boxes.
     The box order must be (xmin, ymin, xmax, ymax).
+
     Args:
         boxes1,boxes2 (Boxes): two `Boxes`. Contains N & M boxes, respectively.
 
@@ -373,7 +373,7 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
 
 def pairwise_ioa(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     """
-    Similar to pariwise_iou but compute the IoA (intersection over boxes2 area).
+    Similar to :func:`pariwise_iou` but compute the IoA (intersection over boxes2 area).
 
     Args:
         boxes1,boxes2 (Boxes): two `Boxes`. Contains N & M boxes, respectively.

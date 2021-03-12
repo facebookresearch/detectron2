@@ -357,10 +357,9 @@ def build_detection_train_loader(
         mapper (callable): a callable which takes a sample (dict) from dataset and
             returns the format to be consumed by the model.
             When using cfg, the default choice is ``DatasetMapper(cfg, is_train=True)``.
-        sampler (torch.utils.data.sampler.Sampler or None): a sampler that
-            produces indices to be applied on ``dataset``.
-            Default to :class:`TrainingSampler`, which coordinates a random shuffle
-            sequence across all workers.
+        sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces
+            indices to be applied on ``dataset``. Default to :class:`TrainingSampler`,
+            which coordinates an infinite random shuffle sequence across all workers.
         total_batch_size (int): total batch size across all workers. Batching
             simply puts data into a list.
         aspect_ratio_grouping (bool): whether to group images with similar
@@ -411,7 +410,9 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
 @configurable(from_config=_test_loader_from_config)
 def build_detection_test_loader(dataset, *, mapper, num_workers=0):
     """
-    Similar to `build_detection_train_loader`, but uses a batch size of 1.
+    Similar to `build_detection_train_loader`, but uses a batch size of 1,
+    and :class:`InferenceSampler`. This sampler coordinates all workers to
+    produce the exact set of all samples.
     This interface is experimental.
 
     Args:

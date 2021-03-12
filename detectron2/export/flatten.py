@@ -184,14 +184,14 @@ def flatten_to_tuple(obj):
 
 class TracingAdapter(nn.Module):
     """
-    A model may take rich input/output format (e.g. dict or custom classes).
+    A model may take rich input/output format (e.g. dict or custom classes),
+    but `torch.jit.trace` requires tuple of tensors as input/output.
     This adapter flattens input/output format of a model so it becomes traceable.
 
     It also records the necessary schema to rebuild model's inputs/outputs from flattened
     inputs/outputs.
 
     Example:
-
     ::
         outputs = model(inputs)   # inputs/outputs may be rich structure
         adapter = TracingAdapter(model, inputs)
