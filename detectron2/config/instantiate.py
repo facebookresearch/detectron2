@@ -45,7 +45,10 @@ def instantiate(cfg):
     """
     from omegaconf import ListConfig
 
-    if isinstance(cfg, (list, tuple, ListConfig)):
+    if isinstance(cfg, ListConfig):
+        lst = [instantiate(x) for x in cfg]
+        return ListConfig(lst, flags={"allow_objects": True})
+    if isinstance(cfg, list):
         # Specialize for list, because many classes take
         # list[objects] as arguments, such as ResNet, DatasetMapper
         return [instantiate(x) for x in cfg]
