@@ -20,6 +20,9 @@ class TestBoxMode(unittest.TestCase):
     def _convert_xywh_to_xywha(self, x):
         return BoxMode.convert(x, BoxMode.XYWH_ABS, BoxMode.XYWHA_ABS)
 
+    def test_convert_int_mode(self):
+        BoxMode.convert([1, 2, 3, 4], 0, 1)
+
     def test_box_convert_list(self):
         for tp in [list, tuple]:
             box = tp([5.0, 5.0, 10.0, 10.0])
