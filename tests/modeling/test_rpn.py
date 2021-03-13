@@ -8,7 +8,7 @@ from detectron2.config import get_cfg
 from detectron2.export import scripting_with_instances
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import build_backbone
-from detectron2.modeling.proposal_generator import RPN, build_proposal_generator
+from detectron2.modeling.proposal_generator import RPN, RRPN, build_proposal_generator
 from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
@@ -195,6 +195,35 @@ class RPNTest(unittest.TestCase):
         torch.jit.trace(
             func, (proposal, pred_logit, torch.tensor([100, 100])), check_inputs=other_inputs
         )
+
+    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    def test_rrpn_scriptability(self):
+        cfg = get_cfg()
+        cfg.MODEL.PROPOSAL_GENERATOR.NAME = "RRPN"
+        cfg.MODEL.ANCHOR_GENERATOR.NAME = "RotatedAnchorGenerator"
+        cfg.MODEL.ANCHOR_GENERATOR.SIZES = [[32, 64]]
+        cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.25, 1]]
+        cfg.MODEL.ANCHOR_GENERATOR.ANGLES = [[0, 60]]
+        cfg.MODEL.RPN.BBOX_REG_WEIGHTS = (1, 1, 1, 1, 1)
+        cfg.MODEL.RPN.HEAD_NAME = "StandardRPNHead"
+        proposal_generator = RRPN(cfg, {"res4": ShapeSpec(channels=1024, stride=16)}).eval()
+        num_images = 2
+        images_tensor = torch.rand(num_images, 30, 40)
+        image_sizes = [(32, 32), (30, 40)]
+        images = ImageList(images_tensor, image_sizes)
+        features = {"res4": torch.rand(num_images, 1024, 1, 2)}
+
+        fields = {"proposal_boxes": RotatedBoxes, "objectness_logits": torch.Tensor}
+        proposal_generator_ts = scripting_with_instances(proposal_generator, fields)
+
+        proposals, _ = proposal_generator(images, features)
+        proposals_ts, _ = proposal_generator_ts(images, features)
+        for proposal, proposal_ts in zip(proposals, proposals_ts):
+            self.assertEqual(proposal.image_size, proposal_ts.image_size)
+            self.assertTrue(
+                torch.equal(proposal.proposal_boxes.tensor, proposal_ts.proposal_boxes.tensor)
+            )
+            self.assertTrue(torch.equal(proposal.objectness_logits, proposal_ts.objectness_logits))
 
 
 if __name__ == "__main__":

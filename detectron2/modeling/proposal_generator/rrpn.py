@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
 import logging
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import torch
 
 from detectron2.layers import ShapeSpec, batched_nms_rotated, cat
@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 def find_top_rrpn_proposals(
-    proposals,
-    pred_objectness_logits,
-    image_sizes,
-    nms_thresh,
-    pre_nms_topk,
-    post_nms_topk,
-    min_box_size,
-    training,
+    proposals: List[torch.Tensor],
+    pred_objectness_logits: List[torch.Tensor],
+    image_sizes: List[Tuple[int, int]],
+    nms_thresh: float,
+    pre_nms_topk: int,
+    post_nms_topk: int,
+    min_box_size: float,
+    training: bool,
 ):
     """
     For each feature map, select the `pre_nms_topk` highest scoring proposals,
@@ -62,17 +62,19 @@ def find_top_rrpn_proposals(
     topk_proposals = []
     level_ids = []  # #lvl Tensor, each of shape (topk,)
     batch_idx = torch.arange(num_images, device=device)
-    for level_id, proposals_i, logits_i in zip(
-        itertools.count(), proposals, pred_objectness_logits
-    ):
+    for level_id, (proposals_i, logits_i) in enumerate(zip(proposals, pred_objectness_logits)):
         Hi_Wi_A = logits_i.shape[1]
-        num_proposals_i = min(pre_nms_topk, Hi_Wi_A)
+
+        if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
+            num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
+        else:
+            num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
 
         # sort is faster than topk (https://github.com/pytorch/pytorch/issues/22812)
         # topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
         logits_i, idx = logits_i.sort(descending=True, dim=1)
-        topk_scores_i = logits_i[batch_idx, :num_proposals_i]
-        topk_idx = idx[batch_idx, :num_proposals_i]
+        topk_scores_i = logits_i.narrow(1, 0, num_proposals_i)
+        topk_idx = idx.narrow(1, 0, num_proposals_i)
 
         # each is N x topk
         topk_proposals_i = proposals_i[batch_idx[:, None], topk_idx]  # N x topk x 5
@@ -87,7 +89,7 @@ def find_top_rrpn_proposals(
     level_ids = cat(level_ids, dim=0)
 
     # 3. For each image, run a per-level NMS, and choose topk results.
-    results = []
+    results: List[Instances] = []
     for n, image_size in enumerate(image_sizes):
         boxes = RotatedBoxes(topk_proposals[n])
         scores_per_img = topk_scores[n]
@@ -135,7 +137,9 @@ class RRPN(RPN):
             )
 
     @torch.no_grad()
-    def label_and_sample_anchors(self, anchors: List[RotatedBoxes], gt_instances: List[Instances]):
+    def label_and_sample_anchors(
+        self, anchors: List[RotatedBoxes], gt_instances: List[Instances]
+    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
         Args:
             anchors (list[RotatedBoxes]): anchors for each feature map.
@@ -181,16 +185,45 @@ class RRPN(RPN):
             matched_gt_boxes.append(matched_gt_boxes_i)
         return gt_labels, matched_gt_boxes
 
-    @torch.no_grad()
-    def predict_proposals(self, anchors, pred_objectness_logits, pred_anchor_deltas, image_sizes):
-        pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
-        return find_top_rrpn_proposals(
-            pred_proposals,
-            pred_objectness_logits,
-            image_sizes,
-            self.nms_thresh,
-            self.pre_nms_topk[self.training],
-            self.post_nms_topk[self.training],
-            self.min_box_size,
-            self.training,
-        )
+    def predict_proposals(
+        self,
+        anchors: List[RotatedBoxes],
+        pred_objectness_logits: List[torch.Tensor],
+        pred_anchor_deltas: List[torch.Tensor],
+        image_sizes: List[Tuple[int, int]],
+    ):
+        with torch.no_grad():
+            pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
+            return find_top_rrpn_proposals(
+                pred_proposals,
+                pred_objectness_logits,
+                image_sizes,
+                self.nms_thresh,
+                self.pre_nms_topk[self.training],
+                self.post_nms_topk[self.training],
+                self.min_box_size,
+                self.training,
+            )
+
+    def _decode_proposals(
+        self, anchors: List[RotatedBoxes], pred_anchor_deltas: List[torch.Tensor]
+    ):
+        """
+        Transform anchors into proposals by applying the predicted anchor deltas.
+
+        Returns:
+            proposals (list[Tensor]): A list of L tensors. Tensor i has shape
+                (N, Hi*Wi*A, B)
+        """
+        N = pred_anchor_deltas[0].shape[0]
+        proposals = []
+        # For each feature map
+        for anchors_i, pred_anchor_deltas_i in zip(anchors, pred_anchor_deltas):
+            B = anchors_i.tensor.size(1)
+            pred_anchor_deltas_i = pred_anchor_deltas_i.reshape(-1, B)
+            # Expand anchors to shape (N*Hi*Wi*A, B)
+            anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
+            proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
+            # Append feature map proposals with shape (N, Hi*Wi*A, B)
+            proposals.append(proposals_i.view(N, -1, B))
+        return proposals
