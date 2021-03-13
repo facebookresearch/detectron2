@@ -196,7 +196,9 @@ class RPNTest(unittest.TestCase):
             func, (proposal, pred_logit, torch.tensor([100, 100])), check_inputs=other_inputs
         )
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
+    @unittest.skipIf(
+        TORCH_VERSION < (1, 8) or sys.version_info.minor <= 6, "Insufficient pytorch version"
+    )
     def test_rrpn_scriptability(self):
         cfg = get_cfg()
         cfg.MODEL.PROPOSAL_GENERATOR.NAME = "RRPN"
