@@ -9,6 +9,7 @@ python -m pip install detectron2{d2_version} -f \\
   https://dl.fbaipublicfiles.com/detectron2/wheels/{cuda}/torch{torch}/index.html
 </code></pre> </details>"""
 CUDA_SUFFIX = {
+    "11.1": "cu111",
     "11.0": "cu110",
     "10.2": "cu102",
     "10.1": "cu101",
@@ -34,9 +35,9 @@ if __name__ == "__main__":
     d2_version = f"=={args.d2_version}" if args.d2_version else ""
 
     all_versions = (
-        [("1.5", k) for k in ["10.2", "10.1", "9.2", "cpu"]]
-        + [("1.6", k) for k in ["10.2", "10.1", "9.2", "cpu"]]
+        [("1.6", k) for k in ["10.2", "10.1", "9.2", "cpu"]]
         + [("1.7", k) for k in ["11.0", "10.2", "10.1", "9.2", "cpu"]]
+        + [("1.8", k) for k in ["11.1", "10.2", "10.1", "cpu"]]
     )
 
     torch_versions = sorted({k[0] for k in all_versions}, key=float, reverse=True)

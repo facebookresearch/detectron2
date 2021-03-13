@@ -24,6 +24,7 @@ build_one() {
   esac
 
   echo "Launching container $container_name ..."
+  container_id="$container_name"_"$cu"_"$pytorch_ver"
 
   py_versions=(3.6 3.7 3.8)
   if [[ $pytorch_ver == "1.8" ]]; then
@@ -32,18 +33,18 @@ build_one() {
 
   for py in "${py_versions[@]}"; do
     docker run -itd \
-      --name $container_name \
+      --name "$container_id" \
       --mount type=bind,source="$(pwd)",target=/detectron2 \
       pytorch/$container_name
 
-    cat <<EOF | docker exec -i $container_name sh
+    cat <<EOF | docker exec -i $container_id sh
       export CU_VERSION=$cu D2_VERSION_SUFFIX=+$cu PYTHON_VERSION=$py
       export PYTORCH_VERSION=$pytorch_ver
       cd /detectron2 && ./dev/packaging/build_wheel.sh
 EOF
 
-    docker container stop $container_name
-    docker container rm $container_name
+    docker container stop $container_id
+    docker container rm $container_id
   done
 }
 
