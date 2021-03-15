@@ -3,7 +3,7 @@
 
 import copy
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 import torch
 
 from detectron2.data import MetadataCatalog
@@ -143,30 +143,19 @@ class DatasetMapper:
         return annotation
 
     def _add_densepose_masks_as_segmentation(
-        self, annotations: Dict[str, Any], image_shape_hw: Tuple[int, int]
+        self, annotations: List[Dict[str, Any]], image_shape_hw: Tuple[int, int]
     ):
         for obj in annotations:
             if ("densepose" not in obj) or ("segmentation" in obj):
                 continue
             # DP segmentation: torch.Tensor [S, S] of float32, S=256
-            # pyre-fixme[16]: `str` has no attribute `segm`.
-            # pyre-fixme[6]: Expected `Union[int, slice]` for 1st param but got `str`.
             segm_dp = torch.zeros_like(obj["densepose"].segm)
-            # pyre-fixme[6]: Expected `Union[int, slice]` for 1st param but got `str`.
             segm_dp[obj["densepose"].segm > 0] = 1
             segm_h, segm_w = segm_dp.shape
             bbox_segm_dp = torch.tensor((0, 0, segm_h - 1, segm_w - 1), dtype=torch.float32)
             # image bbox
             x0, y0, x1, y1 = (
-                v.item()
-                # pyre-fixme[6]: Expected `Union[typing.List[float], numpy.ndarray,
-                #  torch.Tensor, typing.Tuple[float, ...]]` for 1st param but got
-                #  `str`.
-                # pyre-fixme[6]: Expected `Union[int, slice]` for 1st param but got
-                #  `str`.
-                # pyre-fixme[6]: Expected `Union[int, slice]` for 1st param but got
-                #  `str`.
-                for v in BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS)
+                v.item() for v in BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS)
             )
             segm_aligned = (
                 ROIAlign((y1 - y0, x1 - x0), 1.0, 0, aligned=True)
@@ -176,5 +165,4 @@ class DatasetMapper:
             image_mask = torch.zeros(*image_shape_hw, dtype=torch.float32)
             image_mask[y0:y1, x0:x1] = segm_aligned
             # segmentation for BitMask: np.array [H, W] of np.bool
-            # pyre-fixme[16]: `str` has no attribute `__setitem__`.
             obj["segmentation"] = image_mask >= 0.5

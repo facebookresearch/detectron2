@@ -27,8 +27,7 @@ class FrameSelectionStrategy(Enum):
     # fmt: on
 
 
-# pyre-fixme[39]: `(...) -> Any` is not a valid parent class.
-class RandomKFramesSelector(Callable):
+class RandomKFramesSelector(Callable):  # pyre-ignore[39]
     """
     Selector that retains at most `k` random frames
     """
@@ -48,8 +47,7 @@ class RandomKFramesSelector(Callable):
         return random.sample(frame_tss, min(self.k, len(frame_tss)))
 
 
-# pyre-fixme[39]: `(...) -> Any` is not a valid parent class.
-class FirstKFramesSelector(Callable):
+class FirstKFramesSelector(Callable):  # pyre-ignore[39]
     """
     Selector that retains at most `k` first frames
     """
@@ -69,8 +67,7 @@ class FirstKFramesSelector(Callable):
         return frame_tss[: self.k]
 
 
-# pyre-fixme[39]: `(...) -> Any` is not a valid parent class.
-class LastKFramesSelector(Callable):
+class LastKFramesSelector(Callable):  # pyre-ignore[39]
     """
     Selector that retains at most `k` last frames from video data
     """

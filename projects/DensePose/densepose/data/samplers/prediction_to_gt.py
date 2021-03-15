@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from detectron2.structures import Instances
 
@@ -38,7 +38,7 @@ class PredictionToGroundTruthSampler:
         # delete scores
         self.register_sampler("scores")
 
-    def __call__(self, model_output: ModelOutput) -> SampledData:
+    def __call__(self, model_output: List[ModelOutput]) -> List[SampledData]:
         """
         Transform model output into ground truth data through sampling
 
@@ -48,8 +48,6 @@ class PredictionToGroundTruthSampler:
           Dict[str, Any]: sampled data
         """
         for model_output_i in model_output:
-            # pyre-fixme[9]: instances has type `Instances`; used as `str`.
-            # pyre-fixme[6]: Expected `Union[int, slice]` for 1st param but got `str`.
             instances: Instances = model_output_i["instances"]
             # transform data in each field
             for _, sampler in self._samplers.items():
@@ -63,7 +61,6 @@ class PredictionToGroundTruthSampler:
             for _, sampler in self._samplers.items():
                 if sampler.src != sampler.dst and instances.has(sampler.src):
                     instances.remove(sampler.src)
-            # pyre-fixme[16]: `str` has no attribute `__setitem__`.
             model_output_i["dataset"] = self.dataset_name
         return model_output
 

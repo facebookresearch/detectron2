@@ -76,17 +76,16 @@ class Trainer(DefaultTrainer):
     def extract_embedder_from_model(cls, model: nn.Module) -> Optional[Embedder]:
         if isinstance(model, nn.parallel.DistributedDataParallel):
             model = model.module
-        # pyre-fixme[16]: `Module` has no attribute `roi_heads`.
-        if hasattr(model, "roi_heads") and hasattr(model.roi_heads, "embedder"):
+        if hasattr(model, "roi_heads") and hasattr(model.roi_heads, "embedder"):  # pyre-ignore[16]
             return model.roi_heads.embedder
         return None
 
     # TODO: the only reason to copy the base class code here is to pass the embedder from
     # the model to the evaluator; that should be refactored to avoid unnecessary copy-pasting
     @classmethod
-    # pyre-fixme[9]: evaluators has type
-    #  `List[detectron2.evaluation.evaluator.DatasetEvaluator]`; used as `None`.
-    def test(cls, cfg: CfgNode, model: nn.Module, evaluators: List[DatasetEvaluator] = None):
+    def test(
+        cls, cfg: CfgNode, model: nn.Module, evaluators: Optional[List[DatasetEvaluator]] = None
+    ):
         """
         Args:
             cfg (CfgNode):
@@ -116,8 +115,6 @@ class Trainer(DefaultTrainer):
             else:
                 try:
                     embedder = cls.extract_embedder_from_model(model)
-                    # pyre-fixme[6]: Expected `Embedder` for 3rd param but got
-                    #  `Optional[densepose.modeling.cse.embedder.Embedder]`.
                     evaluator = cls.build_evaluator(cfg, dataset_name, embedder=embedder)
                 except NotImplementedError:
                     logger.warn(
@@ -147,8 +144,7 @@ class Trainer(DefaultTrainer):
         cfg: CfgNode,
         dataset_name: str,
         output_folder: Optional[str] = None,
-        # pyre-fixme[9]: embedder has type `Embedder`; used as `None`.
-        embedder: Embedder = None,
+        embedder: Optional[Embedder] = None,
     ) -> DatasetEvaluators:
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
@@ -216,11 +212,7 @@ class Trainer(DefaultTrainer):
         model.to(cfg.BOOTSTRAP_MODEL.DEVICE)
         DetectionCheckpointer(model).resume_or_load(cfg.BOOTSTRAP_MODEL.WEIGHTS, resume=False)
         inference_based_loaders, ratios = build_inference_based_loaders(cfg, model)
-        # pyre-fixme[58]: `+` is not supported for operand types `List[typing.Any]`
-        #  and `InferenceBasedLoader`.
         loaders = [data_loader] + inference_based_loaders
-        # pyre-fixme[58]: `+` is not supported for operand types `List[float]` and
-        #  `InferenceBasedLoader`.
         ratios = [1.0] + ratios
         combined_data_loader = build_combined_loader(cfg, loaders, ratios)
         sample_counting_loader = SampleCountingLoader(combined_data_loader)
@@ -247,9 +239,6 @@ class Trainer(DefaultTrainer):
             )
             for name in cfg.DATASETS.TEST
         ]
-        # pyre-fixme[6]: Expected
-        #  `List[detectron2.evaluation.evaluator.DatasetEvaluator]` for 3rd param but
-        #  got `List[detectron2.evaluation.evaluator.DatasetEvaluators]`.
-        res = cls.test(cfg, model, evaluators)
+        res = cls.test(cfg, model, evaluators)  # pyre-ignore[6]
         res = OrderedDict({k + "_TTA": v for k, v in res.items()})
         return res

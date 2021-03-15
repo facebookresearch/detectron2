@@ -77,9 +77,7 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             # (here best = smallest variance)
             _, sorted_confidence_indices = torch.sort(values[2])
             if self.search_count_multiplier is not None:
-                # pyre-fixme[58]: `*` is not supported for operand types `int` and
-                #  `Optional[float]`.
-                search_count = min(int(count * self.search_count_multiplier), k)
+                search_count = min(int(count * self.search_count_multiplier), k)  # pyre-ignore[58]
             elif self.search_proportion is not None:
                 search_count = min(max(int(k * self.search_proportion), count), k)
             else:
@@ -88,7 +86,7 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             index_sample = sorted_confidence_indices[:search_count][sample_from_top]
         return index_sample
 
-    def _produce_labels_and_results(self, instance) -> Tuple[torch.Tensor]:
+    def _produce_labels_and_results(self, instance) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Method to get labels and DensePose results from an instance, with confidences
 
@@ -107,6 +105,4 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             (dp_result, getattr(chart_result, self.confidence_channel)[None].cpu())
         )
 
-        # pyre-fixme[7]: Expected `Tuple[torch.Tensor]` but got `Tuple[torch.Tensor,
-        #  torch.Tensor]`.
         return labels, dp_result

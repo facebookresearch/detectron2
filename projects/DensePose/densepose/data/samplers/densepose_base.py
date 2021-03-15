@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures import BoxMode, Instances
 
 from densepose.converters import ToChartResultConverter
+from densepose.converters.base import IntTupleBox, make_int_box
 from densepose.structures import DensePoseDataRelative, DensePoseList
 
 
@@ -35,11 +36,9 @@ class DensePoseBaseSampler:
         boxes_xyxy_abs = instances.pred_boxes.tensor.clone().cpu()
         boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
         dp_datas = []
-        for i, box_xywh in enumerate(boxes_xywh_abs):
-            # pyre-fixme[6]: Expected `List[int]` for 2nd param but got `float`.
-            annotation_i = self._sample(instances[i], box_xywh)
-            # pyre-fixme[16]: `DensePoseDataRelative` has no attribute `__setitem__`.
-            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(
+        for i in range(len(boxes_xywh_abs)):
+            annotation_i = self._sample(instances[i], make_int_box(boxes_xywh_abs[i]))
+            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(  # pyre-ignore[6]
                 instances[i].pred_densepose
             )
             dp_datas.append(DensePoseDataRelative(annotation_i))
@@ -47,11 +46,10 @@ class DensePoseBaseSampler:
         dp_list = DensePoseList(dp_datas, boxes_xyxy_abs, instances.image_size)
         return dp_list
 
-    def _sample(self, instance: Instances, bbox_xywh: List[int]) -> DensePoseDataRelative:
+    def _sample(self, instance: Instances, bbox_xywh: IntTupleBox) -> Dict[str, List[Any]]:
         """
         Sample DensPoseDataRelative from estimation results
         """
-        # pyre-fixme[23]: Unable to unpack single value, 2 were expected.
         labels, dp_result = self._produce_labels_and_results(instance)
         annotation = {
             DensePoseDataRelative.X_KEY: [],
@@ -92,8 +90,6 @@ class DensePoseBaseSampler:
             annotation[DensePoseDataRelative.U_KEY].extend(u)
             annotation[DensePoseDataRelative.V_KEY].extend(v)
             annotation[DensePoseDataRelative.I_KEY].extend(fine_segm_labels)
-        # pyre-fixme[7]: Expected `DensePoseDataRelative` but got `Dict[str,
-        #  List[typing.Any]]`.
         return annotation
 
     def _produce_index_sample(self, values: torch.Tensor, count: int):
@@ -113,7 +109,7 @@ class DensePoseBaseSampler:
         """
         raise NotImplementedError
 
-    def _produce_labels_and_results(self, instance: Instances) -> Tuple[torch.Tensor]:
+    def _produce_labels_and_results(self, instance: Instances) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Method to get labels and DensePose results from an instance
 
@@ -127,8 +123,6 @@ class DensePoseBaseSampler:
         converter = ToChartResultConverter
         chart_result = converter.convert(instance.pred_densepose, instance.pred_boxes)
         labels, dp_result = chart_result.labels.cpu(), chart_result.uv.cpu()
-        # pyre-fixme[7]: Expected `Tuple[torch.Tensor]` but got `Tuple[torch.Tensor,
-        #  torch.Tensor]`.
         return labels, dp_result
 
     def _resample_mask(self, output: Any) -> torch.Tensor:

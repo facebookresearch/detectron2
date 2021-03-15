@@ -5,7 +5,7 @@ import logging
 import numpy as np
 from collections import UserDict, defaultdict
 from dataclasses import dataclass
-from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
 import torch
 from torch.utils.data.dataset import Dataset
 
@@ -602,10 +602,7 @@ def build_inference_based_loader(
     dataset = build_bootstrap_dataset(dataset_cfg.DATASET, dataset_cfg.IMAGE_LOADER)
     training_sampler = TrainingSampler(len(dataset))
     data_loader = torch.utils.data.DataLoader(
-        # pyre-fixme[6]: Expected
-        #  `Dataset[Variable[torch.utils.data.dataloader.T_co](covariant)]` for 1st
-        #  param but got `Sequence[torch.Tensor]`.
-        dataset,
+        dataset,  # pyre-ignore[6]
         batch_size=dataset_cfg.IMAGE_LOADER.BATCH_SIZE,
         sampler=training_sampler,
         num_workers=dataset_cfg.IMAGE_LOADER.NUM_WORKERS,
@@ -632,7 +629,7 @@ def has_inference_based_loaders(cfg: CfgNode) -> bool:
 
 def build_inference_based_loaders(
     cfg: CfgNode, model: torch.nn.Module
-) -> List[InferenceBasedLoader]:
+) -> Tuple[List[InferenceBasedLoader], List[float]]:
     loaders = []
     ratios = []
     for dataset_spec in cfg.BOOTSTRAP_DATASETS:
@@ -641,8 +638,6 @@ def build_inference_based_loaders(
         loader = build_inference_based_loader(cfg, dataset_cfg, model)
         loaders.append(loader)
         ratios.append(dataset_cfg.RATIO)
-    # pyre-fixme[7]: Expected `List[InferenceBasedLoader]` but got
-    #  `Tuple[List[typing.Any], List[typing.Any]]`.
     return loaders, ratios
 
 
