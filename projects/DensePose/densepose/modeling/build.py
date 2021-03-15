@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from typing import Optional
 from torch import nn
 
 from detectron2.config import CfgNode
@@ -71,7 +72,7 @@ def build_densepose_losses(cfg: CfgNode):
     return DENSEPOSE_LOSS_REGISTRY.get(loss_name)(cfg)
 
 
-def build_densepose_embedder(cfg: CfgNode) -> nn.Module:
+def build_densepose_embedder(cfg: CfgNode) -> Optional[nn.Module]:
     """
     Build embedder used to embed mesh vertices into an embedding space.
     Embedder contains sub-embedders, one for each mesh ID.
@@ -81,8 +82,6 @@ def build_densepose_embedder(cfg: CfgNode) -> nn.Module:
     Return:
         Embedding module
     """
-    embedder = None
     if cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS:
         return Embedder(cfg)
-    # pyre-fixme[7]: Expected `Module` but got `None`.
-    return embedder
+    return None
