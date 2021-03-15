@@ -38,14 +38,11 @@ class DensePoseChartConfidencePredictorMixin:
             input_channels (int): number of input channels
         """
         # we rely on base predictor to call nn.Module.__init__
-        # pyre-fixme[19]: Expected 0 positional arguments.
-        super().__init__(cfg, input_channels)
+        super().__init__(cfg, input_channels)  # pyre-ignore[19]
         self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
         self._initialize_confidence_estimation_layers(cfg, input_channels)
         self._registry = {}
-        # pyre-fixme[6]: Expected `Module` for 1st param but got
-        #  `DensePoseChartConfidencePredictorMixin`.
-        initialize_module_params(self)
+        initialize_module_params(self)  # pyre-ignore[6]
 
     def _initialize_confidence_estimation_layers(self, cfg: CfgNode, dim_in: int):
         """
@@ -59,9 +56,7 @@ class DensePoseChartConfidencePredictorMixin:
         kernel_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.DECONV_KERNEL
         if self.confidence_model_cfg.uv_confidence.enabled:
             if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `sigma_2_lowres`.
-                self.sigma_2_lowres = ConvTranspose2d(
+                self.sigma_2_lowres = ConvTranspose2d(  # pyre-ignore[16]
                     dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
                 )
             elif (
@@ -71,14 +66,10 @@ class DensePoseChartConfidencePredictorMixin:
                 self.sigma_2_lowres = ConvTranspose2d(
                     dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
                 )
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `kappa_u_lowres`.
-                self.kappa_u_lowres = ConvTranspose2d(
+                self.kappa_u_lowres = ConvTranspose2d(  # pyre-ignore[16]
                     dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
                 )
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `kappa_v_lowres`.
-                self.kappa_v_lowres = ConvTranspose2d(
+                self.kappa_v_lowres = ConvTranspose2d(  # pyre-ignore[16]
                     dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
                 )
             else:
@@ -87,14 +78,10 @@ class DensePoseChartConfidencePredictorMixin:
                     f"{self.confidence_model_cfg.confidence_model_type}"
                 )
         if self.confidence_model_cfg.segm_confidence.enabled:
-            # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-            #  attribute `fine_segm_confidence_lowres`.
-            self.fine_segm_confidence_lowres = ConvTranspose2d(
+            self.fine_segm_confidence_lowres = ConvTranspose2d(  # pyre-ignore[16]
                 dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
             )
-            # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-            #  attribute `coarse_segm_confidence_lowres`.
-            self.coarse_segm_confidence_lowres = ConvTranspose2d(
+            self.coarse_segm_confidence_lowres = ConvTranspose2d(  # pyre-ignore[16]
                 dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
             )
 
@@ -111,8 +98,7 @@ class DensePoseChartConfidencePredictorMixin:
             see `decorate_predictor_output_class_with_confidences`
         """
         # assuming base class returns SIUV estimates in its first result
-        # pyre-fixme[16]: `object` has no attribute `forward`.
-        base_predictor_outputs = super().forward(head_outputs)
+        base_predictor_outputs = super().forward(head_outputs)  # pyre-ignore[16]
 
         # create output instance by extending base predictor outputs:
         output = self._create_output_instance(base_predictor_outputs)
@@ -120,23 +106,15 @@ class DensePoseChartConfidencePredictorMixin:
         if self.confidence_model_cfg.uv_confidence.enabled:
             if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
                 # assuming base class defines interp2d method for bilinear interpolation
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `interp2d`.
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `sigma_2_lowres`.
-                output.sigma_2 = self.interp2d(self.sigma_2_lowres(head_outputs))
+                output.sigma_2 = self.interp2d(self.sigma_2_lowres(head_outputs))  # pyre-ignore[16]
             elif (
                 self.confidence_model_cfg.uv_confidence.type
                 == DensePoseUVConfidenceType.INDEP_ANISO
             ):
                 # assuming base class defines interp2d method for bilinear interpolation
                 output.sigma_2 = self.interp2d(self.sigma_2_lowres(head_outputs))
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `kappa_u_lowres`.
-                output.kappa_u = self.interp2d(self.kappa_u_lowres(head_outputs))
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `kappa_v_lowres`.
-                output.kappa_v = self.interp2d(self.kappa_v_lowres(head_outputs))
+                output.kappa_u = self.interp2d(self.kappa_u_lowres(head_outputs))  # pyre-ignore[16]
+                output.kappa_v = self.interp2d(self.kappa_v_lowres(head_outputs))  # pyre-ignore[16]
             else:
                 raise ValueError(
                     f"Unknown confidence model type: "
@@ -146,18 +124,20 @@ class DensePoseChartConfidencePredictorMixin:
             # base predictor outputs are assumed to have `fine_segm` and `coarse_segm` attributes
             # base predictor is assumed to define `interp2d` method for bilinear interpolation
             output.fine_segm_confidence = (
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `fine_segm_confidence_lowres`.
-                F.softplus(self.interp2d(self.fine_segm_confidence_lowres(head_outputs)))
+                F.softplus(
+                    self.interp2d(self.fine_segm_confidence_lowres(head_outputs))  # pyre-ignore[16]
+                )
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
             output.fine_segm = base_predictor_outputs.fine_segm * torch.repeat_interleave(
                 output.fine_segm_confidence, base_predictor_outputs.fine_segm.shape[1], dim=1
             )
             output.coarse_segm_confidence = (
-                # pyre-fixme[16]: `DensePoseChartConfidencePredictorMixin` has no
-                #  attribute `coarse_segm_confidence_lowres`.
-                F.softplus(self.interp2d(self.coarse_segm_confidence_lowres(head_outputs)))
+                F.softplus(
+                    self.interp2d(
+                        self.coarse_segm_confidence_lowres(head_outputs)  # pyre-ignore[16]
+                    )
+                )
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
             output.coarse_segm = base_predictor_outputs.coarse_segm * torch.repeat_interleave(
@@ -178,9 +158,7 @@ class DensePoseChartConfidencePredictorMixin:
            An instance of outputs with confidences
         """
         PredictorOutput = decorate_predictor_output_class_with_confidences(
-            # pyre-fixme[6]: Expected `Hashable` for 1st param but got
-            #  `Type[typing.Any]`.
-            type(base_predictor_outputs)
+            type(base_predictor_outputs)  # pyre-ignore[6]
         )
         # base_predictor_outputs is assumed to be a dataclass
         # reassign all the fields from base_predictor_outputs (no deep copy!), add new fields
