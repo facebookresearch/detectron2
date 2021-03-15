@@ -53,11 +53,10 @@ class DensePoseCseLoss:
         packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
         if packed_annotations is None:
             return self.produce_fake_losses(densepose_predictor_outputs, embedder)
+        h, w = densepose_predictor_outputs.embedding.shape[2:]
         interpolator = BilinearInterpolationHelper.from_matches(
             packed_annotations,
-            # pyre-fixme[6]: Expected `Tuple[int, int]` for 2nd param but got
-            #  `Tuple[Any, ...]`.
-            tuple(densepose_predictor_outputs.embedding.shape[2:]),
+            (h, w),
         )
         meshid_to_embed_losses = self.embed_loss(
             proposals_with_gt,

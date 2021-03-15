@@ -106,8 +106,9 @@ class MaskLoss:
             )
         if (mask_loss_data.masks_gt is None) or (mask_loss_data.masks_est is None):
             return self.fake_value(densepose_predictor_outputs)
-        # pyre-fixme[16]: `Optional` has no attribute `long`.
-        return F.cross_entropy(mask_loss_data.masks_est, mask_loss_data.masks_gt.long())
+        return F.cross_entropy(
+            mask_loss_data.masks_est, mask_loss_data.masks_gt.long()  # pyre-ignore[16]
+        )
 
     def fake_value(self, densepose_predictor_outputs: Any) -> torch.Tensor:
         """

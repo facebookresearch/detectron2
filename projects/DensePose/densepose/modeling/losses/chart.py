@@ -105,23 +105,22 @@ class DensePoseChartLoss:
         if packed_annotations is None:
             return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
+        h, w = densepose_predictor_outputs.u.shape[2:]
         interpolator = BilinearInterpolationHelper.from_matches(
             packed_annotations,
-            # pyre-fixme[6]: Expected `Tuple[int, int]` for 2nd param but got
-            #  `Tuple[Any, ...]`.
-            tuple(densepose_predictor_outputs.u.shape[2:]),
+            (h, w),
         )
 
-        # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute `j_valid`.
-        j_valid_fg = interpolator.j_valid * (packed_annotations.fine_segm_labels_gt > 0)
+        j_valid_fg = interpolator.j_valid * (  # pyre-ignore[16]
+            packed_annotations.fine_segm_labels_gt > 0
+        )
 
         losses_uv = self.produce_densepose_losses_uv(
             proposals_with_gt,
             densepose_predictor_outputs,
             packed_annotations,
             interpolator,
-            # pyre-fixme[6]: Expected `Tensor` for 5th param but got `int`.
-            j_valid_fg,
+            j_valid_fg,  # pyre-ignore[6]
         )
 
         losses_segm = self.produce_densepose_losses_segm(
@@ -129,8 +128,7 @@ class DensePoseChartLoss:
             densepose_predictor_outputs,
             packed_annotations,
             interpolator,
-            # pyre-fixme[6]: Expected `Tensor` for 5th param but got `int`.
-            j_valid_fg,
+            j_valid_fg,  # pyre-ignore[6]
         )
 
         return {**losses_uv, **losses_segm}
@@ -270,23 +268,16 @@ class DensePoseChartLoss:
                  instance segmentation data is performed (`segm_trained_by_masks` is True),
                  this loss is handled by `produce_mask_losses` instead
         """
-        # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute `j_valid`.
-        fine_segm_gt = packed_annotations.fine_segm_labels_gt[interpolator.j_valid]
+        fine_segm_gt = packed_annotations.fine_segm_labels_gt[
+            interpolator.j_valid  # pyre-ignore[16]
+        ]
         fine_segm_est = interpolator.extract_at_points(
             densepose_predictor_outputs.fine_segm,
             slice_fine_segm=slice(None),
-            # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
-            #  `w_ylo_xlo`.
-            w_ylo_xlo=interpolator.w_ylo_xlo[:, None],
-            # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
-            #  `w_ylo_xhi`.
-            w_ylo_xhi=interpolator.w_ylo_xhi[:, None],
-            # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
-            #  `w_yhi_xlo`.
-            w_yhi_xlo=interpolator.w_yhi_xlo[:, None],
-            # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
-            #  `w_yhi_xhi`.
-            w_yhi_xhi=interpolator.w_yhi_xhi[:, None],
+            w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
+            w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
+            w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
+            w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
         )[interpolator.j_valid, :]
         return {
             "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long()) * self.w_part,

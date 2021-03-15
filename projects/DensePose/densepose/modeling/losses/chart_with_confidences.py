@@ -107,16 +107,13 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                         * self.w_points
                     )
                 }
-        else:
-            # pyre-fixme[7]: Expected `Dict[str, torch.Tensor]` but got implicit
-            #  return value of `None`.
-            return super().produce_densepose_losses_uv(
-                proposals_with_gt,
-                densepose_predictor_outputs,
-                packed_annotations,
-                interpolator,
-                j_valid_fg,
-            )
+        return super().produce_densepose_losses_uv(
+            proposals_with_gt,
+            densepose_predictor_outputs,
+            packed_annotations,
+            interpolator,
+            j_valid_fg,
+        )
 
 
 class IIDIsotropicGaussianUVLoss(nn.Module):
@@ -205,5 +202,4 @@ class IndepAnisotropicGaussianUVLoss(nn.Module):
         loss = 0.5 * (
             self.log2pi + torch.log(denom2) + delta_sqnorm / sigma2 - delta_r_sqnorm / denom2
         )
-        # pyre-fixme[16]: `float` has no attribute `sum`.
-        return loss.sum()
+        return loss.sum()  # pyre-ignore[16]
