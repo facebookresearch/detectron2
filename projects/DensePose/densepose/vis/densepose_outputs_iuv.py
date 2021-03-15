@@ -28,9 +28,9 @@ class DensePoseOutputsVisualizer(object):
         image_bgr: Image,
         dp_output_with_bboxes: Tuple[Optional[DensePoseChartPredictorOutput], Optional[Boxes]],
     ) -> Image:
-        if dp_output_with_bboxes[0] is None:
-            return image_bgr
         densepose_output, bboxes_xywh = dp_output_with_bboxes
+        if densepose_output is None or bboxes_xywh is None:
+            return image_bgr
 
         assert isinstance(
             densepose_output, DensePoseChartPredictorOutput
@@ -57,8 +57,6 @@ class DensePoseOutputsVisualizer(object):
             S.size(), V.size()
         )
         assert N == len(
-            # pyre-fixme[6]: Expected `Sized` for 1st param but got
-            #  `Optional[torch.Tensor]`.
             bboxes_xywh
         ), "number of bounding boxes {}" " should be equal to first dim size of outputs {}".format(
             len(bboxes_xywh), N
@@ -69,7 +67,6 @@ class DensePoseOutputsVisualizer(object):
             segmentation = In.cpu().numpy().astype(np.uint8)
             mask = np.zeros(segmentation.shape, dtype=np.uint8)
             mask[segmentation > 0] = 1
-            # pyre-fixme[16]: `Optional` has no attribute `__getitem__`.
             bbox_xywh = bboxes_xywh[n]
 
             if self.to_visualize == "I":

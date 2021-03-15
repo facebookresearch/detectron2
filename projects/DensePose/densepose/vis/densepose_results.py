@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import numpy as np
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 import cv2
 import torch
 
@@ -14,29 +14,33 @@ class DensePoseResultsVisualizer(object):
     def visualize(
         self,
         image_bgr: Image,
-        results_and_boxes_xywh: Tuple[Optional[DensePoseChartResult], Optional[Boxes]],
+        results_and_boxes_xywh: Tuple[Optional[List[DensePoseChartResult]], Optional[Boxes]],
     ) -> Image:
-        if results_and_boxes_xywh[0] is None:
-            return image_bgr
         densepose_result, boxes_xywh = results_and_boxes_xywh
-        # pyre-fixme[16]: `Optional` has no attribute `cpu`.
+        if densepose_result is None or boxes_xywh is None:
+            return image_bgr
+
         boxes_xywh = boxes_xywh.cpu().numpy()
-        # pyre-fixme[16]: `DensePoseResultsVisualizer` has no attribute
-        #  `create_visualization_context`.
         context = self.create_visualization_context(image_bgr)
-        # pyre-fixme[6]: Expected `Iterable[Variable[_T]]` for 1st param but got
-        #  `Optional[densepose.structures.chart_result.DensePoseChartResult]`.
         for i, result in enumerate(densepose_result):
             iuv_array = torch.cat(
                 (result.labels[None].type(torch.float32), result.uv * 255.0)
             ).type(torch.uint8)
-            # pyre-fixme[16]: `DensePoseResultsVisualizer` has no attribute
-            #  `visualize_iuv_arr`.
             self.visualize_iuv_arr(context, iuv_array.cpu().numpy(), boxes_xywh[i])
-        # pyre-fixme[16]: `DensePoseResultsVisualizer` has no attribute
-        #  `context_to_image_bgr`.
         image_bgr = self.context_to_image_bgr(context)
         return image_bgr
+
+    def create_visualization_context(self, image_bgr: Image):
+        return image_bgr
+
+    def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh) -> None:
+        pass
+
+    def context_to_image_bgr(self, context):
+        return context
+
+    def get_image_bgr_from_context(self, context):
+        return context
 
 
 class DensePoseMaskedColormapResultsVisualizer(DensePoseResultsVisualizer):
@@ -56,24 +60,16 @@ class DensePoseMaskedColormapResultsVisualizer(DensePoseResultsVisualizer):
         self.data_extractor = data_extractor
         self.segm_extractor = segm_extractor
 
-    def create_visualization_context(self, image_bgr: Image):
-        return image_bgr
-
     def context_to_image_bgr(self, context):
         return context
 
-    def get_image_bgr_from_context(self, context):
-        return context
-
-    # pyre-fixme[11]: Annotation `array` is not defined as a type.
-    def visualize_iuv_arr(self, context, iuv_arr: np.array, bbox_xywh):
+    def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh) -> None:
         image_bgr = self.get_image_bgr_from_context(context)
         matrix = self.data_extractor(iuv_arr)
         segm = self.segm_extractor(iuv_arr)
         mask = np.zeros(matrix.shape, dtype=np.uint8)
         mask[segm > 0] = 1
         image_bgr = self.mask_visualizer.visualize(image_bgr, mask, matrix, bbox_xywh)
-        return image_bgr
 
 
 def _extract_i_from_iuvarr(iuv_arr):
@@ -122,7 +118,7 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
         image_bgr = image_rgb[:, :, ::-1].copy()
         return image_bgr
 
-    def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh: Boxes) -> Image:
+    def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh: Boxes) -> None:
         import matplotlib.pyplot as plt
 
         u = _extract_u_from_iuvarr(iuv_arr).astype(float) / 255.0
@@ -134,7 +130,6 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
             bbox_xywh[1] + bbox_xywh[3],
         )
         plt.contour(u, self.levels, extent=extent, **self.plot_args)
-        # pyre-fixme[7]: Expected `ndarray` but got implicit return value of `None`.
         plt.contour(v, self.levels, extent=extent, **self.plot_args)
 
 
@@ -160,22 +155,12 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
             [int(v) for v in img_color_bgr.ravel()] for img_color_bgr in img_colors_bgr
         ]
 
-    def create_visualization_context(self, image_bgr: Image):
-        return image_bgr
-
-    def context_to_image_bgr(self, context):
-        return context
-
-    def get_image_bgr_from_context(self, context):
-        return context
-
-    def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh: Boxes) -> Image:
+    def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh: Boxes) -> None:
         image_bgr = self.get_image_bgr_from_context(context)
         segm = _extract_i_from_iuvarr(iuv_arr)
         u = _extract_u_from_iuvarr(iuv_arr).astype(float) / 255.0
         v = _extract_v_from_iuvarr(iuv_arr).astype(float) / 255.0
         self._contours(image_bgr, u, segm, bbox_xywh)
-        # pyre-fixme[7]: Expected `ndarray` but got implicit return value of `None`.
         self._contours(image_bgr, v, segm, bbox_xywh)
 
     def _contours(self, image_bgr, arr, segm, bbox_xywh):
@@ -322,8 +307,7 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
 try:
     import matplotlib
 
-    # pyre-fixme[16]: Module `matplotlib` has no attribute `use`.
-    matplotlib.use("Agg")
+    matplotlib.use("Agg")  # pyre-ignore[16]
     DensePoseResultsContourVisualizer = DensePoseResultsMplContourVisualizer
 except ModuleNotFoundError:
     logger = logging.getLogger(__name__)

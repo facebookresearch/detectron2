@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 import cv2
 import torch
 
@@ -11,9 +11,8 @@ from .base import Boxes, Image
 from .densepose_results import DensePoseResultsVisualizer
 
 
-def get_texture_atlas(path: Optional[str]) -> np.ndarray:
+def get_texture_atlas(path: Optional[str]) -> Optional[np.ndarray]:
     if path is None:
-        # pyre-fixme[7]: Expected `ndarray` but got `None`.
         return None
 
     return cv2.imread(PathManager.get_local_path(path), cv2.IMREAD_UNCHANGED)
@@ -31,21 +30,19 @@ class DensePoseResultsVisualizerWithTexture(DensePoseResultsVisualizer):
         self.body_part_size = texture_atlas.shape[0] // 6
         assert self.body_part_size == texture_atlas.shape[1] // 4
 
-    # pyre-fixme[14]: `visualize` overrides method defined in
-    #  `DensePoseResultsVisualizer` inconsistently.
     def visualize(
-        self, image_bgr: Image, results_and_boxes_xywh: Optional[Tuple[DensePoseChartResult, Boxes]]
+        self,
+        image_bgr: Image,
+        results_and_boxes_xywh: Tuple[Optional[List[DensePoseChartResult]], Optional[Boxes]],
     ) -> Image:
-        # pyre-fixme[16]: `Optional` has no attribute `__getitem__`.
-        if results_and_boxes_xywh[0] is None:
-            return image_bgr
-        # pyre-fixme[23]: Unable to unpack `Optional[Tuple[DensePoseChartResult,
-        #  Tensor]]` into 2 values.
         densepose_result, boxes_xywh = results_and_boxes_xywh
+        if densepose_result is None or boxes_xywh is None:
+            return image_bgr
+
         boxes_xywh = boxes_xywh.int().cpu().numpy()
         texture_image, alpha = self.get_texture()
         for i, result in enumerate(densepose_result):
-            iuv_array = torch.cat((result.labels[None], result.uv.clip(0, 1)))
+            iuv_array = torch.cat((result.labels[None], result.uv.clamp(0, 1)))
             x, y, w, h = boxes_xywh[i]
             bbox_image = image_bgr[y : y + h, x : x + w]
             image_bgr[y : y + h, x : x + w] = self.generate_image_with_texture(
