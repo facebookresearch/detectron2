@@ -3,7 +3,7 @@
 import logging
 import os
 from collections import OrderedDict
-from typing import List, Optional
+from typing import List, Optional, Union
 import torch
 from torch import nn
 
@@ -84,13 +84,16 @@ class Trainer(DefaultTrainer):
     # the model to the evaluator; that should be refactored to avoid unnecessary copy-pasting
     @classmethod
     def test(
-        cls, cfg: CfgNode, model: nn.Module, evaluators: Optional[List[DatasetEvaluator]] = None
+        cls,
+        cfg: CfgNode,
+        model: nn.Module,
+        evaluators: Optional[Union[DatasetEvaluator, List[DatasetEvaluator]]] = None,
     ):
         """
         Args:
             cfg (CfgNode):
             model (nn.Module):
-            evaluators (list[DatasetEvaluator] or None): if None, will call
+            evaluators (DatasetEvaluator, list[DatasetEvaluator] or None): if None, will call
                 :meth:`build_evaluator`. Otherwise, must have the same length as
                 ``cfg.DATASETS.TEST``.
 
