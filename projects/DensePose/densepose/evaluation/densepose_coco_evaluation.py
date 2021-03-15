@@ -131,9 +131,6 @@ class DensePoseCocoEval(object):
         self.embedder = embedder
         self._dpEvalMode = dpEvalMode
         self._dpDataMode = dpDataMode
-        # pyre-fixme[8]: Attribute has type `Params`; used as `Dict[Variable[_KT],
-        #  Variable[_VT]]`.
-        self.params = {}  # evaluation parameters
         self.evalImgs = defaultdict(list)  # per-image per-category eval results [KxAxI]
         self.eval = {}  # accumulated evaluation results
         self._gts = defaultdict(list)  # gt for evaluation
@@ -573,6 +570,7 @@ class DensePoseCocoEval(object):
             )
         else:
             raise Exception(f"No mask data in the detection: {dt}")
+        raise ValueError('The prediction dict needs to contain either "densepose" or "cse_mask"')
 
     def _extract_iuv(
         self, densepose_data: np.ndarray, py: np.ndarray, px: np.ndarray, gt: Dict[str, Any]
