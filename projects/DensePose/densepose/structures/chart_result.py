@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 import torch
 
 
@@ -45,18 +45,12 @@ class DensePoseChartResultWithConfidences:
 
     labels: torch.Tensor
     uv: torch.Tensor
-    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
-    sigma_1: torch.Tensor = None
-    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
-    sigma_2: torch.Tensor = None
-    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
-    kappa_u: torch.Tensor = None
-    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
-    kappa_v: torch.Tensor = None
-    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
-    fine_segm_confidence: torch.Tensor = None
-    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
-    coarse_segm_confidence: torch.Tensor = None
+    sigma_1: Optional[torch.Tensor] = None
+    sigma_2: Optional[torch.Tensor] = None
+    kappa_u: Optional[torch.Tensor] = None
+    kappa_v: Optional[torch.Tensor] = None
+    fine_segm_confidence: Optional[torch.Tensor] = None
+    coarse_segm_confidence: Optional[torch.Tensor] = None
 
     def to(self, device: torch.device):
         """
