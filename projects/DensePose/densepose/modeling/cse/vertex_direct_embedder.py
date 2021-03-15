@@ -47,9 +47,7 @@ class VertexDirectEmbedder(nn.Module):
         """
         return normalize_embeddings(self.embeddings)
 
-    # pyre-fixme[56]: Decorator `torch.no_grad(...)` could not be called, because
-    #  its type `no_grad` is not callable.
-    @torch.no_grad()
+    @torch.no_grad()  # pyre-ignore[56]
     def load(self, fpath: str):
         """
         Load data from a file
@@ -58,9 +56,7 @@ class VertexDirectEmbedder(nn.Module):
             fpath (str): file path to load data from
         """
         with PathManager.open(fpath, "rb") as hFile:
-            # pyre-fixme[6]: Expected `IO[bytes]` for 1st param but got
-            #  `Union[typing.IO[bytes], typing.IO[str]]`.
-            data = pickle.load(hFile)
+            data = pickle.load(hFile)  # pyre-ignore[6]
             for name in ["embeddings"]:
                 if name in data:
                     getattr(self, name).copy_(
