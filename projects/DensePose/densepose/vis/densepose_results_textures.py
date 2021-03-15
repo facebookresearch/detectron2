@@ -13,6 +13,7 @@ from .densepose_results import DensePoseResultsVisualizer
 
 def get_texture_atlas(path: Optional[str]) -> np.ndarray:
     if path is None:
+        # pyre-fixme[7]: Expected `ndarray` but got `None`.
         return None
 
     return cv2.imread(PathManager.get_local_path(path), cv2.IMREAD_UNCHANGED)
@@ -30,11 +31,16 @@ class DensePoseResultsVisualizerWithTexture(DensePoseResultsVisualizer):
         self.body_part_size = texture_atlas.shape[0] // 6
         assert self.body_part_size == texture_atlas.shape[1] // 4
 
+    # pyre-fixme[14]: `visualize` overrides method defined in
+    #  `DensePoseResultsVisualizer` inconsistently.
     def visualize(
         self, image_bgr: Image, results_and_boxes_xywh: Optional[Tuple[DensePoseChartResult, Boxes]]
     ) -> Image:
+        # pyre-fixme[16]: `Optional` has no attribute `__getitem__`.
         if results_and_boxes_xywh[0] is None:
             return image_bgr
+        # pyre-fixme[23]: Unable to unpack `Optional[Tuple[DensePoseChartResult,
+        #  Tensor]]` into 2 values.
         densepose_result, boxes_xywh = results_and_boxes_xywh
         boxes_xywh = boxes_xywh.int().cpu().numpy()
         texture_image, alpha = self.get_texture()

@@ -77,6 +77,8 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             # (here best = smallest variance)
             _, sorted_confidence_indices = torch.sort(values[2])
             if self.search_count_multiplier is not None:
+                # pyre-fixme[58]: `*` is not supported for operand types `int` and
+                #  `Optional[float]`.
                 search_count = min(int(count * self.search_count_multiplier), k)
             elif self.search_proportion is not None:
                 search_count = min(max(int(k * self.search_proportion), count), k)
@@ -105,4 +107,6 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             (dp_result, getattr(chart_result, self.confidence_channel)[None].cpu())
         )
 
+        # pyre-fixme[7]: Expected `Tuple[torch.Tensor]` but got `Tuple[torch.Tensor,
+        #  torch.Tensor]`.
         return labels, dp_result

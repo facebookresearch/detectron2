@@ -41,6 +41,8 @@ class ImageListDataset(Dataset):
         try:
             image = torch.from_numpy(np.ascontiguousarray(read_image(fpath, format="BGR")))
             if self.transform is not None:
+                # pyre-fixme[29]: `Optional[typing.Callable[[torch.Tensor],
+                #  torch.Tensor]]` is not a function.
                 image = self.transform(image.unsqueeze(0))[0]  # Transforms are done on batches
             return image
         except (OSError, RuntimeError) as e:

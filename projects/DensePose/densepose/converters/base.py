@@ -35,6 +35,7 @@ class BaseConverter:
 
     @classmethod
     def _do_register(cls, from_type: Type, converter: Any):
+        # pyre-fixme[16]: `BaseConverter` has no attribute `registry`.
         cls.registry[from_type] = converter
 
     @classmethod
@@ -50,6 +51,7 @@ class BaseConverter:
             callable or None - registered converter or None
                 if no suitable entry was found in the registry
         """
+        # pyre-fixme[16]: `BaseConverter` has no attribute `registry`.
         if from_type in cls.registry:
             return cls.registry[from_type]
         for base in from_type.__bases__:
@@ -75,6 +77,7 @@ class BaseConverter:
         instance_type = type(instance)
         converter = cls._lookup_converter(instance_type)
         if converter is None:
+            # pyre-fixme[16]: `BaseConverter` has no attribute `dst_type`.
             if cls.dst_type is None:
                 output_type_str = "itself"
             else:

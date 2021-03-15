@@ -147,6 +147,7 @@ def get_texture_atlases(json_str: Optional[str]) -> Dict[str, np.ndarray]:
     json_str is a JSON string representing a mesh_name -> texture_atlas_path dictionary
     """
     if json_str is None:
+        # pyre-fixme[7]: Expected `Dict[str, np.ndarray]` but got `None`.
         return None
 
     paths = json.loads(json_str)

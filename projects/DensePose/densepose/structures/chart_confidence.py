@@ -37,6 +37,10 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
 
     PredictorOutput = make_dataclass(
         BasePredictorOutput.__name__ + "WithConfidences",
+        # pyre-fixme[6]: Expected `Iterable[typing.Union[typing.Tuple[str,
+        #  typing.Type[typing.Any]], typing.Tuple[str, typing.Type[typing.Any],
+        #  dataclasses.Field[typing.Any]], str]]` for 2nd param but got
+        #  `Iterable[typing.Tuple[str, typing.Type[Optional[torch.Tensor]], None]]`.
         fields=[
             ("sigma_1", Optional[torch.Tensor], None),
             ("sigma_2", Optional[torch.Tensor], None),
@@ -77,6 +81,7 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
         Transfers all tensors to the given device
         """
         PredictorOutput = type(self)
+        # pyre-fixme[16]: `super` has no attribute `to`.
         base_predictor_output_to = super(PredictorOutput, self).to(device)
 
         def to_device_if_tensor(var: Any):

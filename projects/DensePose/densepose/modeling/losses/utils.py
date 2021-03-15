@@ -148,6 +148,7 @@ class BilinearInterpolationHelper:
             y_hi,
             x_lo,
             x_hi,
+            # pyre-fixme[6]: Expected `Tensor` for 7th param but got `float`.
             w_ylo_xlo,
             w_ylo_xhi,
             w_yhi_xlo,
@@ -351,6 +352,7 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             boxes_xywh_est, boxes_xywh_gt, instances_one_image.gt_densepose
         ):
             if (dp_gt is not None) and (len(dp_gt.x) > 0):
+                # pyre-fixme[6]: Expected `Tensor` for 1st param but got `float`.
                 self._do_accumulate(box_xywh_gt, box_xywh_est, dp_gt)
             self.nxt_bbox_index += 1
 

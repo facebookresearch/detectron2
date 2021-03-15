@@ -217,7 +217,9 @@ def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[os.P
         datasets_root: Optional[os.PathLike]
             Datasets root folder (default: None)
     """
+    # pyre-fixme[6]: Expected `_PathLike[typing.Any]` for 2nd param but got `str`.
     annotations_fpath = maybe_prepend_base_path(datasets_root, dataset_data.annotations_fpath)
+    # pyre-fixme[6]: Expected `_PathLike[typing.Any]` for 2nd param but got `str`.
     images_root = maybe_prepend_base_path(datasets_root, dataset_data.images_root)
 
     def load_annotations():
@@ -232,6 +234,8 @@ def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[os.P
         json_file=annotations_fpath,
         image_root=images_root,
         evaluator_type="lvis",
+        # pyre-fixme[6]: Expected `Optional[_PathLike[typing.Any]]` for 1st param
+        #  but got `str`.
         **get_metadata(DENSEPOSE_METADATA_URL_PREFIX),
     )
 

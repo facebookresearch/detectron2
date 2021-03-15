@@ -67,11 +67,13 @@ class EmbeddingLoss:
             dict(int -> tensor): losses for different mesh IDs
         """
         losses = {}
+        # pyre-fixme[16]: `Tensor` has no attribute `unique`.
         for mesh_id_tensor in packed_annotations.vertex_mesh_ids_gt.unique():
             mesh_id = mesh_id_tensor.item()
             mesh_name = MeshCatalog.get_mesh_name(mesh_id)
             # valid points are those that fall into estimated bbox
             # and correspond to the current mesh
+            # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute `j_valid`.
             j_valid = interpolator.j_valid * (packed_annotations.vertex_mesh_ids_gt == mesh_id)
             # extract estimated embeddings for valid points
             # -> tensor [J, D]
@@ -79,9 +81,17 @@ class EmbeddingLoss:
                 interpolator.extract_at_points(
                     densepose_predictor_outputs.embedding,
                     slice_fine_segm=slice(None),
+                    # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
+                    #  `w_ylo_xlo`.
                     w_ylo_xlo=interpolator.w_ylo_xlo[:, None],
+                    # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
+                    #  `w_ylo_xhi`.
                     w_ylo_xhi=interpolator.w_ylo_xhi[:, None],
+                    # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
+                    #  `w_yhi_xlo`.
                     w_yhi_xlo=interpolator.w_yhi_xlo[:, None],
+                    # pyre-fixme[16]: `BilinearInterpolationHelper` has no attribute
+                    #  `w_yhi_xhi`.
                     w_yhi_xhi=interpolator.w_yhi_xhi[:, None],
                 )[j_valid, :]
             )
@@ -98,6 +108,7 @@ class EmbeddingLoss:
             ) / (-self.embdist_gauss_sigma)
             losses[mesh_name] = F.cross_entropy(scores, vertex_indices_i, ignore_index=-1)
 
+        # pyre-fixme[16]: `Module` has no attribute `mesh_names`.
         for mesh_name in embedder.mesh_names:
             if mesh_name not in losses:
                 losses[mesh_name] = self.fake_value(
@@ -107,6 +118,7 @@ class EmbeddingLoss:
 
     def fake_values(self, densepose_predictor_outputs: Any, embedder: nn.Module):
         losses = {}
+        # pyre-fixme[16]: `Module` has no attribute `mesh_names`.
         for mesh_name in embedder.mesh_names:
             losses[mesh_name] = self.fake_value(densepose_predictor_outputs, embedder, mesh_name)
         return losses

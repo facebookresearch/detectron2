@@ -150,6 +150,8 @@ class SingleProcessFileTensorStorage(SingleProcessTensorStorage):
             file_h = open(local_fpath, mode)
         else:
             raise ValueError(f"Unsupported file mode {mode}, supported modes: rb, wb")
+        # pyre-fixme[6]: Expected `BinaryIO` for 2nd param but got
+        #  `Union[typing.IO[bytes], typing.IO[str]]`.
         super().__init__(data_schema, file_h)
 
 
@@ -189,6 +191,8 @@ class MultiProcessFileTensorStorage(MultiProcessTensorStorage):
             rank: SingleProcessFileTensorStorage(data_schema, fpath, mode)
             for rank, fpath in rank_to_fpath.items()
         }
+        # pyre-fixme[6]: Expected `Dict[int, SingleProcessTensorStorage]` for 1st
+        #  param but got `Dict[int, SingleProcessFileTensorStorage]`.
         super().__init__(rank_to_storage)
 
 
@@ -198,6 +202,8 @@ class MultiProcessRamTensorStorage(MultiProcessTensorStorage):
             rank: SingleProcessRamTensorStorage(data_schema, buf)
             for rank, buf in rank_to_buffer.items()
         }
+        # pyre-fixme[6]: Expected `Dict[int, SingleProcessTensorStorage]` for 1st
+        #  param but got `Dict[int, SingleProcessRamTensorStorage]`.
         super().__init__(rank_to_storage)
 
 
@@ -209,9 +215,14 @@ def _ram_storage_gather(
     # see detectron2/utils.comm.py
     data_list = gather(storage.storage_impl.read(), dst=dst_rank)
     if get_rank() != dst_rank:
+        # pyre-fixme[7]: Expected `MultiProcessRamTensorStorage` but got `None`.
         return None
     rank_to_buffer = {i: io.BytesIO(data_list[i]) for i in range(len(data_list))}
+    # pyre-fixme[9]: storage has type `SingleProcessRamTensorStorage`; used as
+    #  `MultiProcessRamTensorStorage`.
     storage = MultiProcessRamTensorStorage(storage.data_schema, rank_to_buffer)
+    # pyre-fixme[7]: Expected `MultiProcessRamTensorStorage` but got
+    #  `SingleProcessRamTensorStorage`.
     return storage
 
 
@@ -223,6 +234,7 @@ def _file_storage_gather(
     storage.storage_impl.close()
     fpath_list = gather(storage.fpath, dst=dst_rank)
     if get_rank() != dst_rank:
+        # pyre-fixme[7]: Expected `MultiProcessFileTensorStorage` but got `None`.
         return None
     rank_to_fpath = {i: fpath_list[i] for i in range(len(fpath_list))}
     return MultiProcessFileTensorStorage(storage.data_schema, rank_to_fpath, mode)

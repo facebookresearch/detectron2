@@ -57,7 +57,9 @@ class Mesh:
                     self.device = field.device
                     break
             if self.device is None and self._symmetry is not None:
+                # pyre-fixme[16]: `Optional` has no attribute `__iter__`.
                 for key in self._symmetry:
+                    # pyre-fixme[16]: `Optional` has no attribute `__getitem__`.
                     self.device = self._symmetry[key].device
                     break
             self.device = torch.device("cpu") if self.device is None else self.device
@@ -66,13 +68,19 @@ class Mesh:
         assert symmetry is None or all(
             self._symmetry[key].device == self.device for key in self._symmetry
         )
+        # pyre-fixme[6]: Expected `Sized` for 1st param but got
+        #  `Optional[torch.Tensor]`.
+        # pyre-fixme[6]: Expected `Sized` for 1st param but got
+        #  `Optional[torch.Tensor]`.
         assert texcoords is None or vertices is None or len(self._vertices) == len(self._texcoords)
 
     def to(self, device: torch.device):
         return Mesh(
+            # pyre-fixme[16]: `Optional` has no attribute `to`.
             self._vertices.to(device) if self._vertices is not None else None,
             self._faces.to(device) if self._faces is not None else None,
             self._geodists.to(device) if self._geodists is not None else None,
+            # pyre-fixme[16]: `Optional` has no attribute `items`.
             {key: value.to(device) for key, value in self._symmetry.items()}
             if self._symmetry is not None
             else None,
@@ -126,6 +134,8 @@ def load_mesh_data(
     mesh_fpath: str, field: str, device: Optional[torch.device] = None
 ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
     with PathManager.open(mesh_fpath, "rb") as hFile:
+        # pyre-fixme[6]: Expected `IO[bytes]` for 1st param but got
+        #  `Union[typing.IO[bytes], typing.IO[str]]`.
         return torch.as_tensor(pickle.load(hFile)[field], dtype=torch.float).to(device)
     return None
 
@@ -135,6 +145,8 @@ def load_mesh_auxiliary_data(
 ) -> Optional[torch.Tensor]:
     fpath_local = PathManager.get_local_path(fpath)
     with PathManager.open(fpath_local, "rb") as hFile:
+        # pyre-fixme[6]: Expected `IO[bytes]` for 1st param but got
+        #  `Union[typing.IO[bytes], typing.IO[str]]`.
         return torch.as_tensor(pickle.load(hFile), dtype=torch.float).to(device)
     return None
 
@@ -144,6 +156,8 @@ def load_mesh_symmetry(
     symmetry_fpath: str, device: Optional[torch.device] = None
 ) -> Optional[Dict[str, torch.Tensor]]:
     with PathManager.open(symmetry_fpath, "rb") as hFile:
+        # pyre-fixme[6]: Expected `IO[bytes]` for 1st param but got
+        #  `Union[typing.IO[bytes], typing.IO[str]]`.
         symmetry_loaded = pickle.load(hFile)
         symmetry = {
             "vertex_transforms": torch.as_tensor(
@@ -155,5 +169,6 @@ def load_mesh_symmetry(
 
 
 @lru_cache()
+# pyre-fixme[9]: device has type `device`; used as `None`.
 def create_mesh(mesh_name: str, device: torch.device = None):
     return Mesh(mesh_info=MeshCatalog[mesh_name], device=device)

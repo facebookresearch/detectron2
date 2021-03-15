@@ -84,4 +84,5 @@ def build_densepose_embedder(cfg: CfgNode) -> nn.Module:
     embedder = None
     if cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS:
         return Embedder(cfg)
+    # pyre-fixme[7]: Expected `Module` but got `None`.
     return embedder

@@ -13,6 +13,8 @@ class DensePoseDataFilter(object):
         self.iou_threshold = cfg.MODEL.ROI_DENSEPOSE_HEAD.FG_IOU_THRESHOLD
         self.keep_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
 
+    # pyre-fixme[56]: Decorator `torch.no_grad(...)` could not be called, because
+    #  its type `no_grad` is not callable.
     @torch.no_grad()
     def __call__(self, features: List[torch.Tensor], proposals_with_targets: List[Instances]):
         """
@@ -54,6 +56,8 @@ class DensePoseDataFilter(object):
             # apply match threshold for densepose head
             iou = matched_boxlist_iou(gt_boxes, est_boxes)
             iou_select = iou > self.iou_threshold
+            # pyre-fixme[6]: Expected `Union[int, slice, torch.BoolTensor]` for 1st
+            #  param but got `ByteTensor`.
             proposals_per_image = proposals_per_image[iou_select]
 
             N_gt_boxes = len(proposals_per_image.gt_boxes)
@@ -86,6 +90,8 @@ class DensePoseDataFilter(object):
             #     feature_mask[i] = 0
             #     continue
             if len(selected_indices) != N_gt_boxes:
+                # pyre-fixme[6]: Expected `Union[int, slice, torch.BoolTensor]` for
+                #  1st param but got `List[int]`.
                 proposals_per_image = proposals_per_image[selected_indices]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
             proposals_filtered.append(proposals_per_image)

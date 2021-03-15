@@ -131,6 +131,8 @@ class DensePoseCocoEval(object):
         self.embedder = embedder
         self._dpEvalMode = dpEvalMode
         self._dpDataMode = dpDataMode
+        # pyre-fixme[8]: Attribute has type `Params`; used as `Dict[Variable[_KT],
+        #  Variable[_VT]]`.
         self.params = {}  # evaluation parameters
         self.evalImgs = defaultdict(list)  # per-image per-category eval results [KxAxI]
         self.eval = {}  # accumulated evaluation results

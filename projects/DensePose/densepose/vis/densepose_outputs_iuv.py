@@ -57,6 +57,8 @@ class DensePoseOutputsVisualizer(object):
             S.size(), V.size()
         )
         assert N == len(
+            # pyre-fixme[6]: Expected `Sized` for 1st param but got
+            #  `Optional[torch.Tensor]`.
             bboxes_xywh
         ), "number of bounding boxes {}" " should be equal to first dim size of outputs {}".format(
             len(bboxes_xywh), N
@@ -67,6 +69,7 @@ class DensePoseOutputsVisualizer(object):
             segmentation = In.cpu().numpy().astype(np.uint8)
             mask = np.zeros(segmentation.shape, dtype=np.uint8)
             mask[segmentation > 0] = 1
+            # pyre-fixme[16]: `Optional` has no attribute `__getitem__`.
             bbox_xywh = bboxes_xywh[n]
 
             if self.to_visualize == "I":

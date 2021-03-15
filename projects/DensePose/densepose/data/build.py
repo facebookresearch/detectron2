@@ -602,6 +602,9 @@ def build_inference_based_loader(
     dataset = build_bootstrap_dataset(dataset_cfg.DATASET, dataset_cfg.IMAGE_LOADER)
     training_sampler = TrainingSampler(len(dataset))
     data_loader = torch.utils.data.DataLoader(
+        # pyre-fixme[6]: Expected
+        #  `Dataset[Variable[torch.utils.data.dataloader.T_co](covariant)]` for 1st
+        #  param but got `Sequence[torch.Tensor]`.
         dataset,
         batch_size=dataset_cfg.IMAGE_LOADER.BATCH_SIZE,
         sampler=training_sampler,
@@ -638,6 +641,8 @@ def build_inference_based_loaders(
         loader = build_inference_based_loader(cfg, dataset_cfg, model)
         loaders.append(loader)
         ratios.append(dataset_cfg.RATIO)
+    # pyre-fixme[7]: Expected `List[InferenceBasedLoader]` but got
+    #  `Tuple[List[typing.Any], List[typing.Any]]`.
     return loaders, ratios
 
 

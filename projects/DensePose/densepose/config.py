@@ -19,6 +19,7 @@ def add_dataset_category_config(cfg: CN):
 
 def add_evaluation_config(cfg: CN):
     _C = cfg
+    # pyre-fixme[16]: `CfgNode` has no attribute `DENSEPOSE_EVALUATION`.
     _C.DENSEPOSE_EVALUATION = CN()
     # evaluator type, possible values:
     #  - "iou": evaluator for models that produce iou data
@@ -43,7 +44,9 @@ def add_evaluation_config(cfg: CN):
 def add_bootstrap_config(cfg: CN):
     """"""
     _C = cfg
+    # pyre-fixme[16]: `CfgNode` has no attribute `BOOTSTRAP_DATASETS`.
     _C.BOOTSTRAP_DATASETS = []
+    # pyre-fixme[16]: `CfgNode` has no attribute `BOOTSTRAP_MODEL`.
     _C.BOOTSTRAP_MODEL = CN()
     _C.BOOTSTRAP_MODEL.WEIGHTS = ""
     _C.BOOTSTRAP_MODEL.DEVICE = "cuda"
@@ -51,24 +54,30 @@ def add_bootstrap_config(cfg: CN):
 
 def get_bootstrap_dataset_config() -> CN:
     _C = CN()
+    # pyre-fixme[16]: `CfgNode` has no attribute `DATASET`.
     _C.DATASET = ""
     # ratio used to mix data loaders
+    # pyre-fixme[16]: `CfgNode` has no attribute `RATIO`.
     _C.RATIO = 0.1
     # image loader
+    # pyre-fixme[16]: `CfgNode` has no attribute `IMAGE_LOADER`.
     _C.IMAGE_LOADER = CN(new_allowed=True)
     _C.IMAGE_LOADER.TYPE = ""
     _C.IMAGE_LOADER.BATCH_SIZE = 4
     _C.IMAGE_LOADER.NUM_WORKERS = 4
     # inference
+    # pyre-fixme[16]: `CfgNode` has no attribute `INFERENCE`.
     _C.INFERENCE = CN()
     # batch size for model inputs
     _C.INFERENCE.INPUT_BATCH_SIZE = 4
     # batch size to group model outputs
     _C.INFERENCE.OUTPUT_BATCH_SIZE = 2
     # sampled data
+    # pyre-fixme[16]: `CfgNode` has no attribute `DATA_SAMPLER`.
     _C.DATA_SAMPLER = CN(new_allowed=True)
     _C.DATA_SAMPLER.TYPE = ""
     # filter
+    # pyre-fixme[16]: `CfgNode` has no attribute `FILTER`.
     _C.FILTER = CN(new_allowed=True)
     _C.FILTER.TYPE = ""
     return _C
@@ -88,6 +97,7 @@ def load_bootstrap_config(cfg: CN):
         _C = get_bootstrap_dataset_config().clone()
         _C.merge_from_other_cfg(CN(dataset_cfg))
         bootstrap_datasets_cfgnodes.append(_C)
+    # pyre-fixme[16]: `CfgNode` has no attribute `BOOTSTRAP_DATASETS`.
     cfg.BOOTSTRAP_DATASETS = bootstrap_datasets_cfgnodes
 
 

@@ -24,6 +24,8 @@ def densepose_chart_predictor_output_hflip(
             if isinstance(field_value, torch.Tensor):
                 setattr(densepose_predictor_output, field.name, torch.flip(field_value, [3]))
 
+        # pyre-fixme[9]: densepose_predictor_output has type
+        #  `DensePoseChartPredictorOutput`; used as `None`.
         densepose_predictor_output = _flip_iuv_semantics_tensor(
             densepose_predictor_output, transform_data
         )
@@ -34,6 +36,8 @@ def densepose_chart_predictor_output_hflip(
         for field in fields(densepose_predictor_output):
             output_dict[field.name] = getattr(densepose_predictor_output, field.name)
 
+        # pyre-fixme[7]: Expected `DensePoseChartPredictorOutput` but got implicit
+        #  return value of `None`.
         return PredictorOutput(**output_dict)
 
 
@@ -57,6 +61,7 @@ def _flip_iuv_semantics_tensor(
         densepose_predictor_output.__dict__[el] = densepose_predictor_output.__dict__[el][
             :, point_label_symmetries, :, :
         ]
+    # pyre-fixme[7]: Expected `None` but got `DensePoseChartPredictorOutput`.
     return densepose_predictor_output
 
 

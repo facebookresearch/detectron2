@@ -103,11 +103,20 @@ class FieldEntrySelector(EntrySelector):
                 if self._is_range_spec(field_value_or_range):
                     vmin, vmax = self._get_range_spec(field_value_or_range)
                     predicate = FieldEntrySelector._FieldEntryRangePredicate(
-                        field_name, field_type, vmin, vmax
+                        field_name,
+                        # pyre-fixme[6]: Expected `str` for 2nd param but got
+                        #  `Optional[str]`.
+                        field_type,
+                        vmin,
+                        vmax,
                     )
                 else:
                     predicate = FieldEntrySelector._FieldEntryValuePredicate(
-                        field_name, field_type, field_value_or_range
+                        field_name,
+                        # pyre-fixme[6]: Expected `str` for 2nd param but got
+                        #  `Optional[str]`.
+                        field_type,
+                        field_value_or_range,
                     )
                 predicates.append(predicate)
             elif eq_idx == 0:

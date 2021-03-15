@@ -58,6 +58,7 @@ def create_embedder(embedder_spec: CfgNode, embedder_dim: int) -> nn.Module:
         raise ValueError(f"Unexpected embedder type {embedder_type}")
 
     if not embedder_spec.IS_TRAINABLE:
+        # pyre-fixme[16]: `VertexDirectEmbedder` has no attribute `requires_grad_`.
         embedder.requires_grad_(False)
 
     return embedder
@@ -85,6 +86,7 @@ class Embedder(nn.Module):
         logger = logging.getLogger(__name__)
         for mesh_name, embedder_spec in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
             logger.info(f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}")
+            # pyre-fixme[16]: `Embedder` has no attribute `add_module`.
             self.add_module(f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim))
             self.mesh_names.add(mesh_name)
         if cfg.MODEL.WEIGHTS != "":
@@ -96,6 +98,8 @@ class Embedder(nn.Module):
         state_dict = None
         if fpath.endswith(".pkl"):
             with PathManager.open(fpath, "rb") as hFile:
+                # pyre-fixme[6]: Expected `IO[bytes]` for 1st param but got
+                #  `Union[typing.IO[bytes], typing.IO[str]]`.
                 state_dict = pickle.load(hFile, encoding="latin1")
         else:
             with PathManager.open(fpath, "rb") as hFile:
@@ -109,6 +113,7 @@ class Embedder(nn.Module):
                         v_key = torch.from_numpy(v_key)
                     state_dict_local[key[len(prefix) :]] = v_key
             # non-strict loading to finetune on different meshes
+            # pyre-fixme[28]: Unexpected keyword argument `strict`.
             self.load_state_dict(state_dict_local, strict=False)
 
     def forward(self, mesh_name: str) -> torch.Tensor:

@@ -110,7 +110,10 @@ def predictor_output_with_fine_and_coarse_segm_to_mask(
     N = len(boxes_xywh_abs)
     masks = torch.zeros((N, H, W), dtype=torch.bool, device=boxes.tensor.device)
     for i, box_xywh in enumerate(boxes_xywh_abs):
+        # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 2nd param but got
+        #  `float`.
         labels_i = resample_fine_and_coarse_segm_to_bbox(predictor_output[i], box_xywh)
+        # pyre-fixme[16]: `float` has no attribute `long`.
         x, y, w, h = box_xywh.long().tolist()
         masks[i, y : y + h, x : x + w] = labels_i > 0
     return BitMasks(masks)

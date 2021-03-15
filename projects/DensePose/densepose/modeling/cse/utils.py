@@ -31,4 +31,5 @@ def normalize_embeddings(embeddings: torch.Tensor, epsilon: float = 1e-6) -> tor
     Return:
         Normalized embeddings (tensor [N, D]), such that L2 vector norms are all equal to 1.
     """
+    # pyre-fixme[6]: Expected `Union[float, int, str]` for 1st param but got `None`.
     return embeddings / torch.clamp(embeddings.norm(p=None, dim=1, keepdim=True), min=epsilon)

@@ -24,9 +24,13 @@ def _grouper(iterable: Iterable[Any], n: int, fillvalue=None) -> Iterator[Tuple[
             except StopIteration:
                 if values:
                     values.extend([fillvalue] * (n - len(values)))
+                    # pyre-fixme[7]: Expected `Iterator[Tuple[typing.Any]]` but got
+                    #  `Generator[typing.Tuple[typing.Any, ...], None, None]`.
                     yield tuple(values)
                 return
             values.append(value)
+        # pyre-fixme[7]: Expected `Iterator[Tuple[typing.Any]]` but got
+        #  `Generator[typing.Tuple[typing.Any, ...], None, None]`.
         yield tuple(values)
 
 
@@ -121,6 +125,7 @@ class InferenceBasedLoader:
         data_batches: List[SampledData] = []
         batched_images = _grouper(images, self.inference_batch_size)
         for batch in batched_images:
+            # pyre-fixme[16]: `Module` has no attribute `device`.
             batch = [{"image": img.to(self.model.device)} for img in batch if img is not None]
             if not batch:
                 continue
@@ -129,11 +134,17 @@ class InferenceBasedLoader:
             for model_output_i, batch_i in zip(model_output, batch):
                 model_output_i["image"] = batch_i["image"]
             model_output_filtered = (
-                model_output if self.data_filter is None else self.data_filter(model_output)
+                model_output
+                if self.data_filter is None
+                # pyre-fixme[29]: `Optional[typing.Callable[[typing.Any],
+                #  typing.Any]]` is not a function.
+                else self.data_filter(model_output)
             )
             data = (
                 model_output_filtered
                 if self.data_sampler is None
+                # pyre-fixme[29]: `Optional[typing.Callable[[typing.Any],
+                #  List[typing.Any]]]` is not a function.
                 else self.data_sampler(model_output_filtered)
             )
             for data_i in data:

@@ -45,11 +45,17 @@ class DensePoseChartResultWithConfidences:
 
     labels: torch.Tensor
     uv: torch.Tensor
+    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
     sigma_1: torch.Tensor = None
+    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
     sigma_2: torch.Tensor = None
+    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
     kappa_u: torch.Tensor = None
+    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
     kappa_v: torch.Tensor = None
+    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
     fine_segm_confidence: torch.Tensor = None
+    # pyre-fixme[8]: Attribute has type `Tensor`; used as `None`.
     coarse_segm_confidence: torch.Tensor = None
 
     def to(self, device: torch.device):

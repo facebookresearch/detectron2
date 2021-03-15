@@ -16,8 +16,11 @@ def register_dataset(datasets_root: Optional[os.PathLike] = None):
         pass
 
     video_list_fpath = maybe_prepend_base_path(
-        datasets_root, "chimpnsee/cdna.eva.mpg.de/video_list.txt"
+        datasets_root,
+        # pyre-fixme[6]: Expected `_PathLike[typing.Any]` for 2nd param but got `str`.
+        "chimpnsee/cdna.eva.mpg.de/video_list.txt",
     )
+    # pyre-fixme[6]: Expected `_PathLike[typing.Any]` for 2nd param but got `str`.
     video_base_path = maybe_prepend_base_path(datasets_root, "chimpnsee/cdna.eva.mpg.de")
 
     DatasetCatalog.register(CHIMPNSEE_DATASET_NAME, empty_load_callback)
