@@ -54,7 +54,7 @@ class FieldEntrySelector(EntrySelector):
         Predicate that checks strict equality for the specified entry field
         """
 
-        def __init__(self, name: str, typespec: str, value: str):
+        def __init__(self, name: str, typespec: Optional[str], value: str):
             import builtins
 
             self.name = name
@@ -69,7 +69,7 @@ class FieldEntrySelector(EntrySelector):
         Predicate that checks whether an entry field falls into the specified range
         """
 
-        def __init__(self, name: str, typespec: str, vmin: str, vmax: str):
+        def __init__(self, name: str, typespec: Optional[str], vmin: str, vmax: str):
             import builtins
 
             self.name = name
@@ -103,20 +103,11 @@ class FieldEntrySelector(EntrySelector):
                 if self._is_range_spec(field_value_or_range):
                     vmin, vmax = self._get_range_spec(field_value_or_range)
                     predicate = FieldEntrySelector._FieldEntryRangePredicate(
-                        field_name,
-                        # pyre-fixme[6]: Expected `str` for 2nd param but got
-                        #  `Optional[str]`.
-                        field_type,
-                        vmin,
-                        vmax,
+                        field_name, field_type, vmin, vmax
                     )
                 else:
                     predicate = FieldEntrySelector._FieldEntryValuePredicate(
-                        field_name,
-                        # pyre-fixme[6]: Expected `str` for 2nd param but got
-                        #  `Optional[str]`.
-                        field_type,
-                        field_value_or_range,
+                        field_name, field_type, field_value_or_range
                     )
                 predicates.append(predicate)
             elif eq_idx == 0:
