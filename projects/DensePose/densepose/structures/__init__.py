@@ -10,3 +10,7 @@ from .chart_result import (
     decompress_compressed_densepose_chart_result,
 )
 from .cse import DensePoseEmbeddingPredictorOutput
+from .data_relative import DensePoseDataRelative
+from .list import DensePoseList
+from .mesh import Mesh, create_mesh
+from .transform_data import DensePoseTransformData, normalized_coords_transform

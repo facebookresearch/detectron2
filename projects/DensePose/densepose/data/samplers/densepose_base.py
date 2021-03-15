@@ -7,8 +7,7 @@ from torch.nn import functional as F
 from detectron2.structures import BoxMode, Instances
 
 from densepose.converters import ToChartResultConverter
-
-from ..structures import DensePoseDataRelative, DensePoseList
+from densepose.structures import DensePoseDataRelative, DensePoseList
 
 
 class DensePoseBaseSampler:

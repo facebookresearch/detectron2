@@ -3,7 +3,8 @@ import numpy as np
 from typing import Iterable, Optional, Tuple
 import cv2
 
-from ..data.structures import DensePoseDataRelative
+from densepose.structures import DensePoseDataRelative
+
 from .base import Boxes, Image, MatrixVisualizer, PointsVisualizer
 
 

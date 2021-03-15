@@ -2,7 +2,7 @@
 
 import unittest
 
-from densepose.data.structures import normalized_coords_transform
+from densepose.structures import normalized_coords_transform
 
 
 class TestStructures(unittest.TestCase):

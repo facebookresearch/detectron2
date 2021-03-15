@@ -13,7 +13,7 @@ from detectron2.data.catalog import DatasetCatalog
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
-from densepose.data.structures import DensePoseDataRelative
+from densepose.structures import DensePoseDataRelative
 from densepose.utils.dbhelper import EntrySelector
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer

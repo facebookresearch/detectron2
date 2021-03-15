@@ -2,8 +2,7 @@
 from dataclasses import fields
 import torch
 
-from ..data.structures import DensePoseTransformData
-from ..structures import DensePoseChartPredictorOutput
+from densepose.structures import DensePoseChartPredictorOutput, DensePoseTransformData
 
 
 def densepose_chart_predictor_output_hflip(

@@ -30,8 +30,8 @@ from densepose.converters.segm_to_mask import (
     resample_coarse_segm_tensor_to_bbox,
     resample_fine_and_coarse_segm_tensors_to_bbox,
 )
-from densepose.data.structures import DensePoseDataRelative
 from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
+from densepose.structures import DensePoseDataRelative
 from densepose.structures.mesh import create_mesh
 
 logger = logging.getLogger(__name__)

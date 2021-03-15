@@ -13,7 +13,7 @@ from detectron2.layers import ROIAlign
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
 
-from .structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
+from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
 
 
 def build_augmentation(cfg, is_train):

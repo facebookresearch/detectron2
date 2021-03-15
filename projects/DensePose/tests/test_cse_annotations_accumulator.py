@@ -5,8 +5,8 @@ import torch
 
 from detectron2.structures import Boxes, BoxMode, Instances
 
-from densepose.data.structures import DensePoseDataRelative, DensePoseList
 from densepose.modeling.losses.embed_utils import CseAnnotationsAccumulator
+from densepose.structures import DensePoseDataRelative, DensePoseList
 
 
 class TestCseAnnotationsAccumulator(unittest.TestCase):
