@@ -32,8 +32,7 @@ class DensePoseDeepLabHead(nn.Module):
         n_channels = input_channels
 
         self.ASPP = ASPP(input_channels, [6, 12, 56], n_channels)  # 6, 12, 56
-        # pyre-fixme[16]: `DensePoseDeepLabHead` has no attribute `add_module`.
-        self.add_module("ASPP", self.ASPP)
+        self.add_module("ASPP", self.ASPP)  # pyre-ignore[16]
 
         if self.use_nonlocal:
             self.NLBlock = NONLocalBlock2D(input_channels, bn_layer=True)
@@ -79,8 +78,7 @@ class DensePoseDeepLabHead(nn.Module):
 # Copied from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/segmentation/deeplabv3.py
 # See https://arxiv.org/pdf/1706.05587.pdf for details
-# pyre-fixme[11]: Annotation `Sequential` is not defined as a type.
-class ASPPConv(nn.Sequential):
+class ASPPConv(nn.Sequential):  # pyre-ignore[11]
     def __init__(self, in_channels, out_channels, dilation):
         modules = [
             nn.Conv2d(
