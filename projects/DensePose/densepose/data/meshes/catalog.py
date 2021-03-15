@@ -52,8 +52,6 @@ MeshCatalog = _MeshCatalog()
 def register_mesh(mesh_info: MeshInfo, base_path: Optional[str]):
     MeshCatalog[mesh_info.name] = MeshInfo(
         name=mesh_info.name,
-        # pyre-fixme[6]: Expected `Optional[_PathLike[typing.Any]]` for 1st param
-        #  but got `Optional[str]`.
         data=maybe_prepend_base_path(base_path, mesh_info.data),
         geodists=(
             # pyre-fixme[6]: Expected `Optional[_PathLike[typing.Any]]` for 1st

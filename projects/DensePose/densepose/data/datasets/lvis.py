@@ -207,19 +207,17 @@ def load_lvis_json(annotations_json_file: str, image_root: str, dataset_name: st
     return dataset_records
 
 
-def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[os.PathLike] = None):
+def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str] = None):
     """
     Registers provided LVIS DensePose dataset
 
     Args:
         dataset_data: CocoDatasetInfo
             Dataset data
-        datasets_root: Optional[os.PathLike]
+        datasets_root: Optional[str]
             Datasets root folder (default: None)
     """
-    # pyre-fixme[6]: Expected `_PathLike[typing.Any]` for 2nd param but got `str`.
     annotations_fpath = maybe_prepend_base_path(datasets_root, dataset_data.annotations_fpath)
-    # pyre-fixme[6]: Expected `_PathLike[typing.Any]` for 2nd param but got `str`.
     images_root = maybe_prepend_base_path(datasets_root, dataset_data.images_root)
 
     def load_annotations():
@@ -234,14 +232,12 @@ def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[os.P
         json_file=annotations_fpath,
         image_root=images_root,
         evaluator_type="lvis",
-        # pyre-fixme[6]: Expected `Optional[_PathLike[typing.Any]]` for 1st param
-        #  but got `str`.
         **get_metadata(DENSEPOSE_METADATA_URL_PREFIX),
     )
 
 
 def register_datasets(
-    datasets_data: Iterable[CocoDatasetInfo], datasets_root: Optional[os.PathLike] = None
+    datasets_data: Iterable[CocoDatasetInfo], datasets_root: Optional[str] = None
 ):
     """
     Registers provided LVIS DensePose datasets
@@ -249,7 +245,7 @@ def register_datasets(
     Args:
         datasets_data: Iterable[CocoDatasetInfo]
             An iterable of dataset datas
-        datasets_root: Optional[os.PathLike]
+        datasets_root: Optional[str]
             Datasets root folder (default: None)
     """
     for dataset_data in datasets_data:
