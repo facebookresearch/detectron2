@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Dict, Tuple
+from typing import Dict
 import torch
 from torch.nn import functional as F
 
-from detectron2.structures import Boxes, BoxMode
+from detectron2.structures.boxes import Boxes, BoxMode
 
 from ..structures import (
     DensePoseChartPredictorOutput,
@@ -12,13 +12,14 @@ from ..structures import (
     DensePoseChartResultWithConfidences,
 )
 from . import resample_fine_and_coarse_segm_to_bbox
+from .base import IntTupleBox, make_int_box
 
 
 def resample_uv_tensors_to_bbox(
     u: torch.Tensor,
     v: torch.Tensor,
     labels: torch.Tensor,
-    box_xywh_abs: Tuple[int, int, int, int],
+    box_xywh_abs: IntTupleBox,
 ) -> torch.Tensor:
     """
     Resamples U and V coordinate estimates for the given bounding box
@@ -47,7 +48,7 @@ def resample_uv_tensors_to_bbox(
 def resample_uv_to_bbox(
     predictor_output: DensePoseChartPredictorOutput,
     labels: torch.Tensor,
-    box_xywh_abs: Tuple[int, int, int, int],
+    box_xywh_abs: IntTupleBox,
 ) -> torch.Tensor:
     """
     Resamples U and V coordinate estimates for the given bounding box
@@ -90,13 +91,9 @@ def densepose_chart_predictor_output_to_result(
 
     boxes_xyxy_abs = boxes.tensor.clone()
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
-    box_xywh = tuple(boxes_xywh_abs[0].long().tolist())
+    box_xywh = make_int_box(boxes_xywh_abs[0])
 
-    # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 2nd param but got
-    #  `Tuple[Any, ...]`.
     labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)
-    # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 3rd param but got
-    #  `Tuple[Any, ...]`.
     uv = resample_uv_to_bbox(predictor_output, labels, box_xywh)
     return DensePoseChartResult(labels=labels, uv=uv)
 
@@ -104,7 +101,7 @@ def densepose_chart_predictor_output_to_result(
 def resample_confidences_to_bbox(
     predictor_output: DensePoseChartPredictorOutput,
     labels: torch.Tensor,
-    box_xywh_abs: Tuple[int, int, int, int],
+    box_xywh_abs: IntTupleBox,
 ) -> Dict[str, torch.Tensor]:
     """
     Resamples confidences for the given bounding box
@@ -156,8 +153,7 @@ def resample_confidences_to_bbox(
 
         confidence_results[key] = result
 
-    # pyre-fixme[7]: Expected `Dict[str, torch.Tensor]` but got `Dict[str, None]`.
-    return confidence_results
+    return confidence_results  # pyre-ignore[7]
 
 
 def densepose_chart_predictor_output_to_result_with_confidences(
@@ -181,15 +177,9 @@ def densepose_chart_predictor_output_to_result_with_confidences(
 
     boxes_xyxy_abs = boxes.tensor.clone()
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
-    box_xywh = tuple(boxes_xywh_abs[0].long().tolist())
+    box_xywh = make_int_box(boxes_xywh_abs[0])
 
-    # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 2nd param but got
-    #  `Tuple[Any, ...]`.
     labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)
-    # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 3rd param but got
-    #  `Tuple[Any, ...]`.
     uv = resample_uv_to_bbox(predictor_output, labels, box_xywh)
-    # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 3rd param but got
-    #  `Tuple[Any, ...]`.
     confidences = resample_confidences_to_bbox(predictor_output, labels, box_xywh)
     return DensePoseChartResultWithConfidences(labels=labels, uv=uv, **confidences)

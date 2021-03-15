@@ -1,17 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, Tuple
+from typing import Any
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures import BitMasks, Boxes, BoxMode
 
+from .base import IntTupleBox, make_int_box
 from .to_mask import ImageSizeType
 
 
-def resample_coarse_segm_tensor_to_bbox(
-    coarse_segm: torch.Tensor, box_xywh_abs: Tuple[int, int, int, int]
-):
+def resample_coarse_segm_tensor_to_bbox(coarse_segm: torch.Tensor, box_xywh_abs: IntTupleBox):
     """
     Resample coarse segmentation tensor to the given
     bounding box and derive labels for each pixel of the bounding box
@@ -31,7 +30,7 @@ def resample_coarse_segm_tensor_to_bbox(
 
 
 def resample_fine_and_coarse_segm_tensors_to_bbox(
-    fine_segm: torch.Tensor, coarse_segm: torch.Tensor, box_xywh_abs: Tuple[int, int, int, int]
+    fine_segm: torch.Tensor, coarse_segm: torch.Tensor, box_xywh_abs: IntTupleBox
 ):
     """
     Resample fine and coarse segmentation tensors to the given
@@ -60,9 +59,7 @@ def resample_fine_and_coarse_segm_tensors_to_bbox(
     return labels
 
 
-def resample_fine_and_coarse_segm_to_bbox(
-    predictor_output: Any, box_xywh_abs: Tuple[int, int, int, int]
-):
+def resample_fine_and_coarse_segm_to_bbox(predictor_output: Any, box_xywh_abs: IntTupleBox):
     """
     Resample fine and coarse segmentation outputs from a predictor to the given
     bounding box and derive labels for each pixel of the bounding box
@@ -109,11 +106,9 @@ def predictor_output_with_fine_and_coarse_segm_to_mask(
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
     N = len(boxes_xywh_abs)
     masks = torch.zeros((N, H, W), dtype=torch.bool, device=boxes.tensor.device)
-    for i, box_xywh in enumerate(boxes_xywh_abs):
-        # pyre-fixme[6]: Expected `Tuple[int, int, int, int]` for 2nd param but got
-        #  `float`.
+    for i in range(len(boxes_xywh_abs)):
+        box_xywh = make_int_box(boxes_xywh_abs[i])
         labels_i = resample_fine_and_coarse_segm_to_bbox(predictor_output[i], box_xywh)
-        # pyre-fixme[16]: `float` has no attribute `long`.
-        x, y, w, h = box_xywh.long().tolist()
+        x, y, w, h = box_xywh
         masks[i, y : y + h, x : x + w] = labels_i > 0
     return BitMasks(masks)

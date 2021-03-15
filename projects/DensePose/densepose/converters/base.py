@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, Type
+from typing import Any, Tuple, Type
+import torch
 
 
 class BaseConverter:
@@ -35,8 +36,7 @@ class BaseConverter:
 
     @classmethod
     def _do_register(cls, from_type: Type, converter: Any):
-        # pyre-fixme[16]: `BaseConverter` has no attribute `registry`.
-        cls.registry[from_type] = converter
+        cls.registry[from_type] = converter  # pyre-ignore[16]
 
     @classmethod
     def _lookup_converter(cls, from_type: Type) -> Any:
@@ -51,8 +51,7 @@ class BaseConverter:
             callable or None - registered converter or None
                 if no suitable entry was found in the registry
         """
-        # pyre-fixme[16]: `BaseConverter` has no attribute `registry`.
-        if from_type in cls.registry:
+        if from_type in cls.registry:  # pyre-ignore[16]
             return cls.registry[from_type]
         for base in from_type.__bases__:
             converter = cls._lookup_converter(base)
@@ -77,10 +76,18 @@ class BaseConverter:
         instance_type = type(instance)
         converter = cls._lookup_converter(instance_type)
         if converter is None:
-            # pyre-fixme[16]: `BaseConverter` has no attribute `dst_type`.
-            if cls.dst_type is None:
+            if cls.dst_type is None:  # pyre-ignore[16]
                 output_type_str = "itself"
             else:
                 output_type_str = cls.dst_type
             raise KeyError(f"Could not find converter from {instance_type} to {output_type_str}")
         return converter(instance, *args, **kwargs)
+
+
+IntTupleBox = Tuple[int, int, int, int]
+
+
+def make_int_box(box: torch.Tensor) -> IntTupleBox:
+    int_box = [0, 0, 0, 0]
+    int_box[0], int_box[1], int_box[2], int_box[3] = tuple(box.long().tolist())
+    return int_box[0], int_box[1], int_box[2], int_box[3]
