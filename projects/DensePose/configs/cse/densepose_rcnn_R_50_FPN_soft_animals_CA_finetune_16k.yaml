@@ -124,16 +124,6 @@ DATASETS:
       - 76   # bear
       - 225  # cat
       - 378  # dog
-  CLASS_TO_MESH_NAME_MAPPING:
-    "0": "bear_4936"
-    "1": "cow_5002"
-    "2": "cat_7466"
-    "3": "dog_7466"
-    "4": "elephant_5002"
-    "5": "giraffe_5002"
-    "6": "horse_5004"
-    "7": "sheep_5004"
-    "8": "zebra_5002"
   CATEGORY_MAPS:
     "densepose_lvis_v1_train1":
       "1202": 943 # zebra -> sheep
