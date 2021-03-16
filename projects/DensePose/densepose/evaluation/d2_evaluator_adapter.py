@@ -9,6 +9,12 @@ from densepose.data.datasets.coco import (
 )
 
 
+def _maybe_add_iscrowd_annotations(cocoapi):
+    for ann in cocoapi.dataset["annotations"]:
+        if "iscrowd" not in ann:
+            ann["iscrowd"] = 0
+
+
 class Detectron2COCOEvaluatorAdapter(COCOEvaluator):
     def __init__(
         self,
@@ -17,6 +23,7 @@ class Detectron2COCOEvaluatorAdapter(COCOEvaluator):
     ):
         super().__init__(dataset_name, output_dir=output_dir)
         maybe_filter_categories_cocoapi(dataset_name, self._coco_api)
+        _maybe_add_iscrowd_annotations(self._coco_api)
         # substitute category metadata to account for categories
         # that are mapped to the same contiguous id
         if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
