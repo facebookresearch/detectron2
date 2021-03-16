@@ -382,6 +382,9 @@ def combine_detection_dataset_dicts(
     # cat_id -> [(orig_cat_id, cat_name, dataset_name)]
     merged_categories = _merge_categories(dataset_names)
     _warn_if_merged_different_categories(merged_categories)
+    merged_category_names = [
+        merged_categories[cat_id][0].mapped_name for cat_id in sorted(merged_categories)
+    ]
     # map to contiguous category IDs
     _add_category_id_to_contiguous_id_maps_to_metadata(merged_categories)
     # load annotations and dataset metadata
@@ -391,9 +394,7 @@ def combine_detection_dataset_dicts(
         if proposal_file is not None:
             dataset_dicts = load_proposals_into_dataset(dataset_dicts, proposal_file)
         dataset_dicts = _maybe_filter_and_map_categories(dataset_name, dataset_dicts)
-        print_instances_class_histogram(
-            dataset_dicts, MetadataCatalog.get(dataset_name).thing_classes
-        )
+        print_instances_class_histogram(dataset_dicts, merged_category_names)
         dataset_name_to_dicts[dataset_name] = dataset_dicts
 
     if keep_instance_predicate is not None:
