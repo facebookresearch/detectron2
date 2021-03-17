@@ -13,7 +13,7 @@ from detectron2.structures import BoxMode
 from detectron2.utils.comm import get_world_size
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.file_io import PathManager
-from detectron2.utils.logger import log_first_n
+from detectron2.utils.logger import _log_api_usage, log_first_n
 
 from .catalog import DatasetCatalog, MetadataCatalog
 from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
@@ -313,6 +313,7 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
             else 0,
             proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
         )
+        _log_api_usage("dataset." + cfg.DATASETS.TRAIN[0])
 
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
