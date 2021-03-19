@@ -131,7 +131,12 @@ def load_lvis_json(json_file, image_root, dataset_name=None):
             # This fails only when the data parsing logic or the annotation file is buggy.
             assert anno["image_id"] == image_id
             obj = {"bbox": anno["bbox"], "bbox_mode": BoxMode.XYWH_ABS}
-            obj["category_id"] = anno["category_id"] - 1  # Convert 1-indexed to 0-indexed
+            # LVIS data loader can be used to load COCO dataset categories. In this case `meta`
+            # variable will have a field with COCO-specific category mapping.
+            if dataset_name is not None and "thing_dataset_id_to_contiguous_id" in meta:
+                obj["category_id"] = meta["thing_dataset_id_to_contiguous_id"][anno["category_id"]]
+            else:
+                obj["category_id"] = anno["category_id"] - 1  # Convert 1-indexed to 0-indexed
             segm = anno["segmentation"]  # list[list[float]]
             # filter out invalid polygons (< 3 points)
             valid_segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
