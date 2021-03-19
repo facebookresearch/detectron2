@@ -533,7 +533,9 @@ class RetinaNetHead(nn.Module):
 
         cls_subnet = []
         bbox_subnet = []
-        for in_channels, out_channels in zip([input_shape[0].channels] + conv_dims, conv_dims):
+        for in_channels, out_channels in zip(
+            [input_shape[0].channels] + list(conv_dims), conv_dims
+        ):
             cls_subnet.append(
                 nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
             )
