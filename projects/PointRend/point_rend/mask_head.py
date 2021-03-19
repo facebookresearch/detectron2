@@ -160,13 +160,23 @@ class PointRendMaskHead(nn.Module):
         self.mask_point_train_num_points        = cfg.MODEL.POINT_HEAD.TRAIN_NUM_POINTS
         self.mask_point_oversample_ratio        = cfg.MODEL.POINT_HEAD.OVERSAMPLE_RATIO
         self.mask_point_importance_sample_ratio = cfg.MODEL.POINT_HEAD.IMPORTANCE_SAMPLE_RATIO
-        # next two parameters are use in the adaptive subdivions inference procedure
+        # next three parameters are use in the adaptive subdivions inference procedure
+        self.mask_point_subdivision_init_resolution = cfg.MODEL.ROI_MASK_HEAD.OUTPUT_SIDE_RESOLUTION
         self.mask_point_subdivision_steps       = cfg.MODEL.POINT_HEAD.SUBDIVISION_STEPS
         self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
         in_channels = np.sum([input_shape[f].channels for f in self.mask_point_in_features])
         self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
+
+        # An optimization to skip unused subdivision steps: if after subdivision, all pixels on
+        # the mask will be selected and recomputed anyway, we should just double our init_resolution
+        while (
+            4 * self.mask_point_subdivision_init_resolution ** 2
+            <= self.mask_point_subdivision_num_points
+        ):
+            self.mask_point_subdivision_init_resolution *= 2
+            self.mask_point_subdivision_steps -= 1
 
     def forward(self, features, instances):
         """
@@ -242,23 +252,29 @@ class PointRendMaskHead(nn.Module):
             if len(pred_classes) == 0:
                 return mask_coarse_logits
 
-            mask_logits = mask_coarse_logits.clone()
-            for subdivions_step in range(self.mask_point_subdivision_steps):
-                mask_logits = interpolate(
-                    mask_logits, scale_factor=2, mode="bilinear", align_corners=False
-                )
-                # If `mask_point_subdivision_num_points` is larger or equal to the
-                # resolution of the next step, then we can skip this step
-                H, W = mask_logits.shape[-2:]
-                if (
-                    self.mask_point_subdivision_num_points >= 4 * H * W
-                    and subdivions_step < self.mask_point_subdivision_steps - 1
-                ):
-                    continue
-                uncertainty_map = calculate_uncertainty(mask_logits, pred_classes)
-                point_indices, point_coords = get_uncertain_point_coords_on_grid(
-                    uncertainty_map, self.mask_point_subdivision_num_points
-                )
+            mask_logits = None
+            # +1 here to include an initial step to generate the coarsest mask
+            # prediction with init_resolution, when mask_logits is None.
+            # We compute initial mask by sampling on a regular grid. coarse_mask
+            # can be used as initial mask as well, but it's typically very low-res
+            # so it will be completely overwritten during subdivision anyway.
+            for _ in range(self.mask_point_subdivision_steps + 1):
+                if mask_logits is None:
+                    point_coords = generate_regular_grid_point_coords(
+                        pred_classes.size(0),
+                        self.mask_point_subdivision_init_resolution,
+                        pred_boxes[0].device,
+                    )
+                else:
+                    mask_logits = interpolate(
+                        mask_logits, scale_factor=2, mode="bilinear", align_corners=False
+                    )
+                    uncertainty_map = calculate_uncertainty(mask_logits, pred_classes)
+                    point_indices, point_coords = get_uncertain_point_coords_on_grid(
+                        uncertainty_map, self.mask_point_subdivision_num_points
+                    )
+
+                # Run the point head for every point in point_coords
                 fine_grained_features, _ = point_sample_fine_grained_features(
                     mask_features_list, features_scales, pred_boxes, point_coords
                 )
@@ -267,12 +283,22 @@ class PointRendMaskHead(nn.Module):
                 )
                 point_logits = self.point_head(fine_grained_features, coarse_features)
 
-                # put mask point predictions to the right places on the upsampled grid.
-                R, C, H, W = mask_logits.shape
-                point_indices = point_indices.unsqueeze(1).expand(-1, C, -1)
-                mask_logits = (
-                    mask_logits.reshape(R, C, H * W)
-                    .scatter_(2, point_indices, point_logits)
-                    .view(R, C, H, W)
-                )
+                if mask_logits is None:
+                    # Create initial mask_logits using point_logits on this regular grid
+                    R, C, _ = point_logits.shape
+                    mask_logits = point_logits.reshape(
+                        R,
+                        C,
+                        self.mask_point_subdivision_init_resolution,
+                        self.mask_point_subdivision_init_resolution,
+                    )
+                else:
+                    # Put point predictions to the right places on the upsampled grid.
+                    R, C, H, W = mask_logits.shape
+                    point_indices = point_indices.unsqueeze(1).expand(-1, C, -1)
+                    mask_logits = (
+                        mask_logits.reshape(R, C, H * W)
+                        .scatter_(2, point_indices, point_logits)
+                        .view(R, C, H, W)
+                    )
             return mask_logits
