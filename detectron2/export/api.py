@@ -7,16 +7,22 @@ from caffe2.proto import caffe2_pb2
 from torch import nn
 
 from detectron2.config import CfgNode
+from detectron2.modeling import meta_arch
 from detectron2.utils.file_io import PathManager
 
 from .caffe2_inference import ProtobufDetectionModel
-from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format
+from .caffe2_modeling import (
+    META_ARCH_CAFFE2_EXPORT_TYPE_MAP,
+    assemble_rcnn_outputs_by_name,
+    convert_batched_inputs_to_c2_format,
+)
 from .shared import get_pb_arg_vali, get_pb_arg_vals, save_graph
 
 __all__ = [
     "add_export_config",
     "export_caffe2_model",
     "Caffe2Model",
+    "ONNXModel",
     "export_onnx_model",
     "Caffe2Tracer",
 ]
@@ -254,6 +260,90 @@ class Caffe2Model(nn.Module):
         """
         if self._predictor is None:
             self._predictor = ProtobufDetectionModel(self._predict_net, self._init_net)
+        return self._predictor(inputs)
+
+
+class ONNXModel(nn.Module):
+    """
+    A wrapper around the traced model in ONNX format similar to the Caffe2Model.
+
+    Examples:
+    ::
+        model = ONNXModel.load_onnx("model.onnx")
+        inputs = [{"image": img_tensor_CHW, "width": width, "height": height}]
+        outputs = model(inputs)
+    """
+
+    def __init__(self, onnx_model):
+        super().__init__()
+        self.eval()  # always in eval mode
+        self._onnx_model = onnx_model
+        self._predictor = None
+
+    __init__.__HIDE_SPHINX_DOC__ = True
+
+    @property
+    def onnx_model(self):
+        """
+        onnx.onnx_ml_pb2.ModelProto: the underlying onnx protobuf model
+        """
+        return self._onnx_model
+
+    @staticmethod
+    def load_onnx(file):
+        """
+        Args:
+            file (str): the onnx model file
+
+        Returns:
+            ONNXModel: the onnx model loaded from this file.
+        """
+        import onnx  # no hard dependency on onnx
+
+        model = onnx.load(file)
+        onnx.checker.check_model(model)
+
+        return ONNXModel(model)
+
+    def __call__(self, inputs):
+        """
+        An interface that wraps around a ONNX model and mimics detectron2's models'
+        input/output format similar to the Caffe2Model.
+
+        Due to the extra conversion between Pytorch/Caffe2, this method is not meant for
+        benchmark. Because of the conversion, this method also has dependency
+        on detectron2 in order to convert to detectron2's output format.
+        """
+
+        def __onnx_predictor(inputs):
+            assert isinstance(inputs, list), "Invalid inputs format, only list() is supported"
+            assert len(inputs) == 1, "Currently only a batch_size of 1 is supported"
+            # TODO: get divisiblity and device dynamically
+            (image, img_info) = convert_batched_inputs_to_c2_format(inputs, 32, "cpu")
+
+            import caffe2.python.onnx.backend as backend  # no hard dependency to onnx.backend
+
+            raw_onnx_outputs = backend.prepare(self._onnx_model).run(
+                {
+                    self._onnx_model.graph.input[0].name: image.data.numpy(),
+                    self._onnx_model.graph.input[1].name: img_info.data.numpy(),
+                }
+            )
+
+            image_sizes = [[int(im[0]), int(im[1])] for im in img_info]
+            results = assemble_rcnn_outputs_by_name(
+                image_sizes,
+                {
+                    "bbox_nms": torch.tensor(raw_onnx_outputs.roi_bbox_nms),
+                    "score_nms": torch.tensor(raw_onnx_outputs._1),
+                    "class_nms": torch.tensor(raw_onnx_outputs._2),
+                },
+            )
+            # FIXME: get model dynamicaly
+            return meta_arch.GeneralizedRCNN._postprocess(results, inputs, image_sizes)
+
+        if self._predictor is None:
+            self._predictor = __onnx_predictor
         return self._predictor(inputs)
 
 
