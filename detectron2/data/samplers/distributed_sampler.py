@@ -49,9 +49,9 @@ class TrainingSampler(Sampler):
         g.manual_seed(self._seed)
         while True:
             if self._shuffle:
-                yield from torch.randperm(self._size, generator=g)
+                yield from torch.randperm(self._size, generator=g).tolist()
             else:
-                yield from torch.arange(self._size)
+                yield from torch.arange(self._size).tolist()
 
 
 class RepeatFactorTrainingSampler(Sampler):
@@ -165,9 +165,9 @@ class RepeatFactorTrainingSampler(Sampler):
             indices = self._get_epoch_indices(g)
             if self._shuffle:
                 randperm = torch.randperm(len(indices), generator=g)
-                yield from indices[randperm]
+                yield from indices[randperm].tolist()
             else:
-                yield from indices
+                yield from indices.tolist()
 
 
 class InferenceSampler(Sampler):
