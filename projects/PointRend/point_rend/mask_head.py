@@ -1,14 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Dict
+from typing import Dict, List
 import fvcore.nn.weight_init as weight_init
 import torch
-from torch import nn
+from torch import Tensor, nn
 from torch.nn import functional as F
 
 from detectron2.layers import Conv2d, ShapeSpec, cat, interpolate
-from detectron2.modeling import ROI_MASK_HEAD_REGISTRY, BaseMaskRCNNHead
+from detectron2.modeling import ROI_MASK_HEAD_REGISTRY
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference, mask_rcnn_loss
+from detectron2.structures import Boxes
 
 from .point_features import (
     generate_regular_grid_point_coords,
@@ -45,8 +46,7 @@ def calculate_uncertainty(logits, classes):
     return -(torch.abs(gt_class_logits))
 
 
-@ROI_MASK_HEAD_REGISTRY.register()
-class CoarseMaskHead(BaseMaskRCNNHead):
+class CoarseMaskHead(nn.Module):
     """
     A mask head with fully connected layers. Given pooled features it first reduces channels and
     spatial dimensions with conv layers and then uses FC layers to predict coarse masks analogously
@@ -61,7 +61,7 @@ class CoarseMaskHead(BaseMaskRCNNHead):
             num_fc: the number of FC layers
             output_side_resolution: side resolution of the output square mask prediction
         """
-        super(CoarseMaskHead, self).__init__()
+        super().__init__()
 
         # fmt: off
         self.num_classes            = cfg.MODEL.ROI_HEADS.NUM_CLASSES
@@ -114,11 +114,8 @@ class CoarseMaskHead(BaseMaskRCNNHead):
         for layer in self.fcs:
             weight_init.c2_xavier_fill(layer)
 
-    def layers(self, x):
-        # unlike BaseMaskRCNNHead, this head only outputs intermediate
-        # features, because the features will be used later by PointHead.
+    def forward(self, x):
         N = x.shape[0]
-        x = x.view(N, self.input_channels, self.input_h, self.input_w)
         for layer in self.conv_layers:
             x = layer(x)
         x = torch.flatten(x, start_dim=1)
@@ -133,17 +130,17 @@ class CoarseMaskHead(BaseMaskRCNNHead):
 class PointRendMaskHead(nn.Module):
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
         super().__init__()
-        # coarse mask head
-        self.mask_coarse_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
-        self.mask_coarse_side_size = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
+        self.roi_pooler_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
+        self.roi_pooler_size = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
         self._feature_scales = {k: 1.0 / v.stride for k, v in input_shape.items()}
-        in_channels = np.sum([input_shape[f].channels for f in self.mask_coarse_in_features])
+        in_channels = np.sum([input_shape[f].channels for f in self.roi_pooler_in_features])
+        # coarse mask head
         self.coarse_head = CoarseMaskHead(
             cfg,
             ShapeSpec(
                 channels=in_channels,
-                width=self.mask_coarse_side_size,
-                height=self.mask_coarse_side_size,
+                width=self.roi_pooler_size,
+                height=self.roi_pooler_size,
             ),
         )
 
@@ -187,31 +184,42 @@ class PointRendMaskHead(nn.Module):
         """
         if self.training:
             proposal_boxes = [x.proposal_boxes for x in instances]
-            mask_coarse_logits = self._forward_mask_coarse(features, proposal_boxes)
+            mask_coarse_logits = self.coarse_head(self._roi_pooler(features, proposal_boxes))
 
             losses = {"loss_mask": mask_rcnn_loss(mask_coarse_logits, instances)}
             losses.update(self._forward_mask_point(features, mask_coarse_logits, instances))
             return losses
         else:
             pred_boxes = [x.pred_boxes for x in instances]
-            mask_coarse_logits = self._forward_mask_coarse(features, pred_boxes)
+            mask_coarse_logits = self.coarse_head(self._roi_pooler(features, pred_boxes))
 
             mask_logits = self._forward_mask_point(features, mask_coarse_logits, instances)
             mask_rcnn_inference(mask_logits, instances)
             return instances
 
-    def _forward_mask_coarse(self, features, boxes):
-        point_coords = generate_regular_grid_point_coords(
-            sum(x.tensor.size(0) for x in boxes), self.mask_coarse_side_size, boxes[0].device
-        )
-        mask_coarse_features_list = [features[k] for k in self.mask_coarse_in_features]
-        features_scales = [self._feature_scales[k] for k in self.mask_coarse_in_features]
+    def _roi_pooler(self, features: List[Tensor], boxes: List[Boxes]):
+        """
+        Extract per-box feature. This is similar to RoIAlign except:
+        1. It's implemented by point_sample
+        2. It pools features across all levels and concat them, while typically
+           RoIAlign select one level for every box. However in the config we only use
+           one level (p2) so there is no difference.
+
+        Returns:
+            Tensor of shape (R, C, pooler_size, pooler_size) where R is the total number of boxes
+        """
+        features_list = [features[k] for k in self.roi_pooler_in_features]
+        features_scales = [self._feature_scales[k] for k in self.roi_pooler_in_features]
+
+        num_boxes = sum(x.tensor.size(0) for x in boxes)
+        output_size = self.roi_pooler_size
+        point_coords = generate_regular_grid_point_coords(num_boxes, output_size, boxes[0].device)
         # For regular grids of points, this function is equivalent to `len(features_list)' calls
         # of `ROIAlign` (with `SAMPLING_RATIO=2`), and concat the results.
-        mask_features, _ = point_sample_fine_grained_features(
-            mask_coarse_features_list, features_scales, boxes, point_coords
+        roi_features, _ = point_sample_fine_grained_features(
+            features_list, features_scales, boxes, point_coords
         )
-        return self.coarse_head.layers(mask_features)
+        return roi_features.view(num_boxes, -1, output_size, output_size)
 
     def _forward_mask_point(self, features, mask_coarse_logits, instances):
         """
