@@ -16,6 +16,7 @@ from detectron2.data.build import (
     load_proposals_into_dataset,
     print_instances_class_histogram,
     trivial_batch_collator,
+    worker_init_reset_seed,
 )
 from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
 from detectron2.data.samplers import TrainingSampler
@@ -608,6 +609,7 @@ def build_inference_based_loader(
         sampler=training_sampler,
         num_workers=dataset_cfg.IMAGE_LOADER.NUM_WORKERS,
         collate_fn=trivial_batch_collator,
+        worker_init_fn=worker_init_reset_seed,
     )
     return InferenceBasedLoader(
         model,

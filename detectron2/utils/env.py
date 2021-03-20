@@ -36,6 +36,7 @@ def seed_all_rng(seed=None):
     np.random.seed(seed)
     torch.manual_seed(seed)
     random.seed(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
 
 
 # from https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path
