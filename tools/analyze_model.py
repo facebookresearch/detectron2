@@ -12,8 +12,9 @@ from detectron2.data import build_detection_test_loader
 from detectron2.engine import default_argument_parser
 from detectron2.modeling import build_model
 from detectron2.utils.analysis import (
+    FlopCountAnalysis,
     activation_count_operators,
-    flop_count_operators,
+    flop_count_table,
     parameter_count_table,
 )
 from detectron2.utils.logger import setup_logger
@@ -27,6 +28,7 @@ def setup(args):
     cfg.DATALOADER.NUM_WORKERS = 0
     cfg.merge_from_list(args.opts)
     cfg.freeze()
+    setup_logger(name="fvcore")
     setup_logger()
     return cfg
 
@@ -40,13 +42,20 @@ def do_flop(cfg):
     counts = Counter()
     total_flops = []
     for idx, data in zip(tqdm.trange(args.num_inputs), data_loader):  # noqa
-        count = flop_count_operators(model, data)
-        counts += count
-        total_flops.append(sum(count.values()))
+        flops = FlopCountAnalysis(model, data)
+        if idx > 0:
+            flops.unsupported_ops_warnings(False).uncalled_modules_warnings(False)
+        counts += flops.by_operator()
+        total_flops.append(flops.total())
+
+    logger.info("Flops table computed from only one input sample:\n" + flop_count_table(flops))
     logger.info(
-        "(G)Flops for Each Type of Operators:\n" + str([(k, v / idx) for k, v in counts.items()])
+        "Average GFlops for each type of operators:\n"
+        + str([(k, v / (idx + 1) / 1e9) for k, v in counts.items()])
     )
-    logger.info("Total (G)Flops: {}±{}".format(np.mean(total_flops), np.std(total_flops)))
+    logger.info(
+        "Total GFlops: {:.1f}±{:.1f}".format(np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9)
+    )
 
 
 def do_activation(cfg):
@@ -106,6 +115,7 @@ $ ./analyze_model.py --num-inputs 100 --tasks flop \\
         nargs="+",
     )
     parser.add_argument(
+        "-n",
         "--num-inputs",
         default=100,
         type=int,

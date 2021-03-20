@@ -144,10 +144,10 @@ class Caffe2Model(nn.Module):
 
     Examples:
     ::
-        model = Caffe2Model.load_protobuf("dir/with/pb/files")
+        c2_model = Caffe2Tracer(cfg, torch_model, inputs).export_caffe2()
         inputs = [{"image": img_tensor_CHW}]
-        outputs = model(inputs)
-
+        outputs = c2_model(inputs)
+        orig_outputs = torch_model(inputs)
     """
 
     def __init__(self, predict_net, init_net):

@@ -382,6 +382,8 @@ class RPN(nn.Module):
         normalizer = self.batch_size_per_image * num_images
         losses = {
             "loss_rpn_cls": objectness_loss / normalizer,
+            # The original Faster R-CNN paper uses a slightly different normalizer
+            # for loc loss. But it doesn't matter in practice
             "loss_rpn_loc": localization_loss / normalizer,
         }
         losses = {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}

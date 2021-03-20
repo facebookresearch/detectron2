@@ -211,7 +211,7 @@ setup(
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
-        "fvcore>=0.1.3,<0.1.4",  # required like this to make it pip installable
+        "fvcore>=0.1.4,<0.1.5",  # required like this to make it pip installable
         "iopath>=0.1.2",
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         "future",  # used by caffe2
