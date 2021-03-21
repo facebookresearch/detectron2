@@ -24,9 +24,9 @@ class Detectron2Handler(PathHandler):
     def _get_supported_prefixes(self):
         return [self.PREFIX]
 
-    def _get_local_path(self, path):
+    def _get_local_path(self, path, **kwargs):
         name = path[len(self.PREFIX) :]
-        return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name)
+        return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name, **kwargs)
 
     def _open(self, path, mode="r", **kwargs):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
