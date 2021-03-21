@@ -8,8 +8,10 @@ import functools
 import logging
 import numpy as np
 import pickle
+from typing import Tuple
 import torch
 import torch.distributed as dist
+from torch.autograd.function import Function
 
 _LOCAL_PROCESS_GROUP = None
 """
@@ -261,3 +263,50 @@ def reduce_dict(input_dict, average=True):
             values /= world_size
         reduced_dict = {k: v for k, v in zip(names, values)}
     return reduced_dict
+
+
+class _AllReduce(Function):
+    @staticmethod
+    def forward(ctx, input):
+        input_list = [torch.zeros_like(input) for k in range(dist.get_world_size())]
+        # Use allgather instead of allreduce since I don't trust in-place operations ..
+        dist.all_gather(input_list, input, async_op=False)
+        inputs = torch.stack(input_list, dim=0)
+        return torch.sum(inputs, dim=0)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        dist.all_reduce(grad_output, async_op=False)
+        return grad_output
+
+
+def differentiable_all_reduce(input: torch.Tensor) -> torch.Tensor:
+    """
+    Differentiable counterpart of `dist.all_reduce`.
+    """
+    if get_world_size() == 1:
+        return input
+    return _AllReduce.apply(input)
+
+
+class _AllGather(Function):
+    @staticmethod
+    def forward(ctx, x):
+        output = [torch.zeros_like(x) for _ in range(dist.get_world_size())]
+        dist.all_gather(output, x)
+        return tuple(output)
+
+    @staticmethod
+    def backward(ctx, *grads):
+        all_gradients = torch.stack(grads)
+        dist.all_reduce(all_gradients)
+        return all_gradients[dist.get_rank()]
+
+
+def differentiable_all_gather(input: torch.Tensor) -> Tuple[torch.Tensor]:
+    """
+    Differentiable counterpart of `dist.all_gather`.
+    """
+    if get_world_size() == 1:
+        return (input,)
+    return _AllGather.apply(input)

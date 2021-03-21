@@ -3,7 +3,6 @@ import logging
 import torch
 import torch.distributed as dist
 from torch import nn
-from torch.autograd.function import Function
 from torch.nn import functional as F
 
 from detectron2.utils import comm, env
@@ -156,21 +155,6 @@ def get_norm(norm, out_channels):
     return norm(out_channels)
 
 
-class AllReduce(Function):
-    @staticmethod
-    def forward(ctx, input):
-        input_list = [torch.zeros_like(input) for k in range(dist.get_world_size())]
-        # Use allgather instead of allreduce since I don't trust in-place operations ..
-        dist.all_gather(input_list, input, async_op=False)
-        inputs = torch.stack(input_list, dim=0)
-        return torch.sum(inputs, dim=0)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        dist.all_reduce(grad_output, async_op=False)
-        return grad_output
-
-
 class NaiveSyncBatchNorm(BatchNorm2d):
     """
     In PyTorch<=1.5, ``nn.SyncBatchNorm`` has incorrect gradient
@@ -216,7 +200,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
         if self._stats_mode == "":
             assert B > 0, 'SyncBatchNorm(stats_mode="") does not support zero batch size.'
             vec = torch.cat([mean, meansqr], dim=0)
-            vec = AllReduce.apply(vec) * (1.0 / dist.get_world_size())
+            vec = comm.differentiable_all_reduce(vec) * (1.0 / dist.get_world_size())
             mean, meansqr = torch.split(vec, C)
             momentum = self.momentum
         else:
@@ -227,7 +211,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
                 vec = torch.cat(
                     [mean, meansqr, torch.ones([1], device=mean.device, dtype=mean.dtype)], dim=0
                 )
-            vec = AllReduce.apply(vec * B)
+            vec = comm.differentiable_all_reduce(vec * B)
 
             total_batch = vec[-1].detach()
             momentum = total_batch.clamp(max=1) * self.momentum  # no update if total_batch is 0
