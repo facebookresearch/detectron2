@@ -1,11 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
 import unittest
+from copy import copy
 import cv2
 import torch
 from fvcore.common.benchmark import benchmark
+from torch.nn import functional as F
 
-from detectron2.layers.roi_align import ROIAlign
+from detectron2.layers.roi_align import ROIAlign, roi_align
 
 
 class ROIAlignTest(unittest.TestCase):
@@ -59,13 +61,28 @@ class ROIAlignTest(unittest.TestCase):
         diff = np.abs(output2x - output)
         self.assertTrue(diff.max() < 1e-4)
 
-    def _simple_roialign(self, img, box, resolution, aligned=True):
+    def test_grid_sample_equivalence(self):
+        H, W = 30, 30
+        input = np.random.rand(H, W).astype("float32") * 100
+        box = [10, 10, 20, 20]
+        for ratio in [1, 2, 3]:
+            output = self._simple_roialign(input, box, (5, 5), sampling_ratio=ratio)
+            output_grid_sample = grid_sample_roi_align(
+                torch.from_numpy(input[None, None, :, :]).float(),
+                torch.as_tensor(box).float()[None, :],
+                5,
+                1.0,
+                ratio,
+            )
+            self.assertTrue(torch.allclose(output, output_grid_sample))
+
+    def _simple_roialign(self, img, box, resolution, sampling_ratio=0, aligned=True):
         """
-        RoiAlign with scale 1.0 and 0 sample ratio.
+        RoiAlign with scale 1.0.
         """
         if isinstance(resolution, int):
             resolution = (resolution, resolution)
-        op = ROIAlign(resolution, 1.0, 0, aligned=aligned)
+        op = ROIAlign(resolution, 1.0, sampling_ratio, aligned=aligned)
         input = torch.from_numpy(img[None, None, :, :].astype("float32"))
 
         rois = [0] + list(box)
@@ -111,39 +128,80 @@ class ROIAlignTest(unittest.TestCase):
         self.assertTrue(output.shape == (0, 3, 7, 7))
 
 
-def benchmark_roi_align():
-    from detectron2 import _C
+def grid_sample_roi_align(input, boxes, output_size, scale, sampling_ratio):
+    # unlike true roi_align, this does not support different batch_idx
+    from detectron2.projects.point_rend.point_features import (
+        generate_regular_grid_point_coords,
+        get_point_coords_wrt_image,
+        point_sample,
+    )
 
+    N, _, H, W = input.shape
+    R = len(boxes)
+    assert N == 1
+    boxes = boxes * scale
+    grid = generate_regular_grid_point_coords(R, output_size * sampling_ratio, device=boxes.device)
+    coords = get_point_coords_wrt_image(boxes, grid)
+    coords = coords / torch.as_tensor([W, H], device=coords.device)  # R, s^2, 2
+    res = point_sample(input, coords.unsqueeze(0), align_corners=False)  # 1,C, R,s^2
+    res = (
+        res.squeeze(0)
+        .permute(1, 0, 2)
+        .reshape(R, -1, output_size * sampling_ratio, output_size * sampling_ratio)
+    )
+    res = F.avg_pool2d(res, sampling_ratio)
+    return res
+
+
+def benchmark_roi_align():
     def random_boxes(mean_box, stdev, N, maxsize):
         ret = torch.rand(N, 4) * stdev + torch.tensor(mean_box, dtype=torch.float)
         ret.clamp_(min=0, max=maxsize)
         return ret
 
-    def func(N, C, H, W, nboxes_per_img):
-        input = torch.rand(N, C, H, W)
+    def func(shape, nboxes_per_img, sampling_ratio, device, box_size="large"):
+        N, _, H, _ = shape
+        input = torch.rand(*shape)
         boxes = []
         batch_idx = []
         for k in range(N):
-            b = random_boxes([80, 80, 130, 130], 24, nboxes_per_img, H)
-            # try smaller boxes:
-            # b = random_boxes([100, 100, 110, 110], 4, nboxes_per_img, H)
+            if box_size == "large":
+                b = random_boxes([80, 80, 130, 130], 24, nboxes_per_img, H)
+            else:
+                b = random_boxes([100, 100, 110, 110], 4, nboxes_per_img, H)
             boxes.append(b)
             batch_idx.append(torch.zeros(nboxes_per_img, 1, dtype=torch.float32) + k)
         boxes = torch.cat(boxes, axis=0)
         batch_idx = torch.cat(batch_idx, axis=0)
         boxes = torch.cat([batch_idx, boxes], axis=1)
 
-        input = input.cuda()
-        boxes = boxes.cuda()
+        input = input.to(device=device)
+        boxes = boxes.to(device=device)
 
         def bench():
-            _C.roi_align_forward(input, boxes, 1.0, 7, 7, 0, True)
-            torch.cuda.synchronize()
+            if False and sampling_ratio > 0 and N == 1:
+                # enable to benchmark grid_sample (slower)
+                grid_sample_roi_align(input, boxes[:, 1:], 7, 1.0, sampling_ratio)
+            else:
+                roi_align(input, boxes, 7, 1.0, sampling_ratio, True)
+            if device == "cuda":
+                torch.cuda.synchronize()
 
         return bench
 
-    args = [dict(N=2, C=512, H=256, W=256, nboxes_per_img=500)]
-    benchmark(func, "cuda_roialign", args, num_iters=20, warmup_iters=1)
+    def gen_args(arg):
+        args = []
+        for size in ["small", "large"]:
+            for ratio in [0, 2]:
+                args.append(copy(arg))
+                args[-1]["sampling_ratio"] = ratio
+                args[-1]["box_size"] = size
+        return args
+
+    arg = dict(shape=(1, 512, 256, 256), nboxes_per_img=512, device="cuda")
+    benchmark(func, "cuda_roialign", gen_args(arg), num_iters=20, warmup_iters=1)
+    arg.update({"device": "cpu", "shape": (1, 256, 128, 128)})
+    benchmark(func, "cpu_roialign", gen_args(arg), num_iters=5, warmup_iters=1)
 
 
 if __name__ == "__main__":
