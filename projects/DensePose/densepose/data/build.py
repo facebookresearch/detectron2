@@ -651,7 +651,8 @@ def build_video_list_dataset(meta: Metadata, cfg: CfgNode):
         frame_selector = build_frame_selector(cfg.SELECT)
         transform = build_transform(cfg.TRANSFORM, data_type="image")
         video_list = video_list_from_file(video_list_fpath, video_base_path)
-        return VideoKeyframeDataset(video_list, frame_selector, transform)
+        keyframe_helper_fpath = cfg.KEYFRAME_HELPER if hasattr(cfg, "KEYFRAME_HELPER") else None
+        return VideoKeyframeDataset(video_list, frame_selector, transform, keyframe_helper_fpath)
 
 
 class _BootstrapDatasetFactoryCatalog(UserDict):

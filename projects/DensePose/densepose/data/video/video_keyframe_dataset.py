@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import csv
 import logging
 import numpy as np
 from typing import Callable, List, Optional
@@ -171,6 +172,46 @@ def video_list_from_file(video_list_fpath: str, base_path: Optional[str] = None)
     return video_list
 
 
+def read_keyframe_helper_data(fpath: str):
+    """
+    Read keyframe data from a file in CSV format: the header should contain
+    "video_id" and "keyframes" fields. Value specifications are:
+      video_id: int
+      keyframes: list(int)
+    Example of contents:
+      video_id,keyframes
+      2,"[1,11,21,31,41,51,61,71,81]"
+
+    Args:
+        fpath (str): File containing keyframe data
+
+    Return:
+        video_id_to_keyframes (dict: int -> list(int)): for a given video ID it
+          contains a list of keyframes for that video
+    """
+    video_id_to_keyframes = {}
+    try:
+        with PathManager.open(fpath, "r") as io:
+            csv_reader = csv.reader(io)  # pyre-ignore[6]
+            header = next(csv_reader)
+            video_id_idx = header.index("video_id")
+            keyframes_idx = header.index("keyframes")
+            for row in csv_reader:
+                video_id = int(row[video_id_idx])
+                assert (
+                    video_id not in video_id_to_keyframes
+                ), f"Duplicate keyframes entry for video {fpath}"
+                video_id_to_keyframes[video_id] = (
+                    [int(v) for v in row[keyframes_idx][1:-1].split(",")]
+                    if len(row[keyframes_idx]) > 2
+                    else []
+                )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Error reading keyframe helper data from {fpath}: {e}")
+    return video_id_to_keyframes
+
+
 class VideoKeyframeDataset(Dataset):
     """
     Dataset that provides keyframes for a set of videos.
@@ -183,6 +224,7 @@ class VideoKeyframeDataset(Dataset):
         video_list: List[str],
         frame_selector: Optional[FrameSelector] = None,
         transform: Optional[FrameTransform] = None,
+        keyframe_helper_fpath: Optional[str] = None,
     ):
         """
         Dataset constructor
@@ -202,6 +244,11 @@ class VideoKeyframeDataset(Dataset):
         self.video_list = video_list
         self.frame_selector = frame_selector
         self.transform = transform
+        self.keyframe_helper_data = (
+            read_keyframe_helper_data(keyframe_helper_fpath)
+            if keyframe_helper_fpath is not None
+            else None
+        )
 
     def __getitem__(self, idx: int) -> torch.Tensor:
         """
@@ -214,7 +261,11 @@ class VideoKeyframeDataset(Dataset):
                 defined by the transform that contains keyframes data
         """
         fpath = self.video_list[idx]
-        keyframes = list_keyframes(fpath)
+        keyframes = (
+            list_keyframes(fpath)
+            if self.keyframe_helper_data is None or idx not in self.keyframe_helper_data
+            else self.keyframe_helper_data[idx]
+        )
         if not keyframes:
             return self._EMPTY_FRAMES
         if self.frame_selector is not None:
