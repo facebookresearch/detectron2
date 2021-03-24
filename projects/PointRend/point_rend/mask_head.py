@@ -219,7 +219,7 @@ class PointRendMaskHead(nn.Module):
         roi_features, _ = point_sample_fine_grained_features(
             features_list, features_scales, boxes, point_coords
         )
-        return roi_features.view(num_boxes, -1, output_size, output_size)
+        return roi_features.view(num_boxes, roi_features.shape[1], output_size, output_size)
 
     def _forward_mask_point(self, features, mask_coarse_logits, instances):
         """
