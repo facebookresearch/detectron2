@@ -162,6 +162,13 @@ def collect_env_info():
         pass
 
     try:
+        import iopath
+
+        data.append(("iopath", iopath.__version__))
+    except (ImportError, AttributeError):
+        pass
+
+    try:
         import cv2
 
         data.append(("cv2", cv2.__version__))
