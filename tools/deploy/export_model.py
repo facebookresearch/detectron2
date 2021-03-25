@@ -2,9 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import argparse
 import os
+from typing import Dict, List, Tuple
 import onnx
 import torch
-from torch import Tensor
+from torch import Tensor, nn
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -70,7 +71,30 @@ def export_scripting(torch_model):
         "pred_keypoint_heatmaps": torch.Tensor,
     }
     assert args.format == "torchscript", "Scripting only supports torchscript format."
-    ts_model = scripting_with_instances(torch_model, fields)
+
+    class ScriptableAdapterBase(nn.Module):
+        # Use this adapter to workaround https://github.com/pytorch/pytorch/issues/46944
+        # by not retuning instances but dicts. Otherwise the exported model is not deployable
+        def __init__(self):
+            super().__init__()
+            self.model = torch_model
+            self.eval()
+
+    if isinstance(torch_model, GeneralizedRCNN):
+
+        class ScriptableAdapter(ScriptableAdapterBase):
+            def forward(self, inputs: Tuple[Dict[str, torch.Tensor]]) -> List[Dict[str, Tensor]]:
+                instances = self.model.inference(inputs, do_postprocess=False)
+                return [i.get_fields() for i in instances]
+
+    else:
+
+        class ScriptableAdapter(ScriptableAdapterBase):
+            def forward(self, inputs: Tuple[Dict[str, torch.Tensor]]) -> List[Dict[str, Tensor]]:
+                instances = self.model(inputs)
+                return [i.get_fields() for i in instances]
+
+    ts_model = scripting_with_instances(ScriptableAdapter(), fields)
     with PathManager.open(os.path.join(args.output, "model.ts"), "wb") as f:
         torch.jit.save(ts_model, f)
     dump_torchscript_IR(ts_model, args.output)
