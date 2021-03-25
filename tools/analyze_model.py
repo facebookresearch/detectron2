@@ -5,9 +5,7 @@ import logging
 import numpy as np
 from collections import Counter
 import tqdm
-
-# Currently only flop_count_table is printed. But both can be used.
-from fvcore.nn import flop_count_str, flop_count_table  # noqa
+from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg

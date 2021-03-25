@@ -290,6 +290,9 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
 
     # logging:
     matched_model_keys = sorted(matched_keys.values())
+    if len(matched_model_keys) == 0:
+        logger.warning("No weights in checkpoint matched with model.")
+        return ckpt_state_dict
     common_prefix = _longest_common_prefix(matched_model_keys)
     rev_matched_keys = {v: k for k, v in matched_keys.items()}
     original_keys = {k: original_keys[rev_matched_keys[k]] for k in matched_model_keys}
