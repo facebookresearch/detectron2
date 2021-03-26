@@ -2,6 +2,7 @@
 import logging
 import torch
 import torch.distributed as dist
+from fvcore.nn.distributed import differentiable_all_reduce
 from torch import nn
 from torch.nn import functional as F
 
@@ -200,7 +201,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
         if self._stats_mode == "":
             assert B > 0, 'SyncBatchNorm(stats_mode="") does not support zero batch size.'
             vec = torch.cat([mean, meansqr], dim=0)
-            vec = comm.differentiable_all_reduce(vec) * (1.0 / dist.get_world_size())
+            vec = differentiable_all_reduce(vec) * (1.0 / dist.get_world_size())
             mean, meansqr = torch.split(vec, C)
             momentum = self.momentum
         else:
@@ -211,7 +212,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
                 vec = torch.cat(
                     [mean, meansqr, torch.ones([1], device=mean.device, dtype=mean.dtype)], dim=0
                 )
-            vec = comm.differentiable_all_reduce(vec * B)
+            vec = differentiable_all_reduce(vec * B)
 
             total_batch = vec[-1].detach()
             momentum = total_batch.clamp(max=1) * self.momentum  # no update if total_batch is 0
