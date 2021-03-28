@@ -239,6 +239,15 @@ whose version is closer to what's used by PyTorch (available in `torch.__config_
 </details>
 
 
+<details>
+<summary>
+"library not found for -lstdc++" on older version of MacOS
+</summary>
+<br/>
+See [this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
+</details>
+
+
 ### Installation inside specific environments:
 
 * __Colab__: see our [Colab Tutorial](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)

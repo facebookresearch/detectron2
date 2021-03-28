@@ -99,8 +99,8 @@ class RepeatFactorTrainingSampler(Sampler):
                 repeated twice.
 
         Returns:
-            torch.Tensor: the i-th element is the repeat factor for the dataset image
-                at index i.
+            torch.Tensor:
+                the i-th element is the repeat factor for the dataset image at index i.
         """
         # 1. For each category c, compute the fraction of images that contain it: f(c)
         category_freq = defaultdict(int)

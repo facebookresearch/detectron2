@@ -15,7 +15,7 @@ from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 
 from ..anchor_generator import build_anchor_generator
-from ..backbone import build_backbone
+from ..backbone import Backbone, build_backbone
 from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
 from ..matcher import Matcher
 from ..postprocessing import detector_postprocess
@@ -49,8 +49,8 @@ class RetinaNet(nn.Module):
     def __init__(
         self,
         *,
-        backbone,
-        head,
+        backbone: Backbone,
+        head: nn.Module,
         head_in_features,
         anchor_generator,
         box2box_transform,
@@ -355,14 +355,13 @@ class RetinaNet(nn.Module):
                 for the i-th input image.
 
         Returns:
-            list[Tensor]:
-                List of #img tensors. i-th element is a vector of labels whose length is
-                the total number of anchors across all feature maps (sum(Hi * Wi * A)).
-                Label values are in {-1, 0, ..., K}, with -1 means ignore, and K means background.
-            list[Tensor]:
-                i-th element is a Rx4 tensor, where R is the total number of anchors across
-                feature maps. The values are the matched gt boxes for each anchor.
-                Values are undefined for those anchors not labeled as foreground.
+            list[Tensor]: List of #img tensors. i-th element is a vector of labels whose length is
+            the total number of anchors across all feature maps (sum(Hi * Wi * A)).
+            Label values are in {-1, 0, ..., K}, with -1 means ignore, and K means background.
+
+            list[Tensor]: i-th element is a Rx4 tensor, where R is the total number of anchors
+            across feature maps. The values are the matched gt boxes for each anchor.
+            Values are undefined for those anchors not labeled as foreground.
         """
         anchors = Boxes.cat(anchors)  # Rx4
 

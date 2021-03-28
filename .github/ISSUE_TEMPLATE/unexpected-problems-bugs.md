@@ -39,7 +39,7 @@ Only in one of the two conditions we will help with it:
 
 Paste the output of the following command:
 ```
-wget -nc -q https://github.com/facebookresearch/detectron2/raw/master/detectron2/utils/collect_env.py && python collect_env.py
+wget -nc -nv https://github.com/facebookresearch/detectron2/raw/master/detectron2/utils/collect_env.py && python collect_env.py
 ```
 
 If your issue looks like an installation issue / environment issue,
