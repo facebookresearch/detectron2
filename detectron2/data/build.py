@@ -369,9 +369,10 @@ def build_detection_train_loader(
         num_workers (int): number of parallel data loading workers
 
     Returns:
-        torch.utils.data.DataLoader: a dataloader. Each output from it is a
-            ``list[mapped_element]`` of length ``total_batch_size / num_workers``,
-            where ``mapped_element`` is produced by the ``mapper``.
+        torch.utils.data.DataLoader:
+            a dataloader. Each output from it is a ``list[mapped_element]`` of length
+            ``total_batch_size / num_workers``, where ``mapped_element`` is produced
+            by the ``mapper``.
     """
     if isinstance(dataset, list):
         dataset = DatasetFromList(dataset, copy=False)

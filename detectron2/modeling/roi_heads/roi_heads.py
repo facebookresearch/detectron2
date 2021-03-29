@@ -759,7 +759,7 @@ class StandardROIHeads(ROIHeads):
                 "pred_boxes" and "pred_classes" to exist.
 
         Returns:
-            instances (list[Instances]):
+            list[Instances]:
                 the same `Instances` objects, with extra
                 fields such as `pred_masks` or `pred_keypoints`.
         """

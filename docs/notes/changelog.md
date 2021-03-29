@@ -1,4 +1,4 @@
-# Backward Compatibility and Change Log
+# Change Log and Backward Compatibility
 
 ### Releases
 See release logs at
@@ -38,7 +38,7 @@ There is no need for an open source user to worry about this.
 * v1: Rename `RPN_HEAD.NAME` to `RPN.HEAD_NAME`.
 * v2: A batch of rename of many configurations before release.
 
-### Silent Regression in Historical Versions:
+### Silent Regressions in Historical Versions:
 
 We list a few silent regressions, since they may silently produce incorrect results and will be hard to debug.
 

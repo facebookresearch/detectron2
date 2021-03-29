@@ -61,7 +61,7 @@ class GithubURLDomain(Domain):
 from recommonmark.parser import CommonMarkParser
 
 sys.path.insert(0, os.path.abspath("../"))
-os.environ["DOC_BUILDING"] = "True"
+os.environ["_DOC_BUILDING"] = "True"
 DEPLOY = os.environ.get("READTHEDOCS") == "True"
 
 
@@ -78,11 +78,13 @@ except ImportError:
     ]:
         sys.modules[m] = mock.Mock(name=m)
     sys.modules['torch'].__version__ = "1.7"  # fake version
+    HAS_TORCH = False
 else:
     try:
         torch.ops.detectron2 = mock.Mock(name="torch.ops.detectron2")
     except:
         pass
+    HAS_TORCH = True
 
 for m in [
     "cv2", "scipy", "portalocker", "detectron2._C",
@@ -95,6 +97,12 @@ for m in [
 sys.modules["cv2"].__version__ = "3.4"
 
 import detectron2  # isort: skip
+
+if HAS_TORCH:
+    from detectron2.utils.env import fixup_module_metadata
+
+    fixup_module_metadata("torch.nn", torch.nn.__dict__)
+    fixup_module_metadata("torch.utils.data", torch.utils.data.__dict__)
 
 
 project = "detectron2"
@@ -141,7 +149,7 @@ if DEPLOY:
     intersphinx_timeout = 10
 else:
     # skip this when building locally
-    intersphinx_timeout = 0.1
+    intersphinx_timeout = 0.5
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.6", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
@@ -316,6 +324,10 @@ _PAPER_DATA = {
     "mobilenet": (
         "1704.04861",
         "MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications",
+    ),
+    "deeplabv3+": (
+        "1802.02611",
+        "Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation",
     ),
 }
 

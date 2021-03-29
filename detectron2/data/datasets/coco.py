@@ -353,6 +353,12 @@ def convert_to_coco_dict(dataset_name):
 
             # COCO requirement: XYWH box format for axis-align and XYWHA for rotated
             bbox = annotation["bbox"]
+            if isinstance(bbox, np.ndarray):
+                if bbox.ndim != 1:
+                    raise ValueError(f"bbox has to be 1-dimensional. Got shape={bbox.shape}.")
+                bbox = bbox.tolist()
+            if len(bbox) not in [4, 5]:
+                raise ValueError(f"bbox has to has length 4 or 5. Got {bbox}.")
             from_bbox_mode = annotation["bbox_mode"]
             to_bbox_mode = BoxMode.XYWH_ABS if len(bbox) == 4 else BoxMode.XYWHA_ABS
             bbox = BoxMode.convert(bbox, from_bbox_mode, to_bbox_mode)

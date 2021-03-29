@@ -221,6 +221,8 @@ setup(
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
         "omegaconf==2.1.0.dev22",
+        # When adding to the list, may need to update docs/requirements.txt
+        # or add mock in docs/conf.py
     ],
     extras_require={
         "all": [
