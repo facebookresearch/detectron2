@@ -235,6 +235,9 @@ _C.MODEL.RPN.POST_NMS_TOPK_TRAIN = 2000
 _C.MODEL.RPN.POST_NMS_TOPK_TEST = 1000
 # NMS threshold used on RPN proposals
 _C.MODEL.RPN.NMS_THRESH = 0.7
+_C.MODEL.RPN.NUM_CONV = 1
+# Set this to -1 to use the same number of output channels as input channels.
+_C.MODEL.RPN.CONV_DIM = -1
 
 # ---------------------------------------------------------------------------- #
 # ROI HEADS options
