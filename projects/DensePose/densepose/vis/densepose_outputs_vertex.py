@@ -9,9 +9,9 @@ import torch.nn.functional as F
 
 from detectron2.utils.file_io import PathManager
 
-from densepose.data.build import get_class_to_mesh_name_mapping
 from densepose.modeling import build_densepose_embedder
 
+from ..data.utils import get_class_to_mesh_name_mapping
 from ..modeling.cse.utils import squared_euclidean_distance_matrix
 from ..structures import DensePoseEmbeddingPredictorOutput
 from ..structures.mesh import create_mesh

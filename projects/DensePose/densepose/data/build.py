@@ -36,6 +36,7 @@ from .samplers import (
     PredictionToGroundTruthSampler,
 )
 from .transform import ImageResizeTransform
+from .utils import get_class_to_mesh_name_mapping
 from .video import (
     FirstKFramesSelector,
     FrameSelectionStrategy,
@@ -283,13 +284,6 @@ def _add_category_maps_to_metadata(cfg: CfgNode):
         meta.category_map = category_map
         logger = logging.getLogger(__name__)
         logger.info("Category maps for dataset {}: {}".format(dataset_name, meta.category_map))
-
-
-def get_class_to_mesh_name_mapping(cfg):
-    return {
-        int(class_id): mesh_name
-        for class_id, mesh_name in cfg.DATASETS.CLASS_TO_MESH_NAME_MAPPING.items()
-    }
 
 
 def _maybe_add_class_to_mesh_name_map_to_metadata(dataset_names: List[str], cfg: CfgNode):

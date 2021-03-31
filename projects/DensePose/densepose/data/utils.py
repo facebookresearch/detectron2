@@ -1,7 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import os
-from typing import Optional
+from typing import Dict, Optional
+
+from detectron2.config import CfgNode
 
 
 def is_relative_local_path(path: str):
@@ -20,3 +22,10 @@ def maybe_prepend_base_path(base_path: Optional[str], path: str):
     if is_relative_local_path(path):
         return os.path.join(base_path, path)
     return path
+
+
+def get_class_to_mesh_name_mapping(cfg: CfgNode) -> Dict[int, str]:
+    return {
+        int(class_id): mesh_name
+        for class_id, mesh_name in cfg.DATASETS.CLASS_TO_MESH_NAME_MAPPING.items()
+    }
