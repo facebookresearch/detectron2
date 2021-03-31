@@ -79,6 +79,39 @@ def resample_fine_and_coarse_segm_to_bbox(predictor_output: Any, box_xywh_abs: I
     )
 
 
+def predictor_output_with_coarse_segm_to_mask(
+    predictor_output: Any, boxes: Boxes, image_size_hw: ImageSizeType
+) -> BitMasks:
+    """
+    Convert predictor output with coarse and fine segmentation to a mask.
+    Assumes that predictor output has the following attributes:
+     - coarse_segm (tensor of size [N, D, H, W]): coarse segmentation
+         unnormalized scores for N instances; D is the number of coarse
+         segmentation labels, H and W is the resolution of the estimate
+
+    Args:
+        predictor_output: DensePose predictor output to be converted to mask
+        boxes (Boxes): bounding boxes that correspond to the DensePose
+            predictor outputs
+        image_size_hw (tuple [int, int]): image height Himg and width Wimg
+    Return:
+        BitMasks that contain a bool tensor of size [N, Himg, Wimg] with
+        a mask of the size of the image for each instance
+    """
+    H, W = image_size_hw
+    boxes_xyxy_abs = boxes.tensor.clone()
+    boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+    N = len(boxes_xywh_abs)
+    masks = torch.zeros((N, H, W), dtype=torch.bool, device=boxes.tensor.device)
+    for i in range(len(boxes_xywh_abs)):
+        box_xywh = make_int_box(boxes_xywh_abs[i])
+        box_mask = resample_coarse_segm_tensor_to_bbox(predictor_output[i].coarse_segm, box_xywh)
+        x, y, w, h = box_xywh
+        masks[i, y : y + h, x : x + w] = box_mask
+
+    return BitMasks(masks)
+
+
 def predictor_output_with_fine_and_coarse_segm_to_mask(
     predictor_output: Any, boxes: Boxes, image_size_hw: ImageSizeType
 ) -> BitMasks:
