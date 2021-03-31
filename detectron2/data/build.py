@@ -410,7 +410,7 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
 
 
 @configurable(from_config=_test_loader_from_config)
-def build_detection_test_loader(dataset, *, mapper, num_workers=0):
+def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0):
     """
     Similar to `build_detection_train_loader`, but uses a batch size of 1,
     and :class:`InferenceSampler`. This sampler coordinates all workers to
@@ -424,6 +424,9 @@ def build_detection_test_loader(dataset, *, mapper, num_workers=0):
         mapper (callable): a callable which takes a sample (dict) from dataset
            and returns the format to be consumed by the model.
            When using cfg, the default choice is ``DatasetMapper(cfg, is_train=False)``.
+        sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces
+            indices to be applied on ``dataset``. Default to :class:`InferenceSampler`,
+            which splits the dataset across all workers.
         num_workers (int): number of parallel data loading workers
 
     Returns:
@@ -443,7 +446,8 @@ def build_detection_test_loader(dataset, *, mapper, num_workers=0):
         dataset = DatasetFromList(dataset, copy=False)
     if mapper is not None:
         dataset = MapDataset(dataset, mapper)
-    sampler = InferenceSampler(len(dataset))
+    if sampler is None:
+        sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)

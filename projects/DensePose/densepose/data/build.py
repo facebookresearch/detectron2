@@ -476,10 +476,13 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
     )
+    sampler = None
+    if not cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE:
+        sampler = torch.utils.data.SequentialSampler(dataset_dicts)
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
     return d2_build_detection_test_loader(
-        dataset_dicts, mapper=mapper, num_workers=cfg.DATALOADER.NUM_WORKERS
+        dataset_dicts, mapper=mapper, num_workers=cfg.DATALOADER.NUM_WORKERS, sampler=sampler
     )
 
 

@@ -39,6 +39,8 @@ def add_evaluation_config(cfg: CN):
     # minimum threshold for IOU values: the lower its values is,
     # the more matches are produced (and the higher the AP score)
     _C.DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD = 0.5
+    # Non-distributed inference is slower (at inference time) but can avoid RAM OOM
+    _C.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE = True
 
 
 def add_bootstrap_config(cfg: CN):

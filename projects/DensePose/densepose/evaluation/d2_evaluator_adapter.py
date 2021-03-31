@@ -20,8 +20,9 @@ class Detectron2COCOEvaluatorAdapter(COCOEvaluator):
         self,
         dataset_name,
         output_dir=None,
+        distributed=True,
     ):
-        super().__init__(dataset_name, output_dir=output_dir)
+        super().__init__(dataset_name, output_dir=output_dir, distributed=distributed)
         maybe_filter_categories_cocoapi(dataset_name, self._coco_api)
         _maybe_add_iscrowd_annotations(self._coco_api)
         # substitute category metadata to account for categories
