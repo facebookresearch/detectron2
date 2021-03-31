@@ -5,14 +5,13 @@ from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 import cv2
 import torch
-import torch.nn.functional as F
 
 from detectron2.utils.file_io import PathManager
 
 from densepose.modeling import build_densepose_embedder
+from densepose.modeling.cse.utils import get_closest_vertices_mask_from_ES
 
 from ..data.utils import get_class_to_mesh_name_mapping
-from ..modeling.cse.utils import squared_euclidean_distance_matrix
 from ..structures import DensePoseEmbeddingPredictorOutput
 from ..structures.mesh import create_mesh
 from .base import Boxes, Image, MatrixVisualizer
@@ -80,8 +79,13 @@ class DensePoseOutputsVertexVisualizer(object):
         for n in range(N):
             x, y, w, h = bboxes_xywh[n].int().tolist()
             mesh_name = self.class_to_mesh_name[pred_classes[n]]
-            closest_vertices, mask = self.get_closest_vertices_mask_from_ES(
-                E[[n]], S[[n]], h, w, mesh_name
+            closest_vertices, mask = get_closest_vertices_mask_from_ES(
+                E[[n]],
+                S[[n]],
+                h,
+                w,
+                self.mesh_vertex_embeddings[mesh_name],
+                self.device,
             )
             embed_map = get_xyz_vertex_embedding(mesh_name, self.device)
             vis = (embed_map[closest_vertices].clip(0, 1) * 255.0).cpu().numpy()
@@ -122,24 +126,6 @@ class DensePoseOutputsVertexVisualizer(object):
         )
 
         return S, E, N, bboxes_xywh, pred_classes
-
-    def get_closest_vertices_mask_from_ES(self, En, Sn, h, w, mesh_name):
-        embedding_resized = F.interpolate(En, size=(h, w), mode="bilinear")[0].to(self.device)
-        coarse_segm_resized = F.interpolate(Sn, size=(h, w), mode="bilinear")[0].to(self.device)
-        mask = coarse_segm_resized.argmax(0) > 0
-        closest_vertices = torch.zeros(mask.shape, dtype=torch.long, device=self.device)
-        all_embeddings = embedding_resized[:, mask].t()
-        size_chunk = 10_000  # Chunking to avoid possible OOM
-        edm = []
-        for chunk in range((len(all_embeddings) - 1) // size_chunk + 1):
-            chunk_embeddings = all_embeddings[size_chunk * chunk : size_chunk * (chunk + 1)]
-            edm.append(
-                squared_euclidean_distance_matrix(
-                    chunk_embeddings, self.mesh_vertex_embeddings[mesh_name]
-                ).argmin(dim=1)
-            )
-        closest_vertices[mask] = torch.cat(edm)
-        return closest_vertices, mask
 
 
 def get_texture_atlases(json_str: Optional[str]) -> Optional[Dict[str, Optional[np.ndarray]]]:
@@ -205,8 +191,14 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
 
         for n in range(N):
             x, y, w, h = bboxes_xywh[n].int().cpu().numpy()
-            closest_vertices, mask = self.get_closest_vertices_mask_from_ES(
-                E[[n]], S[[n]], h, w, self.class_to_mesh_name[pred_classes[n]]
+            mesh_name = self.class_to_mesh_name[pred_classes[n]]
+            closest_vertices, mask = get_closest_vertices_mask_from_ES(
+                E[[n]],
+                S[[n]],
+                h,
+                w,
+                self.mesh_vertex_embeddings[mesh_name],
+                self.device,
             )
             uv_array = meshes[pred_classes[n]].texcoords[closest_vertices].permute((2, 0, 1))
             uv_array = uv_array.cpu().numpy().clip(0, 1)
