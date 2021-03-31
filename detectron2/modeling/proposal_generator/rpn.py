@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from detectron2.config import configurable
-from detectron2.layers import ShapeSpec, cat
+from detectron2.layers import Conv2d, ShapeSpec, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.memory import retry_if_cuda_oom
@@ -73,7 +73,9 @@ class StandardRPNHead(nn.Module):
     """
 
     @configurable
-    def __init__(self, *, in_channels: int, num_anchors: int, box_dim: int = 4):
+    def __init__(
+        self, *, in_channels: int, num_anchors: int, box_dim: int = 4, conv_dims: List[int] = (-1,)
+    ):
         """
         NOTE: this interface is experimental.
 
@@ -86,18 +88,50 @@ class StandardRPNHead(nn.Module):
             box_dim (int): dimension of a box, which is also the number of box regression
                 predictions to make for each anchor. An axis aligned box has
                 box_dim=4, while a rotated box has box_dim=5.
+            conv_dims (list[int]): a list of integers representing the output channels
+                of N conv layers. Set it to -1 to use the same number of output channels
+                as input channels.
         """
         super().__init__()
-        # 3x3 conv for the hidden representation
-        self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+        cur_channels = in_channels
+        # Keeping the old variable names and structure for backwards compatiblity.
+        # Otherwise the old checkpoints will fail to load.
+        if len(conv_dims) == 1:
+            out_channels = cur_channels if conv_dims[0] == -1 else conv_dims[0]
+            # 3x3 conv for the hidden representation
+            self.conv = self._get_rpn_conv(cur_channels, out_channels)
+            cur_channels = out_channels
+        else:
+            self.conv = nn.Sequential()
+            for k, conv_dim in enumerate(conv_dims):
+                out_channels = cur_channels if conv_dim == -1 else conv_dim
+                if out_channels <= 0:
+                    raise ValueError(
+                        f"Conv output channels should be greater than 0. Got {out_channels}"
+                    )
+                conv = self._get_rpn_conv(cur_channels, out_channels)
+                self.conv.add_module(f"conv{k}", conv)
+                cur_channels = out_channels
         # 1x1 conv for predicting objectness logits
-        self.objectness_logits = nn.Conv2d(in_channels, num_anchors, kernel_size=1, stride=1)
+        self.objectness_logits = nn.Conv2d(cur_channels, num_anchors, kernel_size=1, stride=1)
         # 1x1 conv for predicting box2box transform deltas
-        self.anchor_deltas = nn.Conv2d(in_channels, num_anchors * box_dim, kernel_size=1, stride=1)
+        self.anchor_deltas = nn.Conv2d(cur_channels, num_anchors * box_dim, kernel_size=1, stride=1)
 
-        for l in [self.conv, self.objectness_logits, self.anchor_deltas]:
-            nn.init.normal_(l.weight, std=0.01)
-            nn.init.constant_(l.bias, 0)
+        # Keeping the order of weights initialization same for backwards compatiblility.
+        for layer in self.modules():
+            if isinstance(layer, nn.Conv2d):
+                nn.init.normal_(layer.weight, std=0.01)
+                nn.init.constant_(layer.bias, 0)
+
+    def _get_rpn_conv(self, in_channels, out_channels):
+        return Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            activation=nn.ReLU(),
+        )
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -114,7 +148,12 @@ class StandardRPNHead(nn.Module):
         assert (
             len(set(num_anchors)) == 1
         ), "Each level must have the same number of anchors per spatial position"
-        return {"in_channels": in_channels, "num_anchors": num_anchors[0], "box_dim": box_dim}
+        return {
+            "in_channels": in_channels,
+            "num_anchors": num_anchors[0],
+            "box_dim": box_dim,
+            "conv_dims": cfg.MODEL.RPN.CONV_DIMS,
+        }
 
     def forward(self, features: List[torch.Tensor]):
         """
@@ -132,7 +171,7 @@ class StandardRPNHead(nn.Module):
         pred_objectness_logits = []
         pred_anchor_deltas = []
         for x in features:
-            t = F.relu(self.conv(x))
+            t = self.conv(x)
             pred_objectness_logits.append(self.objectness_logits(t))
             pred_anchor_deltas.append(self.anchor_deltas(t))
         return pred_objectness_logits, pred_anchor_deltas
