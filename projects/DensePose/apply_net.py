@@ -17,6 +17,7 @@ from detectron2.structures.instances import Instances
 from detectron2.utils.logger import setup_logger
 
 from densepose import add_densepose_config
+from densepose.structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer
@@ -35,7 +36,12 @@ from densepose.vis.densepose_results_textures import (
     DensePoseResultsVisualizerWithTexture,
     get_texture_atlas,
 )
-from densepose.vis.extractor import CompoundExtractor, DensePoseResultExtractor, create_extractor
+from densepose.vis.extractor import (
+    CompoundExtractor,
+    DensePoseOutputsExtractor,
+    DensePoseResultExtractor,
+    create_extractor,
+)
 
 DOC = """Apply Net - a tool to print / visualize DensePose results
 """
@@ -165,7 +171,11 @@ class DumpAction(InferenceAction):
         if outputs.has("pred_boxes"):
             result["pred_boxes_XYXY"] = outputs.get("pred_boxes").tensor.cpu()
             if outputs.has("pred_densepose"):
-                result["pred_densepose"], _ = DensePoseResultExtractor()(outputs)
+                if isinstance(outputs.pred_densepose, DensePoseChartPredictorOutput):
+                    extractor = DensePoseResultExtractor()
+                elif isinstance(outputs.pred_densepose, DensePoseEmbeddingPredictorOutput):
+                    extractor = DensePoseOutputsExtractor()
+                result["pred_densepose"] = extractor(outputs)[0]
         context["results"].append(result)
 
     @classmethod
