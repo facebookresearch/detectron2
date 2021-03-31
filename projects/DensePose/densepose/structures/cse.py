@@ -42,3 +42,11 @@ class DensePoseEmbeddingPredictorOutput:
             return DensePoseEmbeddingPredictorOutput(
                 coarse_segm=self.coarse_segm[item], embedding=self.embedding[item]
             )
+
+    def to(self, device: torch.device):
+        """
+        Transfers all tensors to the given device
+        """
+        coarse_segm = self.coarse_segm.to(device)
+        embedding = self.embedding.to(device)
+        return DensePoseEmbeddingPredictorOutput(coarse_segm=coarse_segm, embedding=embedding)

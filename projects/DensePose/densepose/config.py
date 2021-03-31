@@ -167,6 +167,8 @@ def add_densepose_head_config(cfg: CN):
     #   "DensePoseChartPredictor": predicts segmentation and UV coordinates for predefined charts
     #   "DensePoseChartWithConfidencePredictor": predicts segmentation, UV coordinates
     #       and associated confidences for predefined charts (default)
+    #   "DensePoseEmbeddingWithConfidencePredictor": predicts segmentation, embeddings
+    #       and associated confidences for CSE
     _C.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME = "DensePoseChartWithConfidencePredictor"
     # Loss class name, must be registered in DENSEPOSE_LOSS_REGISTRY
     # Some registered losses:
