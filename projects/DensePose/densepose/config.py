@@ -39,6 +39,8 @@ def add_evaluation_config(cfg: CN):
     # minimum threshold for IOU values: the lower its values is,
     # the more matches are produced (and the higher the AP score)
     _C.DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD = 0.5
+    # Non-distributed inference is slower (at inference time) but can avoid RAM OOM
+    _C.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE = True
 
 
 def add_bootstrap_config(cfg: CN):
@@ -165,6 +167,8 @@ def add_densepose_head_config(cfg: CN):
     #   "DensePoseChartPredictor": predicts segmentation and UV coordinates for predefined charts
     #   "DensePoseChartWithConfidencePredictor": predicts segmentation, UV coordinates
     #       and associated confidences for predefined charts (default)
+    #   "DensePoseEmbeddingWithConfidencePredictor": predicts segmentation, embeddings
+    #       and associated confidences for CSE
     _C.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME = "DensePoseChartWithConfidencePredictor"
     # Loss class name, must be registered in DENSEPOSE_LOSS_REGISTRY
     # Some registered losses:
