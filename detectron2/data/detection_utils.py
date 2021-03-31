@@ -568,14 +568,7 @@ def check_metadata_consistency(key, dataset_names):
             raise ValueError("Datasets have different metadata '{}'!".format(key))
 
 
-def build_augmentation(cfg, is_train):
-    """
-    Create a list of default :class:`Augmentation` from config.
-    Now it includes resizing and flipping.
-
-    Returns:
-        list[Augmentation]
-    """
+def _build_sample_scale_aug(cfg, is_train):
     if is_train:
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
@@ -584,7 +577,35 @@ def build_augmentation(cfg, is_train):
         min_size = cfg.INPUT.MIN_SIZE_TEST
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
-    augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
+    return T.ResizeShortestEdge(min_size, max_size, sample_style)
+
+
+def _build_scale_and_crop_aug(cfg, is_train):
+    if is_train:
+        min_scale = cfg.INPUT.SCALE_AND_CROP.MIN_SCALE
+        max_scale = cfg.INPUT.SCALE_AND_CROP.MAX_SCALE
+    else:
+        min_scale = 1.0
+        max_scale = 1.0
+    return T.ScaleAndCrop(
+        min_scale, max_scale, cfg.INPUT.SCALE_AND_CROP.HEIGHT, cfg.INPUT.SCALE_AND_CROP.WIDTH
+    )
+
+
+def build_augmentation(cfg, is_train):
+    """
+    Create a list of default :class:`Augmentation` from config.
+    Now it includes resizing and flipping.
+
+    Returns:
+        list[Augmentation]
+    """
+    augmentation = []
+    if cfg.INPUT.SCALE_AND_CROP.ENABLED:
+        augmentation.append(_build_scale_and_crop_aug(cfg, is_train))
+    else:
+        augmentation.append(_build_sample_scale_aug(cfg, is_train))
+
     if is_train and cfg.INPUT.RANDOM_FLIP != "none":
         augmentation.append(
             T.RandomFlip(

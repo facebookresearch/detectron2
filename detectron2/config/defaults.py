@@ -57,6 +57,18 @@ _C.INPUT.MAX_SIZE_TRAIN = 1333
 _C.INPUT.MIN_SIZE_TEST = 800
 # Maximum size of the side of the image during testing
 _C.INPUT.MAX_SIZE_TEST = 1333
+# Set to `True` to use random scale and crop data augmentation.
+# If enabled, it takes precedence over the INPUT.MIN_SIZE_TRAIN_SAMPLING setting.
+# This data augmentation selects a random scale beteween MIN_SCALE and MAX_SCALE.
+# If the scaled image size is larger than the input (WIDTH, HEIGHT), then it
+# uses a random crop of size (WIDTH, HEIGHT). If the scaled image size is smaller,
+# then it uses padding to the size (WIDTH, HEIGHT).
+# At test/inference time, the MIN_SCALE and MAX_SCALE is set to 1.0.
+_C.INPUT.SCALE_AND_CROP = CN({"ENABLED": False})
+_C.INPUT.SCALE_AND_CROP.HEIGHT = 800
+_C.INPUT.SCALE_AND_CROP.WIDTH = 800
+_C.INPUT.SCALE_AND_CROP.MIN_SCALE = 0.8
+_C.INPUT.SCALE_AND_CROP.MAX_SCALE = 1.2
 # Mode for flipping images used in data augmentation during training
 # choose one of ["horizontal, "vertical", "none"]
 _C.INPUT.RANDOM_FLIP = "horizontal"

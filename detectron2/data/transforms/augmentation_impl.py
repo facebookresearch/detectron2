@@ -10,6 +10,8 @@ from fvcore.transforms.transform import (
     CropTransform,
     HFlipTransform,
     NoOpTransform,
+    PadTransform,
+    TransformList,
     VFlipTransform,
 )
 from PIL import Image
@@ -30,6 +32,7 @@ __all__ = [
     "Resize",
     "ResizeShortestEdge",
     "RandomCrop_CategoryAreaConstraint",
+    "ScaleAndCrop",
 ]
 
 
@@ -170,6 +173,58 @@ class ResizeShortestEdge(Augmentation):
         neww = int(neww + 0.5)
         newh = int(newh + 0.5)
         return ResizeTransform(h, w, newh, neww, self.interp)
+
+
+class ScaleAndCrop(Augmentation):
+    """
+    Selects a random scale beteween `min_scale' and `max_scale`. If the scaled image size is larger
+    than the input (height, width), then it uses a random crop of size (height, width). If the
+    scaled image size is smaller, then it pads the image to the size (height, width).
+    """
+
+    def __init__(self, min_scale, max_scale, height, width, interp=Image.BILINEAR):
+        """
+        Args:
+            min_scale (float): minimum image scale range.
+            max_scale (float): maximum image scale range.
+            height (int): output image height.
+            width (int): output image width.
+        """
+        super().__init__()
+        self._init(locals())
+
+    def get_transform(self, image):
+        # Compute the image scale and scaled size.
+        input_size = image.shape[:2]
+        output_size = (self.height, self.width)
+        random_scale = np.random.uniform(self.min_scale, self.max_scale)
+        random_scale_size = np.multiply(output_size, random_scale)
+        scale = np.minimum(
+            random_scale_size[0] / input_size[0], random_scale_size[1] / input_size[1]
+        )
+        scaled_size = np.round(np.multiply(input_size, scale)).astype(int)
+
+        # Add random crop if the image is scaled up.
+        max_offset = np.subtract(scaled_size, output_size)
+        max_offset = np.maximum(max_offset, 0)
+        offset = np.multiply(max_offset, np.random.uniform(0.0, 1.0))
+        offset = np.round(offset).astype(int)
+        resize_transform = ResizeTransform(
+            input_size[0], input_size[1], scaled_size[0], scaled_size[1], self.interp
+        )
+        crop_transform = CropTransform(
+            offset[1], offset[0], output_size[1], output_size[0], scaled_size[1], scaled_size[0]
+        )
+
+        # Add padding if the image is scaled down.
+        pad_size = np.subtract(output_size, scaled_size)
+        pad_size = np.maximum(pad_size, 0)
+        original_size = np.minimum(scaled_size, output_size)
+        pad_transform = PadTransform(
+            0, 0, pad_size[1], pad_size[0], original_size[1], original_size[0]
+        )
+
+        return TransformList([resize_transform, crop_transform, pad_transform])
 
 
 class RandomRotation(Augmentation):

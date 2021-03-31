@@ -88,6 +88,8 @@ class DatasetMapper:
         if cfg.INPUT.CROP.ENABLED and is_train:
             augs.insert(0, T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE))
             recompute_boxes = cfg.MODEL.MASK_ON
+        elif cfg.INPUT.SCALE_AND_CROP.ENABLED:
+            recompute_boxes = cfg.MODEL.MASK_ON
         else:
             recompute_boxes = False
 
@@ -184,4 +186,7 @@ class DatasetMapper:
             if self.recompute_boxes:
                 instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
             dataset_dict["instances"] = utils.filter_empty_instances(instances)
-        return dataset_dict
+        if len(dataset_dict["instances"]) == 0:
+            return None
+        else:
+            return dataset_dict
