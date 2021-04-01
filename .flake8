@@ -10,3 +10,4 @@ select = B,C,E,F,W,T4,B9
 exclude = build
 per-file-ignores =
   **/__init__.py:F401,F403,E402
+  **/configs/**.py:F401,E402
