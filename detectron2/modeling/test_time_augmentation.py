@@ -3,11 +3,13 @@ import copy
 import numpy as np
 from contextlib import contextmanager
 from itertools import count
+from typing import List
 import torch
 from fvcore.transforms import HFlipTransform, NoOpTransform
 from torch import nn
 from torch.nn.parallel import DistributedDataParallel
 
+from detectron2.config import configurable
 from detectron2.data.detection_utils import read_image
 from detectron2.data.transforms import (
     RandomFlip,
@@ -33,11 +35,25 @@ class DatasetMapperTTA:
     This is used for test-time augmentation.
     """
 
-    def __init__(self, cfg):
-        self.min_sizes = cfg.TEST.AUG.MIN_SIZES
-        self.max_size = cfg.TEST.AUG.MAX_SIZE
-        self.flip = cfg.TEST.AUG.FLIP
-        self.image_format = cfg.INPUT.FORMAT
+    @configurable
+    def __init__(self, min_sizes: List[int], max_size: int, flip: bool):
+        """
+        Args:
+            min_sizes: list of short-edge size to resize the image to
+            max_size: maximum height or width of resized images
+            flip: whether to apply flipping augmentation
+        """
+        self.min_sizes = min_sizes
+        self.max_size = max_size
+        self.flip = flip
+
+    @classmethod
+    def from_config(cls, cfg):
+        return {
+            "min_sizes": cfg.TEST.AUG.MIN_SIZES,
+            "max_size": cfg.TEST.AUG.MAX_SIZE,
+            "flip": cfg.TEST.AUG.FLIP,
+        }
 
     def __call__(self, dataset_dict):
         """
@@ -177,7 +193,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
         def _maybe_read_image(dataset_dict):
             ret = copy.copy(dataset_dict)
             if "image" not in ret:
-                image = read_image(ret.pop("file_name"), self.tta_mapper.image_format)
+                image = read_image(ret.pop("file_name"), self.model.input_format)
                 image = torch.from_numpy(np.ascontiguousarray(image.transpose(2, 0, 1)))  # CHW
                 ret["image"] = image
             if "height" not in ret and "width" not in ret:
