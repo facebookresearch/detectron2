@@ -152,19 +152,12 @@ def configurable(init_func=None, *, from_config=None):
             as its first argument.
     """
 
-    def check_docstring(func):
-        if func.__module__.startswith("detectron2."):
-            assert (
-                func.__doc__ is not None and "experimental" in func.__doc__.lower()
-            ), f"configurable {func} should be marked experimental"
-
     if init_func is not None:
         assert (
             inspect.isfunction(init_func)
             and from_config is None
             and init_func.__name__ == "__init__"
         ), "Incorrect use of @configurable. Check API documentation for examples."
-        check_docstring(init_func)
 
         @functools.wraps(init_func)
         def wrapped(self, *args, **kwargs):
@@ -193,8 +186,6 @@ def configurable(init_func=None, *, from_config=None):
         ), "from_config argument of configurable must be a function!"
 
         def wrapper(orig_func):
-            check_docstring(orig_func)
-
             @functools.wraps(orig_func)
             def wrapped(*args, **kwargs):
                 if _called_with_cfg(*args, **kwargs):
