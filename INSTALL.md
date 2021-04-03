@@ -17,10 +17,10 @@ python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 
 # Or, to install it from a local clone:
 git clone https://github.com/facebookresearch/detectron2.git
-python -m pip install -e detectron2
 
+python -m pip install -e detectron2
 # Or if you are on macOS
-CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install ......
+CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install -e dectron2
 ```
 
 To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
