@@ -2,12 +2,12 @@
 blank_issues_enabled: false
 
 contact_links:
-  - name: How-To / Other Questions
+  - name: How-To / All Other Questions
     url: https://github.com/facebookresearch/detectron2/discussions
-    about: Use discussions for more general questions and support
+    about: Use "github discussions" for community support on general questions that don't belong to the above issue categories
   - name: Detectron2 Documentation
     url: https://detectron2.readthedocs.io/index.html
-    about: Check if your question is answered in docs
+    about: Check if your question is answered in tutorials or API docs
 
 # Unexpected behaviors & bugs are split to two templates.
 # When they are one template, users think "it's not a bug" and don't choose the template.

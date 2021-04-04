@@ -102,6 +102,15 @@ def collect_env_info():
                 except subprocess.SubprocessError:
                     nvcc = "Not found"
                 data.append(("CUDA compiler", nvcc))
+        if has_cuda and sys.platform != "win32":
+            try:
+                so_file = importlib.util.find_spec("detectron2._C").origin
+            except ImportError:
+                pass
+            else:
+                data.append(
+                    ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, so_file))
+                )
     else:
         # print compilers that are used to build extension
         data.append(("Compiler", _C.get_compiler_version()))

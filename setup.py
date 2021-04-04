@@ -57,7 +57,7 @@ def get_extensions():
         else [0, 0, 0]
     )
 
-    if is_rocm_pytorch and hipify_ver < [1, 0, 0]:
+    if is_rocm_pytorch and hipify_ver < [1, 0, 0]:  # TODO not needed since pt1.8
 
         # Earlier versions of hipification and extension modules were not
         # transparent, i.e. would require an explicit call to hipify, and the

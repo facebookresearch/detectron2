@@ -866,5 +866,5 @@ class StandardROIHeads(ROIHeads):
             boxes = [x.proposal_boxes if self.training else x.pred_boxes for x in instances]
             features = self.keypoint_pooler(features, boxes)
         else:
-            features = dict([(f, features[f]) for f in self.keypoint_in_features])
+            features = {f: features[f] for f in self.keypoint_in_features}
         return self.keypoint_head(features, instances)

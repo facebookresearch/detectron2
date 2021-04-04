@@ -84,7 +84,7 @@ that performs the export logic.
 It replaces parts of the model with Caffe2 operators,
 and then export the model into Caffe2, TorchScript or ONNX format.
 
-The converted model is able to run in either Python or C++ without detectron2/torchvision dependency.
+The converted model is able to run in either Python or C++ without detectron2/torchvision dependency, on CPU or GPUs.
 It has a runtime optimized for CPU & mobile inference, but not optimized for GPU inference.
 
 This feature requires ONNX ≥ 1.6.

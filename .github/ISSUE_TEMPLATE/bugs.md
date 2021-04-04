@@ -23,7 +23,7 @@ git rev-parse HEAD; git diff
 
 ## Expected behavior:
 
-If there are no obvious error in "what you observed" provided above,
+If there are no obvious error in "full logs" provided above,
 please tell us the expected behavior.
 
 ## Environment:

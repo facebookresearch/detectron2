@@ -19,8 +19,8 @@ python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 git clone https://github.com/facebookresearch/detectron2.git
 python -m pip install -e detectron2
 
-# Or if you are on macOS
-CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install ......
+# On macOS, you may need to prepend the above commands with a few environment variables:
+CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install ...
 ```
 
 To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
@@ -60,7 +60,7 @@ Choose from this table to install [v0.4 (Mar 2021)](https://github.com/facebookr
 
 
 Note that:
-1. The pre-built package has to be used with corresponding version of CUDA and the official package of PyTorch.
+1. The pre-built packages have to be used with corresponding version of CUDA and the official package of PyTorch.
    Otherwise, please build detectron2 from source.
 2. New packages are released every few months. Therefore, packages may not contain latest features in the master
    branch and may not be compatible with the master branch of a research project that uses detectron2

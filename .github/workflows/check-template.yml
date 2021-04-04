@@ -7,8 +7,10 @@ on:
 jobs:
   check-template:
     runs-on: ubuntu-latest
+    # comment this out when testing with https://github.com/nektos/act
     if: ${{ github.repository_owner == 'facebookresearch' }}
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/github-script@v3
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -18,6 +20,8 @@ jobs:
             // - context: An object containing the context of the workflow run
             // - core: A reference to the @actions/core package
             // - io: A reference to the @actions/io package
+            const fs = require('fs');
+            const editDistance = require(`${process.env.GITHUB_WORKSPACE}/.github/workflows/levenshtein.js`).getEditDistance
             issue = await github.issues.get({
               owner: context.issue.owner,
               repo: context.issue.repo,
@@ -29,7 +33,41 @@ jobs:
               core.debug("Issue " + issue.data.title + " was skipped.");
               return;
             }
-            const body = issue.data.body.toLowerCase();
+
+            sameAsTemplate = function(filename, body) {
+              let tmpl = fs.readFileSync(`.github/ISSUE_TEMPLATE/${filename}`, 'utf8');
+              tmpl = tmpl.toLowerCase().split("---").slice(2).join("").trim();
+              tmpl = tmpl.replace(/(\r\n|\n|\r)/gm, "");
+              let bodyr = body.replace(/(\r\n|\n|\r)/gm, "");
+              let dist = editDistance(tmpl, bodyr);
+              return dist < 8;
+            };
+
+            checkFail = async function(msg) {
+              core.info("Processing '" + issue.data.title + "' with message: " + msg);
+              await github.issues.addLabels({
+                owner: context.issue.owner,
+                repo: context.issue.repo,
+                issue_number: context.issue.number,
+                labels: ["needs-more-info"],
+              });
+              await github.issues.createComment({
+                owner: context.issue.owner,
+                repo: context.issue.repo,
+                issue_number: context.issue.number,
+                body: msg,
+              });
+            };
+
+            const body = issue.data.body.toLowerCase().trim();
+
+            if (sameAsTemplate("bugs.md", body) || sameAsTemplate("unexpected-problems-bugs.md", body)) {
+              await checkFail(`
+            We found that not enough information is provided about this issue.
+            Please provide details following the [issue template](https://github.com/facebookresearch/detectron2/issues/new/choose).`)
+              return;
+            }
+
             const hasInstructions = body.indexOf("reproduce") != -1;
             const hasEnvironment = (body.indexOf("environment") != -1) || (body.indexOf("colab") != -1) || (body.indexOf("docker") != -1);
             if (hasInstructions && hasEnvironment) {
@@ -45,17 +83,4 @@ jobs:
             if (!hasEnvironment) {
               message += "\"Your Environment\"; ";
             }
-
-            core.info("Processing " + issue.data.title + " with message " + message);
-            await github.issues.addLabels({
-              owner: context.issue.owner,
-              repo: context.issue.repo,
-              issue_number: context.issue.number,
-              labels: ["needs-more-info"],
-            });
-            await github.issues.createComment({
-              owner: context.issue.owner,
-              repo: context.issue.repo,
-              issue_number: context.issue.number,
-              body: message,
-            });
+            await checkFail(message);

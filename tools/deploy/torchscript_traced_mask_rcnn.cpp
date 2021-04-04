@@ -7,6 +7,7 @@
 
 #include <c10/cuda/CUDAStream.h>
 #include <torch/csrc/autograd/grad_mode.h>
+#include <torch/csrc/jit/runtime/graph_executor.h>
 #include <torch/script.h>
 
 // only needed for export_method=tracing
@@ -61,6 +62,7 @@ Usage:
   assert(export_method == "caffe2_tracing" || export_method == "tracing");
   bool is_caffe2 = export_method == "caffe2_tracing";
 
+  torch::jit::getBailoutDepth() = 1;
   torch::autograd::AutoGradMode guard(false);
   auto module = torch::jit::load(argv[1]);
 
