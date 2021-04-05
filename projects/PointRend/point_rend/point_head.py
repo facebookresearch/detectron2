@@ -5,11 +5,8 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, cat
-from detectron2.structures import BitMasks
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
-
-from .point_features import point_sample
 
 POINT_HEAD_REGISTRY = Registry("POINT_HEAD")
 POINT_HEAD_REGISTRY.__doc__ = """
@@ -19,10 +16,10 @@ The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 
-def roi_mask_point_loss(mask_logits, instances, points_coord):
+def roi_mask_point_loss(mask_logits, instances, point_labels):
     """
-    Compute the point-based loss for instance segmentation mask predictions.
-
+    Compute the point-based loss for instance segmentation mask predictions
+    given point-wise mask prediction and its corresponding point-wise labels.
     Args:
         mask_logits (Tensor): A tensor of shape (R, C, P) or (R, 1, P) for class-specific or
             class-agnostic, where R is the total number of predicted masks in all images, C is the
@@ -33,9 +30,9 @@ def roi_mask_point_loss(mask_logits, instances, points_coord):
             elememt of the list contains R_i objects and R_1 + ... + R_N is equal to R.
             The ground-truth labels (class, box, mask, ...) associated with each instance are stored
             in fields.
-        points_coords (Tensor): A tensor of shape (R, P, 2), where R is the total number of
-            predicted masks and P is the number of points for each mask. The coordinates are in
-            the image pixel coordinate space, i.e. [0, H] x [0, W].
+        point_labels (Tensor): A tensor of shape (R, P), where R is the total number of
+            predicted masks and P is the number of points for each mask.
+            Labels with value of -1 will be ignored.
     Returns:
         point_loss (Tensor): A scalar tensor containing the loss.
     """
@@ -44,38 +41,19 @@ def roi_mask_point_loss(mask_logits, instances, points_coord):
         total_num_masks = mask_logits.size(0)
 
         gt_classes = []
-        gt_mask_logits = []
-        idx = 0
         for instances_per_image in instances:
             if len(instances_per_image) == 0:
                 continue
-            assert isinstance(
-                instances_per_image.gt_masks, BitMasks
-            ), "Point head works with GT in 'bitmask' format. Set INPUT.MASK_FORMAT to 'bitmask'."
 
             if not cls_agnostic_mask:
                 gt_classes_per_image = instances_per_image.gt_classes.to(dtype=torch.int64)
                 gt_classes.append(gt_classes_per_image)
 
-            gt_bit_masks = instances_per_image.gt_masks.tensor
-            h, w = instances_per_image.gt_masks.image_size
-            scale = torch.tensor([w, h], dtype=torch.float, device=gt_bit_masks.device)
-            points_coord_grid_sample_format = (
-                points_coord[idx : idx + len(instances_per_image)] / scale
-            )
-            idx += len(instances_per_image)
-            gt_mask_logits.append(
-                point_sample(
-                    gt_bit_masks.to(torch.float32).unsqueeze(1),
-                    points_coord_grid_sample_format,
-                    align_corners=False,
-                ).squeeze(1)
-            )
-
-    if len(gt_mask_logits) == 0:
+    gt_mask_logits = point_labels
+    point_ignores = point_labels == -1
+    if gt_mask_logits.shape[0] == 0:
         return mask_logits.sum() * 0
 
-    gt_mask_logits = cat(gt_mask_logits)
     assert gt_mask_logits.numel() > 0, gt_mask_logits.shape
 
     if cls_agnostic_mask:
@@ -87,11 +65,12 @@ def roi_mask_point_loss(mask_logits, instances, points_coord):
 
     # Log the training accuracy (using gt classes and 0.0 threshold for the logits)
     mask_accurate = (mask_logits > 0.0) == gt_mask_logits.to(dtype=torch.uint8)
+    mask_accurate = mask_accurate[~point_ignores]
     mask_accuracy = mask_accurate.nonzero().size(0) / mask_accurate.numel()
-    get_event_storage().put_scalar("point_rend/accuracy", mask_accuracy)
+    get_event_storage().put_scalar("point/accuracy", mask_accuracy)
 
     point_loss = F.binary_cross_entropy_with_logits(
-        mask_logits, gt_mask_logits.to(dtype=torch.float32), reduction="mean"
+        mask_logits, gt_mask_logits.to(dtype=torch.float32), weight=~point_ignores, reduction="mean"
     )
     return point_loss
 
