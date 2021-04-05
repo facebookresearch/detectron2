@@ -142,8 +142,8 @@ class RetinaNet(nn.Module):
         self.vis_period = vis_period
         self.input_format = input_format
 
-        self.register_buffer("pixel_mean", torch.Tensor(pixel_mean).view(-1, 1, 1), False)
-        self.register_buffer("pixel_std", torch.Tensor(pixel_std).view(-1, 1, 1), False)
+        self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
+        self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
 
         """
         In Detectron1, loss is normalized by number of foreground samples in the batch.

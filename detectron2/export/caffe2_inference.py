@@ -118,7 +118,7 @@ class ProtobufModel(torch.nn.Module):
                 raise RuntimeError(
                     "Invalid output for blob {}, received: {}".format(name, c2_output)
                 )
-            outputs.append(torch.Tensor(c2_output).to(device=device))
+            outputs.append(torch.tensor(c2_output).to(device=device))
         return tuple(outputs)
 
 

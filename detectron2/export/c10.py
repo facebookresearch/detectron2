@@ -169,9 +169,9 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
         if self.tensor_mode:
             im_info = images.image_sizes
         else:
-            im_info = torch.Tensor(
-                [[im_sz[0], im_sz[1], torch.Tensor([1.0])] for im_sz in images.image_sizes]
-            ).to(images.tensor.device)
+            im_info = torch.tensor([[im_sz[0], im_sz[1], 1.0] for im_sz in images.image_sizes]).to(
+                images.tensor.device
+            )
         assert isinstance(im_info, torch.Tensor)
 
         rpn_rois_list = []
@@ -402,7 +402,7 @@ class Caffe2FastRCNNOutputsInference:
             im_info = proposals[0].image_size
             rois = rois.tensor
         else:
-            im_info = torch.Tensor(
+            im_info = torch.tensor(
                 [[sz[0], sz[1], 1.0] for sz in [x.image_size for x in proposals]]
             )
             batch_ids = cat(

@@ -588,7 +588,7 @@ class Visualizer:
                 pan_seg = rgb2id(pan_seg)
         if pan_seg is not None:
             segments_info = dic["segments_info"]
-            pan_seg = torch.Tensor(pan_seg)
+            pan_seg = torch.tensor(pan_seg)
             self.draw_panoptic_seg(pan_seg, segments_info, area_threshold=0, alpha=0.5)
         return self.output
 
