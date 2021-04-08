@@ -199,15 +199,20 @@ class MMDetDetector(nn.Module):
                         return mm_PolygonMasks(m.polygons, shape[0], shape[1])
 
                 gt_masks = [convert_mask(x.gt_masks, x.image_size) for x in gt_instances]
+                losses_and_metrics = self.detector.forward_train(
+                    images,
+                    metas,
+                    [x.gt_boxes.tensor for x in gt_instances],
+                    [x.gt_classes for x in gt_instances],
+                    gt_masks=gt_masks,
+                )
             else:
-                gt_masks = None
-            losses_and_metrics = self.detector.forward_train(
-                images,
-                metas,
-                [x.gt_boxes.tensor for x in gt_instances],
-                [x.gt_classes for x in gt_instances],
-                gt_masks=gt_masks,
-            )
+                losses_and_metrics = self.detector.forward_train(
+                    images,
+                    metas,
+                    [x.gt_boxes.tensor for x in gt_instances],
+                    [x.gt_classes for x in gt_instances],
+                )
             return _parse_losses(losses_and_metrics)
         else:
             results = self.detector.simple_test(images, metas, rescale=rescale)
