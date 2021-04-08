@@ -14,7 +14,7 @@ import logging
 import os
 import sys
 from collections import OrderedDict
-from typing import Optional, Union, List, Dict
+from typing import Optional, Dict, List, Union
 
 import numpy as np
 import torch
@@ -42,6 +42,7 @@ from detectron2.utils.env import TORCH_VERSION, seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
+
 from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
 
@@ -66,7 +67,7 @@ def default_argument_parser(epilog=None):
     """
     parser = argparse.ArgumentParser(
         epilog=epilog
-               or f"""
+        or f"""
 Examples:
 
 Run on single machine:
@@ -86,7 +87,7 @@ Run on multiple machines:
         "--resume",
         action="store_true",
         help="Whether to attempt to resume from the checkpoint directory. "
-             "See documentation of `DefaultTrainer.resume_or_load()` for what it means.",
+        "See documentation of `DefaultTrainer.resume_or_load()` for what it means.",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
@@ -103,13 +104,13 @@ Run on multiple machines:
         "--dist-url",
         default="tcp://127.0.0.1:{}".format(port),
         help="initialization URL for pytorch distributed backend. See "
-             "https://pytorch.org/docs/stable/distributed.html for details.",
+        "https://pytorch.org/docs/stable/distributed.html for details.",
     )
     parser.add_argument(
         "opts",
         help="Modify config options by adding 'KEY VALUE' pairs at the end of the command. "
-             "See config references at "
-             "https://detectron2.readthedocs.io/modules/config.html#config-references",
+        "See config references at "
+        "https://detectron2.readthedocs.io/modules/config.html#config-references",
         default=None,
         nargs=argparse.REMAINDER,
     )
@@ -258,11 +259,11 @@ class BatchPredictor(DefaultPredictor):
     def __call__(self, batch: Union[np.ndarray, List[np.ndarray], List[Dict[str, np.ndarray]]]):
         """
         Args:
-            batch (np.ndarray): supported format includes:   
+            batch (np.ndarray): supported format includes:
                 - an image of shape (H, W, C) (in BGR order),
                 - a list of (H, W, C) np.ndarray
                 - a list of dict like {'image': (H, W, C)}
-                - a batch ndarray of shape (B, H, W, C) 
+                - a batch ndarray of shape (B, H, W, C)
 
         Returns:
             predictions (List[dict]):
@@ -280,7 +281,7 @@ class BatchPredictor(DefaultPredictor):
 
         assert isinstance(batch, list) and isinstance(batch[0], np.ndarray)
 
-        with torch.no_grad():
+        with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
             inputs = []
             for original_image in batch:
@@ -658,7 +659,7 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
         cfg.defrost()
 
         assert (
-                cfg.SOLVER.IMS_PER_BATCH % old_world_size == 0
+            cfg.SOLVER.IMS_PER_BATCH % old_world_size == 0
         ), "Invalid REFERENCE_WORLD_SIZE in config!"
         scale = num_workers / old_world_size
         bs = cfg.SOLVER.IMS_PER_BATCH = int(round(cfg.SOLVER.IMS_PER_BATCH * scale))
