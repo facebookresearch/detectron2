@@ -273,11 +273,12 @@ class BatchPredictor(DefaultPredictor):
             elif batch.ndim == 4:
                 batch = [i.squeeze() for i in np.split(batch, batch.shape[0])]
             else:
-                assert False
+                raise AssertionError()
         elif isinstance(batch, list) and isinstance(batch[0], dict):
             batch = [i["image"] for i in batch]
 
-        assert isinstance(batch, list) and isinstance(batch[0], np.ndarray)
+        if not (isinstance(batch, list) and isinstance(batch[0], np.ndarray)):
+            raise AssertionError()
 
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
