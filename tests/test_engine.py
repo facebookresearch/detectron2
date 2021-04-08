@@ -82,7 +82,9 @@ class TestTrainer(unittest.TestCase):
 
     @unittest.skipIf(os.environ.get("CI"), "Require COCO data.")
     def test_default_trainer(self):
+        # TODO: this test requires manifold access, so changed device to CPU. see: T88318502
         cfg = get_cfg()
+        cfg.MODEL.DEVICE = "cpu"
         cfg.MODEL.META_ARCHITECTURE = "_SimpleModel"
         cfg.DATASETS.TRAIN = ("coco_2017_val_100",)
         with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:

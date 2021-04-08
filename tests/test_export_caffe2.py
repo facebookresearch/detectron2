@@ -42,14 +42,18 @@ class TestCaffe2Export(unittest.TestCase):
             ts_model.save(os.path.join(d, "model.ts"))
 
     def testMaskRCNN(self):
+        # TODO: this test requires manifold access, see: T88318502
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNNGPU(self):
+        # TODO: this test requires manifold access, see: T88318502
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", device="cuda")
 
     def testRetinaNet(self):
+        # TODO: this test requires manifold access, see: T88318502
         self._test_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml")
 
     def testPanopticFPN(self):
+        # TODO: this test requires manifold access, see: T88318502
         self._test_model("COCO-PanopticSegmentation/panoptic_fpn_R_50_3x.yaml")
