@@ -11,12 +11,11 @@ since they are meant to represent the "common default behavior" people need in t
 
 import argparse
 import logging
+import numpy as np
 import os
 import sys
 from collections import OrderedDict
-from typing import Optional, Dict, List, Union
-
-import numpy as np
+from typing import Dict, List, Optional, Union
 import torch
 from fvcore.nn.precise_bn import get_bn_modules
 from torch.nn.parallel import DistributedDataParallel
@@ -255,7 +254,6 @@ class DefaultPredictor:
 
 
 class BatchPredictor(DefaultPredictor):
-
     def __call__(self, batch: Union[np.ndarray, List[np.ndarray], List[Dict[str, np.ndarray]]]):
         """
         Args:
@@ -277,7 +275,7 @@ class BatchPredictor(DefaultPredictor):
             else:
                 assert False
         elif isinstance(batch, list) and isinstance(batch[0], dict):
-            batch = [i['image'] for i in batch]
+            batch = [i["image"] for i in batch]
 
         assert isinstance(batch, list) and isinstance(batch[0], np.ndarray)
 
