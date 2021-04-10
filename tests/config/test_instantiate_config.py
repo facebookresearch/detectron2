@@ -7,8 +7,7 @@ import yaml
 from omegaconf import OmegaConf
 from omegaconf import __version__ as oc_version
 
-from detectron2.config import LazyCall as L
-from detectron2.config import instantiate
+from detectron2.config import instantiate, LazyCall as L
 from detectron2.layers import ShapeSpec
 
 OC_VERSION = tuple(int(x) for x in oc_version.split(".")[:2])

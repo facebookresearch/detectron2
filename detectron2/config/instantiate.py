@@ -3,7 +3,6 @@ import dataclasses
 import logging
 from collections import abc
 from typing import Any
-from omegaconf import DictConfig
 
 from detectron2.utils.registry import _convert_target_to_string, locate
 
@@ -81,30 +80,3 @@ def instantiate(cfg):
             logger.error(f"Error when instantiating {cls_name}!")
             raise
     return cfg  # return as-is if don't know what to do
-
-
-class LazyCall:
-    """
-    Wrap a callable so that when it's called, the call will not be execued,
-    but returns a dict that describes the call.
-
-    LazyCall object has to be called with only keyword arguments. Positional
-    arguments are not yet supported.
-
-    Examples:
-    ::
-        layer_cfg = LazyCall(nn.Conv2d)(in_channels=32, out_channels=32)
-        layer_cfg.out_channels = 64
-        layer = instantiate(layer_cfg)
-    """
-
-    def __init__(self, target):
-        if not (callable(target) or isinstance(target, (str, abc.Mapping))):
-            raise TypeError(
-                "target of LazyCall must be a callable or defines a callable! Got {target}"
-            )
-        self._target = target
-
-    def __call__(self, **kwargs):
-        kwargs["_target_"] = self._target
-        return DictConfig(content=kwargs, flags={"allow_objects": True})
