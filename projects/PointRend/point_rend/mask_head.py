@@ -133,9 +133,7 @@ class ConvFCHead(nn.Module):
         )
         return ret
 
-    def layers(self, x):
-        # unlike BaseMaskRCNNHead, this head only outputs intermediate
-        # features, because the features will be used later by PointHead.
+    def forward(self, x):
         N = x.shape[0]
         for layer in self.conv_layers:
             x = layer(x)
@@ -144,10 +142,6 @@ class ConvFCHead(nn.Module):
             x = F.relu(layer(x))
         output_shape = [N] + list(self.output_shape)
         return self.prediction(x).view(*output_shape)
-
-    def forward(self, x):
-        # backward compatibility
-        return self.layers(x)
 
     def _load_from_state_dict(
         self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
