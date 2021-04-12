@@ -233,7 +233,7 @@ class RotatedAnchorGenerator(nn.Module):
     "Arbitrary-Oriented Scene Text Detection via Rotation Proposals".
     """
 
-    box_dim: int = 5
+    box_dim: torch.jit.Final[int] = 5
     """
     the dimension of each anchor box.
     """
@@ -289,6 +289,7 @@ class RotatedAnchorGenerator(nn.Module):
         return BufferList(cell_anchors)
 
     @property
+    @torch.jit.unused
     def num_cell_anchors(self):
         """
         Alias of `num_anchors`.
@@ -296,6 +297,7 @@ class RotatedAnchorGenerator(nn.Module):
         return self.num_anchors
 
     @property
+    @torch.jit.unused
     def num_anchors(self):
         """
         Returns:
@@ -310,9 +312,10 @@ class RotatedAnchorGenerator(nn.Module):
         """
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
-    def _grid_anchors(self, grid_sizes):
+    def _grid_anchors(self, grid_sizes: List[List[int]]):
         anchors = []
-        for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
+        buffers: List[torch.Tensor] = [x[1] for x in self.cell_anchors.named_buffers()]
+        for size, stride, base_anchors in zip(grid_sizes, self.strides, buffers):
             shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors.device)
             zeros = torch.zeros_like(shift_x)
             shifts = torch.stack((shift_x, shift_y, zeros, zeros, zeros), dim=1)
@@ -357,7 +360,7 @@ class RotatedAnchorGenerator(nn.Module):
 
         return torch.tensor(anchors)
 
-    def forward(self, features):
+    def forward(self, features: List[torch.Tensor]):
         """
         Args:
             features (list[Tensor]): list of backbone feature maps on which to generate anchors.
