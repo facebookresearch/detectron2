@@ -22,7 +22,7 @@ __all__ = ["LazyCall", "LazyConfig"]
 
 class LazyCall:
     """
-    Wrap a callable so that when it's called, the call will not be execued,
+    Wrap a callable so that when it's called, the call will not be executed,
     but returns a dict that describes the call.
 
     LazyCall object has to be called with only keyword arguments. Positional

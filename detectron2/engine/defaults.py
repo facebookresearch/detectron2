@@ -17,10 +17,12 @@ from collections import OrderedDict
 from typing import Optional
 import torch
 from fvcore.nn.precise_bn import get_bn_modules
+from omegaconf import OmegaConf
 from torch.nn.parallel import DistributedDataParallel
 
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
+from detectron2.config import CfgNode, LazyConfig
 from detectron2.data import (
     MetadataCatalog,
     build_detection_test_loader,
@@ -133,6 +135,24 @@ Run on multiple machines:
     return parser
 
 
+def _try_get_key(cfg, *keys, default=None):
+    """
+    Try select keys from cfg until the first key that exists. Otherwise return default.
+    """
+    if isinstance(cfg, CfgNode):
+        cfg = OmegaConf.create(cfg.dump())
+    for k in keys:
+        parts = k.split(".")
+        # https://github.com/omry/omegaconf/issues/674
+        for p in parts:
+            if p not in cfg:
+                break
+            cfg = OmegaConf.select(cfg, p)
+        else:
+            return cfg
+    return default
+
+
 def default_setup(cfg, args):
     """
     Perform some basic common setups at the beginning of a job, including:
@@ -142,10 +162,10 @@ def default_setup(cfg, args):
     3. Backup the config to the output directory
 
     Args:
-        cfg (CfgNode): the full config to be used
+        cfg (CfgNode or omegaconf.DictConfig): the full config to be used
         args (argparse.NameSpace): the command line arguments to be logged
     """
-    output_dir = cfg.OUTPUT_DIR
+    output_dir = _try_get_key(cfg, "OUTPUT_DIR", "output_dir", "train.output_dir")
     if comm.is_main_process() and output_dir:
         PathManager.mkdirs(output_dir)
 
@@ -164,22 +184,28 @@ def default_setup(cfg, args):
             )
         )
 
-    logger.info("Running with full config:\n{}".format(cfg))
     if comm.is_main_process() and output_dir:
         # Note: some of our scripts may expect the existence of
         # config.yaml in output directory
         path = os.path.join(output_dir, "config.yaml")
-        with PathManager.open(path, "w") as f:
-            f.write(cfg.dump())
+        if isinstance(cfg, CfgNode):
+            logger.info("Running with full config:\n{}".format(cfg))
+            with PathManager.open(path, "w") as f:
+                f.write(cfg.dump())
+        else:
+            LazyConfig.save(cfg, path)
         logger.info("Full config saved to {}".format(path))
 
     # make sure each worker has a different, yet deterministic seed if specified
-    seed_all_rng(None if cfg.SEED < 0 else cfg.SEED + rank)
+    seed = _try_get_key(cfg, "SEED", "train.seed", default=-1)
+    seed_all_rng(None if seed < 0 else seed + rank)
 
     # cudnn benchmark has large overhead. It shouldn't be used considering the small size of
     # typical validation set.
     if not (hasattr(args, "eval_only") and args.eval_only):
-        torch.backends.cudnn.benchmark = cfg.CUDNN_BENCHMARK
+        torch.backends.cudnn.benchmark = _try_get_key(
+            cfg, "CUDNN_BENCHMARK", "train.cudnn_benchmark", default=False
+        )
 
 
 def default_writers(output_dir: str, max_iter: Optional[int] = None):
