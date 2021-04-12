@@ -38,7 +38,7 @@ from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
-from detectron2.utils.env import TORCH_VERSION, seed_all_rng
+from detectron2.utils.env import seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
@@ -396,13 +396,7 @@ class DefaultTrainer(TrainerBase):
         if resume and self.checkpointer.has_checkpoint():
             self.start_iter = checkpoint.get("iteration", -1) + 1
             # The checkpoint stores the training iteration that just finished, thus we start
-            # at the next iteration (or iter zero if there's no checkpoint).
-        if isinstance(self.model, DistributedDataParallel):
-            # broadcast loaded data/model from the first rank, because other
-            # machines may not have access to the checkpoint file
-            if TORCH_VERSION >= (1, 7):
-                self.model._sync_params_and_buffers()
-            self.start_iter = comm.all_gather(self.start_iter)[0]
+            # at the next iteration
 
     def build_hooks(self):
         """
