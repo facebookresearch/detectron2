@@ -173,7 +173,7 @@ class MMDetDetector(nn.Module):
             c, h, w = input["image"].shape
             meta["img_shape"] = meta["ori_shape"] = (h, w, c)
             if rescale:
-                scale_factor = np.sqrt(h * w / (input["height"] * input["width"]))
+                scale_factor = np.array([w / input["width"], h / input["height"]] * 2)
                 ori_shape = (input["height"], input["width"])
                 output_shapes.append(ori_shape)
                 meta["ori_shape"] = ori_shape + (c,)
