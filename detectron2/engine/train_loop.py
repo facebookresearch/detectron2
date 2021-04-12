@@ -46,9 +46,11 @@ class HookBase:
            between :meth:`before_step` and :meth:`after_step` (e.g., timer) to
            function properly.
 
-    Attributes:
-        trainer (TrainerBase): A weak reference to the trainer object. Set by the trainer
-            when the hook is registered.
+    """
+
+    trainer: "TrainerBase" = None
+    """
+    A weak reference to the trainer object. Set by the trainer when the hook is registered.
     """
 
     def before_train(self):
