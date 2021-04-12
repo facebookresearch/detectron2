@@ -37,6 +37,45 @@ class TestTransforms(unittest.TestCase):
         err_msg = "transformed_bbox = {}, expected {}".format(transformed_bbox, expected_bbox)
         assert np.allclose(transformed_bbox, expected_bbox), err_msg
 
+    def test_resize_and_crop(self):
+        np.random.seed(125)
+        min_scale = 0.2
+        max_scale = 2.0
+        target_height = 1100
+        target_width = 1000
+        resize_aug = T.ResizeScale(min_scale, max_scale, target_height, target_width)
+        fixed_size_crop_aug = T.FixedSizeCrop((target_height, target_width))
+        hflip_aug = T.RandomFlip()
+        augs = [resize_aug, fixed_size_crop_aug, hflip_aug]
+        original_image = np.random.rand(900, 800)
+        image, transforms = T.apply_augmentations(augs, original_image)
+        image_shape = image.shape[:2]  # h, w
+        self.assertEqual((1100, 1000), image_shape)
+
+        boxes = np.array(
+            [[91, 46, 144, 111], [523, 251, 614, 295]],
+            dtype=np.float64,
+        )
+        transformed_bboxs = transforms.apply_box(boxes)
+        expected_bboxs = np.array(
+            [
+                [895.42, 33.42666667, 933.91125, 80.66],
+                [554.0825, 182.39333333, 620.17125, 214.36666667],
+            ],
+            dtype=np.float64,
+        )
+        err_msg = "transformed_bbox = {}, expected {}".format(transformed_bboxs, expected_bboxs)
+        self.assertTrue(np.allclose(transformed_bboxs, expected_bboxs), err_msg)
+
+        polygon = np.array([[91, 46], [144, 46], [144, 111], [91, 111]])
+        transformed_polygons = transforms.apply_polygons([polygon])
+        expected_polygon = np.array([[934.0, 33.0], [934.0, 80.0], [896.0, 80.0], [896.0, 33.0]])
+        self.assertEqual(1, len(transformed_polygons))
+        err_msg = "transformed_polygon = {}, expected {}".format(
+            transformed_polygons[0], expected_polygon
+        )
+        self.assertTrue(np.allclose(transformed_polygons[0], expected_polygon), err_msg)
+
     def test_apply_rotated_boxes_unequal_scaling_factor(self):
         np.random.seed(125)
         h, w = 400, 200
