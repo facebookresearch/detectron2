@@ -13,6 +13,7 @@ import argparse
 import logging
 import os
 import sys
+import weakref
 from collections import OrderedDict
 from typing import Optional
 import torch
@@ -363,14 +364,11 @@ class DefaultTrainer(TrainerBase):
         )
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
-        # Assume no other objects need to be checkpointed.
-        # We can later make it checkpoint the stateful hooks
         self.checkpointer = DetectionCheckpointer(
             # Assume you want to save checkpoints together with logs/statistics
             model,
             cfg.OUTPUT_DIR,
-            optimizer=optimizer,
-            scheduler=self.scheduler,
+            trainer=weakref.proxy(self),
         )
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
@@ -392,11 +390,11 @@ class DefaultTrainer(TrainerBase):
         Args:
             resume (bool): whether to do resume or not
         """
-        checkpoint = self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
+        self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
         if resume and self.checkpointer.has_checkpoint():
-            self.start_iter = checkpoint.get("iteration", -1) + 1
             # The checkpoint stores the training iteration that just finished, thus we start
             # at the next iteration
+            self.start_iter = self.iter + 1
 
     def build_hooks(self):
         """

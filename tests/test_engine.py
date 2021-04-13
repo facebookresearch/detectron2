@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 import torch
+from fvcore.common.checkpoint import Checkpointer
 from torch import nn
 
 from detectron2.config import configurable, get_cfg
@@ -95,3 +96,35 @@ class TestTrainer(unittest.TestCase):
             self.assertIs(trainer.model, trainer._trainer.model)
             trainer.model = _SimpleModel()
             self.assertIs(trainer.model, trainer._trainer.model)
+
+    def test_checkpoint_resume(self):
+        model = _SimpleModel()
+        dataloader = self._data_loader("cpu")
+        opt = torch.optim.SGD(model.parameters(), 0.1)
+        scheduler = torch.optim.lr_scheduler.StepLR(opt, 3)
+
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            trainer = SimpleTrainer(model, dataloader, opt)
+            checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
+
+            trainer.register_hooks(
+                [
+                    hooks.PeriodicCheckpointer(checkpointer, 10),
+                    hooks.LRScheduler(scheduler=scheduler),
+                ]
+            )
+
+            trainer.train(0, 12)
+            del trainer
+
+            trainer = SimpleTrainer(model, dataloader, opt)
+            scheduler = torch.optim.lr_scheduler.StepLR(opt, 3)
+            trainer.register_hooks(
+                [
+                    hooks.LRScheduler(scheduler=scheduler),
+                ]
+            )
+            checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
+            checkpointer.resume_or_load("non_exist.pth")
+            self.assertEqual(trainer.iter, 11)  # last finished iter
+            self.assertEqual(scheduler.last_epoch, 11)

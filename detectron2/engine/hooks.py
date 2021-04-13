@@ -220,11 +220,10 @@ class LRScheduler(HookBase):
 
     def before_train(self):
         self._optimizer = self._optimizer or self.trainer.optimizer
-        self._scheduler = self._scheduler or self.trainer.scheduler
-        if isinstance(self._scheduler, ParamScheduler):
+        if isinstance(self.scheduler, ParamScheduler):
             self._scheduler = LRMultiplier(
                 self._optimizer,
-                self._scheduler,
+                self.scheduler,
                 self.trainer.max_iter,
                 last_iter=self.trainer.iter - 1,
             )
@@ -251,7 +250,22 @@ class LRScheduler(HookBase):
     def after_step(self):
         lr = self._optimizer.param_groups[self._best_param_group_id]["lr"]
         self.trainer.storage.put_scalar("lr", lr, smoothing_hint=False)
-        self._scheduler.step()
+        self.scheduler.step()
+
+    @property
+    def scheduler(self):
+        return self._scheduler or self.trainer.scheduler
+
+    def state_dict(self):
+        if isinstance(self.scheduler, torch.optim.lr_scheduler._LRScheduler):
+            return self.scheduler.state_dict()
+        return {}
+
+    def load_state_dict(self, state_dict):
+        if isinstance(self.scheduler, torch.optim.lr_scheduler._LRScheduler):
+            logger = logging.getLogger(__name__)
+            logger.info("Loading scheduler from state_dict ...")
+            self.scheduler.load_state_dict(state_dict)
 
 
 class AutogradProfiler(HookBase):
