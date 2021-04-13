@@ -329,7 +329,8 @@ class DeformBottleneckBlock(CNNBlockBase):
 
 class BasicStem(CNNBlockBase):
     """
-    The standard ResNet stem (layers before the first residual block).
+    The standard ResNet stem (layers before the first residual block),
+    with a conv, relu and max_pool.
     """
 
     def __init__(self, in_channels=3, out_channels=64, norm="BN"):

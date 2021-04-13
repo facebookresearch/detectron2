@@ -31,7 +31,7 @@ class _ScaleGradient(Function):
 @ROI_HEADS_REGISTRY.register()
 class CascadeROIHeads(StandardROIHeads):
     """
-    Implement :paper:`Cascade R-CNN`.
+    The ROI heads that implement :paper:`Cascade R-CNN`.
     """
 
     @configurable
