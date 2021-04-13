@@ -154,6 +154,20 @@ def _try_get_key(cfg, *keys, default=None):
     return default
 
 
+def _highlight(code, filename):
+    try:
+        import pygments
+    except ImportError:
+        return code
+
+    from pygments.lexers import Python3Lexer, YamlLexer
+    from pygments.formatters import Terminal256Formatter
+
+    lexer = Python3Lexer() if filename.endswith(".py") else YamlLexer()
+    code = pygments.highlight(code, lexer, Terminal256Formatter(style="monokai"))
+    return code
+
+
 def default_setup(cfg, args):
     """
     Perform some basic common setups at the beginning of a job, including:
@@ -181,7 +195,8 @@ def default_setup(cfg, args):
     if hasattr(args, "config_file") and args.config_file != "":
         logger.info(
             "Contents of args.config_file={}:\n{}".format(
-                args.config_file, PathManager.open(args.config_file, "r").read()
+                args.config_file,
+                _highlight(PathManager.open(args.config_file, "r").read(), args.config_file),
             )
         )
 
@@ -190,7 +205,7 @@ def default_setup(cfg, args):
         # config.yaml in output directory
         path = os.path.join(output_dir, "config.yaml")
         if isinstance(cfg, CfgNode):
-            logger.info("Running with full config:\n{}".format(cfg))
+            logger.info("Running with full config:\n{}".format(_highlight(cfg.dump(), ".yaml")))
             with PathManager.open(path, "w") as f:
                 f.write(cfg.dump())
         else:

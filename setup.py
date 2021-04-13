@@ -227,6 +227,7 @@ setup(
     extras_require={
         "all": [
             "shapely",
+            "pygments>=2.2",
             "psutil",
             "hydra-core",
             "panopticapi @ https://github.com/cocodataset/panopticapi/archive/master.zip",
