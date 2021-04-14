@@ -65,6 +65,7 @@ jobs:
           python -m pip install ninja opencv-python-headless onnx pytest-xdist
           python -m pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
           python -m pip install -U 'git+https://github.com/facebookresearch/fvcore'
+          python -m pip install -U 'git+https://github.com/facebookresearch/iopath'
 
       - name: Build and install
         run: |
