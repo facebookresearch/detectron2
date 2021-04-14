@@ -246,7 +246,7 @@ def build_lr_scheduler(
     sched = WarmupParamScheduler(
         sched,
         cfg.SOLVER.WARMUP_FACTOR,
-        cfg.SOLVER.WARMUP_ITERS / cfg.SOLVER.MAX_ITER,
+        min(cfg.SOLVER.WARMUP_ITERS / cfg.SOLVER.MAX_ITER, 1.0),
         cfg.SOLVER.WARMUP_METHOD,
     )
     return LRMultiplier(optimizer, multiplier=sched, max_iter=cfg.SOLVER.MAX_ITER)
