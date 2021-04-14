@@ -216,8 +216,8 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             "Filtered out {} instances without valid segmentation. ".format(
                 num_instances_without_valid_segmentation
             )
-            + "There might be issues in your dataset generation process. "
-            "A valid polygon should be a list[float] with even length >= 6."
+            + "There might be issues in your dataset generation process.  Please "
+            "check https://detectron2.readthedocs.io/en/latest/tutorials/datasets.html carefully"
         )
     return dataset_dicts
 

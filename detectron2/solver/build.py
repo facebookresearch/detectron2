@@ -141,7 +141,7 @@ def get_default_optimizer_params(
 ):
     """
     Get default param list for optimizer, with support for a few types of
-    overrides. If not overrides needed, this is equivalent to `model.parameters()`.
+    overrides. If no overrides needed, this is equivalent to `model.parameters()`.
 
     Args:
         base_lr: lr for every group by default. Can be omitted to use the one in optimizer.

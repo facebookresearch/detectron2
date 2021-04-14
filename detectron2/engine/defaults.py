@@ -262,8 +262,10 @@ class DefaultPredictor:
     3. Apply resizing defined by `cfg.INPUT.{MIN,MAX}_SIZE_TEST`.
     4. Take one input image and produce a single output, instead of a batch.
 
-    If you'd like to do anything more fancy, please refer to its source code
-    as examples to build and use the model manually.
+    This is meant for simple demo purposes, so it does the above steps automatically.
+    This is not meant for benchmarks or running complicated inference logic.
+    If you'd like to do anything more fancy, please refer to its source code as examples
+    to build and use the model manually.
 
     Attributes:
         metadata (Metadata): the metadata of the underlying dataset, obtained from

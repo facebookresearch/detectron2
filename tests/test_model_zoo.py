@@ -40,6 +40,11 @@ class TestModelZoo(unittest.TestCase):
     def test_panoptic_fpn(self):
         self._build_lazy_model("panoptic_fpn.py")
 
+    def test_schedule(self):
+        cfg = model_zoo.get_config("common/coco_schedule.py")
+        for _, v in cfg.items():
+            instantiate(v)
+
 
 if __name__ == "__main__":
     unittest.main()

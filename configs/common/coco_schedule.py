@@ -24,15 +24,13 @@ def default_X_scheduler(num_X):
         scheduler = L(MultiStepParamScheduler)(
             values=[1.0, 0.1, 0.01],
             # note that scheduler is scale-invariant. This is equivalent to
-            # milestones=[6, 8], num_updates=9
-            milestones=[60000, 80000],
-            num_updates=90000,
+            # milestones=[6, 8, 9]
+            milestones=[60000, 80000, 90000],
         )
     else:
         scheduler = L(MultiStepParamScheduler)(
             values=[1.0, 0.1, 0.01],
-            milestones=[total_steps_16bs - 60000, total_steps_16bs - 20000],
-            num_updates=total_steps_16bs,
+            milestones=[total_steps_16bs - 60000, total_steps_16bs - 20000, total_steps_16bs],
         )
     return L(WarmupParamScheduler)(
         scheduler=scheduler,

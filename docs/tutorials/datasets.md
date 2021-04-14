@@ -90,7 +90,7 @@ and the required fields vary based on what the dataloader or the task needs (see
     The value num_categories is reserved to represent the "background" category, if applicable.
   + `segmentation` (list[list[float]] or dict): the segmentation mask of the instance.
     + If `list[list[float]]`, it represents a list of polygons, one for each connected component
-      of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]`.
+      of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]` (n≥3).
       The Xs and Ys are absolute coordinates in unit of pixels.
     + If `dict`, it represents the per-pixel segmentation mask in COCO's compressed RLE format.
       The dict should have keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and

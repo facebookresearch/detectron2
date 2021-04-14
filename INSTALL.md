@@ -9,7 +9,7 @@
 
 ### Build Detectron2 from Source
 
-gcc & g++ ≥ 5.4 are required. [ninja](https://ninja-build.org/) is recommended for faster build.
+gcc & g++ ≥ 5.4 are required. [ninja](https://ninja-build.org/) is optional but recommended for faster build.
 After having them, run:
 ```
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
