@@ -48,6 +48,7 @@ from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
 
 __all__ = [
+    "create_ddp_model",
     "default_argument_parser",
     "default_setup",
     "default_writers",
@@ -58,12 +59,16 @@ __all__ = [
 
 def create_ddp_model(model, *, fp16_compression=False, **kwargs):
     """
+    Create a DistributedDataParallel model if there are >1 processes.
+
     Args:
         model: a torch.nn.Module
         fp16_compression: add fp16 compression hooks to the ddp object.
             See more at https://pytorch.org/docs/stable/ddp_comm_hooks.html#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook
         kwargs: other arguments of :module:`torch.nn.parallel.DistributedDataParallel`.
     """  # noqa
+    if comm.get_world_size() == 1:
+        return model
     if "device_ids" not in kwargs:
         kwargs["device_ids"] = [comm.get_local_rank()]
     ddp = DistributedDataParallel(model, **kwargs)
@@ -371,9 +376,7 @@ class DefaultTrainer(TrainerBase):
         optimizer = self.build_optimizer(cfg, model)
         data_loader = self.build_train_loader(cfg)
 
-        # For training, wrap with DDP. But don't need this for inference.
-        if comm.get_world_size() > 1:
-            model = create_ddp_model(model, broadcast_buffers=False)
+        model = create_ddp_model(model, broadcast_buffers=False)
         self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
             model, data_loader, optimizer
         )
