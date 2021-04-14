@@ -5,7 +5,7 @@ import pkg_resources
 import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
+from detectron2.config import LazyConfig, get_cfg
 from detectron2.modeling import build_model
 
 
@@ -133,14 +133,20 @@ def get_config(config_path, trained: bool = False):
             an ImageNet pre-trained model, while randomly initializing the other weights.
 
     Returns:
-        CfgNode: a config object
+        CfgNode or omegaconf.DictConfig: a config object
     """
     cfg_file = get_config_file(config_path)
-    cfg = get_cfg()
-    cfg.merge_from_file(cfg_file)
-    if trained:
-        cfg.MODEL.WEIGHTS = get_checkpoint_url(config_path)
-    return cfg
+    if cfg_file.endswith(".yaml"):
+        cfg = get_cfg()
+        cfg.merge_from_file(cfg_file)
+        if trained:
+            cfg.MODEL.WEIGHTS = get_checkpoint_url(config_path)
+        return cfg
+    elif cfg_file.endswith(".py"):
+        cfg = LazyConfig.load(cfg_file)
+        if trained:
+            raise NotImplementedError
+        return cfg
 
 
 def get(config_path, trained: bool = False, device: Optional[str] = None):
