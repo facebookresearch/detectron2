@@ -114,6 +114,8 @@ class DensePoseChartLoss:
         j_valid_fg = interpolator.j_valid * (  # pyre-ignore[16]
             packed_annotations.fine_segm_labels_gt > 0
         )
+        if not torch.any(j_valid_fg):
+            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
         losses_uv = self.produce_densepose_losses_uv(
             proposals_with_gt,

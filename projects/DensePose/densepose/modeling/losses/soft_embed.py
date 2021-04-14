@@ -81,6 +81,8 @@ class SoftEmbeddingLoss:
             j_valid = interpolator.j_valid * (  # pyre-ignore[16]
                 packed_annotations.vertex_mesh_ids_gt == mesh_id
             )
+            if not torch.any(j_valid):
+                continue
             # extract estimated embeddings for valid points
             # -> tensor [J, D]
             vertex_embeddings_i = normalize_embeddings(
