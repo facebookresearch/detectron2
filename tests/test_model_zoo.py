@@ -24,6 +24,8 @@ class TestModelZoo(unittest.TestCase):
             url,
             "https://dl.fbaipublicfiles.com/detectron2/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn/138602908/model_final_01ca85.pkl",  # noqa
         )
+        url2 = model_zoo.get_checkpoint_url("Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.py")
+        self.assertEqual(url, url2)
 
     def _build_lazy_model(self, name):
         cfg = model_zoo.get_config("common/models/" + name)
