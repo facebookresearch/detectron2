@@ -4,7 +4,7 @@ from typing import Callable, List, Optional, Tuple
 import torch
 from torch import nn
 
-from detectron2.structures import Boxes, Instances
+from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.registry import _convert_target_to_string, locate
 
 from .torchscript_patch import patch_builtin_len
@@ -170,7 +170,7 @@ def flatten_to_tuple(obj):
         (tuple, TupleSchema),
         (collections.abc.Mapping, DictSchema),
         (Instances, InstancesSchema),
-        (Boxes, TensorWrapSchema),
+        ((Boxes, ROIMasks), TensorWrapSchema),
     ]
     for klass, schema in schemas:
         if isinstance(obj, klass):
