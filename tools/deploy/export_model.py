@@ -3,15 +3,14 @@
 import argparse
 import os
 from typing import Dict, List, Tuple
+import cv2
 import onnx
 import torch
-import cv2
 from torch import Tensor, nn
 
+import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-import detectron2.data.transforms as T
-
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.export import (
@@ -211,10 +210,9 @@ if __name__ == "__main__":
         image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
 
         inputs = {"image": image, "height": height, "width": width}
-        
+
         # Sample ready
         first_batch = [inputs]
-
 
     # convert and save model
     if args.export_method == "caffe2_tracing":
