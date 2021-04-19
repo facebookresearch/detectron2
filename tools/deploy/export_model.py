@@ -5,10 +5,13 @@ import os
 from typing import Dict, List, Tuple
 import onnx
 import torch
+import cv2
 from torch import Tensor, nn
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
+import detectron2.data.transforms as T
+
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.export import (
@@ -165,6 +168,7 @@ if __name__ == "__main__":
         default="caffe2_tracing",
     )
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
+    parser.add_argument("--sample-image", default=None, type=str, help="sample image for input")
     parser.add_argument("--run-eval", action="store_true")
     parser.add_argument("--output", help="output directory for the converted model")
     parser.add_argument(
@@ -187,9 +191,30 @@ if __name__ == "__main__":
     DetectionCheckpointer(torch_model).resume_or_load(cfg.MODEL.WEIGHTS)
     torch_model.eval()
 
-    # get a sample data
-    data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
-    first_batch = next(iter(data_loader))
+    if args.sample_image is None:
+        # get a sample data
+        data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
+        first_batch = next(iter(data_loader))
+    else:
+        # get a sample data
+        original_image = cv2.imread(args.sample_image)
+        # Do same preprocessing as DefaultPredictor
+        aug = T.ResizeShortestEdge(
+            [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
+        )
+        # Apply pre-processing to image.
+        if cfg.INPUT.FORMAT == "RGB":
+            # whether the model expects BGR inputs or RGB
+            original_image = original_image[:, :, ::-1]
+        height, width = original_image.shape[:2]
+        image = aug.get_transform(original_image).apply_image(original_image)
+        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+
+        inputs = {"image": image, "height": height, "width": width}
+        
+        # Sample ready
+        first_batch = [inputs]
+
 
     # convert and save model
     if args.export_method == "caffe2_tracing":
