@@ -33,11 +33,12 @@ logger = logging.getLogger("detectron2")
 
 
 def do_test(cfg, model):
-    ret = inference_on_dataset(
-        model, instantiate(cfg.dataloader.test), instantiate(cfg.dataloader.evaluator)
-    )
-    print_csv_format(ret)
-    return ret
+    if "evaluator" in cfg.dataloader:
+        ret = inference_on_dataset(
+            model, instantiate(cfg.dataloader.test), instantiate(cfg.dataloader.evaluator)
+        )
+        print_csv_format(ret)
+        return ret
 
 
 def do_train(args, cfg):

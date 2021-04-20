@@ -142,14 +142,14 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210304
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - <<: *install_linux_dep
 
       - save_cache:
           paths:
             - ~/venv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210304
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -166,7 +166,7 @@ jobs:
       # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210304
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -174,7 +174,7 @@ jobs:
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210304
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - <<: *install_detectron2
       - <<: *run_unittests
@@ -190,7 +190,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210304
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - run:
           name: Install Dependencies
@@ -205,7 +205,7 @@ jobs:
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210304
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
