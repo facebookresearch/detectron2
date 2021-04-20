@@ -2,8 +2,9 @@
 import datetime
 import logging
 import time
-from collections import OrderedDict
+from collections import OrderedDict, abc
 from contextlib import ExitStack, contextmanager
+from typing import List, Union
 import torch
 from torch import nn
 
@@ -99,7 +100,9 @@ class DatasetEvaluators(DatasetEvaluator):
         return results
 
 
-def inference_on_dataset(model, data_loader, evaluator):
+def inference_on_dataset(
+    model, data_loader, evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None]
+):
     """
     Run model on the data_loader and evaluate the metrics with evaluator.
     Also benchmark the inference speed of `model.__call__` accurately.
@@ -114,8 +117,8 @@ def inference_on_dataset(model, data_loader, evaluator):
             wrap the given model and override its behavior of `.eval()` and `.train()`.
         data_loader: an iterable object with a length.
             The elements it generates will be the inputs to the model.
-        evaluator (DatasetEvaluator): the evaluator to run. Use `None` if you only want
-            to benchmark, but don't want to do any evaluation.
+        evaluator: the evaluator(s) to run. Use `None` if you only want to benchmark,
+            but don't want to do any evaluation.
 
     Returns:
         The return value of `evaluator.evaluate()`
@@ -128,6 +131,8 @@ def inference_on_dataset(model, data_loader, evaluator):
     if evaluator is None:
         # create a no-op evaluator
         evaluator = DatasetEvaluators([])
+    if isinstance(evaluator, abc.MutableSequence):
+        evaluator = DatasetEvaluators(evaluator)
     evaluator.reset()
 
     num_warmup = min(5, total - 1)

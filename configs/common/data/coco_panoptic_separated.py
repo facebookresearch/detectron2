@@ -13,16 +13,14 @@ dataloader.train.dataset.filter_empty = False
 dataloader.test.dataset.names = "coco_2017_val_panoptic_separated"
 
 
-dataloader.evaluator = L(DatasetEvaluators)(
-    evaluators=[
-        L(COCOEvaluator)(
-            dataset_name="${....test.dataset.names}",
-        ),
-        L(SemSegEvaluator)(
-            dataset_name="${....test.dataset.names}",
-        ),
-        L(COCOPanopticEvaluator)(
-            dataset_name="${....test.dataset.names}",
-        ),
-    ]
-)
+dataloader.evaluator = [
+    L(COCOEvaluator)(
+        dataset_name="${...test.dataset.names}",
+    ),
+    L(SemSegEvaluator)(
+        dataset_name="${...test.dataset.names}",
+    ),
+    L(COCOPanopticEvaluator)(
+        dataset_name="${...test.dataset.names}",
+    ),
+]
