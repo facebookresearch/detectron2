@@ -631,7 +631,7 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
-        num_instances = None
+        num_instances = 0
         if boxes is not None:
             boxes = self._convert_boxes(boxes)
             num_instances = len(boxes)
