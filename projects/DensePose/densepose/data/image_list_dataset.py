@@ -58,7 +58,7 @@ class ImageListDataset(Dataset):
 
         try:
             image = torch.from_numpy(np.ascontiguousarray(read_image(fpath, format="BGR")))
-            image = image.permute(2, 0, 1).unsqueeze(0)
+            image = image.permute(2, 0, 1).unsqueeze(0).float()  # HWC -> NCHW
             if transform is not None:
                 image = transform(image)
             return {"images": image, "categories": categories}

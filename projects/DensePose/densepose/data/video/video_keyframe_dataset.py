@@ -279,17 +279,21 @@ class VideoKeyframeDataset(Dataset):
             if self.keyframe_helper_data is None or idx not in self.keyframe_helper_data
             else self.keyframe_helper_data[idx]
         )
+        transform = self.transform
+        frame_selector = self.frame_selector
         if not keyframes:
             return {"images": self._EMPTY_FRAMES, "categories": []}
-        if self.frame_selector is not None:
-            keyframes = self.frame_selector(keyframes)  # pyre-ignore[29]
+        if frame_selector is not None:
+            keyframes = frame_selector(keyframes)
         frames = read_keyframes(fpath, keyframes)
         if not frames:
             return {"images": self._EMPTY_FRAMES, "categories": []}
         frames = np.stack([frame.to_rgb().to_ndarray() for frame in frames])
         frames = torch.as_tensor(frames, device=torch.device("cpu"))
-        if self.transform is not None:
-            frames = self.transform(frames)  # pyre-ignore[29]
+        frames = frames[..., [2, 1, 0]]  # RGB -> BGR
+        frames = frames.permute(0, 3, 1, 2).float()  # NHWC -> NCHW
+        if transform is not None:
+            frames = transform(frames)
         return {"images": frames, "categories": categories}
 
     def __len__(self):

@@ -60,8 +60,8 @@ class TestVideoKeyframeDataset(unittest.TestCase):
             dataset = VideoKeyframeDataset(video_list, category_list)
             self.assertEqual(len(dataset), 1)
             data1, categories1 = dataset[0]["images"], dataset[0]["categories"]
-            self.assertEqual(data1.shape, torch.Size((5, 300, 300, 3)))
-            self.assertEqual(data1.dtype, torch.uint8)
+            self.assertEqual(data1.shape, torch.Size((5, 3, 300, 300)))
+            self.assertEqual(data1.dtype, torch.float32)
             self.assertIsNone(categories1[0])
             return
         self.assertTrue(False)
@@ -75,8 +75,8 @@ class TestVideoKeyframeDataset(unittest.TestCase):
             dataset = VideoKeyframeDataset(video_list, category_list, frame_selector)
             self.assertEqual(len(dataset), 1)
             data1, categories1 = dataset[0]["images"], dataset[0]["categories"]
-            self.assertEqual(data1.shape, torch.Size((3, 300, 300, 3)))
-            self.assertEqual(data1.dtype, torch.uint8)
+            self.assertEqual(data1.shape, torch.Size((3, 3, 300, 300)))
+            self.assertEqual(data1.dtype, torch.float32)
             self.assertIsNone(categories1[0])
             return
         self.assertTrue(False)
