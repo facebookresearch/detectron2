@@ -58,7 +58,6 @@ class DensePoseBaseSampler:
             DensePoseDataRelative.V_KEY: [],
             DensePoseDataRelative.I_KEY: [],
         }
-        x0, y0, _, _ = bbox_xywh
         n, h, w = dp_result.shape
         for part_id in range(1, DensePoseDataRelative.N_PART_LABELS + 1):
             # indices - tuple of 3 1D tensors of size k

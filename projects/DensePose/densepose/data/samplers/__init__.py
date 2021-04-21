@@ -2,5 +2,6 @@
 
 from .densepose_uniform import DensePoseUniformSampler
 from .densepose_confidence_based import DensePoseConfidenceBasedSampler
+from .densepose_cse_uniform import DensePoseCSEUniformSampler
 from .mask_from_densepose import MaskFromDensePoseSampler
 from .prediction_to_gt import PredictionToGroundTruthSampler

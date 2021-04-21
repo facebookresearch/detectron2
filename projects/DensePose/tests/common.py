@@ -93,7 +93,7 @@ def get_quick_schedules_config_files():
     return _collect_config_files(_get_quick_schedules_config_dir())
 
 
-def _get_model_config(config_file):
+def get_model_config(config_file):
     """
     Load and return the configuration from the specified file (relative to the base configuration
     directory)
@@ -111,7 +111,7 @@ def get_model(config_file):
     """
     Get the model from the specified file (relative to the base configuration directory)
     """
-    cfg = _get_model_config(config_file)
+    cfg = get_model_config(config_file)
     return build_model(cfg)
 
 
@@ -119,6 +119,6 @@ def setup(config_file):
     """
     Setup the configuration from the specified file (relative to the base configuration directory)
     """
-    cfg = _get_model_config(config_file)
+    cfg = get_model_config(config_file)
     cfg.freeze()
     default_setup(cfg, {})
