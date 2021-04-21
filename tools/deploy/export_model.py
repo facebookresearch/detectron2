@@ -3,7 +3,6 @@
 import argparse
 import os
 from typing import Dict, List, Tuple
-import cv2
 import onnx
 import torch
 from torch import Tensor, nn
@@ -11,7 +10,7 @@ from torch import Tensor, nn
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import build_detection_test_loader
+from detectron2.data import build_detection_test_loader, detection_utils
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.export import (
     Caffe2Tracer,
@@ -152,6 +151,31 @@ def export_tracing(torch_model, inputs):
     return eval_wrapper
 
 
+def get_sample_inputs(args):
+
+    if args.sample_image is None:
+        # get a first batch from dataset
+        data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
+        first_batch = next(iter(data_loader))
+        return first_batch
+    else:
+        # get a sample data
+        original_image = detection_utils.read_image(args.sample_image, format=cfg.INPUT.FORMAT)
+        # Do same preprocessing as DefaultPredictor
+        aug = T.ResizeShortestEdge(
+            [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
+        )
+        height, width = original_image.shape[:2]
+        image = aug.get_transform(original_image).apply_image(original_image)
+        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+
+        inputs = {"image": image, "height": height, "width": width}
+
+        # Sample ready
+        sample_inputs = [inputs]
+        return sample_inputs
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export a model for deployment.")
     parser.add_argument(
@@ -190,37 +214,16 @@ if __name__ == "__main__":
     DetectionCheckpointer(torch_model).resume_or_load(cfg.MODEL.WEIGHTS)
     torch_model.eval()
 
-    if args.sample_image is None:
-        # get a sample data
-        data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
-        first_batch = next(iter(data_loader))
-    else:
-        # get a sample data
-        original_image = cv2.imread(args.sample_image)
-        # Do same preprocessing as DefaultPredictor
-        aug = T.ResizeShortestEdge(
-            [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
-        )
-        # Apply pre-processing to image.
-        if cfg.INPUT.FORMAT == "RGB":
-            # whether the model expects BGR inputs or RGB
-            original_image = original_image[:, :, ::-1]
-        height, width = original_image.shape[:2]
-        image = aug.get_transform(original_image).apply_image(original_image)
-        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
-
-        inputs = {"image": image, "height": height, "width": width}
-
-        # Sample ready
-        first_batch = [inputs]
+    # get sample data
+    sample_inputs = get_sample_inputs(args)
 
     # convert and save model
     if args.export_method == "caffe2_tracing":
-        exported_model = export_caffe2_tracing(cfg, torch_model, first_batch)
+        exported_model = export_caffe2_tracing(cfg, torch_model, sample_inputs)
     elif args.export_method == "scripting":
         exported_model = export_scripting(torch_model)
     elif args.export_method == "tracing":
-        exported_model = export_tracing(torch_model, first_batch)
+        exported_model = export_tracing(torch_model, sample_inputs)
 
     # run evaluation with the converted model
     if args.run_eval:
