@@ -56,37 +56,43 @@ class TestVideoKeyframeDataset(unittest.TestCase):
     def test_read_keyframes_all(self):
         with temp_video(60, 300, 300, 5, video_codec="mpeg4") as (fname, data):
             video_list = [fname]
-            dataset = VideoKeyframeDataset(video_list)
+            category_list = [None]
+            dataset = VideoKeyframeDataset(video_list, category_list)
             self.assertEqual(len(dataset), 1)
-            data1 = dataset[0]
+            data1, categories1 = dataset[0]["images"], dataset[0]["categories"]
             self.assertEqual(data1.shape, torch.Size((5, 300, 300, 3)))
             self.assertEqual(data1.dtype, torch.uint8)
+            self.assertIsNone(categories1[0])
             return
         self.assertTrue(False)
 
     def test_read_keyframes_with_selector(self):
         with temp_video(60, 300, 300, 5, video_codec="mpeg4") as (fname, data):
             video_list = [fname]
+            category_list = [None]
             random.seed(0)
             frame_selector = RandomKFramesSelector(3)
-            dataset = VideoKeyframeDataset(video_list, frame_selector)
+            dataset = VideoKeyframeDataset(video_list, category_list, frame_selector)
             self.assertEqual(len(dataset), 1)
-            data1 = dataset[0]
+            data1, categories1 = dataset[0]["images"], dataset[0]["categories"]
             self.assertEqual(data1.shape, torch.Size((3, 300, 300, 3)))
             self.assertEqual(data1.dtype, torch.uint8)
+            self.assertIsNone(categories1[0])
             return
         self.assertTrue(False)
 
     def test_read_keyframes_with_selector_with_transform(self):
         with temp_video(60, 300, 300, 5, video_codec="mpeg4") as (fname, data):
             video_list = [fname]
+            category_list = [None]
             random.seed(0)
             frame_selector = RandomKFramesSelector(1)
             transform = ImageResizeTransform()
-            dataset = VideoKeyframeDataset(video_list, frame_selector, transform)
-            data1 = dataset[0]
+            dataset = VideoKeyframeDataset(video_list, category_list, frame_selector, transform)
+            data1, categories1 = dataset[0]["images"], dataset[0]["categories"]
             self.assertEqual(len(dataset), 1)
             self.assertEqual(data1.shape, torch.Size((1, 3, 800, 800)))
             self.assertEqual(data1.dtype, torch.float32)
+            self.assertIsNone(categories1[0])
             return
         self.assertTrue(False)

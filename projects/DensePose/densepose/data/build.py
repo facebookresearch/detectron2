@@ -644,12 +644,15 @@ def build_inference_based_loaders(
 def build_video_list_dataset(meta: Metadata, cfg: CfgNode):
     video_list_fpath = meta.video_list_fpath
     video_base_path = meta.video_base_path
+    category = meta.category
     if cfg.TYPE == "video_keyframe":
         frame_selector = build_frame_selector(cfg.SELECT)
         transform = build_transform(cfg.TRANSFORM, data_type="image")
         video_list = video_list_from_file(video_list_fpath, video_base_path)
         keyframe_helper_fpath = cfg.KEYFRAME_HELPER if hasattr(cfg, "KEYFRAME_HELPER") else None
-        return VideoKeyframeDataset(video_list, frame_selector, transform, keyframe_helper_fpath)
+        return VideoKeyframeDataset(
+            video_list, category, frame_selector, transform, keyframe_helper_fpath
+        )
 
 
 class _BootstrapDatasetFactoryCatalog(UserDict):

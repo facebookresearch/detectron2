@@ -4,7 +4,7 @@
 import csv
 import logging
 import numpy as np
-from typing import Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 import av
 import torch
 from torch.utils.data.dataset import Dataset
@@ -222,6 +222,7 @@ class VideoKeyframeDataset(Dataset):
     def __init__(
         self,
         video_list: List[str],
+        category_list: Union[str, List[str], None] = None,
         frame_selector: Optional[FrameSelector] = None,
         transform: Optional[FrameTransform] = None,
         keyframe_helper_fpath: Optional[str] = None,
@@ -231,6 +232,8 @@ class VideoKeyframeDataset(Dataset):
 
         Args:
             video_list (List[str]): list of paths to video files
+            category_list (Union[str, List[str], None]): list of animal categories for each
+                video file. If it is a string, or None, this applies to all videos
             frame_selector (Callable: KeyFrameList -> KeyFrameList):
                 selects keyframes to process, keyframes are given by
                 packet timestamps in timebase counts. If None, all keyframes
@@ -241,6 +244,13 @@ class VideoKeyframeDataset(Dataset):
                 applied (default: None)
 
         """
+        if type(category_list) == list:
+            self.category_list = category_list
+        else:
+            self.category_list = [category_list] * len(video_list)
+        assert len(video_list) == len(
+            self.category_list
+        ), "length of video and category lists must be equal"
         self.video_list = video_list
         self.frame_selector = frame_selector
         self.transform = transform
@@ -250,16 +260,19 @@ class VideoKeyframeDataset(Dataset):
             else None
         )
 
-    def __getitem__(self, idx: int) -> torch.Tensor:
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
         """
         Gets selected keyframes from a given video
 
         Args:
             idx (int): video index in the video list file
         Returns:
-            frames (torch.Tensor): tensor of size [N, H, W, 3] or of size
-                defined by the transform that contains keyframes data
+            A dictionary containing two keys:
+                images (torch.Tensor): tensor of size [N, H, W, 3] or of size
+                    defined by the transform that contains keyframes data
+                categories (List[str]): categories of the frames
         """
+        categories = [self.category_list[idx]]
         fpath = self.video_list[idx]
         keyframes = (
             list_keyframes(fpath)
@@ -267,17 +280,17 @@ class VideoKeyframeDataset(Dataset):
             else self.keyframe_helper_data[idx]
         )
         if not keyframes:
-            return self._EMPTY_FRAMES
+            return {"images": self._EMPTY_FRAMES, "categories": []}
         if self.frame_selector is not None:
             keyframes = self.frame_selector(keyframes)  # pyre-ignore[29]
         frames = read_keyframes(fpath, keyframes)
         if not frames:
-            return self._EMPTY_FRAMES
+            return {"images": self._EMPTY_FRAMES, "categories": []}
         frames = np.stack([frame.to_rgb().to_ndarray() for frame in frames])
         frames = torch.as_tensor(frames, device=torch.device("cpu"))
         if self.transform is not None:
             frames = self.transform(frames)  # pyre-ignore[29]
-        return frames
+        return {"images": frames, "categories": categories}
 
     def __len__(self):
         return len(self.video_list)

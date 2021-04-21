@@ -3,7 +3,7 @@
 
 import logging
 import numpy as np
-from typing import Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 import torch
 from torch.utils.data.dataset import Dataset
 
@@ -19,23 +19,40 @@ class ImageListDataset(Dataset):
 
     _EMPTY_IMAGE = torch.empty((1, 1, 3))
 
-    def __init__(self, image_list: List[str], transform: Optional[ImageTransform] = None):
+    def __init__(
+        self,
+        image_list: List[str],
+        category_list: Union[str, List[str], None] = None,
+        transform: Optional[ImageTransform] = None,
+    ):
         """
         Args:
             image_list (List[str]): list of paths to image files
+            category_list (Union[str, List[str], None]): list of animal categories for
+                each image. If it is a string, or None, this applies to all images
         """
+        if type(category_list) == list:
+            self.category_list = category_list
+        else:
+            self.category_list = [category_list] * len(image_list)
+        assert len(image_list) == len(
+            self.category_list
+        ), "length of image and category lists must be equal"
         self.image_list = image_list
         self.transform = transform
 
-    def __getitem__(self, idx: int) -> torch.Tensor:
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
         """
         Gets selected images from the list
 
         Args:
             idx (int): video index in the video list file
         Returns:
-            image (torch.Tensor): tensor of size [H, W, 3]
+            A dictionary containing two keys:
+                images (torch.Tensor): tensor of size [H, W, 3]
+                categories (List[str]): categories of the frames
         """
+        categories = [self.category_list[idx]]
         fpath = self.image_list[idx]
 
         try:
@@ -43,12 +60,12 @@ class ImageListDataset(Dataset):
             if self.transform is not None:
                 # Transforms are done on batches
                 image = self.transform(image.unsqueeze(0))[0]  # pyre-ignore[29]
-            return image
+            return {"images": image, "categories": categories}
         except (OSError, RuntimeError) as e:
             logger = logging.getLogger(__name__)
             logger.warning(f"Error opening image file container {fpath}: {e}")
 
-        return self._EMPTY_IMAGE
+        return {"images": self._EMPTY_IMAGE, "categories": []}
 
     def __len__(self):
         return len(self.image_list)

@@ -62,6 +62,8 @@ def get_bootstrap_dataset_config() -> CN:
     _C.IMAGE_LOADER.TYPE = ""
     _C.IMAGE_LOADER.BATCH_SIZE = 4
     _C.IMAGE_LOADER.NUM_WORKERS = 4
+    _C.IMAGE_LOADER.CATEGORIES = []
+    _C.IMAGE_LOADER.MAX_COUNT_PER_CATEGORY = 1_000_000
     # inference
     _C.INFERENCE = CN()
     # batch size for model inputs

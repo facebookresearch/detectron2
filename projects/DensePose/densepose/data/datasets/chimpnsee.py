@@ -25,4 +25,5 @@ def register_dataset(datasets_root: Optional[str] = None):
         dataset_type=DatasetType.VIDEO_LIST,
         video_list_fpath=video_list_fpath,
         video_base_path=video_base_path,
+        category="chimpanzee",
     )
