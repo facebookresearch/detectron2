@@ -32,6 +32,7 @@ from .datasets.dataset_type import DatasetType
 from .inference_based_loader import InferenceBasedLoader, ScoreBasedFilter
 from .samplers import (
     DensePoseConfidenceBasedSampler,
+    DensePoseCSEConfidenceBasedSampler,
     DensePoseCSEUniformSampler,
     DensePoseUniformSampler,
     MaskFromDensePoseSampler,
@@ -609,6 +610,24 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
                 use_gt_categories=sampler_cfg.USE_GROUND_TRUTH_CATEGORIES,
                 embedder=embedder,
                 count_per_class=sampler_cfg.COUNT_PER_CLASS,
+            ),
+        )
+        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        return data_sampler
+    elif sampler_cfg.TYPE == "densepose_cse_coarse_segm_confidence":
+        assert embedder is not None
+        data_sampler = PredictionToGroundTruthSampler()
+        # transform densepose pred -> gt
+        data_sampler.register_sampler(
+            "pred_densepose",
+            "gt_densepose",
+            DensePoseCSEConfidenceBasedSampler(
+                cfg=cfg,
+                use_gt_categories=sampler_cfg.USE_GROUND_TRUTH_CATEGORIES,
+                embedder=embedder,
+                confidence_channel="coarse_segm_confidence",
+                count_per_class=sampler_cfg.COUNT_PER_CLASS,
+                search_proportion=0.5,
             ),
         )
         data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
