@@ -239,7 +239,7 @@ class VideoKeyframeDataset(Dataset):
                 packet timestamps in timebase counts. If None, all keyframes
                 are selected (default: None)
             transform (Callable: torch.Tensor -> torch.Tensor):
-                transforms a batch of RGB images (tensors of size [B, H, W, 3]),
+                transforms a batch of RGB images (tensors of size [B, 3, H, W]),
                 returns a tensor of the same size. If None, no transform is
                 applied (default: None)
 

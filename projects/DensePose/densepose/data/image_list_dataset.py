@@ -17,7 +17,7 @@ class ImageListDataset(Dataset):
     Dataset that provides images from a list.
     """
 
-    _EMPTY_IMAGE = torch.empty((1, 1, 3))
+    _EMPTY_IMAGE = torch.empty((0, 3, 1, 1))
 
     def __init__(
         self,
@@ -49,17 +49,18 @@ class ImageListDataset(Dataset):
             idx (int): video index in the video list file
         Returns:
             A dictionary containing two keys:
-                images (torch.Tensor): tensor of size [H, W, 3]
+                images (torch.Tensor): tensor of size [N, 3, H, W] (N = 1, or 0 for _EMPTY_IMAGE)
                 categories (List[str]): categories of the frames
         """
         categories = [self.category_list[idx]]
         fpath = self.image_list[idx]
+        transform = self.transform
 
         try:
             image = torch.from_numpy(np.ascontiguousarray(read_image(fpath, format="BGR")))
-            if self.transform is not None:
-                # Transforms are done on batches
-                image = self.transform(image.unsqueeze(0))[0]  # pyre-ignore[29]
+            image = image.permute(2, 0, 1).unsqueeze(0)
+            if transform is not None:
+                image = transform(image)
             return {"images": image, "categories": categories}
         except (OSError, RuntimeError) as e:
             logger = logging.getLogger(__name__)
