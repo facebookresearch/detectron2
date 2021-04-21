@@ -29,3 +29,10 @@ def get_class_to_mesh_name_mapping(cfg: CfgNode) -> Dict[int, str]:
         int(class_id): mesh_name
         for class_id, mesh_name in cfg.DATASETS.CLASS_TO_MESH_NAME_MAPPING.items()
     }
+
+
+def get_category_to_class_mapping(dataset_cfg: CfgNode) -> Dict[str, int]:
+    return {
+        category: int(class_id)
+        for category, class_id in dataset_cfg.CATEGORY_TO_CLASS_MAPPING.items()
+    }

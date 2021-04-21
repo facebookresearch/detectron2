@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import random
-from typing import Any, Callable, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 import torch
 from torch import nn
 
@@ -60,31 +60,33 @@ class InferenceBasedLoader:
     def __init__(
         self,
         model: nn.Module,
-        data_loader: Iterable[List[torch.Tensor]],
+        data_loader: Iterable[List[Dict[str, Any]]],
         data_sampler: Optional[Callable[[ModelOutput], List[SampledData]]] = None,
         data_filter: Optional[Callable[[ModelOutput], ModelOutput]] = None,
         shuffle: bool = True,
         batch_size: int = 4,
         inference_batch_size: int = 4,
         drop_last: bool = False,
+        category_to_class_mapping: Optional[dict] = None,
     ):
         """
         Constructor
 
         Args:
           model (torch.nn.Module): model used to produce data
-          data_loader (Iterable[Tensor]): iterable that provides images
-              to perform inference on
+          data_loader (Iterable[List[Dict[str, Any]]]): iterable that provides
+            dictionaries with "images" and "categories" fields to perform inference on
           data_sampler (Callable: ModelOutput -> SampledData): functor
               that produces annotation data from inference results;
               (optional, default: None)
           data_filter (Callable: ModelOutput -> ModelOutput): filter
-              that selects model outputs for for further processing
+              that selects model outputs for further processing
               (optional, default: None)
           shuffle (bool): if True, the input images get shuffled
           batch_size (int): batch size for the produced annotation data
           inference_batch_size (int): batch size for input images
           drop_last (bool): if True, drop the last batch if it is undersized
+          category_to_class_mapping (dict): category to class mapping
         """
         self.model = model
         self.model.eval()
@@ -95,43 +97,63 @@ class InferenceBasedLoader:
         self.batch_size = batch_size
         self.inference_batch_size = inference_batch_size
         self.drop_last = drop_last
+        if category_to_class_mapping is not None:
+            self.category_to_class_mapping = category_to_class_mapping
+        else:
+            self.category_to_class_mapping = {}
 
     def __iter__(self) -> Iterator[List[SampledData]]:
         for batch in self.data_loader:
-            # batch : List[Tensor[N, C, H, W]]
+            # batch : List[Dict[str: Tensor[N, C, H, W], str: Optional[str]]]
             # images_batch : Tensor[N, C, H, W]
             # image : Tensor[C, H, W]
-            images = [image for images_batch in batch for image in images_batch]
-            if not images:
+            images_and_categories = [
+                {"image": image, "category": category}
+                for element in batch
+                for image, category in zip(element["images"], element["categories"])
+            ]
+            if not images_and_categories:
                 continue
             if self.shuffle:
-                random.shuffle(images)
-            yield from self._produce_data(images)
+                random.shuffle(images_and_categories)
+            yield from self._produce_data(images_and_categories)  # pyre-ignore[6]
 
-    def _produce_data(self, images: List[torch.Tensor]) -> Iterator[List[SampledData]]:
+    def _produce_data(
+        self, images_and_categories: List[Tuple[torch.Tensor, Optional[str]]]
+    ) -> Iterator[List[SampledData]]:
         """
         Produce batches of data from images
 
         Args:
-          images (List[Tensor]): list of images to process
+          images_and_categories (List[Tuple[torch.Tensor, Optional[str]]]):
+            list of images and corresponding categories to process
 
         Returns:
           Iterator over batches of data sampled from model outputs
         """
         data_batches: List[SampledData] = []
-        batched_images = _grouper(images, self.inference_batch_size)
-        for batch in batched_images:
+        category_to_class_mapping = self.category_to_class_mapping
+        batched_images_and_categories = _grouper(images_and_categories, self.inference_batch_size)
+        for batch in batched_images_and_categories:
             batch = [
-                {"image": img.to(self.model.device)}  # pyre-ignore[16]
-                for img in batch
-                if img is not None
+                {
+                    "image": image_and_category["image"].to(self.model.device),  # pyre-ignore[16]
+                    "category": image_and_category["category"],
+                }
+                for image_and_category in batch
+                if image_and_category is not None
             ]
             if not batch:
                 continue
             with torch.no_grad():
                 model_output = self.model(batch)
             for model_output_i, batch_i in zip(model_output, batch):
+                assert len(batch_i["image"].shape) == 3
                 model_output_i["image"] = batch_i["image"]
+                instance_class = category_to_class_mapping.get(batch_i["category"], 0)
+                model_output_i["instances"].dataset_classes = torch.tensor(
+                    [instance_class] * len(model_output_i["instances"])
+                )
             model_output_filtered = (
                 model_output
                 if self.data_filter is None

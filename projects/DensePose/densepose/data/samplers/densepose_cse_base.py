@@ -22,7 +22,13 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
     to belong to that class.
     """
 
-    def __init__(self, cfg: CfgNode, embedder: torch.nn.Module, count_per_class: int = 8):
+    def __init__(
+        self,
+        cfg: CfgNode,
+        use_gt_categories: bool,
+        embedder: torch.nn.Module,
+        count_per_class: int = 8,
+    ):
         """
         Constructor
 
@@ -35,13 +41,18 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         super().__init__(count_per_class)
         self.embedder = embedder
         self.class_to_mesh_name = get_class_to_mesh_name_mapping(cfg)
+        self.use_gt_categories = use_gt_categories
 
     def _sample(self, instance: Instances, bbox_xywh: IntTupleBox) -> Dict[str, List[Any]]:
         """
         Sample DensPoseDataRelative from estimation results
         """
+        if self.use_gt_categories:
+            instance_class = instance.dataset_classes.tolist()[0]
+        else:
+            instance_class = instance.pred_classes.tolist()[0]
+        mesh_name = self.class_to_mesh_name[instance_class]
 
-        mesh_name = self.class_to_mesh_name[instance.pred_classes.tolist()[0]]
         annotation = {
             DensePoseDataRelative.X_KEY: [],
             DensePoseDataRelative.Y_KEY: [],

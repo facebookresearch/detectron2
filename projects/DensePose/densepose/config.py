@@ -64,6 +64,7 @@ def get_bootstrap_dataset_config() -> CN:
     _C.IMAGE_LOADER.NUM_WORKERS = 4
     _C.IMAGE_LOADER.CATEGORIES = []
     _C.IMAGE_LOADER.MAX_COUNT_PER_CATEGORY = 1_000_000
+    _C.IMAGE_LOADER.CATEGORY_TO_CLASS_MAPPING = CN(new_allowed=True)
     # inference
     _C.INFERENCE = CN()
     # batch size for model inputs
@@ -73,6 +74,7 @@ def get_bootstrap_dataset_config() -> CN:
     # sampled data
     _C.DATA_SAMPLER = CN(new_allowed=True)
     _C.DATA_SAMPLER.TYPE = ""
+    _C.DATA_SAMPLER.USE_GROUND_TRUTH_CATEGORIES = False
     # filter
     _C.FILTER = CN(new_allowed=True)
     _C.FILTER.TYPE = ""

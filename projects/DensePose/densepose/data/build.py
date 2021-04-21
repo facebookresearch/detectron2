@@ -38,7 +38,7 @@ from .samplers import (
     PredictionToGroundTruthSampler,
 )
 from .transform import ImageResizeTransform
-from .utils import get_class_to_mesh_name_mapping
+from .utils import get_category_to_class_mapping, get_class_to_mesh_name_mapping
 from .video import (
     FirstKFramesSelector,
     FrameSelectionStrategy,
@@ -288,6 +288,19 @@ def _add_category_maps_to_metadata(cfg: CfgNode):
         logger.info("Category maps for dataset {}: {}".format(dataset_name, meta.category_map))
 
 
+def _add_category_info_to_bootstrapping_metadata(dataset_name: str, dataset_cfg: CfgNode):
+    meta = MetadataCatalog.get(dataset_name)
+    meta.category_to_class_mapping = get_category_to_class_mapping(dataset_cfg)
+    meta.categories = dataset_cfg.CATEGORIES
+    meta.max_count_per_category = dataset_cfg.MAX_COUNT_PER_CATEGORY
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "Category to class mapping for dataset {}: {}".format(
+            dataset_name, meta.category_to_class_mapping
+        )
+    )
+
+
 def _maybe_add_class_to_mesh_name_map_to_metadata(dataset_names: List[str], cfg: CfgNode):
     for dataset_name in dataset_names:
         meta = MetadataCatalog.get(dataset_name)
@@ -520,6 +533,7 @@ def build_bootstrap_dataset(dataset_name: str, cfg: CfgNode) -> Sequence[torch.T
             [N, C, H, W] of type float32
     """
     logger = logging.getLogger(__name__)
+    _add_category_info_to_bootstrapping_metadata(dataset_name, cfg)
     meta = MetadataCatalog.get(dataset_name)
     factory = BootstrapDatasetFactoryCatalog.get(meta.dataset_type)
     dataset = None
@@ -591,7 +605,10 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
             "pred_densepose",
             "gt_densepose",
             DensePoseCSEUniformSampler(
-                cfg=cfg, embedder=embedder, count_per_class=sampler_cfg.COUNT_PER_CLASS
+                cfg=cfg,
+                use_gt_categories=sampler_cfg.USE_GROUND_TRUTH_CATEGORIES,
+                embedder=embedder,
+                count_per_class=sampler_cfg.COUNT_PER_CLASS,
             ),
         )
         data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
@@ -617,6 +634,7 @@ def build_inference_based_loader(
     Constructs data loader based on inference results of a model.
     """
     dataset = build_bootstrap_dataset(dataset_cfg.DATASET, dataset_cfg.IMAGE_LOADER)
+    meta = MetadataCatalog.get(dataset_cfg.DATASET)
     training_sampler = TrainingSampler(len(dataset))
     data_loader = torch.utils.data.DataLoader(
         dataset,  # pyre-ignore[6]
@@ -634,6 +652,7 @@ def build_inference_based_loader(
         shuffle=True,
         batch_size=dataset_cfg.INFERENCE.OUTPUT_BATCH_SIZE,
         inference_batch_size=dataset_cfg.INFERENCE.INPUT_BATCH_SIZE,
+        category_to_class_mapping=meta.category_to_class_mapping,
     )
 
 
