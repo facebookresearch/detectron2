@@ -42,3 +42,8 @@ class TestLazyPythonConfig(unittest.TestCase):
         LazyConfig.apply_overrides(cfg, ["lazyobj.x=123", 'dir1b_dict.a="123"'])
         self.assertEqual(cfg.dir1b_dict.a, "123")
         self.assertEqual(cfg.lazyobj.x, 123)
+
+    def test_invalid_overrides(self):
+        cfg = LazyConfig.load(self.root_filename)
+        with self.assertRaises(KeyError):
+            LazyConfig.apply_overrides(cfg, ["lazyobj.x.xxx=123"])

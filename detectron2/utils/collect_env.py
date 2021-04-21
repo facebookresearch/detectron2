@@ -77,6 +77,8 @@ def collect_env_info():
         )
     except ImportError:
         data.append(("detectron2", "failed to import"))
+    except AttributeError:
+        data.append(("detectron2", "imported a wrong installation"))
 
     try:
         import detectron2._C as _C

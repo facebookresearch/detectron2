@@ -1,35 +1,31 @@
 <img src=".github/Detectron2-Logo-Horz.svg" width="300" >
 
-Detectron2 is Facebook AI Research's next generation software system
-that implements state-of-the-art object detection algorithms.
-It is a ground-up rewrite of the previous version,
-[Detectron](https://github.com/facebookresearch/Detectron/),
-and it originates from [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/).
+Detectron2 is Facebook AI Research's next generation library
+that provides state-of-the-art detection and segmentation algorithms.
+It is the successor of
+[Detectron](https://github.com/facebookresearch/Detectron/)
+and [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/).
+It supports a number of computer vision research projects and production applications in Facebook.
 
 <div align="center">
   <img src="https://user-images.githubusercontent.com/1381301/66535560-d3422200-eace-11e9-9123-5535d469db19.png"/>
 </div>
 
 ### What's New
-* It is powered by the [PyTorch](https://pytorch.org) deep learning framework.
-* Includes more features such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
+* Includes new capabilities such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
   DeepLab, etc.
-* Can be used as a library to support [different projects](projects/) on top of it.
-  We'll open source more research projects in this way.
-* It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
+* Used as a library to support building [research projects](projects/) on top of it.
 * Models can be exported to TorchScript format or Caffe2 format for deployment.
+* It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).
 
 See our [blog post](https://ai.facebook.com/blog/-detectron2-a-pytorch-based-modular-object-detection-library-/)
 to see more demos and learn about detectron2.
 
 ## Installation
 
-See [INSTALL.md](INSTALL.md).
+See [installation instructions](https://detectron2.readthedocs.io/tutorials/install.html).
 
 ## Getting Started
-
-Follow the [installation instructions](https://detectron2.readthedocs.io/tutorials/install.html) to
-install detectron2.
 
 See [Getting Started with Detectron2](https://detectron2.readthedocs.io/tutorials/getting_started.html),
 and the [Colab Notebook](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
@@ -41,7 +37,6 @@ And see [projects/](projects/) for some projects that are built on top of detect
 ## Model Zoo and Baselines
 
 We provide a large set of baseline results and trained models available for download in the [Detectron2 Model Zoo](MODEL_ZOO.md).
-
 
 ## License
 
