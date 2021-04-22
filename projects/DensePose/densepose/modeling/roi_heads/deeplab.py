@@ -32,10 +32,12 @@ class DensePoseDeepLabHead(nn.Module):
         n_channels = input_channels
 
         self.ASPP = ASPP(input_channels, [6, 12, 56], n_channels)  # 6, 12, 56
-        self.add_module("ASPP", self.ASPP)  # pyre-ignore[16]
+        # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
+        self.add_module("ASPP", self.ASPP)
 
         if self.use_nonlocal:
             self.NLBlock = NONLocalBlock2D(input_channels, bn_layer=True)
+            # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
             self.add_module("NLBlock", self.NLBlock)
         # weight_init.c2_msra_fill(self.ASPP)
 
@@ -53,6 +55,7 @@ class DensePoseDeepLabHead(nn.Module):
             weight_init.c2_msra_fill(layer)
             n_channels = hidden_dim
             layer_name = self._get_layer_name(i)
+            # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
             self.add_module(layer_name, layer)
         self.n_out_channels = hidden_dim
         # initialize_module_params(self)

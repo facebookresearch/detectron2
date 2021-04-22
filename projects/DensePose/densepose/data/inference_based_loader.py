@@ -137,7 +137,7 @@ class InferenceBasedLoader:
         for batch in batched_images_and_categories:
             batch = [
                 {
-                    "image": image_and_category["image"].to(self.model.device),  # pyre-ignore[16]
+                    "image": image_and_category["image"].to(self.model.device),
                     "category": image_and_category["category"],
                 }
                 for image_and_category in batch

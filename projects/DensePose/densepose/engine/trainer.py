@@ -76,7 +76,8 @@ class Trainer(DefaultTrainer):
     def extract_embedder_from_model(cls, model: nn.Module) -> Optional[Embedder]:
         if isinstance(model, nn.parallel.DistributedDataParallel):
             model = model.module
-        if hasattr(model, "roi_heads") and hasattr(model.roi_heads, "embedder"):  # pyre-ignore[16]
+        if hasattr(model, "roi_heads") and hasattr(model.roi_heads, "embedder"):
+            # pyre-fixme[16]: `Tensor` has no attribute `embedder`.
             return model.roi_heads.embedder
         return None
 

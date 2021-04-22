@@ -67,7 +67,8 @@ class Decoder(nn.Module):
                         nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
                     )
             self.scale_heads.append(nn.Sequential(*head_ops))
-            self.add_module(in_feature, self.scale_heads[-1])  # pyre-ignore[16]
+            # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
+            self.add_module(in_feature, self.scale_heads[-1])
         self.predictor = Conv2d(conv_dims, num_classes, kernel_size=1, stride=1, padding=0)
         weight_init.c2_msra_fill(self.predictor)
 
@@ -153,7 +154,9 @@ class DensePoseROIHeads(StandardROIHeads):
                 proposal_boxes = [x.proposal_boxes for x in proposals]
 
                 if self.use_decoder:
-                    features_list = [self.decoder(features_list)]  # pyre-ignore[16]
+                    # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a
+                    #  function.
+                    features_list = [self.decoder(features_list)]
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
@@ -166,6 +169,7 @@ class DensePoseROIHeads(StandardROIHeads):
             pred_boxes = [x.pred_boxes for x in instances]
 
             if self.use_decoder:
+                # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
                 features_list = [self.decoder(features_list)]
 
             features_dp = self.densepose_pooler(features_list, pred_boxes)
