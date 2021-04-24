@@ -1,12 +1,12 @@
 ---
 name: "\U0001F4DA Documentation Issues"
-about: Docs or comments are missing or inaccurate
+about: Issues about existing documentation, comments, website or tutorials.
 labels: documentation
 
 ---
 
 ## 📚 Documentation
 
-* Link to the relevant documentation/comment:
+* Link to the relevant documentation/comment/tutorials:
 
-* What is missing or inaccurate?
+* What is missing, inaccurate, or imprecise?

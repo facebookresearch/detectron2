@@ -97,8 +97,9 @@ install_linux_dep: &install_linux_dep
   - run:
       name: Install Dependencies
       command: |
-        pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+        # install from github to get latest; install iopath first since fvcore depends on it
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
+        pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
         # install from pytorch's test wheels index to have access to RC wheels
         pip install --progress-bar off torch==$PYTORCH_VERSION -f https://download.pytorch.org/whl/test/torch_test.html
@@ -198,8 +199,8 @@ jobs:
             pip install certifi --ignore-installed  # required on windows to workaround some cert issue
             pip install numpy cython  # required on windows before pycocotools
             pip install opencv-python-headless pytest-xdist pycocotools tensorboard
-            pip install -U git+https://github.com/facebookresearch/fvcore
             pip install -U git+https://github.com/facebookresearch/iopath
+            pip install -U git+https://github.com/facebookresearch/fvcore
             pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
       - save_cache:

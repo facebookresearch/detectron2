@@ -3,7 +3,6 @@
 import argparse
 import os
 from typing import Dict, List, Tuple
-import onnx
 import torch
 from torch import Tensor, nn
 
@@ -49,6 +48,8 @@ def export_caffe2_tracing(cfg, torch_model, inputs):
         caffe2_model.save_graph(os.path.join(args.output, "model.svg"), inputs=inputs)
         return caffe2_model
     elif args.format == "onnx":
+        import onnx
+
         onnx_model = tracer.export_onnx()
         onnx.save(onnx_model, os.path.join(args.output, "model.onnx"))
     elif args.format == "torchscript":

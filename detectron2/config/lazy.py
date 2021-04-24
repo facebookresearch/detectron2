@@ -126,7 +126,7 @@ def _patch_import():
             # Only deal with relative imports inside config files
             level != 0
             and globals is not None
-            and globals.get("__package__", "").startswith(_CFG_PACKAGE_NAME)
+            and (globals.get("__package__", "") or "").startswith(_CFG_PACKAGE_NAME)
         ):
             cur_file = find_relative_file(globals["__file__"], name, level)
             _validate_py_syntax(cur_file)
