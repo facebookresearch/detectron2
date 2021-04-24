@@ -243,7 +243,6 @@ class ROIHeads(torch.nn.Module):
 
                 Other fields such as "gt_classes", "gt_masks", that's included in `targets`.
         """
-        gt_boxes = [x.gt_boxes for x in targets]
         # Augment proposals with ground-truth boxes.
         # In the case of learned proposals (e.g., RPN), when training starts
         # the proposals will be low quality due to random initialization.
@@ -256,7 +255,7 @@ class ROIHeads(torch.nn.Module):
         # convergence and empirically improves box AP on COCO by about 0.5
         # points (under one tested configuration).
         if self.proposal_append_gt:
-            proposals = add_ground_truth_to_proposals(gt_boxes, proposals)
+            proposals = add_ground_truth_to_proposals(targets, proposals)
 
         proposals_with_gt = []
 

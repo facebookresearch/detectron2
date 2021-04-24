@@ -234,9 +234,8 @@ class RROIHeads(StandardROIHeads):
                    then the ground-truth box is random)
                 - gt_classes: the ground-truth classification lable for each proposal
         """
-        gt_boxes = [x.gt_boxes for x in targets]
         if self.proposal_append_gt:
-            proposals = add_ground_truth_to_proposals(gt_boxes, proposals)
+            proposals = add_ground_truth_to_proposals(targets, proposals)
 
         proposals_with_gt = []
 
