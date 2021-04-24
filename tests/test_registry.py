@@ -35,3 +35,11 @@ class TestLocate(unittest.TestCase):
     def test_failure(self):
         with self.assertRaises(ImportError):
             locate("asdf")
+
+    def test_compress_target(self):
+        from detectron2.data.transforms import RandomCrop
+
+        name = _convert_target_to_string(RandomCrop)
+        # name shouldn't contain 'augmentation_impl'
+        self.assertEqual(name, "detectron2.data.transforms.RandomCrop")
+        self.assertIs(RandomCrop, locate(name))
