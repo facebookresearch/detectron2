@@ -5,6 +5,7 @@ import os
 import tempfile
 import time
 import unittest
+from unittest import mock
 import torch
 from fvcore.common.checkpoint import Checkpointer
 from torch import nn
@@ -128,3 +129,15 @@ class TestTrainer(unittest.TestCase):
             checkpointer.resume_or_load("non_exist.pth")
             self.assertEqual(trainer.iter, 11)  # last finished iter
             self.assertEqual(scheduler.last_epoch, 11)
+
+    def test_eval_hook(self):
+        model = _SimpleModel()
+        dataloader = self._data_loader("cpu")
+        opt = torch.optim.SGD(model.parameters(), 0.1)
+
+        for total_iter, period, eval_count in [(30, 15, 2), (31, 15, 3), (20, 0, 1)]:
+            test_func = mock.Mock(return_value={"metric": 3.0})
+            trainer = SimpleTrainer(model, dataloader, opt)
+            trainer.register_hooks([hooks.EvalHook(period, test_func)])
+            trainer.train(0, total_iter)
+            self.assertEqual(test_func.call_count, eval_count)
