@@ -107,7 +107,7 @@ def collect_env_info():
         if has_cuda and sys.platform != "win32":
             try:
                 so_file = importlib.util.find_spec("detectron2._C").origin
-            except ImportError:
+            except (ImportError, AttributeError):
                 pass
             else:
                 data.append(
@@ -160,7 +160,7 @@ def collect_env_info():
                 torchvision_C = importlib.util.find_spec("torchvision._C").origin
                 msg = detect_compute_compatibility(CUDA_HOME, torchvision_C)
                 data.append(("torchvision arch flags", msg))
-            except ImportError:
+            except (ImportError, AttributeError):
                 data.append(("torchvision._C", "Not found"))
     except AttributeError:
         data.append(("torchvision", "unknown"))
@@ -169,7 +169,7 @@ def collect_env_info():
         import fvcore
 
         data.append(("fvcore", fvcore.__version__))
-    except ImportError:
+    except (ImportError, AttributeError):
         pass
 
     try:
@@ -183,7 +183,7 @@ def collect_env_info():
         import cv2
 
         data.append(("cv2", cv2.__version__))
-    except ImportError:
+    except (ImportError, AttributeError):
         data.append(("cv2", "Not found"))
     env_str = tabulate(data) + "\n"
     env_str += collect_torch_env()
