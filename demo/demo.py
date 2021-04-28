@@ -135,7 +135,7 @@ if __name__ == "__main__":
         if args.output:
             if os.path.isdir(args.output):
                 output_fname = os.path.join(args.output, basename)
-                output_fname = os.path.splitext(output_fname)[0] + ".mkv"
+                output_fname = os.path.splitext(output_fname)[0] + ".mp4" #mkv->mp4
             else:
                 output_fname = args.output
             assert not os.path.isfile(output_fname), output_fname
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                 filename=output_fname,
                 # some installation of opencv may not support x264 (due to its license),
                 # you can try other format (e.g. MPEG)
-                fourcc=cv2.VideoWriter_fourcc(*"mp4v"),
+                fourcc=cv2.VideoWriter_fourcc(*"mp4v"), #x264 -> mp4v
                 fps=float(frames_per_second),
                 frameSize=(width, height),
                 isColor=True,
