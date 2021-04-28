@@ -2,7 +2,7 @@
 
 Bowen Cheng, Omkar Parkhi, Alexander Kirillov
 
-[[`arXiv`](https://arxiv.org)] [[`Project`](https://bowenc0221.github.io/point-sup)] [[`BibTeX`](#CitingPointSup)]
+[[`arXiv`](https://arxiv.org/abs/2104.06404)] [[`Project`](https://bowenc0221.github.io/point-sup)] [[`BibTeX`](#CitingPointSup)]
 
 <div align="center">
   <img src="https://bowenc0221.github.io/images/cheng2021pointly.png" width="50%" height="50%"/>
