@@ -1,0 +1,15 @@
+_BASE_: "../../../configs/Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  ROI_MASK_HEAD:
+    NAME: "MaskRCNNConvUpsamplePointSupHead"
+INPUT:
+  POINT_SUP: True
+DATASETS:
+  TRAIN: ("coco_2017_train_points_n10_v1_without_masks",)
+SOLVER:
+  STEPS: (210000, 250000)
+  MAX_ITER: 270000
