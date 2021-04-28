@@ -10,10 +10,11 @@ import sys
 import pycocotools.mask as mask_utils
 
 from detectron2.utils.env import seed_all_rng
+from detectron2.utils.file_io import PathManager
 
 
 def get_point_annotations(input_filename, output_filename, num_points_per_instance):
-    with open(input_filename, "r") as f:
+    with PathManager.open(input_filename, "r") as f:
         coco_json = json.load(f)
 
     coco_annos = coco_json.pop("annotations")
@@ -62,7 +63,7 @@ def get_point_annotations(input_filename, output_filename, num_points_per_instan
         new_annos.append(new_ann)
     coco_points_json["annotations"] = new_annos
 
-    with open(output_filename, "w") as f:
+    with PathManager.open(output_filename, "w") as f:
         json.dump(coco_points_json, f)
 
     print("{} is modified and stored in {}.".format(input_filename, output_filename))
