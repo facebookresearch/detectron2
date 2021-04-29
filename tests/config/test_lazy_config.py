@@ -4,7 +4,7 @@ import unittest
 import tempfile
 from itertools import count
 
-from detectron2.config import LazyConfig
+from detectron2.config import LazyConfig, LazyCall as L
 
 
 class TestLazyPythonConfig(unittest.TestCase):
@@ -47,3 +47,24 @@ class TestLazyPythonConfig(unittest.TestCase):
         cfg = LazyConfig.load(self.root_filename)
         with self.assertRaises(KeyError):
             LazyConfig.apply_overrides(cfg, ["lazyobj.x.xxx=123"])
+
+    def test_to_py(self):
+        cfg = LazyConfig.load(self.root_filename)
+        cfg.lazyobj.x = {"a": 1, "b": 2, "c": L(count)(x={"r": "a", "s": 2.4, "t": [1, 2, 3, "z"]})}
+        cfg.list = ["a", 1, "b", 3.2]
+        py_str = LazyConfig.to_py(cfg)
+        expected = """cfg.dir1a_dict.a = "modified"
+cfg.dir1a_dict.b = 2
+cfg.dir1b_dict.a = 1
+cfg.dir1b_dict.b = 2
+cfg.lazyobj = itertools.count(
+    x={
+        "a": 1,
+        "b": 2,
+        "c": itertools.count(x={"r": "a", "s": 2.4, "t": [1, 2, 3, "z"]}),
+    },
+    y="base_a_1_from_b",
+)
+cfg.list = ["a", 1, "b", 3.2]
+"""
+        self.assertEqual(py_str, expected)

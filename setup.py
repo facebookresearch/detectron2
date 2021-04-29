@@ -222,7 +222,9 @@ setup(
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
-        "omegaconf==2.1.0.dev22",
+        "omegaconf>=2.1.0.dev24",
+        "hydra-core>=1.1.0.dev5",
+        "black==20.8b1",
         # When adding to the list, may need to update docs/requirements.txt
         # or add mock in docs/conf.py
     ],
@@ -231,13 +233,11 @@ setup(
             "shapely",
             "pygments>=2.2",
             "psutil",
-            "hydra-core",
             "panopticapi @ https://github.com/cocodataset/panopticapi/archive/master.zip",
         ],
         "dev": [
             "flake8==3.8.1",
             "isort==4.3.21",
-            "black==20.8b1",
             "flake8-bugbear",
             "flake8-comprehensions",
         ],
