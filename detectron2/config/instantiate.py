@@ -69,7 +69,7 @@ def instantiate(cfg):
         else:
             try:
                 cls_name = cls.__module__ + "." + cls.__qualname__
-            except AttributeError:
+            except Exception:
                 # target could be anything, so the above could fail
                 cls_name = str(cls)
         assert callable(cls), f"_target_ {cls} does not define a callable object"
