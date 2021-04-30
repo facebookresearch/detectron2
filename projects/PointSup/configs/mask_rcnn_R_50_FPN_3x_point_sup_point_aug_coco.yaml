@@ -1,0 +1,3 @@
+_BASE_: "mask_rcnn_R_50_FPN_3x_point_sup_coco.yaml"
+INPUT:
+  SAMPLE_POINTS: 5
