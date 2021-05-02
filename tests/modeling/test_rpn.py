@@ -249,12 +249,12 @@ class RPNTest(unittest.TestCase):
         self.assertRaises(AssertionError, add_ground_truth_to_proposals, [gt_instances], [proposals])
 
         gt_instances.custom_attribute = torch.tensor([1])
-        gt_instances.custom_attribute2 = torch.tensor([])
+        gt_instances.custom_attribute2 = torch.tensor([1])
         new_proposals = add_ground_truth_to_proposals([gt_instances], [proposals])[0]
 
         self.assertEqual(new_proposals.custom_attribute[0], 1)
         # new proposals should only include the attributes in proposals
-        self.assertRaises(KeyError, lambda: new_proposals.custom_attribute2)
+        self.assertRaises(AttributeError, lambda: new_proposals.custom_attribute2)
 
 
 if __name__ == "__main__":
