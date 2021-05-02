@@ -172,13 +172,11 @@ class PointRendMaskHead(nn.Module):
         # point head
         self._init_point_head(cfg, input_shape)
         # coarse mask head
-        self._init_roi_head(cfg, input_shape)
-
-    def _init_roi_head(self, cfg, input_shape):
         self.roi_pooler_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
         self.roi_pooler_size = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
+        self._feature_scales = {k: 1.0 / v.stride for k, v in input_shape.items()}
         in_channels = np.sum([input_shape[f].channels for f in self.roi_pooler_in_features])
-        self.coarse_head = ConvFCHead(
+        self._init_roi_head(
             cfg,
             ShapeSpec(
                 channels=in_channels,
@@ -186,6 +184,9 @@ class PointRendMaskHead(nn.Module):
                 height=self.roi_pooler_size,
             ),
         )
+
+    def _init_roi_head(self, cfg, input_shape):
+        self.coarse_head = ConvFCHead(cfg, input_shape)
 
     def _init_point_head(self, cfg, input_shape):
         # fmt: off

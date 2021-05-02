@@ -206,8 +206,8 @@ class ImplicitPointHead(nn.Module):
             else:
                 fine_grained_features = torch.cat([locations, fine_grained_features], dim=1)
 
-        # features [1, R*C, K]
-        mask_feat = fine_grained_features.reshape(1, num_instances * self.in_channels, num_points)
+        # features [R, C, K]
+        mask_feat = fine_grained_features.reshape(num_instances, self.in_channels, num_points)
 
         weights, biases = self._parse_params(
             parameters,
@@ -229,7 +229,7 @@ class ImplicitPointHead(nn.Module):
         n_layers = len(weights)
         x = features
         for i, (w, b) in enumerate(zip(weights, biases)):
-            x = F.conv1d(x, w, bias=b, stride=1, padding=0, groups=num_instances)
+            x = torch.einsum("nck,ndc->ndk", x, w) + b
             if i < n_layers - 1:
                 x = F.relu(x)
         return x
@@ -259,21 +259,17 @@ class ImplicitPointHead(nn.Module):
 
         for l in range(num_layers):
             if l == 0:
-                # out_channels x in_channels x 1 x 1
-                weight_splits[l] = weight_splits[l].reshape(
-                    num_instances * channels, in_channels, 1
-                )
-                bias_splits[l] = bias_splits[l].reshape(num_instances * channels)
+                # input layer
+                weight_splits[l] = weight_splits[l].reshape(num_instances, channels, in_channels)
+                bias_splits[l] = bias_splits[l].reshape(num_instances, channels, 1)
             elif l < num_layers - 1:
-                # out_channels x in_channels x 1 x 1
-                weight_splits[l] = weight_splits[l].reshape(num_instances * channels, channels, 1)
-                bias_splits[l] = bias_splits[l].reshape(num_instances * channels)
+                # intermediate layer
+                weight_splits[l] = weight_splits[l].reshape(num_instances, channels, channels)
+                bias_splits[l] = bias_splits[l].reshape(num_instances, channels, 1)
             else:
-                # out_channels x in_channels x 1 x 1
-                weight_splits[l] = weight_splits[l].reshape(
-                    num_instances * num_classes, channels, 1
-                )
-                bias_splits[l] = bias_splits[l].reshape(num_instances * num_classes)
+                # output layer
+                weight_splits[l] = weight_splits[l].reshape(num_instances, num_classes, channels)
+                bias_splits[l] = bias_splits[l].reshape(num_instances, num_classes, 1)
 
         return weight_splits, bias_splits
 
