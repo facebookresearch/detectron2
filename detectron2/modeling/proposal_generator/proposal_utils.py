@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import torch
 
 from detectron2.layers import batched_nms, cat
@@ -129,12 +129,13 @@ def find_top_rpn_proposals(
         results.append(res)
     return results
 
-def add_ground_truth_to_proposals(gt: List[Instances], proposals: List[Instances]):
+
+def add_ground_truth_to_proposals(gt: Union[List[Instances], List[Boxes]], proposals: List[Instances]):
     """
     Call `add_ground_truth_to_proposals_single_image` for all images.
 
     Args:
-        gt(list[Instances]): list of N elements. Element i is a Instances
+        gt(Union[List[Instances], List[Boxes]): list of N elements. Element i is a Instances
             representing the ground-truth for image i.
         proposals (list[Instances]): list of N elements. Element i is a Instances
             representing the proposals for image i.
@@ -160,12 +161,18 @@ def add_ground_truth_to_proposals_single_image(gt, proposals):
     Augment `proposals` with `gt`.
 
     Args:
-        Same as `add_ground_truth_to_proposals`, but with gt_boxes and proposals
+        Same as `add_ground_truth_to_proposals`, but with gt and proposals
         per image.
 
     Returns:
         Same as `add_ground_truth_to_proposals`, but for only one image.
     """
+    if isinstance(gt, Boxes):
+        # convert Boxes to Instances
+        new_gt = Instances(proposals.image_size)
+        new_gt.gt_boxes = gt
+        gt = new_gt
+
     gt_boxes = gt.gt_boxes
     device = proposals.objectness_logits.device
     # Assign all ground-truth boxes an objectness logit corresponding to
@@ -177,6 +184,10 @@ def add_ground_truth_to_proposals_single_image(gt, proposals):
     gt_proposal = Instances(proposals.image_size, **gt.get_fields())
     gt_proposal.proposal_boxes = gt_boxes
     gt_proposal.objectness_logits = gt_logits
+
+    for key in proposals.get_fields().keys():
+        assert gt_proposal.has(key), "the attribute '{}' in `proposals` does not exist in `gt`".format(key)
+
     new_proposals = Instances.cat([proposals, gt_proposal])
 
     return new_proposals

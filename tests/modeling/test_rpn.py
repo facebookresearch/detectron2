@@ -9,7 +9,7 @@ from detectron2.export import scripting_with_instances
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import build_backbone
 from detectron2.modeling.proposal_generator import RPN, build_proposal_generator
-from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals
+from detectron2.modeling.proposal_generator.proposal_utils import find_top_rpn_proposals, add_ground_truth_to_proposals
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
@@ -232,6 +232,29 @@ class RPNTest(unittest.TestCase):
         torch.jit.trace(
             func, (proposal, pred_logit, torch.tensor([100, 100])), check_inputs=other_inputs
         )
+
+    def test_append_gt_to_proposal(self):
+        proposals = Instances((10, 10), **{
+            'proposal_boxes': Boxes(torch.empty((0, 4))),
+            'objectness_logits': torch.tensor([]),
+            'custom_attribute': torch.tensor([])
+        })
+        gt_boxes = Boxes(torch.tensor([[0, 0, 1, 1]]))
+
+        self.assertRaises(AssertionError, add_ground_truth_to_proposals, [gt_boxes], [proposals])
+
+        gt_instances = Instances((10, 10))
+        gt_instances.gt_boxes = gt_boxes
+
+        self.assertRaises(AssertionError, add_ground_truth_to_proposals, [gt_instances], [proposals])
+
+        gt_instances.custom_attribute = torch.tensor([1])
+        gt_instances.custom_attribute2 = torch.tensor([])
+        new_proposals = add_ground_truth_to_proposals([gt_instances], [proposals])[0]
+
+        self.assertEqual(new_proposals.custom_attribute[0], 1)
+        # new proposals should only include the attributes in proposals
+        self.assertRaises(KeyError, lambda: new_proposals.custom_attribute2)
 
 
 if __name__ == "__main__":
