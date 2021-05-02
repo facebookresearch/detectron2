@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
+import math
 import numpy as np
 from typing import Dict, List, Tuple
 import fvcore.nn.weight_init as weight_init
@@ -168,10 +169,10 @@ class PointRendMaskHead(nn.Module):
     def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
         super().__init__()
         self._feature_scales = {k: 1.0 / v.stride for k, v in input_shape.items()}
-        # coarse mask head
-        self._init_roi_head(cfg, input_shape)
         # point head
         self._init_point_head(cfg, input_shape)
+        # coarse mask head
+        self._init_roi_head(cfg, input_shape)
 
     def _init_roi_head(self, cfg, input_shape):
         self.roi_pooler_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
@@ -354,3 +355,79 @@ class PointRendMaskHead(nn.Module):
                 )
         mask_rcnn_inference(mask_logits, instances)
         return instances
+
+
+@ROI_MASK_HEAD_REGISTRY.register()
+class ImplicitPointRendMaskHead(PointRendMaskHead):
+    def __init__(self, cfg, input_shape: Dict[str, ShapeSpec]):
+        super().__init__(cfg, input_shape)
+
+    def _init_roi_head(self, cfg, input_shape):
+        assert hasattr(self, "num_params"), "Please initialize point_head first!"
+        self.parameter_head = ConvFCHead(cfg, input_shape, output_shape=(self.num_params,))
+        self.regularizer = cfg.MODEL.IMPLICIT_POINTREND.PARAMS_L2_REGULARIZER
+
+    def _init_point_head(self, cfg, input_shape):
+        # fmt: off
+        self.mask_point_on = True  # always on
+        assert cfg.MODEL.ROI_HEADS.NUM_CLASSES == cfg.MODEL.POINT_HEAD.NUM_CLASSES
+        self.mask_point_in_features             = cfg.MODEL.POINT_HEAD.IN_FEATURES
+        self.mask_point_train_num_points        = cfg.MODEL.POINT_HEAD.TRAIN_NUM_POINTS
+        # next two parameters are use in the adaptive subdivions inference procedure
+        self.mask_point_subdivision_steps       = cfg.MODEL.POINT_HEAD.SUBDIVISION_STEPS
+        self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
+        # fmt: on
+
+        in_channels = np.sum([input_shape[f].channels for f in self.mask_point_in_features])
+        self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
+        self.num_params = self.point_head.num_params
+
+        # inference parameters
+        self.mask_point_subdivision_init_resolution = int(
+            math.sqrt(self.mask_point_subdivision_num_points)
+        )
+        assert (
+            self.mask_point_subdivision_init_resolution
+            * self.mask_point_subdivision_init_resolution
+            == self.mask_point_subdivision_num_points
+        )
+
+    def forward(self, features, instances):
+        """
+        Args:
+            features (dict[str, Tensor]): a dict of image-level features
+            instances (list[Instances]): proposals in training; detected
+                instances in inference
+        """
+        if self.training:
+            proposal_boxes = [x.proposal_boxes for x in instances]
+            parameters = self.parameter_head(self._roi_pooler(features, proposal_boxes))
+            losses = {"loss_l2": self.regularizer * (parameters ** 2).mean()}
+
+            point_coords, point_labels = self._uniform_sample_train_points(instances)
+            point_fine_grained_features = self._point_pooler(features, proposal_boxes, point_coords)
+            point_logits = self._get_point_logits(
+                point_fine_grained_features, point_coords, parameters
+            )
+            losses["loss_mask_point"] = roi_mask_point_loss(point_logits, instances, point_labels)
+            return losses
+        else:
+            pred_boxes = [x.pred_boxes for x in instances]
+            parameters = self.parameter_head(self._roi_pooler(features, pred_boxes))
+            return self._subdivision_inference(features, parameters, instances)
+
+    def _uniform_sample_train_points(self, instances):
+        assert self.training
+        proposal_boxes = [x.proposal_boxes for x in instances]
+        cat_boxes = Boxes.cat(proposal_boxes)
+        # uniform sample
+        point_coords = torch.rand(
+            len(cat_boxes), self.mask_point_train_num_points, 2, device=cat_boxes.tensor.device
+        )
+        # sample point_labels
+        point_coords_wrt_image = get_point_coords_wrt_image(cat_boxes.tensor, point_coords)
+        point_labels = sample_point_labels(instances, point_coords_wrt_image)
+        return point_coords, point_labels
+
+    def _get_point_logits(self, fine_grained_features, point_coords, parameters):
+        return self.point_head(fine_grained_features, point_coords, parameters)

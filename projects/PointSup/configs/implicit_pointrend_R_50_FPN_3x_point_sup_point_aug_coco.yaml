@@ -1,0 +1,9 @@
+_BASE_: "../../PointRend/configs/InstanceSegmentation/implicit_pointrend_R_50_FPN_3x_coco.yaml"
+MODEL:
+  ROI_MASK_HEAD:
+    NAME: "ImplicitPointRendPointSupHead"
+INPUT:
+  POINT_SUP: True
+  SAMPLE_POINTS: 5
+DATASETS:
+  TRAIN: ("coco_2017_train_points_n10_v1_without_masks",)

@@ -1,0 +1,11 @@
+_BASE_: "Base-Implicit-PointRend.yaml"
+MODEL:
+  WEIGHTS: detectron2://ImageNetPretrained/MSRA/R-50.pkl
+  RESNETS:
+    DEPTH: 50
+SOLVER:
+  STEPS: (210000, 250000)
+  MAX_ITER: 270000
+# To add COCO AP evaluation against the higher-quality LVIS annotations.
+# DATASETS:
+#   TEST: ("coco_2017_val", "lvis_v0.5_val_cocofied")
