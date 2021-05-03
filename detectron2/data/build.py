@@ -260,7 +260,9 @@ def build_batch_data_loader(
     dataset, sampler, total_batch_size, *, aspect_ratio_grouping=False, num_workers=0
 ):
     """
-    Build a batched dataloader for training.
+    Build a batched dataloader. The main differences from `torch.utils.data.DataLoader` are:
+    1. support aspect ratio grouping options
+    2. use no "batch collation", because this is common for detection training
 
     Args:
         dataset (torch.utils.data.Dataset): map-style PyTorch dataset. Can be indexed.
