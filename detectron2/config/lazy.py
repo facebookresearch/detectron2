@@ -252,7 +252,9 @@ class LazyConfig:
 
         try:
             with PathManager.open(filename, "w") as f:
-                OmegaConf.save(cfg, f)
+                dict = OmegaConf.to_container(cfg, resolve=False)
+                dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
+                f.write(dumped)
         except Exception:
             logger.exception("Unable to serialize the config to yaml. Error:")
             new_filename = filename + ".pkl"
