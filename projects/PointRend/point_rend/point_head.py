@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import numpy as np
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -126,6 +127,151 @@ class StandardPointHead(nn.Module):
             if self.coarse_pred_each_layer:
                 x = cat((x, coarse_features), dim=1)
         return self.predictor(x)
+
+
+@POINT_HEAD_REGISTRY.register()
+class ImplicitPointHead(nn.Module):
+    """
+    A point head multi-layer perceptron which we model with conv1d layers with kernel 1. The head
+    takes both fine-grained features and instance-wise MLP parameters as its input.
+    """
+
+    def __init__(self, cfg, input_shape: ShapeSpec):
+        """
+        The following attributes are parsed from config:
+            channels: the output dimension of each FC layers
+            num_layers: the number of FC layers (including the final prediction layer)
+            image_feature_enabled: if True, fine-grained image-level features are used
+            positional_encoding_enabled: if True, positional encoding is used
+        """
+        super(ImplicitPointHead, self).__init__()
+        # fmt: off
+        self.num_layers                         = cfg.MODEL.POINT_HEAD.NUM_FC + 1
+        self.channels                           = cfg.MODEL.POINT_HEAD.FC_DIM
+        self.image_feature_enabled              = cfg.MODEL.IMPLICIT_POINTREND.IMAGE_FEATURE_ENABLED
+        self.positional_encoding_enabled        = cfg.MODEL.IMPLICIT_POINTREND.POS_ENC_ENABLED
+        self.num_classes                        = (
+            cfg.MODEL.POINT_HEAD.NUM_CLASSES if not cfg.MODEL.POINT_HEAD.CLS_AGNOSTIC_MASK else 1
+        )
+        self.in_channels                        = input_shape.channels
+        # fmt: on
+
+        if not self.image_feature_enabled:
+            self.in_channels = 0
+        if self.positional_encoding_enabled:
+            self.in_channels += 256
+            self.register_buffer("positional_encoding_gaussian_matrix", torch.randn((2, 128)))
+
+        assert self.in_channels > 0
+
+        num_weight_params, num_bias_params = [], []
+        assert self.num_layers >= 2
+        for l in range(self.num_layers):
+            if l == 0:
+                # input layer
+                num_weight_params.append(self.in_channels * self.channels)
+                num_bias_params.append(self.channels)
+            elif l == self.num_layers - 1:
+                # output layer
+                num_weight_params.append(self.channels * self.num_classes)
+                num_bias_params.append(self.num_classes)
+            else:
+                # intermediate layer
+                num_weight_params.append(self.channels * self.channels)
+                num_bias_params.append(self.channels)
+
+        self.num_weight_params = num_weight_params
+        self.num_bias_params = num_bias_params
+        self.num_params = sum(num_weight_params) + sum(num_bias_params)
+
+    def forward(self, fine_grained_features, point_coords, parameters):
+        # features: [R, channels, K]
+        # point_coords: [R, K, 2]
+        num_instances = fine_grained_features.size(0)
+        num_points = fine_grained_features.size(2)
+
+        if num_instances == 0:
+            return torch.zeros((0, 1, num_points), device=fine_grained_features.device)
+
+        if self.positional_encoding_enabled:
+            # locations: [R*K, 2]
+            locations = 2 * point_coords.reshape(num_instances * num_points, 2) - 1
+            locations = locations @ self.positional_encoding_gaussian_matrix.to(locations.device)
+            locations = 2 * np.pi * locations
+            locations = torch.cat([torch.sin(locations), torch.cos(locations)], dim=1)
+            # locations: [R, C, K]
+            locations = locations.reshape(num_instances, num_points, 256).permute(0, 2, 1)
+            if not self.image_feature_enabled:
+                fine_grained_features = locations
+            else:
+                fine_grained_features = torch.cat([locations, fine_grained_features], dim=1)
+
+        # features [R, C, K]
+        mask_feat = fine_grained_features.reshape(num_instances, self.in_channels, num_points)
+
+        weights, biases = self._parse_params(
+            parameters,
+            self.in_channels,
+            self.channels,
+            self.num_classes,
+            self.num_weight_params,
+            self.num_bias_params,
+        )
+
+        point_logits = self._dynamic_mlp(mask_feat, weights, biases, num_instances)
+        point_logits = point_logits.reshape(-1, self.num_classes, num_points)
+
+        return point_logits
+
+    @staticmethod
+    def _dynamic_mlp(features, weights, biases, num_instances):
+        assert features.dim() == 3, features.dim()
+        n_layers = len(weights)
+        x = features
+        for i, (w, b) in enumerate(zip(weights, biases)):
+            x = torch.einsum("nck,ndc->ndk", x, w) + b
+            if i < n_layers - 1:
+                x = F.relu(x)
+        return x
+
+    @staticmethod
+    def _parse_params(
+        pred_params,
+        in_channels,
+        channels,
+        num_classes,
+        num_weight_params,
+        num_bias_params,
+    ):
+        assert pred_params.dim() == 2
+        assert len(num_weight_params) == len(num_bias_params)
+        assert pred_params.size(1) == sum(num_weight_params) + sum(num_bias_params)
+
+        num_instances = pred_params.size(0)
+        num_layers = len(num_weight_params)
+
+        params_splits = list(
+            torch.split_with_sizes(pred_params, num_weight_params + num_bias_params, dim=1)
+        )
+
+        weight_splits = params_splits[:num_layers]
+        bias_splits = params_splits[num_layers:]
+
+        for l in range(num_layers):
+            if l == 0:
+                # input layer
+                weight_splits[l] = weight_splits[l].reshape(num_instances, channels, in_channels)
+                bias_splits[l] = bias_splits[l].reshape(num_instances, channels, 1)
+            elif l < num_layers - 1:
+                # intermediate layer
+                weight_splits[l] = weight_splits[l].reshape(num_instances, channels, channels)
+                bias_splits[l] = bias_splits[l].reshape(num_instances, channels, 1)
+            else:
+                # output layer
+                weight_splits[l] = weight_splits[l].reshape(num_instances, num_classes, channels)
+                bias_splits[l] = bias_splits[l].reshape(num_instances, num_classes, 1)
+
+        return weight_splits, bias_splits
 
 
 def build_point_head(cfg, input_channels):

@@ -152,3 +152,16 @@ If you use PointRend, please use the following BibTeX entry.
   year={2019}
 }
 ```
+
+## <a name="CitingImplicitPointRend"></a>Citing Implicit PointRend
+
+If you use Implicit PointRend, please use the following BibTeX entry.
+
+```BibTeX
+@InProceedings{cheng2021pointly,
+  title={Pointly-Supervised Instance Segmentation,
+  author={Bowen Cheng and Omkar Parkhi and Alexander Kirillov},
+  journal={ArXiv},
+  year={2021}
+}
+```
