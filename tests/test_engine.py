@@ -110,14 +110,18 @@ class TestTrainer(unittest.TestCase):
 
             trainer.register_hooks(
                 [
-                    hooks.PeriodicCheckpointer(checkpointer, 10),
                     hooks.LRScheduler(scheduler=scheduler),
+                    # checkpoint after scheduler to properly save the state of scheduler
+                    hooks.PeriodicCheckpointer(checkpointer, 10),
                 ]
             )
 
             trainer.train(0, 12)
+            self.assertAlmostEqual(opt.param_groups[0]["lr"], 1e-5)
+            self.assertEqual(scheduler.last_epoch, 12)
             del trainer
 
+            opt = torch.optim.SGD(model.parameters(), 999)  # lr will be loaded
             trainer = SimpleTrainer(model, dataloader, opt)
             scheduler = torch.optim.lr_scheduler.StepLR(opt, 3)
             trainer.register_hooks(
@@ -127,8 +131,10 @@ class TestTrainer(unittest.TestCase):
             )
             checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
             checkpointer.resume_or_load("non_exist.pth")
-            self.assertEqual(trainer.iter, 11)  # last finished iter
-            self.assertEqual(scheduler.last_epoch, 11)
+            self.assertEqual(trainer.iter, 11)  # last finished iter number (0-based in Trainer)
+            # number of times `scheduler.step()` was called (1-based)
+            self.assertEqual(scheduler.last_epoch, 12)
+            self.assertAlmostEqual(opt.param_groups[0]["lr"], 1e-5)
 
     def test_eval_hook(self):
         model = _SimpleModel()
