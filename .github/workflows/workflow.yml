@@ -18,7 +18,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install flake8==3.8.1 flake8-bugbear flake8-comprehensions isort==4.3.21
-          python -m pip install black==20.8b1
+          python -m pip install black==21.4b2
           flake8 --version
       - name: Lint
         run: |

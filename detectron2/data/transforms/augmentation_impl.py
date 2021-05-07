@@ -106,7 +106,7 @@ class RandomFlip(Augmentation):
 
 
 class Resize(Augmentation):
-    """ Resize image to a fixed target size"""
+    """Resize image to a fixed target size"""
 
     def __init__(self, shape, interp=Image.BILINEAR):
         """

@@ -44,7 +44,7 @@ def add_evaluation_config(cfg: CN):
 
 
 def add_bootstrap_config(cfg: CN):
-    """"""
+    """ """
     _C = cfg
     _C.BOOTSTRAP_DATASETS = []
     _C.BOOTSTRAP_MODEL = CN()

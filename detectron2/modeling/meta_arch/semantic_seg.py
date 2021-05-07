@@ -38,7 +38,7 @@ class SemanticSegmentor(nn.Module):
         backbone: Backbone,
         sem_seg_head: nn.Module,
         pixel_mean: Tuple[float],
-        pixel_std: Tuple[float]
+        pixel_std: Tuple[float],
     ):
         """
         Args:
@@ -147,7 +147,7 @@ class SemSegFPNHead(nn.Module):
         common_stride: int,
         loss_weight: float = 1.0,
         norm: Optional[Union[str, Callable]] = None,
-        ignore_value: int = -1
+        ignore_value: int = -1,
     ):
         """
         NOTE: this interface is experimental.

@@ -363,7 +363,7 @@ class Caffe2FastRCNNOutputsInference:
         self.tensor_mode = tensor_mode  # whether the output is caffe2 tensor mode
 
     def __call__(self, box_predictor, predictions, proposals):
-        """ equivalent to FastRCNNOutputLayers.inference """
+        """equivalent to FastRCNNOutputLayers.inference"""
         num_classes = box_predictor.num_classes
         score_thresh = box_predictor.test_score_thresh
         nms_thresh = box_predictor.test_nms_thresh
@@ -494,7 +494,7 @@ class Caffe2FastRCNNOutputsInference:
 
 class Caffe2MaskRCNNInference:
     def __call__(self, pred_mask_logits, pred_instances):
-        """ equivalent to mask_head.mask_rcnn_inference """
+        """equivalent to mask_head.mask_rcnn_inference"""
         if all(isinstance(x, InstancesList) for x in pred_instances):
             assert len(pred_instances) == 1
             mask_probs_pred = pred_mask_logits.sigmoid()

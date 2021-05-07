@@ -31,7 +31,7 @@ class PanopticFPN(GeneralizedRCNN):
         combine_overlap_thresh: float = 0.5,
         combine_stuff_area_thresh: float = 4096,
         combine_instances_score_thresh: float = 0.5,
-        **kwargs
+        **kwargs,
     ):
         """
         NOTE: this interface is experimental.

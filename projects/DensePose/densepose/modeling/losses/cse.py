@@ -16,7 +16,7 @@ from .utils import BilinearInterpolationHelper, LossDict, extract_packed_annotat
 
 @DENSEPOSE_LOSS_REGISTRY.register()
 class DensePoseCseLoss:
-    """"""
+    """ """
 
     _EMBED_LOSS_REGISTRY = {
         EmbeddingLoss.__name__: EmbeddingLoss,
