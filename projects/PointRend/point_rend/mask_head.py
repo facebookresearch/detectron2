@@ -304,9 +304,6 @@ class PointRendMaskHead(nn.Module):
 
         pred_boxes = [x.pred_boxes for x in instances]
         pred_classes = cat([x.pred_classes for x in instances])
-        # The subdivision code will fail with the empty list of boxes
-        if len(pred_classes) == 0:
-            return instances
 
         mask_logits = None
         # +1 here to include an initial step to generate the coarsest mask
@@ -345,6 +342,10 @@ class PointRendMaskHead(nn.Module):
                     self.mask_point_subdivision_init_resolution,
                     self.mask_point_subdivision_init_resolution,
                 )
+                # The subdivision code will fail with the empty list of boxes
+                if len(pred_classes) == 0:
+                    mask_rcnn_inference(mask_logits, instances)
+                    return instances
             else:
                 # Put point predictions to the right places on the upsampled grid.
                 R, C, H, W = mask_logits.shape
