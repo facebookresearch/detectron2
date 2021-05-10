@@ -2,6 +2,7 @@
 import logging
 import os
 import pickle
+import torch
 from fvcore.common.checkpoint import Checkpointer
 from torch.nn.parallel import DistributedDataParallel
 
@@ -72,6 +73,19 @@ class DetectionCheckpointer(Checkpointer):
                     data = data["blobs"]
                 data = {k: v for k, v in data.items() if not k.endswith("_momentum")}
                 return {"model": data, "__author__": "Caffe2", "matching_heuristics": True}
+        elif filename.endswith(".pyth"):
+            # assume file is from pycls; no one else seems to use the ".pyth" extension
+            with PathManager.open(filename, "rb") as f:
+                data = torch.load(f)
+            assert (
+                "model_state" in data
+            ), f"Cannot load .pyth file {filename}; pycls checkpoints must contain 'model_state'."
+            model_state = {
+                k: v
+                for k, v in data["model_state"].items()
+                if not k.endswith("num_batches_tracked")
+            }
+            return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
 
         loaded = super()._load_file(filename)  # load native pth checkpoint
         if "model" not in loaded:

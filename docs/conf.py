@@ -329,6 +329,8 @@ _PAPER_DATA = {
         "1802.02611",
         "Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation",
     ),
+    "dds": ("2003.13678", "Designing Network Design Spaces"),
+    "scaling": ("2103.06877", "Fast and Accurate Model Scaling"),
 }
 
 
