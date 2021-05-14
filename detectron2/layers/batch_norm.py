@@ -195,6 +195,10 @@ class NaiveSyncBatchNorm(BatchNorm2d):
 
         B, C = input.shape[0], input.shape[1]
 
+        half_input = input.dtype == torch.float16
+        if half_input:
+            # fp16 does not have good enough numerics for the reduction here
+            input = input.float()
         mean = torch.mean(input, dim=[0, 2, 3])
         meansqr = torch.mean(input * input, dim=[0, 2, 3])
 
@@ -216,8 +220,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
 
             total_batch = vec[-1].detach()
             momentum = total_batch.clamp(max=1) * self.momentum  # no update if total_batch is 0
-            total_batch = torch.max(total_batch, torch.ones_like(total_batch))  # avoid div-by-zero
-            mean, meansqr, _ = torch.split(vec / total_batch, C)
+            mean, meansqr, _ = torch.split(vec / total_batch.clamp(min=1), C)  # avoid div-by-zero
 
         var = meansqr - mean * mean
         invstd = torch.rsqrt(var + self.eps)
@@ -228,4 +231,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
 
         self.running_mean += momentum * (mean.detach() - self.running_mean)
         self.running_var += momentum * (var.detach() - self.running_var)
-        return input * scale + bias
+        ret = input * scale + bias
+        if half_input:
+            ret = ret.half()
+        return ret
