@@ -23,7 +23,7 @@ jobs:
             const kLabelToCheck = "needs-more-info";
             const kInvalidLabel = "invalid/unrelated";
             const kDaysBeforeClose = 7;
-            const kMessage = "Requested information was not provided in 7 days, so we're closing this issue."
+            const kMessage = "Requested information was not provided in 7 days, so we're closing this issue.\n\nPlease open new issue if information becomes available. Otherwise, use [github discussions](https://github.com/facebookresearch/detectron2/discussions) for free-form discussions."
 
             issues = await github.issues.listForRepo({
               owner: context.repo.owner,

@@ -78,7 +78,7 @@ jobs:
             let message = "You've chosen to report an unexpected problem or bug. Unless you already know the root cause of it, please include details about it by filling the [issue template](https://github.com/facebookresearch/detectron2/issues/new/choose).\n";
             message += "The following information is missing: ";
             if (!hasInstructions) {
-              message += "\"Instructions To Reproduce the Issue and Full Logs\"; ";
+              message += "\"Instructions To Reproduce the Issue and __Full__ Logs\"; ";
             }
             if (!hasEnvironment) {
               message += "\"Your Environment\"; ";
