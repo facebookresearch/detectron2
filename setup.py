@@ -215,15 +215,15 @@ setup(
         "tensorboard",
         # Lock version of fvcore/iopath because they may have breaking changes
         # NOTE: when updating fvcore/iopath version, make sure fvcore depends
-        # on the same version of iopath.
+        # on compatible version of iopath.
         "fvcore>=0.1.5,<0.1.6",  # required like this to make it pip installable
         "iopath>=0.1.7,<0.1.9",
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
-        "omegaconf>=2.1.0.dev24",
-        "hydra-core>=1.1.0.dev5",
+        "omegaconf>=2.1.0rc1",
+        "hydra-core>=1.1.0rc1",
         "black==21.4b2",
         # When adding to the list, may need to update docs/requirements.txt
         # or add mock in docs/conf.py
