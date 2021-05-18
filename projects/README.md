@@ -19,6 +19,7 @@ of support or stability as detectron2.
 + [D2Go (Detectron2Go)](https://github.com/facebookresearch/d2go), an end-to-end production system for training and deployment for mobile platforms.
 + [Pointly-Supervised Instance Segmentation](PointSup)
 + [Unbiased Teacher for Semi-Supervised Object Detection](https://github.com/facebookresearch/unbiased-teacher)
++ [Rethinking "Batch" in BatchNorm](Rethinking-BatchNorm/)
 
 
 ## External Projects
