@@ -62,7 +62,7 @@ class PointRendSemSegHead(nn.Module):
         self.subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
-        in_channels = np.sum([feature_channels[f] for f in self.in_features])
+        in_channels = int(np.sum([feature_channels[f] for f in self.in_features]))
         self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
 
     def forward(self, features, targets=None):

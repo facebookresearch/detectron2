@@ -105,7 +105,7 @@ class ConvFCHead(nn.Module):
             self.fcs.append(fc)
             input_dim = fc_dim
 
-        output_dim = np.prod(self.output_shape)
+        output_dim = int(np.prod(self.output_shape))
 
         self.prediction = nn.Linear(fc_dims[-1], output_dim)
         # use normal distribution initialization for mask prediction layer
@@ -204,7 +204,7 @@ class PointRendMaskHead(nn.Module):
         self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
-        in_channels = np.sum([input_shape[f].channels for f in self.mask_point_in_features])
+        in_channels = int(np.sum([input_shape[f].channels for f in self.mask_point_in_features]))
         self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
 
         # An optimization to skip unused subdivision steps: if after subdivision, all pixels on
@@ -380,7 +380,7 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
         self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
-        in_channels = np.sum([input_shape[f].channels for f in self.mask_point_in_features])
+        in_channels = int(np.sum([input_shape[f].channels for f in self.mask_point_in_features]))
         self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
         self.num_params = self.point_head.num_params
 
