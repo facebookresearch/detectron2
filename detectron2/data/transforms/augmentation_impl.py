@@ -180,7 +180,7 @@ class ResizeShortestEdge(Augmentation):
 
 class ResizeScale(Augmentation):
     """
-    Takes target size as input and randomly scales the given target size beteween `min_scale`
+    Takes target size as input and randomly scales the given target size between `min_scale`
     and `max_scale`. It then scales the input image such that it fits inside the scaled target
     box, keeping the aspect ratio constant.
     This implements the resize part of the Google's 'resize_and_crop' data augmentation:
