@@ -4,6 +4,7 @@ import glob
 import multiprocessing as mp
 import numpy as np
 import os
+import tempfile
 import time
 import warnings
 import cv2
@@ -73,21 +74,20 @@ def get_parser():
 
 
 def test_opencv_video_format(codec, file_ext):
-    filename = "test_file" + file_ext
-    writer = cv2.VideoWriter(
-        filename=filename,
-        fourcc=cv2.VideoWriter_fourcc(*codec),
-        fps=float(30),
-        frameSize=(10, 10),
-        isColor=True,
-    )
-    [writer.write(np.zeros((10, 10, 3), np.uint8)) for _ in range(30)]
-    writer.release()
-    if os.path.isfile(filename):
-        os.remove(filename)
-        return True
-    warnings.warn("x264 codec not available switching to mp4v")
-    return False
+    with tempfile.TemporaryDirectory(prefix="video_format_test") as dir:
+        filename = os.path.join(dir, "test_file" + file_ext)
+        writer = cv2.VideoWriter(
+            filename=filename,
+            fourcc=cv2.VideoWriter_fourcc(*codec),
+            fps=float(30),
+            frameSize=(10, 10),
+            isColor=True,
+        )
+        [writer.write(np.zeros((10, 10, 3), np.uint8)) for _ in range(30)]
+        writer.release()
+        if os.path.isfile(filename):
+            return True
+        return False
 
 
 if __name__ == "__main__":
@@ -154,7 +154,8 @@ if __name__ == "__main__":
         codec, file_ext = (
             ("x264", ".mkv") if test_opencv_video_format("x264", ".mkv") else ("mp4v", ".mp4")
         )
-
+        if codec == ".mpv4":
+            warnings.warn("x264 codec not available switching to mp4v")
         if args.output:
             if os.path.isdir(args.output):
                 output_fname = os.path.join(args.output, basename)
