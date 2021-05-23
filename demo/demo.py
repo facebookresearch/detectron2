@@ -2,8 +2,11 @@
 import argparse
 import glob
 import multiprocessing as mp
+import numpy as np
 import os
+import tempfile
 import time
+import warnings
 import cv2
 import tqdm
 
@@ -70,6 +73,23 @@ def get_parser():
     return parser
 
 
+def test_opencv_video_format(codec, file_ext):
+    with tempfile.TemporaryDirectory(prefix="video_format_test") as dir:
+        filename = os.path.join(dir, "test_file" + file_ext)
+        writer = cv2.VideoWriter(
+            filename=filename,
+            fourcc=cv2.VideoWriter_fourcc(*codec),
+            fps=float(30),
+            frameSize=(10, 10),
+            isColor=True,
+        )
+        [writer.write(np.zeros((10, 10, 3), np.uint8)) for _ in range(30)]
+        writer.release()
+        if os.path.isfile(filename):
+            return True
+        return False
+
+
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     args = get_parser().parse_args()
@@ -131,11 +151,15 @@ if __name__ == "__main__":
         frames_per_second = video.get(cv2.CAP_PROP_FPS)
         num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         basename = os.path.basename(args.video_input)
-
+        codec, file_ext = (
+            ("x264", ".mkv") if test_opencv_video_format("x264", ".mkv") else ("mp4v", ".mp4")
+        )
+        if codec == ".mp4v":
+            warnings.warn("x264 codec not available, switching to mp4v")
         if args.output:
             if os.path.isdir(args.output):
                 output_fname = os.path.join(args.output, basename)
-                output_fname = os.path.splitext(output_fname)[0] + ".mkv"
+                output_fname = os.path.splitext(output_fname)[0] + file_ext
             else:
                 output_fname = args.output
             assert not os.path.isfile(output_fname), output_fname
@@ -143,7 +167,7 @@ if __name__ == "__main__":
                 filename=output_fname,
                 # some installation of opencv may not support x264 (due to its license),
                 # you can try other format (e.g. MPEG)
-                fourcc=cv2.VideoWriter_fourcc(*"x264"),
+                fourcc=cv2.VideoWriter_fourcc(*codec),
                 fps=float(frames_per_second),
                 frameSize=(width, height),
                 isColor=True,
