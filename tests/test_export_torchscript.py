@@ -59,7 +59,7 @@ class TestScripting(unittest.TestCase):
         }
         script_model = scripting_with_instances(model, fields)
 
-        inputs = [{"image": get_sample_coco_image()}]
+        inputs = [{"image": get_sample_coco_image()}] * 2
         with torch.no_grad():
             instance = model.inference(inputs, do_postprocess=False)[0]
             scripted_instance = script_model.inference(inputs, do_postprocess=False)[0]
@@ -77,7 +77,7 @@ class TestScripting(unittest.TestCase):
         script_model = scripting_with_instances(model, fields)
 
         img = get_sample_coco_image()
-        inputs = [{"image": img}]
+        inputs = [{"image": img}] * 2
         with torch.no_grad():
             instance = model(inputs)[0]["instances"]
             scripted_instance = convert_scripted_instances(script_model(inputs)[0])

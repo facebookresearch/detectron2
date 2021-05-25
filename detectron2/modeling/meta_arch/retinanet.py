@@ -229,7 +229,7 @@ class RetinaNet(nn.Module):
         vis_name = f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
         storage.put_image(vis_name, vis_img)
 
-    def forward(self, batched_inputs: Tuple[Dict[str, Tensor]]):
+    def forward(self, batched_inputs: List[Dict[str, Tensor]]):
         """
         Args:
             batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
@@ -485,7 +485,7 @@ class RetinaNet(nn.Module):
         result.pred_classes = class_idxs_all[keep]
         return result
 
-    def preprocess_image(self, batched_inputs: Tuple[Dict[str, Tensor]]):
+    def preprocess_image(self, batched_inputs: List[Dict[str, Tensor]]):
         """
         Normalize, pad and batch the input images.
         """

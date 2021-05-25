@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
-from typing import Dict, Tuple
+from typing import Dict, List
 import torch
 from torch import nn
 
@@ -134,9 +134,7 @@ class PanopticFPN(GeneralizedRCNN):
         losses.update(detector_losses)
         return losses
 
-    def inference(
-        self, batched_inputs: Tuple[Dict[str, torch.Tensor]], do_postprocess: bool = True
-    ):
+    def inference(self, batched_inputs: List[Dict[str, torch.Tensor]], do_postprocess: bool = True):
         """
         Run inference on the given inputs.
 
