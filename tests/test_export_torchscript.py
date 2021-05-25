@@ -181,6 +181,21 @@ class TestTorchscriptUtils(unittest.TestCase):
                 fname = os.path.join(d, name + ".txt")
                 self.assertTrue(os.stat(fname).st_size > 0, fname)
 
+    def test_dump_IR_function(self):
+        @torch.jit.script
+        def gunc(x, y):
+            return x + y
+
+        def func(x, y):
+            return x + y + gunc(x, y)
+
+        ts_model = torch.jit.trace(func, (torch.rand(3), torch.rand(3)))
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            dump_torchscript_IR(ts_model, d)
+            for name in ["model_ts_code", "model_ts_IR", "model_ts_IR_inlined"]:
+                fname = os.path.join(d, name + ".txt")
+                self.assertTrue(os.stat(fname).st_size > 0, fname)
+
     def test_flatten_basic(self):
         obj = [3, ([5, 6], {"name": [7, 9], "name2": 3})]
         res, schema = flatten_to_tuple(obj)
