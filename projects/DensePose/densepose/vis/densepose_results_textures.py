@@ -1,10 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
 from typing import List, Optional, Tuple
-import cv2
 import torch
 
-from detectron2.utils.file_io import PathManager
+from detectron2.data.detection_utils import read_image
 
 from ..structures import DensePoseChartResult
 from .base import Boxes, Image
@@ -15,7 +14,14 @@ def get_texture_atlas(path: Optional[str]) -> Optional[np.ndarray]:
     if path is None:
         return None
 
-    return cv2.imread(PathManager.get_local_path(path), cv2.IMREAD_UNCHANGED)
+    # Reading images like that downsamples 16-bit images to 8-bit
+    # If 16-bit images are needed, we can replace that by cv2.imread with the
+    # cv2.IMREAD_UNCHANGED flag (with cv2 we also need it to keep alpha channels)
+    # The rest of the pipeline would need to be adapted to 16-bit images too
+    bgr_image = read_image(path)
+    rgb_image = np.copy(bgr_image)  # Convert BGR -> RGB
+    rgb_image[:, :, :3] = rgb_image[:, :, 2::-1]  # Works with alpha channel
+    return rgb_image
 
 
 class DensePoseResultsVisualizerWithTexture(DensePoseResultsVisualizer):
