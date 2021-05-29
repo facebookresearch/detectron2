@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import os
 from collections import OrderedDict
-from typing import Optional
+from typing import Dict, Iterable, List, Optional
 import pycocotools.mask as mask_utils
 import torch
 from pycocotools.coco import COCO
@@ -32,6 +32,7 @@ from densepose.structures import (
 )
 
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
+from .mesh_alignment_evaluator import MeshAlignmentEvaluator
 from .tensor_storage import (
     SingleProcessFileTensorStorage,
     SingleProcessRamTensorStorage,
@@ -51,12 +52,24 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         min_iou_threshold: float = 0.5,
         storage: Optional[SingleProcessTensorStorage] = None,
         embedder=None,
+        should_evaluate_mesh_alignment: bool = False,
+        mesh_alignment_mesh_names: Optional[List[str]] = None,
     ):
         self._embedder = embedder
         self._distributed = distributed
         self._output_dir = output_dir
         self._evaluator_type = evaluator_type
         self._storage = storage
+        self._should_evaluate_mesh_alignment = should_evaluate_mesh_alignment
+
+        assert not (
+            should_evaluate_mesh_alignment and embedder is None
+        ), "Mesh alignment evaluation is activated, but no vertex embedder provided!"
+        if should_evaluate_mesh_alignment:
+            self._mesh_alignment_evaluator = MeshAlignmentEvaluator(
+                embedder,
+                mesh_alignment_mesh_names,
+            )
 
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
@@ -145,7 +158,41 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         res["densepose_gps"] = results_gps
         res["densepose_gpsm"] = results_gpsm
         res["densepose_segm"] = results_segm
+        if self._should_evaluate_mesh_alignment:
+            res["densepose_mesh_alignment"] = self._evaluate_mesh_alignment()
         return res
+
+    def _evaluate_mesh_alignment(self):
+        self._logger.info("Mesh alignment evaluation ...")
+        mean_ge, mean_gps, per_mesh_metrics = self._mesh_alignment_evaluator.evaluate()
+        results = {
+            "GE": mean_ge * 100,
+            "GPS": mean_gps * 100,
+        }
+        mesh_names = set()
+        for metric_name in per_mesh_metrics:
+            for mesh_name, value in per_mesh_metrics[metric_name].items():
+                results[f"{metric_name}-{mesh_name}"] = value * 100
+                mesh_names.add(mesh_name)
+        self._print_mesh_alignment_results(results, mesh_names)
+        return results
+
+    def _print_mesh_alignment_results(self, results: Dict[str, float], mesh_names: Iterable[str]):
+        self._logger.info("Evaluation results for densepose, mesh alignment:")
+        self._logger.info(f'| {"Mesh":13s} | {"GErr":7s} | {"GPS":7s} |')
+        self._logger.info("| :-----------: | :-----: | :-----: |")
+        for mesh_name in mesh_names:
+            ge_key = f"GE-{mesh_name}"
+            ge_str = f"{results[ge_key]:.4f}" if ge_key in results else " "
+            gps_key = f"GPS-{mesh_name}"
+            gps_str = f"{results[gps_key]:.4f}" if gps_key in results else " "
+            self._logger.info(f"| {mesh_name:13s} | {ge_str:7s} | {gps_str:7s} |")
+        self._logger.info("| :-------------------------------: |")
+        ge_key = "GE"
+        ge_str = f"{results[ge_key]:.4f}" if ge_key in results else " "
+        gps_key = "GPS"
+        gps_str = f"{results[gps_key]:.4f}" if gps_key in results else " "
+        self._logger.info(f'| {"MEAN":13s} | {ge_str:7s} | {gps_str:7s} |')
 
 
 def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_storage):

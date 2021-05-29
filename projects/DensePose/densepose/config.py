@@ -41,6 +41,10 @@ def add_evaluation_config(cfg: CN):
     _C.DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD = 0.5
     # Non-distributed inference is slower (at inference time) but can avoid RAM OOM
     _C.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE = True
+    # evaluate mesh alignment based on vertex embeddings, only makes sense in CSE context
+    _C.DENSEPOSE_EVALUATION.EVALUATE_MESH_ALIGNMENT = False
+    # meshes to compute mesh alignment for
+    _C.DENSEPOSE_EVALUATION.MESH_ALIGNMENT_MESH_NAMES = []
 
 
 def add_bootstrap_config(cfg: CN):

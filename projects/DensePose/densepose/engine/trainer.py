@@ -181,6 +181,8 @@ class Trainer(DefaultTrainer):
                     min_iou_threshold=cfg.DENSEPOSE_EVALUATION.MIN_IOU_THRESHOLD,
                     storage=storage,
                     embedder=embedder,
+                    should_evaluate_mesh_alignment=cfg.DENSEPOSE_EVALUATION.EVALUATE_MESH_ALIGNMENT,
+                    mesh_alignment_mesh_names=cfg.DENSEPOSE_EVALUATION.MESH_ALIGNMENT_MESH_NAMES,
                 )
             )
         return DatasetEvaluators(evaluators)
