@@ -176,7 +176,9 @@ Models trained with soft assignment loss &#x2112;<sub>&sigma;</sub>:
 
 ### Animal CSE Models
 
-Models obtained by finetuning human CSE models on animals data with soft assignment loss &#x2112;<sub>&sigma;</sub>:
+Models obtained by finetuning human CSE models on animals data from `ds1_train`
+(see the [DensePose LVIS](DENSEPOSE_DATASETS.md#continuous-surface-embeddings-annotations-3)
+section for more details on the datasets) with soft assignment loss &#x2112;<sub>&sigma;</sub>:
 
 <table><tbody>
 <!-- START TABLE -->
@@ -238,6 +240,76 @@ Acronyms:
 
 `CA`: class agnostic training, where all annotated instances are mapped into a single category
 
+
+Models obtained by finetuning human CSE models on animals data from `ds2_train` dataset
+with soft assignment loss &#x2112;<sub>&sigma;</sub> and, for some schedules, cycle losses.
+Please refer to [DensePose LVIS](DENSEPOSE_DATASETS.md#continuous-surface-embeddings-annotations-3)
+section for details on the dataset and to [Neverova et al, 2021]() for details on cycle losses.
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom">lr<br/>sched</th>
+<th valign="bottom">train<br/>time<br/>(s/iter)</th>
+<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">train<br/>mem<br/>(GB)</th>
+<th valign="bottom">box<br/>AP</th>
+<th valign="bottom">segm<br/>AP</th>
+<th valign="bottom">dp. AP<br/>GPS</th>
+<th valign="bottom">dp. AP<br/>GPSm</th>
+<th valign="bottom">GErr</th>
+<th valign="bottom">GPS</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+<!-- ROW: densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_16k -->
+<tr><td align="left"><a href="../configs/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_16k.yaml">R_50_FPN_soft_animals_I0_finetune_16k</a></td>
+ <td align="center">16k</td>
+ <td align="center">0.386</td>
+ <td align="center">0.058</td>
+ <td align="center">8.4</td>
+ <td align="center">54.2</td>
+ <td align="center">67.0</td>
+ <td align="center">29.0</td>
+ <td align="center">38.6</td>
+ <td align="center">13.2</td>
+ <td align="center">85.4</td>
+ <td align="center">270727112</td>
+ <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_16k/270727112/model_final_421d28.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_16k/270727112/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_m2m_16k -->
+<tr><td align="left"><a href="../configs/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_m2m_16k.yaml">R_50_FPN_soft_animals_I0_finetune_m2m_16k</a></td>
+ <td align="center">16k</td>
+ <td align="center">0.508</td>
+ <td align="center">0.056</td>
+ <td align="center">12.2</td>
+ <td align="center">54.1</td>
+ <td align="center">67.3</td>
+ <td align="center">28.6</td>
+ <td align="center">38.4</td>
+ <td align="center">12.5</td>
+ <td align="center">87.6</td>
+ <td align="center">270982215</td>
+ <td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_m2m_16k/270982215/model_final_6fe5f4.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_m2m_16k/270982215/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_i2m_16k -->
+<tr><td align="left"><a href="../configs/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_i2m_16k.yaml">R_50_FPN_soft_animals_I0_finetune_i2m_16k</a></td>
+ <td align="center">16k</td>
+ <td align="center">0.483</td>
+ <td align="center">0.056</td>
+ <td align="center">9.7</td>
+ <td align="center">54.0</td>
+ <td align="center">66.6</td>
+ <td align="center">28.9</td>
+ <td align="center">38.3</td>
+ <td align="center">11.0</td>
+ <td align="center">88.9</td>
+ <td align="center">270727461</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_i2m_16k/270727461/model_final_8c9d99.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_animals_I0_finetune_i2m_16k/270727461/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
+
 ## <a name="References"></a> References
 
 If you use DensePose methods based on continuous surface embeddings, please take the
@@ -250,5 +322,15 @@ Continuous surface embeddings:
     author = {Neverova, Natalia and Novotny, David and Khalidov, Vasil and Szafraniec, Marc and Labatut, Patrick and Vedaldi, Andrea},
     journal = {Advances in Neural Information Processing Systems},
     year = {2020},
+}
+```
+
+Cycle Losses:
+```
+@InProceedings{Neverova2021UniversalCanonicalMaps,
+    title = {Discovering Relationships between Object Categories via Universal Canonical Maps},
+    author = {Neverova, Natalia and Sanakoyeu, Artsiom and Novotny, David and Labatut, Patrick and Vedaldi, Andrea},
+    journal = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+    year = {2021},
 }
 ```
