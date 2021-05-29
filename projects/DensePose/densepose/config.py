@@ -124,6 +124,8 @@ def add_densepose_head_cse_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR = 1.0
     # Shape to shape cycle consistency loss parameters:
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS = CN({"ENABLED": False})
+    # shape to shape cycle consistency loss weight
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.WEIGHT = 0.025
     # norm type used for loss computation
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.NORM_P = 2
     # normalization term for embedding similarity matrices
@@ -134,6 +136,8 @@ def add_densepose_head_cse_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.MAX_NUM_VERTICES = 4936
     # Pixel to shape cycle consistency loss parameters:
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS = CN({"ENABLED": False})
+    # pixel to shape cycle consistency loss weight
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.WEIGHT = 0.0001
     # norm type used for loss computation
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.NORM_P = 2
     # map images to all meshes and back (if false, use only gt meshes from the batch)
