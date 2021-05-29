@@ -418,3 +418,23 @@ def extract_packed_annotations_from_matches(
     for proposals_targets_per_image in proposals_with_targets:
         accumulator.accumulate(proposals_targets_per_image)
     return accumulator.pack()
+
+
+def sample_random_indices(
+    n_indices: int, n_samples: int, device: Optional[torch.device] = None
+) -> Optional[torch.Tensor]:
+    """
+    Samples `n_samples` random indices from range `[0..n_indices - 1]`.
+    If `n_indices` is smaller than `n_samples`, returns `None` meaning that all indices
+    are selected.
+    Args:
+        n_indices (int): total number of indices
+        n_samples (int): number of indices to sample
+        device (torch.device): the desired device of returned tensor
+    Return:
+        Tensor of selected vertex indices, or `None`, if all vertices are selected
+    """
+    if (n_samples <= 0) or (n_indices <= n_samples):
+        return None
+    indices = torch.randperm(n_indices, device=device)[:n_samples]
+    return indices

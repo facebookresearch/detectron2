@@ -122,6 +122,16 @@ def add_densepose_head_cse_config(cfg: CN):
     # optimizer hyperparameters
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.FEATURES_LR_FACTOR = 1.0
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR = 1.0
+    # Shape to shape cycle consistency loss parameters:
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS = CN({"ENABLED": False})
+    # norm type used for loss computation
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.NORM_P = 2
+    # normalization term for embedding similarity matrices
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.TEMPERATURE = 0.05
+    # maximum number of vertices to include into shape to shape cycle loss
+    # if negative or zero, all vertices are considered
+    # if positive, random subset of vertices of given size is considered
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.MAX_NUM_VERTICES = 4936
 
 
 def add_densepose_head_config(cfg: CN):
