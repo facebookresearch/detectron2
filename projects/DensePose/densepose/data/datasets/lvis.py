@@ -19,22 +19,27 @@ from .coco import (
 
 DATASETS = [
     CocoDatasetInfo(
-        name="densepose_lvis_v1_train1",
+        name="densepose_lvis_v1_ds1_train_v1",
         images_root="coco_",
-        annotations_fpath="lvis/densepose_lvis_v1_train1_v2.json",
+        annotations_fpath="lvis/densepose_lvis_v1_ds1_train_v1.json",
     ),
     CocoDatasetInfo(
-        name="densepose_lvis_v1_train2",
+        name="densepose_lvis_v1_ds1_val_v1",
         images_root="coco_",
-        annotations_fpath="lvis/densepose_lvis_v1_train2_v2.json",
+        annotations_fpath="lvis/densepose_lvis_v1_ds1_val_v1.json",
     ),
     CocoDatasetInfo(
-        name="densepose_lvis_v1_val",
+        name="densepose_lvis_v1_ds2_train_v1",
         images_root="coco_",
-        annotations_fpath="lvis/densepose_lvis_v1_val_v2.json",
+        annotations_fpath="lvis/densepose_lvis_v1_ds2_train_v1.json",
     ),
     CocoDatasetInfo(
-        name="densepose_lvis_v1_val_animals_100",
+        name="densepose_lvis_v1_ds2_val_v1",
+        images_root="coco_",
+        annotations_fpath="lvis/densepose_lvis_v1_ds2_val_v1.json",
+    ),
+    CocoDatasetInfo(
+        name="densepose_lvis_v1_ds1_val_animals_100",
         images_root="coco_",
         annotations_fpath="lvis/densepose_lvis_v1_val_animals_100_v2.json",
     ),
