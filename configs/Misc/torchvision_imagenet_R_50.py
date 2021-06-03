@@ -2,10 +2,12 @@
 An example config file to train a ImageNet classifier with detectron2.
 Model and dataloader both come from torchvision.
 This shows how to use detectron2 as a general engine for any new models and tasks.
+
 To run, use the following command:
 
 python tools/lazyconfig_train_net.py --config-file configs/Misc/torchvision_imagenet_R_50.py \
     --num-gpus 8 dataloader.train.dataset.root=/path/to/imagenet/
+
 """
 
 
@@ -25,6 +27,14 @@ from detectron2.model_zoo import get_config
 from detectron2.data.samplers import TrainingSampler, InferenceSampler
 from detectron2.evaluation import DatasetEvaluator
 from detectron2.utils import comm
+
+
+"""
+Note: Here we put reusable code (models, evaluation, data) together with configs just as a
+proof-of-concept, to easily demonstrate what's needed to train a ImageNet classifier in detectron2.
+Writing code in configs offers extreme flexibility but is often not a good engineering practice.
+In practice, you might want to put code in your project and import them instead.
+"""
 
 
 def build_data_loader(dataset, batch_size, num_workers, training=True):
@@ -70,6 +80,9 @@ class ClassificationAcc(DatasetEvaluator):
         corr = sum(x[0] for x in all_corr_total)
         total = sum(x[1] for x in all_corr_total)
         return {"accuracy": corr / total}
+
+
+# --- End of code that could be in a project and be imported
 
 
 dataloader = OmegaConf.create()
