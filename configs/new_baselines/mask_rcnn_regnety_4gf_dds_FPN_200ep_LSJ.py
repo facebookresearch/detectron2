@@ -7,3 +7,7 @@ from .mask_rcnn_regnety_4gf_dds_FPN_100ep_LSJ import (
 )
 
 train.max_iter *= 2  # 100ep -> 200ep
+
+lr_multiplier.scheduler.milestones = [milestone * 2 for milestone in
+                                      lr_multiplier.scheduler.milestones]
+lr_multiplier.scheduler.num_updates = train.max_iter

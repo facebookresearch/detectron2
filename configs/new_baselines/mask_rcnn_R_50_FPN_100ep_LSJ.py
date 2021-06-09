@@ -2,7 +2,7 @@ import detectron2.data.transforms as T
 from detectron2.config.lazy import LazyCall as L
 from detectron2.layers.batch_norm import NaiveSyncBatchNorm
 from detectron2.solver import WarmupParamScheduler
-from fvcore.common.param_scheduler import CosineParamScheduler
+from fvcore.common.param_scheduler import MultiStepParamScheduler
 
 from ..common.data.coco import dataloader
 from ..common.models.mask_rcnn_fpn import model
@@ -59,7 +59,11 @@ dataloader.train.total_batch_size = 64
 train.max_iter = 184375
 
 lr_multiplier = L(WarmupParamScheduler)(
-    scheduler=CosineParamScheduler(1.0, 0.0),
+    scheduler=L(MultiStepParamScheduler)(
+        values=[1.0, 0.1, 0.01],
+        milestones=[163889, 177546],
+        num_updates=train.max_iter,
+    ),
     warmup_length=500 / train.max_iter,
     warmup_factor=0.067,
 )
