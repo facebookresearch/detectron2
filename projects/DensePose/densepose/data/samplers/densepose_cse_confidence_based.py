@@ -88,7 +88,7 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
             else:
                 search_count = min(count, k)
             sample_from_top = random.sample(range(search_count), count)
-            index_sample = sorted_confidence_indices[:search_count][sample_from_top]
+            index_sample = sorted_confidence_indices[-search_count:][sample_from_top]
         return index_sample
 
     def _produce_mask_and_results(
