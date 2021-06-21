@@ -688,7 +688,7 @@ def build_inference_based_loaders(
 ) -> Tuple[List[InferenceBasedLoader], List[float]]:
     loaders = []
     ratios = []
-    embedder = build_densepose_embedder(cfg)
+    embedder = build_densepose_embedder(cfg).to(device=model.device)  # pyre-ignore[16]
     for dataset_spec in cfg.BOOTSTRAP_DATASETS:
         dataset_cfg = get_bootstrap_dataset_config().clone()
         dataset_cfg.merge_from_other_cfg(CfgNode(dataset_spec))
