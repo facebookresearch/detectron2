@@ -19,6 +19,7 @@ You may want to write your own script with your datasets and other customization
 import logging
 import os
 from collections import OrderedDict
+from datetime import datetime
 import torch
 
 import detectron2.utils.comm as comm
@@ -121,6 +122,11 @@ def setup(args):
     cfg = get_cfg()
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
+    if cfg.WRITE_OUTPUT_TO_SUBDIR:
+        config_file_name = args.config_file.split("/")[-1].replace(".yaml", "")
+        cfg.OUTPUT_DIR = os.path.join(
+            cfg.OUTPUT_DIR, datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + config_file_name
+        )
     cfg.freeze()
     default_setup(cfg, args)
     return cfg
