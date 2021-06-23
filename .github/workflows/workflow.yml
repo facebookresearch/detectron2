@@ -36,14 +36,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: [1.6, 1.7, 1.8]
+        torch: [1.7, 1.8, 1.9]
         include:
-          - torch: 1.6
-            torchvision: 0.7
           - torch: 1.7
             torchvision: 0.8
           - torch: 1.8
             torchvision: 0.9
+          - torch: 1.9
+            torchvision: "0.10"
     steps:
       - name: Checkout
         uses: actions/checkout@v2

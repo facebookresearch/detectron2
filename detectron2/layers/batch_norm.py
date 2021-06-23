@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
 import torch
 import torch.distributed as dist
 from fvcore.nn.distributed import differentiable_all_reduce

@@ -14,6 +14,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     image: ubuntu-1604-cuda-10.1:201909-23
+    #image: ubuntu-1604-cuda-10.2:202012-01
   resource_class: gpu.small
 
 windows-cpu: &windows_cpu
@@ -31,10 +32,10 @@ pytorch_parameters: &pytorch_parameters
   parameters:
     pytorch_version:
       type: string
-      default: "1.7"
+      default: "1.8"
     torchvision_version:
       type: string
-      default: "0.8"
+      default: "0.9"
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -216,21 +217,22 @@ workflows:
   regular_test:
     jobs:
       - linux_cpu_tests:
-          name: linux_cpu_tests_pytorch1.8
-          pytorch_version: '1.8+cpu'
-          torchvision_version: '0.9+cpu'
+          name: linux_cpu_tests_pytorch1.9
+          pytorch_version: '1.9.0+cpu'
+          torchvision_version: '0.10.0+cpu'
           context:
             - DOCKERHUB_TOKEN
       - linux_gpu_tests:
-          name: linux_gpu_tests_pytorch1.6
-          pytorch_version: '1.6+cu101'
-          torchvision_version: '0.7+cu101'
-      - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.7
-          pytorch_version: '1.7+cu101'
+          pytorch_version: '1.7.1+cu101'
           torchvision_version: '0.8.1+cu101'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.8
-          pytorch_version: '1.8+cu101'
-          torchvision_version: '0.9+cu101'
+          pytorch_version: '1.8.1+cu101'
+          torchvision_version: '0.9.1+cu101'
+      # TODO fix it
+      #- linux_gpu_tests:
+          #name: linux_gpu_tests_pytorch1.9
+          #pytorch_version: '1.9+cu102'
+          #torchvision_version: '0.10+cu102'
       - windows_cpu_build

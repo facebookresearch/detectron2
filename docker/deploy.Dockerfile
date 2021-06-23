@@ -9,7 +9,7 @@ USER appuser
 ENV HOME=/home/appuser
 WORKDIR $HOME
 
-ENV CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.6/site-packages/torch/
+ENV CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.8/site-packages/torch/
 
 RUN sudo apt-get update && sudo apt-get install libgflags-dev libgoogle-glog-dev libopencv-dev --yes
 RUN pip install mkl-include
@@ -21,7 +21,7 @@ RUN export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=$(python3 -c 'import torch; print(i
 	./configure --prefix=$HOME/.local && make && make install
 
 # install libtorchvision
-RUN git clone --branch v0.9.0 https://github.com/pytorch/vision/
+RUN git clone --branch v0.10.0 https://github.com/pytorch/vision/
 RUN mkdir vision/build && cd vision/build && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release -DWITH_CUDA=on -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST && \
 	make && make install

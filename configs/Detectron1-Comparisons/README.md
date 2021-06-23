@@ -79,5 +79,6 @@ and provide a fair comparison of accuracy and speed against Detectron.
   [bug](https://github.com/facebookresearch/Detectron/issues/459) lead to a drop in box AP, and can be
 	compensated back by some parameter tuning.
 * Mask R-CNN: Detectron's AP is box 37.7, mask 33.9. We're 1 AP better in mask AP, due to more correct implementation.
+  See [this article](https://ppwwyyxx.com/blog/2021/Where-are-Pixels/) for details.
 
 For speed comparison, see [benchmarks](https://detectron2.readthedocs.io/notes/benchmarks.html).

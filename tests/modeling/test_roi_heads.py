@@ -148,7 +148,6 @@ class ROIHeadsTest(unittest.TestCase):
             ),
         )
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_box_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024, height=14, width=14)
         box_features = torch.randn(4, 1024, 14, 14)

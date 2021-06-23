@@ -175,10 +175,10 @@ def inference_on_dataset(
                     logging.INFO,
                     (
                         f"Inference done {idx + 1}/{total}. "
-                        f"Dataloading: {data_seconds_per_iter:.4f} s / iter. "
-                        f"Inference: {compute_seconds_per_iter:.4f} s / iter. "
-                        f"Eval: {eval_seconds_per_iter:.4f} s / iter. "
-                        f"Total: {total_seconds_per_iter:.4f} s / iter. "
+                        f"Dataloading: {data_seconds_per_iter:.4f} s/iter. "
+                        f"Inference: {compute_seconds_per_iter:.4f} s/iter. "
+                        f"Eval: {eval_seconds_per_iter:.4f} s/iter. "
+                        f"Total: {total_seconds_per_iter:.4f} s/iter. "
                         f"ETA={eta}"
                     ),
                     n=5,

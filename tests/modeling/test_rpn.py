@@ -103,7 +103,7 @@ class RPNTest(unittest.TestCase):
 
     # https://github.com/pytorch/pytorch/issues/46964
     @unittest.skipIf(
-        TORCH_VERSION < (1, 7) or sys.version_info.minor <= 6, "Insufficient pytorch version"
+        TORCH_VERSION < (1, 8) and sys.version_info.minor <= 6, "Insufficient pytorch version"
     )
     def test_rpn_scriptability(self):
         cfg = get_cfg()
@@ -207,7 +207,6 @@ class RPNTest(unittest.TestCase):
         pred_logits[0][1][3:5].fill_(float("inf"))
         find_top_rpn_proposals(proposals, pred_logits, [(10, 10)], 0.5, 1000, 1000, 0, False)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_find_rpn_proposals_tracing(self):
         N, Hi, Wi, A = 3, 50, 50, 9
         proposal = torch.rand(N, Hi * Wi * A, 4)
