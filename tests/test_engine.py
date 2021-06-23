@@ -10,8 +10,9 @@ import torch
 from fvcore.common.checkpoint import Checkpointer
 from torch import nn
 
+from detectron2 import model_zoo
 from detectron2.config import configurable, get_cfg
-from detectron2.engine import DefaultTrainer, SimpleTrainer, hooks
+from detectron2.engine import DefaultTrainer, SimpleTrainer, default_setup, hooks
 from detectron2.modeling.meta_arch import META_ARCH_REGISTRY
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter
 
@@ -147,3 +148,13 @@ class TestTrainer(unittest.TestCase):
             trainer.register_hooks([hooks.EvalHook(period, test_func)])
             trainer.train(0, total_iter)
             self.assertEqual(test_func.call_count, eval_count)
+
+    def test_setup_config(self):
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            cfg = get_cfg()
+            cfg.OUTPUT_DIR = os.path.join(d, "yacs")
+            default_setup(cfg, {})
+
+            cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py")
+            cfg.train.output_dir = os.path.join(d, "omegaconf")
+            default_setup(cfg, {})
