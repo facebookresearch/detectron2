@@ -64,7 +64,8 @@ model-level compatibility. The major ones are:
   Note that this affects how flip augmentation is implemented.
 
 
-We will later share more details and rationale behind the above mentioned issues
+[This article](https://ppwwyyxx.com/blog/2021/Where-are-Pixels/)
+explains more details on the above mentioned issues
 about pixels, coordinates, and "+1"s.
 
 

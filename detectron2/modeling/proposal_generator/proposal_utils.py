@@ -6,17 +6,17 @@ import torch
 
 from detectron2.layers import batched_nms, cat
 from detectron2.structures import Boxes, Instances
-from detectron2.utils.env import TORCH_VERSION
 
 logger = logging.getLogger(__name__)
 
 
 def _is_tracing():
+    # (fixed in TORCH_VERSION >= 1.9)
     if torch.jit.is_scripting():
         # https://github.com/pytorch/pytorch/issues/47379
         return False
     else:
-        return TORCH_VERSION >= (1, 7) and torch.jit.is_tracing()
+        return torch.jit.is_tracing()
 
 
 def find_top_rpn_proposals(

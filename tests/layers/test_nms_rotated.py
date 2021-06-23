@@ -7,7 +7,6 @@ import torch
 from torchvision import ops
 
 from detectron2.layers import batched_nms, batched_nms_rotated, nms_rotated
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import random_boxes
 
 
@@ -159,13 +158,11 @@ class TestScriptable(unittest.TestCase):
 
         self.module = TestingModule()
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_scriptable_cpu(self):
         m = deepcopy(self.module).cpu()
         _ = torch.jit.script(m)
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_scriptable_cuda(self):
         m = deepcopy(self.module).cuda()
         _ = torch.jit.script(m)

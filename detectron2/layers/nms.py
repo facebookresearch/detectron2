@@ -6,15 +6,6 @@ import torch
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
-from detectron2.utils.env import TORCH_VERSION
-
-if TORCH_VERSION < (1, 7):
-    from detectron2 import _C
-
-    nms_rotated_func = _C.nms_rotated
-else:
-    nms_rotated_func = torch.ops.detectron2.nms_rotated
-
 
 def batched_nms(
     boxes: torch.Tensor, scores: torch.Tensor, idxs: torch.Tensor, iou_threshold: float
@@ -102,7 +93,7 @@ def nms_rotated(boxes, scores, iou_threshold):
         keep (Tensor): int64 tensor with the indices of the elements that have been kept
         by Rotated NMS, sorted in decreasing order of scores
     """
-    return nms_rotated_func(boxes, scores, iou_threshold)
+    return torch.ops.detectron2.nms_rotated(boxes, scores, iou_threshold)
 
 
 # Note: this function (batched_nms_rotated) might be moved into
