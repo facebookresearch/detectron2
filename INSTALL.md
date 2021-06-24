@@ -72,7 +72,7 @@ Click each issue for its solutions:
 
 <details>
 <summary>
-Undefined symbols that contains TH,aten,torch,caffe2; Missing torch dynamic libraries; Segmentation fault immediately when using detectron2.
+Undefined symbols that contains TH,aten,torch,caffe2.
 </summary>
 <br/>
 
@@ -93,7 +93,15 @@ If the above instructions do not resolve this problem, please provide an environ
 
 <details>
 <summary>
-Undefined C++ symbols (e.g. `GLIBCXX`) or C++ symbols not found.
+Missing torch dynamic libraries, OR segmentation fault immediately when using detectron2.
+</summary>
+This usually happens when detectron2 or torchvision is not
+compiled with the version of PyTorch you're running. See the previous common issue for the solution.
+</details>
+
+<details>
+<summary>
+Undefined C++ symbols (e.g. GLIBCXX) or C++ symbols not found.
 </summary>
 <br/>
 Usually it's because the library is compiled with a newer C++ compiler but run with an old C++ runtime.
@@ -179,9 +187,9 @@ to match your local CUDA installation, or install a different version of CUDA to
 
 <details>
 <summary>
-C++ compilation errors from NVCC / NVRTC; "Unsupported gpu architecture"
+C++ compilation errors from NVCC / NVRTC, or "Unsupported gpu architecture"
 </summary>
-
+<br/>
 A few possibilities:
 
 1. Local CUDA/NVCC version has to match the CUDA version of your PyTorch. Both can be found in `python collect_env.py`.
@@ -243,7 +251,9 @@ whose version is closer to what's used by PyTorch (available in `torch.__config_
 "library not found for -lstdc++" on older version of MacOS
 </summary>
 <br/>
-See [this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
+See
+[this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
+
 </details>
 
 
