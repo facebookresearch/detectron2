@@ -386,7 +386,7 @@ _C.MODEL.SEM_SEG_HEAD = CN()
 _C.MODEL.SEM_SEG_HEAD.NAME = "SemSegFPNHead"
 _C.MODEL.SEM_SEG_HEAD.IN_FEATURES = ["p2", "p3", "p4", "p5"]
 # Label in the semantic segmentation ground truth that is ignored, i.e., no loss is calculated for
-# the correposnding pixel.
+# the corresponding pixel.
 _C.MODEL.SEM_SEG_HEAD.IGNORE_VALUE = 255
 # Number of classes in the semantic segmentation head
 _C.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 54
