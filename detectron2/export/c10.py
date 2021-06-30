@@ -299,8 +299,12 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
                 c2_roi_align = torch.ops._caffe2.RoIAlign
                 aligned = self.level_poolers[0].aligned
 
+            x0 = x[0]
+            if x0.is_quantized:
+                x0 = x0.dequantize()
+
             out = c2_roi_align(
-                x[0],
+                x0,
                 pooler_fmt_boxes,
                 order="NCHW",
                 spatial_scale=float(self.level_poolers[0].spatial_scale),
@@ -336,6 +340,9 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
             else:
                 c2_roi_align = torch.ops._caffe2.RoIAlign
                 aligned = bool(pooler.aligned)
+
+            if x_level.is_quantized:
+                x_level = x_level.dequantize()
 
             roi_feat_fpn = c2_roi_align(
                 x_level,
