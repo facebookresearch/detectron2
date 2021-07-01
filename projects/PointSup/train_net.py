@@ -19,7 +19,6 @@ from detectron2.utils.logger import setup_logger
 
 from point_sup import PointSupDatasetMapper, add_point_sup_config
 
-
 class Trainer(DefaultTrainer):
     """
     We use the "DefaultTrainer" which contains pre-defined default logic for
