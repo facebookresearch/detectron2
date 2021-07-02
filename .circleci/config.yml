@@ -13,8 +13,8 @@ cpu: &cpu
 
 gpu: &gpu
   machine:
-    image: ubuntu-1604-cuda-10.1:201909-23
-    #image: ubuntu-1604-cuda-10.2:202012-01
+    #image: ubuntu-1604-cuda-10.1:201909-23
+    image: ubuntu-1604-cuda-10.2:202012-01
   resource_class: gpu.small
 
 windows-cpu: &windows_cpu
@@ -32,14 +32,18 @@ pytorch_parameters: &pytorch_parameters
   parameters:
     pytorch_version:
       type: string
-      default: "1.8"
     torchvision_version:
       type: string
-      default: "0.9"
+    pytorch_index:
+      type: string
+      # use test wheels index to have access to RC wheels
+      # https://download.pytorch.org/whl/test/torch_test.html
+      default: "https://download.pytorch.org/whl/torch_stable.html"
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
     TORCHVISION_VERSION: << parameters.torchvision_version >>
+    PYTORCH_INDEX: << parameters.pytorch_index >>
 
 # -------------------------------------------------------------------------------------
 # Re-usable commands
@@ -102,12 +106,11 @@ install_linux_dep: &install_linux_dep
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
-        # install from pytorch's test wheels index to have access to RC wheels
-        pip install --progress-bar off torch==$PYTORCH_VERSION -f https://download.pytorch.org/whl/test/torch_test.html
+        pip install --progress-bar off torch==$PYTORCH_VERSION -f $PYTORCH_INDEX
         if [[ "$TORCHVISION_VERSION" == "master" ]]; then
           pip install git+https://github.com/pytorch/vision.git
         else
-          pip install --progress-bar off torchvision==$TORCHVISION_VERSION -f https://download.pytorch.org/whl/test/torch_test.html
+          pip install --progress-bar off torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
         fi
 
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
@@ -202,7 +205,7 @@ jobs:
             pip install opencv-python-headless pytest-xdist pycocotools tensorboard
             pip install -U git+https://github.com/facebookresearch/iopath
             pip install -U git+https://github.com/facebookresearch/fvcore
-            pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f https://download.pytorch.org/whl/cpu/torch_stable.html
+            pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f $env:PYTORCH_INDEX
 
       - save_cache:
           paths:
@@ -224,15 +227,18 @@ workflows:
             - DOCKERHUB_TOKEN
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.7
-          pytorch_version: '1.7.1+cu101'
-          torchvision_version: '0.8.1+cu101'
+          pytorch_version: '1.7.0'
+          torchvision_version: '0.8.1'
+          # 1.7 wheels don't have +cu102 suffix, so use a cu102 specific index
+          pytorch_index: 'https://download.pytorch.org/whl/cu102/torch_stable.html'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.8
-          pytorch_version: '1.8.1+cu101'
-          torchvision_version: '0.9.1+cu101'
-      # TODO fix it
-      #- linux_gpu_tests:
-          #name: linux_gpu_tests_pytorch1.9
-          #pytorch_version: '1.9+cu102'
-          #torchvision_version: '0.10+cu102'
-      - windows_cpu_build
+          pytorch_version: '1.8.1+cu102'
+          torchvision_version: '0.9.1+cu102'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.9
+          pytorch_version: '1.9+cu102'
+          torchvision_version: '0.10+cu102'
+      - windows_cpu_build:
+          pytorch_version: '1.9+cpu'
+          torchvision_version: '0.10+cpu'
