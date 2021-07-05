@@ -224,11 +224,11 @@ class BestCheckpointer(HookBase):
             file_prefix (str): the prefix of checkpoint's filename, defaults to "model_best"
             append_iter (bool): if True, checkpoint file name will have iteration num appended, else write to the same checkpoint file.
         """
-        self.logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__name__)
         self._period = eval_period
         self._val_metric = val_metric
-        self.checkpointer = checkpointer
-        self.file_prefix = file_prefix
+        self._checkpointer = checkpointer
+        self._file_prefix = file_prefix
         self.best_metric = None
         self.best_iter = None
         self._append_iter = append_iter
@@ -238,17 +238,17 @@ class BestCheckpointer(HookBase):
         if self.best_metric is None or latest_metric > self.best_metric:
             if self._append_iter:
                 additional_state = {"iteration": metric_iter}
-                save_name = f"{self.file_prefix}_{metric_iter:07d}"
+                save_name = f"{self._file_prefix}_{metric_iter:07d}"
             else:
-                save_name = f"{self.file_prefix}"
+                save_name = f"{self._file_prefix}"
                 additional_state = {}
-            self.checkpointer.save(save_name, **additional_state)
+            self._checkpointer.save(save_name, **additional_state)
             if self.best_metric is None:
-                self.logger.info(
+                self._logger.info(
                     f"Saved first model with latest eval score for {self._val_metric} at {latest_metric:0.5f}"
                 )
             else:
-                self.logger.info(
+                self._logger.info(
                     f"Saved best model as latest eval score for {self._val_metric} at {latest_metric:0.5f} is better than last best score at {self.best_metric:0.5f} @ {self.best_iter} steps"
                 )
             if math.isnan(latest_metric):
@@ -256,7 +256,7 @@ class BestCheckpointer(HookBase):
             self.best_metric = latest_metric
             self.best_iter = metric_iter
         else:
-            self.logger.info(
+            self._logger.info(
                 f"Not saving as latest eval score for {self._val_metric} at {latest_metric:0.5f} is not better than best score at {self.best_metric:0.5f} @ {self.best_iter} steps"
             )
 
