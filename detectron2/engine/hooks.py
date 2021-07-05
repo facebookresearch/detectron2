@@ -247,7 +247,7 @@ class BestCheckpointer(HookBase):
             if self.best_metric is None:
                 self.logger.info(f"Saved first model with latest eval score for {self._val_metric} at {latest_metric:0.5f}")
             else:
-                self.logger.info(f"Saved best model as latest eval score for {self._val_metric} at {latest_metric:0.5f} is better than last best score at {self.best_metric:0.5f} @ {self.best_iter}")
+                self.logger.info(f"Saved best model as latest eval score for {self._val_metric} at {latest_metric:0.5f} is better than last best score at {self.best_metric:0.5f} @ {self.best_iter} steps")
             if math.isnan(latest_metric):
                 latest_metric = -1.0
             self.best_metric = latest_metric
