@@ -404,7 +404,8 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         dataset_name,
         filter_empty=False,
         proposal_files=[
-            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]
+            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)]
+            for x in dataset_name
         ]
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
