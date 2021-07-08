@@ -5,10 +5,10 @@ import datetime
 import itertools
 import logging
 import math
+import operator
 import os
 import tempfile
 import time
-import operator
 from collections import Counter
 import torch
 from fvcore.common.checkpoint import Checkpointer
@@ -229,8 +229,11 @@ class BestCheckpointer(HookBase):
         self._logger = logging.getLogger(__name__)
         self._period = eval_period
         self._val_metric = val_metric
-        assert mode in ['max','min'],'Given `mode` to `BestCheckpointer` is unknown. It should be one of {"max", "min"}.'
-        if mode == 'max':
+        assert mode in [
+            "max",
+            "min",
+        ], 'Given `mode` to `BestCheckpointer` is unknown. It should be one of {"max", "min"}.'
+        if mode == "max":
             self._compare = operator.gt
         else:
             self._compare = operator.lt
@@ -241,18 +244,20 @@ class BestCheckpointer(HookBase):
 
     def _update_best(self, val, iter):
         if math.isnan(val) or math.isinf(val):
-            return 
+            return
         self.best_metric = val
         self.best_iter = iter
-    
+
     def _best_checking(self):
         metric_tuple = self.trainer.storage.latest().get(self._val_metric)
         if metric_tuple is None:
-            self._logger.warning(f'Given val metric {self._val_metric} does not seem to be computed/stored. Will not be checkpointing based on it.')
+            self._logger.warning(
+                f"Given val metric {self._val_metric} does not seem to be computed/stored. Will not be checkpointing based on it."
+            )
             return
         else:
             latest_metric, metric_iter = metric_tuple
-        
+
         if self.best_metric is None:
             self._update_best(latest_metric, metric_iter)
         elif self._compare(latest_metric, self.best_metric):
