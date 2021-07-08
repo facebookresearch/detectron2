@@ -212,7 +212,7 @@ class BestCheckpointer(HookBase):
         self,
         eval_period: int,
         checkpointer: Checkpointer,
-        val_metric: str = "bbox/AP50",
+        val_metric: str,
         file_prefix: str = "model_best",
         append_iter: bool = False,
     ) -> None:
