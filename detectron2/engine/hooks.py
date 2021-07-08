@@ -232,17 +232,15 @@ class BestCheckpointer(HookBase):
 
     def _best_checking(self):
         latest_metric, metric_iter = self.trainer.storage.latest().get(self._val_metric)
-        if self.best_metric is None or latest_metric > self.best_metric:
+        if self.best_metric is None:
+            self.best_metric = latest_metric
+            self.best_iter = metric_iter
+        elif latest_metric > self.best_metric:
             additional_state = {"iteration": metric_iter}
             self._checkpointer.save(f"{self._file_prefix}", **additional_state)
-            if self.best_metric is None:
-                self._logger.info(
-                    f"Saved first model with latest eval score for {self._val_metric} at {latest_metric:0.5f}"
-                )
-            else:
-                self._logger.info(
-                    f"Saved best model as latest eval score for {self._val_metric} at {latest_metric:0.5f} is better than last best score at {self.best_metric:0.5f} @ {self.best_iter} steps"
-                )
+            self._logger.info(
+                f"Saved best model as latest eval score for {self._val_metric} at {latest_metric:0.5f} is better than last best score at {self.best_metric:0.5f} @ {self.best_iter} steps"
+            )
             if math.isnan(latest_metric):
                 latest_metric = -1.0
             self.best_metric = latest_metric
