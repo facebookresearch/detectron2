@@ -212,14 +212,14 @@ class BestCheckpointer(HookBase):
         self,
         eval_period: int,
         checkpointer: Checkpointer,
-        val_metric: str = "bbox/AP50",
+        val_metric: str,
         file_prefix: str = "model_best",
     ) -> None:
         """
         Args:
             eval_period (int): the period `EvalHook` is set to run.
             checkpointer: the checkpointer object used to save checkpoints.
-            val_metric (str): chosen validation metric to track for best checkpointing
+            val_metric (str): chosen validation metric to track for best checkpoint, e.g. "bbox/AP50"
             file_prefix (str): the prefix of checkpoint's filename, defaults to "model_best"
         """
         self._logger = logging.getLogger(__name__)
