@@ -205,7 +205,7 @@ class BestCheckpointer(HookBase):
     """
     Checkpoints best weights based off given metric.
 
-    This hook should be used in conjunction to and executed after `EvalHook`.
+    This hook should be used in conjunction to and executed after the hook that produces the metric, e.g. `EvalHook`.
     """
 
     def __init__(
