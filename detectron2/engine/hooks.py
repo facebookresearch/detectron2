@@ -30,6 +30,7 @@ __all__ = [
     "IterationTimer",
     "PeriodicWriter",
     "PeriodicCheckpointer",
+    "BestCheckpointer",
     "LRScheduler",
     "AutogradProfiler",
     "EvalHook",
