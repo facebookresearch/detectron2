@@ -8,6 +8,7 @@ import math
 import os
 import tempfile
 import time
+import operator
 from collections import Counter
 import torch
 from fvcore.common.checkpoint import Checkpointer
@@ -213,6 +214,7 @@ class BestCheckpointer(HookBase):
         eval_period: int,
         checkpointer: Checkpointer,
         val_metric: str,
+        mode: str = "max",
         file_prefix: str = "model_best",
     ) -> None:
         """
@@ -220,31 +222,39 @@ class BestCheckpointer(HookBase):
             eval_period (int): the period `EvalHook` is set to run.
             checkpointer: the checkpointer object used to save checkpoints.
             val_metric (str): chosen validation metric to track for best checkpoint, e.g. "bbox/AP50"
+            mode (str): one of {'max', 'min'}. controls whether chosen val metric should be maximized or minimized, e.g. for "bbox/AP50" it should be "max"
             file_prefix (str): the prefix of checkpoint's filename, defaults to "model_best"
         """
         self._logger = logging.getLogger(__name__)
         self._period = eval_period
         self._val_metric = val_metric
+        assert mode in ['max','min'],'Given `mode` to `BestCheckpointer` is unknown. It should be one of {"max", "min"}.'
+        if mode == 'max':
+            self._compare = operator.gt
+        else:
+            self._compare = operator.lt
         self._checkpointer = checkpointer
         self._file_prefix = file_prefix
         self.best_metric = None
         self.best_iter = None
 
+    def _update_best(self, val, iter):
+        if math.isnan(val) or math.isinf(val):
+            return 
+        self.best_metric = val
+        self.best_iter = iter
+    
     def _best_checking(self):
         latest_metric, metric_iter = self.trainer.storage.latest().get(self._val_metric)
         if self.best_metric is None:
-            self.best_metric = latest_metric
-            self.best_iter = metric_iter
-        elif latest_metric > self.best_metric:
+            self._update_best(latest_metric, metric_iter)
+        elif self._compare(latest_metric, self.best_metric):
             additional_state = {"iteration": metric_iter}
             self._checkpointer.save(f"{self._file_prefix}", **additional_state)
             self._logger.info(
                 f"Saved best model as latest eval score for {self._val_metric} at {latest_metric:0.5f} is better than last best score at {self.best_metric:0.5f} @ {self.best_iter} steps"
             )
-            if math.isnan(latest_metric):
-                latest_metric = -1.0
-            self.best_metric = latest_metric
-            self.best_iter = metric_iter
+            self._update_best(latest_metric, metric_iter)
         else:
             self._logger.info(
                 f"Not saving as latest eval score for {self._val_metric} at {latest_metric:0.5f} is not better than best score at {self.best_metric:0.5f} @ {self.best_iter} steps"
