@@ -220,7 +220,7 @@ class BestCheckpointer(HookBase):
         Args:
             eval_period (int): the period `EvalHook` is set to run.
             checkpointer: the checkpointer object used to save checkpoints.
-            val_metric (str): chosen validation metric to track for best checkpointing
+            val_metric (str): chosen validation metric to track for best checkpoint, e.g. "bbox/AP50"
             file_prefix (str): the prefix of checkpoint's filename, defaults to "model_best"
             append_iter (bool): if True, checkpoint file name will have iteration num appended, else write to the same checkpoint file.
         """
