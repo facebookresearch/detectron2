@@ -113,7 +113,13 @@ def benchmark_train(args):
     max_iter = 400
     trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(model, f(), optimizer)
     trainer.register_hooks(
-        [hooks.IterationTimer(), hooks.PeriodicWriter([CommonMetricPrinter(max_iter)])]
+        [
+            hooks.IterationTimer(),
+            hooks.PeriodicWriter([CommonMetricPrinter(max_iter)]),
+            hooks.TorchProfiler(
+                lambda trainer: trainer.iter == max_iter - 1, cfg.OUTPUT_DIR, save_tensorboard=True
+            ),
+        ]
     )
     trainer.train(1, max_iter)
 
