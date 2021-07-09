@@ -1,10 +1,30 @@
+# Use Builtin Datasets
 
-For a few datasets that detectron2 natively supports,
-the datasets are assumed to exist in a directory called
-"datasets/", under the directory where you launch the program.
-They need to have the following directory structure:
+A dataset can be used by accessing [DatasetCatalog](https://detectron2.readthedocs.io/modules/data.html#detectron2.data.DatasetCatalog)
+for its data, or [MetadataCatalog](https://detectron2.readthedocs.io/modules/data.html#detectron2.data.MetadataCatalog) for its metadata (class names, etc).
+This document explains how to setup the builtin datasets so they can be used by the above APIs.
+[Use Custom Datasets](https://detectron2.readthedocs.io/tutorials/datasets.html) gives a deeper dive on how to use `DatasetCatalog` and `MetadataCatalog`,
+and how to add new datasets to them.
 
-## Expected dataset structure for COCO instance/keypoint detection:
+Detectron2 has builtin support for a few datasets.
+The datasets are assumed to exist in a directory specified by the environment variable
+`DETECTRON2_DATASETS`.
+Under this directory, detectron2 will look for datasets in the structure described below, if needed.
+```
+$DETECTRON2_DATASETS/
+  coco/
+  lvis/
+  cityscapes/
+  VOC20{07,12}/
+```
+
+You can set the location for builtin datasets by `export DETECTRON2_DATASETS=/path/to/datasets`.
+If left unset, the default is `./datasets` relative to your current working directory.
+
+The [model zoo](https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md)
+contains configs and models that use these builtin datasets.
+
+## Expected dataset structure for [COCO instance/keypoint detection](https://cocodataset.org/#download):
 
 ```
 coco/
@@ -18,10 +38,12 @@ coco/
 You can use the 2014 version of the dataset as well.
 
 Some of the builtin tests (`dev/run_*_tests.sh`) uses a tiny version of the COCO dataset,
-which you can download with `./prepare_for_tests.sh`.
+which you can download with `./datasets/prepare_for_tests.sh`.
 
 ## Expected dataset structure for PanopticFPN:
 
+Extract panoptic annotations from [COCO website](https://cocodataset.org/#download)
+into the following structure:
 ```
 coco/
   annotations/
@@ -34,15 +56,17 @@ Install panopticapi by:
 ```
 pip install git+https://github.com/cocodataset/panopticapi.git
 ```
-Then, run `python prepare_panoptic_fpn.py`, to extract semantic annotations from panoptic annotations.
+Then, run `python datasets/prepare_panoptic_fpn.py`, to extract semantic annotations from panoptic annotations.
 
-## Expected dataset structure for LVIS instance segmentation:
+## Expected dataset structure for [LVIS instance segmentation](https://www.lvisdataset.org/dataset):
 ```
 coco/
   {train,val,test}2017/
 lvis/
   lvis_v0.5_{train,val}.json
   lvis_v0.5_image_info_test.json
+  lvis_v1_{train,val}.json
+  lvis_v1_image_info_test{,_challenge}.json
 ```
 
 Install lvis-api by:
@@ -50,9 +74,10 @@ Install lvis-api by:
 pip install git+https://github.com/lvis-dataset/lvis-api.git
 ```
 
-Run `python prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations for evaluation of models trained on the COCO dataset.
+To evaluate models trained on the COCO dataset using LVIS annotations,
+run `python datasets/prepare_cocofied_lvis.py` to prepare "cocofied" LVIS annotations.
 
-## Expected dataset structure for cityscapes:
+## Expected dataset structure for [cityscapes](https://www.cityscapes-dataset.com/downloads/):
 ```
 cityscapes/
   gtFine/
@@ -63,6 +88,13 @@ cityscapes/
       ...
     val/
     test/
+    # below are generated Cityscapes panoptic annotation
+    cityscapes_panoptic_train.json
+    cityscapes_panoptic_train/
+    cityscapes_panoptic_val.json
+    cityscapes_panoptic_val/
+    cityscapes_panoptic_test.json
+    cityscapes_panoptic_test/
   leftImg8bit/
     train/
     val/
@@ -73,11 +105,19 @@ Install cityscapes scripts by:
 pip install git+https://github.com/mcordts/cityscapesScripts.git
 ```
 
-Note:
-labelTrainIds.png are created by `cityscapesscripts/preparation/createTrainIdLabelImgs.py`.
-They are not needed for instance segmentation.
+Note: to create labelTrainIds.png, first prepare the above structure, then run cityscapesescript with:
+```
+CITYSCAPES_DATASET=/path/to/abovementioned/cityscapes python cityscapesscripts/preparation/createTrainIdLabelImgs.py
+```
+These files are not needed for instance segmentation.
 
-## Expected dataset structure for Pascal VOC:
+Note: to generate Cityscapes panoptic dataset, run cityscapesescript with:
+```
+CITYSCAPES_DATASET=/path/to/abovementioned/cityscapes python cityscapesscripts/preparation/createPanopticImgs.py
+```
+These files are not needed for semantic and instance segmentation.
+
+## Expected dataset structure for [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.html):
 ```
 VOC20{07,12}/
   Annotations/
@@ -88,3 +128,13 @@ VOC20{07,12}/
       # train.txt or val.txt, if you use these splits
   JPEGImages/
 ```
+
+## Expected dataset structure for [ADE20k Scene Parsing](http://sceneparsing.csail.mit.edu/):
+```
+ADEChallengeData2016/
+  annotations/
+  annotations_detectron2/
+  images/
+  objectInfo150.txt
+```
+The directory `annotations_detectron2` is generated by running `python datasets/prepare_ade20k_sem_seg.py`.

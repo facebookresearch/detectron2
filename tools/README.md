@@ -1,5 +1,5 @@
 
-This directory contains a few scripts that use detectron2.
+This directory contains a few example scripts that demonstrate features of detectron2.
 
 
 * `train_net.py`
@@ -21,6 +21,10 @@ Usage:
 ```
 python benchmark.py --config-file config.yaml --task train/eval/data [optional DDP flags]
 ```
+
+* `analyze_model.py`
+
+Analyze FLOPs, parameters, activations of a detectron2 model.  See its `--help` for usage.
 
 * `visualize_json_results.py`
 

@@ -1,4 +1,5 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
+import torch
 from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
@@ -23,7 +24,7 @@ class _ROIAlignRotated(Function):
     @staticmethod
     @once_differentiable
     def backward(ctx, grad_output):
-        rois, = ctx.saved_tensors
+        (rois,) = ctx.saved_tensors
         output_size = ctx.output_size
         spatial_scale = ctx.spatial_scale
         sampling_ratio = ctx.sampling_ratio
@@ -75,9 +76,13 @@ class ROIAlignRotated(nn.Module):
                 The other 5 columns are (x_ctr, y_ctr, width, height, angle_degrees).
         """
         assert rois.dim() == 2 and rois.size(1) == 6
+        orig_dtype = input.dtype
+        if orig_dtype == torch.float16:
+            input = input.float()
+            rois = rois.float()
         return roi_align_rotated(
             input, rois, self.output_size, self.spatial_scale, self.sampling_ratio
-        )
+        ).to(dtype=orig_dtype)
 
     def __repr__(self):
         tmpstr = self.__class__.__name__ + "("

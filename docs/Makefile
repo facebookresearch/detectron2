@@ -1,5 +1,5 @@
 # Minimal makefile for Sphinx documentation
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 # You can set these variables from the command line.
 SPHINXOPTS    =

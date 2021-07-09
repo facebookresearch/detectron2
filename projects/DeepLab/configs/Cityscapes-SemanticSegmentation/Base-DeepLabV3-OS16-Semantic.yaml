@@ -1,0 +1,36 @@
+_BASE_: "../../../../configs/Base-RCNN-DilatedC5.yaml"
+MODEL:
+  META_ARCHITECTURE: "SemanticSegmentor"
+  BACKBONE:
+    FREEZE_AT: 0
+  SEM_SEG_HEAD:
+    NAME: "DeepLabV3Head"
+    IN_FEATURES: ["res5"]
+    ASPP_CHANNELS: 256
+    ASPP_DILATIONS: [6, 12, 18]
+    ASPP_DROPOUT: 0.1
+    CONVS_DIM: 256
+    COMMON_STRIDE: 16
+    NUM_CLASSES: 19
+    LOSS_TYPE: "hard_pixel_mining"
+DATASETS:
+  TRAIN: ("cityscapes_fine_sem_seg_train",)
+  TEST: ("cityscapes_fine_sem_seg_val",)
+SOLVER:
+  BASE_LR: 0.01
+  MAX_ITER: 90000
+  LR_SCHEDULER_NAME: "WarmupPolyLR"
+  IMS_PER_BATCH: 16
+INPUT:
+  MIN_SIZE_TRAIN: (512, 768, 1024, 1280, 1536, 1792, 2048)
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 1024
+  MAX_SIZE_TRAIN: 4096
+  MAX_SIZE_TEST: 2048
+  CROP:
+    ENABLED: True
+    TYPE: "absolute"
+    SIZE: (512, 1024)
+    SINGLE_CATEGORY_MAX_AREA: 1.0
+DATALOADER:
+  NUM_WORKERS: 10

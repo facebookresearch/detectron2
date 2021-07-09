@@ -1,11 +1,11 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
-import json
 import copy
+import json
 import os
 from collections import defaultdict
-
 
 # This mapping is extracted from the official LVIS mapping:
 # https://github.com/lvis-dataset/lvis-api/blob/master/data/coco_to_synset.json
@@ -167,7 +167,7 @@ def cocofy_lvis(input_filename, output_filename):
 
 
 if __name__ == "__main__":
-    dataset_dir = os.path.join(os.path.dirname(__file__), "lvis")
+    dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "lvis")
     for s in ["lvis_v0.5_train", "lvis_v0.5_val"]:
         print("Start COCOfing {}.".format(s))
         cocofy_lvis(

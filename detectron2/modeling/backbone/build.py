@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from detectron2.layers import ShapeSpec
 from detectron2.utils.registry import Registry
 
@@ -13,7 +13,7 @@ The registered object must be a callable that accepts two arguments:
 1. A :class:`detectron2.config.CfgNode`
 2. A :class:`detectron2.layers.ShapeSpec`, which contains the input shape specification.
 
-It must returns an instance of :class:`Backbone`.
+Registered object must return instance of :class:`Backbone`.
 """
 
 

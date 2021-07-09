@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
 import numpy as np
@@ -12,18 +12,20 @@ import torch
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
+from detectron2.utils.file_io import PathManager
 
 from .evaluator import DatasetEvaluator
 
 
 class PascalVOCDetectionEvaluator(DatasetEvaluator):
     """
-    Evaluate Pascal VOC AP.
+    Evaluate Pascal VOC style AP for Pascal VOC dataset.
     It contains a synchronization, therefore has to be called from all ranks.
 
-    Note that this is a rewrite of the official Matlab API.
-    The results should be similar, but not identical to the one produced by
-    the official API.
+    Note that the concept of AP can be implemented in different ways and may not
+    produce identical results. This class mimics the implementation of the official
+    Pascal VOC Matlab API, and should produce similar but not identical results to the
+    official API.
     """
 
     def __init__(self, dataset_name):
@@ -33,7 +35,12 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         """
         self._dataset_name = dataset_name
         meta = MetadataCatalog.get(dataset_name)
-        self._anno_file_template = os.path.join(meta.dirname, "Annotations", "{}.xml")
+
+        # Too many tiny files, download all to local for speed.
+        annotation_dir_local = PathManager.get_local_path(
+            os.path.join(meta.dirname, "Annotations/")
+        )
+        self._anno_file_template = os.path.join(annotation_dir_local, "{}.xml")
         self._image_set_path = os.path.join(meta.dirname, "ImageSets", "Main", meta.split + ".txt")
         self._class_names = meta.thing_classes
         assert meta.year in [2007, 2012], meta.year
@@ -124,7 +131,8 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 @lru_cache(maxsize=None)
 def parse_rec(filename):
     """Parse a PASCAL VOC xml file."""
-    tree = ET.parse(filename)
+    with PathManager.open(filename) as f:
+        tree = ET.parse(f)
     objects = []
     for obj in tree.findall("object"):
         obj_struct = {}
@@ -202,7 +210,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
 
     # first load gt
     # read list of images
-    with open(imagesetfile, "r") as f:
+    with PathManager.open(imagesetfile, "r") as f:
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
 

@@ -1,8 +1,9 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import unittest
 
 from detectron2 import model_zoo
+from detectron2.config import instantiate
 from detectron2.modeling import FPN, GeneralizedRCNN
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,26 @@ class TestModelZoo(unittest.TestCase):
             url,
             "https://dl.fbaipublicfiles.com/detectron2/Misc/scratch_mask_rcnn_R_50_FPN_3x_gn/138602908/model_final_01ca85.pkl",  # noqa
         )
+        url2 = model_zoo.get_checkpoint_url("Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.py")
+        self.assertEqual(url, url2)
+
+    def _build_lazy_model(self, name):
+        cfg = model_zoo.get_config("common/models/" + name)
+        instantiate(cfg.model)
+
+    def test_mask_rcnn_fpn(self):
+        self._build_lazy_model("mask_rcnn_fpn.py")
+
+    def test_mask_rcnn_c4(self):
+        self._build_lazy_model("mask_rcnn_c4.py")
+
+    def test_panoptic_fpn(self):
+        self._build_lazy_model("panoptic_fpn.py")
+
+    def test_schedule(self):
+        cfg = model_zoo.get_config("common/coco_schedule.py")
+        for _, v in cfg.items():
+            instantiate(v)
 
 
 if __name__ == "__main__":

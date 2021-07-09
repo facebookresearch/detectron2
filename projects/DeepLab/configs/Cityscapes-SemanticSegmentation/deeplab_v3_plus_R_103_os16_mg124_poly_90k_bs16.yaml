@@ -1,0 +1,24 @@
+_BASE_: Base-DeepLabV3-OS16-Semantic.yaml
+MODEL:
+  WEIGHTS: "detectron2://DeepLab/R-103.pkl"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  BACKBONE:
+    NAME: "build_resnet_deeplab_backbone"
+  RESNETS:
+    DEPTH: 101
+    NORM: "SyncBN"
+    OUT_FEATURES: ["res2", "res5"]
+    RES5_MULTI_GRID: [1, 2, 4]
+    STEM_TYPE: "deeplab"
+    STEM_OUT_CHANNELS: 128
+    STRIDE_IN_1X1: False
+  SEM_SEG_HEAD:
+    NAME: "DeepLabV3PlusHead"
+    IN_FEATURES: ["res2", "res5"]
+    PROJECT_FEATURES: ["res2"]
+    PROJECT_CHANNELS: [48]
+    NORM: "SyncBN"
+    COMMON_STRIDE: 4
+INPUT:
+  FORMAT: "RGB"

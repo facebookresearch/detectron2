@@ -1,9 +1,10 @@
 #!/bin/bash -e
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 BIN="python train_net.py"
 OUTPUT="instant_test_output"
 NUM_GPUS=2
+SOLVER_IMS_PER_BATCH=$((NUM_GPUS * 2))
 
 CFG_LIST=( "${@:1}" )
 if [ ${#CFG_LIST[@]} -eq 0 ]; then
@@ -20,7 +21,7 @@ for cfg in "${CFG_LIST[@]}"; do
     echo "Running $cfg ..."
     echo "========================================================================"
     $BIN --num-gpus $NUM_GPUS --config-file "$cfg" \
-      SOLVER.IMS_PER_BATCH $(($NUM_GPUS * 2)) \
+      SOLVER.IMS_PER_BATCH $SOLVER_IMS_PER_BATCH \
       OUTPUT_DIR "$OUTPUT"
     rm -rf "$OUTPUT"
 done

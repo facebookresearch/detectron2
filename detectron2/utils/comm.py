@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 """
 This file contains primitives for multi-gpu communication.
 This is useful when doing distributed training.
@@ -221,8 +221,8 @@ def shared_random_seed():
     """
     Returns:
         int: a random number that is the same across all workers.
-            If workers need a shared RNG, they can use this shared seed to
-            create one.
+        If workers need a shared RNG, they can use this shared seed to
+        create one.
 
     All workers must call this function, otherwise it will deadlock.
     """

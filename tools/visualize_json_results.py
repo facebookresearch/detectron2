@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import argparse
 import json
@@ -8,10 +8,10 @@ import os
 from collections import defaultdict
 import cv2
 import tqdm
-from fvcore.common.file_io import PathManager
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import Boxes, BoxMode, Instances
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
 
@@ -22,7 +22,7 @@ def create_instances(predictions, image_size):
     score = np.asarray([x["score"] for x in predictions])
     chosen = (score > args.conf_threshold).nonzero()[0]
     score = score[chosen]
-    bbox = np.asarray([predictions[i]["bbox"] for i in chosen])
+    bbox = np.asarray([predictions[i]["bbox"] for i in chosen]).reshape(-1, 4)
     bbox = BoxMode.convert(bbox, BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
 
     labels = np.asarray([dataset_id_map(predictions[i]["category_id"]) for i in chosen])

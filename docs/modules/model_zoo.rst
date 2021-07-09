@@ -1,4 +1,4 @@
-detectron2.model_zoo package
+detectron2.model_zoo 
 ============================
 
 .. automodule:: detectron2.model_zoo

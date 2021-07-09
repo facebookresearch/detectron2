@@ -1,6 +1,7 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import logging
-from fvcore.common.file_io import PathHandler, PathManager
+
+from detectron2.utils.file_io import PathHandler, PathManager
 
 
 class ModelCatalog(object):
@@ -17,6 +18,8 @@ class ModelCatalog(object):
     # Even when loaded to FrozenBN, it is still different from affine by an epsilon,
     # which should be negligible for training.
     # NOTE: all models here uses PIXEL_STD=[1,1,1]
+    # NOTE: Most of the BN models here are no longer used. We use the
+    # re-converted pre-trained models under detectron2 model zoo instead.
     C2_IMAGENET_MODELS = {
         "MSRA/R-50": "ImageNetPretrained/MSRA/R-50.pkl",
         "MSRA/R-101": "ImageNetPretrained/MSRA/R-101.pkl",
@@ -28,8 +31,8 @@ class ModelCatalog(object):
     }
 
     C2_DETECTRON_PATH_FORMAT = (
-        "{prefix}/{url}/output/train/{dataset}/{type}/model_final.pkl"
-    )  # noqa B950
+        "{prefix}/{url}/output/train/{dataset}/{type}/model_final.pkl"  # noqa B950
+    )
 
     C2_DATASET_COCO = "coco_2014_train%3Acoco_2014_valminusminival"
     C2_DATASET_COCO_KEYPOINTS = "keypoints_coco_2014_train%3Akeypoints_coco_2014_valminusminival"
@@ -99,34 +102,14 @@ class ModelCatalogHandler(PathHandler):
     def _get_supported_prefixes(self):
         return [self.PREFIX]
 
-    def _get_local_path(self, path):
+    def _get_local_path(self, path, **kwargs):
         logger = logging.getLogger(__name__)
         catalog_path = ModelCatalog.get(path[len(self.PREFIX) :])
         logger.info("Catalog entry {} points to {}".format(path, catalog_path))
-        return PathManager.get_local_path(catalog_path)
-
-    def _open(self, path, mode="r", **kwargs):
-        return PathManager.open(self._get_local_path(path), mode, **kwargs)
-
-
-class Detectron2Handler(PathHandler):
-    """
-    Resolve anything that's in Detectron2 model zoo.
-    """
-
-    PREFIX = "detectron2://"
-    S3_DETECTRON2_PREFIX = "https://dl.fbaipublicfiles.com/detectron2/"
-
-    def _get_supported_prefixes(self):
-        return [self.PREFIX]
-
-    def _get_local_path(self, path):
-        name = path[len(self.PREFIX) :]
-        return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name)
+        return PathManager.get_local_path(catalog_path, **kwargs)
 
     def _open(self, path, mode="r", **kwargs):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
 
 
 PathManager.register_handler(ModelCatalogHandler())
-PathManager.register_handler(Detectron2Handler())

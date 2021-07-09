@@ -1,0 +1,8 @@
+_BASE_: "../HRNet/densepose_rcnn_HRFPN_HRNet_w32_s1x.yaml"
+DATASETS:
+  TRAIN: ("densepose_coco_2014_minival_100",)
+  TEST: ("densepose_coco_2014_minival_100",)
+SOLVER:
+  MAX_ITER: 40
+  STEPS: (30,)
+  IMS_PER_BATCH: 2

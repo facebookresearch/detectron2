@@ -1,4 +1,5 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+#!/usr/bin/env python
+# Copyright (c) Facebook, Inc. and its affiliates.
 """
 A script to benchmark builtin models.
 
@@ -20,10 +21,11 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.engine import SimpleTrainer, default_argument_parser, hooks, launch
+from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser, hooks, launch
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
 from detectron2.utils import comm
+from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.events import CommonMetricPrinter
 from detectron2.utils.logger import setup_logger
 
@@ -40,17 +42,28 @@ def setup(args):
     return cfg
 
 
+def RAM_msg():
+    vram = psutil.virtual_memory()
+    return "RAM Usage: {:.2f}/{:.2f} GB".format(
+        (vram.total - vram.available) / 1024 ** 3, vram.total / 1024 ** 3
+    )
+
+
 def benchmark_data(args):
     cfg = setup(args)
 
-    dataloader = build_detection_train_loader(cfg)
-
+    logger.info("After spawning " + RAM_msg())
     timer = Timer()
+    dataloader = build_detection_train_loader(cfg)
+    logger.info("Initialize loader using {} seconds.".format(timer.seconds()))
+
+    timer.reset()
     itr = iter(dataloader)
     for i in range(10):  # warmup
         next(itr)
         if i == 0:
             startup_time = timer.seconds()
+    logger.info("Startup time: {} seconds".format(startup_time))
     timer = Timer()
     max_iter = 1000
     for _ in tqdm.trange(max_iter):
@@ -60,16 +73,10 @@ def benchmark_data(args):
             max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
         )
     )
-    logger.info("Startup time: {} seconds".format(startup_time))
-    vram = psutil.virtual_memory()
-    logger.info(
-        "RAM Usage: {:.2f}/{:.2f} GB".format(
-            (vram.total - vram.available) / 1024 ** 3, vram.total / 1024 ** 3
-        )
-    )
 
     # test for a few more rounds
-    for _ in range(10):
+    for k in range(10):
+        logger.info(f"Iteration {k} " + RAM_msg())
         timer = Timer()
         max_iter = 1000
         for _ in tqdm.trange(max_iter):
@@ -94,16 +101,17 @@ def benchmark_train(args):
     checkpointer.load(cfg.MODEL.WEIGHTS)
 
     cfg.defrost()
-    cfg.DATALOADER.NUM_WORKERS = 0
+    cfg.DATALOADER.NUM_WORKERS = 2
     data_loader = build_detection_train_loader(cfg)
     dummy_data = list(itertools.islice(data_loader, 100))
 
     def f():
+        data = DatasetFromList(dummy_data, copy=False, serialize=False)
         while True:
-            yield from DatasetFromList(dummy_data, copy=False)
+            yield from data
 
     max_iter = 400
-    trainer = SimpleTrainer(model, f(), optimizer)
+    trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(model, f(), optimizer)
     trainer.register_hooks(
         [hooks.IterationTimer(), hooks.PeriodicWriter([CommonMetricPrinter(max_iter)])]
     )
@@ -121,16 +129,16 @@ def benchmark_eval(args):
     cfg.defrost()
     cfg.DATALOADER.NUM_WORKERS = 0
     data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
-    dummy_data = list(itertools.islice(data_loader, 100))
+    dummy_data = DatasetFromList(list(itertools.islice(data_loader, 100)), copy=False)
 
     def f():
         while True:
-            yield from DatasetFromList(dummy_data, copy=False)
+            yield from dummy_data
 
-    for _ in range(5):  # warmup
-        model(dummy_data[0])
+    for k in range(5):  # warmup
+        model(dummy_data[k])
 
-    max_iter = 400
+    max_iter = 300
     timer = Timer()
     with tqdm.tqdm(total=max_iter) as pbar:
         for idx, d in enumerate(f()):
@@ -147,8 +155,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     assert not args.eval_only
 
+    logger.info("Environment info:\n" + collect_env_info())
     if args.task == "data":
         f = benchmark_data
+        print("Initial " + RAM_msg())
     elif args.task == "train":
         """
         Note: training speed may not be representative.

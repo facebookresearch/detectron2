@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 """
 Common data processing utilities that are used in a
@@ -7,10 +7,10 @@ typical object detection data pipeline.
 """
 import logging
 import numpy as np
+from typing import List, Union
 import pycocotools.mask as mask_util
 import torch
-from fvcore.common.file_io import PathManager
-from PIL import Image, ImageOps
+from PIL import Image
 
 from detectron2.structures import (
     BitMasks,
@@ -22,15 +22,145 @@ from detectron2.structures import (
     RotatedBoxes,
     polygons_to_bitmask,
 )
+from detectron2.utils.file_io import PathManager
 
 from . import transforms as T
 from .catalog import MetadataCatalog
+
+__all__ = [
+    "SizeMismatchError",
+    "convert_image_to_rgb",
+    "check_image_size",
+    "transform_proposals",
+    "transform_instance_annotations",
+    "annotations_to_instances",
+    "annotations_to_instances_rotated",
+    "build_augmentation",
+    "build_transform_gen",
+    "create_keypoint_hflip_indices",
+    "filter_empty_instances",
+    "read_image",
+]
 
 
 class SizeMismatchError(ValueError):
     """
     When loaded image has difference width/height compared with annotation.
     """
+
+
+# https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
+_M_RGB2YUV = [[0.299, 0.587, 0.114], [-0.14713, -0.28886, 0.436], [0.615, -0.51499, -0.10001]]
+_M_YUV2RGB = [[1.0, 0.0, 1.13983], [1.0, -0.39465, -0.58060], [1.0, 2.03211, 0.0]]
+
+# https://www.exiv2.org/tags.html
+_EXIF_ORIENT = 274  # exif 'Orientation' tag
+
+
+def convert_PIL_to_numpy(image, format):
+    """
+    Convert PIL image to numpy array of target format.
+
+    Args:
+        image (PIL.Image): a PIL image
+        format (str): the format of output image
+
+    Returns:
+        (np.ndarray): also see `read_image`
+    """
+    if format is not None:
+        # PIL only supports RGB, so convert to RGB and flip channels over below
+        conversion_format = format
+        if format in ["BGR", "YUV-BT.601"]:
+            conversion_format = "RGB"
+        image = image.convert(conversion_format)
+    image = np.asarray(image)
+    # PIL squeezes out the channel dimension for "L", so make it HWC
+    if format == "L":
+        image = np.expand_dims(image, -1)
+
+    # handle formats not supported by PIL
+    elif format == "BGR":
+        # flip channels if needed
+        image = image[:, :, ::-1]
+    elif format == "YUV-BT.601":
+        image = image / 255.0
+        image = np.dot(image, np.array(_M_RGB2YUV).T)
+
+    return image
+
+
+def convert_image_to_rgb(image, format):
+    """
+    Convert an image from given format to RGB.
+
+    Args:
+        image (np.ndarray or Tensor): an HWC image
+        format (str): the format of input image, also see `read_image`
+
+    Returns:
+        (np.ndarray): (H,W,3) RGB image in 0-255 range, can be either float or uint8
+    """
+    if isinstance(image, torch.Tensor):
+        image = image.cpu().numpy()
+    if format == "BGR":
+        image = image[:, :, [2, 1, 0]]
+    elif format == "YUV-BT.601":
+        image = np.dot(image, np.array(_M_YUV2RGB).T)
+        image = image * 255.0
+    else:
+        if format == "L":
+            image = image[:, :, 0]
+        image = image.astype(np.uint8)
+        image = np.asarray(Image.fromarray(image, mode=format).convert("RGB"))
+    return image
+
+
+def _apply_exif_orientation(image):
+    """
+    Applies the exif orientation correctly.
+
+    This code exists per the bug:
+      https://github.com/python-pillow/Pillow/issues/3973
+    with the function `ImageOps.exif_transpose`. The Pillow source raises errors with
+    various methods, especially `tobytes`
+
+    Function based on:
+      https://github.com/wkentaro/labelme/blob/v4.5.4/labelme/utils/image.py#L59
+      https://github.com/python-pillow/Pillow/blob/7.1.2/src/PIL/ImageOps.py#L527
+
+    Args:
+        image (PIL.Image): a PIL image
+
+    Returns:
+        (PIL.Image): the PIL image with exif orientation applied, if applicable
+    """
+    if not hasattr(image, "getexif"):
+        return image
+
+    try:
+        exif = image.getexif()
+    except Exception:  # https://github.com/facebookresearch/detectron2/issues/1885
+        exif = None
+
+    if exif is None:
+        return image
+
+    orientation = exif.get(_EXIF_ORIENT)
+
+    method = {
+        2: Image.FLIP_LEFT_RIGHT,
+        3: Image.ROTATE_180,
+        4: Image.FLIP_TOP_BOTTOM,
+        5: Image.TRANSPOSE,
+        6: Image.ROTATE_270,
+        7: Image.TRANSVERSE,
+        8: Image.ROTATE_90,
+    }.get(orientation)
+
+    if method is not None:
+        return image.transpose(method)
+    return image
 
 
 def read_image(file_name, format=None):
@@ -40,34 +170,19 @@ def read_image(file_name, format=None):
 
     Args:
         file_name (str): image file path
-        format (str): one of the supported image modes in PIL, or "BGR"
+        format (str): one of the supported image modes in PIL, or "BGR" or "YUV-BT.601".
 
     Returns:
-        image (np.ndarray): an HWC image in the given format.
+        image (np.ndarray):
+            an HWC image in the given format, which is 0-255, uint8 for
+            supported image modes in PIL or "BGR"; float (0-1 for Y) for YUV-BT.601.
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
 
-        # capture and ignore this bug: https://github.com/python-pillow/Pillow/issues/3973
-        try:
-            image = ImageOps.exif_transpose(image)
-        except Exception:
-            pass
-
-        if format is not None:
-            # PIL only supports RGB, so convert to RGB and flip channels over below
-            conversion_format = format
-            if format == "BGR":
-                conversion_format = "RGB"
-            image = image.convert(conversion_format)
-        image = np.asarray(image)
-        if format == "BGR":
-            # flip channels if needed
-            image = image[:, :, ::-1]
-        # PIL squeezes out the channel dimension for "L", so make it HWC
-        if format == "L":
-            image = np.expand_dims(image, -1)
-        return image
+        # work around this bug: https://github.com/python-pillow/Pillow/issues/3973
+        image = _apply_exif_orientation(image)
+        return convert_PIL_to_numpy(image, format)
 
 
 def check_image_size(dataset_dict, image):
@@ -79,13 +194,14 @@ def check_image_size(dataset_dict, image):
         expected_wh = (dataset_dict["width"], dataset_dict["height"])
         if not image_wh == expected_wh:
             raise SizeMismatchError(
-                "Mismatched (W,H){}, got {}, expect {}".format(
+                "Mismatched image shape{}, got {}, expect {}.".format(
                     " for image " + dataset_dict["file_name"]
                     if "file_name" in dataset_dict
                     else "",
                     image_wh,
                     expected_wh,
                 )
+                + " Please check the width/height in your annotation."
             )
 
     # To ensure bbox always remap to original image size
@@ -95,7 +211,7 @@ def check_image_size(dataset_dict, image):
         dataset_dict["height"] = image.shape[0]
 
 
-def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len, proposal_topk):
+def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk, min_box_size=0):
     """
     Apply transformations to the proposals in dataset_dict, if any.
 
@@ -104,8 +220,9 @@ def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len,
             contains fields "proposal_boxes", "proposal_objectness_logits", "proposal_bbox_mode"
         image_shape (tuple): height, width
         transforms (TransformList):
-        min_box_side_len (int): keep proposals with at least this size
         proposal_topk (int): only keep top-K scoring proposals
+        min_box_size (int): proposals with either side smaller than this
+            threshold are removed
 
     The input dict is modified in-place, with abovementioned keys removed. A new
     key "proposals" will be added. Its value is an `Instances`
@@ -127,7 +244,7 @@ def transform_proposals(dataset_dict, image_shape, transforms, min_box_side_len,
         )
 
         boxes.clip(image_shape)
-        keep = boxes.nonempty(threshold=min_box_side_len)
+        keep = boxes.nonempty(threshold=min_box_size)
         boxes = boxes[keep]
         objectness_logits = objectness_logits[keep]
 
@@ -151,7 +268,7 @@ def transform_instance_annotations(
     Args:
         annotation (dict): dict of instance annotations for a single instance.
             It will be modified in-place.
-        transforms (TransformList):
+        transforms (TransformList or list[Transform]):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
 
@@ -161,9 +278,13 @@ def transform_instance_annotations(
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
+    if isinstance(transforms, (tuple, list)):
+        transforms = T.TransformList(transforms)
+    # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
-    # Note that bbox is 1d (per-instance bounding box)
-    annotation["bbox"] = transforms.apply_box([bbox])[0]
+    # clip transformed bbox to image size
+    bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
+    annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
     if "segmentation" in annotation:
@@ -200,16 +321,26 @@ def transform_instance_annotations(
 def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_hflip_indices=None):
     """
     Transform keypoint annotations of an image.
+    If a keypoint is transformed out of image boundary, it will be marked "unlabeled" (visibility=0)
 
     Args:
-        keypoints (list[float]): Nx3 float in Detectron2 Dataset format.
+        keypoints (list[float]): Nx3 float in Detectron2's Dataset format.
+            Each point is represented by (x, y, visibility).
         transforms (TransformList):
         image_size (tuple): the height, width of the transformed image
         keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
+            When `transforms` includes horizontal flip, will use the index
+            mapping to flip keypoints.
     """
     # (N*3,) -> (N, 3)
     keypoints = np.asarray(keypoints, dtype="float64").reshape(-1, 3)
-    keypoints[:, :2] = transforms.apply_coords(keypoints[:, :2])
+    keypoints_xy = transforms.apply_coords(keypoints[:, :2])
+
+    # Set all out-of-boundary points to "unlabeled"
+    inside = (keypoints_xy >= np.array([0, 0])) & (keypoints_xy <= np.array(image_size[::-1]))
+    inside = inside.all(axis=1)
+    keypoints[:, :2] = keypoints_xy
+    keypoints[:, 2][~inside] = 0
 
     # This assumes that HorizFlipTransform is the only one that does flip
     do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
@@ -222,11 +353,9 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
     # If flipped, swap each keypoint with its opposite-handed equivalent
     if do_hflip:
         assert keypoint_hflip_indices is not None
-        keypoints = keypoints[keypoint_hflip_indices, :]
+        keypoints = keypoints[np.asarray(keypoint_hflip_indices, dtype=np.int32), :]
 
-    # Maintain COCO convention that if visibility == 0, then x, y = 0
-    # TODO may need to reset visibility for cropped keypoints,
-    # but it does not matter for our existing algorithms
+    # Maintain COCO convention that if visibility == 0 (unlabeled), then x, y = 0
     keypoints[keypoints[:, 2] == 0] = 0
     return keypoints
 
@@ -249,17 +378,21 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
     """
     boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
     target = Instances(image_size)
-    boxes = target.gt_boxes = Boxes(boxes)
-    boxes.clip(image_size)
+    target.gt_boxes = Boxes(boxes)
 
-    classes = [obj["category_id"] for obj in annos]
+    classes = [int(obj["category_id"]) for obj in annos]
     classes = torch.tensor(classes, dtype=torch.int64)
     target.gt_classes = classes
 
     if len(annos) and "segmentation" in annos[0]:
         segms = [obj["segmentation"] for obj in annos]
         if mask_format == "polygon":
-            masks = PolygonMasks(segms)
+            try:
+                masks = PolygonMasks(segms)
+            except ValueError as e:
+                raise ValueError(
+                    "Failed to use mask_format=='polygon' from the given annotations!"
+                ) from e
         else:
             assert mask_format == "bitmask", mask_format
             masks = []
@@ -280,8 +413,8 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
                     raise ValueError(
                         "Cannot convert segmentation of type '{}' to BitMasks!"
                         "Supported types are: polygons as list[list[float] or ndarray],"
-                        " COCO-style RLE as a dict, or a full-image segmentation mask "
-                        "as a 2D ndarray.".format(type(segm))
+                        " COCO-style RLE as a dict, or a binary segmentation mask "
+                        " in a 2D numpy array of shape HxW.".format(type(segm))
                     )
             # torch.from_numpy does not support array with negative stride.
             masks = BitMasks(
@@ -325,7 +458,9 @@ def annotations_to_instances_rotated(annos, image_size):
     return target
 
 
-def filter_empty_instances(instances, by_box=True, by_mask=True):
+def filter_empty_instances(
+    instances, by_box=True, by_mask=True, box_threshold=1e-5, return_mask=False
+):
     """
     Filter out empty instances in an `Instances` object.
 
@@ -333,14 +468,17 @@ def filter_empty_instances(instances, by_box=True, by_mask=True):
         instances (Instances):
         by_box (bool): whether to filter out instances with empty boxes
         by_mask (bool): whether to filter out instances with empty masks
+        box_threshold (float): minimum width and height to be considered non-empty
+        return_mask (bool): whether to return boolean mask of filtered instances
 
     Returns:
         Instances: the filtered instances.
+        tensor[bool], optional: boolean mask of filtered instances
     """
     assert by_box or by_mask
     r = []
     if by_box:
-        r.append(instances.gt_boxes.nonempty())
+        r.append(instances.gt_boxes.nonempty(threshold=box_threshold))
     if instances.has("gt_masks") and by_mask:
         r.append(instances.gt_masks.nonempty())
 
@@ -351,17 +489,22 @@ def filter_empty_instances(instances, by_box=True, by_mask=True):
     m = r[0]
     for x in r[1:]:
         m = m & x
+    if return_mask:
+        return instances[m], m
     return instances[m]
 
 
-def create_keypoint_hflip_indices(dataset_names):
+def create_keypoint_hflip_indices(dataset_names: Union[str, List[str]]) -> List[int]:
     """
     Args:
-        dataset_names (list[str]): list of dataset names
+        dataset_names: list of dataset names
+
     Returns:
-        ndarray[int]: a vector of size=#keypoints, storing the
+        list[int]: a list of size=#keypoints, storing the
         horizontally-flipped keypoint indices.
     """
+    if isinstance(dataset_names, str):
+        dataset_names = [dataset_names]
 
     check_metadata_consistency("keypoint_names", dataset_names)
     check_metadata_consistency("keypoint_flip_map", dataset_names)
@@ -373,7 +516,7 @@ def create_keypoint_hflip_indices(dataset_names):
     flip_map.update({v: k for k, v in flip_map.items()})
     flipped_names = [i if i not in flip_map else flip_map[i] for i in names]
     flip_indices = [names.index(i) for i in flipped_names]
-    return np.asarray(flip_indices)
+    return flip_indices
 
 
 def gen_crop_transform_with_instance(crop_size, image_size, instance):
@@ -435,13 +578,13 @@ def check_metadata_consistency(key, dataset_names):
             raise ValueError("Datasets have different metadata '{}'!".format(key))
 
 
-def build_transform_gen(cfg, is_train):
+def build_augmentation(cfg, is_train):
     """
-    Create a list of :class:`TransformGen` from config.
+    Create a list of default :class:`Augmentation` from config.
     Now it includes resizing and flipping.
 
     Returns:
-        list[TransformGen]
+        list[Augmentation]
     """
     if is_train:
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
@@ -451,15 +594,18 @@ def build_transform_gen(cfg, is_train):
         min_size = cfg.INPUT.MIN_SIZE_TEST
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
-    if sample_style == "range":
-        assert len(min_size) == 2, "more than 2 ({}) min_size(s) are provided for ranges".format(
-            len(min_size)
+    augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
+    if is_train and cfg.INPUT.RANDOM_FLIP != "none":
+        augmentation.append(
+            T.RandomFlip(
+                horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
+                vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
+            )
         )
+    return augmentation
 
-    logger = logging.getLogger(__name__)
-    tfm_gens = []
-    tfm_gens.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
-    if is_train:
-        tfm_gens.append(T.RandomFlip())
-        logger.info("TransformGens used in training: " + str(tfm_gens))
-    return tfm_gens
+
+build_transform_gen = build_augmentation
+"""
+Alias for backward-compatibility.
+"""

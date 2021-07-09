@@ -1,9 +1,14 @@
 #!/bin/bash -e
+# Copyright (c) Facebook, Inc. and its affiliates.
 
-PYTORCH_VERSION=1.4
+[[ -d "dev/packaging" ]] || {
+  echo "Please run this script at detectron2 root!"
+  exit 1
+}
 
-build_for_one_cuda() {
+build_one() {
   cu=$1
+  pytorch_ver=$2
 
   case "$cu" in
     cu*)
@@ -19,38 +24,47 @@ build_for_one_cuda() {
   esac
 
   echo "Launching container $container_name ..."
+  container_id="$container_name"_"$cu"_"$pytorch_ver"
 
-  for py in 3.6 3.7 3.8; do
+  py_versions=(3.6 3.7 3.8)
+  if [[ $pytorch_ver == "1.8" ]]; then
+    py_versions+=(3.9)
+  fi
+
+  for py in "${py_versions[@]}"; do
     docker run -itd \
-      --name $container_name \
+      --name "$container_id" \
       --mount type=bind,source="$(pwd)",target=/detectron2 \
       pytorch/$container_name
 
-    cat <<EOF | docker exec -i $container_name sh
+    cat <<EOF | docker exec -i $container_id sh
       export CU_VERSION=$cu D2_VERSION_SUFFIX=+$cu PYTHON_VERSION=$py
-      export PYTORCH_VERSION=$PYTORCH_VERSION
+      export PYTORCH_VERSION=$pytorch_ver
       cd /detectron2 && ./dev/packaging/build_wheel.sh
 EOF
 
-    if [[ "$cu" == "cu101" ]]; then
-      # build wheel without local version
-      cat <<EOF | docker exec -i $container_name sh
-        export CU_VERSION=$cu D2_VERSION_SUFFIX= PYTHON_VERSION=$py
-        export PYTORCH_VERSION=$PYTORCH_VERSION
-        cd /detectron2 && ./dev/packaging/build_wheel.sh
-EOF
-    fi
-
-    docker exec -i $container_name rm -rf /detectron2/build/$cu
-    docker container stop $container_name
-    docker container rm $container_name
+    docker container stop $container_id
+    docker container rm $container_id
   done
 }
 
-if [[ -n "$1" ]]; then
-  build_for_one_cuda "$1"
+
+if [[ -n "$1" ]] && [[ -n "$2" ]]; then
+  build_one "$1" "$2"
 else
-  for cu in cu101 cu100 cu92 cpu; do
-    build_for_one_cuda "$cu"
-  done
+  build_one cu111 1.8
+  build_one cu102 1.8
+  build_one cu101 1.8
+  build_one cpu 1.8
+
+  build_one cu110 1.7
+  build_one cu102 1.7
+  build_one cu101 1.7
+  build_one cu92 1.7
+  build_one cpu 1.7
+
+  build_one cu102 1.6
+  build_one cu101 1.6
+  build_one cu92 1.6
+  build_one cpu 1.6
 fi

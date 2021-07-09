@@ -1,4 +1,6 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+#!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+
 import argparse
 import logging
 import os
@@ -8,6 +10,7 @@ from typing import Any, ClassVar, Dict, List
 import torch
 
 from detectron2.data.catalog import DatasetCatalog
+from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
 from densepose.structures import DensePoseDataRelative
@@ -15,7 +18,7 @@ from densepose.utils.dbhelper import EntrySelector
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import BoundingBoxVisualizer
-from densepose.vis.densepose import (
+from densepose.vis.densepose_data_points import (
     DensePoseDataCoarseSegmentationVisualizer,
     DensePoseDataPointsIVisualizer,
     DensePoseDataPointsUVisualizer,
@@ -160,7 +163,7 @@ class ShowAction(EntrywiseAction):
         import cv2
         import numpy as np
 
-        image_fpath = entry["file_name"]
+        image_fpath = PathManager.get_local_path(entry["file_name"])
         image = cv2.imread(image_fpath, cv2.IMREAD_GRAYSCALE)
         image = np.tile(image[:, :, np.newaxis], [1, 1, 3])
         datas = cls._extract_data_for_visualizers_from_entry(context["vis_specs"], entry)

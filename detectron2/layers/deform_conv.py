@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import math
 from functools import lru_cache
 import torch
@@ -6,6 +6,7 @@ from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
+from torchvision.ops import deform_conv2d
 
 from detectron2 import _C
 
@@ -46,7 +47,13 @@ class _DeformConv(Function):
         ctx.bufs_ = [input.new_empty(0), input.new_empty(0)]  # columns, ones
 
         if not input.is_cuda:
-            raise NotImplementedError
+            if deformable_groups != 1:
+                raise NotImplementedError(
+                    "Deformable Conv with deformable_groups != 1 is not supported on CPUs!"
+                )
+            return deform_conv2d(
+                input, offset, weight, stride=stride, padding=padding, dilation=dilation
+            )
         else:
             cur_im2col_step = _DeformConv._cal_im2col_step(input.shape[0], ctx.im2col_step)
             assert (input.shape[0] % cur_im2col_step) == 0, "im2col step must divide batchsize"
@@ -80,7 +87,7 @@ class _DeformConv(Function):
         grad_input = grad_offset = grad_weight = None
 
         if not grad_output.is_cuda:
-            raise NotImplementedError
+            raise NotImplementedError("Deformable Conv is not supported on CPUs!")
         else:
             cur_im2col_step = _DeformConv._cal_im2col_step(input.shape[0], ctx.im2col_step)
             assert (input.shape[0] % cur_im2col_step) == 0, "im2col step must divide batchsize"
@@ -200,7 +207,7 @@ class _ModulatedDeformConv(Function):
         if not ctx.with_bias:
             bias = input.new_empty(1)  # fake tensor
         if not input.is_cuda:
-            raise NotImplementedError
+            raise NotImplementedError("Deformable Conv is not supported on CPUs!")
         if (
             weight.requires_grad
             or mask.requires_grad
@@ -237,7 +244,7 @@ class _ModulatedDeformConv(Function):
     @once_differentiable
     def backward(ctx, grad_output):
         if not grad_output.is_cuda:
-            raise NotImplementedError
+            raise NotImplementedError("Deformable Conv is not supported on CPUs!")
         input, offset, mask, weight, bias = ctx.saved_tensors
         grad_input = torch.zeros_like(input)
         grad_offset = torch.zeros_like(offset)
@@ -321,7 +328,7 @@ class DeformConv(nn.Module):
         activation=None,
     ):
         """
-        Deformable convolution.
+        Deformable convolution from :paper:`deformconv`.
 
         Arguments are similar to :class:`Conv2D`. Extra arguments:
 
@@ -418,7 +425,7 @@ class ModulatedDeformConv(nn.Module):
         activation=None,
     ):
         """
-        Modulated deformable convolution.
+        Modulated deformable convolution from :paper:`deformconv2`.
 
         Arguments are similar to :class:`Conv2D`. Extra arguments:
 

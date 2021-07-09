@@ -1,14 +1,14 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import collections
 import contextlib
 import copy
 import functools
 import logging
-import mock
 import numpy as np
 import os
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from unittest import mock
 import caffe2.python.utils as putils
 import torch
 import torch.nn.functional as F
@@ -273,9 +273,12 @@ def create_const_fill_op(
     """
 
     tensor_type = type(blob)
-    assert tensor_type in [np.ndarray, workspace.Int8Tensor], (
-        'Error when creating const fill op for "{}", unsupported blob type: {}'
-    ).format(name, type(blob))
+    assert tensor_type in [
+        np.ndarray,
+        workspace.Int8Tensor,
+    ], 'Error when creating const fill op for "{}", unsupported blob type: {}'.format(
+        name, type(blob)
+    )
 
     if tensor_type == np.ndarray:
         return _create_const_fill_op_from_numpy(name, blob, device_option)
@@ -335,7 +338,7 @@ def get_consumer_map(ssa):
 
 
 def get_params_from_init_net(
-    init_net: caffe2_pb2.NetDef
+    init_net: caffe2_pb2.NetDef,
 ) -> [Dict[str, Any], Dict[str, caffe2_pb2.DeviceOption]]:
     """
     Take the output blobs from init_net by running it.
@@ -447,7 +450,7 @@ def infer_device_type(
     known_status: Dict[Tuple[str, int], Any],
     device_name_style: str = "caffe2",
 ) -> Dict[Tuple[str, int], str]:
-    """ Return the device type ("cpu" or "gpu"/"cuda") of each (versioned) blob """
+    """Return the device type ("cpu" or "gpu"/"cuda") of each (versioned) blob"""
 
     assert device_name_style in ["caffe2", "pytorch"]
     _CPU_STR = "cpu"
@@ -594,7 +597,7 @@ def alias(x, name, is_backward=False):
 
 
 def fuse_alias_placeholder(predict_net, init_net):
-    """ Remove AliasWithName placeholder and rename the input/output of it """
+    """Remove AliasWithName placeholder and rename the input/output of it"""
     # First we finish all the re-naming
     for i, op in enumerate(predict_net.op):
         if op.type == "AliasWithName":
@@ -622,7 +625,7 @@ def fuse_alias_placeholder(predict_net, init_net):
 
 
 class IllegalGraphTransformError(ValueError):
-    """ When a graph transform function call can't be executed. """
+    """When a graph transform function call can't be executed."""
 
 
 def _rename_versioned_blob_in_proto(
@@ -634,7 +637,7 @@ def _rename_versioned_blob_in_proto(
     start_versions: Dict[str, int],
     end_versions: Dict[str, int],
 ):
-    """ In given proto, rename all blobs with matched version """
+    """In given proto, rename all blobs with matched version"""
     # Operater list
     for op, i_th_ssa in zip(proto.op, ssa):
         versioned_inputs, versioned_outputs = i_th_ssa
@@ -671,7 +674,7 @@ def rename_op_input(
     - It requires the input is only consumed by this op.
     - This function modifies predict_net and init_net in-place.
     - When from_producer is enable, this also updates other operators that consumes
-        the same input. Be cautious because may trigger unintended behaviour.
+        the same input. Be cautious because may trigger unintended behavior.
     """
     assert isinstance(predict_net, caffe2_pb2.NetDef)
     assert isinstance(init_net, caffe2_pb2.NetDef)
@@ -777,7 +780,7 @@ def get_sub_graph_external_input_output(
 
 
 class DiGraph:
-    """ A DAG representation of caffe2 graph, each vertice is a versioned blob. """
+    """A DAG representation of caffe2 graph, each vertice is a versioned blob."""
 
     def __init__(self):
         self.vertices = set()
@@ -849,7 +852,7 @@ def _get_dependency_chain(ssa, versioned_target, versioned_source):
     return sorted(set().union(*[set(ops) for ops in ops_in_paths]))
 
 
-def identify_reshape_sub_graph(predict_net: caffe2_pb2.NetDef,) -> List[List[int]]:
+def identify_reshape_sub_graph(predict_net: caffe2_pb2.NetDef) -> List[List[int]]:
     """
     Idenfity the reshape sub-graph in a protobuf.
     The reshape sub-graph is defined as matching the following pattern:
@@ -1005,7 +1008,7 @@ def fuse_copy_between_cpu_and_gpu(predict_net: caffe2_pb2.NetDef):
 
 
 def remove_dead_end_ops(net_def: caffe2_pb2.NetDef):
-    """ remove ops if its output is not used or not in external_output """
+    """remove ops if its output is not used or not in external_output"""
     ssa, versions = core.get_ssa(net_def)
     versioned_external_output = [(name, versions[name]) for name in net_def.external_output]
     consumer_map = get_consumer_map(ssa)

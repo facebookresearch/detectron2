@@ -7,8 +7,12 @@ DATASETS:
   TRAIN: ("densepose_coco_2014_minival",)
   TEST: ("densepose_coco_2014_minival",)
 SOLVER:
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: norm
+    CLIP_VALUE: 1.0
   MAX_ITER: 6000
   STEPS: (5500, 5800)
 TEST:
-  EXPECTED_RESULTS: [["bbox", "AP", 58.27, 1.0], ["densepose_gps", "AP", 42.47, 1.5], ["densepose_gpsm", "AP", 49.20, 1.5]]
+  EXPECTED_RESULTS: [["bbox", "AP", 76.2477, 1.0], ["densepose_gps", "AP", 79.6090, 1.5], ["densepose_gpsm", "AP", 80.0061, 1.5]]
 

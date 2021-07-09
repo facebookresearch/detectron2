@@ -1,0 +1,25 @@
+_BASE_: "../../../../configs/Base-RCNN-FPN.yaml"
+MODEL:
+  MASK_ON: true
+  ROI_MASK_HEAD:
+    NAME: "ImplicitPointRendMaskHead"
+    POOLER_TYPE: ""  # No RoI pooling, let the head process image features directly
+    FC_DIM: 1024
+    NUM_FC: 2
+  POINT_HEAD:
+    NAME: "ImplicitPointHead"
+    FC_DIM: 256
+    NUM_FC: 3
+    IN_FEATURES: ["p2"]
+    NUM_CLASSES: 80
+    CLS_AGNOSTIC_MASK: False
+    TRAIN_NUM_POINTS: 196
+    SUBDIVISION_STEPS: 3
+    SUBDIVISION_NUM_POINTS: 784
+  IMPLICIT_POINTREND:
+    IMAGE_FEATURE_ENABLED: True
+    POS_ENC_ENABLED: True
+    PARAMS_L2_REGULARIZER: 0.00001
+INPUT:
+  # PointRend for instance segmentation does not work with "polygon" mask_format.
+  MASK_FORMAT: "bitmask"

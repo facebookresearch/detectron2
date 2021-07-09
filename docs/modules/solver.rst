@@ -1,4 +1,4 @@
-detectron2.solver package
+detectron2.solver 
 =========================
 
 .. automodule:: detectron2.solver

@@ -1,53 +1,9 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from torch import nn
-from torch.autograd import Function
-from torch.autograd.function import once_differentiable
-from torch.nn.modules.utils import _pair
-
-from detectron2 import _C
+from torchvision.ops import roi_align
 
 
-class _ROIAlign(Function):
-    @staticmethod
-    def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio, aligned):
-        ctx.save_for_backward(roi)
-        ctx.output_size = _pair(output_size)
-        ctx.spatial_scale = spatial_scale
-        ctx.sampling_ratio = sampling_ratio
-        ctx.input_shape = input.size()
-        ctx.aligned = aligned
-        output = _C.roi_align_forward(
-            input, roi, spatial_scale, output_size[0], output_size[1], sampling_ratio, aligned
-        )
-        return output
-
-    @staticmethod
-    @once_differentiable
-    def backward(ctx, grad_output):
-        rois, = ctx.saved_tensors
-        output_size = ctx.output_size
-        spatial_scale = ctx.spatial_scale
-        sampling_ratio = ctx.sampling_ratio
-        bs, ch, h, w = ctx.input_shape
-        grad_input = _C.roi_align_backward(
-            grad_output,
-            rois,
-            spatial_scale,
-            output_size[0],
-            output_size[1],
-            bs,
-            ch,
-            h,
-            w,
-            sampling_ratio,
-            ctx.aligned,
-        )
-        return grad_input, None, None, None, None, None
-
-
-roi_align = _ROIAlign.apply
-
-
+# NOTE: torchvision's RoIAlign has a different default aligned=False
 class ROIAlign(nn.Module):
     def __init__(self, output_size, spatial_scale, sampling_ratio, aligned=True):
         """
@@ -78,11 +34,17 @@ class ROIAlign(nn.Module):
             The difference does not make a difference to the model's performance if
             ROIAlign is used together with conv layers.
         """
-        super(ROIAlign, self).__init__()
+        super().__init__()
         self.output_size = output_size
         self.spatial_scale = spatial_scale
         self.sampling_ratio = sampling_ratio
         self.aligned = aligned
+
+        from torchvision import __version__
+
+        version = tuple(int(x) for x in __version__.split(".")[:2])
+        # https://github.com/pytorch/vision/pull/2438
+        assert version >= (0, 7), "Require torchvision >= 0.7"
 
     def forward(self, input, rois):
         """
@@ -91,8 +53,15 @@ class ROIAlign(nn.Module):
             rois: Bx5 boxes. First column is the index into N. The other 4 columns are xyxy.
         """
         assert rois.dim() == 2 and rois.size(1) == 5
+        if input.is_quantized:
+            input = input.dequantize()
         return roi_align(
-            input, rois, self.output_size, self.spatial_scale, self.sampling_ratio, self.aligned
+            input,
+            rois.to(dtype=input.dtype),
+            self.output_size,
+            self.spatial_scale,
+            self.sampling_ratio,
+            self.aligned,
         )
 
     def __repr__(self):

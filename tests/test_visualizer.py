@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# File:
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import os
+import tempfile
 import unittest
+import cv2
 import torch
 
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BoxMode, Instances, RotatedBoxes
-from detectron2.utils.visualizer import Visualizer
+from detectron2.utils.visualizer import ColorMode, Visualizer
 
 
 class TestVisualizer(unittest.TestCase):
@@ -25,7 +27,7 @@ class TestVisualizer(unittest.TestCase):
         polygons = [[_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)]
 
         mask = np.zeros_like(img[:, :, 0], dtype=np.bool)
-        mask[:10, 10:20] = 1
+        mask[:40, 10:20] = 1
 
         labels = [str(i) for i in range(N)]
         return img, boxes, labels, polygons, [mask] * N
@@ -52,6 +54,33 @@ class TestVisualizer(unittest.TestCase):
                         "counts": "_jh52m?2N2N2N2O100O10O001N1O2MceP2",
                         "size": [512, 512],
                     },
+                }
+            ],
+            "height": 512,
+            "image_id": 1,
+            "width": 512,
+        }
+        v = Visualizer(img)
+        v.draw_dataset_dict(dic)
+
+        v = Visualizer(img, self.metadata)
+        v.draw_dataset_dict(dic)
+
+    def test_draw_rotated_dataset_dict(self):
+        img = np.random.rand(512, 512, 3) * 255
+        dic = {
+            "annotations": [
+                {
+                    "bbox": [
+                        368.9946492271106,
+                        330.891438763377,
+                        13.148537455410235,
+                        13.644708680142685,
+                        45.0,
+                    ],
+                    "bbox_mode": BoxMode.XYWHA_ABS,
+                    "category_id": 0,
+                    "iscrowd": 1,
                 }
             ],
             "height": 512,
@@ -92,7 +121,21 @@ class TestVisualizer(unittest.TestCase):
         inst.pred_boxes = torch.from_numpy(boxes)
         inst.pred_masks = torch.from_numpy(np.asarray(masks))
 
+        v = Visualizer(img)
+        v.draw_instance_predictions(inst)
+
         v = Visualizer(img, self.metadata)
+        v.draw_instance_predictions(inst)
+
+    def test_BWmode_nomask(self):
+        img, boxes, _, _, masks = self._random_data()
+        num_inst = len(boxes)
+        inst = Instances((img.shape[0], img.shape[1]))
+        inst.pred_classes = torch.randint(0, 80, size=(num_inst,))
+        inst.scores = torch.rand(num_inst)
+        inst.pred_boxes = torch.from_numpy(boxes)
+
+        v = Visualizer(img, self.metadata, instance_mode=ColorMode.IMAGE_BW)
         v.draw_instance_predictions(inst)
 
     def test_draw_empty_mask_predictions(self):
@@ -141,3 +184,70 @@ class TestVisualizer(unittest.TestCase):
 
         v = Visualizer(img, MetadataCatalog.get("asdfasdf"))
         v.draw_instance_predictions(inst)
+
+    def test_draw_binary_mask(self):
+        img, boxes, _, _, masks = self._random_data()
+        img[:, :, 0] = 0  # remove red color
+        mask = masks[0]
+        mask_with_hole = np.zeros_like(mask).astype("uint8")
+        mask_with_hole = cv2.rectangle(mask_with_hole, (10, 10), (50, 50), 1, 5)
+
+        for m in [mask, mask_with_hole]:
+            for save in [True, False]:
+                v = Visualizer(img)
+                o = v.draw_binary_mask(m, color="red", text="test")
+                if save:
+                    with tempfile.TemporaryDirectory(prefix="detectron2_viz") as d:
+                        path = os.path.join(d, "output.png")
+                        o.save(path)
+                        o = cv2.imread(path)[:, :, ::-1]
+                else:
+                    o = o.get_image().astype("float32")
+                    # red color is drawn on the image
+                self.assertTrue(o[:, :, 0].sum() > 0)
+
+    def test_border_mask_with_holes(self):
+        H, W = 200, 200
+        img = np.zeros((H, W, 3))
+        img[:, :, 0] = 255.0
+        v = Visualizer(img, scale=3)
+
+        mask = np.zeros((H, W))
+        mask[:, 100:150] = 1
+        # create a hole, to trigger imshow
+        mask = cv2.rectangle(mask, (110, 110), (130, 130), 0, thickness=-1)
+        output = v.draw_binary_mask(mask, color="blue")
+        output = output.get_image()[:, :, ::-1]
+
+        first_row = {tuple(x.tolist()) for x in output[0]}
+        last_row = {tuple(x.tolist()) for x in output[-1]}
+        # Check quantization / off-by-1 error: the first and last row must have two colors
+        self.assertEqual(len(last_row), 2)
+        self.assertEqual(len(first_row), 2)
+        self.assertIn((0, 0, 255), last_row)
+        self.assertIn((0, 0, 255), first_row)
+
+    def test_border_polygons(self):
+        H, W = 200, 200
+        img = np.zeros((H, W, 3))
+        img[:, :, 0] = 255.0
+        v = Visualizer(img, scale=3)
+        mask = np.zeros((H, W))
+        mask[:, 100:150] = 1
+
+        output = v.draw_binary_mask(mask, color="blue")
+        output = output.get_image()[:, :, ::-1]
+
+        first_row = {tuple(x.tolist()) for x in output[0]}
+        last_row = {tuple(x.tolist()) for x in output[-1]}
+        # Check quantization / off-by-1 error:
+        # the first and last row must have >=2 colors, because the polygon
+        # touches both rows
+        self.assertGreaterEqual(len(last_row), 2)
+        self.assertGreaterEqual(len(first_row), 2)
+        self.assertIn((0, 0, 255), last_row)
+        self.assertIn((0, 0, 255), first_row)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -2,6 +2,8 @@ _BASE_: "../Base-RCNN-FPN.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   KEYPOINT_ON: True
+  ROI_HEADS:
+    NUM_CLASSES: 1
 DATASETS:
   TRAIN: ("keypoints_coco_2017_val_100",)
   TEST: ("keypoints_coco_2017_val_100",)

@@ -1,18 +1,18 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
-import time
 import functools
 import json
 import multiprocessing as mp
 import numpy as np
 import os
+import time
+from fvcore.common.download import download
+from panopticapi.utils import rgb2id
 from PIL import Image
 
 from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
-from fvcore.common.download import download
-
-from panopticapi.utils import rgb2id
 
 
 def _process_panoptic_to_semantic(input_panoptic, output_semantic, segments, id_map):
@@ -78,7 +78,7 @@ def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root, sem_seg_r
 
 
 if __name__ == "__main__":
-    dataset_dir = os.path.join(os.path.dirname(__file__), "coco")
+    dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "coco")
     for s in ["val2017", "train2017"]:
         separate_coco_semantic_from_panoptic(
             os.path.join(dataset_dir, "annotations/panoptic_{}.json".format(s)),

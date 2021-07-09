@@ -1,0 +1,60 @@
+VERSION: 2
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+  BACKBONE:
+    NAME: "build_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  FPN:
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
+  ANCHOR_GENERATOR:
+    SIZES: [[32], [64], [128], [256], [512]]  # One size for each in feature map
+    ASPECT_RATIOS: [[0.5, 1.0, 2.0]]  # Three aspect ratios (same for all in feature maps)
+  RPN:
+    IN_FEATURES: ["p2", "p3", "p4", "p5", "p6"]
+    PRE_NMS_TOPK_TRAIN: 2000  # Per FPN level
+    PRE_NMS_TOPK_TEST: 1000  # Per FPN level
+    # Detectron1 uses 2000 proposals per-batch,
+    # (See "modeling/rpn/rpn_outputs.py" for details of this legacy issue)
+    # which is approximately 1000 proposals per-image since the default batch size for FPN is 2.
+    POST_NMS_TOPK_TRAIN: 1000
+    POST_NMS_TOPK_TEST: 1000
+
+  DENSEPOSE_ON: True
+  ROI_HEADS:
+    NAME: "DensePoseROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NUM_CLASSES: 1
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_FC: 2
+    POOLER_RESOLUTION: 7
+    POOLER_SAMPLING_RATIO: 2
+    POOLER_TYPE: "ROIAlign"
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseV1ConvXHead"
+    POOLER_TYPE: "ROIAlign"
+    NUM_COARSE_SEGM_CHANNELS: 2
+    PREDICTOR_NAME: "DensePoseEmbeddingPredictor"
+    LOSS_NAME: "DensePoseCseLoss"
+    CSE:
+      # embedding loss, possible values:
+      # - "EmbeddingLoss"
+      # - "SoftEmbeddingLoss"
+      EMBED_LOSS_NAME: "EmbeddingLoss"
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.01
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+  WARMUP_FACTOR: 0.1
+  CLIP_GRADIENTS:
+    CLIP_TYPE: norm
+    CLIP_VALUE: 1.0
+    ENABLED: true
+    NORM_TYPE: 2.0
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+DENSEPOSE_EVALUATION:
+  TYPE: cse
+  STORAGE: file

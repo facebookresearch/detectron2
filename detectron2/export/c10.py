@@ -1,10 +1,11 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 
 import math
 import torch
 import torch.nn.functional as F
 
 from detectron2.layers import cat
+from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference
@@ -14,20 +15,22 @@ from .shared import alias, to_device
 
 
 """
-This file contains caffe2-compatible implementation of several detectrno2 components.
+This file contains caffe2-compatible implementation of several detectron2 components.
 """
 
 
-class Boxes4or5(Boxes):
+class Caffe2Boxes(Boxes):
     """
     Representing a list of detectron2.structures.Boxes from minibatch, each box
-    is represented by a 5d vector (batch index + 4 coordinates).
+    is represented by a 5d vector (batch index + 4 coordinates), or a 6d vector
+    (batch index + 5 coordinates) for RotatedBoxes.
     """
 
     def __init__(self, tensor):
         assert isinstance(tensor, torch.Tensor)
-        assert tensor.dim() == 2 and tensor.size(-1) in [4, 5], tensor.size()
-        # TODO: make tensor immutable when dim is Nx5?
+        assert tensor.dim() == 2 and tensor.size(-1) in [4, 5, 6], tensor.size()
+        # TODO: make tensor immutable when dim is Nx5 for Boxes,
+        # and Nx6 for RotatedBoxes?
         self.tensor = tensor
 
 
@@ -53,8 +56,8 @@ class InstancesList(object):
         self.image_size = self.im_info
 
     def get_fields(self):
-        """ like `get_fields` in the Instances object,
-        but return each field in tensor representations """
+        """like `get_fields` in the Instances object,
+        but return each field in tensor representations"""
         ret = {}
         for k, v in self.batch_extra_fields.items():
             # if isinstance(v, torch.Tensor):
@@ -142,6 +145,10 @@ class InstancesList(object):
 
 
 class Caffe2Compatible(object):
+    """
+    A model can inherit this class to indicate that it can be traced and deployed with caffe2.
+    """
+
     def _get_tensor_mode(self):
         return self._tensor_mode
 
@@ -155,22 +162,16 @@ class Caffe2Compatible(object):
 
 
 class Caffe2RPN(Caffe2Compatible, rpn.RPN):
-    def forward(self, images, features, gt_instances=None):
-        assert not self.training
-
-        features = [features[f] for f in self.in_features]
-        objectness_logits_pred, anchor_deltas_pred = self.rpn_head(features)
-
-        # TODO is the needed?
-        # objectness_logits_pred = [t.sigmoid() for t in objectness_logits_pred]
-
+    def _generate_proposals(
+        self, images, objectness_logits_pred, anchor_deltas_pred, gt_instances=None
+    ):
         assert isinstance(images, ImageList)
         if self.tensor_mode:
             im_info = images.image_sizes
         else:
-            im_info = torch.Tensor(
-                [[im_sz[0], im_sz[1], torch.Tensor([1.0])] for im_sz in images.image_sizes]
-            ).to(images.tensor.device)
+            im_info = torch.tensor([[im_sz[0], im_sz[1], 1.0] for im_sz in images.image_sizes]).to(
+                images.tensor.device
+            )
         assert isinstance(im_info, torch.Tensor)
 
         rpn_rois_list = []
@@ -193,11 +194,11 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
                 pre_nms_topN=self.pre_nms_topk[self.training],
                 post_nms_topN=self.post_nms_topk[self.training],
                 nms_thresh=self.nms_thresh,
-                min_size=self.min_box_side_len,
+                min_size=self.min_box_size,
                 # correct_transform_coords=True,  # deprecated argument
                 angle_bound_on=True,  # Default
-                angle_bound_lo=-90,  # Default
-                angle_bound_hi=90,  # Default
+                angle_bound_lo=-180,
+                angle_bound_hi=180,
                 clip_angle_thresh=1.0,  # Default
                 legacy_plus_one=False,
             )
@@ -244,13 +245,24 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
         proposals = self.c2_postprocess(im_info, rpn_rois, rpn_roi_probs, self.tensor_mode)
         return proposals, {}
 
+    def forward(self, images, features, gt_instances=None):
+        assert not self.training
+        features = [features[f] for f in self.in_features]
+        objectness_logits_pred, anchor_deltas_pred = self.rpn_head(features)
+        return self._generate_proposals(
+            images,
+            objectness_logits_pred,
+            anchor_deltas_pred,
+            gt_instances,
+        )
+
     @staticmethod
     def c2_postprocess(im_info, rpn_rois, rpn_roi_probs, tensor_mode):
         proposals = InstancesList(
             im_info=im_info,
             indices=rpn_rois[:, 0],
             extra_fields={
-                "proposal_boxes": Boxes4or5(rpn_rois),
+                "proposal_boxes": Caffe2Boxes(rpn_rois),
                 "objectness_logits": (torch.Tensor, rpn_roi_probs),
             },
         )
@@ -265,7 +277,7 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
     @staticmethod
     def c2_preprocess(box_lists):
         assert all(isinstance(x, Boxes) for x in box_lists)
-        if all(isinstance(x, Boxes4or5) for x in box_lists):
+        if all(isinstance(x, Caffe2Boxes) for x in box_lists):
             # input is pure-tensor based
             assert len(box_lists) == 1
             pooler_fmt_boxes = box_lists[0].tensor
@@ -280,15 +292,26 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
         num_level_assignments = len(self.level_poolers)
 
         if num_level_assignments == 1:
-            out = torch.ops._caffe2.RoIAlign(
-                x[0],
+            if isinstance(self.level_poolers[0], ROIAlignRotated):
+                c2_roi_align = torch.ops._caffe2.RoIAlignRotated
+                aligned = True
+            else:
+                c2_roi_align = torch.ops._caffe2.RoIAlign
+                aligned = self.level_poolers[0].aligned
+
+            x0 = x[0]
+            if x0.is_quantized:
+                x0 = x0.dequantize()
+
+            out = c2_roi_align(
+                x0,
                 pooler_fmt_boxes,
                 order="NCHW",
                 spatial_scale=float(self.level_poolers[0].spatial_scale),
                 pooled_h=int(self.output_size[0]),
                 pooled_w=int(self.output_size[1]),
                 sampling_ratio=int(self.level_poolers[0].sampling_ratio),
-                aligned=bool(self.level_poolers[0].aligned),
+                aligned=aligned,
             )
             return out
 
@@ -311,7 +334,17 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
 
         roi_feat_fpn_list = []
         for roi_fpn, x_level, pooler in zip(rois_fpn_list, x, self.level_poolers):
-            roi_feat_fpn = torch.ops._caffe2.RoIAlign(
+            if isinstance(pooler, ROIAlignRotated):
+                c2_roi_align = torch.ops._caffe2.RoIAlignRotated
+                aligned = True
+            else:
+                c2_roi_align = torch.ops._caffe2.RoIAlign
+                aligned = bool(pooler.aligned)
+
+            if x_level.is_quantized:
+                x_level = x_level.dequantize()
+
+            roi_feat_fpn = c2_roi_align(
                 x_level,
                 roi_fpn,
                 order="NCHW",
@@ -319,65 +352,85 @@ class Caffe2ROIPooler(Caffe2Compatible, poolers.ROIPooler):
                 pooled_h=int(self.output_size[0]),
                 pooled_w=int(self.output_size[1]),
                 sampling_ratio=int(pooler.sampling_ratio),
-                aligned=bool(pooler.aligned),
+                aligned=aligned,
             )
             roi_feat_fpn_list.append(roi_feat_fpn)
 
         roi_feat_shuffled = cat(roi_feat_fpn_list, dim=0)
+        assert roi_feat_shuffled.numel() > 0 and rois_idx_restore_int32.numel() > 0, (
+            "Caffe2 export requires tracing with a model checkpoint + input that can produce valid"
+            " detections. But no detections were obtained with the given checkpoint and input!"
+        )
         roi_feat = torch.ops._caffe2.BatchPermutation(roi_feat_shuffled, rois_idx_restore_int32)
         return roi_feat
 
 
 class Caffe2FastRCNNOutputsInference:
     def __init__(self, tensor_mode):
-        self.tensor_mode = tensor_mode
+        self.tensor_mode = tensor_mode  # whether the output is caffe2 tensor mode
 
-    def __call__(self, fastrcnn_outputs, score_thresh, nms_thresh, topk_per_image):
-        """ equivalent to FastRCNNOutputs.inference """
-        assert isinstance(fastrcnn_outputs.proposals, Boxes)
-        input_tensor_mode = fastrcnn_outputs.proposals.tensor.shape[1] == 5
+    def __call__(self, box_predictor, predictions, proposals):
+        """equivalent to FastRCNNOutputLayers.inference"""
+        num_classes = box_predictor.num_classes
+        score_thresh = box_predictor.test_score_thresh
+        nms_thresh = box_predictor.test_nms_thresh
+        topk_per_image = box_predictor.test_topk_per_image
+        is_rotated = len(box_predictor.box2box_transform.weights) == 5
 
-        class_logits = fastrcnn_outputs.pred_class_logits
-        box_regression = fastrcnn_outputs.pred_proposal_deltas
-        class_prob = F.softmax(class_logits, -1)
+        if is_rotated:
+            box_dim = 5
+            assert box_predictor.box2box_transform.weights[4] == 1, (
+                "The weights for Rotated BBoxTransform in C2 have only 4 dimensions,"
+                + " thus enforcing the angle weight to be 1 for now"
+            )
+            box2box_transform_weights = box_predictor.box2box_transform.weights[:4]
+        else:
+            box_dim = 4
+            box2box_transform_weights = box_predictor.box2box_transform.weights
 
-        assert box_regression.shape[1] % 4 == 0
-        cls_agnostic_bbox_reg = box_regression.shape[1] // 4 == 1
+        class_logits, box_regression = predictions
+        if num_classes + 1 == class_logits.shape[1]:
+            class_prob = F.softmax(class_logits, -1)
+        else:
+            assert num_classes == class_logits.shape[1]
+            class_prob = F.sigmoid(class_logits)
+            # BoxWithNMSLimit will infer num_classes from the shape of the class_prob
+            # So append a zero column as placeholder for the background class
+            class_prob = torch.cat((class_prob, torch.zeros(class_prob.shape[0], 1)), dim=1)
 
-        device = class_logits.device
+        assert box_regression.shape[1] % box_dim == 0
+        cls_agnostic_bbox_reg = box_regression.shape[1] // box_dim == 1
 
-        im_info = (
-            torch.Tensor(
-                [[sz[0], sz[1], torch.Tensor([1.0])] for sz in fastrcnn_outputs.image_shapes]
-            ).to(device)
-            if not input_tensor_mode
-            else fastrcnn_outputs.image_shapes[0]
-        )
+        input_tensor_mode = proposals[0].proposal_boxes.tensor.shape[1] == box_dim + 1
 
-        rois_n4 = fastrcnn_outputs.proposals.tensor
-        device, dtype = rois_n4.device, rois_n4.dtype
-        if not input_tensor_mode:
+        rois = type(proposals[0].proposal_boxes).cat([p.proposal_boxes for p in proposals])
+        device, dtype = rois.tensor.device, rois.tensor.dtype
+        if input_tensor_mode:
+            im_info = proposals[0].image_size
+            rois = rois.tensor
+        else:
+            im_info = torch.tensor(
+                [[sz[0], sz[1], 1.0] for sz in [x.image_size for x in proposals]]
+            )
             batch_ids = cat(
                 [
                     torch.full((b, 1), i, dtype=dtype, device=device)
-                    for i, b in enumerate(fastrcnn_outputs.num_preds_per_image)
+                    for i, b in enumerate(len(p) for p in proposals)
                 ],
                 dim=0,
             )
-            rois = torch.cat([batch_ids, rois_n4], dim=1)
-        else:
-            rois = fastrcnn_outputs.proposals.tensor
+            rois = torch.cat([batch_ids, rois.tensor], dim=1)
 
         roi_pred_bbox, roi_batch_splits = torch.ops._caffe2.BBoxTransform(
             to_device(rois, "cpu"),
             to_device(box_regression, "cpu"),
             to_device(im_info, "cpu"),
-            weights=fastrcnn_outputs.box2box_transform.weights,
+            weights=box2box_transform_weights,
             apply_scale=True,
-            rotated=False,
+            rotated=is_rotated,
             angle_bound_on=True,
-            angle_bound_lo=-90,
-            angle_bound_hi=90,
+            angle_bound_lo=-180,
+            angle_bound_hi=180,
             clip_angle_thresh=1.0,
             legacy_plus_one=False,
         )
@@ -395,7 +448,7 @@ class Caffe2FastRCNNOutputsInference:
             soft_nms_method="linear",
             soft_nms_sigma=0.5,
             soft_nms_min_score_thres=0.001,
-            rotated=False,
+            rotated=is_rotated,
             cls_agnostic_bbox_reg=cls_agnostic_bbox_reg,
             input_boxes_include_bg_cls=False,
             output_classes_include_bg_cls=False,
@@ -429,7 +482,7 @@ class Caffe2FastRCNNOutputsInference:
             im_info=im_info,
             indices=roi_batch_ids[:, 0],
             extra_fields={
-                "pred_boxes": Boxes4or5(roi_bbox_nms),
+                "pred_boxes": Caffe2Boxes(roi_bbox_nms),
                 "scores": roi_score_nms,
                 "pred_classes": roi_class_nms,
             },
@@ -448,7 +501,7 @@ class Caffe2FastRCNNOutputsInference:
 
 class Caffe2MaskRCNNInference:
     def __call__(self, pred_mask_logits, pred_instances):
-        """ equivalent to mask_head.mask_rcnn_inference """
+        """equivalent to mask_head.mask_rcnn_inference"""
         if all(isinstance(x, InstancesList) for x in pred_instances):
             assert len(pred_instances) == 1
             mask_probs_pred = pred_mask_logits.sigmoid()

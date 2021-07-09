@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 from detectron2.utils.registry import Registry
 
 PROPOSAL_GENERATOR_REGISTRY = Registry("PROPOSAL_GENERATOR")

@@ -1,12 +1,15 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import logging
+from datetime import timedelta
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from detectron2.utils import comm
 
-__all__ = ["launch"]
+__all__ = ["DEFAULT_TIMEOUT", "launch"]
+
+DEFAULT_TIMEOUT = timedelta(minutes=30)
 
 
 def _find_free_port():
@@ -21,15 +24,29 @@ def _find_free_port():
     return port
 
 
-def launch(main_func, num_gpus_per_machine, num_machines=1, machine_rank=0, dist_url=None, args=()):
+def launch(
+    main_func,
+    num_gpus_per_machine,
+    num_machines=1,
+    machine_rank=0,
+    dist_url=None,
+    args=(),
+    timeout=DEFAULT_TIMEOUT,
+):
     """
+    Launch multi-gpu or distributed training.
+    This function must be called on all machines involved in the training.
+    It will spawn child processes (defined by ``num_gpus_per_machine``) on each machine.
+
     Args:
         main_func: a function that will be called by `main_func(*args)`
+        num_gpus_per_machine (int): number of GPUs per machine
         num_machines (int): the total number of machines
-        machine_rank (int): the rank of this machine (one per machine)
-        dist_url (str): url to connect to for distributed training, including protocol
+        machine_rank (int): the rank of this machine
+        dist_url (str): url to connect to for distributed jobs, including protocol
                        e.g. "tcp://127.0.0.1:8686".
-                       Can be set to auto to automatically select a free port on localhost
+                       Can be set to "auto" to automatically select a free port on localhost
+        timeout (timedelta): timeout of the distributed workers
         args (tuple): arguments passed to main_func
     """
     world_size = num_machines * num_gpus_per_machine
@@ -38,14 +55,27 @@ def launch(main_func, num_gpus_per_machine, num_machines=1, machine_rank=0, dist
         # TODO prctl in spawned processes
 
         if dist_url == "auto":
-            assert num_machines == 1, "dist_url=auto cannot work with distributed training."
+            assert num_machines == 1, "dist_url=auto not supported in multi-machine jobs."
             port = _find_free_port()
             dist_url = f"tcp://127.0.0.1:{port}"
+        if num_machines > 1 and dist_url.startswith("file://"):
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "file:// is not a reliable init_method in multi-machine jobs. Prefer tcp://"
+            )
 
         mp.spawn(
             _distributed_worker,
             nprocs=num_gpus_per_machine,
-            args=(main_func, world_size, num_gpus_per_machine, machine_rank, dist_url, args),
+            args=(
+                main_func,
+                world_size,
+                num_gpus_per_machine,
+                machine_rank,
+                dist_url,
+                args,
+                timeout,
+            ),
             daemon=False,
         )
     else:
@@ -53,13 +83,24 @@ def launch(main_func, num_gpus_per_machine, num_machines=1, machine_rank=0, dist
 
 
 def _distributed_worker(
-    local_rank, main_func, world_size, num_gpus_per_machine, machine_rank, dist_url, args
+    local_rank,
+    main_func,
+    world_size,
+    num_gpus_per_machine,
+    machine_rank,
+    dist_url,
+    args,
+    timeout=DEFAULT_TIMEOUT,
 ):
     assert torch.cuda.is_available(), "cuda is not available. Please check your installation."
     global_rank = machine_rank * num_gpus_per_machine + local_rank
     try:
         dist.init_process_group(
-            backend="NCCL", init_method=dist_url, world_size=world_size, rank=global_rank
+            backend="NCCL",
+            init_method=dist_url,
+            world_size=world_size,
+            rank=global_rank,
+            timeout=timeout,
         )
     except Exception as e:
         logger = logging.getLogger(__name__)

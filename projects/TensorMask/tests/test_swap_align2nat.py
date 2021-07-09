@@ -1,4 +1,6 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+#!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+
 import unittest
 import torch
 from torch.autograd import gradcheck

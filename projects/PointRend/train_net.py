@@ -1,4 +1,6 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+#!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+
 """
 PointRend Training Script.
 
@@ -8,20 +10,43 @@ This script is a simplified version of the training script in detectron2/tools.
 import os
 import torch
 
+import detectron2.data.transforms as T
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import MetadataCatalog
+from detectron2.data import DatasetMapper, MetadataCatalog, build_detection_train_loader
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 from detectron2.evaluation import (
-    CityscapesEvaluator,
+    CityscapesInstanceEvaluator,
+    CityscapesSemSegEvaluator,
     COCOEvaluator,
     DatasetEvaluators,
     LVISEvaluator,
+    SemSegEvaluator,
     verify_results,
 )
+from detectron2.projects.point_rend import ColorAugSSDTransform, add_pointrend_config
 
-from point_rend import add_pointrend_config
+
+def build_sem_seg_train_aug(cfg):
+    augs = [
+        T.ResizeShortestEdge(
+            cfg.INPUT.MIN_SIZE_TRAIN, cfg.INPUT.MAX_SIZE_TRAIN, cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
+        )
+    ]
+    if cfg.INPUT.CROP.ENABLED:
+        augs.append(
+            T.RandomCrop_CategoryAreaConstraint(
+                cfg.INPUT.CROP.TYPE,
+                cfg.INPUT.CROP.SIZE,
+                cfg.INPUT.CROP.SINGLE_CATEGORY_MAX_AREA,
+                cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
+            )
+        )
+    if cfg.INPUT.COLOR_AUG_SSD:
+        augs.append(ColorAugSSDTransform(img_format=cfg.INPUT.FORMAT))
+    augs.append(T.RandomFlip())
+    return augs
 
 
 class Trainer(DefaultTrainer):
@@ -45,14 +70,25 @@ class Trainer(DefaultTrainer):
         evaluator_list = []
         evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
         if evaluator_type == "lvis":
-            return LVISEvaluator(dataset_name, cfg, True, output_folder)
+            return LVISEvaluator(dataset_name, output_dir=output_folder)
         if evaluator_type == "coco":
-            return COCOEvaluator(dataset_name, cfg, True, output_folder)
-        if evaluator_type == "cityscapes":
+            return COCOEvaluator(dataset_name, output_dir=output_folder)
+        if evaluator_type == "sem_seg":
+            return SemSegEvaluator(
+                dataset_name,
+                distributed=True,
+                output_dir=output_folder,
+            )
+        if evaluator_type == "cityscapes_instance":
             assert (
                 torch.cuda.device_count() >= comm.get_rank()
             ), "CityscapesEvaluator currently do not work with multiple machines."
-            return CityscapesEvaluator(dataset_name)
+            return CityscapesInstanceEvaluator(dataset_name)
+        if evaluator_type == "cityscapes_sem_seg":
+            assert (
+                torch.cuda.device_count() >= comm.get_rank()
+            ), "CityscapesEvaluator currently do not work with multiple machines."
+            return CityscapesSemSegEvaluator(dataset_name)
         if len(evaluator_list) == 0:
             raise NotImplementedError(
                 "no Evaluator for the dataset {} with the type {}".format(
@@ -62,6 +98,14 @@ class Trainer(DefaultTrainer):
         if len(evaluator_list) == 1:
             return evaluator_list[0]
         return DatasetEvaluators(evaluator_list)
+
+    @classmethod
+    def build_train_loader(cls, cfg):
+        if "SemanticSegmentor" in cfg.MODEL.META_ARCHITECTURE:
+            mapper = DatasetMapper(cfg, is_train=True, augmentations=build_sem_seg_train_aug(cfg))
+        else:
+            mapper = None
+        return build_detection_train_loader(cfg, mapper=mapper)
 
 
 def setup(args):

@@ -1,0 +1,24 @@
+_BASE_: Base-PanopticDeepLab-OS16.yaml
+MODEL:
+  WEIGHTS: "detectron2://DeepLab/R-52.pkl"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  BACKBONE:
+    NAME: "build_resnet_deeplab_backbone"
+  RESNETS:
+    DEPTH: 50
+    NORM: "SyncBN"
+    RES5_MULTI_GRID: [1, 2, 4]
+    STEM_TYPE: "deeplab"
+    STEM_OUT_CHANNELS: 128
+    STRIDE_IN_1X1: False
+  PANOPTIC_DEEPLAB:
+    USE_DEPTHWISE_SEPARABLE_CONV: True
+  SEM_SEG_HEAD:
+    USE_DEPTHWISE_SEPARABLE_CONV: True
+SOLVER:
+  MAX_ITER: 90000
+INPUT:
+  FORMAT: "RGB"
+  CROP:
+    SIZE: (512, 1024)

@@ -1,51 +1,91 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 
+import logging
+from typing import Dict, List
 import torch
 from torch import nn
 
+from detectron2.config import configurable
 from detectron2.structures import ImageList
 
-from ..backbone import build_backbone
 from ..postprocessing import detector_postprocess, sem_seg_postprocess
-from ..proposal_generator import build_proposal_generator
-from ..roi_heads import build_roi_heads
 from .build import META_ARCH_REGISTRY
+from .rcnn import GeneralizedRCNN
 from .semantic_seg import build_sem_seg_head
 
 __all__ = ["PanopticFPN"]
 
 
 @META_ARCH_REGISTRY.register()
-class PanopticFPN(nn.Module):
+class PanopticFPN(GeneralizedRCNN):
     """
-    Main class for Panoptic FPN architectures (see https://arxiv.org/abs/1901.02446).
+    Implement the paper :paper:`PanopticFPN`.
     """
 
-    def __init__(self, cfg):
-        super().__init__()
+    @configurable
+    def __init__(
+        self,
+        *,
+        sem_seg_head: nn.Module,
+        combine_overlap_thresh: float = 0.5,
+        combine_stuff_area_thresh: float = 4096,
+        combine_instances_score_thresh: float = 0.5,
+        **kwargs,
+    ):
+        """
+        NOTE: this interface is experimental.
 
-        self.device = torch.device(cfg.MODEL.DEVICE)
+        Args:
+            sem_seg_head: a module for the semantic segmentation head.
+            combine_overlap_thresh: combine masks into one instances if
+                they have enough overlap
+            combine_stuff_area_thresh: ignore stuff areas smaller than this threshold
+            combine_instances_score_thresh: ignore instances whose score is
+                smaller than this threshold
 
-        self.instance_loss_weight = cfg.MODEL.PANOPTIC_FPN.INSTANCE_LOSS_WEIGHT
-
+        Other arguments are the same as :class:`GeneralizedRCNN`.
+        """
+        super().__init__(**kwargs)
+        self.sem_seg_head = sem_seg_head
         # options when combining instance & semantic outputs
-        self.combine_on = cfg.MODEL.PANOPTIC_FPN.COMBINE.ENABLED
-        self.combine_overlap_threshold = cfg.MODEL.PANOPTIC_FPN.COMBINE.OVERLAP_THRESH
-        self.combine_stuff_area_limit = cfg.MODEL.PANOPTIC_FPN.COMBINE.STUFF_AREA_LIMIT
-        self.combine_instances_confidence_threshold = (
-            cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH
+        self.combine_overlap_thresh = combine_overlap_thresh
+        self.combine_stuff_area_thresh = combine_stuff_area_thresh
+        self.combine_instances_score_thresh = combine_instances_score_thresh
+
+    @classmethod
+    def from_config(cls, cfg):
+        ret = super().from_config(cfg)
+        ret.update(
+            {
+                "combine_overlap_thresh": cfg.MODEL.PANOPTIC_FPN.COMBINE.OVERLAP_THRESH,
+                "combine_stuff_area_thresh": cfg.MODEL.PANOPTIC_FPN.COMBINE.STUFF_AREA_LIMIT,
+                "combine_instances_score_thresh": cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH,  # noqa
+            }
         )
+        ret["sem_seg_head"] = build_sem_seg_head(cfg, ret["backbone"].output_shape())
+        logger = logging.getLogger(__name__)
+        if not cfg.MODEL.PANOPTIC_FPN.COMBINE.ENABLED:
+            logger.warning(
+                "PANOPTIC_FPN.COMBINED.ENABLED is no longer used. "
+                " model.inference(do_postprocess=) should be used to toggle postprocessing."
+            )
+        if cfg.MODEL.PANOPTIC_FPN.INSTANCE_LOSS_WEIGHT != 1.0:
+            w = cfg.MODEL.PANOPTIC_FPN.INSTANCE_LOSS_WEIGHT
+            logger.warning(
+                "PANOPTIC_FPN.INSTANCE_LOSS_WEIGHT should be replaced by weights on each ROI head."
+            )
 
-        self.backbone = build_backbone(cfg)
-        self.proposal_generator = build_proposal_generator(cfg, self.backbone.output_shape())
-        self.roi_heads = build_roi_heads(cfg, self.backbone.output_shape())
-        self.sem_seg_head = build_sem_seg_head(cfg, self.backbone.output_shape())
+            def update_weight(x):
+                if isinstance(x, dict):
+                    return {k: v * w for k, v in x.items()}
+                else:
+                    return x * w
 
-        pixel_mean = torch.Tensor(cfg.MODEL.PIXEL_MEAN).to(self.device).view(3, 1, 1)
-        pixel_std = torch.Tensor(cfg.MODEL.PIXEL_STD).to(self.device).view(3, 1, 1)
-        self.normalizer = lambda x: (x - pixel_mean) / pixel_std
-        self.to(self.device)
+            roi_heads = ret["roi_heads"]
+            roi_heads.box_predictor.loss_weight = update_weight(roi_heads.box_predictor.loss_weight)
+            roi_heads.mask_head.loss_weight = update_weight(roi_heads.mask_head.loss_weight)
+        return ret
 
     def forward(self, batched_inputs):
         """
@@ -64,78 +104,86 @@ class PanopticFPN(nn.Module):
 
         Returns:
             list[dict]:
-                each dict is the results for one image. The dict contains the following keys:
+                each dict has the results for one image. The dict contains the following keys:
 
                 * "instances": see :meth:`GeneralizedRCNN.forward` for its format.
                 * "sem_seg": see :meth:`SemanticSegmentor.forward` for its format.
-                * "panoptic_seg": available when `PANOPTIC_FPN.COMBINE.ENABLED`.
-                  See the return value of
+                * "panoptic_seg": See the return value of
                   :func:`combine_semantic_and_instance_outputs` for its format.
         """
-        images = [x["image"].to(self.device) for x in batched_inputs]
-        images = [self.normalizer(x) for x in images]
-        images = ImageList.from_tensors(images, self.backbone.size_divisibility)
+        if not self.training:
+            return self.inference(batched_inputs)
+        images = self.preprocess_image(batched_inputs)
         features = self.backbone(images.tensor)
 
-        if "proposals" in batched_inputs[0]:
-            proposals = [x["proposals"].to(self.device) for x in batched_inputs]
-            proposal_losses = {}
-
-        if "sem_seg" in batched_inputs[0]:
-            gt_sem_seg = [x["sem_seg"].to(self.device) for x in batched_inputs]
-            gt_sem_seg = ImageList.from_tensors(
-                gt_sem_seg, self.backbone.size_divisibility, self.sem_seg_head.ignore_value
-            ).tensor
-        else:
-            gt_sem_seg = None
+        assert "sem_seg" in batched_inputs[0]
+        gt_sem_seg = [x["sem_seg"].to(self.device) for x in batched_inputs]
+        gt_sem_seg = ImageList.from_tensors(
+            gt_sem_seg, self.backbone.size_divisibility, self.sem_seg_head.ignore_value
+        ).tensor
         sem_seg_results, sem_seg_losses = self.sem_seg_head(features, gt_sem_seg)
 
-        if "instances" in batched_inputs[0]:
-            gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
-        else:
-            gt_instances = None
-        if self.proposal_generator:
-            proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
+        gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+        proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
         detector_results, detector_losses = self.roi_heads(
             images, features, proposals, gt_instances
         )
 
-        if self.training:
-            losses = {}
-            losses.update(sem_seg_losses)
-            losses.update({k: v * self.instance_loss_weight for k, v in detector_losses.items()})
-            losses.update(proposal_losses)
-            return losses
+        losses = sem_seg_losses
+        losses.update(proposal_losses)
+        losses.update(detector_losses)
+        return losses
 
-        processed_results = []
-        for sem_seg_result, detector_result, input_per_image, image_size in zip(
-            sem_seg_results, detector_results, batched_inputs, images.image_sizes
-        ):
-            height = input_per_image.get("height", image_size[0])
-            width = input_per_image.get("width", image_size[1])
-            sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
-            detector_r = detector_postprocess(detector_result, height, width)
+    def inference(self, batched_inputs: List[Dict[str, torch.Tensor]], do_postprocess: bool = True):
+        """
+        Run inference on the given inputs.
 
-            processed_results.append({"sem_seg": sem_seg_r, "instances": detector_r})
+        Args:
+            batched_inputs (list[dict]): same as in :meth:`forward`
+            do_postprocess (bool): whether to apply post-processing on the outputs.
 
-            if self.combine_on:
+        Returns:
+            When do_postprocess=True, see docs in :meth:`forward`.
+            Otherwise, returns a (list[Instances], list[Tensor]) that contains
+            the raw detector outputs, and raw semantic segmentation outputs.
+        """
+        images = self.preprocess_image(batched_inputs)
+        features = self.backbone(images.tensor)
+        sem_seg_results, sem_seg_losses = self.sem_seg_head(features, None)
+        proposals, _ = self.proposal_generator(images, features, None)
+        detector_results, _ = self.roi_heads(images, features, proposals, None)
+
+        if do_postprocess:
+            processed_results = []
+            for sem_seg_result, detector_result, input_per_image, image_size in zip(
+                sem_seg_results, detector_results, batched_inputs, images.image_sizes
+            ):
+                height = input_per_image.get("height", image_size[0])
+                width = input_per_image.get("width", image_size[1])
+                sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
+                detector_r = detector_postprocess(detector_result, height, width)
+
+                processed_results.append({"sem_seg": sem_seg_r, "instances": detector_r})
+
                 panoptic_r = combine_semantic_and_instance_outputs(
                     detector_r,
                     sem_seg_r.argmax(dim=0),
-                    self.combine_overlap_threshold,
-                    self.combine_stuff_area_limit,
-                    self.combine_instances_confidence_threshold,
+                    self.combine_overlap_thresh,
+                    self.combine_stuff_area_thresh,
+                    self.combine_instances_score_thresh,
                 )
                 processed_results[-1]["panoptic_seg"] = panoptic_r
-        return processed_results
+            return processed_results
+        else:
+            return detector_results, sem_seg_results
 
 
 def combine_semantic_and_instance_outputs(
     instance_results,
     semantic_results,
     overlap_threshold,
-    stuff_area_limit,
-    instances_confidence_threshold,
+    stuff_area_thresh,
+    instances_score_thresh,
 ):
     """
     Implement a simple combining logic following
@@ -144,7 +192,7 @@ def combine_semantic_and_instance_outputs(
 
     Args:
         instance_results: output of :func:`detector_postprocess`.
-        semantic_results: an (H, W) tensor, each is the contiguous semantic
+        semantic_results: an (H, W) tensor, each element is the contiguous semantic
             category id
 
     Returns:
@@ -165,7 +213,7 @@ def combine_semantic_and_instance_outputs(
     # Add instances one-by-one, check for overlaps with existing ones
     for inst_id in sorted_inds:
         score = instance_results.scores[inst_id].item()
-        if score < instances_confidence_threshold:
+        if score < instances_score_thresh:
             break
         mask = instance_masks[inst_id]  # H,W
         mask_area = mask.sum().item()
@@ -201,7 +249,7 @@ def combine_semantic_and_instance_outputs(
             continue
         mask = (semantic_results == semantic_label) & (panoptic_seg == 0)
         mask_area = mask.sum().item()
-        if mask_area < stuff_area_limit:
+        if mask_area < stuff_area_thresh:
             continue
 
         current_segment_id += 1

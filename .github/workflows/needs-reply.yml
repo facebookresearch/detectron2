@@ -1,0 +1,98 @@
+name: Close/Lock issues after inactivity
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  close-issues-needs-more-info:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'facebookresearch' }}
+    steps:
+      - name: Close old issues that need reply
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          # Modified from https://github.com/dwieeb/needs-reply
+          script: |
+            // Arguments available:
+            // - github: A pre-authenticated octokit/rest.js client
+            // - context: An object containing the context of the workflow run
+            // - core: A reference to the @actions/core package
+            // - io: A reference to the @actions/io package
+            const kLabelToCheck = "needs-more-info";
+            const kInvalidLabel = "invalid/unrelated";
+            const kDaysBeforeClose = 7;
+            const kMessage = "Requested information was not provided in 7 days, so we're closing this issue.\n\nPlease open new issue if information becomes available. Otherwise, use [github discussions](https://github.com/facebookresearch/detectron2/discussions) for free-form discussions."
+
+            issues = await github.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: kLabelToCheck,
+              sort: 'updated',
+              direction: 'asc',
+              per_page: 30,
+              page: 1,
+            });
+            issues = issues.data;
+            if (issues.length === 0) {
+              core.info('No more issues found to process. Exiting.');
+              return;
+            }
+            for (const issue of issues) {
+              if (!!issue.pull_request)
+                continue;
+              core.info(`Processing issue #${issue.number}`);
+
+              let updatedAt = new Date(issue.updated_at).getTime();
+              const numComments = issue.comments;
+              const comments = await github.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                per_page: 30,
+                page: Math.floor((numComments - 1) / 30) + 1, // the last page
+              });
+              const lastComments = comments.data
+                .map(l => new Date(l.created_at).getTime())
+                .sort();
+              if (lastComments.length > 0) {
+                updatedAt = lastComments[lastComments.length - 1];
+              }
+
+              const now = new Date().getTime();
+              const daysSinceUpdated = (now - updatedAt) / 1000 / 60 / 60 / 24;
+
+              if (daysSinceUpdated < kDaysBeforeClose) {
+                core.info(`Skipping #${issue.number} because it has been updated in the last ${daysSinceUpdated} days`);
+                continue;
+              }
+              core.info(`Closing #${issue.number} because it has not been updated in the last ${daysSinceUpdated} days`);
+              await github.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: kMessage,
+              });
+              const newLabels = numComments <= 2 ? [kInvalidLabel, kLabelToCheck] : issue.labels;
+              await github.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: newLabels,
+                state: 'closed',
+              });
+            }
+
+  lock-issues-after-closed:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'facebookresearch' }}
+    steps:
+      - name: Lock closed issues that have no activity for a while
+        uses: dessant/lock-threads@v2
+        with:
+          github-token: ${{ github.token }}
+          issue-lock-inactive-days: '300'
+          process-only: 'issues'
+          issue-exclude-labels: 'enhancement,bug,documentation'

@@ -4,18 +4,20 @@ instant_test_output
 inference_test_output
 
 
-*.jpg
 *.png
-*.txt
 *.json
 *.diff
+*.jpg
+!/projects/DensePose/doc/images/*.jpg
 
 # compilation and distribution
 __pycache__
 _ext
 *.pyc
+*.pyd
 *.so
-detectron2.egg-info/
+*.dll
+*.egg-info/
 build/
 dist/
 wheels/
@@ -24,6 +26,8 @@ wheels/
 *.pth
 *.pkl
 *.npy
+*.ts
+model_ts*.txt
 
 # ipython/jupyter notebooks
 *.ipynb
@@ -38,9 +42,12 @@ wheels/
 # editor settings
 .idea
 .vscode
+_darcs
 
 # project dirs
 /detectron2/model_zoo/configs
-/datasets
+/datasets/*
+!/datasets/*.*
 /projects/*/datasets
 /models
+/snippet

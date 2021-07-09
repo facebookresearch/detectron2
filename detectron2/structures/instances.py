@@ -1,9 +1,7 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
 from typing import Any, Dict, List, Tuple, Union
 import torch
-
-from detectron2.layers import cat
 
 
 class Instances:
@@ -17,7 +15,7 @@ class Instances:
 
     Some basic usage:
 
-    1. Set/Get a field:
+    1. Set/get/check a field:
 
        .. code-block:: python
 
@@ -29,7 +27,12 @@ class Instances:
     3. Indexing: ``instances[indices]`` will apply the indexing on all the fields
        and returns a new :class:`Instances`.
        Typically, ``indices`` is a integer vector of indices,
-       or a binary mask of length ``num_instances``,
+       or a binary mask of length ``num_instances``
+
+       .. code-block:: python
+
+          category_3_detections = instances[instances.pred_classes == 3]
+          confident_detections = instances[instances.scores > 0.9]
     """
 
     def __init__(self, image_size: Tuple[int, int], **kwargs: Any):
@@ -104,7 +107,7 @@ class Instances:
         return self._fields
 
     # Tensor-like methods
-    def to(self, device: str) -> "Instances":
+    def to(self, *args: Any, **kwargs: Any) -> "Instances":
         """
         Returns:
             Instances: all fields are called with a `to(device)`, if the field has this method.
@@ -112,7 +115,7 @@ class Instances:
         ret = Instances(self._image_size)
         for k, v in self._fields.items():
             if hasattr(v, "to"):
-                v = v.to(device)
+                v = v.to(*args, **kwargs)
             ret.set(k, v)
         return ret
 
@@ -125,6 +128,12 @@ class Instances:
             If `item` is a string, return the data in the corresponding field.
             Otherwise, returns an `Instances` where all fields are indexed by `item`.
         """
+        if type(item) == int:
+            if item >= len(self) or item < -len(self):
+                raise IndexError("Instances index out of range!")
+            else:
+                item = slice(item, None, len(self))
+
         ret = Instances(self._image_size)
         for k, v in self._fields.items():
             ret.set(k, v[item])
@@ -132,7 +141,8 @@ class Instances:
 
     def __len__(self) -> int:
         for v in self._fields.values():
-            return len(v)
+            # use __len__ because len() has to be int and is not friendly to tracing
+            return v.__len__()
         raise NotImplementedError("Empty Instances does not support __len__!")
 
     def __iter__(self):
@@ -153,14 +163,15 @@ class Instances:
             return instance_lists[0]
 
         image_size = instance_lists[0].image_size
-        for i in instance_lists[1:]:
-            assert i.image_size == image_size
+        if not isinstance(image_size, torch.Tensor):  # could be a tensor in tracing
+            for i in instance_lists[1:]:
+                assert i.image_size == image_size
         ret = Instances(image_size)
         for k in instance_lists[0]._fields.keys():
             values = [i.get(k) for i in instance_lists]
             v0 = values[0]
             if isinstance(v0, torch.Tensor):
-                values = cat(values, dim=0)
+                values = torch.cat(values, dim=0)
             elif isinstance(v0, list):
                 values = list(itertools.chain(*values))
             elif hasattr(type(v0), "cat"):

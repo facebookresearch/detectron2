@@ -64,7 +64,8 @@ model-level compatibility. The major ones are:
   Note that this affects how flip augmentation is implemented.
 
 
-We will later share more details and rationale behind the above mentioned issues
+[This article](https://ppwwyyxx.com/blog/2021/Where-are-Pixels/)
+explains more details on the above mentioned issues
 about pixels, coordinates, and "+1"s.
 
 
@@ -73,11 +74,11 @@ about pixels, coordinates, and "+1"s.
 As mentioned above, despite the incompatibilities with Detectron, the relevant
 ops have been implemented in Caffe2.
 Therefore, models trained with detectron2 can be converted in Caffe2.
-See [Deployment](../tutorials/deployment.html) for the tutorial.
+See [Deployment](../tutorials/deployment.md) for the tutorial.
 
 ## Compatibility with TensorFlow
 
 Most ops are available in TensorFlow, although some tiny differences in
 the implementation of resize / ROIAlign / padding need to be addressed.
-A working conversion script is provided by [tensorpack FasterRCNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
+A working conversion script is provided by [tensorpack Faster R-CNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
 to run a standard detectron2 model in TensorFlow.

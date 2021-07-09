@@ -1,21 +1,20 @@
 _BASE_: "../../../../configs/Base-RCNN-FPN.yaml"
 MODEL:
-  ROI_HEADS:
-    NAME: "PointRendROIHeads"
-    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+  MASK_ON: true
   ROI_BOX_HEAD:
     TRAIN_ON_PRED_BOXES: True
   ROI_MASK_HEAD:
-    NAME: "CoarseMaskHead"
+    POOLER_TYPE: ""  # No RoI pooling, let the head process image features directly
+    NAME: "PointRendMaskHead"
     FC_DIM: 1024
     NUM_FC: 2
     OUTPUT_SIDE_RESOLUTION: 7
-    IN_FEATURES: ["p2"]
+    IN_FEATURES: ["p2"]  # for the coarse mask head
     POINT_HEAD_ON: True
   POINT_HEAD:
     FC_DIM: 256
     NUM_FC: 3
     IN_FEATURES: ["p2"]
 INPUT:
-  # PointRend for instance segmenation does not work with "polygon" mask_format.
+  # PointRend for instance segmentation does not work with "polygon" mask_format.
   MASK_FORMAT: "bitmask"

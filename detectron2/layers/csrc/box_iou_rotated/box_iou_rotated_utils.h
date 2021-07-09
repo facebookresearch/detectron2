@@ -1,10 +1,10 @@
-// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// Copyright (c) Facebook, Inc. and its affiliates.
 #pragma once
 
 #include <cassert>
 #include <cmath>
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || __HCC__ == 1 || __HIP__ == 1
 // Designates functions callable from the host (CPU) and the device (GPU)
 #define HOST_DEVICE __host__ __device__
 #define HOST_DEVICE_INLINE HOST_DEVICE __forceinline__
@@ -48,9 +48,11 @@ HOST_DEVICE_INLINE T dot_2d(const Point<T>& A, const Point<T>& B) {
   return A.x * B.x + A.y * B.y;
 }
 
-template <typename T>
-HOST_DEVICE_INLINE T cross_2d(const Point<T>& A, const Point<T>& B) {
-  return A.x * B.y - B.x * A.y;
+// R: result type. can be different from input type
+template <typename T, typename R = T>
+HOST_DEVICE_INLINE R cross_2d(const Point<T>& A, const Point<T>& B) {
+  return static_cast<R>(A.x) * static_cast<R>(B.y) -
+      static_cast<R>(B.x) * static_cast<R>(A.y);
 }
 
 template <typename T>
@@ -63,9 +65,9 @@ HOST_DEVICE_INLINE void get_rotated_vertices(
   T sinTheta2 = (T)sin(theta) * 0.5f;
 
   // y: top --> down; x: left --> right
-  pts[0].x = box.x_ctr - sinTheta2 * box.h - cosTheta2 * box.w;
+  pts[0].x = box.x_ctr + sinTheta2 * box.h + cosTheta2 * box.w;
   pts[0].y = box.y_ctr + cosTheta2 * box.h - sinTheta2 * box.w;
-  pts[1].x = box.x_ctr + sinTheta2 * box.h - cosTheta2 * box.w;
+  pts[1].x = box.x_ctr - sinTheta2 * box.h + cosTheta2 * box.w;
   pts[1].y = box.y_ctr - cosTheta2 * box.h - sinTheta2 * box.w;
   pts[2].x = 2 * box.x_ctr - pts[0].x;
   pts[2].y = 2 * box.y_ctr - pts[0].y;
@@ -86,6 +88,13 @@ HOST_DEVICE_INLINE int get_intersection_points(
     vec2[i] = pts2[(i + 1) % 4] - pts2[i];
   }
 
+  // When computing the intersection area, it doesn't hurt if we have
+  // more (duplicated/approximate) intersections/vertices than needed,
+  // while it can cause drastic difference if we miss an intersection/vertex.
+  // Therefore, we add an epsilon to relax the comparisons between
+  // the float point numbers that decide the intersection points.
+  double EPS = 1e-5;
+
   // Line test - test all line combos for intersection
   int num = 0; // number of intersections
   for (int i = 0; i < 4; i++) {
@@ -103,7 +112,7 @@ HOST_DEVICE_INLINE int get_intersection_points(
       T t1 = cross_2d<T>(vec2[j], vec12) / det;
       T t2 = cross_2d<T>(vec1[i], vec12) / det;
 
-      if (t1 >= 0.0f && t1 <= 1.0f && t2 >= 0.0f && t2 <= 1.0f) {
+      if (t1 > -EPS && t1 < 1.0f + EPS && t2 > -EPS && t2 < 1.0f + EPS) {
         intersections[num++] = pts1[i] + vec1[i] * t1;
       }
     }
@@ -125,8 +134,8 @@ HOST_DEVICE_INLINE int get_intersection_points(
       auto APdotAB = dot_2d<T>(AP, AB);
       auto APdotAD = -dot_2d<T>(AP, DA);
 
-      if ((APdotAB >= 0) && (APdotAD >= 0) && (APdotAB <= ABdotAB) &&
-          (APdotAD <= ADdotAD)) {
+      if ((APdotAB > -EPS) && (APdotAD > -EPS) && (APdotAB < ABdotAB + EPS) &&
+          (APdotAD < ADdotAD + EPS)) {
         intersections[num++] = pts1[i];
       }
     }
@@ -144,8 +153,8 @@ HOST_DEVICE_INLINE int get_intersection_points(
       auto APdotAB = dot_2d<T>(AP, AB);
       auto APdotAD = -dot_2d<T>(AP, DA);
 
-      if ((APdotAB >= 0) && (APdotAD >= 0) && (APdotAB <= ABdotAB) &&
-          (APdotAD <= ADdotAD)) {
+      if ((APdotAB > -EPS) && (APdotAD > -EPS) && (APdotAB < ABdotAB + EPS) &&
+          (APdotAD < ADdotAD + EPS)) {
         intersections[num++] = pts2[i];
       }
     }
@@ -190,11 +199,13 @@ HOST_DEVICE_INLINE int convex_hull_graham(
   // (essentially sorting according to angles)
   // If the angles are the same, sort according to their distance to origin
   T dist[24];
+#if defined(__CUDACC__) || __HCC__ == 1 || __HIP__ == 1
+  // compute distance to origin before sort, and sort them together with the
+  // points
   for (int i = 0; i < num_in; i++) {
     dist[i] = dot_2d<T>(q[i], q[i]);
   }
 
-#ifdef __CUDACC__
   // CUDA version
   // In the future, we can potentially use thrust
   // for sorting here to improve speed (though not guaranteed)
@@ -223,6 +234,10 @@ HOST_DEVICE_INLINE int convex_hull_graham(
           return temp > 0;
         }
       });
+  // compute distance to origin after sort, since the points are now different.
+  for (int i = 0; i < num_in; i++) {
+    dist[i] = dot_2d<T>(q[i], q[i]);
+  }
 #endif
 
   // Step 4:
@@ -249,9 +264,22 @@ HOST_DEVICE_INLINE int convex_hull_graham(
   // until the 3-point relationship is convex again, or
   // until the stack only contains two points
   for (int i = k + 1; i < num_in; i++) {
-    while (m > 1 && cross_2d<T>(q[i] - q[m - 2], q[m - 1] - q[m - 2]) >= 0) {
-      m--;
+    while (m > 1) {
+      auto q1 = q[i] - q[m - 2], q2 = q[m - 1] - q[m - 2];
+      // cross_2d() uses FMA and therefore computes round(round(q1.x*q2.y) -
+      // q2.x*q1.y) So it may not return 0 even when q1==q2. Therefore we
+      // compare round(q1.x*q2.y) and round(q2.x*q1.y) directly. (round means
+      // round to nearest floating point).
+      if (q1.x * q2.y >= q2.x * q1.y)
+        m--;
+      else
+        break;
     }
+    // Using double also helps, but float can solve the issue for now.
+    // while (m > 1 && cross_2d<T, double>(q[i] - q[m - 2], q[m - 1] - q[m - 2])
+    // >= 0) {
+    //     m--;
+    // }
     q[m++] = q[i];
   }
 
@@ -328,14 +356,14 @@ single_box_iou_rotated(T const* const box1_raw, T const* const box2_raw) {
   box2.h = box2_raw[3];
   box2.a = box2_raw[4];
 
-  const T area1 = box1.w * box1.h;
-  const T area2 = box2.w * box2.h;
+  T area1 = box1.w * box1.h;
+  T area2 = box2.w * box2.h;
   if (area1 < 1e-14 || area2 < 1e-14) {
     return 0.f;
   }
 
-  const T intersection = rotated_boxes_intersection<T>(box1, box2);
-  const T iou = intersection / (area1 + area2 - intersection);
+  T intersection = rotated_boxes_intersection<T>(box1, box2);
+  T iou = intersection / (area1 + area2 - intersection);
   return iou;
 }
 

@@ -1,5 +1,5 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from typing import Any, Dict, List, Optional, Tuple
+# Copyright (c) Facebook, Inc. and its affiliates.
+from typing import Any, Dict, Optional, Tuple
 
 
 class EntrySelector(object):
@@ -54,7 +54,7 @@ class FieldEntrySelector(EntrySelector):
         Predicate that checks strict equality for the specified entry field
         """
 
-        def __init__(self, name: str, typespec: str, value: str):
+        def __init__(self, name: str, typespec: Optional[str], value: str):
             import builtins
 
             self.name = name
@@ -69,7 +69,7 @@ class FieldEntrySelector(EntrySelector):
         Predicate that checks whether an entry field falls into the specified range
         """
 
-        def __init__(self, name: str, typespec: str, vmin: str, vmax: str):
+        def __init__(self, name: str, typespec: Optional[str], vmin: str, vmax: str):
             import builtins
 
             self.name = name
@@ -91,7 +91,7 @@ class FieldEntrySelector(EntrySelector):
                 return False
         return True
 
-    def _parse_specifier_into_predicates(self, spec: str) -> List["_FieldEntryPredicate"]:
+    def _parse_specifier_into_predicates(self, spec: str):
         predicates = []
         specs = spec.split(self._SPEC_DELIM)
         for subspec in specs:
@@ -126,6 +126,8 @@ class FieldEntrySelector(EntrySelector):
         else:
             field_name = field_name_with_type
             field_type = None
+        # pyre-fixme[61]: `field_name` may not be initialized here.
+        # pyre-fixme[61]: `field_type` may not be initialized here.
         return field_name, field_type
 
     def _is_range_spec(self, field_value_or_range):

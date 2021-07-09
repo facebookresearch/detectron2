@@ -1,0 +1,76 @@
+name: CI
+on: [push, pull_request]
+
+# Run linter with github actions for quick feedbacks.
+# Run macos tests with github actions. Linux (CPU & GPU) tests currently runs on CircleCI
+jobs:
+  linter:
+    runs-on: ubuntu-latest
+    # run on PRs, or commits to facebookresearch (not internal)
+    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.6
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install flake8==3.8.1 flake8-bugbear flake8-comprehensions isort==4.3.21
+          python -m pip install black==21.4b2
+          flake8 --version
+      - name: Lint
+        run: |
+          echo "Running isort"
+          isort -c -sp .
+          echo "Running black"
+          black -l 100 --check .
+          echo "Running flake8"
+          flake8 .
+
+  macos_tests:
+    runs-on: macos-latest
+    # run on PRs, or commits to facebookresearch (not internal)
+    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        torch: [1.7, 1.8, 1.9]
+        include:
+          - torch: 1.7
+            torchvision: 0.8
+          - torch: 1.8
+            torchvision: 0.9
+          - torch: 1.9
+            torchvision: "0.10"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python 3.6
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.pythonLocation }}/lib/python3.6/site-packages
+            ~/.torch
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20210420
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          python -m pip install ninja opencv-python-headless onnx pytest-xdist
+          python -m pip install torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f https://download.pytorch.org/whl/torch_stable.html
+          # install from github to get latest; install iopath first since fvcore depends on it
+          python -m pip install -U 'git+https://github.com/facebookresearch/iopath'
+          python -m pip install -U 'git+https://github.com/facebookresearch/fvcore'
+
+      - name: Build and install
+        run: |
+          CC=clang CXX=clang++ python -m pip install -e .[all]
+          python -m detectron2.utils.collect_env
+      - name: Run unittests
+        run: python -m pytest -n 4 -v tests/

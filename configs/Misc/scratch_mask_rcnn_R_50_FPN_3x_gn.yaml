@@ -1,12 +1,11 @@
 _BASE_: "mask_rcnn_R_50_FPN_3x_gn.yaml"
-# INPUT:
+MODEL:
+  # Train from random initialization.
+  WEIGHTS: ""
   # It makes sense to divide by STD when training from scratch
   # But it seems to make no difference on the results and C2's models didn't do this.
   # So we keep things consistent with C2.
   # PIXEL_STD: [57.375, 57.12, 58.395]
-MODEL:
-  # Train from random initialization.
-  WEIGHTS: ""
   MASK_ON: True
   BACKBONE:
     FREEZE_AT: 0
