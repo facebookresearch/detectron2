@@ -72,7 +72,7 @@ def default_argument_parser():
     port = 2 ** 15 + 2 ** 14 + hash(os.getuid()) % 2 ** 14
     parser.add_argument("--dist-url", default="tcp://127.0.0.1:{}".format(port))
     parser.add_argument(
-        "opts",
+        "--opts",
         help="Modify config options using the command-line",
         default=None,
         nargs=argparse.REMAINDER,
