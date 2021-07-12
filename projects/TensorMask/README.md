@@ -30,14 +30,14 @@ python /path/to/detectron2/projects/TensorMask/train_net.py --config-file <confi
 For example, to launch TensorMask BiPyramid training (1x schedule) with ResNet-50 backbone on 8 GPUs,
 one should execute:
 ```bash
-python /path/to/detectron2/projects/TensorMask/train_net.py --config-file configs/tensormask_R_50_FPN_1x.yaml --num-gpus 8
+python /path/to/detectron2/projects/TensorMask/train_net.py --config-file projects/TensorMask/configs/tensormask_R_50_FPN_1x.yaml --num-gpus 8
 ```
 
 ## Evaluation
 
 Model evaluation can be done similarly (6x schedule with scale augmentation):
 ```bash
-python /path/to/detectron2/projects/TensorMask/train_net.py --config-file configs/tensormask_R_50_FPN_6x.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
+python /path/to/detectron2/projects/TensorMask/train_net.py --config-file projects/TensorMask/configs/tensormask_R_50_FPN_6x.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
 ```
 
 # Pretrained Models
