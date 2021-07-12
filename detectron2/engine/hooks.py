@@ -110,7 +110,7 @@ class IterationTimer(HookBase):
         total_time_minus_hooks = self._total_timer.seconds()
         hook_time = total_time - total_time_minus_hooks
 
-        num_iter = self.trainer.iter + 1 - self.trainer.start_iter - self._warmup_iter
+        num_iter = self.trainer.storage.iter + 1 - self.trainer.start_iter - self._warmup_iter
 
         if num_iter > 0 and total_time_minus_hooks > 0:
             # Speed is meaningful only after warmup
@@ -137,7 +137,7 @@ class IterationTimer(HookBase):
     def after_step(self):
         # +1 because we're in after_step, the current step is done
         # but not yet counted
-        iter_done = self.trainer.iter - self.trainer.start_iter + 1
+        iter_done = self.trainer.storage.iter - self.trainer.start_iter + 1
         if iter_done >= self._warmup_iter:
             sec = self._step_timer.seconds()
             self.trainer.storage.put_scalars(time=sec)
@@ -229,25 +229,26 @@ class LRScheduler(HookBase):
                 self.trainer.max_iter,
                 last_iter=self.trainer.iter - 1,
             )
+        self._best_param_group_id = LRScheduler.get_best_param_group_id(self._optimizer)
 
+    @staticmethod
+    def get_best_param_group_id(optimizer):
         # NOTE: some heuristics on what LR to summarize
         # summarize the param group with most parameters
-        largest_group = max(len(g["params"]) for g in self._optimizer.param_groups)
+        largest_group = max(len(g["params"]) for g in optimizer.param_groups)
 
         if largest_group == 1:
             # If all groups have one parameter,
             # then find the most common initial LR, and use it for summary
-            lr_count = Counter([g["lr"] for g in self._optimizer.param_groups])
+            lr_count = Counter([g["lr"] for g in optimizer.param_groups])
             lr = lr_count.most_common()[0][0]
-            for i, g in enumerate(self._optimizer.param_groups):
+            for i, g in enumerate(optimizer.param_groups):
                 if g["lr"] == lr:
-                    self._best_param_group_id = i
-                    break
+                    return i
         else:
-            for i, g in enumerate(self._optimizer.param_groups):
+            for i, g in enumerate(optimizer.param_groups):
                 if len(g["params"]) == largest_group:
-                    self._best_param_group_id = i
-                    break
+                    return i
 
     def after_step(self):
         lr = self._optimizer.param_groups[self._best_param_group_id]["lr"]
