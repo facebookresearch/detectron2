@@ -20,6 +20,7 @@ of support or stability as detectron2.
 + [Pointly-Supervised Instance Segmentation](PointSup)
 + [Unbiased Teacher for Semi-Supervised Object Detection](https://github.com/facebookresearch/unbiased-teacher)
 + [Rethinking "Batch" in BatchNorm](Rethinking-BatchNorm/)
++ [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://github.com/facebookresearch/MaskFormer)
 
 
 ## External Projects
