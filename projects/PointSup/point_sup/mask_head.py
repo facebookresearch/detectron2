@@ -53,8 +53,6 @@ class MaskRCNNConvUpsamplePointSupHead(MaskRCNNConvUpsampleHead):
                 return {"loss_mask": x.sum() * 0}
 
             # Training with point supervision
-            # Sanity check: annotation should not contain gt_masks
-            assert not instances[0].has("gt_masks")
             point_coords, point_labels = get_point_coords_from_point_annotation(instances)
 
             mask_logits = point_sample(
@@ -73,7 +71,7 @@ class MaskRCNNConvUpsamplePointSupHead(MaskRCNNConvUpsampleHead):
 class ImplicitPointRendPointSupHead(ImplicitPointRendMaskHead):
     def _uniform_sample_train_points(self, instances):
         assert self.training
-        assert not instances[0].has("gt_masks")
+        # Please keep in mind that "gt_masks" is not used in this mask head.
         point_coords, point_labels = get_point_coords_from_point_annotation(instances)
 
         return point_coords, point_labels

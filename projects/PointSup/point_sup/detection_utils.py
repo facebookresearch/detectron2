@@ -32,9 +32,7 @@ def annotations_to_instances(annos, image_size, sample_points=0):
     """
     target = base_annotations_to_instances(annos, image_size)
 
-    assert "point_coords" in annos[0]
-    assert "point_labels" in annos[0]
-    assert "segmentation" not in annos[0], "Please remove mask annotation"
+    assert ("point_coords" in annos[0]) == ("point_labels" in annos[0])
 
     if len(annos) and "point_labels" in annos[0]:
         point_coords = []
@@ -83,19 +81,18 @@ def transform_instance_annotations(annotation, transforms, image_size):
     """
     annotation = base_transform_instance_annotations(annotation, transforms, image_size)
 
-    assert "segmentation" not in annotation
-    assert "point_coords" in annotation
-    assert "point_labels" in annotation
-    point_coords = annotation["point_coords"]
-    point_labels = np.array(annotation["point_labels"]).astype(np.float)
-    point_coords = transforms.apply_coords(point_coords)
+    assert ("point_coords" in annotation) == ("point_labels" in annotation)
+    if "point_coords" in annotation and "point_labels" in annotation:
+        point_coords = annotation["point_coords"]
+        point_labels = np.array(annotation["point_labels"]).astype(np.float)
+        point_coords = transforms.apply_coords(point_coords)
 
-    # Set all out-of-boundary points to "unlabeled"
-    inside = (point_coords >= np.array([0, 0])) & (point_coords <= np.array(image_size[::-1]))
-    inside = inside.all(axis=1)
-    point_labels[~inside] = -1
+        # Set all out-of-boundary points to "unlabeled"
+        inside = (point_coords >= np.array([0, 0])) & (point_coords <= np.array(image_size[::-1]))
+        inside = inside.all(axis=1)
+        point_labels[~inside] = -1
 
-    annotation["point_coords"] = point_coords
-    annotation["point_labels"] = point_labels
+        annotation["point_coords"] = point_coords
+        annotation["point_labels"] = point_labels
 
     return annotation
