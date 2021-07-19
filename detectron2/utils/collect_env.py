@@ -126,7 +126,11 @@ def collect_env_info():
     data.append(("PyTorch", torch_version + " @" + os.path.dirname(torch.__file__)))
     data.append(("PyTorch debug build", torch.version.debug))
 
-    data.append(("GPU available", has_gpu))
+    if not has_gpu:
+        has_gpu_text = "No: torch.cuda.is_available() == False"
+    else:
+        has_gpu_text = "Yes"
+    data.append(("GPU available", has_gpu_text))
     if has_gpu:
         devices = defaultdict(list)
         for k in range(torch.cuda.device_count()):
