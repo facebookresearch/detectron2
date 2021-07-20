@@ -230,3 +230,21 @@ class TestTorchscriptUtils(unittest.TestCase):
         assert_instances_allclose(new_obj[1][1], inst, rtol=0.0, size_as_tensor=True)
 
         self._check_schema(schema)
+
+    def test_allow_non_tensor(self):
+        data = (torch.tensor([5, 8]), 3)  # contains non-tensor
+
+        class M(nn.Module):
+            def forward(self, input, number):
+                return input
+
+        model = M()
+        with self.assertRaisesRegex(ValueError, "must only contain tensors"):
+            adap = TracingAdapter(model, data, allow_non_tensor=False)
+
+        adap = TracingAdapter(model, data, allow_non_tensor=True)
+        _ = adap(*adap.flattened_inputs)
+
+        newdata = (data[0].clone(),)
+        with self.assertRaisesRegex(ValueError, "cannot generalize"):
+            _ = adap(*newdata)
