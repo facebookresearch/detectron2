@@ -1,4 +1,4 @@
-detectron2.config 
+detectron2.config
 =========================
 
 Related tutorials: :doc:`../tutorials/configs`, :doc:`../tutorials/extend`.
@@ -10,7 +10,7 @@ Related tutorials: :doc:`../tutorials/configs`, :doc:`../tutorials/extend`.
     :inherited-members:
 
 
-Config References
+Yaml Config References
 -----------------
 
 .. literalinclude:: ../../detectron2/config/defaults.py

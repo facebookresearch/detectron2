@@ -13,6 +13,7 @@ __all__ = [
     "flop_count_operators",
     "parameter_count_table",
     "parameter_count",
+    "FlopCountAnalysis",
 ]
 
 FLOPS_MODE = "flops"

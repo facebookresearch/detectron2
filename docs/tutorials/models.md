@@ -1,6 +1,8 @@
 # Use Models
 
-Models (and their sub-models) in detectron2 are built by
+## Build Models from Yacs Config
+From a yacs config object,
+models (and their sub-models) can be built by
 functions such as `build_model`, `build_backbone`, `build_roi_heads`:
 ```python
 from detectron2.modeling import build_model

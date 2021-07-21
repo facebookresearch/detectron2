@@ -16,4 +16,5 @@ Tutorials
    training
    evaluation
    configs
+   lazyconfigs
    deployment
