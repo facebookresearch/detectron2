@@ -62,5 +62,8 @@ def register_all_coco_train_points(root):
             )
 
 
-_root = os.getenv("DETECTRON2_DATASETS", "datasets")
-register_all_coco_train_points(_root)
+# True for open source;
+# Internally at fb, we register them elsewhere
+if __name__.endswith(".register_point_annotations"):
+    _root = os.getenv("DETECTRON2_DATASETS", "datasets")
+    register_all_coco_train_points(_root)
