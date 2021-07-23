@@ -194,6 +194,7 @@ def configurable(init_func=None, *, from_config=None):
                 else:
                     return orig_func(*args, **kwargs)
 
+            wrapped.from_config = from_config
             return wrapped
 
         return wrapper

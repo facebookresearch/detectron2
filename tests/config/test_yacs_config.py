@@ -259,6 +259,8 @@ class TestConfigurable(unittest.TestCase):
         self.assertEqual(_test_func(cfg, arg1=100, arg2=20), (100, 20, 30, 4))
         self.assertEqual(_test_func(cfg, arg1=100, arg2=20, arg4=40), (100, 20, 30, 40))
 
+        self.assertTrue(callable(_test_func.from_config))
+
     def testOmegaConf(self):
         cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
         cfg = OmegaConf.create(cfg.dump())
