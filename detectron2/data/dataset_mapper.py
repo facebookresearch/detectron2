@@ -112,6 +112,35 @@ class DatasetMapper:
             )
         return ret
 
+    def _transform_annotations(self, dataset_dict, transforms, image_shape):
+        # USER: Modify this if you want to keep them for some reason.
+        for anno in dataset_dict["annotations"]:
+            if not self.use_instance_mask:
+                anno.pop("segmentation", None)
+            if not self.use_keypoint:
+                anno.pop("keypoints", None)
+
+        # USER: Implement additional transformations if you have other types of data
+        annos = [
+            utils.transform_instance_annotations(
+                obj, transforms, image_shape, keypoint_hflip_indices=self.keypoint_hflip_indices
+            )
+            for obj in dataset_dict.pop("annotations")
+            if obj.get("iscrowd", 0) == 0
+        ]
+        instances = utils.annotations_to_instances(
+            annos, image_shape, mask_format=self.instance_mask_format
+        )
+
+        # After transforms such as cropping are applied, the bounding box may no longer
+        # tightly bound the object. As an example, imagine a triangle object
+        # [(0,0), (2,0), (0,2)] cropped by a box [(1,0),(2,2)] (XYXY format). The tight
+        # bounding box of the cropped triangle should be [(1,0),(2,1)], which is not equal to
+        # the intersection of original bounding box and the cropping box.
+        if self.recompute_boxes:
+            instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
+        dataset_dict["instances"] = utils.filter_empty_instances(instances)
+
     def __call__(self, dataset_dict):
         """
         Args:
@@ -157,31 +186,6 @@ class DatasetMapper:
             return dataset_dict
 
         if "annotations" in dataset_dict:
-            # USER: Modify this if you want to keep them for some reason.
-            for anno in dataset_dict["annotations"]:
-                if not self.use_instance_mask:
-                    anno.pop("segmentation", None)
-                if not self.use_keypoint:
-                    anno.pop("keypoints", None)
+            self._transform_annotations(dataset_dict, transforms, image_shape)
 
-            # USER: Implement additional transformations if you have other types of data
-            annos = [
-                utils.transform_instance_annotations(
-                    obj, transforms, image_shape, keypoint_hflip_indices=self.keypoint_hflip_indices
-                )
-                for obj in dataset_dict.pop("annotations")
-                if obj.get("iscrowd", 0) == 0
-            ]
-            instances = utils.annotations_to_instances(
-                annos, image_shape, mask_format=self.instance_mask_format
-            )
-
-            # After transforms such as cropping are applied, the bounding box may no longer
-            # tightly bound the object. As an example, imagine a triangle object
-            # [(0,0), (2,0), (0,2)] cropped by a box [(1,0),(2,2)] (XYXY format). The tight
-            # bounding box of the cropped triangle should be [(1,0),(2,1)], which is not equal to
-            # the intersection of original bounding box and the cropping box.
-            if self.recompute_boxes:
-                instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
-            dataset_dict["instances"] = utils.filter_empty_instances(instances)
         return dataset_dict
