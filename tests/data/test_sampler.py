@@ -38,12 +38,15 @@ class TestGroupedBatchSampler(unittest.TestCase):
 class TestSamplerDeterministic(unittest.TestCase):
     def test_to_iterable(self):
         sampler = TrainingSampler(100, seed=10)
+        gt_output = list(itertools.islice(sampler, 100))
+        self.assertEqual(set(gt_output), set(range(100)))
+
         dataset = DatasetFromList(list(range(100)))
         dataset = ToIterableDataset(dataset, sampler)
         data_loader = data.DataLoader(dataset, num_workers=0, collate_fn=operator.itemgetter(0))
 
         output = list(itertools.islice(data_loader, 100))
-        self.assertEqual(set(output), set(range(100)))
+        self.assertEqual(output, gt_output)
 
         data_loader = data.DataLoader(
             dataset,
@@ -54,7 +57,7 @@ class TestSamplerDeterministic(unittest.TestCase):
         )
         output = list(itertools.islice(data_loader, 100))
         # multiple workers should not lead to duplicate or different data
-        self.assertEqual(set(output), set(range(100)))
+        self.assertEqual(output, gt_output)
 
     def test_training_sampler_seed(self):
         seed_all_rng(42)

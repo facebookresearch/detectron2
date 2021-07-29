@@ -13,6 +13,16 @@ from detectron2.utils.serialize import PicklableWrapper
 __all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset", "ToIterableDataset"]
 
 
+def _shard_iterator_dataloader_worker(iterable):
+    # Shard the iterable if we're currently inside pytorch dataloader worker.
+    worker_info = data.get_worker_info()
+    if worker_info is None or worker_info.num_workers == 1:
+        # do nothing
+        yield from iterable
+    else:
+        yield from itertools.islice(iterable, worker_info.id, None, worker_info.num_workers)
+
+
 class MapDataset(data.Dataset):
     """
     Map a function over the elements in a dataset.
@@ -120,33 +130,38 @@ class ToIterableDataset(data.IterableDataset):
     to an iterable-style dataset.
     """
 
-    def __init__(self, dataset, sampler):
+    def __init__(self, dataset: data.Dataset, sampler: Sampler, shard_sampler: bool = True):
         """
         Args:
-            dataset (torch.utils.data.Dataset): an old-style dataset with ``__getitem__``
-            sampler (torch.utils.data.sampler.Sampler): a cheap iterable that produces indices
-                to be applied on ``dataset``.
+            dataset: an old-style dataset with ``__getitem__``
+            sampler: a cheap iterable that produces indices to be applied on ``dataset``.
+            shard_sampler: whether to shard the sampler based on the current pytorch data loader
+                worker id. When an IterableDataset is forked by pytorch's DataLoader into multiple
+                workers, it is responsible for sharding its data based on worker id so that workers
+                don't produce identical data.
+
+                Most samplers (like our TrainingSampler) do not shard based on dataloader worker id
+                and this argument should be set to True. But certain samplers may be already
+                sharded, in that case this argument should be set to False.
         """
         assert not isinstance(dataset, data.IterableDataset), dataset
         assert isinstance(sampler, Sampler), sampler
         self.dataset = dataset
         self.sampler = sampler
+        self.shard_sampler = shard_sampler
 
     def __iter__(self):
-        worker_info = data.get_worker_info()
-        if worker_info is None or worker_info.num_workers == 1:
-            for idx in self.sampler:
-                yield self.dataset[idx]
+        if not self.shard_sampler:
+            sampler = self.sampler
         else:
             # With map-style dataset, `DataLoader(dataset, sampler)` runs the
             # sampler in main process only. But `DataLoader(ToIterableDataset(dataset, sampler))`
-            # will run sampler in every of the N worker and only keep 1/N of the ids on each
-            # worker. The assumption is that sampler is cheap to iterate and it's fine to discard
-            # ids in workers.
-            for idx in itertools.islice(
-                self.sampler, worker_info.id, None, worker_info.num_workers
-            ):
-                yield self.dataset[idx]
+            # will run sampler in every of the N worker. So we should only keep 1/N of the ids on
+            # each worker. The assumption is that sampler is cheap to iterate so it's fine to
+            # discard ids in workers.
+            sampler = _shard_iterator_dataloader_worker(self.sampler)
+        for idx in sampler:
+            yield self.dataset[idx]
 
 
 class AspectRatioGroupedDataset(data.IterableDataset):

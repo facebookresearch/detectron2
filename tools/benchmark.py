@@ -78,7 +78,8 @@ def benchmark_data(args):
         benchmark.benchmark_distributed(250, 1)
 
 
-def benchmark_data_advanced(args):  # benchmark dataloader with more details
+def benchmark_data_advanced(args):
+    # benchmark dataloader with more details to help analyze performance bottleneck
     cfg = setup(args)
     benchmark = create_data_benchmark(cfg, args)
 
