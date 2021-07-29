@@ -23,8 +23,8 @@ class ImageList(object):
     """
     Structure that holds a list of images (of possibly
     varying sizes) as a single tensor.
-    This works by padding the images to the same size,
-    and storing in a field the original sizes of each image
+    This works by padding the images to the same size.
+    The original sizes of each image is stored in `image_sizes`.
 
     Attributes:
         image_sizes (list[tuple[int, int]]): each tuple is (h, w).

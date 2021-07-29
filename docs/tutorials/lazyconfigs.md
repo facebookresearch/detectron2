@@ -28,7 +28,7 @@ cfg = LazyConfig.load("path/to/config.py")  # an omegaconf dictionary
 assert cfg.a.z.xx == 1
 ```
 
-After `LazyConfig.load`, `cfg` will be a dictionary that contains all dictionaries
+After [LazyConfig.load](../modules/config.html#detectron2.config.LazyConfig.load), `cfg` will be a dictionary that contains all dictionaries
 defined in the global scope of the config file. Note that:
 * All dictionaries are turned to an [omegaconf](https://omegaconf.readthedocs.io/)
   config object during loading. This enables access to omegaconf features,
@@ -38,6 +38,10 @@ defined in the global scope of the config file. Note that:
 * Relative imports can only import dictionaries from config files.
   They are simply a syntax sugar for [LazyConfig.load_rel](../modules/config.html#detectron2.config.LazyConfig.load_rel).
   They can load Python files at relative path without requiring `__init__.py`.
+
+[LazyConfig.save](../modules/config.html#detectron2.config.LazyConfig.save) can save a config object to yaml.
+Note that this is not always successful if non-serializable objects appear in the config file (e.g. lambdas).
+It is up to users whether to sacrifice the ability to save in exchange for flexibility.
 
 ## Recursive Instantiation
 
@@ -112,16 +116,24 @@ We provide some configs in the model zoo using the LazyConfig system, for exampl
 After installing detectron2, they can be loaded by the model zoo API
 [model_zoo.get_config](../modules/model_zoo.html#detectron2.model_zoo.get_config).
 
-Our model zoo configs follow some simple conventions, e.g.
+Using these as references, you're free to define custom config structure / fields for your own
+project, as long as your training script can understand them.
+Despite of this, our model zoo configs still follow some simple conventions for consistency, e.g.
 `cfg.model` defines a model object, `cfg.dataloader.{train,test}` defines dataloader objects,
 and `cfg.train` contains training options in key-value form.
+In addition to `print()`, a better way to view the structure of a config is like this:
+```
+from detectron2.model_zoo import get_config
+from detectron2.config import LazyConfig
+print(LazyConfig.to_py(get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py")))
+```
+From the output it's easier to find relevant options to change, e.g.
+`dataloader.train.total_batch_size` for the batch size, or `optimizer.lr` for base learning rate.
+
 We provide a reference training script
 [tools/lazyconfig_train_net.py](../../tools/lazyconfig_train_net.py),
 that can train/eval our model zoo configs.
 It also shows how to support command line value overrides.
-
-Nevertheless, you are free to define any custom structure for your project and use it
-with your own scripts.
 
 To demonstrate the power and flexibility of the new system, we show that
 [a simple config file](../../configs/Misc/torchvision_imagenet_R_50.py)
@@ -145,8 +157,8 @@ This has the following benefits:
   code. This gives a lot more __flexibility__.
 * You can still pass huge dictionaries as arguments, just like the old way.
 
-Putting recursive instantiation together with the Python config file syntax, the config file
-looks a lot like the code that will be executed:
+Recursive instantiation and Python syntax are orthogonal: you can use one without the other.
+But by putting them together, the config file looks a lot like the code that will be executed:
 
 ![img](./lazyconfig.jpg)
 

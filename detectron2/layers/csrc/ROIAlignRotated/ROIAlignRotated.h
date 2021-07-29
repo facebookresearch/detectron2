@@ -64,7 +64,7 @@ inline at::Tensor ROIAlignRotated_forward(
         pooled_width,
         sampling_ratio);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
   return ROIAlignRotated_forward_cpu(
@@ -96,7 +96,7 @@ inline at::Tensor ROIAlignRotated_backward(
         width,
         sampling_ratio);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
   return ROIAlignRotated_backward_cpu(

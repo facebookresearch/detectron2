@@ -23,6 +23,8 @@ cfg.merge_from_file("my_cfg.yaml")   # load values from a file
 
 cfg.merge_from_list(["MODEL.WEIGHTS", "weights.pth"])   # can also load values from a list of str
 print(cfg.dump())  # print formatted configs
+with open("output.yaml", "w") as f:
+  f.write(cfg.dump())   # save config to file
 ```
 
 In addition to the basic Yaml syntax, the config file can

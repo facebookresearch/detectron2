@@ -316,10 +316,10 @@ class LazyConfig:
     @staticmethod
     def to_py(cfg, prefix: str = "cfg."):
         """
-        Try to convert a config object into its equivalent Python code.
+        Try to convert a config object into Python-like psuedo code.
 
-        Note that this is not always possible. So the returned results are mainly
-        meant to be human-readable, and not meant to be loaded back.
+        Note that perfect conversion is not always possible. So the returned
+        results are mainly meant to be human-readable, and not meant to be executed.
 
         Args:
             cfg: an omegaconf config object

@@ -29,7 +29,7 @@ inline at::Tensor nms_rotated(
     return nms_rotated_cuda(
         dets.contiguous(), scores.contiguous(), iou_threshold);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
 

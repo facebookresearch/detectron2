@@ -214,7 +214,7 @@ unavailable to you:
   where each pair are the two keypoints that should be flipped if the image is
   flipped horizontally during augmentation.
 * `keypoint_connection_rules`: list[tuple(str, str, (r, g, b))]. Each tuple specifies a pair of keypoints
-  that are connected and the color to use for the line between them when visualized.
+  that are connected and the color (in [0, 255]) to use for the line between them when visualized.
 
 Some additional metadata that are specific to the evaluation of certain datasets (e.g. COCO):
 

@@ -7,7 +7,6 @@ Related tutorials: :doc:`../tutorials/configs`, :doc:`../tutorials/extend`.
     :members:
     :undoc-members:
     :show-inheritance:
-    :inherited-members:
 
 
 Yaml Config References
