@@ -1,11 +1,12 @@
-termcolor
-numpy
-tqdm
 docutils==0.16
 # https://github.com/sphinx-doc/sphinx/commit/7acd3ada3f38076af7b2b5c9f3b60bb9c2587a3d
 sphinx==3.2.0
 recommonmark==0.6.0
 sphinx_rtd_theme
+# Dependencies here are only those required by import
+termcolor
+numpy
+tqdm
 matplotlib
 termcolor
 yacs
@@ -18,4 +19,3 @@ https://download.pytorch.org/whl/cpu/torch-1.7.0%2Bcpu-cp37-cp37m-linux_x86_64.w
 https://download.pytorch.org/whl/cpu/torchvision-0.8.1%2Bcpu-cp37-cp37m-linux_x86_64.whl
 omegaconf>=2.1.0.dev24
 hydra-core>=1.1.0.dev5
-black

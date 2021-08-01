@@ -5,11 +5,9 @@ from typing import List, Sequence, Tuple
 import torch
 
 from detectron2.structures import ImageList
-from detectron2.utils.env import TORCH_VERSION
 
 
 class TestImageList(unittest.TestCase):
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_imagelist_padding_tracing(self):
         # test that the trace does not contain hard-coded constant sizes
         def to_imagelist(tensors: Sequence[torch.Tensor]):
@@ -43,7 +41,6 @@ class TestImageList(unittest.TestCase):
         self.assertEqual(image_sizes[1].tolist(), [10, 10], image_sizes[1])
         # support calling with different spatial sizes, but not with different #images
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_imagelist_scriptability(self):
         image_nums = 2
         image_tensor = torch.randn((image_nums, 10, 20), dtype=torch.float32)
@@ -59,7 +56,6 @@ class TestImageList(unittest.TestCase):
         for i in range(image_nums):
             self.assertTrue(torch.equal(ret[i], ret_script[i]))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_imagelist_from_tensors_scriptability(self):
         image_tensor_0 = torch.randn(10, 20, dtype=torch.float32)
         image_tensor_1 = torch.randn(12, 22, dtype=torch.float32)

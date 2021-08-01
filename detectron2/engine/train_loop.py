@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import time
 import weakref
-from typing import Dict, List, Optional
+from typing import List, Mapping, Optional
 import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 
@@ -295,14 +295,23 @@ class SimpleTrainer(TrainerBase):
 
     def _write_metrics(
         self,
-        loss_dict: Dict[str, torch.Tensor],
+        loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
         prefix: str = "",
-    ):
+    ) -> None:
+        SimpleTrainer.write_metrics(loss_dict, data_time, prefix)
+
+    @staticmethod
+    def write_metrics(
+        loss_dict: Mapping[str, torch.Tensor],
+        data_time: float,
+        prefix: str = "",
+    ) -> None:
         """
         Args:
             loss_dict (dict): dict of scalar losses
             data_time (float): time taken by the dataloader iteration
+            prefix (str): prefix for logging keys
         """
         metrics_dict = {k: v.detach().cpu().item() for k, v in loss_dict.items()}
         metrics_dict["data_time"] = data_time
@@ -327,7 +336,7 @@ class SimpleTrainer(TrainerBase):
             total_losses_reduced = sum(metrics_dict.values())
             if not np.isfinite(total_losses_reduced):
                 raise FloatingPointError(
-                    f"Loss became infinite or NaN at iteration={self.iter}!\n"
+                    f"Loss became infinite or NaN at iteration={storage.iter}!\n"
                     f"loss_dict = {metrics_dict}"
                 )
 

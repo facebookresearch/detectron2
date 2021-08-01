@@ -229,6 +229,11 @@ class LazyConfig:
     @staticmethod
     def save(cfg, filename: str):
         """
+        Save a config object to a yaml file.
+        Note that when the config dictionary contains complex objects (e.g. lambda),
+        it can't be saved to yaml. In that case we will print an error and
+        attempt to save to a pkl file instead.
+
         Args:
             cfg: an omegaconf config object
             filename: yaml file name to save the config file
@@ -311,7 +316,10 @@ class LazyConfig:
     @staticmethod
     def to_py(cfg, prefix: str = "cfg."):
         """
-        Convert a config object into its equivalent Python code.
+        Try to convert a config object into Python-like psuedo code.
+
+        Note that perfect conversion is not always possible. So the returned
+        results are mainly meant to be human-readable, and not meant to be executed.
 
         Args:
             cfg: an omegaconf config object

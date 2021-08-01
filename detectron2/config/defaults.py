@@ -504,7 +504,8 @@ _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 # ---------------------------------------------------------------------------- #
 _C.SOLVER = CN()
 
-# See detectron2/solver/build.py for LR scheduler options
+# Options: WarmupMultiStepLR, WarmupCosineLR.
+# See detectron2/solver/build.py for definition.
 _C.SOLVER.LR_SCHEDULER_NAME = "WarmupMultiStepLR"
 
 _C.SOLVER.MAX_ITER = 40000

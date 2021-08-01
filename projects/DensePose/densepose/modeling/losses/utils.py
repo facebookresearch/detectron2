@@ -351,7 +351,7 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             boxes_xywh_est, boxes_xywh_gt, instances_one_image.gt_densepose
         ):
             if (dp_gt is not None) and (len(dp_gt.x) > 0):
-                self._do_accumulate(box_xywh_gt, box_xywh_est, dp_gt)  # pyre-ignore[6]
+                self._do_accumulate(box_xywh_gt, box_xywh_est, dp_gt)
             self.nxt_bbox_index += 1
 
     def _do_accumulate(
@@ -418,3 +418,23 @@ def extract_packed_annotations_from_matches(
     for proposals_targets_per_image in proposals_with_targets:
         accumulator.accumulate(proposals_targets_per_image)
     return accumulator.pack()
+
+
+def sample_random_indices(
+    n_indices: int, n_samples: int, device: Optional[torch.device] = None
+) -> Optional[torch.Tensor]:
+    """
+    Samples `n_samples` random indices from range `[0..n_indices - 1]`.
+    If `n_indices` is smaller than `n_samples`, returns `None` meaning that all indices
+    are selected.
+    Args:
+        n_indices (int): total number of indices
+        n_samples (int): number of indices to sample
+        device (torch.device): the desired device of returned tensor
+    Return:
+        Tensor of selected vertex indices, or `None`, if all vertices are selected
+    """
+    if (n_samples <= 0) or (n_indices <= n_samples):
+        return None
+    indices = torch.randperm(n_indices, device=device)[:n_samples]
+    return indices

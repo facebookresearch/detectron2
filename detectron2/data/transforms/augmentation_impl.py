@@ -206,19 +206,26 @@ class ResizeScale(Augmentation):
         super().__init__()
         self._init(locals())
 
-    def get_transform(self, image: np.ndarray) -> Transform:
-        # Compute the image scale and scaled size.
+    def _get_resize(self, image: np.ndarray, scale: float) -> Transform:
         input_size = image.shape[:2]
-        output_size = (self.target_height, self.target_width)
-        random_scale = np.random.uniform(self.min_scale, self.max_scale)
-        random_scale_size = np.multiply(output_size, random_scale)
-        scale = np.minimum(
-            random_scale_size[0] / input_size[0], random_scale_size[1] / input_size[1]
+
+        # Compute new target size given a scale.
+        target_size = (self.target_height, self.target_width)
+        target_scale_size = np.multiply(target_size, scale)
+
+        # Compute actual rescaling applied to input image and output size.
+        output_scale = np.minimum(
+            target_scale_size[0] / input_size[0], target_scale_size[1] / input_size[1]
         )
-        scaled_size = np.round(np.multiply(input_size, scale)).astype(int)
+        output_size = np.round(np.multiply(input_size, output_scale)).astype(int)
+
         return ResizeTransform(
-            input_size[0], input_size[1], scaled_size[0], scaled_size[1], self.interp
+            input_size[0], input_size[1], output_size[0], output_size[1], self.interp
         )
+
+    def get_transform(self, image: np.ndarray) -> Transform:
+        random_scale = np.random.uniform(self.min_scale, self.max_scale)
+        return self._get_resize(image, random_scale)
 
 
 class RandomRotation(Augmentation):
@@ -279,19 +286,21 @@ class FixedSizeCrop(Augmentation):
     """
     If `crop_size` is smaller than the input image size, then it uses a random crop of
     the crop size. If `crop_size` is larger than the input image size, then it pads
-    the right and the bottom of the image to the crop size.
+    the right and the bottom of the image to the crop size if `pad` is True, otherwise
+    it returns the smaller image.
     """
 
-    def __init__(self, crop_size: Tuple[int], pad_value: float = 128.0):
+    def __init__(self, crop_size: Tuple[int], pad: bool = True, pad_value: float = 128.0):
         """
         Args:
             crop_size: target image (height, width).
+            pad: if True, will pad images smaller than `crop_size` up to `crop_size`
             pad_value: the padding value.
         """
         super().__init__()
         self._init(locals())
 
-    def get_transform(self, image: np.ndarray) -> TransformList:
+    def _get_crop(self, image: np.ndarray) -> Transform:
         # Compute the image scale and scaled size.
         input_size = image.shape[:2]
         output_size = self.crop_size
@@ -301,19 +310,28 @@ class FixedSizeCrop(Augmentation):
         max_offset = np.maximum(max_offset, 0)
         offset = np.multiply(max_offset, np.random.uniform(0.0, 1.0))
         offset = np.round(offset).astype(int)
-        crop_transform = CropTransform(
+        return CropTransform(
             offset[1], offset[0], output_size[1], output_size[0], input_size[1], input_size[0]
         )
+
+    def _get_pad(self, image: np.ndarray) -> Transform:
+        # Compute the image scale and scaled size.
+        input_size = image.shape[:2]
+        output_size = self.crop_size
 
         # Add padding if the image is scaled down.
         pad_size = np.subtract(output_size, input_size)
         pad_size = np.maximum(pad_size, 0)
         original_size = np.minimum(input_size, output_size)
-        pad_transform = PadTransform(
+        return PadTransform(
             0, 0, pad_size[1], pad_size[0], original_size[1], original_size[0], self.pad_value
         )
 
-        return TransformList([crop_transform, pad_transform])
+    def get_transform(self, image: np.ndarray) -> TransformList:
+        transforms = [self._get_crop(image)]
+        if self.pad:
+            transforms.append(self._get_pad(image))
+        return TransformList(transforms)
 
 
 class RandomCrop(Augmentation):

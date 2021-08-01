@@ -126,6 +126,8 @@ class FieldEntrySelector(EntrySelector):
         else:
             field_name = field_name_with_type
             field_type = None
+        # pyre-fixme[61]: `field_name` may not be initialized here.
+        # pyre-fixme[61]: `field_type` may not be initialized here.
         return field_name, field_type
 
     def _is_range_spec(self, field_value_or_range):

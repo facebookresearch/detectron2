@@ -154,10 +154,10 @@ inline int deform_conv_forward(
         deformable_group,
         im2col_step);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
-  AT_ERROR("Not implemented on the CPU");
+  AT_ERROR("This operator is not implemented on CPU");
 }
 
 inline int deform_conv_backward_input(
@@ -204,10 +204,10 @@ inline int deform_conv_backward_input(
         deformable_group,
         im2col_step);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
-  AT_ERROR("Not implemented on the CPU");
+  AT_ERROR("This operator is not implemented on CPU");
 }
 
 inline int deform_conv_backward_filter(
@@ -253,10 +253,10 @@ inline int deform_conv_backward_filter(
         scale,
         im2col_step);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
-  AT_ERROR("Not implemented on the CPU");
+  AT_ERROR("This operator is not implemented on CPU");
 }
 
 inline void modulated_deform_conv_forward(
@@ -305,10 +305,10 @@ inline void modulated_deform_conv_forward(
         deformable_group,
         with_bias);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
-  AT_ERROR("Not implemented on the CPU");
+  AT_ERROR("This operator is not implemented on CPU");
 }
 
 inline void modulated_deform_conv_backward(
@@ -368,10 +368,10 @@ inline void modulated_deform_conv_backward(
         deformable_group,
         with_bias);
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
-  AT_ERROR("Not implemented on the CPU");
+  AT_ERROR("This operator is not implemented on CPU");
 }
 
 } // namespace detectron2

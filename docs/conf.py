@@ -292,6 +292,8 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "draw_panoptic_seg_predictions",
         "WarmupCosineLR",
         "WarmupMultiStepLR",
+        "downgrade_config",
+        "upgrade_config",
     }
     try:
         if name in HIDDEN or (

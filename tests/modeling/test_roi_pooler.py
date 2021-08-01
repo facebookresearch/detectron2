@@ -5,7 +5,6 @@ import torch
 
 from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
 from detectron2.structures import Boxes, RotatedBoxes
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import random_boxes
 
 logger = logging.getLogger(__name__)
@@ -98,11 +97,9 @@ class TestROIPooler(unittest.TestCase):
         scripted_roialignv2_out = torch.jit.script(roialignv2_pooler)(features, rois)
         self.assertTrue(torch.equal(roialignv2_out, scripted_roialignv2_out))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_scriptability_cpu(self):
         self._test_scriptability(device="cpu")
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_scriptability_gpu(self):
         self._test_scriptability(device="cuda")

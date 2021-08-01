@@ -132,9 +132,11 @@ Run on multiple machines:
     )
     parser.add_argument(
         "opts",
-        help="Modify config options by adding 'KEY VALUE' pairs at the end of the command. "
-        "See config references at "
-        "https://detectron2.readthedocs.io/modules/config.html#config-references",
+        help="""
+Modify config options at the end of the command. For Yacs configs, use
+space-separated "PATH.KEY VALUE" pairs.
+For python-based LazyConfig, use "path.key=value".
+        """.strip(),
         default=None,
         nargs=argparse.REMAINDER,
     )
@@ -148,6 +150,8 @@ def _try_get_key(cfg, *keys, default=None):
     if isinstance(cfg, CfgNode):
         cfg = OmegaConf.create(cfg.dump())
     for k in keys:
+        # OmegaConf.select(default=) is supported only after omegaconf2.1,
+        # but some internal users still rely on 2.0
         parts = k.split(".")
         # https://github.com/omry/omegaconf/issues/674
         for p in parts:
@@ -264,8 +268,8 @@ class DefaultPredictor:
 
     This is meant for simple demo purposes, so it does the above steps automatically.
     This is not meant for benchmarks or running complicated inference logic.
-    If you'd like to do anything more fancy, please refer to its source code as examples
-    to build and use the model manually.
+    If you'd like to do anything more complicated, please refer to its source code as
+    examples to build and use the model manually.
 
     Attributes:
         metadata (Metadata): the metadata of the underlying dataset, obtained from

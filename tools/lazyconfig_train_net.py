@@ -50,7 +50,7 @@ def do_train(args, cfg):
             dataloader.evaluator: instantiate to evaluator for test set
             optimizer: instantaite to an optimizer
             lr_multiplier: instantiate to a fvcore scheduler
-            train: other misc config defined in `common_train.py`, including:
+            train: other misc config defined in `configs/common/train.py`, including:
                 output_dir (str)
                 init_checkpoint (str)
                 amp.enabled (bool)

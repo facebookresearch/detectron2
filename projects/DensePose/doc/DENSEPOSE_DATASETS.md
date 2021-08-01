@@ -389,57 +389,125 @@ The table below outlines the dataset splits:
   <b>Figure 5.</b> Example images from the DensePose LVIS dataset.
 </p>
 
-DensePose LVIS dataset contains about 6K annotated animals on images from the
-[LVIS dataset](https://www.lvisdataset.org/dataset).
+DensePose LVIS dataset contains segmentation and DensePose annotations for animals
+on images from the [LVIS dataset](https://www.lvisdataset.org/dataset).
 The images are available for download through the links:
 [train2017](http://images.cocodataset.org/zips/train2017.zip),
 [val2017](http://images.cocodataset.org/zips/val2017.zip).
 
 ### Continuous Surface Embeddings Annotations
 
-Continuous surface embeddings annotations for DensePose LVIS
+Continuous surface embeddings (CSE) annotations for DensePose LVIS
 include `dp_x`, `dp_y` and `dp_vertex` point-based annotations
-(~3 points per annotated instance) and `ref_model` field
-which refers to a 3D model which corresponds to the instance. In total,
-9 reference models were used for annotations: `bear_4936`,
-`cow_5002`, `cat_5001`, `dog_5002`, `elephant_5002`, `giraffe_5002`,
-`horse_5004`, `sheep_5004` and `zebra_5002`.
-Foreground masks are loaded from instance segmentation annotations
-in `segmentation` field in polygon format, stored as a 2D list
+(~3 points per annotated instance) and a `ref_model` field
+which refers to a 3D model that corresponds to the instance.
+Instances from 9 animal categories were annotated with CSE DensePose data:
+bear, cow, cat, dog, elephant, giraffe, horse, sheep and zebra.
+
+Foreground masks are available from instance segmentation annotations
+(`segmentation` field) in polygon format, they are stored as a 2D list
 `[[x1 y1 x2 y2...],[x1 y1 ...],...]`.
 
-The dataset is split into 2 training (`train1`, `train2`) and
-1 validation (`val`) subsets.
-The table with annotation download links, which summarizes the number of annotated
-instances and images for each of the dataset splits is given below:
+We used two datasets, each constising of one training (`train`)
+and validation (`val`) subsets: the first one (`ds1`)
+was used in [Neverova et al, 2020](https://arxiv.org/abs/2011.12438).
+The second one (`ds2`), was used in [Neverova et al, 2021]().
+
+The summary of the available datasets is given below:
 <table><tbody>
 <!-- START TABLE -->
 <!-- TABLE HEADER -->
+<tr>
+<th valign="bottom"></th>
+<th valign="bottom" colspan="3">All Data</th>
+<th valign="bottom" colspan="3">Selected Animals<br>(9 categories)</th>
+<th valign="bottom" colspan="2">File</th>
+</tr>
+<tr>
 <th valign="bottom">Name</th>
-<th valign="bottom"># inst</th>
-<th valign="bottom"># images</th>
-<th valign="bottom">file size</th>
+<th valign="bottom"># cat</th>
+<th valign="bottom"># img</th>
+<th valign="bottom"># segm</th>
+<th valign="bottom"># img</th>
+<th valign="bottom"># segm</th>
+<th valign="bottom"># dp</th>
+<th valign="bottom">size</th>
 <th valign="bottom">download</th>
+</tr>
 <!-- TABLE BODY -->
-<!-- ROW: densepose_lvis_v1_train1 -->
-<tr><td align="left">densepose_lvis_v1_train1</td>
-<td align="center">3394</td>
-<td align="center">2722</td>
-<td valign="center">29M</td>
-<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_train1_v2.json">densepose_lvis_v1_train1_v2.json</a></td>
+<!-- ROW: densepose_lvis_v1_ds1_train_v1 -->
+<tr><td align="left">ds1_train</td>
+<td align="center">556</td>
+<td align="center">4141</td>
+<td align="center">23985</td>
+<td align="center">4141</td>
+<td align="center">9472</td>
+<td align="center">5184</td>
+<td valign="center">46M</td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_ds1_train_v1.json">densepose_lvis_v1_ds1_train_v1.json</a></td>
 </tr>
-<!-- ROW: densepose_lvis_v1_train2 -->
-<tr><td align="left">densepose_lvis_v1_train2</td>
-<td align="center">1800</td>
-<td align="center">1423</td>
-<td valign="center">18M</td>
-<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_train2_v2.json">densepose_lvis_v1_train2_v2.json</a></td>
-</tr>
-<!-- ROW: densepose_lvis_v1_val -->
-<tr><td align="left">densepose_lvis_v1_val</td>
-<td align="center">1037</td>
+<!-- ROW: densepose_lvis_v1_ds1_val_v1 -->
+<tr><td align="left">ds1_val</td>
+<td align="center">251</td>
 <td align="center">571</td>
+<td align="center">3281</td>
+<td align="center">571</td>
+<td align="center">1537</td>
+<td align="center">1036</td>
 <td valign="center">5M</td>
-<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_val_v2.json">densepose_lvis_v1_val_v2.json</a></td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_ds1_val_v1.json">densepose_lvis_v1_ds1_val_v1.json</a></td>
+</tr>
+<!-- ROW: densepose_lvis_v1_ds2_train_v1 -->
+<tr><td align="left">ds2_train</td>
+<td align="center">1203</td>
+<td align="center">99388</td>
+<td align="center">1270141</td>
+<td align="center">13746</td>
+<td align="center">46964</td>
+<td align="center">18932</td>
+<td valign="center">1051M</td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_ds2_train_v1.json">densepose_lvis_v1_ds2_train_v1.json</a></td>
+</tr>
+<!-- ROW: densepose_lvis_v1_ds2_val_v1 -->
+<tr><td align="left">ds2_val</td>
+<td align="center">9</td>
+<td align="center">2690</td>
+<td align="center">9155</td>
+<td align="center">2690</td>
+<td align="center">9155</td>
+<td align="center">3604</td>
+<td valign="center">24M</td>
+<td align="left"><a href="https://dl.fbaipublicfiles.com/densepose/annotations/lvis/densepose_lvis_v1_ds2_val_v1.json">densepose_lvis_v1_ds2_val_v1.json</a></td>
 </tr>
 </tbody></table>
+
+Legend:
+
+`#cat` - number of categories in the dataset for which annotations are available;
+
+`#img` - number of images with annotations in the dataset;
+
+`#segm` - number of segmentation annotations;
+
+`#dp` - number of DensePose annotations.
+
+
+Important Notes:
+
+1. The reference models used for `ds1_train` and `ds1_val` are
+`bear_4936`, `cow_5002`, `cat_5001`, `dog_5002`, `elephant_5002`, `giraffe_5002`,
+`horse_5004`, `sheep_5004` and `zebra_5002`. The reference models used for
+`ds2_train` and `ds2_val` are `bear_4936`, `cow_5002`, `cat_7466`,
+`dog_7466`, `elephant_5002`, `giraffe_5002`, `horse_5004`, `sheep_5004` and `zebra_5002`.
+So reference models for categories `cat` aind `dog` are different for `ds1` and `ds2`.
+
+2. Some annotations from `ds1_train` are reused in `ds2_train` (4538 DensePose annotations
+and 21275 segmentation annotations). The ones for cat and dog categories were remapped
+from `cat_5001` and `dog_5002` reference models used in `ds1` to `cat_7466` and `dog_7466`
+used in `ds2`.
+
+3. All annotations from `ds1_val` are included into `ds2_val` after the remapping
+procedure mentioned in note 2.
+
+4. Some annotations from `ds1_train` are part of `ds2_val` (646 DensePose annotations and
+1225 segmentation annotations). Thus one should not train on `ds1_train` if evaluating on `ds2_val`.

@@ -15,12 +15,13 @@ from fvcore.common.timer import Timer
 from torch.nn.parallel import DistributedDataParallel
 
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
+from detectron2.config import LazyConfig, get_cfg, instantiate
 from detectron2.data import (
     DatasetFromList,
     build_detection_test_loader,
     build_detection_train_loader,
 )
+from detectron2.data.benchmark import DataLoaderBenchmark
 from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser, hooks, launch
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
@@ -33,13 +34,29 @@ logger = logging.getLogger("detectron2")
 
 
 def setup(args):
-    cfg = get_cfg()
-    cfg.merge_from_file(args.config_file)
-    cfg.SOLVER.BASE_LR = 0.001  # Avoid NaNs. Not useful in this script anyway.
-    cfg.merge_from_list(args.opts)
-    cfg.freeze()
+    if args.config_file.endswith(".yaml"):
+        cfg = get_cfg()
+        cfg.merge_from_file(args.config_file)
+        cfg.SOLVER.BASE_LR = 0.001  # Avoid NaNs. Not useful in this script anyway.
+        cfg.merge_from_list(args.opts)
+        cfg.freeze()
+    else:
+        cfg = LazyConfig.load(args.config_file)
+        cfg = LazyConfig.apply_overrides(cfg, args.opts)
     setup_logger(distributed_rank=comm.get_rank())
     return cfg
+
+
+def create_data_benchmark(cfg, args):
+    if args.config_file.endswith(".py"):
+        dl_cfg = cfg.dataloader.train
+        dl_cfg._target_ = DataLoaderBenchmark
+        return instantiate(dl_cfg)
+    else:
+        kwargs = build_detection_train_loader.from_config(cfg)
+        kwargs.pop("aspect_ratio_grouping", None)
+        kwargs["_target_"] = DataLoaderBenchmark
+        return instantiate(kwargs)
 
 
 def RAM_msg():
@@ -51,41 +68,30 @@ def RAM_msg():
 
 def benchmark_data(args):
     cfg = setup(args)
-
     logger.info("After spawning " + RAM_msg())
-    timer = Timer()
-    dataloader = build_detection_train_loader(cfg)
-    logger.info("Initialize loader using {} seconds.".format(timer.seconds()))
 
-    timer.reset()
-    itr = iter(dataloader)
-    for i in range(10):  # warmup
-        next(itr)
-        if i == 0:
-            startup_time = timer.seconds()
-    logger.info("Startup time: {} seconds".format(startup_time))
-    timer = Timer()
-    max_iter = 1000
-    for _ in tqdm.trange(max_iter):
-        next(itr)
-    logger.info(
-        "{} iters ({} images) in {} seconds.".format(
-            max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
-        )
-    )
-
+    benchmark = create_data_benchmark(cfg, args)
+    benchmark.benchmark_distributed(250, 10)
     # test for a few more rounds
     for k in range(10):
         logger.info(f"Iteration {k} " + RAM_msg())
-        timer = Timer()
-        max_iter = 1000
-        for _ in tqdm.trange(max_iter):
-            next(itr)
-        logger.info(
-            "{} iters ({} images) in {} seconds.".format(
-                max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
-            )
-        )
+        benchmark.benchmark_distributed(250, 1)
+
+
+def benchmark_data_advanced(args):
+    # benchmark dataloader with more details to help analyze performance bottleneck
+    cfg = setup(args)
+    benchmark = create_data_benchmark(cfg, args)
+
+    if comm.get_rank() == 0:
+        benchmark.benchmark_dataset(100)
+        benchmark.benchmark_mapper(100)
+        benchmark.benchmark_workers(100, warmup=10)
+        benchmark.benchmark_IPC(100, warmup=10)
+    if comm.get_world_size() > 1:
+        benchmark.benchmark_distributed(100)
+        logger.info("Rerun ...")
+        benchmark.benchmark_distributed(100)
 
 
 def benchmark_train(args):
@@ -113,7 +119,13 @@ def benchmark_train(args):
     max_iter = 400
     trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(model, f(), optimizer)
     trainer.register_hooks(
-        [hooks.IterationTimer(), hooks.PeriodicWriter([CommonMetricPrinter(max_iter)])]
+        [
+            hooks.IterationTimer(),
+            hooks.PeriodicWriter([CommonMetricPrinter(max_iter)]),
+            hooks.TorchProfiler(
+                lambda trainer: trainer.iter == max_iter - 1, cfg.OUTPUT_DIR, save_tensorboard=True
+            ),
+        ]
     )
     trainer.train(1, max_iter)
 
@@ -151,14 +163,17 @@ def benchmark_eval(args):
 
 if __name__ == "__main__":
     parser = default_argument_parser()
-    parser.add_argument("--task", choices=["train", "eval", "data"], required=True)
+    parser.add_argument("--task", choices=["train", "eval", "data", "data_advanced"], required=True)
     args = parser.parse_args()
     assert not args.eval_only
 
     logger.info("Environment info:\n" + collect_env_info())
+    if "data" in args.task:
+        print("Initial " + RAM_msg())
     if args.task == "data":
         f = benchmark_data
-        print("Initial " + RAM_msg())
+    if args.task == "data_advanced":
+        f = benchmark_data_advanced
     elif args.task == "train":
         """
         Note: training speed may not be representative.

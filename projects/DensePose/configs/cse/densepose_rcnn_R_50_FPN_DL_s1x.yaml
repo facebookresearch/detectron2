@@ -1,4 +1,4 @@
-_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+_BASE_: "Base-DensePose-RCNN-FPN-Human.yaml"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
   RESNETS:

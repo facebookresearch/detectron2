@@ -11,8 +11,8 @@ You can access these models from code using [detectron2.model_zoo](https://detec
 In addition to these official baseline models, you can find more models in [projects/](projects/).
 
 #### How to Read the Tables
-* The "Name" column contains a link to the config file. Running `tools/train_net.py --num-gpus 8` with this config file
-  will reproduce the model.
+* The "Name" column contains a link to the config file. Models can be reproduced using `tools/train_net.py` with the corresponding yaml config file,
+  or `tools/lazyconfig_train_net.py` for python config files.
 * Training speed is averaged across the entire training.
   We keep updating the speed with latest version of detectron2/pytorch/etc.,
   so they might be different from the `metrics` file.
@@ -432,6 +432,152 @@ All models available for download through this document are licensed under the
 <td align="center">39.5</td>
 <td align="center">139653917</td>
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x/139653917/model_final_2d9806.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x/139653917/metrics.json">metrics</a></td>
+</tr>
+</tbody></table>
+
+
+
+#### New baselines using Large-Scale Jitter and Longer Training Schedule
+
+The following baselines of COCO Instance Segmentation with Mask R-CNN are generated
+using a longer training schedule and large-scale jitter as described in Google's
+[Simple Copy-Paste Data Augmentation](https://arxiv.org/pdf/2012.07177.pdf) paper. These
+models are trained from scratch using random initialization. These baselines exceed the
+previous Mask R-CNN baselines.
+
+In the following table, one epoch consists of training on 118000 COCO images.
+
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="bottom">Name</th>
+<th valign="bottom">epochs</th>
+<th valign="bottom">train<br/>time<br/>(s/im)</th>
+<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">box<br/>AP</th>
+<th valign="bottom">mask<br/>AP</th>
+<th valign="bottom">model id</th>
+<th valign="bottom">download</th>
+<!-- TABLE BODY -->
+<!-- ROW: mask_rcnn_R_50_FPN_100ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_50_FPN_100ep_LSJ.py">R50-FPN</a></td>
+<td align="center">100</td>
+<td align="center">0.376</td>
+<td align="center">0.069</td>
+<td align="center">44.6</td>
+<td align="center">40.3</td>
+<td align="center">42047764</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_100ep_LSJ/42047764/model_final_bb69de.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_100ep_LSJ/42047764/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_50_FPN_200ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_50_FPN_200ep_LSJ.py">R50-FPN</a></td>
+<td align="center">200</td>
+<td align="center">0.376</td>
+<td align="center">0.069</td>
+<td align="center">46.3</td>
+<td align="center">41.7</td>
+<td align="center">42047638</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_200ep_LSJ/42047638/model_final_89a8d3.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_200ep_LSJ/42047638/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_50_FPN_400ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_50_FPN_400ep_LSJ.py">R50-FPN</a></td>
+<td align="center">400</td>
+<td align="center">0.376</td>
+<td align="center">0.069</td>
+<td align="center">47.4</td>
+<td align="center">42.5</td>
+<td align="center">42019571</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_400ep_LSJ/42019571/model_final_14d201.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_400ep_LSJ/42019571/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_101_FPN_100ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ.py">R101-FPN</a></td>
+<td align="center">100</td>
+<td align="center">0.518</td>
+<td align="center">0.073</td>
+<td align="center">46.4</td>
+<td align="center">41.6</td>
+<td align="center">42025812</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ/42025812/model_final_4f7b58.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ/42025812/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_101_FPN_200ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ.py">R101-FPN</a></td>
+<td align="center">200</td>
+<td align="center">0.518</td>
+<td align="center">0.073</td>
+<td align="center">48.0</td>
+<td align="center">43.1</td>
+<td align="center">42131867</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ/42131867/model_final_0bb7ae.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ/42131867/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_R_101_FPN_400ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_400ep_LSJ.py">R101-FPN</a></td>
+<td align="center">400</td>
+<td align="center">0.518</td>
+<td align="center">0.073</td>
+<td align="center">48.9</td>
+<td align="center">43.7</td>
+<td align="center">42073830</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_400ep_LSJ/42073830/model_final_f96b26.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_400ep_LSJ/42073830/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_regnetx_4gf_dds_FPN_100ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_100ep_LSJ.py">regnetx_4gf_dds_FPN</a></td>
+<td align="center">100</td>
+<td align="center">0.474</td>
+<td align="center">0.071</td>
+<td align="center">46.0</td>
+<td align="center">41.3</td>
+<td align="center">42047771</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_100ep_LSJ/42047771/model_final_b7fbab.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_100ep_LSJ/42047771/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_regnetx_4gf_dds_FPN_200ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_200ep_LSJ.py">regnetx_4gf_dds_FPN</a></td>
+<td align="center">200</td>
+<td align="center">0.474</td>
+<td align="center">0.071</td>
+<td align="center">48.1</td>
+<td align="center">43.1</td>
+<td align="center">42132721</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_200ep_LSJ/42132721/model_final_5d87c1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_200ep_LSJ/42132721/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_regnetx_4gf_dds_FPN_400ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_400ep_LSJ.py">regnetx_4gf_dds_FPN</a></td>
+<td align="center">400</td>
+<td align="center">0.474</td>
+<td align="center">0.071</td>
+<td align="center">48.6</td>
+<td align="center">43.5</td>
+<td align="center">42025447</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_400ep_LSJ/42025447/model_final_f1362d.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnetx_4gf_dds_FPN_400ep_LSJ/42025447/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_regnety_4gf_dds_FPN_100ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_100ep_LSJ.py">regnety_4gf_dds_FPN</a></td>
+<td align="center">100</td>
+<td align="center">0.487</td>
+<td align="center">0.073</td>
+<td align="center">46.1</td>
+<td align="center">41.6</td>
+<td align="center">42047784</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_100ep_LSJ/42047784/model_final_6ba57e.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_100ep_LSJ/42047784/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_regnety_4gf_dds_FPN_200ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_200ep_LSJ.py">regnety_4gf_dds_FPN</a></td>
+<td align="center">200</td>
+<td align="center">0.487</td>
+<td align="center">0.072</td>
+<td align="center">47.8</td>
+<td align="center">43.0</td>
+<td align="center">42047642</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_200ep_LSJ/42047642/model_final_27b9c1.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_200ep_LSJ/42047642/metrics.json">metrics</a></td>
+</tr>
+<!-- ROW: mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ -->
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ.py">regnety_4gf_dds_FPN</a></td>
+<td align="center">400</td>
+<td align="center">0.487</td>
+<td align="center">0.072</td>
+<td align="center">48.2</td>
+<td align="center">43.3</td>
+<td align="center">42045954</td>
+<td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ/42045954/model_final_ef3a80.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_regnety_4gf_dds_FPN_400ep_LSJ/42045954/metrics.json">metrics</a></td>
 </tr>
 </tbody></table>
 

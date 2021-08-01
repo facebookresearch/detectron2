@@ -32,9 +32,7 @@ def annotations_to_instances(annos, image_size, sample_points=0):
     """
     target = base_annotations_to_instances(annos, image_size)
 
-    assert "point_coords" in annos[0]
-    assert "point_labels" in annos[0]
-    assert "segmentation" not in annos[0], "Please remove mask annotation"
+    assert ("point_coords" in annos[0]) == ("point_labels" in annos[0])
 
     if len(annos) and "point_labels" in annos[0]:
         point_coords = []
@@ -65,7 +63,9 @@ def annotations_to_instances(annos, image_size, sample_points=0):
     return target
 
 
-def transform_instance_annotations(annotation, transforms, image_size):
+def transform_instance_annotations(
+    annotation, transforms, image_size, *, keypoint_hflip_indices=None
+):
     """
     Apply transforms to box, and point annotations of a single instance.
     It will use `transforms.apply_box` for the box, and
@@ -75,27 +75,29 @@ def transform_instance_annotations(annotation, transforms, image_size):
             It will be modified in-place.
         transforms (TransformList or list[Transform]):
         image_size (tuple): the height, width of the transformed image
+        keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
     Returns:
         dict:
             the same input dict with fields "bbox", "point_coords", "point_labels"
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
-    annotation = base_transform_instance_annotations(annotation, transforms, image_size)
+    annotation = base_transform_instance_annotations(
+        annotation, transforms, image_size, keypoint_hflip_indices
+    )
 
-    assert "segmentation" not in annotation
-    assert "point_coords" in annotation
-    assert "point_labels" in annotation
-    point_coords = annotation["point_coords"]
-    point_labels = np.array(annotation["point_labels"]).astype(np.float)
-    point_coords = transforms.apply_coords(point_coords)
+    assert ("point_coords" in annotation) == ("point_labels" in annotation)
+    if "point_coords" in annotation and "point_labels" in annotation:
+        point_coords = annotation["point_coords"]
+        point_labels = np.array(annotation["point_labels"]).astype(np.float)
+        point_coords = transforms.apply_coords(point_coords)
 
-    # Set all out-of-boundary points to "unlabeled"
-    inside = (point_coords >= np.array([0, 0])) & (point_coords <= np.array(image_size[::-1]))
-    inside = inside.all(axis=1)
-    point_labels[~inside] = -1
+        # Set all out-of-boundary points to "unlabeled"
+        inside = (point_coords >= np.array([0, 0])) & (point_coords <= np.array(image_size[::-1]))
+        inside = inside.all(axis=1)
+        point_labels[~inside] = -1
 
-    annotation["point_coords"] = point_coords
-    annotation["point_labels"] = point_labels
+        annotation["point_coords"] = point_coords
+        annotation["point_labels"] = point_labels
 
     return annotation

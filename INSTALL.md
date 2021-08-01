@@ -2,7 +2,7 @@
 
 ### Requirements
 - Linux or macOS with Python ≥ 3.6
-- PyTorch ≥ 1.6 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
+- PyTorch ≥ 1.7 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
   Install them together at [pytorch.org](https://pytorch.org) to make sure of this
 - OpenCV is optional but needed by demo and visualization
 
@@ -28,34 +28,32 @@ old build first. You often need to rebuild detectron2 after reinstalling PyTorch
 
 ### Install Pre-Built Detectron2 (Linux only)
 
-Choose from this table to install [v0.4 (Mar 2021)](https://github.com/facebookresearch/detectron2/releases):
+Choose from this table to install [v0.5 (Jul 2021)](https://github.com/facebookresearch/detectron2/releases):
 
-<table class="docutils"><tbody><th width="80"> CUDA </th><th valign="bottom" align="left" width="100">torch 1.8</th><th valign="bottom" align="left" width="100">torch 1.7</th><th valign="bottom" align="left" width="100">torch 1.6</th> <tr><td align="left">11.1</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+<table class="docutils"><tbody><th width="80"> CUDA </th><th valign="bottom" align="left" width="100">torch 1.9</th><th valign="bottom" align="left" width="100">torch 1.8</th><th valign="bottom" align="left" width="100">torch 1.7</th> <tr><td align="left">11.1</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.9/index.html
+</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.8/index.html
-</code></pre> </details> </td> <td align="left"> </td> <td align="left"> </td> </tr> <tr><td align="left">11.0</td><td align="left"> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+</code></pre> </details> </td> <td align="left"> </td> </tr> <tr><td align="left">11.0</td><td align="left"> </td> <td align="left"> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu110/torch1.7/index.html
-</code></pre> </details> </td> <td align="left"> </td> </tr> <tr><td align="left">10.2</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+</code></pre> </details> </td> </tr> <tr><td align="left">10.2</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/torch1.9/index.html
+</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/torch1.8/index.html
 </code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/torch1.7/index.html
-</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
-  https://dl.fbaipublicfiles.com/detectron2/wheels/cu102/torch1.6/index.html
-</code></pre> </details> </td> </tr> <tr><td align="left">10.1</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+</code></pre> </details> </td> </tr> <tr><td align="left">10.1</td><td align="left"> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.8/index.html
 </code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.7/index.html
-</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
-  https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.6/index.html
-</code></pre> </details> </td> </tr> <tr><td align="left">9.2</td><td align="left"> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+</code></pre> </details> </td> </tr> <tr><td align="left">9.2</td><td align="left"> </td> <td align="left"> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu92/torch1.7/index.html
-</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
-  https://dl.fbaipublicfiles.com/detectron2/wheels/cu92/torch1.6/index.html
 </code></pre> </details> </td> </tr> <tr><td align="left">cpu</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
+  https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.9/index.html
+</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.8/index.html
 </code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.7/index.html
-</code></pre> </details> </td> <td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
-  https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.6/index.html
 </code></pre> </details> </td> </tr></tbody></table>
 
 
@@ -72,7 +70,7 @@ Click each issue for its solutions:
 
 <details>
 <summary>
-Undefined symbols that contains TH,aten,torch,caffe2; Missing torch dynamic libraries; Segmentation fault immediately when using detectron2.
+Undefined symbols that contains TH,aten,torch,caffe2.
 </summary>
 <br/>
 
@@ -82,29 +80,36 @@ compiled with the version of PyTorch you're running.
 If the error comes from a pre-built torchvision, uninstall torchvision and pytorch and reinstall them
 following [pytorch.org](http://pytorch.org). So the versions will match.
 
-If the error comes from a pre-built detectron2, check [release notes](https://github.com/facebookresearch/detectron2/releases)
-to see the corresponding pytorch version required for each pre-built detectron2.
-Or uninstall and reinstall the correct pre-built detectron2.
+If the error comes from a pre-built detectron2, check [release notes](https://github.com/facebookresearch/detectron2/releases),
+uninstall and reinstall the correct pre-built detectron2 that matches pytorch version.
 
 If the error comes from detectron2 or torchvision that you built manually from source,
 remove files you built (`build/`, `**/*.so`) and rebuild it so it can pick up the version of pytorch currently in your environment.
 
-If you cannot resolve this problem, please include the output of `gdb -ex "r" -ex "bt" -ex "quit" --args python -m detectron2.utils.collect_env`
-in your issue.
+If the above instructions do not resolve this problem, please provide an environment (e.g. a dockerfile) that can reproduce the issue.
 </details>
 
 <details>
 <summary>
-Undefined C++ symbols (e.g. `GLIBCXX`) or C++ symbols not found.
+Missing torch dynamic libraries, OR segmentation fault immediately when using detectron2.
+</summary>
+This usually happens when detectron2 or torchvision is not
+compiled with the version of PyTorch you're running. See the previous common issue for the solution.
+</details>
+
+<details>
+<summary>
+Undefined C++ symbols (e.g. GLIBCXX) or C++ symbols not found.
 </summary>
 <br/>
 Usually it's because the library is compiled with a newer C++ compiler but run with an old C++ runtime.
 
 This often happens with old anaconda.
-Try `conda update libgcc`. Then rebuild detectron2.
+It may help to run `conda update libgcc` to upgrade its runtime.
 
-The fundamental solution is to run the code with proper C++ runtime.
-One way is to use `LD_PRELOAD=/path/to/libstdc++.so`.
+The fundamental solution is to avoid the mismatch, either by compiling using older version of C++
+compiler, or run the code with proper C++ runtime.
+To run the code with a specific C++ runtime, you can use environment variable `LD_PRELOAD=/path/to/libstdc++.so`.
 
 </details>
 
@@ -180,9 +185,9 @@ to match your local CUDA installation, or install a different version of CUDA to
 
 <details>
 <summary>
-C++ compilation errors from NVCC / NVRTC; "Unsupported gpu architecture"
+C++ compilation errors from NVCC / NVRTC, or "Unsupported gpu architecture"
 </summary>
-
+<br/>
 A few possibilities:
 
 1. Local CUDA/NVCC version has to match the CUDA version of your PyTorch. Both can be found in `python collect_env.py`.
@@ -244,7 +249,9 @@ whose version is closer to what's used by PyTorch (available in `torch.__config_
 "library not found for -lstdc++" on older version of MacOS
 </summary>
 <br/>
-See [this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
+See
+[this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
+
 </details>
 
 

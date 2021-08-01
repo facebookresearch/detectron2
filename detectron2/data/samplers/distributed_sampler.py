@@ -19,6 +19,15 @@ class TrainingSampler(Sampler):
     where `indices` is an infinite stream of indices consisting of
     `shuffle(range(size)) + shuffle(range(size)) + ...` (if shuffle is True)
     or `range(size) + range(size) + ...` (if shuffle is False)
+
+    Note that this sampler does not shard based on pytorch DataLoader worker id.
+    A sampler passed to pytorch DataLoader is used only with map-style dataset
+    and will not be executed inside workers.
+    But if this sampler is used in a way that it gets execute inside a dataloader
+    worker, then extra work needs to be done to shard its outputs based on worker id.
+    This is required so that workers don't produce identical data.
+    :class:`ToIterableDataset` implements this logic.
+    This note is true for all samplers in detectron2.
     """
 
     def __init__(self, size: int, shuffle: bool = True, seed: Optional[int] = None):
@@ -30,8 +39,11 @@ class TrainingSampler(Sampler):
                 across all workers. If None, will use a random seed shared
                 among workers (require synchronization among all workers).
         """
+        if not isinstance(size, int):
+            raise TypeError(f"TrainingSampler(size=) expects an int. Got type {type(size)}.")
+        if size <= 0:
+            raise ValueError(f"TrainingSampler(size=) expects a positive int. Got {size}.")
         self._size = size
-        assert size > 0
         self._shuffle = shuffle
         if seed is None:
             seed = comm.shared_random_seed()

@@ -308,7 +308,7 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
 try:
     import matplotlib
 
-    matplotlib.use("Agg")  # pyre-ignore[16]
+    matplotlib.use("Agg")
     DensePoseResultsContourVisualizer = DensePoseResultsMplContourVisualizer
 except ModuleNotFoundError:
     logger = logging.getLogger(__name__)

@@ -9,10 +9,9 @@ from setuptools import find_packages, setup
 from typing import List
 import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
-from torch.utils.hipify import hipify_python
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 6], "Requires PyTorch >= 1.6"
+assert torch_ver >= [1, 7], "Requires PyTorch >= 1.7"
 
 
 def get_version():
@@ -50,59 +49,14 @@ def get_extensions():
     is_rocm_pytorch = (
         True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
     )
+    if is_rocm_pytorch:
+        assert torch_ver >= [1, 8], "ROCM support requires PyTorch >= 1.8!"
 
-    hipify_ver = (
-        [int(x) for x in torch.utils.hipify.__version__.split(".")]
-        if hasattr(torch.utils.hipify, "__version__")
-        else [0, 0, 0]
+    # common code between cuda and rocm platforms, for hipify version [1,0,0] and later.
+    source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu")) + glob.glob(
+        path.join(extensions_dir, "*.cu")
     )
-
-    if is_rocm_pytorch and hipify_ver < [1, 0, 0]:  # TODO not needed since pt1.8
-
-        # Earlier versions of hipification and extension modules were not
-        # transparent, i.e. would require an explicit call to hipify, and the
-        # hipification would introduce "hip" subdirectories, possibly changing
-        # the relationship between source and header files.
-        # This path is maintained for backwards compatibility.
-
-        hipify_python.hipify(
-            project_directory=this_dir,
-            output_directory=this_dir,
-            includes="/detectron2/layers/csrc/*",
-            show_detailed=True,
-            is_pytorch_extension=True,
-        )
-
-        source_cuda = glob.glob(path.join(extensions_dir, "**", "hip", "*.hip")) + glob.glob(
-            path.join(extensions_dir, "hip", "*.hip")
-        )
-
-        shutil.copy(
-            "detectron2/layers/csrc/box_iou_rotated/box_iou_rotated_utils.h",
-            "detectron2/layers/csrc/box_iou_rotated/hip/box_iou_rotated_utils.h",
-        )
-        shutil.copy(
-            "detectron2/layers/csrc/deformable/deform_conv.h",
-            "detectron2/layers/csrc/deformable/hip/deform_conv.h",
-        )
-
-        sources = [main_source] + sources
-        sources = [
-            s
-            for s in sources
-            if not is_rocm_pytorch or torch_ver < [1, 7] or not s.endswith("hip/vision.cpp")
-        ]
-
-    else:
-
-        # common code between cuda and rocm platforms,
-        # for hipify version [1,0,0] and later.
-
-        source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu")) + glob.glob(
-            path.join(extensions_dir, "*.cu")
-        )
-
-        sources = [main_source] + sources
+    sources = [main_source] + sources
 
     extension = CppExtension
 
@@ -202,39 +156,46 @@ setup(
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
     python_requires=">=3.6",
     install_requires=[
+        # These dependencies are not pure-python.
+        # In general, avoid adding more dependencies like them because they are not
+        # guaranteed to be installable by `pip install` on all platforms.
+        # To tell if a package is pure-python, go to https://pypi.org/project/{name}/#files
+        "Pillow>=7.1",  # or use pillow-simd for better performance
+        "matplotlib",  # TODO move it to optional after we add opencv visualization
+        "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         # Do not add opencv here. Just like pytorch, user should install
         # opencv themselves, preferrably by OS's package manager, or by
         # choosing the proper pypi package name at https://github.com/skvark/opencv-python
+        # The following are pure-python dependencies that should be easily installable
         "termcolor>=1.1",
-        "Pillow>=7.1",  # or use pillow-simd for better performance
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",
-        "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
         # Lock version of fvcore/iopath because they may have breaking changes
         # NOTE: when updating fvcore/iopath version, make sure fvcore depends
         # on compatible version of iopath.
         "fvcore>=0.1.5,<0.1.6",  # required like this to make it pip installable
-        "iopath>=0.1.7,<0.1.9",
-        "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
+        "iopath>=0.1.7,<0.1.10",
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
-        "omegaconf>=2.1.0rc1",
-        "hydra-core>=1.1.0rc1",
+        "omegaconf>=2.1",
+        "hydra-core>=1.1",
         "black==21.4b2",
-        # When adding to the list, may need to update docs/requirements.txt
-        # or add mock in docs/conf.py
+        # If a new dependency is required at import time (in addition to runtime), it
+        # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
     ],
     extras_require={
+        # optional dependencies, required by some features
         "all": [
             "shapely",
             "pygments>=2.2",
             "psutil",
             "panopticapi @ https://github.com/cocodataset/panopticapi/archive/master.zip",
         ],
+        # dev dependencies. Install them by `pip install 'detectron2[dev]'`
         "dev": [
             "flake8==3.8.1",
             "isort==4.3.21",

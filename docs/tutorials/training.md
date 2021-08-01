@@ -22,7 +22,8 @@ It includes the following two instantiations:
   provides a minimal training loop for single-cost single-optimizer single-data-source training, with nothing else.
   Other tasks (checkpointing, logging, etc) can be implemented using
   [the hook system](../modules/engine.html#detectron2.engine.HookBase).
-* [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer) is a `SimpleTrainer` initialized from a config, used by
+* [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer) is a `SimpleTrainer` initialized from a
+  yacs config, used by
   [tools/train_net.py](../../tools/train_net.py) and many scripts.
   It includes more standard default behaviors that one might want to opt in,
   including default configurations for optimizer, learning rate schedule,

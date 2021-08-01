@@ -78,33 +78,11 @@ MODEL:
           INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_bear_4936_256.pkl"
 DATASETS:
   TRAIN:
-    - "densepose_lvis_v1_train1"
-    - "densepose_lvis_v1_train2"
-    - "densepose_lvis_v1_train_CVPR2021"
+    - "densepose_lvis_v1_ds2_train_v1"
   TEST:
-    - "densepose_lvis_v1_val_CVPR2021"
+    - "densepose_lvis_v1_ds2_val_v1"
   WHITELISTED_CATEGORIES:
-    "densepose_lvis_v1_train1":
-      - 943  # sheep
-      - 1202 # zebra
-      - 569  # horse
-      - 496  # giraffe
-      - 422  # elephant
-      - 80   # cow
-      - 76   # bear
-        #- 225  # cat
-        #- 378  # dog
-    "densepose_lvis_v1_train2":
-      - 943  # sheep
-      - 1202 # zebra
-      - 569  # horse
-      - 496  # giraffe
-      - 422  # elephant
-      - 80   # cow
-      - 76   # bear
-        #- 225  # cat
-        #- 378  # dog
-    "densepose_lvis_v1_train_CVPR2021":
+    "densepose_lvis_v1_ds2_train_v1":
       - 943  # sheep
       - 1202 # zebra
       - 569  # horse
@@ -114,7 +92,7 @@ DATASETS:
       - 76   # bear
       - 225  # cat
       - 378  # dog
-    "densepose_lvis_v1_val_CVPR2021":
+    "densepose_lvis_v1_ds2_val_v1":
       - 943  # sheep
       - 1202 # zebra
       - 569  # horse
@@ -125,25 +103,7 @@ DATASETS:
       - 225  # cat
       - 378  # dog
   CATEGORY_MAPS:
-    "densepose_lvis_v1_train1":
-      "1202": 943 # zebra -> sheep
-      "569": 943  # horse -> sheep
-      "496": 943  # giraffe -> sheep
-      "422": 943  # elephant -> sheep
-      "80": 943   # cow -> sheep
-      "76": 943   # bear -> sheep
-      #"225": 943  # cat -> sheep
-      #"378": 943  # dog -> sheep
-    "densepose_lvis_v1_train2":
-      "1202": 943 # zebra -> sheep
-      "569": 943  # horse -> sheep
-      "496": 943  # giraffe -> sheep
-      "422": 943  # elephant -> sheep
-      "80": 943   # cow -> sheep
-      "76": 943   # bear -> sheep
-      #"225": 943  # cat -> sheep
-      #"378": 943  # dog -> sheep
-    "densepose_lvis_v1_train_CVPR2021":
+    "densepose_lvis_v1_ds2_train_v1":
       "1202": 943 # zebra -> sheep
       "569": 943  # horse -> sheep
       "496": 943  # giraffe -> sheep
@@ -152,7 +112,7 @@ DATASETS:
       "76": 943   # bear -> sheep
       "225": 943  # cat -> sheep
       "378": 943  # dog -> sheep
-    "densepose_lvis_v1_val_CVPR2021":
+    "densepose_lvis_v1_ds2_val_v1":
       "1202": 943 # zebra -> sheep
       "569": 943  # horse -> sheep
       "496": 943  # giraffe -> sheep
@@ -169,3 +129,5 @@ DATASETS:
 SOLVER:
   MAX_ITER: 16000
   STEPS: (12000, 14000)
+DENSEPOSE_EVALUATION:
+  EVALUATE_MESH_ALIGNMENT: True

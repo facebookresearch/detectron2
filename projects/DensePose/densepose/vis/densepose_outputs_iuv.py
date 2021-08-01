@@ -80,6 +80,7 @@ class DensePoseOutputsVisualizer(object):
                         U_or_Vn[partId][segmentation == partId].clip(0, 1) * 255
                     )
 
+            # pyre-fixme[61]: `vis` may not be initialized here.
             image_bgr = self.mask_visualizer.visualize(image_bgr, mask, vis, bbox_xywh)
 
         return image_bgr

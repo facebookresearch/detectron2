@@ -27,7 +27,7 @@ build_one() {
   container_id="$container_name"_"$cu"_"$pytorch_ver"
 
   py_versions=(3.6 3.7 3.8)
-  if [[ $pytorch_ver == "1.8" ]]; then
+  if [[ $pytorch_ver != "1.7" ]]; then
     py_versions+=(3.9)
   fi
 
@@ -52,6 +52,10 @@ EOF
 if [[ -n "$1" ]] && [[ -n "$2" ]]; then
   build_one "$1" "$2"
 else
+  build_one cu111 1.9
+  build_one cu102 1.9
+  build_one cpu 1.9
+
   build_one cu111 1.8
   build_one cu102 1.8
   build_one cu101 1.8
@@ -62,9 +66,4 @@ else
   build_one cu101 1.7
   build_one cu92 1.7
   build_one cpu 1.7
-
-  build_one cu102 1.6
-  build_one cu101 1.6
-  build_one cu92 1.6
-  build_one cpu 1.6
 fi
