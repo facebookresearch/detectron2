@@ -1,3 +1,5 @@
+import re
+from pathlib import Path
 from setuptools import find_packages, setup
 
 try:
@@ -13,9 +15,21 @@ For more information:
     """
     )
 
+
+def get_detectron2_current_version():
+    """Version is not available for import through Python since it is
+    above the top level of the packge. Instead, we parse it from the
+    file with a regex."""
+    # get version info from detectron2 __init__.py
+    version_source = (Path(__file__).parents[2] / "detectron2" / "__init__.py").read_text()
+    version_number = re.findall('__version__ = "([0-9\.]+)"', version_source)[0]
+    return version_number
+
+
 setup(
-    name="DensePose",
+    name="detectron2-densepose",
     author="FAIR",
+    version=get_detectron2_current_version(),
     url="https://github.com/facebookresearch/detectron2/tree/master/projects/DensePose",
     packages=find_packages(),
     python_requires=">=3.6",
