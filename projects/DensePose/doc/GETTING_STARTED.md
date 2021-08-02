@@ -56,3 +56,20 @@ Please refer to [Query DB](TOOL_QUERY_DB.md) for more details on this tool
 
 `apply_net` is a tool to print or visualize DensePose results.
 Please refer to [Apply Net](TOOL_APPLY_NET.md) for more details on this tool
+
+
+## Installation as a package
+
+DensePose can also be installed as a Python package for integration with other software.
+
+Prerequisites that must be installed prior to installing DensePose are:
+ - Python >= 3.6
+ - [PyTorch](https://pytorch.org/get-started/locally/#start-locally)
+
+DensePose can then be installed from this GitHub repository by running:
+
+```
+pip install git+https://github.com/drivendataorg/detectron2@master#subdirectory=projects/DensePose
+```
+
+After installing the package it is available with `import densepose`.
