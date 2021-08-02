@@ -22,7 +22,7 @@ def get_detectron2_current_version():
     file with a regex."""
     # get version info from detectron2 __init__.py
     version_source = (Path(__file__).parents[2] / "detectron2" / "__init__.py").read_text()
-    version_number = re.findall('__version__ = "([0-9\.]+)"', version_source)[0]
+    version_number = re.findall(r'__version__ = "([0-9\.]+)"', version_source)[0]
     return version_number
 
 
