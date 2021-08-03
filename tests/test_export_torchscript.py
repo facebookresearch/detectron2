@@ -36,9 +36,14 @@ contains some explanations of this file.
 @unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestScripting(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    def testMaskRCNN(self):
+    def testMaskRCNNFPN(self):
         # TODO: this test requires manifold access, see: T88318502
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def testMaskRCNNC4(self):
+        # TODO: this test requires manifold access, see: T88318502
+        self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testRetinaNet(self):
@@ -90,13 +95,21 @@ class TestScripting(unittest.TestCase):
 @unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestTracing(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    def testMaskRCNN(self):
+    def testMaskRCNNFPN(self):
         # TODO: this test requires manifold access, see: T88318502
         def inference_func(model, image):
             inputs = [{"image": image}]
             return model.inference(inputs, do_postprocess=False)[0]
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
+
+    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
+    def testMaskRCNNC4(self):
+        def inference_func(model, image):
+            inputs = [{"image": image}]
+            return model.inference(inputs, do_postprocess=False)[0]
+
+        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testRetinaNet(self):
