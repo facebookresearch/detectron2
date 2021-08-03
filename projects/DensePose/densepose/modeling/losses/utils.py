@@ -150,6 +150,7 @@ class BilinearInterpolationHelper:
             x_hi,
             w_ylo_xlo,  # pyre-ignore[6]
             w_ylo_xhi,
+            # pyre-fixme[6]: Expected `Tensor` for 9th param but got `float`.
             w_yhi_xlo,
             w_yhi_xhi,
         )
