@@ -19,7 +19,12 @@ from .catalog import DatasetCatalog, MetadataCatalog
 from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
-from .samplers import InferenceSampler, RepeatFactorTrainingSampler, TrainingSampler
+from .samplers import (
+    InferenceSampler,
+    RandomSubsetTrainingSampler,
+    RepeatFactorTrainingSampler,
+    TrainingSampler,
+)
 
 """
 This file contains the default logic to build a dataloader for training or testing.
@@ -331,6 +336,8 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
                 dataset, cfg.DATALOADER.REPEAT_THRESHOLD
             )
             sampler = RepeatFactorTrainingSampler(repeat_factors)
+        elif sampler_name == "RandomSubsetTrainingSampler":
+            sampler = RandomSubsetTrainingSampler(len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO)
         else:
             raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
