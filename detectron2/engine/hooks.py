@@ -217,6 +217,7 @@ class BestCheckpointer(HookBase):
         val_metric: str,
         mode: str = "max",
         file_prefix: str = "model_best",
+        save_first : bool = True
     ) -> None:
         """
         Args:
@@ -225,6 +226,7 @@ class BestCheckpointer(HookBase):
             val_metric (str): chosen validation metric to track for best checkpoint, e.g. "bbox/AP50"
             mode (str): one of {'max', 'min'}. controls whether chosen val metric should be maximized or minimized, e.g. for "bbox/AP50" it should be "max"
             file_prefix (str): the prefix of checkpoint's filename, defaults to "model_best"
+            save_first (bool): flag to save model after first evaluation, defaults to True.
         """
         self._logger = logging.getLogger(__name__)
         self._period = eval_period
@@ -239,6 +241,7 @@ class BestCheckpointer(HookBase):
             self._compare = operator.lt
         self._checkpointer = checkpointer
         self._file_prefix = file_prefix
+        self.save_first = save_first
         self.best_metric = None
         self.best_iter = None
 
@@ -260,6 +263,12 @@ class BestCheckpointer(HookBase):
 
         if self.best_metric is None:
             self._update_best(latest_metric, metric_iter)
+            if self.save_first:
+                additional_state = {"iteration": metric_iter}
+                self._checkpointer.save(f"{self._file_prefix}", **additional_state)
+                self._logger.info(
+                    f"Saved first model at {self.best_metric:0.5f} @ {self.best_iter} steps"
+                )
         elif self._compare(latest_metric, self.best_metric):
             additional_state = {"iteration": metric_iter}
             self._checkpointer.save(f"{self._file_prefix}", **additional_state)
