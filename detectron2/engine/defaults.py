@@ -572,6 +572,9 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
     @classmethod
     def test(cls, cfg, model, evaluators=None):
         """
+        Evaluate the given model. The given model is expected to already contain
+        weights to evaluate.
+
         Args:
             cfg (CfgNode):
             model (nn.Module):
