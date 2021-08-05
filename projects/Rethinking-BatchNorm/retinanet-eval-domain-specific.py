@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (c) Facebook, Inc. and its affiliates.
 import sys
 import torch
 from fvcore.nn.precise_bn import update_bn_stats

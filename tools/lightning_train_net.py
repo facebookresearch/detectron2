@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
 # Lightning Trainer should be considered beta at this point
 # We have confirmed that training and validation run correctly and produce correct results
 # Depending on how you launch the trainer, there are issues with processes terminating correctly
