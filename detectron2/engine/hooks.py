@@ -33,6 +33,7 @@ __all__ = [
     "EvalHook",
     "PreciseBN",
     "TorchProfiler",
+    "TorchMemoryStats",
 ]
 
 
@@ -526,3 +527,57 @@ class PreciseBN(HookBase):
                 + "Note that this could produce different statistics every time."
             )
             update_bn_stats(self._model, data_loader(), self._num_iter)
+
+
+class TorchMemoryStats(HookBase):
+    """
+    Writes pytorch's cuda memory statistics periodically.
+    """
+
+    def __init__(self, period=20, max_runs=10):
+        """
+        Args:
+            period (int): Output stats each 'period' iterations
+            max_runs (int): Stop the logging after 'max_runs'
+        """
+
+        self._logger = logging.getLogger(__name__)
+        self._period = period
+        self._max_runs = max_runs
+        self._runs = 0
+
+    def after_step(self):
+        if self._runs > self._max_runs:
+            return
+
+        if (self.trainer.iter + 1) % self._period == 0 or (
+            self.trainer.iter == self.trainer.max_iter - 1
+        ):
+            if torch.cuda.is_available():
+                max_reserved_mb = torch.cuda.max_memory_reserved() / 1024.0 / 1024.0
+                reserved_mb = torch.cuda.memory_reserved() / 1024.0 / 1024.0
+                max_allocated_mb = torch.cuda.max_memory_allocated() / 1024.0 / 1024.0
+                allocated_mb = torch.cuda.memory_allocated() / 1024.0 / 1024.0
+
+                self._logger.info(
+                    (
+                        " iter: {} "
+                        " max_reserved_mem: {:.0f}MB "
+                        " reserved_mem: {:.0f}MB "
+                        " max_allocated_mem: {:.0f}MB "
+                        " allocated_mem: {:.0f}MB "
+                    ).format(
+                        self.trainer.iter,
+                        max_reserved_mb,
+                        reserved_mb,
+                        max_allocated_mb,
+                        allocated_mb,
+                    )
+                )
+
+                self._runs += 1
+                if self._runs == self._max_runs:
+                    mem_summary = torch.cuda.memory_summary()
+                    self._logger.info("\n" + mem_summary)
+
+                torch.cuda.reset_peak_memory_stats()

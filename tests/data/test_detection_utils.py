@@ -159,6 +159,15 @@ class TestTransformAnnotations(unittest.TestCase):
         self.assertEqual(img.dtype, np.uint8)
         self.assertEqual(img.shape, (1200, 1800, 3))  # check that shape is not transposed
 
+    def test_opencv_exif_orientation(self):
+        import cv2
+
+        URL = "detectron2://assets/Landscape_5.jpg"
+        with PathManager.open(URL, "rb") as f:
+            img = cv2.imdecode(np.frombuffer(f.read(), dtype="uint8"), cv2.IMREAD_COLOR)
+        self.assertEqual(img.dtype, np.uint8)
+        self.assertEqual(img.shape, (1200, 1800, 3))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+# Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
 import logging
 import numpy as np

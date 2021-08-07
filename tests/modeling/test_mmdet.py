@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 import unittest
 
 from detectron2.layers import ShapeSpec

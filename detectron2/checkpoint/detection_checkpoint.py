@@ -114,4 +114,9 @@ class DetectionCheckpointer(Checkpointer):
                     incompatible.missing_keys.remove(k)
                 except ValueError:
                     pass
+        for k in incompatible.unexpected_keys[:]:
+            # Ignore unexpected keys about cell anchors. They exist in old checkpoints
+            # but now they are non-persistent buffers and will not be in new checkpoints.
+            if "anchor_generator.cell_anchors" in k:
+                incompatible.unexpected_keys.remove(k)
         return incompatible
