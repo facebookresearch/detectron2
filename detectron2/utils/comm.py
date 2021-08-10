@@ -11,6 +11,8 @@ import pickle
 import torch
 import torch.distributed as dist
 
+from .env import TORCH_VERSION
+
 _LOCAL_PROCESS_GROUP = None
 """
 A torch process group which only includes processes that on the same machine as the current process.
@@ -78,7 +80,7 @@ def synchronize():
     world_size = dist.get_world_size()
     if world_size == 1:
         return
-    if dist.get_backend() == dist.Backend.NCCL:
+    if dist.get_backend() == dist.Backend.NCCL and TORCH_VERSION >= (1, 8):
         # This argument is needed to avoid warnings.
         # It's valid only for NCCL backend.
         dist.barrier(device_ids=[get_local_rank()])
