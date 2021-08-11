@@ -83,7 +83,7 @@ def synchronize():
     if dist.get_backend() == dist.Backend.NCCL and TORCH_VERSION >= (1, 8):
         # This argument is needed to avoid warnings.
         # It's valid only for NCCL backend.
-        dist.barrier(device_ids=[get_local_rank()])
+        dist.barrier(device_ids=[torch.cuda.current_device()])
     else:
         dist.barrier()
 
