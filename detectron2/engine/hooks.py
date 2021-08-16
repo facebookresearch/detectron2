@@ -245,11 +245,12 @@ class BestCheckpointer(HookBase):
         self.best_metric = None
         self.best_iter = None
 
-    def _update_best(self, val, iter):
+    def _update_best(self, val, iteration):
         if math.isnan(val) or math.isinf(val):
-            return
+            return False
         self.best_metric = val
-        self.best_iter = iter
+        self.best_iter = iteration
+        return True
 
     def _best_checking(self):
         metric_tuple = self.trainer.storage.latest().get(self._val_metric)
@@ -262,8 +263,7 @@ class BestCheckpointer(HookBase):
             latest_metric, metric_iter = metric_tuple
 
         if self.best_metric is None:
-            self._update_best(latest_metric, metric_iter)
-            if self.save_first:
+            if self._update_best(latest_metric, metric_iter) and self.save_first:
                 additional_state = {"iteration": metric_iter}
                 self._checkpointer.save(f"{self._file_prefix}", **additional_state)
                 self._logger.info(

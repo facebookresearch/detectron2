@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 from unittest import mock
+import math
 import torch
 from fvcore.common.checkpoint import Checkpointer
 from torch import nn
@@ -158,7 +159,8 @@ class TestTrainer(unittest.TestCase):
         test_period = 10
         test_cases = [
             ('max', iter([0.3, 0.4, 0.35, 0.5]), 3),
-            ('min', iter([1.0, 0.8, 0.9, 0.9]), 2)
+            ('min', iter([1.0, 0.8, 0.9, 0.9]), 2),
+            ('min', iter([math.nan, 0.8, 0.9, 0.9]), 1),
         ]
         for mode, metrics, call_count in test_cases:
             trainer = SimpleTrainer(model, dataloader, opt)
