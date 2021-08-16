@@ -113,7 +113,7 @@ class BoxMode(IntEnum):
             arr = arr.double()
             arr[:, 0] += arr[:, 2] / 2.0
             arr[:, 1] += arr[:, 3] / 2.0
-            angles = torch.zeros((arr.shape[0], 1), dtype=arr.dtype)
+            angles = torch.zeros((arr.shape[0], 1), dtype=arr.dtype, device=arr.device)
             arr = torch.cat((arr, angles), axis=1).to(dtype=original_dtype)
         else:
             if to_mode == BoxMode.XYXY_ABS and from_mode == BoxMode.XYWH_ABS:
