@@ -62,6 +62,14 @@ class TestBoxMode(unittest.TestCase):
         self.assertTrue((output[0] == [5, 5, 5, 5]).all())
         self.assertTrue((output[1] == [1, 1, 1, 2]).all())
 
+        output = self._convert_xywh_to_xywha(box)
+        self.assertEqual(output.dtype, box.dtype)
+        self.assertEqual(output.device, box.device)
+        expected = np.asarray(
+            [[5, 5, 10, 10, 0], [1, 1, 2, 3, 0]], dtype=box.dtype, device=box.device
+        )
+        self.assertTrue(np.allclose(output, expected, atol=1e-6), "output={}".format(output))
+
     def test_box_convert_xywha_to_xyxy_list(self):
         for tp in [list, tuple]:
             box = tp([50, 50, 30, 20, 0])
