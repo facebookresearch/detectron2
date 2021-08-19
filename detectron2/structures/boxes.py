@@ -388,15 +388,15 @@ def pairwise_ioa(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     return ioa
 
 
-def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
+def matched_pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     """
     Compute pairwise intersection over union (IOU) of two sets of matched
-    boxes. The box order must be (xmin, ymin, xmax, ymax).
-    Similar to boxlist_iou, but computes only diagonal elements of the matrix
+    boxes that have the same number of boxes.
+    Similar to :func:`pairwise_iou`, but computes only diagonal elements of the matrix.
 
     Args:
-        boxes1: (Boxes) bounding boxes, sized [N,4].
-        boxes2: (Boxes) bounding boxes, sized [N,4].
+        boxes1 (Boxes): bounding boxes, sized [N,4] in XYXY format.
+        boxes2 (Boxes): same length as boxes1
     Returns:
         Tensor: iou, sized [N].
     """
