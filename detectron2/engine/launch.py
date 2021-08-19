@@ -116,11 +116,11 @@ def _distributed_worker(
         if i == machine_rank:
             comm._LOCAL_PROCESS_GROUP = pg
 
+    assert num_gpus_per_machine <= torch.cuda.device_count()
+    torch.cuda.set_device(local_rank)
+
     # synchronize is needed here to prevent a possible timeout after calling init_process_group
     # See: https://github.com/facebookresearch/maskrcnn-benchmark/issues/172
     comm.synchronize()
-
-    assert num_gpus_per_machine <= torch.cuda.device_count()
-    torch.cuda.set_device(local_rank)
 
     main_func(*args)

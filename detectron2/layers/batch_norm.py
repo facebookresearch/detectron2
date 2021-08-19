@@ -142,6 +142,8 @@ def get_norm(norm, out_channels):
             # for debugging:
             "nnSyncBN": nn.SyncBatchNorm,
             "naiveSyncBN": NaiveSyncBatchNorm,
+            # expose stats_mode N as an option to caller, required for zero-len inputs
+            "naiveSyncBN_N": lambda channels: NaiveSyncBatchNorm(channels, stats_mode="N"),
         }[norm]
     return norm(out_channels)
 
