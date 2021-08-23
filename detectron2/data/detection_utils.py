@@ -376,8 +376,12 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
             "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
-    boxes = np.stack(
-        [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+    boxes = (
+        np.stack(
+            [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+        )
+        if len(annos)
+        else np.zeros((0, 4))
     )
     target = Instances(image_size)
     target.gt_boxes = Boxes(boxes)

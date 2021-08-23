@@ -29,6 +29,9 @@ class TestTransformAnnotations(unittest.TestCase):
 
         detection_utils.annotations_to_instances([output, output], (400, 400))
 
+    def test_transform_empty_annotation(self):
+        detection_utils.annotations_to_instances([], (400, 400))
+
     def test_flip_keypoints(self):
         transforms = T.TransformList([T.HFlipTransform(400)])
         anno = {
