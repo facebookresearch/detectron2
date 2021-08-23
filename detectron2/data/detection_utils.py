@@ -352,7 +352,13 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
 
     # If flipped, swap each keypoint with its opposite-handed equivalent
     if do_hflip:
-        assert keypoint_hflip_indices is not None
+        if keypoint_hflip_indices is None:
+            raise ValueError("Cannot flip keypoints without providing flip indices!")
+        if len(keypoints) != len(keypoint_hflip_indices):
+            raise ValueError(
+                "Keypoint data has {} points, but metadata "
+                "contains {} points!".format(len(keypoints), len(keypoint_hflip_indices))
+            )
         keypoints = keypoints[np.asarray(keypoint_hflip_indices, dtype=np.int32), :]
 
     # Maintain COCO convention that if visibility == 0 (unlabeled), then x, y = 0
