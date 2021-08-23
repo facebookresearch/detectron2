@@ -13,7 +13,7 @@ from detectron2.structures import Boxes
 _DEFAULT_SCALE_CLAMP = math.log(1000.0 / 16)
 
 
-__all__ = ["Box2BoxTransform", "Box2BoxTransformRotated"]
+__all__ = ["Box2BoxTransform", "Box2BoxTransformRotated", "Box2BoxTransformLinear"]
 
 
 @torch.jit.script
@@ -223,6 +223,77 @@ class Box2BoxTransformRotated(object):
 
         pred_boxes[:, 4::5] = pred_angle
 
+        return pred_boxes
+
+
+class Box2BoxTransformLinear:
+    """
+    The linear box-to-box transform defined in FCOS. The transformation is parameterized
+    by the distance from the center of (square) src box to 4 edges of the target box.
+    """
+
+    def __init__(self, normalize_by_size=True):
+        """
+        Args:
+            normalize_by_size: normalize deltas by the size of src (anchor) boxes.
+        """
+        self.normalize_by_size = normalize_by_size
+
+    def get_deltas(self, src_boxes, target_boxes):
+        """
+        Get box regression transformation deltas (dx1, dy1, dx2, dy2) that can be used
+        to transform the `src_boxes` into the `target_boxes`. That is, the relation
+        ``target_boxes == self.apply_deltas(deltas, src_boxes)`` is true.
+
+        Args:
+            src_boxes (Tensor): square source boxes, e.g., anchors
+            target_boxes (Tensor): target of the transformation, e.g., ground-truth
+                boxes.
+        """
+        assert isinstance(src_boxes, torch.Tensor), type(src_boxes)
+        assert isinstance(target_boxes, torch.Tensor), type(target_boxes)
+
+        src_ctr_x = 0.5 * (src_boxes[:, 0] + src_boxes[:, 2])
+        src_ctr_y = 0.5 * (src_boxes[:, 1] + src_boxes[:, 3])
+
+        target_l = src_ctr_x - target_boxes[:, 0]
+        target_t = src_ctr_y - target_boxes[:, 1]
+        target_r = target_boxes[:, 2] - src_ctr_x
+        target_b = target_boxes[:, 3] - src_ctr_y
+
+        deltas = torch.stack((target_l, target_t, target_r, target_b), dim=1)
+        if self.normalize_by_size:
+            stride = (src_boxes[:, 2] - src_boxes[:, 0]).unsqueeze(1)
+            deltas = deltas / stride
+        return deltas
+
+    def apply_deltas(self, deltas, boxes):
+        """
+        Apply transformation `deltas` (dx1, dy1, dx2, dy2) to `boxes`.
+
+        Args:
+            deltas (Tensor): transformation deltas of shape (N, k*4), where k >= 1.
+                deltas[i] represents k potentially different class-specific
+                box transformations for the single box boxes[i].
+            boxes (Tensor): boxes to transform, of shape (N, 4)
+        """
+        boxes = boxes.to(deltas.dtype)
+
+        ctr_x = 0.5 * (boxes[:, 0] + boxes[:, 2])
+        ctr_y = 0.5 * (boxes[:, 1] + boxes[:, 3])
+        if self.normalize_by_size:
+            stride = (boxes[:, 2] - boxes[:, 0]).unsqueeze(1)
+            deltas = deltas * stride
+        l = deltas[:, 0::4]
+        t = deltas[:, 1::4]
+        r = deltas[:, 2::4]
+        b = deltas[:, 3::4]
+
+        pred_boxes = torch.zeros_like(deltas)
+        pred_boxes[:, 0::4] = ctr_x[:, None] - l  # x1
+        pred_boxes[:, 1::4] = ctr_y[:, None] - t  # y1
+        pred_boxes[:, 2::4] = ctr_x[:, None] + r  # x2
+        pred_boxes[:, 3::4] = ctr_y[:, None] + b  # y2
         return pred_boxes
 
 
