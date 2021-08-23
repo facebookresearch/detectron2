@@ -452,11 +452,17 @@ class Res5ROIHeads(ROIHeads):
         )
         return nn.Sequential(*blocks), out_channels
 
-    def _shared_roi_transform(self, features, boxes):
+    def _shared_roi_transform(self, features: List[torch.Tensor], boxes: List[Boxes]):
         x = self.pooler(features, boxes)
         return self.res5(x)
 
-    def forward(self, images, features, proposals, targets=None):
+    def forward(
+        self,
+        images: ImageList,
+        features: Dict[str, torch.Tensor],
+        proposals: List[Instances],
+        targets: Optional[List[Instances]] = None,
+    ):
         """
         See :meth:`ROIHeads.forward`.
         """
@@ -493,7 +499,9 @@ class Res5ROIHeads(ROIHeads):
             pred_instances = self.forward_with_given_boxes(features, pred_instances)
             return pred_instances, {}
 
-    def forward_with_given_boxes(self, features, instances):
+    def forward_with_given_boxes(
+        self, features: Dict[str, torch.Tensor], instances: List[Instances]
+    ) -> List[Instances]:
         """
         Use the given boxes in `instances` to produce other (non-box) per-ROI outputs.
 
@@ -511,8 +519,8 @@ class Res5ROIHeads(ROIHeads):
         assert instances[0].has("pred_boxes") and instances[0].has("pred_classes")
 
         if self.mask_on:
-            features = [features[f] for f in self.in_features]
-            x = self._shared_roi_transform(features, [x.pred_boxes for x in instances])
+            feature_list = [features[f] for f in self.in_features]
+            x = self._shared_roi_transform(feature_list, [x.pred_boxes for x in instances])
             return self.mask_head(x, instances)
         else:
             return instances
