@@ -163,6 +163,8 @@ class SemSegFPNHead(nn.Module):
         """
         super().__init__()
         input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
+        if not len(input_shape):
+            raise ValueError("SemSegFPNHead(input_shape=) cannot be empty!")
         self.in_features = [k for k, v in input_shape]
         feature_strides = [v.stride for k, v in input_shape]
         feature_channels = [v.channels for k, v in input_shape]
