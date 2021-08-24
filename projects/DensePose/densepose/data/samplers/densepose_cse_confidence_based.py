@@ -82,7 +82,7 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
             # (here best = smallest variance)
             _, sorted_confidence_indices = torch.sort(values[0])
             if self.search_count_multiplier is not None:
-                search_count = min(int(count * self.search_count_multiplier), k)  # pyre-ignore[58]
+                search_count = min(int(count * self.search_count_multiplier), k)
             elif self.search_proportion is not None:
                 search_count = min(max(int(k * self.search_proportion), count), k)
             else:
