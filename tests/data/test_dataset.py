@@ -8,7 +8,15 @@ from functools import partial
 import torch
 from iopath.common.file_io import LazyPath
 
-from detectron2.data.build import DatasetFromList, MapDataset
+from detectron2 import model_zoo
+from detectron2.config import instantiate
+from detectron2.data import (
+    DatasetFromList,
+    MapDataset,
+    ToIterableDataset,
+    build_detection_train_loader,
+)
+from detectron2.data.samplers import TrainingSampler
 
 
 def _a_slow_func(x):
@@ -61,3 +69,26 @@ class TestMapDataset(unittest.TestCase):
         ds = MapDataset(ds, lambda x: x * 2)
         ds = pickle.loads(pickle.dumps(ds))
         self.assertEqual(ds[0], 2)
+
+
+@unittest.skipIf(os.environ.get("CI"), "Skipped OSS testing due to COCO data requirement.")
+class TestDataLoader(unittest.TestCase):
+    def _get_kwargs(self):
+        # get kwargs of build_detection_train_loader
+        cfg = model_zoo.get_config("common/data/coco.py").dataloader.train
+        cfg.dataset.names = "coco_2017_val_100"
+        cfg.pop("_target_")
+        kwargs = {k: instantiate(v) for k, v in cfg.items()}
+        return kwargs
+
+    def test_build_dataloader(self):
+        kwargs = self._get_kwargs()
+        dl = build_detection_train_loader(**kwargs)
+        next(iter(dl))
+
+    def test_build_iterable_dataloader(self):
+        kwargs = self._get_kwargs()
+        ds = DatasetFromList(kwargs.pop("dataset"))
+        ds = ToIterableDataset(ds, TrainingSampler(len(ds)))
+        dl = build_detection_train_loader(dataset=ds, **kwargs)
+        next(iter(dl))
