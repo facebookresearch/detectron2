@@ -4,7 +4,8 @@ import logging
 import numpy as np
 import operator
 import pickle
-import torch.utils.data
+import torch
+import torch.utils.data as torchdata
 from tabulate import tabulate
 from termcolor import colored
 
@@ -16,7 +17,7 @@ from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import _log_api_usage, log_first_n
 
 from .catalog import DatasetCatalog, MetadataCatalog
-from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset
+from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIterableDataset
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 from .samplers import (
@@ -270,8 +271,9 @@ def build_batch_data_loader(
     2. use no "batch collation", because this is common for detection training
 
     Args:
-        dataset (torch.utils.data.Dataset): map-style PyTorch dataset. Can be indexed.
-        sampler (torch.utils.data.sampler.Sampler): a sampler that produces indices
+        dataset (torch.utils.data.Dataset): a pytorch map-style or iterable dataset.
+        sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces indices.
+            Must be provided iff. ``dataset`` is a map-style dataset.
         total_batch_size, aspect_ratio_grouping, num_workers): see
             :func:`build_detection_train_loader`.
 
@@ -285,26 +287,27 @@ def build_batch_data_loader(
     ), "Total batch size ({}) must be divisible by the number of gpus ({}).".format(
         total_batch_size, world_size
     )
-
     batch_size = total_batch_size // world_size
+
+    if isinstance(dataset, torchdata.IterableDataset):
+        assert sampler is None, "sampler must be None if dataset is IterableDataset"
+    else:
+        dataset = ToIterableDataset(dataset, sampler)
+
     if aspect_ratio_grouping:
-        data_loader = torch.utils.data.DataLoader(
+        data_loader = torchdata.DataLoader(
             dataset,
-            sampler=sampler,
             num_workers=num_workers,
-            batch_sampler=None,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
         )  # yield individual mapped dict
         return AspectRatioGroupedDataset(data_loader, batch_size)
     else:
-        batch_sampler = torch.utils.data.sampler.BatchSampler(
-            sampler, batch_size, drop_last=True
-        )  # drop_last so the batch always have the same size
-        return torch.utils.data.DataLoader(
+        return torchdata.DataLoader(
             dataset,
+            batch_size=batch_size,
+            drop_last=True,
             num_workers=num_workers,
-            batch_sampler=batch_sampler,
             collate_fn=trivial_batch_collator,
             worker_init_fn=worker_init_reset_seed,
         )
@@ -351,7 +354,6 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
     }
 
 
-# TODO can allow dataset as an iterable or IterableDataset to make this function more general
 @configurable(from_config=_train_loader_from_config)
 def build_detection_train_loader(
     dataset, *, mapper, sampler=None, total_batch_size, aspect_ratio_grouping=True, num_workers=0
@@ -362,14 +364,16 @@ def build_detection_train_loader(
 
     Args:
         dataset (list or torch.utils.data.Dataset): a list of dataset dicts,
-            or a map-style pytorch dataset. They can be obtained by using
-            :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
+            or a pytorch dataset (either map-style or iterable). It can be obtained
+            by using :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
         mapper (callable): a callable which takes a sample (dict) from dataset and
             returns the format to be consumed by the model.
             When using cfg, the default choice is ``DatasetMapper(cfg, is_train=True)``.
         sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces
-            indices to be applied on ``dataset``. Default to :class:`TrainingSampler`,
+            indices to be applied on ``dataset``.
+            If ``dataset`` is map-style, the default sampler is a :class:`TrainingSampler`,
             which coordinates an infinite random shuffle sequence across all workers.
+            Sampler must be None if ``dataset`` is iterable.
         total_batch_size (int): total batch size across all workers. Batching
             simply puts data into a list.
         aspect_ratio_grouping (bool): whether to group images with similar
@@ -387,9 +391,13 @@ def build_detection_train_loader(
         dataset = DatasetFromList(dataset, copy=False)
     if mapper is not None:
         dataset = MapDataset(dataset, mapper)
-    if sampler is None:
-        sampler = TrainingSampler(len(dataset))
-    assert isinstance(sampler, torch.utils.data.sampler.Sampler)
+
+    if isinstance(dataset, torchdata.IterableDataset):
+        assert sampler is None, "sampler must be None if dataset is IterableDataset"
+    else:
+        if sampler is None:
+            sampler = TrainingSampler(len(dataset))
+        assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
     return build_batch_data_loader(
         dataset,
         sampler,
@@ -462,8 +470,8 @@ def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0)
         sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
-    batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
-    data_loader = torch.utils.data.DataLoader(
+    batch_sampler = torchdata.sampler.BatchSampler(sampler, 1, drop_last=False)
+    data_loader = torchdata.DataLoader(
         dataset,
         num_workers=num_workers,
         batch_sampler=batch_sampler,

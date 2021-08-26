@@ -1,6 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from .config import CfgNode as CN
 
+# NOTE: given the new config system
+# (https://detectron2.readthedocs.io/en/latest/tutorials/lazyconfigs.html),
+# we will stop adding new functionalities to default CfgNode.
+
 # -----------------------------------------------------------------------------
 # Convention about Training / Test specific parameters
 # -----------------------------------------------------------------------------

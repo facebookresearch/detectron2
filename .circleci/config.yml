@@ -4,16 +4,14 @@ version: 2.1
 # Environments to run the jobs in
 # -------------------------------------------------------------------------------------
 cpu: &cpu
-  docker:
-    - image: circleci/python:3.6.8-stretch
-      auth:
-        username: $DOCKERHUB_USERNAME
-        password: $DOCKERHUB_TOKEN
+  machine:
+    image: ubuntu-2004:202107-02
   resource_class: medium
 
 gpu: &gpu
   machine:
     #image: ubuntu-1604-cuda-10.1:201909-23
+    # NOTE: use a cuda vesion that's supported by all our pytorch versions
     image: ubuntu-1604-cuda-10.2:202012-01
   resource_class: gpu.small
 
@@ -141,20 +139,20 @@ jobs:
 
     steps:
       - checkout
-      - <<: *setup_venv
 
       # Cache the venv directory that contains dependencies
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210802
 
+      - <<: *install_python
       - <<: *install_linux_dep
 
       - save_cache:
           paths:
-            - ~/venv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
+            - /opt/circleci/.pyenv
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210802
 
       - <<: *install_detectron2
       - <<: *run_unittests

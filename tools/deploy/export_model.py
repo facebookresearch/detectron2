@@ -128,9 +128,8 @@ def export_tracing(torch_model, inputs):
             torch.jit.save(ts_model, f)
         dump_torchscript_IR(ts_model, args.output)
     elif args.format == "onnx":
-        # NOTE onnx export currently failing in pytorch
         with PathManager.open(os.path.join(args.output, "model.onnx"), "wb") as f:
-            torch.onnx.export(traceable_model, (image,), f)
+            torch.onnx.export(traceable_model, (image,), f, opset_version=11)
     logger.info("Inputs schema: " + str(traceable_model.inputs_schema))
     logger.info("Outputs schema: " + str(traceable_model.outputs_schema))
 

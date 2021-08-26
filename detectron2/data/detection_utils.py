@@ -352,7 +352,13 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
 
     # If flipped, swap each keypoint with its opposite-handed equivalent
     if do_hflip:
-        assert keypoint_hflip_indices is not None
+        if keypoint_hflip_indices is None:
+            raise ValueError("Cannot flip keypoints without providing flip indices!")
+        if len(keypoints) != len(keypoint_hflip_indices):
+            raise ValueError(
+                "Keypoint data has {} points, but metadata "
+                "contains {} points!".format(len(keypoints), len(keypoint_hflip_indices))
+            )
         keypoints = keypoints[np.asarray(keypoint_hflip_indices, dtype=np.int32), :]
 
     # Maintain COCO convention that if visibility == 0 (unlabeled), then x, y = 0
@@ -376,8 +382,12 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
             "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
-    boxes = np.stack(
-        [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+    boxes = (
+        np.stack(
+            [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+        )
+        if len(annos)
+        else np.zeros((0, 4))
     )
     target = Instances(image_size)
     target.gt_boxes = Boxes(boxes)

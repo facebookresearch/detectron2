@@ -150,16 +150,10 @@ def _try_get_key(cfg, *keys, default=None):
     if isinstance(cfg, CfgNode):
         cfg = OmegaConf.create(cfg.dump())
     for k in keys:
-        # OmegaConf.select(default=) is supported only after omegaconf2.1,
-        # but some internal users still rely on 2.0
-        parts = k.split(".")
-        # https://github.com/omry/omegaconf/issues/674
-        for p in parts:
-            if p not in cfg:
-                break
-            cfg = OmegaConf.select(cfg, p)
-        else:
-            return cfg
+        none = object()
+        p = OmegaConf.select(cfg, k, default=none)
+        if p is not none:
+            return p
     return default
 
 

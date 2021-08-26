@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from .boxes import Boxes, BoxMode, pairwise_iou, pairwise_ioa
+from .boxes import Boxes, BoxMode, pairwise_iou, pairwise_ioa, pairwise_point_box_distance
 from .image_list import ImageList
 
 from .instances import Instances

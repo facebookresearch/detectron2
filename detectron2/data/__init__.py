@@ -10,7 +10,7 @@ from .build import (
     print_instances_class_histogram,
 )
 from .catalog import DatasetCatalog, MetadataCatalog, Metadata
-from .common import DatasetFromList, MapDataset
+from .common import DatasetFromList, MapDataset, ToIterableDataset
 from .dataset_mapper import DatasetMapper
 
 # ensure the builtin datasets are registered
