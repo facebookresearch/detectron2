@@ -74,7 +74,7 @@ class MapDataset(data.Dataset):
         if is_iterable:
             return _MapIterableDataset(dataset, map_func)
         else:
-            return super().__new__(cls, dataset, map_func)
+            return super().__new__(cls)
 
     def __getnewargs__(self):
         return self._dataset, self._map_func
