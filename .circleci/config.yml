@@ -26,7 +26,7 @@ windows-cpu: &windows_cpu
 #       resource_class: windows.gpu.nvidia.medium
 #       image: windows-server-2019-nvidia:stable
 
-pytorch_parameters: &pytorch_parameters
+version_parameters: &version_parameters
   parameters:
     pytorch_version:
       type: string
@@ -37,11 +37,15 @@ pytorch_parameters: &pytorch_parameters
       # use test wheels index to have access to RC wheels
       # https://download.pytorch.org/whl/test/torch_test.html
       default: "https://download.pytorch.org/whl/torch_stable.html"
+    python_version:  # NOTE: only affect linux
+      type: string
+      default: '3.6.8'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
     TORCHVISION_VERSION: << parameters.torchvision_version >>
     PYTORCH_INDEX: << parameters.pytorch_index >>
+    PYTHON_VERSION: << parameters.python_version>>
 
 # -------------------------------------------------------------------------------------
 # Re-usable commands
@@ -66,8 +70,10 @@ install_python: &install_python
       name: Install Python
       working_directory: ~/
       command: |
-        pyenv install -s 3.6.8
-        pyenv global 3.6.8
+        # upgrade pyenv
+        cd /opt/circleci/.pyenv/plugins/python-build/../.. && git pull && cd -
+        pyenv install -s $PYTHON_VERSION
+        pyenv global $PYTHON_VERSION
         python --version
         which python
         pip install --upgrade pip
@@ -118,6 +124,8 @@ install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
+        # Remove if it's in cache
+        pip uninstall -y detectron2
         pip install --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
 
@@ -133,58 +141,58 @@ run_unittests: &run_unittests
 jobs:
   linux_cpu_tests:
     <<: *cpu
-    <<: *pytorch_parameters
+    <<: *version_parameters
 
     working_directory: ~/detectron2
 
     steps:
       - checkout
 
-      # Cache the venv directory that contains dependencies
+      # Cache the venv directory that contains python, dependencies, and checkpoints
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210802
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
       - <<: *install_python
       - <<: *install_linux_dep
+      - <<: *install_detectron2
+      - <<: *run_unittests
 
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210802
+            - ~/.torch
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
-      - <<: *install_detectron2
-      - <<: *run_unittests
 
   linux_gpu_tests:
     <<: *gpu
-    <<: *pytorch_parameters
+    <<: *version_parameters
 
     working_directory: ~/detectron2
 
     steps:
       - checkout
 
-      # Cache the directory that contains python and dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
       - <<: *install_python
       - <<: *install_linux_dep
+      - <<: *install_detectron2
+      - <<: *run_unittests
 
       - save_cache:
           paths:
             - /opt/circleci/.pyenv
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
-
-      - <<: *install_detectron2
-      - <<: *run_unittests
+            - ~/.torch
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
   windows_cpu_build:
     <<: *windows_cpu
-    <<: *pytorch_parameters
+    <<: *version_parameters
     steps:
       - <<: *add_ssh_keys
       - checkout
@@ -221,8 +229,6 @@ workflows:
           name: linux_cpu_tests_pytorch1.9
           pytorch_version: '1.9.0+cpu'
           torchvision_version: '0.10.0+cpu'
-          context:
-            - DOCKERHUB_TOKEN
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.7
           pytorch_version: '1.7.0'
@@ -237,6 +243,11 @@ workflows:
           name: linux_gpu_tests_pytorch1.9
           pytorch_version: '1.9+cu102'
           torchvision_version: '0.10+cu102'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.9_python39
+          pytorch_version: '1.9+cu102'
+          torchvision_version: '0.10+cu102'
+          python_version: '3.9.6'
       - windows_cpu_build:
           pytorch_version: '1.9+cpu'
           torchvision_version: '0.10+cpu'

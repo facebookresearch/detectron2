@@ -33,7 +33,7 @@ contains some explanations of this file.
 """
 
 
-@unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
+@unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestScripting(unittest.TestCase):
     def testMaskRCNNFPN(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
@@ -86,7 +86,7 @@ class TestScripting(unittest.TestCase):
         # https://github.com/pytorch/pytorch/issues/46944
 
 
-@unittest.skipIf(os.environ.get("CI") or TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
+@unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient Pytorch version")
 class TestTracing(unittest.TestCase):
     def testMaskRCNNFPN(self):
         # TODO: this test requires manifold access, see: T88318502
