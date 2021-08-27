@@ -155,9 +155,7 @@ class InferenceBasedLoader:
                     [instance_class] * len(model_output_i["instances"])
                 )
             model_output_filtered = (
-                model_output
-                if self.data_filter is None
-                else self.data_filter(model_output)
+                model_output if self.data_filter is None else self.data_filter(model_output)
             )
             data = (
                 model_output_filtered
