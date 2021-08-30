@@ -200,6 +200,9 @@ class ToIterableDataset(data.IterableDataset):
         for idx in sampler:
             yield self.dataset[idx]
 
+    def __len__(self):
+        return len(self.sampler)
+
 
 class AspectRatioGroupedDataset(data.IterableDataset):
     """

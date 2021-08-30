@@ -14,9 +14,10 @@ from detectron2.data import (
     DatasetFromList,
     MapDataset,
     ToIterableDataset,
+    build_batch_data_loader,
     build_detection_train_loader,
 )
-from detectron2.data.samplers import TrainingSampler
+from detectron2.data.samplers import InferenceSampler, TrainingSampler
 
 
 def _a_slow_func(x):
@@ -92,3 +93,14 @@ class TestDataLoader(unittest.TestCase):
         ds = ToIterableDataset(ds, TrainingSampler(len(ds)))
         dl = build_detection_train_loader(dataset=ds, **kwargs)
         next(iter(dl))
+
+    def test_build_dataloader_inference(self):
+        N = 96
+        ds = DatasetFromList(list(range(N)))
+        sampler = InferenceSampler(len(ds))
+        dl = build_batch_data_loader(ds, sampler, 8, num_workers=3)
+
+        data = list(iter(dl))
+        data = [x for batch in data for x in batch]  # flatten the batches
+        self.assertEqual(len(data), N)
+        self.assertEqual(set(data), set(range(N)))
