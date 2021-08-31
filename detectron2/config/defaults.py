@@ -316,6 +316,8 @@ _C.MODEL.ROI_BOX_HEAD.NORM = ""
 _C.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG = False
 # If true, RoI heads use bounding boxes predicted by the box head rather than proposal boxes.
 _C.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES = False
+# Scaling factor for the RoI box head
+_C.MODEL.ROI_BOX_HEAD.BBOX_SCALE_FACTOR = 1.0
 
 # ---------------------------------------------------------------------------- #
 # Cascaded Box Head

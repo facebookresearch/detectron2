@@ -74,7 +74,7 @@ class Box2BoxTransform(object):
         assert (src_widths > 0).all().item(), "Input boxes to Box2BoxTransform are not valid!"
         return deltas
 
-    def apply_deltas(self, deltas, boxes):
+    def apply_deltas(self, deltas, boxes, bbox_s):
         """
         Apply transformation `deltas` (dx, dy, dw, dh) to `boxes`.
 
@@ -104,8 +104,8 @@ class Box2BoxTransform(object):
 
         pred_ctr_x = dx * widths[:, None] + ctr_x[:, None]
         pred_ctr_y = dy * heights[:, None] + ctr_y[:, None]
-        pred_w = torch.exp(dw) * widths[:, None]
-        pred_h = torch.exp(dh) * heights[:, None]
+        pred_w = torch.exp(dw) * widths[:, None] * bbox_s
+        pred_h = torch.exp(dh) * heights[:, None] * bbox_s
 
         x1 = pred_ctr_x - 0.5 * pred_w
         y1 = pred_ctr_y - 0.5 * pred_h
@@ -179,7 +179,7 @@ class Box2BoxTransformRotated(object):
         ), "Input boxes to Box2BoxTransformRotated are not valid!"
         return deltas
 
-    def apply_deltas(self, deltas, boxes):
+    def apply_deltas(self, deltas, boxes, bbox_s):
         """
         Apply transformation `deltas` (dx, dy, dw, dh, da) to `boxes`.
 
@@ -213,8 +213,8 @@ class Box2BoxTransformRotated(object):
         pred_boxes = torch.zeros_like(deltas)
         pred_boxes[:, 0::5] = dx * widths + ctr_x  # x_ctr
         pred_boxes[:, 1::5] = dy * heights + ctr_y  # y_ctr
-        pred_boxes[:, 2::5] = torch.exp(dw) * widths  # width
-        pred_boxes[:, 3::5] = torch.exp(dh) * heights  # height
+        pred_boxes[:, 2::5] = torch.exp(dw) * widths * bbox_s # width
+        pred_boxes[:, 3::5] = torch.exp(dh) * heights * bbox_s  # height
 
         # Following original RRPN implementation,
         # angles of deltas are in radians while angles of boxes are in degrees.

@@ -202,6 +202,7 @@ class RPN(nn.Module):
         loss_weight: Union[float, Dict[str, float]] = 1.0,
         box_reg_loss_type: str = "smooth_l1",
         smooth_l1_beta: float = 0.0,
+        bbox_scale_factor: float = 1.0,
     ):
         """
         NOTE: this interface is experimental.
@@ -254,6 +255,7 @@ class RPN(nn.Module):
         self.loss_weight = loss_weight
         self.box_reg_loss_type = box_reg_loss_type
         self.smooth_l1_beta = smooth_l1_beta
+        self.bbox_scale_factor = bbox_scale_factor
 
     @classmethod
     def from_config(cls, cfg, input_shape: Dict[str, ShapeSpec]):
@@ -272,6 +274,7 @@ class RPN(nn.Module):
             "box2box_transform": Box2BoxTransform(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS),
             "box_reg_loss_type": cfg.MODEL.RPN.BBOX_REG_LOSS_TYPE,
             "smooth_l1_beta": cfg.MODEL.RPN.SMOOTH_L1_BETA,
+            "bbox_scale_factor": cfg.MODEL.ROI_BOX_HEAD.BBOX_SCALE_FACTOR,
         }
 
         ret["pre_nms_topk"] = (cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN, cfg.MODEL.RPN.PRE_NMS_TOPK_TEST)
@@ -521,13 +524,14 @@ class RPN(nn.Module):
         """
         N = pred_anchor_deltas[0].shape[0]
         proposals = []
+        bbox_s = self.bbox_scale_factor
         # For each feature map
         for anchors_i, pred_anchor_deltas_i in zip(anchors, pred_anchor_deltas):
             B = anchors_i.tensor.size(1)
             pred_anchor_deltas_i = pred_anchor_deltas_i.reshape(-1, B)
             # Expand anchors to shape (N*Hi*Wi*A, B)
             anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
-            proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
+            proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i, bbox_s)
             # Append feature map proposals with shape (N, Hi*Wi*A, B)
             proposals.append(proposals_i.view(N, -1, B))
         return proposals

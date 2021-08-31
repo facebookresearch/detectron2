@@ -193,6 +193,7 @@ class FastRCNNOutputLayers(nn.Module):
         smooth_l1_beta: float = 0.0,
         box_reg_loss_type: str = "smooth_l1",
         loss_weight: Union[float, Dict[str, float]] = 1.0,
+        bbox_scale_factor: float = 1.0,
     ):
         """
         NOTE: this interface is experimental.
@@ -238,6 +239,7 @@ class FastRCNNOutputLayers(nn.Module):
         if isinstance(loss_weight, float):
             loss_weight = {"loss_cls": loss_weight, "loss_box_reg": loss_weight}
         self.loss_weight = loss_weight
+        self.bbox_scale_factor = bbox_scale_factor
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -253,6 +255,7 @@ class FastRCNNOutputLayers(nn.Module):
             "test_topk_per_image"   : cfg.TEST.DETECTIONS_PER_IMAGE,
             "box_reg_loss_type"     : cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE,
             "loss_weight"           : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT},
+            "bbox_scale_factor"     : cfg.MODEL.ROI_BOX_HEAD.BBOX_SCALE_FACTOR,
             # fmt: on
         }
 
@@ -440,9 +443,11 @@ class FastRCNNOutputLayers(nn.Module):
         _, proposal_deltas = predictions
         num_prop_per_image = [len(p) for p in proposals]
         proposal_boxes = cat([p.proposal_boxes.tensor for p in proposals], dim=0)
+        bbox_s = self.bbox_scale_factor
         predict_boxes = self.box2box_transform.apply_deltas(
             proposal_deltas,
             proposal_boxes,
+            bbox_s,
         )  # Nx(KxB)
         return predict_boxes.split(num_prop_per_image)
 
