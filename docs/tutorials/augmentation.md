@@ -111,7 +111,7 @@ We use keypoints data as an example.
 Keypoints are (x, y) coordinates, but they are not so trivial to augment due to the semantic meaning they carry.
 Such meaning is only known to the users, therefore users may want to augment them manually
 by looking at the returned `transform`.
-For example, when an image is horizontally flipped, we'd like to to swap the keypoint annotations for "left eye" and "right eye".
+For example, when an image is horizontally flipped, we'd like to swap the keypoint annotations for "left eye" and "right eye".
 This can be done like this (included by default in detectron2's default data loader):
 ```python
 # augs, input are defined as in previous examples
