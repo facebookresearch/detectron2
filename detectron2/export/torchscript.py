@@ -71,6 +71,7 @@ def dump_torchscript_IR(model, dir):
         model (TracedModule/ScriptModule/ScriptFUnction): traced or scripted module
         dir (str): output directory to dump files.
     """
+    dir = os.path.expanduser(dir)
     PathManager.mkdirs(dir)
 
     def _get_script_mod(mod):

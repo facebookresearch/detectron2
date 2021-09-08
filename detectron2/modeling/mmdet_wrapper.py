@@ -79,7 +79,7 @@ class MMDetBackbone(Backbone):
         # "Neck" weights, if any, are part of neck itself. This is the interface
         # of mmdet so we follow it. Reference:
         # https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/detectors/two_stage.py
-        logger.info(f"Initializing mmdet backbone weights...")
+        logger.info("Initializing mmdet backbone weights...")
         self.backbone.init_weights()
         # train() in mmdet modules is non-trivial, and has to be explicitly
         # called. Reference:
