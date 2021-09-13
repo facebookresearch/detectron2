@@ -151,7 +151,7 @@ def _patch_import():
 
 class LazyConfig:
     """
-    Provid methods to save, load, and overrides an omegaconf config object
+    Provide methods to save, load, and overrides an omegaconf config object
     which may contain definition of lazily-constructed objects.
     """
 
