@@ -7,6 +7,8 @@ from fvcore.nn import giou_loss, smooth_l1_loss
 from detectron2.layers import cat
 from detectron2.structures import Boxes
 
+from .losses import ciou_loss, diou_loss
+
 # Value for clamping large dw and dh predictions. The heuristic is that we clamp
 # such that dw and dh are no larger than what would transform a 16px box into a
 # 1000px box (based on a small anchor, 16px, and a typical image size, 1000px).
@@ -315,7 +317,8 @@ def _dense_box_regression_loss(
         pred_anchor_deltas: #lvl predictions, each is (N, HixWixA, 4)
         gt_boxes: N ground truth boxes, each has shape (R, 4) (R = sum(Hi * Wi * A))
         fg_mask: the foreground boolean mask of shape (N, R) to compute loss on
-        box_reg_loss_type (str): Loss type to use. Supported losses: "smooth_l1", "giou".
+        box_reg_loss_type (str): Loss type to use. Supported losses: "smooth_l1", "giou",
+            "diou", "ciou".
         smooth_l1_beta (float): beta parameter for the smooth L1 regression loss. Default to
             use L1 loss. Only used when `box_reg_loss_type` is "smooth_l1"
     """
@@ -334,6 +337,20 @@ def _dense_box_regression_loss(
             box2box_transform.apply_deltas(k, anchors) for k in cat(pred_anchor_deltas, dim=1)
         ]
         loss_box_reg = giou_loss(
+            torch.stack(pred_boxes)[fg_mask], torch.stack(gt_boxes)[fg_mask], reduction="sum"
+        )
+    elif box_reg_loss_type == "diou":
+        pred_boxes = [
+            box2box_transform.apply_deltas(k, anchors) for k in cat(pred_anchor_deltas, dim=1)
+        ]
+        loss_box_reg = diou_loss(
+            torch.stack(pred_boxes)[fg_mask], torch.stack(gt_boxes)[fg_mask], reduction="sum"
+        )
+    elif box_reg_loss_type == "ciou":
+        pred_boxes = [
+            box2box_transform.apply_deltas(k, anchors) for k in cat(pred_anchor_deltas, dim=1)
+        ]
+        loss_box_reg = ciou_loss(
             torch.stack(pred_boxes)[fg_mask], torch.stack(gt_boxes)[fg_mask], reduction="sum"
         )
     else:
