@@ -76,6 +76,7 @@ class COCOEvaluator(DatasetEvaluator):
                 By default in COCO, this limit is to 100, but this can be customized
                 to be greater, as is needed in evaluation metrics AP fixed and AP pool
                 (see https://arxiv.org/pdf/2102.01066.pdf)
+                This doesn't affect keypoint evaluation.
             use_fast_impl (bool): use a fast but **unofficial** implementation to compute AP.
                 Although the results should be very close to the official implementation in COCO
                 API, it is still recommended to compute results with the official API for use in
@@ -585,7 +586,8 @@ def _evaluate_predictions_on_coco(
         # apply COCOevalMaxDets to evaluate AP with the custom input.
         if max_dets_per_image[2] != 100:
             coco_eval = COCOevalMaxDets(coco_gt, coco_dt, iou_type)
-    coco_eval.params.maxDets = max_dets_per_image
+    if iou_type != "keypoints":
+        coco_eval.params.maxDets = max_dets_per_image
 
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
