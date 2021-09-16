@@ -255,7 +255,7 @@ class VisImage:
     def __init__(self, img, scale=1.0):
         """
         Args:
-            img (ndarray): an RGB image of shape (H, W, 3).
+            img (ndarray): an RGB image of shape (H, W, 3) in range [0, 255].
             scale (float): scale the input image
         """
         self.img = img
@@ -284,11 +284,17 @@ class VisImage:
         # self.canvas = mpl.backends.backend_cairo.FigureCanvasCairo(fig)
         ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
         ax.axis("off")
-        # Need to imshow this first so that other patches can be drawn on top
-        ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
-
         self.fig = fig
         self.ax = ax
+        self.reset_image(img)
+
+    def reset_image(self, img):
+        """
+        Args:
+            img: same as in __init__
+        """
+        img = img.astype("uint8")
+        self.ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
 
     def save(self, filepath):
         """
@@ -404,10 +410,12 @@ class Visualizer:
             alpha = 0.5
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            self.output.img = self._create_grayscale_image(
-                (predictions.pred_masks.any(dim=0) > 0).numpy()
-                if predictions.has("pred_masks")
-                else None
+            self.output.reset_image(
+                self._create_grayscale_image(
+                    (predictions.pred_masks.any(dim=0) > 0).numpy()
+                    if predictions.has("pred_masks")
+                    else None
+                )
             )
             alpha = 0.3
 
@@ -476,7 +484,7 @@ class Visualizer:
         pred = _PanopticPrediction(panoptic_seg, segments_info, self.metadata)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            self.output.img = self._create_grayscale_image(pred.non_empty_mask())
+            self.output.reset_image(self._create_grayscale_image(pred.non_empty_mask()))
 
         # draw mask for all semantic segments first i.e. "stuff"
         for mask, sinfo in pred.semantic_masks():

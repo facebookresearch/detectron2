@@ -138,6 +138,13 @@ class TestVisualizer(unittest.TestCase):
         v = Visualizer(img, self.metadata, instance_mode=ColorMode.IMAGE_BW)
         v.draw_instance_predictions(inst)
 
+        # check that output is grayscale
+        inst = inst[:0]
+        v = Visualizer(img, self.metadata, instance_mode=ColorMode.IMAGE_BW)
+        output = v.draw_instance_predictions(inst).get_image()
+        self.assertTrue(np.allclose(output[:, :, 0], output[:, :, 1]))
+        self.assertTrue(np.allclose(output[:, :, 0], output[:, :, 2]))
+
     def test_draw_empty_mask_predictions(self):
         img, boxes, _, _, masks = self._random_data()
         num_inst = len(boxes)

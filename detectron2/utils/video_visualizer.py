@@ -91,8 +91,10 @@ class VideoVisualizer:
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             # any() returns uint8 tensor
-            frame_visualizer.output.img = frame_visualizer._create_grayscale_image(
-                (masks.any(dim=0) > 0).numpy() if masks is not None else None
+            frame_visualizer.output.reset_image(
+                frame_visualizer._create_grayscale_image(
+                    (masks.any(dim=0) > 0).numpy() if masks is not None else None
+                )
             )
             alpha = 0.3
         else:
@@ -128,8 +130,8 @@ class VideoVisualizer:
         pred = _PanopticPrediction(panoptic_seg, segments_info, self.metadata)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            frame_visualizer.output.img = frame_visualizer._create_grayscale_image(
-                pred.non_empty_mask()
+            frame_visualizer.output.reset_image(
+                frame_visualizer._create_grayscale_image(pred.non_empty_mask())
             )
 
         # draw mask for all semantic segments first i.e. "stuff"
