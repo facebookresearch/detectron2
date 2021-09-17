@@ -375,6 +375,7 @@ class Visualizer:
             np.sqrt(self.output.height * self.output.width) // 90, 10 // scale
         )
         self._instance_mode = instance_mode
+        self.keypoint_threshold = _KEYPOINT_THRESHOLD
 
     def draw_instance_predictions(self, predictions):
         """
@@ -799,7 +800,7 @@ class Visualizer:
         for idx, keypoint in enumerate(keypoints):
             # draw keypoint
             x, y, prob = keypoint
-            if prob > _KEYPOINT_THRESHOLD:
+            if prob > self.keypoint_threshold:
                 self.draw_circle((x, y), color=_RED)
                 if keypoint_names:
                     keypoint_name = keypoint_names[idx]
