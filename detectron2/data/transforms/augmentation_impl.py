@@ -128,7 +128,9 @@ class Resize(Augmentation):
 
 class ResizeShortestEdge(Augmentation):
     """
-    Scale the shorter edge to the given size, with a limit of `max_size` on the longer edge.
+    Resize the image while keeping the aspect ratio unchanged.
+    It attempts to scale the shorter edge to the given `short_edge_length`,
+    as long as the longer edge does not exceed `max_size`.
     If `max_size` is reached, then downscale so that the longer edge does not exceed max_size.
     """
 
