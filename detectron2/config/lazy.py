@@ -9,6 +9,7 @@ import uuid
 from collections import abc
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import is_dataclass
 from typing import List, Tuple, Union
 import cloudpickle
 import yaml
@@ -45,7 +46,14 @@ class LazyCall:
         self._target = target
 
     def __call__(self, **kwargs):
-        kwargs["_target_"] = self._target
+        if is_dataclass(self._target):
+            # omegaconf object cannot hold dataclass type
+            # https://github.com/omry/omegaconf/issues/784
+            target = _convert_target_to_string(self._target)
+        else:
+            target = self._target
+        kwargs["_target_"] = target
+
         return DictConfig(content=kwargs, flags={"allow_objects": True})
 
 
