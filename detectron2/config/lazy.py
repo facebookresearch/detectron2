@@ -255,19 +255,32 @@ class LazyConfig:
             # not necessary, but makes yaml looks nicer
             _visit_dict_config(cfg, _replace_type_by_name)
 
+        save_pkl = False
         try:
+            dict = OmegaConf.to_container(cfg, resolve=False)
+            dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
             with PathManager.open(filename, "w") as f:
-                dict = OmegaConf.to_container(cfg, resolve=False)
-                dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
                 f.write(dumped)
+
+            try:
+                _ = yaml.unsafe_load(dumped)  # test that it is loadable
+            except Exception:
+                logger.warning(
+                    "The config contains objects that cannot serialize to a valid yaml. "
+                    f"{filename} is human-readable but cannot be loaded."
+                )
+                save_pkl = True
         except Exception:
             logger.exception("Unable to serialize the config to yaml. Error:")
+            save_pkl = True
+
+        if save_pkl:
             new_filename = filename + ".pkl"
             try:
                 # retry by pickle
                 with PathManager.open(new_filename, "wb") as f:
                     cloudpickle.dump(cfg, f)
-                logger.warning(f"Config saved using cloudpickle at {new_filename} ...")
+                logger.warning(f"Config is saved using cloudpickle at {new_filename}.")
             except Exception:
                 pass
 
