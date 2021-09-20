@@ -14,4 +14,5 @@ lr_multiplier = get_config("common/coco_schedule.py").lr_multiplier_3x
 optimizer = get_config("common/optim.py").SGD
 train = get_config("common/train.py").train
 
+train.init_checkpoint = "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
 train.max_iter = 270000  # 3x for batchsize = 16
