@@ -226,7 +226,7 @@ class Box2BoxTransformRotated(object):
         return pred_boxes
 
 
-class Box2BoxTransformLinear:
+class Box2BoxTransformLinear(object):
     """
     The linear box-to-box transform defined in FCOS. The transformation is parameterized
     by the distance from the center of (square) src box to 4 edges of the target box.
@@ -263,8 +263,11 @@ class Box2BoxTransformLinear:
 
         deltas = torch.stack((target_l, target_t, target_r, target_b), dim=1)
         if self.normalize_by_size:
-            stride = (src_boxes[:, 2] - src_boxes[:, 0]).unsqueeze(1)
-            deltas = deltas / stride
+            stride_along_width = (src_boxes[:, 2] - src_boxes[:, 0]).unsqueeze(1)
+            stride_along_height = (src_boxes[:, 3] - src_boxes[:, 1]).unsqueeze(1)
+            deltas[:, 0::2] /= stride_along_width
+            deltas[:, 1::2] /= stride_along_height
+
         return deltas
 
     def apply_deltas(self, deltas, boxes):
@@ -282,8 +285,11 @@ class Box2BoxTransformLinear:
         ctr_x = 0.5 * (boxes[:, 0] + boxes[:, 2])
         ctr_y = 0.5 * (boxes[:, 1] + boxes[:, 3])
         if self.normalize_by_size:
-            stride = (boxes[:, 2] - boxes[:, 0]).unsqueeze(1)
-            deltas = deltas * stride
+            stride_along_width = (boxes[:, 2] - boxes[:, 0]).unsqueeze(1)
+            stride_along_height = (boxes[:, 3] - boxes[:, 1]).unsqueeze(1)
+            deltas[:, 0::2] *= stride_along_width
+            deltas[:, 1::2] *= stride_along_height
+
         l = deltas[:, 0::4]
         t = deltas[:, 1::4]
         r = deltas[:, 2::4]
