@@ -439,14 +439,15 @@ def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0)
 
     Args:
         dataset (list or torch.utils.data.Dataset): a list of dataset dicts,
-            or a map-style pytorch dataset. They can be obtained by using
-            :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
+            or a pytorch dataset (either map-style or iterable). They can be obtained
+            by using :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
         mapper (callable): a callable which takes a sample (dict) from dataset
            and returns the format to be consumed by the model.
            When using cfg, the default choice is ``DatasetMapper(cfg, is_train=False)``.
         sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces
             indices to be applied on ``dataset``. Default to :class:`InferenceSampler`,
-            which splits the dataset across all workers.
+            which splits the dataset across all workers. Sampler must be None
+            if `dataset` is iterable.
         num_workers (int): number of parallel data loading workers
 
     Returns:
@@ -466,18 +467,20 @@ def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0)
         dataset = DatasetFromList(dataset, copy=False)
     if mapper is not None:
         dataset = MapDataset(dataset, mapper)
-    if sampler is None:
-        sampler = InferenceSampler(len(dataset))
+    if isinstance(dataset, torchdata.IterableDataset):
+        assert sampler is None, "sampler must be None if dataset is IterableDataset"
+    else:
+        if sampler is None:
+            sampler = InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the
     # standard when reporting inference time in papers.
-    batch_sampler = torchdata.sampler.BatchSampler(sampler, 1, drop_last=False)
-    data_loader = torchdata.DataLoader(
+    return torchdata.DataLoader(
         dataset,
+        batch_size=1,
+        sampler=sampler,
         num_workers=num_workers,
-        batch_sampler=batch_sampler,
         collate_fn=trivial_batch_collator,
     )
-    return data_loader
 
 
 def trivial_batch_collator(batch):
