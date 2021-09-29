@@ -73,7 +73,7 @@ def get_regular_bitmask_instances(h, w):
     return inst
 
 
-class ModelE2ETest:
+class InstanceModelE2ETest:
     def setUp(self):
         torch.manual_seed(43)
         self.model = get_model_no_weights(self.CONFIG_PATH)
@@ -115,7 +115,7 @@ class ModelE2ETest:
         model(inputs)
 
 
-class MaskRCNNE2ETest(ModelE2ETest, unittest.TestCase):
+class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
     CONFIG_PATH = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
 
     def test_half_empty_data(self):
@@ -171,7 +171,7 @@ class MaskRCNNE2ETest(ModelE2ETest, unittest.TestCase):
             self.assertEqual(out.scores.dtype, torch.float32)  # scores comes from softmax
 
 
-class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
+class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
     CONFIG_PATH = "COCO-Detection/retinanet_R_50_FPN_1x.yaml"
 
     def test_inf_nan_data(self):
@@ -209,3 +209,19 @@ class RetinaNetE2ETest(ModelE2ETest, unittest.TestCase):
             out = self.model(inputs)[0]["instances"]
             self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
             self.assertEqual(out.scores.dtype, torch.float16)
+
+
+class SemSegE2ETest(unittest.TestCase):
+    CONFIG_PATH = "Misc/semantic_R_50_FPN_1x.yaml"
+
+    def setUp(self):
+        torch.manual_seed(43)
+        self.model = get_model_no_weights(self.CONFIG_PATH)
+
+    def _test_eval(self, input_sizes):
+        inputs = [create_model_input(torch.rand(3, s[0], s[1])) for s in input_sizes]
+        self.model.eval()
+        self.model(inputs)
+
+    def test_forward(self):
+        self._test_eval([(200, 250), (200, 249)])
