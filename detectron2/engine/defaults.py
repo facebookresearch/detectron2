@@ -247,7 +247,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None, wandb_proje
         CommonMetricPrinter(max_iter),
         JSONWriter(os.path.join(output_dir, "metrics.json")),
         TensorboardXWriter(output_dir),
-        WandbWriter(wandb_project=wandb_project)
+        WandbWriter(20, wandb_project)
     ]
 
 
