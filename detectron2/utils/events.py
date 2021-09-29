@@ -213,7 +213,7 @@ class CommonMetricPrinter(EventWriter):
             eta_string = None
             if self._last_write is not None:
                 estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
-                    iteration - self._last_write[0]
+                        iteration - self._last_write[0]
                 )
                 eta_seconds = estimate_iter_time * (self._max_iter - iteration - 1)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -328,7 +328,7 @@ class EventStorage:
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
             assert (
-                existing_hint == smoothing_hint
+                    existing_hint == smoothing_hint
             ), "Scalar {} was put with a different smoothing_hint!".format(name)
         else:
             self._smoothing_hints[name] = smoothing_hint
@@ -484,3 +484,30 @@ class EventStorage:
         This should be called after histograms are written to tensorboard.
         """
         self._histograms = []
+
+
+class WandbWriter(EventWriter):
+    """
+    Write all scalars to a wandb tool.
+    """
+
+    def __init__(self, window_size: int = 20, cfg_dict: dict = {}):
+        try:
+            import wandb
+        except ImportError:
+            raise ImportError('WandB is not installed.')
+        self._window_size = window_size
+        if "WANDB_PROJECT" not in cfg_dict:
+            raise KeyError('key WANDB_PROJECT not found in config')
+        self._run = wandb.init(
+            project=cfg_dict["WANDB_PROJECT"],
+            config=cfg_dict
+        )
+
+    def write(self):
+        storage = get_event_storage()
+        for k, v in storage.latest_with_smoothing_hint(self._window_size).items():
+            self._run.log({f"{k}": v}, step=storage.iter)
+
+    def close(self):
+        self._run.finish()

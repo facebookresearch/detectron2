@@ -40,7 +40,7 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter, WandbWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
@@ -227,15 +227,17 @@ def default_setup(cfg, args):
         )
 
 
-def default_writers(output_dir: str, max_iter: Optional[int] = None):
+def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg_dict: dict = {}):
     """
     Build a list of :class:`EventWriter` to be used.
     It now consists of a :class:`CommonMetricPrinter`,
-    :class:`TensorboardXWriter` and :class:`JSONWriter`.
+    :class:`TensorboardXWriter`, :class:`JSONWriter`
+    and :class `WandbWriter`
 
     Args:
         output_dir: directory to store JSON metrics and tensorboard events
         max_iter: the total number of iterations
+        cfg_dict: configuration dict to initialize wandb run
 
     Returns:
         list[EventWriter]: a list of :class:`EventWriter` objects.
@@ -245,6 +247,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
         CommonMetricPrinter(max_iter),
         JSONWriter(os.path.join(output_dir, "metrics.json")),
         TensorboardXWriter(output_dir),
+        WandbWriter(cfg_dict)
     ]
 
 
@@ -471,7 +474,7 @@ class DefaultTrainer(TrainerBase):
         Returns:
             list[EventWriter]: a list of :class:`EventWriter` objects.
         """
-        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter)
+        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter, OmegaConf.to_container(self.cfg))
 
     def train(self):
         """
