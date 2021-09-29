@@ -11,6 +11,7 @@ import torch
 from fvcore.common.history_buffer import HistoryBuffer
 
 from detectron2.utils.file_io import PathManager
+from detectron2.config import global_cfg
 
 __all__ = [
     "get_event_storage",
@@ -491,18 +492,16 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, window_size: int = 20, cfg_dict: dict = {}):
+    def __init__(self, window_size: int = 20, wandb_project: str = None):
         try:
             import wandb
         except ImportError:
             raise ImportError('WandB is not installed.')
         self._window_size = window_size
-        if "WANDB_PROJECT" not in cfg_dict:
-            raise KeyError('key WANDB_PROJECT not found in config')
         self._run = wandb.init(
-            project=cfg_dict["WANDB_PROJECT"],
-            config=cfg_dict
+            project=wandb_project
         )
+        print(global_cfg)
 
     def write(self):
         storage = get_event_storage()

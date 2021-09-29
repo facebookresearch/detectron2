@@ -227,7 +227,7 @@ def default_setup(cfg, args):
         )
 
 
-def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg_dict: dict = {}):
+def default_writers(output_dir: str, max_iter: Optional[int] = None, wandb_project: str = None):
     """
     Build a list of :class:`EventWriter` to be used.
     It now consists of a :class:`CommonMetricPrinter`,
@@ -247,7 +247,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg_dict: d
         CommonMetricPrinter(max_iter),
         JSONWriter(os.path.join(output_dir, "metrics.json")),
         TensorboardXWriter(output_dir),
-        WandbWriter(cfg_dict)
+        WandbWriter(wandb_project=wandb_project)
     ]
 
 
@@ -474,7 +474,7 @@ class DefaultTrainer(TrainerBase):
         Returns:
             list[EventWriter]: a list of :class:`EventWriter` objects.
         """
-        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter, OmegaConf.to_container(self.cfg))
+        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter, self.cfg.WANDB_PROJECT)
 
     def train(self):
         """
