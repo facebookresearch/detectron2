@@ -474,7 +474,7 @@ class DefaultTrainer(TrainerBase):
         Returns:
             list[EventWriter]: a list of :class:`EventWriter` objects.
         """
-        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter, self.cfg.WANDB.PROJECT_NAME)
+        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter, "detectron2")
 
     def train(self):
         """
