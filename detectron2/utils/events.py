@@ -492,12 +492,14 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, window_size: int = 20, wandb_project: str = None):
+    def __init__(self, window_size: int = 20, wandb_project: str = "detectron2"):
         try:
             import wandb
         except ImportError:
             raise ImportError('WandB is not installed.')
         self._window_size = window_size
+        if wandb_project is None:
+            wandb_project = "detectron2"
         self._run = wandb.init(
             project=wandb_project
         )
