@@ -133,14 +133,23 @@ def benchmark_train(args):
 @torch.no_grad()
 def benchmark_eval(args):
     cfg = setup(args)
-    model = build_model(cfg)
+    if args.config_file.endswith(".yaml"):
+        model = build_model(cfg)
+        DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+
+        cfg.defrost()
+        cfg.DATALOADER.NUM_WORKERS = 0
+        data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
+    else:
+        model = instantiate(cfg.model)
+        model.to(cfg.train.device)
+        DetectionCheckpointer(model).load(cfg.train.init_checkpoint)
+
+        cfg.dataloader.num_workers = 0
+        data_loader = instantiate(cfg.dataloader.test)
+
     model.eval()
     logger.info("Model:\n{}".format(model))
-    DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
-
-    cfg.defrost()
-    cfg.DATALOADER.NUM_WORKERS = 0
-    data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
     dummy_data = DatasetFromList(list(itertools.islice(data_loader, 100)), copy=False)
 
     def f():
