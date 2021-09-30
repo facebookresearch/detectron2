@@ -12,6 +12,7 @@ It supports a number of computer vision research projects and production applica
 </div>
 
 ### What's New
+* Integrated to [Huggingface Spaces](https://huggingface.co/spaces) with [Gradio](https://github.com/gradio-app/gradio). See [Gradio Web Demo](https://huggingface.co/spaces/akhaliq/Detectron2)
 * Includes new capabilities such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
   DeepLab, etc.
 * Used as a library to support building [research projects](projects/) on top of it.
