@@ -263,10 +263,10 @@ class Box2BoxTransformLinear(object):
 
         deltas = torch.stack((target_l, target_t, target_r, target_b), dim=1)
         if self.normalize_by_size:
-            stride_along_width = (src_boxes[:, 2] - src_boxes[:, 0]).unsqueeze(1)
-            stride_along_height = (src_boxes[:, 3] - src_boxes[:, 1]).unsqueeze(1)
-            deltas[:, 0::2] /= stride_along_width
-            deltas[:, 1::2] /= stride_along_height
+            stride_w = src_boxes[:, 2] - src_boxes[:, 0]
+            stride_h = src_boxes[:, 3] - src_boxes[:, 1]
+            strides = torch.stack([stride_w, stride_h, stride_w, stride_h]).permute(1, 0)
+            deltas = deltas / strides
 
         return deltas
 
@@ -285,10 +285,10 @@ class Box2BoxTransformLinear(object):
         ctr_x = 0.5 * (boxes[:, 0] + boxes[:, 2])
         ctr_y = 0.5 * (boxes[:, 1] + boxes[:, 3])
         if self.normalize_by_size:
-            stride_along_width = (boxes[:, 2] - boxes[:, 0]).unsqueeze(1)
-            stride_along_height = (boxes[:, 3] - boxes[:, 1]).unsqueeze(1)
-            deltas[:, 0::2] *= stride_along_width
-            deltas[:, 1::2] *= stride_along_height
+            stride_w = boxes[:, 2] - boxes[:, 0]
+            stride_h = boxes[:, 3] - boxes[:, 1]
+            strides = torch.stack([stride_w, stride_h, stride_w, stride_h]).permute(1, 0)
+            deltas = deltas * strides
 
         l = deltas[:, 0::4]
         t = deltas[:, 1::4]
