@@ -23,14 +23,11 @@ def diou_loss(
     x1, y1, x2, y2 = boxes1.unbind(dim=-1)
     x1g, y1g, x2g, y2g = boxes2.unbind(dim=-1)
 
+    # TODO: use torch._assert_async() when pytorch 1.8 support is dropped
     assert (x2 >= x1).all(), "bad box: x1 larger than x2"
     assert (y2 >= y1).all(), "bad box: y1 larger than y2"
 
-    x_p = (x2 + x1) / 2
-    y_p = (y2 + y1) / 2
-    x_g = (x1g + x2g) / 2
-    y_g = (y1g + y2g) / 2
-
+    # Intersection keypoints
     xkis1 = torch.max(x1, x1g)
     ykis1 = torch.max(y1, y1g)
     xkis2 = torch.min(x2, x2g)
@@ -42,17 +39,21 @@ def diou_loss(
     unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g) - intsctk + eps
     iouk = intsctk / unionk
 
+    # smallest enclosing box
     xc1 = torch.min(x1, x1g)
     yc1 = torch.min(y1, y1g)
     xc2 = torch.max(x2, x2g)
     yc2 = torch.max(y2, y2g)
+    diag_len = ((xc2 - xc1) ** 2) + ((yc2 - yc1) ** 2) + eps
 
-    c = ((xc2 - xc1) ** 2) + ((yc2 - yc1) ** 2) + eps
-    d = ((x_p - x_g) ** 2) + ((y_p - y_g) ** 2)
-    u = d / c
-    diouk = iouk - u
+    # centers of boxes
+    x_p = (x2 + x1) / 2
+    y_p = (y2 + y1) / 2
+    x_g = (x1g + x2g) / 2
+    y_g = (y1g + y2g) / 2
+    distance = ((x_p - x_g) ** 2) + ((y_p - y_g) ** 2)
 
-    loss = 1 - diouk
+    loss = 1 - iouk + (distance / diag_len)
     if reduction == "mean":
         loss = loss.mean() if loss.numel() > 0 else 0.0 * loss.sum()
     elif reduction == "sum":
@@ -82,19 +83,11 @@ def ciou_loss(
     x1, y1, x2, y2 = boxes1.unbind(dim=-1)
     x1g, y1g, x2g, y2g = boxes2.unbind(dim=-1)
 
+    # TODO: use torch._assert_async() when pytorch 1.8 support is dropped
     assert (x2 >= x1).all(), "bad box: x1 larger than x2"
     assert (y2 >= y1).all(), "bad box: y1 larger than y2"
 
-    w_pred = x2 - x1
-    h_pred = y2 - y1
-    w_gt = x2g - x1g
-    h_gt = y2g - y1g
-
-    x_center = (x2 + x1) / 2
-    y_center = (y2 + y1) / 2
-    x_center_g = (x1g + x2g) / 2
-    y_center_g = (y1g + y2g) / 2
-
+    # Intersection keypoints
     xkis1 = torch.max(x1, x1g)
     ykis1 = torch.max(y1, y1g)
     xkis2 = torch.min(x2, x2g)
@@ -106,21 +99,30 @@ def ciou_loss(
     unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g) - intsctk + eps
     iouk = intsctk / unionk
 
+    # smallest enclosing box
     xc1 = torch.min(x1, x1g)
     yc1 = torch.min(y1, y1g)
     xc2 = torch.max(x2, x2g)
     yc2 = torch.max(y2, y2g)
+    diag_len = ((xc2 - xc1) ** 2) + ((yc2 - yc1) ** 2) + eps
 
-    c = ((xc2 - xc1) ** 2) + ((yc2 - yc1) ** 2) + eps
-    d = ((x_center - x_center_g) ** 2) + ((y_center - y_center_g) ** 2)
-    u = d / c
+    # centers of boxes
+    x_p = (x2 + x1) / 2
+    y_p = (y2 + y1) / 2
+    x_g = (x1g + x2g) / 2
+    y_g = (y1g + y2g) / 2
+    distance = ((x_p - x_g) ** 2) + ((y_p - y_g) ** 2)
+
+    # width and height of boxes
+    w_pred = x2 - x1
+    h_pred = y2 - y1
+    w_gt = x2g - x1g
+    h_gt = y2g - y1g
     v = (4 / (math.pi ** 2)) * torch.pow((torch.atan(w_gt / h_gt) - torch.atan(w_pred / h_pred)), 2)
     with torch.no_grad():
-        S = 1 - iouk
-        alpha = v / (S + v + eps)
-    ciouk = iouk - (u + alpha * v)
+        alpha = v / (1 - iouk + v + eps)
 
-    loss = 1 - ciouk
+    loss = 1 - iouk + (distance / diag_len) + alpha * v
     if reduction == "mean":
         loss = loss.mean() if loss.numel() > 0 else 0.0 * loss.sum()
     elif reduction == "sum":
