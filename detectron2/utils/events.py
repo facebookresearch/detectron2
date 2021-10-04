@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import datetime
 import json
+import yaml
 import logging
 import os
 import time
@@ -11,7 +12,7 @@ import torch
 from fvcore.common.history_buffer import HistoryBuffer
 
 from detectron2.utils.file_io import PathManager
-from detectron2.config import global_cfg
+from detectron2.config import CfgNode
 
 __all__ = [
     "get_event_storage",
@@ -492,23 +493,35 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, window_size: int = 20, wandb_project: str = "detectron2"):
+    def __init__(self, window_size: int = 20, cfg: CfgNode = None, **kwargs):
+        """
+        Args:
+            cfg (CfgNode): the project level configuration object
+            window_size (int): the scalars will be median-smoothed by this window size
+
+            kwargs: other arguments passed to `wandb.init(...)`
+        """
         try:
             import wandb
         except ImportError:
-            raise ImportError('WandB is not installed.')
+            raise ImportError("WandB is not installed.")
         self._window_size = window_size
-        if wandb_project is None:
+        if cfg is None:
+            cfg = {}
             wandb_project = "detectron2"
+        else:
+            wandb_project = cfg.WANDB.PROJECT_NAME
+            cfg = yaml.load(cfg.dump())
         self._run = wandb.init(
-            project=wandb_project
+            project=wandb_project,
+            config=cfg,
+            **kwargs
         )
-        print(global_cfg)
 
     def write(self):
         storage = get_event_storage()
-        for k, v in storage.latest_with_smoothing_hint(self._window_size).items():
-            self._run.log({f"{k}": v}, step=storage.iter)
+        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+            self._run.log({k: v}, step=iter)
 
     def close(self):
         self._run.finish()

@@ -633,3 +633,7 @@ _C.VIS_PERIOD = 0
 # Do not commit any configs into it.
 _C.GLOBAL = CN()
 _C.GLOBAL.HACK = 1.0
+
+## WandB config
+_C.WANDB = CN()
+_C.WANDB.PROJECT_NAME = "Detectron2"
