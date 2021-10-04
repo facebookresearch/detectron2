@@ -2,7 +2,7 @@
 import torch
 from torch.nn import functional as F
 
-from detectron2.layers import cat
+from detectron2.layers import cat, shapes_to_tensor
 from detectron2.structures import BitMasks, Boxes
 
 
@@ -14,15 +14,6 @@ Shape shorthand in this module:
     R: number of ROIs, combined over all images, in the minibatch
     P: number of points
 """
-
-
-def _as_tensor(x):
-    """
-    An equivalent of `torch.as_tensor`, but works under tracing.
-    """
-    if isinstance(x, (list, tuple)) and all([isinstance(t, torch.Tensor) for t in x]):
-        return torch.stack(x)
-    return torch.as_tensor(x)
 
 
 def point_sample(input, point_coords, **kwargs):
@@ -182,7 +173,7 @@ def point_sample_fine_grained_features(features_list, feature_scales, boxes, poi
         point_features_per_image = []
         for idx_feature, feature_map in enumerate(features_list):
             h, w = feature_map.shape[-2:]
-            scale = _as_tensor([w, h]) / feature_scales[idx_feature]
+            scale = shapes_to_tensor([w, h]) / feature_scales[idx_feature]
             point_coords_scaled = point_coords_wrt_image_per_image / scale.to(feature_map.device)
             point_features_per_image.append(
                 point_sample(

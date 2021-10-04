@@ -3,7 +3,7 @@ import logging
 import unittest
 import torch
 
-from detectron2.modeling.poolers import ROIPooler, _fmt_box_list
+from detectron2.modeling.poolers import ROIPooler
 from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.testing import random_boxes
 
@@ -113,18 +113,6 @@ class TestROIPooler(unittest.TestCase):
         )
         output = pooler.forward(features, [])
         self.assertEqual(output.shape, (0, C, 14, 14))
-
-    def test_fmt_box_list_tracing(self):
-        class Model(torch.nn.Module):
-            def forward(self, box_tensor):
-                return _fmt_box_list(box_tensor, 0)
-
-        with torch.no_grad():
-            func = torch.jit.trace(Model(), torch.ones(10, 4))
-
-            self.assertEqual(func(torch.ones(10, 4)).shape, (10, 5))
-            self.assertEqual(func(torch.ones(5, 4)).shape, (5, 5))
-            self.assertEqual(func(torch.ones(20, 4)).shape, (20, 5))
 
     def test_roi_pooler_tracing(self):
         class Model(torch.nn.Module):
