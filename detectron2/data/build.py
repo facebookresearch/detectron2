@@ -212,7 +212,13 @@ def print_instances_class_histogram(dataset_dicts, class_names):
     )
 
 
-def get_detection_dataset_dicts(names, filter_empty=True, min_keypoints=0, proposal_files=None):
+def get_detection_dataset_dicts(
+    names,
+    filter_empty=True,
+    min_keypoints=0,
+    proposal_files=None,
+    check_consistency=True,
+):
     """
     Load and prepare dataset dicts for instance detection/segmentation and semantic segmentation.
 
@@ -223,6 +229,7 @@ def get_detection_dataset_dicts(names, filter_empty=True, min_keypoints=0, propo
             `min_keypoints`. Set to 0 to do nothing.
         proposal_files (list[str]): if given, a list of object proposal files
             that match each dataset in `names`.
+        check_consistency (bool): whether to check if datasets have consistent metadata.
 
     Returns:
         list[dict]: a list of dicts following the standard dataset dict format.
@@ -253,7 +260,7 @@ def get_detection_dataset_dicts(names, filter_empty=True, min_keypoints=0, propo
     if min_keypoints > 0 and has_instances:
         dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
 
-    if has_instances:
+    if check_consistency and has_instances:
         try:
             class_names = MetadataCatalog.get(names[0]).thing_classes
             check_metadata_consistency("thing_classes", names)
