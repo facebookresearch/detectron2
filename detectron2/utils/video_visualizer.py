@@ -72,6 +72,7 @@ class VideoVisualizer:
         scores = predictions.scores if predictions.has("scores") else None
         classes = predictions.pred_classes.numpy() if predictions.has("pred_classes") else None
         keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
+        colors = predictions.COLOR if predictions.has("COLOR") else [None] * len(predictions)
 
         if predictions.has("pred_masks"):
             masks = predictions.pred_masks
@@ -82,10 +83,11 @@ class VideoVisualizer:
             masks = None
 
         detected = [
-            _DetectedInstance(classes[i], boxes[i], mask_rle=None, color=None, ttl=8)
+            _DetectedInstance(classes[i], boxes[i], mask_rle=None, color=colors[i], ttl=8)
             for i in range(num_instances)
         ]
-        colors = self._assign_colors(detected)
+        if not predictions.has("COLOR"):
+            colors = self._assign_colors(detected)
 
         labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
 
