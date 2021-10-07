@@ -11,9 +11,9 @@ from detectron2.data.build import worker_init_reset_seed
 from detectron2.data.common import DatasetFromList, ToIterableDataset
 from detectron2.data.samplers import (
     GroupedBatchSampler,
+    InferenceSampler,
     RepeatFactorTrainingSampler,
     TrainingSampler,
-    InferenceSampler,
 )
 from detectron2.utils.env import seed_all_rng
 
@@ -102,9 +102,7 @@ class TestInferenceSampler(unittest.TestCase):
             [range(11), range(11, 22), range(22, 32), range(32, 42)],
         ]
 
-        for size, world_size, expected_result in zip(
-            sizes, world_sizes, expected_results
-        ):
+        for size, world_size, expected_result in zip(sizes, world_sizes, expected_results):
             with self.subTest(f"size={size}, world_size={world_size}"):
                 local_indices = [
                     InferenceSampler._get_local_indices(size, world_size, r)

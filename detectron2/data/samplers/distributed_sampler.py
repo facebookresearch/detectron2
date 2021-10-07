@@ -268,7 +268,7 @@ class InferenceSampler(Sampler):
         shard_sizes = [shard_size + int(r < left) for r in range(world_size)]
 
         begin = sum(shard_sizes[:rank])
-        end = min(sum(shard_sizes[:rank + 1]), total_size)
+        end = min(sum(shard_sizes[: rank + 1]), total_size)
         return range(begin, end)
 
     def __iter__(self):
