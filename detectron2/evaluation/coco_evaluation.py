@@ -118,10 +118,12 @@ class COCOEvaluator(DatasetEvaluator):
 
         self._metadata = MetadataCatalog.get(dataset_name)
         if not hasattr(self._metadata, "json_file"):
-            self._logger.info(
-                f"'{dataset_name}' is not registered by `register_coco_instances`."
-                " Therefore trying to convert it to COCO format ..."
-            )
+            if output_dir is None:
+                raise ValueError(
+                    "output_dir must be provided to COCOEvaluator "
+                    "for datasets not in COCO format."
+                )
+            self._logger.info(f"Trying to convert '{dataset_name}' to COCO format ...")
 
             cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
             self._metadata.json_file = cache_path

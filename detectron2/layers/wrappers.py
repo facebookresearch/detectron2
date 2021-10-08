@@ -30,7 +30,7 @@ def cross_entropy(input, target, *, reduction="mean", **kwargs):
     """
     if target.numel() == 0 and reduction == "mean":
         return input.sum() * 0.0  # connect the gradient
-    return F.cross_entropy(input, target, **kwargs)
+    return F.cross_entropy(input, target, reduction=reduction, **kwargs)
 
 
 class _NewEmptyTensorOp(torch.autograd.Function):

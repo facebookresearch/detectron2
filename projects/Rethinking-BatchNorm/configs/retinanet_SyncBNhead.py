@@ -10,4 +10,6 @@ optimizer = get_config("common/optim.py").SGD
 train = get_config("common/train.py").train
 
 optimizer.lr = 0.01
+
+train.init_checkpoint = "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
 train.max_iter = 270000  # 3x for batchsize = 16
