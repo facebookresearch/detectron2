@@ -165,7 +165,7 @@ class Augmentation:
         tfm = self.get_transform(*args)
         assert isinstance(tfm, (Transform, TransformList)), (
             f"{type(self)}.get_transform must return an instance of Transform! "
-            "Got {type(tfm)} instead."
+            f"Got {type(tfm)} instead."
         )
         aug_input.transform(tfm)
         return tfm
