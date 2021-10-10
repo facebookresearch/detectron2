@@ -44,4 +44,5 @@ External projects in the community that use detectron2:
 + [FsDet](https://github.com/ucbdrive/few-shot-object-detection), Few-Shot Object Detection.
 + [Sparse R-CNN](https://github.com/PeizeSun/SparseR-CNN)
 + [BCNet](https://github.com/lkeab/BCNet), a bilayer decoupling instance segmentation method.
++ [COPS] (https://github.com/aabbas90/COPS), Differentiable Combinatorial Optimization for Panoptic Segmentation.
 
