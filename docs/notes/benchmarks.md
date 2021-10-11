@@ -12,7 +12,7 @@ with some other popular open source Mask R-CNN implementations.
   TensorFlow 1.15.0rc2, Keras 2.2.5, MxNet 1.6.0b20190820.
 * Model: an end-to-end R-50-FPN Mask-RCNN model, using the same hyperparameter as the
   [Detectron baseline config](https://github.com/facebookresearch/Detectron/blob/master/configs/12_2017_baselines/e2e_mask_rcnn_R-50-FPN_1x.yaml)
-	(it does not have scale augmentation).
+  (it does not have scale augmentation).
 * Metrics: We use the average throughput in iterations 100-500 to skip GPU warmup time.
   Note that for R-CNN-style models, the throughput of a model typically changes during training, because
   it depends on the predictions of the model. Therefore this metric is not directly comparable with
