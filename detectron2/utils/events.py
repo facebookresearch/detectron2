@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import datetime
 import json
+import yaml
 import logging
 import os
 import time
@@ -11,6 +12,7 @@ import torch
 from fvcore.common.history_buffer import HistoryBuffer
 
 from detectron2.utils.file_io import PathManager
+from detectron2.config import CfgNode
 
 __all__ = [
     "get_event_storage",
@@ -213,7 +215,7 @@ class CommonMetricPrinter(EventWriter):
             eta_string = None
             if self._last_write is not None:
                 estimate_iter_time = (time.perf_counter() - self._last_write[1]) / (
-                    iteration - self._last_write[0]
+                        iteration - self._last_write[0]
                 )
                 eta_seconds = estimate_iter_time * (self._max_iter - iteration - 1)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -328,7 +330,7 @@ class EventStorage:
         existing_hint = self._smoothing_hints.get(name)
         if existing_hint is not None:
             assert (
-                existing_hint == smoothing_hint
+                    existing_hint == smoothing_hint
             ), "Scalar {} was put with a different smoothing_hint!".format(name)
         else:
             self._smoothing_hints[name] = smoothing_hint
@@ -484,3 +486,42 @@ class EventStorage:
         This should be called after histograms are written to tensorboard.
         """
         self._histograms = []
+
+
+class WandbWriter(EventWriter):
+    """
+    Write all scalars to a wandb tool.
+    """
+
+    def __init__(self, window_size: int = 20, cfg: CfgNode = None, **kwargs):
+        """
+        Args:
+            cfg (CfgNode): the project level configuration object
+            window_size (int): the scalars will be median-smoothed by this window size
+
+            kwargs: other arguments passed to `wandb.init(...)`
+        """
+        try:
+            import wandb
+        except ImportError:
+            raise ImportError("WandB is not installed.")
+        self._window_size = window_size
+        if cfg is None:
+            cfg = {}
+            wandb_project = "detectron2"
+        else:
+            wandb_project = cfg.WANDB.PROJECT_NAME
+            cfg = yaml.load(cfg.dump())
+        self._run = wandb.init(
+            project=wandb_project,
+            config=cfg,
+            **kwargs
+        )
+
+    def write(self):
+        storage = get_event_storage()
+        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+            self._run.log({k: v}, step=iter)
+
+    def close(self):
+        self._run.finish()
