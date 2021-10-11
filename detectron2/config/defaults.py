@@ -557,7 +557,7 @@ _C.SOLVER.REFERENCE_WORLD_SIZE = 0
 # changing these and they exist only to reproduce Detectron v1 training if
 # desired.
 _C.SOLVER.BIAS_LR_FACTOR = 1.0
-_C.SOLVER.WEIGHT_DECAY_BIAS = _C.SOLVER.WEIGHT_DECAY
+_C.SOLVER.WEIGHT_DECAY_BIAS = None  # None means following WEIGHT_DECAY
 
 # Gradient clipping
 _C.SOLVER.CLIP_GRADIENTS = CN({"ENABLED": False})

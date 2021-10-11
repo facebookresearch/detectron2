@@ -168,7 +168,7 @@ setup(
         # choosing the proper pypi package name at https://github.com/skvark/opencv-python
         # The following are pure-python dependencies that should be easily installable
         "termcolor>=1.1",
-        "yacs>=0.1.6",
+        "yacs>=0.1.8",
         "tabulate",
         "cloudpickle",
         "tqdm>4.29.0",

@@ -82,7 +82,7 @@ Details for each implementation:
   ```
 
 * __maskrcnn-benchmark__: use commit `0ce8f6f` with `sed -i 's/torch.uint8/torch.bool/g' **/*.py; sed -i 's/AT_CHECK/TORCH_CHECK/g' **/*.cu`
-	to make it compatible with PyTorch 1.5. Then, run training with
+  to make it compatible with PyTorch 1.5. Then, run training with
   ```
   python -m torch.distributed.launch --nproc_per_node=8 tools/train_net.py --config-file configs/e2e_mask_rcnn_R_50_FPN_1x.yaml
   ```
