@@ -88,7 +88,7 @@ class RetinaNet(nn.Module):
             focal_loss_alpha (float): focal_loss_alpha
             focal_loss_gamma (float): focal_loss_gamma
             smooth_l1_beta (float): smooth_l1_beta
-            box_reg_loss_type (str): Options are "smooth_l1", "giou"
+            box_reg_loss_type (str): Options are "smooth_l1", "giou", "diou", "ciou"
 
             # Inference parameters:
             test_score_thresh (float): Inference cls score threshold, only anchors with
