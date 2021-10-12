@@ -122,7 +122,7 @@ class GenericMask:
         # Internal contours (holes) are placed in hierarchy-2.
         # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
         mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
-        res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+        res = cv2.findContours(mask.astype("uint8"), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
             return [], False
