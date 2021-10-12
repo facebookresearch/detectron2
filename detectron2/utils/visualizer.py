@@ -14,14 +14,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
 
 from detectron2.data import MetadataCatalog
-from detectron2.structures import (
-    BitMasks,
-    Boxes,
-    BoxMode,
-    Keypoints,
-    PolygonMasks,
-    RotatedBoxes,
-)
+from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
 
 from .colormap import random_color
@@ -100,9 +93,7 @@ class GenericMask:
             self._mask = m.astype("uint8")
             return
 
-        raise ValueError(
-            "GenericMask cannot handle object {} of type '{}'".format(m, type(m))
-        )
+        raise ValueError("GenericMask cannot handle object {} of type '{}'".format(m, type(m)))
 
     @property
     def mask(self):
@@ -122,9 +113,7 @@ class GenericMask:
             if self._mask is not None:
                 self._polygons, self._has_holes = self.mask_to_polygons(self._mask)
             else:
-                self._has_holes = (
-                    False
-                )  # if original format is polygon, does not have holes
+                self._has_holes = False  # if original format is polygon, does not have holes
         return self._has_holes
 
     def mask_to_polygons(self, mask):
@@ -132,12 +121,8 @@ class GenericMask:
         # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
         # Internal contours (holes) are placed in hierarchy-2.
         # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
-        mask = np.ascontiguousarray(
-            mask
-        )  # some versions of cv2 does not support incontiguous arr
-        res = cv2.findContours(
-            mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE
-        )
+        mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
+        res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
             return [], False
@@ -186,9 +171,7 @@ class _PanopticPrediction:
                     # VOID region.
                     continue
                 pred_class = panoptic_label // label_divisor
-                isthing = (
-                    pred_class in metadata.thing_dataset_id_to_contiguous_id.values()
-                )
+                isthing = pred_class in metadata.thing_dataset_id_to_contiguous_id.values()
                 segments_info.append(
                     {
                         "id": int(panoptic_label),
@@ -251,7 +234,6 @@ def _create_text_labels(classes, scores, class_names, is_crowd=None):
         scores (list[float] or None):
         class_names (list[str] or None):
         is_crowd (list[bool] or None):
-
     Returns:
         list[str] or None
     """
@@ -287,7 +269,6 @@ class VisImage:
         """
         Args:
             Same as in :meth:`__init__()`.
-
         Returns:
             fig (matplotlib.pyplot.figure): top level container for all the image plot elements.
             ax (matplotlib.pyplot.Axes): contains figure elements and sets the coordinate system.
@@ -314,9 +295,7 @@ class VisImage:
             img: same as in __init__
         """
         img = img.astype("uint8")
-        self.ax.imshow(
-            img, extent=(0, self.width, self.height, 0), interpolation="nearest"
-        )
+        self.ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
 
     def save(self, filepath):
         """
@@ -350,32 +329,26 @@ class VisImage:
 class Visualizer:
     """
     Visualizer that draws data about detection/segmentation on images.
-
     It contains methods like `draw_{text,box,circle,line,binary_mask,polygon}`
     that draw primitive objects to images, as well as high-level wrappers like
     `draw_{instance_predictions,sem_seg,panoptic_seg_predictions,dataset_dict}`
     that draw composite data in some pre-defined style.
-
     Note that the exact visualization style for the high-level wrappers are subject to change.
     Style such as color, opacity, label contents, visibility of labels, or even the visibility
     of objects themselves (e.g. when the object is too small) may change according
     to different heuristics, as long as the results still look visually reasonable.
-
     To obtain a consistent style, you can implement custom drawing functions with the
     abovementioned primitive methods instead. If you need more customized visualization
     styles, you can process the data yourself following their format documented in
     tutorials (:doc:`/tutorials/models`, :doc:`/tutorials/datasets`). This class does not
     intend to satisfy everyone's preference on drawing styles.
-
     This visualizer focuses on high rendering quality rather than performance. It is not
     designed to be used for real-time applications.
     """
 
     # TODO implement a fast, rasterized version using OpenCV
 
-    def __init__(
-        self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE
-    ):
+    def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
         """
         Args:
             img_rgb: a numpy array of shape (H, W, C), where H and W correspond to
@@ -404,43 +377,28 @@ class Visualizer:
     def draw_instance_predictions(self, predictions):
         """
         Draw instance-level prediction results on an image.
-
         Args:
             predictions (Instances): the output of an instance detection/segmentation
                 model. Following fields will be used to draw:
                 "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
-
         Returns:
             output (VisImage): image object with visualizations.
         """
         boxes = predictions.pred_boxes if predictions.has("pred_boxes") else None
         scores = predictions.scores if predictions.has("scores") else None
-        classes = (
-            predictions.pred_classes.tolist()
-            if predictions.has("pred_classes")
-            else None
-        )
-        labels = _create_text_labels(
-            classes, scores, self.metadata.get("thing_classes", None)
-        )
-        keypoints = (
-            predictions.pred_keypoints if predictions.has("pred_keypoints") else None
-        )
+        classes = predictions.pred_classes.tolist() if predictions.has("pred_classes") else None
+        labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
+        keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
 
         if predictions.has("pred_masks"):
             masks = np.asarray(predictions.pred_masks)
-            masks = [
-                GenericMask(x, self.output.height, self.output.width) for x in masks
-            ]
+            masks = [GenericMask(x, self.output.height, self.output.width) for x in masks]
         else:
             masks = None
 
-        if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get(
-            "thing_colors"
-        ):
+        if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
             colors = [
-                self._jitter([x / 255 for x in self.metadata.thing_colors[c]])
-                for c in classes
+                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
             ]
             alpha = 0.8
         else:
@@ -470,13 +428,11 @@ class Visualizer:
     def draw_sem_seg(self, sem_seg, area_threshold=None, alpha=0.8):
         """
         Draw semantic segmentation predictions/labels.
-
         Args:
             sem_seg (Tensor or ndarray): the segmentation of shape (H, W).
                 Each value is the integer label of the pixel.
             area_threshold (int): segments with less than `area_threshold` are not drawn.
             alpha (float): the larger it is, the more opaque the segmentations are.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -503,12 +459,9 @@ class Visualizer:
             )
         return self.output
 
-    def draw_panoptic_seg(
-        self, panoptic_seg, segments_info, area_threshold=None, alpha=0.7
-    ):
+    def draw_panoptic_seg(self, panoptic_seg, segments_info, area_threshold=None, alpha=0.7):
         """
         Draw panoptic prediction annotations or results.
-
         Args:
             panoptic_seg (Tensor): of shape (height, width) where the values are ids for each
                 segment.
@@ -517,7 +470,6 @@ class Visualizer:
                 If None, category id of each pixel is computed by
                 ``pixel // metadata.label_divisor``.
             area_threshold (int): stuff segments with less than `area_threshold` are not drawn.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -556,22 +508,16 @@ class Visualizer:
         except KeyError:
             scores = None
         labels = _create_text_labels(
-            category_ids,
-            scores,
-            self.metadata.thing_classes,
-            [x.get("iscrowd", 0) for x in sinfo],
+            category_ids, scores, self.metadata.thing_classes, [x.get("iscrowd", 0) for x in sinfo]
         )
 
         try:
             colors = [
-                self._jitter([x / 255 for x in self.metadata.thing_colors[c]])
-                for c in category_ids
+                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in category_ids
             ]
         except AttributeError:
             colors = None
-        self.overlay_instances(
-            masks=masks, labels=labels, assigned_colors=colors, alpha=alpha
-        )
+        self.overlay_instances(masks=masks, labels=labels, assigned_colors=colors, alpha=alpha)
 
         return self.output
 
@@ -580,10 +526,8 @@ class Visualizer:
     def draw_dataset_dict(self, dic):
         """
         Draw annotations/segmentaions in Detectron2 Dataset format.
-
         Args:
             dic (dict): annotation/segmentation data of one image, in Detectron2 Dataset format.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -608,9 +552,7 @@ class Visualizer:
 
             colors = None
             category_ids = [x["category_id"] for x in annos]
-            if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get(
-                "thing_colors"
-            ):
+            if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
                 colors = [
                     self._jitter([x / 255 for x in self.metadata.thing_colors[c]])
                     for c in category_ids
@@ -623,11 +565,7 @@ class Visualizer:
                 is_crowd=[x.get("iscrowd", 0) for x in annos],
             )
             self.overlay_instances(
-                labels=labels,
-                boxes=boxes,
-                masks=masks,
-                keypoints=keypts,
-                assigned_colors=colors,
+                labels=labels, boxes=boxes, masks=masks, keypoints=keypts, assigned_colors=colors
             )
 
         sem_seg = dic.get("sem_seg", None)
@@ -671,7 +609,6 @@ class Visualizer:
                 for the N objects in a single image,
             labels (list[str]): the text to be displayed for each instance.
             masks (masks-like object): Supported types are:
-
                 * :class:`detectron2.structures.PolygonMasks`,
                   :class:`detectron2.structures.BitMasks`.
                 * list[list[ndarray]]: contains the segmentation masks for all objects in one image.
@@ -687,7 +624,6 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -710,9 +646,7 @@ class Visualizer:
         if labels is not None:
             assert len(labels) == num_instances
         if assigned_colors is None:
-            assigned_colors = [
-                random_color(rgb=True, maximum=1) for _ in range(num_instances)
-            ]
+            assigned_colors = [random_color(rgb=True, maximum=1) for _ in range(num_instances)]
         if num_instances == 0:
             return self.output
         if boxes is not None and boxes.shape[1] == 5:
@@ -775,12 +709,8 @@ class Visualizer:
                     else:
                         text_pos = (x0, y1)
 
-                height_ratio = (y1 - y0) / np.sqrt(
-                    self.output.height * self.output.width
-                )
-                lighter_color = self._change_color_brightness(
-                    color, brightness_factor=0.7
-                )
+                height_ratio = (y1 - y0) / np.sqrt(self.output.height * self.output.width)
+                lighter_color = self._change_color_brightness(color, brightness_factor=0.7)
                 font_size = (
                     np.clip((height_ratio - 0.02) / 0.08 + 1, 1.2, 2)
                     * 0.5
@@ -811,16 +741,13 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
         num_instances = len(boxes)
 
         if assigned_colors is None:
-            assigned_colors = [
-                random_color(rgb=True, maximum=1) for _ in range(num_instances)
-            ]
+            assigned_colors = [random_color(rgb=True, maximum=1) for _ in range(num_instances)]
         if num_instances == 0:
             return self.output
 
@@ -836,9 +763,7 @@ class Visualizer:
 
         for i in range(num_instances):
             self.draw_rotated_box_with_label(
-                boxes[i],
-                edge_color=colors[i],
-                label=labels[i] if labels is not None else None,
+                boxes[i], edge_color=colors[i], label=labels[i] if labels is not None else None
             )
 
         return self.output
@@ -848,11 +773,9 @@ class Visualizer:
         Draws keypoints of an instance and follows the rules for keypoint connections
         to draw lines between appropriate keypoints. This follows color heuristics for
         line color.
-
         Args:
             keypoints (Tensor): a tensor of shape (K, 3), where K is the number of keypoints
                 and the last dimension corresponds to (x, y, probability).
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -888,9 +811,7 @@ class Visualizer:
             # draw line from nose to mid-shoulder
             nose_x, nose_y = visible.get("nose", (None, None))
             if nose_x is not None:
-                self.draw_line(
-                    [nose_x, mid_shoulder_x], [nose_y, mid_shoulder_y], color=_RED
-                )
+                self.draw_line([nose_x, mid_shoulder_x], [nose_y, mid_shoulder_y], color=_RED)
 
             try:
                 # draw line from mid-shoulder to mid-hip
@@ -900,9 +821,7 @@ class Visualizer:
                 pass
             else:
                 mid_hip_x, mid_hip_y = (lh_x + rh_x) / 2, (lh_y + rh_y) / 2
-                self.draw_line(
-                    [mid_hip_x, mid_shoulder_x], [mid_hip_y, mid_shoulder_y], color=_RED
-                )
+                self.draw_line([mid_hip_x, mid_shoulder_x], [mid_hip_y, mid_shoulder_y], color=_RED)
         return self.output
 
     """
@@ -929,7 +848,6 @@ class Visualizer:
                 of formats that are accepted.
             horizontal_alignment (str): see `matplotlib.text.Text`
             rotation: rotation angle in degrees CCW
-
         Returns:
             output (VisImage): image object with text drawn.
         """
@@ -966,7 +884,6 @@ class Visualizer:
             edge_color: color of the outline of the box. Refer to `matplotlib.colors`
                 for full list of formats that are accepted.
             line_style (string): the string to use to create the outline of the boxes.
-
         Returns:
             output (VisImage): image object with box drawn.
         """
@@ -995,7 +912,6 @@ class Visualizer:
     ):
         """
         Draw a rotated box with label on its top-left corner.
-
         Args:
             rotated_box (tuple): a tuple containing (cnt_x, cnt_y, w, h, angle),
                 where cnt_x and cnt_y are the center coordinates of the box.
@@ -1006,7 +922,6 @@ class Visualizer:
                 for full list of formats that are accepted.
             line_style (string): the string to use to create the outline of the boxes.
             label (string): label for rotated box. It will not be rendered when set to None.
-
         Returns:
             output (VisImage): image object with box drawn.
         """
@@ -1022,9 +937,7 @@ class Visualizer:
         s = math.sin(theta)
         rect = [(-w / 2, h / 2), (-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2)]
         # x: left->right ; y: top->down
-        rotated_rect = [
-            (s * yy + c * xx + cnt_x, c * yy - s * xx + cnt_y) for (xx, yy) in rect
-        ]
+        rotated_rect = [(s * yy + c * xx + cnt_x, c * yy - s * xx + cnt_y) for (xx, yy) in rect]
         for k in range(4):
             j = (k + 1) % 4
             self.draw_line(
@@ -1039,17 +952,11 @@ class Visualizer:
             text_pos = rotated_rect[1]  # topleft corner
 
             height_ratio = h / np.sqrt(self.output.height * self.output.width)
-            label_color = self._change_color_brightness(
-                edge_color, brightness_factor=0.7
-            )
+            label_color = self._change_color_brightness(edge_color, brightness_factor=0.7)
             font_size = (
-                np.clip((height_ratio - 0.02) / 0.08 + 1, 1.2, 2)
-                * 0.5
-                * self._default_font_size
+                np.clip((height_ratio - 0.02) / 0.08 + 1, 1.2, 2) * 0.5 * self._default_font_size
             )
-            self.draw_text(
-                label, text_pos, color=label_color, font_size=font_size, rotation=angle
-            )
+            self.draw_text(label, text_pos, color=label_color, font_size=font_size, rotation=angle)
 
         return self.output
 
@@ -1061,7 +968,6 @@ class Visualizer:
             color: color of the polygon. Refer to `matplotlib.colors` for a full list of
                 formats that are accepted.
             radius (int): radius of the circle.
-
         Returns:
             output (VisImage): image object with box drawn.
         """
@@ -1084,7 +990,6 @@ class Visualizer:
                 for a full list of formats that are accepted.
             linewidth (float or None): width of the line. When it's None,
                 a default value will be computed and used.
-
         Returns:
             output (VisImage): image object with line drawn.
         """
@@ -1103,14 +1008,7 @@ class Visualizer:
         return self.output
 
     def draw_binary_mask(
-        self,
-        binary_mask,
-        color=None,
-        *,
-        edge_color=None,
-        text=None,
-        alpha=0.5,
-        area_threshold=0,
+        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=0
     ):
         """
         Args:
@@ -1124,7 +1022,6 @@ class Visualizer:
             text (str): if None, will be drawn in the object's center of mass.
             alpha (float): blending efficient. Smaller values lead to more transparent masks.
             area_threshold (float): a connected component small than this will not be shown.
-
         Returns:
             output (VisImage): image object with mask drawn.
         """
@@ -1140,16 +1037,12 @@ class Visualizer:
         if not mask.has_holes:
             # draw polygons for regular masks
             for segment in mask.polygons:
-                area = mask_util.area(
-                    mask_util.frPyObjects([segment], shape2d[0], shape2d[1])
-                )
+                area = mask_util.area(mask_util.frPyObjects([segment], shape2d[0], shape2d[1]))
                 if area < (area_threshold or 0):
                     continue
                 has_valid_segment = True
                 segment = segment.reshape(-1, 2)
-                self.draw_polygon(
-                    segment, color=color, edge_color=edge_color, alpha=alpha
-                )
+                self.draw_polygon(segment, color=color, edge_color=edge_color, alpha=alpha)
         else:
             # TODO: Use Path/PathPatch to draw vector graphics:
             # https://stackoverflow.com/questions/8919719/how-to-plot-a-complex-polygon
@@ -1157,24 +1050,17 @@ class Visualizer:
             rgba[:, :, :3] = color
             rgba[:, :, 3] = (mask.mask == 1).astype("float32") * alpha
             has_valid_segment = True
-            self.output.ax.imshow(
-                rgba, extent=(0, self.output.width, self.output.height, 0)
-            )
+            self.output.ax.imshow(rgba, extent=(0, self.output.width, self.output.height, 0))
 
         if text is not None and has_valid_segment:
             # TODO sometimes drawn on wrong objects. the heuristics here can improve.
             lighter_color = self._change_color_brightness(color, brightness_factor=0.7)
-            _num_cc, cc_labels, stats, centroids = cv2.connectedComponentsWithStats(
-                binary_mask, 8
-            )
+            _num_cc, cc_labels, stats, centroids = cv2.connectedComponentsWithStats(binary_mask, 8)
             largest_component_id = np.argmax(stats[1:, -1]) + 1
 
             # draw text on the largest component, as well as other very large components.
             for cid in range(1, _num_cc):
-                if (
-                    cid == largest_component_id
-                    or stats[cid, -1] > _LARGE_MASK_AREA_THRESH
-                ):
+                if cid == largest_component_id or stats[cid, -1] > _LARGE_MASK_AREA_THRESH:
                     # median is more stable than centroid
                     # center = centroids[largest_component_id]
                     center = np.median((cc_labels == cid).nonzero(), axis=1)[::-1]
@@ -1191,16 +1077,13 @@ class Visualizer:
                 full list of formats that are accepted. If not provided, a darker shade
                 of the polygon color will be used instead.
             alpha (float): blending efficient. Smaller values lead to more transparent masks.
-
         Returns:
             output (VisImage): image object with polygon drawn.
         """
         if edge_color is None:
             # make edge color darker than the polygon color
             if alpha > 0.8:
-                edge_color = self._change_color_brightness(
-                    color, brightness_factor=-0.7
-                )
+                edge_color = self._change_color_brightness(color, brightness_factor=-0.7)
             else:
                 edge_color = color
         edge_color = mplc.to_rgb(edge_color) + (1,)
@@ -1222,11 +1105,9 @@ class Visualizer:
     def _jitter(self, color):
         """
         Randomly modifies given color to produce a slightly different color than the color given.
-
         Args:
             color (tuple[double]): a tuple of 3 elements, containing the RGB values of the color
                 picked. The values in the list are in the [0.0, 1.0] range.
-
         Returns:
             jittered_color (tuple[double]): a tuple of 3 elements, containing the RGB values of the
                 color after being jittered. The values in the list are in the [0.0, 1.0] range.
@@ -1253,14 +1134,12 @@ class Visualizer:
         """
         Depending on the brightness_factor, gives a lighter or darker color i.e. a color with
         less or more saturation than the original color.
-
         Args:
             color: color of the polygon. Refer to `matplotlib.colors` for a full list of
                 formats that are accepted.
             brightness_factor (float): a value in [-1.0, 1.0] range. A lightness factor of
                 0 will correspond to no change, a factor in [-1.0, 0) range will result in
                 a darker color and a factor in (0, 1.0] range will result in a lighter color.
-
         Returns:
             modified_color (tuple[double]): a tuple containing the RGB values of the
                 modified color. Each value in the tuple is in the [0.0, 1.0] range.
@@ -1271,9 +1150,7 @@ class Visualizer:
         modified_lightness = polygon_color[1] + (brightness_factor * polygon_color[1])
         modified_lightness = 0.0 if modified_lightness < 0.0 else modified_lightness
         modified_lightness = 1.0 if modified_lightness > 1.0 else modified_lightness
-        modified_color = colorsys.hls_to_rgb(
-            polygon_color[0], modified_lightness, polygon_color[2]
-        )
+        modified_color = colorsys.hls_to_rgb(polygon_color[0], modified_lightness, polygon_color[2])
         return modified_color
 
     def _convert_boxes(self, boxes):
@@ -1288,7 +1165,6 @@ class Visualizer:
     def _convert_masks(self, masks_or_polygons):
         """
         Convert different format of masks or polygons to a tuple of masks and polygons.
-
         Returns:
             list[GenericMask]:
         """
