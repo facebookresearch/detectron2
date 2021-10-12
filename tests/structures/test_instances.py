@@ -181,6 +181,41 @@ class TestInstances(unittest.TestCase):
         self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new1.proposal_boxes.tensor))
         self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new2.proposal_boxes.tensor))
 
+    def test_script_init_args(self):
+        def f(x: Tensor):
+            image_shape = (15, 15)
+            # __init__ can take arguments
+            inst = Instances(image_shape, a=x, proposal_boxes=Boxes(x))
+            inst2 = Instances(image_shape, a=x)
+            return inst.a, inst2.a
+
+        fields = {"proposal_boxes": Boxes, "a": Tensor}
+        with patch_instances(fields):
+            script_f = torch.jit.script(f)
+            x = torch.randn(3, 4)
+            outputs = script_f(x)
+            self.assertTrue(torch.equal(outputs[0], x))
+            self.assertTrue(torch.equal(outputs[1], x))
+
+    def test_script_cat(self):
+        def f(x: Tensor):
+            image_shape = (15, 15)
+            # __init__ can take arguments
+            inst = Instances(image_shape, a=x)
+            inst2 = Instances(image_shape, a=x)
+
+            inst3 = Instances(image_shape, proposal_boxes=Boxes(x))
+            return inst.cat([inst, inst2]), inst3.cat([inst3, inst3])
+
+        fields = {"proposal_boxes": Boxes, "a": Tensor}
+        with patch_instances(fields):
+            script_f = torch.jit.script(f)
+            x = torch.randn(3, 4)
+            output, output2 = script_f(x)
+            self.assertTrue(torch.equal(output.a, torch.cat([x, x])))
+            self.assertFalse(output.has("proposal_boxes"))
+            self.assertTrue(torch.equal(output2.proposal_boxes.tensor, torch.cat([x, x])))
+
 
 if __name__ == "__main__":
     unittest.main()
