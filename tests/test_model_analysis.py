@@ -3,8 +3,9 @@
 
 import unittest
 import torch
+from torch import nn
 
-from detectron2.utils.analysis import flop_count_operators, parameter_count
+from detectron2.utils.analysis import find_unused_parameters, flop_count_operators, parameter_count
 from detectron2.utils.testing import get_model_no_weights
 
 
@@ -42,3 +43,19 @@ class FasterRCNNTest(unittest.TestCase):
         res = parameter_count(self.model)
         self.assertTrue(res[""], 41699936)
         self.assertTrue(res["backbone"], 26799296)
+
+
+class UnusedParamTest(unittest.TestCase):
+    def test_unused(self):
+        class TestMod(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.fc1 = nn.Linear(10, 10)
+                self.t = nn.Linear(10, 10)
+
+            def forward(self, x):
+                return self.fc1(x).mean()
+
+        m = TestMod()
+        ret = find_unused_parameters(m, torch.randn(10, 10))
+        self.assertEqual(set(ret), {"t.weight", "t.bias"})
