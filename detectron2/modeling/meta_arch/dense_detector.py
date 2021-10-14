@@ -184,7 +184,7 @@ class DenseDetector(nn.Module):
         score_thresh: float,
         topk_candidates: int,
         image_size: Tuple[int, int],
-    ):
+    ) -> Instances:
         """
         Decode boxes and classification predictions of one featuer level, by
         the following steps:
@@ -208,7 +208,7 @@ class DenseDetector(nn.Module):
 
         # 2. Keep top k top scoring boxes only
         num_topk = min(topk_candidates, topk_idxs.size(0))
-        # torch.sort is actually faster than .topk (at least on GPUs)
+        # torch.sort is actually faster than .topk (https://github.com/pytorch/pytorch/issues/22812)
         pred_scores, idxs = pred_scores.sort(descending=True)
         pred_scores = pred_scores[:num_topk]
         topk_idxs = topk_idxs[idxs[:num_topk]]
@@ -230,7 +230,7 @@ class DenseDetector(nn.Module):
         score_thresh: float,
         topk_candidates: int,
         image_size: Tuple[int, int],
-    ):
+    ) -> Instances:
         """
         Run `_decode_per_level_predictions` for all feature levels and concat the results.
         """
