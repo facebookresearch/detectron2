@@ -17,13 +17,15 @@ from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpoint
 from fvcore.common.param_scheduler import ParamScheduler
 from fvcore.common.timer import Timer
 from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
+from contextlib import ExitStack, contextmanager
 
+import torch.nn as nn
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.solver import LRMultiplier
 from detectron2.utils.events import EventStorage, EventWriter
 from detectron2.utils.file_io import PathManager
-
+from detectron2.data import build_detection_test_loader
 from .train_loop import HookBase
 
 __all__ = [
@@ -684,3 +686,103 @@ class TorchMemoryStats(HookBase):
                     self._logger.info("\n" + mem_summary)
 
                 torch.cuda.reset_peak_memory_stats()
+
+
+class EvalHookv2(HookBase):
+    """
+    Run an evaluation function periodically, and at the end of training.
+
+    It is executed every ``eval_period`` iterations and after the last iteration.
+    """
+
+    def __init__(self, eval_period, eval_function):
+        """
+        Args:
+            eval_period (int): the period to run `eval_function`. Set to 0 to
+                not evaluate periodically (but still after the last iteration).
+            eval_function (callable): a function which takes no arguments, and
+                returns a nested dict of evaluation metrics.
+
+        Note:
+            This hook must be enabled in all or none workers.
+            If you would like only certain workers to perform evaluation,
+            give other workers a no-op function (`eval_function=lambda: None`).
+        """
+        self._period = eval_period
+        self._func = eval_function
+        self._data_loaders = []
+
+    def _setup_eval(self):
+        cfg = self.trainer.cfg
+        for _, dataset_name in enumerate(cfg.DATASETS.TEST):
+            self._data_loaders.append(build_detection_test_loader(cfg, dataset_name))
+        
+    def _predict(self):
+        if not self._data_loaders:
+            self._setup_eval()
+        print("Predicting::::", self._data_loaders)
+        outputs = []
+        model = self.trainer._trainer.model
+        with ExitStack() as stack:
+            if isinstance(model, nn.Module):
+                stack.enter_context(inference_context(model))
+            stack.enter_context(torch.no_grad())
+            for data_loader in self._data_loaders:
+                for _, inputs in enumerate(data_loader):
+                    outputs.append(model(inputs))
+        print(len(outputs))
+        return outputs
+
+
+    def _do_eval(self):
+        results = self._func()
+
+        if results:
+            assert isinstance(
+                results, dict
+            ), "Eval function must return a dict. Got {} instead.".format(results)
+
+            flattened_results = flatten_results_dict(results)
+            for k, v in flattened_results.items():
+                try:
+                    v = float(v)
+                except Exception as e:
+                    raise ValueError(
+                        "[EvalHook] eval_function should return a nested dict of float. "
+                        "Got '{}: {}' instead.".format(k, v)
+                    ) from e
+            self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
+
+        self.trainer.storage.put_predictions(self._predict())
+        # Evaluation may take different time among workers.
+        # A barrier make them start the next iteration together.
+        comm.synchronize()
+
+    def after_step(self):
+        next_iter = self.trainer.iter + 1
+        if self._period > 0 and next_iter % self._period == 0:
+            # do the last eval in after_train
+            if next_iter != self.trainer.max_iter:
+                self._do_eval()
+
+    def after_train(self):
+        # This condition is to prevent the eval from running after a failed training
+        if self.trainer.iter + 1 >= self.trainer.max_iter:
+            self._do_eval()
+        # func is likely a closure that holds reference to the trainer
+        # therefore we clean it to avoid circular reference in the end
+        del self._func
+
+@contextmanager
+def inference_context(model):
+    """
+    A context where the model is temporarily changed to eval mode,
+    and restored to previous mode afterwards.
+
+    Args:
+        model: a torch Module
+    """
+    training_mode = model.training
+    model.eval()
+    yield
+    model.train(training_mode)

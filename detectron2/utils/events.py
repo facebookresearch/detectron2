@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import datetime
+import enum
 import json
 import yaml
 import logging
@@ -8,11 +9,15 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 from typing import Optional
+from detectron2.structures.instances import Instances
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
+import wandb
 
 from detectron2.utils.file_io import PathManager
 from detectron2.config import CfgNode
+from detectron2.data import build_detection_test_loader
+
 
 __all__ = [
     "get_event_storage",
@@ -292,6 +297,7 @@ class EventStorage:
         self._current_prefix = ""
         self._vis_data = []
         self._histograms = []
+        self._predictions = []
 
     def put_image(self, img_name, img_tensor):
         """
@@ -307,6 +313,15 @@ class EventStorage:
                 The `img_tensor` will be visualized in tensorboard.
         """
         self._vis_data.append((img_name, img_tensor, self._iter))
+    
+    def put_predictions(self, preds):
+        """
+        Add a list of predictions on test set
+
+        Args:
+            preds [List]: list containing latest predictions made on test set
+        """
+        self._predictions = preds
 
     def put_scalar(self, name, value, smoothing_hint=True):
         """
@@ -480,6 +495,12 @@ class EventStorage:
         """
         self._vis_data = []
 
+    def clear_predictions(self):
+        """
+        Delete all predictions from `predictions` list.
+        """
+        self._predictions = []
+
     def clear_histograms(self):
         """
         Delete all the stored histograms for visualization.
@@ -501,11 +522,13 @@ class WandbWriter(EventWriter):
 
             kwargs: other arguments passed to `wandb.init(...)`
         """
-        try:
-            import wandb
-        except ImportError:
-            raise ImportError("WandB is not installed.")
         self._window_size = window_size
+        self._val_data_loaders = []
+        self._media = []
+
+        for _, dataset_name in enumerate(cfg.DATASETS.TEST):
+            self._val_data_loaders.append(build_detection_test_loader(cfg, dataset_name))
+        
         if cfg is None:
             cfg = {}
             wandb_project = "detectron2"
@@ -518,10 +541,50 @@ class WandbWriter(EventWriter):
             **kwargs
         )
 
+    def _plot_prediction(self, img, pred):
+        """
+        plot prediction on one image
+
+        Args:
+            img (str): Path to the image
+            pred (detectron2.structures.instances.Instances): Prediction instance for the image
+        """
+        import pdb
+        boxes = pred._fields['pred_boxes'].tensor.cpu().detach().numpy().tolist()
+        classes = pred._fields['pred_classes'].cpu().detach().numpy().tolist()
+        scores = pred._fields['scores'].cpu().detach().numpy().tolist()
+        assert len(boxes) == len(classes) == len(scores)
+        box_data = []
+        for i, box in enumerate(boxes):
+            box_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
+                            "class_id": int(classes[i]),
+                            "box_caption": "%f %.3f" % (classes[i], scores[i]),
+                            "scores": {"class_score":  scores[i]},
+                            "domain": "pixel"
+                            })
+
+        boxes = {"predictions": {"box_data": box_data}}
+        return wandb.Image(img, boxes=boxes)
+
     def write(self):
         storage = get_event_storage()
+        log_dict = {}
+
+        import pdb
+        if len(storage._predictions):
+            self._media = []
+            pred_idx = 0
+            for data_loader in self._val_data_loaders:
+                for _, [input] in enumerate(data_loader): # Test dataloader has batch size set to 1
+                    pred = self._plot_prediction(input.get("file_name"), storage._predictions[pred_idx][0]['instances'])
+                    self._media.append(pred)
+                    pred_idx = pred_idx + 1
+            log_dict["predictions"] = self._media
+                    
         for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
-            self._run.log({k: v}, step=iter)
+            log_dict[k] = v
+        
+        self._run.log(log_dict)
 
     def close(self):
         self._run.finish()
