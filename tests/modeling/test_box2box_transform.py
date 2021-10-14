@@ -4,7 +4,6 @@ import unittest
 import torch
 
 from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransformRotated
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import random_boxes
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,6 @@ class TestBox2BoxTransform(unittest.TestCase):
             dst_boxes_reconstructed = b2b_tfm.apply_deltas(deltas, src_boxes)
             self.assertTrue(torch.allclose(dst_boxes, dst_boxes_reconstructed))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_apply_deltas_tracing(self):
         weights = (5, 5, 10, 10)
         b2b_tfm = Box2BoxTransform(weights=weights)

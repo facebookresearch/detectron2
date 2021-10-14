@@ -7,7 +7,6 @@ from fvcore.common.checkpoint import Checkpointer
 from torch.nn.parallel import DistributedDataParallel
 
 import detectron2.utils.comm as comm
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 
 from .c2_model_loading import align_and_update_state_dicts
@@ -54,8 +53,7 @@ class DetectionCheckpointer(Checkpointer):
 
         if need_sync:
             logger.info("Broadcasting model states from main worker ...")
-            if TORCH_VERSION >= (1, 7):
-                self.model._sync_params_and_buffers()
+            self.model._sync_params_and_buffers()
         return ret
 
     def _load_file(self, filename):

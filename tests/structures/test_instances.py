@@ -5,7 +5,6 @@ from torch import Tensor
 
 from detectron2.export.torchscript import patch_instances
 from detectron2.structures import Boxes, Instances
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import convert_scripted_instances
 
 
@@ -130,7 +129,6 @@ class TestInstances(unittest.TestCase):
             x.proposal_boxes = Boxes(box_tensors)
             self.assertTrue(script_module(x))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_script_to(self):
         class f(torch.nn.Module):
             def forward(self, x: Instances):

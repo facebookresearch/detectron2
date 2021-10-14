@@ -55,7 +55,7 @@ Models can be exported to TorchScript format, by either
 The output model file can be loaded without detectron2 dependency in either Python or C++.
 The exported model often requires torchvision (or its C++ library) dependency for some custom ops.
 
-This feature requires PyTorch ≥ 1.8 (or latest on github before 1.8 is released).
+This feature requires PyTorch ≥ 1.8.
 
 ### Coverage
 Most official models under the meta architectures `GeneralizedRCNN` and `RetinaNet`
