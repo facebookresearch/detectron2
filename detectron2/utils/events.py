@@ -17,6 +17,7 @@ import wandb
 from detectron2.utils.file_io import PathManager
 from detectron2.config import CfgNode
 from detectron2.data import build_detection_test_loader
+from detectron2.data import MetadataCatalog
 
 
 __all__ = [
@@ -514,7 +515,7 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, window_size: int = 20, cfg: CfgNode = None, **kwargs):
+    def __init__(self, cfg: CfgNode, window_size: int = 20, **kwargs):
         """
         Args:
             cfg (CfgNode): the project level configuration object
@@ -525,10 +526,20 @@ class WandbWriter(EventWriter):
         self._window_size = window_size
         self._val_data_loaders = []
         self._media = []
+        self.cfg = cfg
+        self.class_names = None
+        self.index_to_class = None
 
         for _, dataset_name in enumerate(cfg.DATASETS.TEST):
             self._val_data_loaders.append(build_detection_test_loader(cfg, dataset_name))
-        
+
+        metadata = MetadataCatalog.get(self.cfg.DATASETS.TEST)
+        if hasattr(metadata, 'thing_classes'):
+            self.class_names = metadata.thing_classes
+            self.index_to_class = {}
+            for i, name in enumerate(self.class_names, 1):
+                self.index_to_class[i] = name
+
         if cfg is None:
             cfg = {}
             wandb_project = "detectron2"
@@ -540,6 +551,26 @@ class WandbWriter(EventWriter):
             config=cfg,
             **kwargs
         )
+    
+    def _parse_prediction(self, pred):
+        """
+        Parse prediction of one image and return the primitive martices to plot wandb media files
+
+        Args:
+            pred (detectron2.structures.instances.Instances): Prediction instance for the image
+        
+        returns:
+            Dict (): parsed predictions
+        """
+        parsed_pred = {}
+
+        parsed_pred['boxes'] = pred.pred_boxes.tensor.tolist() if pred.has("pred_boxes") else None
+        parsed_pred['classes'] = pred.pred_classes.tolist() if pred.has("pred_classes") else None
+        parsed_pred['scores'] = pred.scores.tolist() if pred.has("scores") else None
+        parsed_pred['pred_masks'] = pred.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
+        parsed_pred['pred_keypoints'] = pred.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
+
+        return parsed_pred
 
     def _plot_prediction(self, img, pred):
         """
@@ -549,28 +580,41 @@ class WandbWriter(EventWriter):
             img (str): Path to the image
             pred (detectron2.structures.instances.Instances): Prediction instance for the image
         """
-        import pdb
-        boxes = pred._fields['pred_boxes'].tensor.cpu().detach().numpy().tolist()
-        classes = pred._fields['pred_classes'].cpu().detach().numpy().tolist()
-        scores = pred._fields['scores'].cpu().detach().numpy().tolist()
-        assert len(boxes) == len(classes) == len(scores)
+        pred = self._parse_prediction(pred)
+ 
         box_data = []
-        for i, box in enumerate(boxes):
-            box_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
-                            "class_id": int(classes[i]),
-                            "box_caption": "%f %.3f" % (classes[i], scores[i]),
-                            "scores": {"class_score":  scores[i]},
-                            "domain": "pixel"
-                            })
+        if pred['boxes']:
+            for i, box in enumerate(pred['boxes']):
+                pred_class = int(pred['classes'][i])
+                caption = f'{pred_class}' if not self.class_names else self.class_names[pred_class]
 
-        boxes = {"predictions": {"box_data": box_data}}
-        return wandb.Image(img, boxes=boxes)
+                box_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
+                                "class_id": int(pred['classes'][i]),
+                                "box_caption": "%s %.3f" % (caption, pred['scores'][i]),
+                                "scores": {"class_score":  pred['scores'][i]},
+                                "domain": "pixel"
+                                })
+        
+        masks = {}
+        if pred['pred_masks'] is not None:
+            num_pred = min(15, len(pred['pred_masks'])) # Hardcoded to max 15 masks for better UI 
+            for i in range(num_pred):
+                pred_class = int(pred['classes'][i])
+                mask_title = f'class {pred_class}' if not self.class_names else self.class_names[pred_class]
+
+                masks[mask_title] = {
+                    "mask_data": pred['pred_masks'][i]*(pred_class+1),
+                    "class_labels": {pred_class+1: mask_title}
+                }
+    
+
+        boxes = {"predictions": {"box_data": box_data, "class_labels": self.index_to_class}}
+        return wandb.Image(img, boxes=boxes, masks=masks)
 
     def write(self):
         storage = get_event_storage()
         log_dict = {}
 
-        import pdb
         if len(storage._predictions):
             self._media = []
             pred_idx = 0

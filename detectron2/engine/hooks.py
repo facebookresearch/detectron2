@@ -720,7 +720,6 @@ class EvalHookv2(HookBase):
     def _predict(self):
         if not self._data_loaders:
             self._setup_eval()
-        print("Predicting::::", self._data_loaders)
         outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
