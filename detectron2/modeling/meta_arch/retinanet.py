@@ -8,7 +8,7 @@ from torch import Tensor, nn
 from torch.nn import functional as F
 
 from detectron2.config import configurable
-from detectron2.layers import ShapeSpec, batched_nms, cat, get_norm
+from detectron2.layers import CycleBatchNormList, ShapeSpec, batched_nms, cat, get_norm
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 
@@ -334,14 +334,30 @@ class RetinaNetHead(nn.Module):
             num_anchors (int): number of generated anchors
             conv_dims (List[int]): dimensions for each convolution layer
             norm (str or callable):
-                    Normalization for conv layers except for the two output layers.
-                    See :func:`detectron2.layers.get_norm` for supported types.
+                Normalization for conv layers except for the two output layers.
+                See :func:`detectron2.layers.get_norm` for supported types.
             prior_prob (float): Prior weight for computing bias
         """
         super().__init__()
 
+        self._num_features = len(input_shape)
         if norm == "BN" or norm == "SyncBN":
-            logger.warning("Shared norm does not work well for BN, SyncBN, expect poor results")
+            logger.info(
+                f"Using domain-specific {norm} in RetinaNetHead with len={self._num_features}."
+            )
+            bn_class = nn.BatchNorm2d if norm == "BN" else nn.SyncBatchNorm
+
+            def norm(c):
+                return CycleBatchNormList(
+                    length=self._num_features, bn_class=bn_class, num_features=c
+                )
+
+        else:
+            norm_name = str(type(get_norm(norm, 1)))
+            if "BN" in norm_name:
+                logger.warning(
+                    f"Shared BatchNorm (type={norm_name}) may not work well in RetinaNetHead."
+                )
 
         cls_subnet = []
         bbox_subnet = []
@@ -414,6 +430,7 @@ class RetinaNetHead(nn.Module):
                 regression values for every anchor. These values are the
                 relative offset between the anchor and the ground truth box.
         """
+        assert len(features) == self._num_features
         logits = []
         bbox_reg = []
         for feature in features:
