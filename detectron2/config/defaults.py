@@ -219,7 +219,7 @@ _C.MODEL.RPN.IOU_LABELS = [0, -1, 1]
 _C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
 # Target fraction of foreground (positive) examples per RPN minibatch
 _C.MODEL.RPN.POSITIVE_FRACTION = 0.5
-# Options are: "smooth_l1", "giou"
+# Options are: "smooth_l1", "giou", "diou", "ciou"
 _C.MODEL.RPN.BBOX_REG_LOSS_TYPE = "smooth_l1"
 _C.MODEL.RPN.BBOX_REG_LOSS_WEIGHT = 1.0
 # Weights on (dx, dy, dw, dh) for normalizing RPN anchor regression targets
@@ -290,7 +290,7 @@ _C.MODEL.ROI_BOX_HEAD = CN()
 # C4 don't use head name option
 # Options for non-C4 models: FastRCNNConvFCHead,
 _C.MODEL.ROI_BOX_HEAD.NAME = ""
-# Options are: "smooth_l1", "giou"
+# Options are: "smooth_l1", "giou", "diou", "ciou"
 _C.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE = "smooth_l1"
 # The final scaling coefficient on the box regression loss, used to balance the magnitude of its
 # gradients with other losses in the model. See also `MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT`.
@@ -455,7 +455,7 @@ _C.MODEL.RETINANET.BBOX_REG_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 _C.MODEL.RETINANET.FOCAL_LOSS_GAMMA = 2.0
 _C.MODEL.RETINANET.FOCAL_LOSS_ALPHA = 0.25
 _C.MODEL.RETINANET.SMOOTH_L1_LOSS_BETA = 0.1
-# Options are: "smooth_l1", "giou"
+# Options are: "smooth_l1", "giou", "diou", "ciou"
 _C.MODEL.RETINANET.BBOX_REG_LOSS_TYPE = "smooth_l1"
 
 # One of BN, SyncBN, FrozenBN, GN

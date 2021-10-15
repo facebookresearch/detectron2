@@ -19,5 +19,6 @@ from .wrappers import (
 )
 from .blocks import CNNBlockBase, DepthwiseSeparableConv2d
 from .aspp import ASPP
+from .losses import ciou_loss, diou_loss
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

@@ -333,6 +333,7 @@ _PAPER_DATA = {
     ),
     "dds": ("2003.13678", "Designing Network Design Spaces"),
     "scaling": ("2103.06877", "Fast and Accurate Model Scaling"),
+    "fcos": ("2006.09214", "FCOS: A Simple and Strong Anchor-free Object Detector"),
 }
 
 
