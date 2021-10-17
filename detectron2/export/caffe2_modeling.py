@@ -8,7 +8,6 @@ import torch
 
 from detectron2.modeling import meta_arch
 from detectron2.modeling.box_regression import Box2BoxTransform
-from detectron2.modeling.meta_arch.retinanet import permute_to_N_HWA_K
 from detectron2.modeling.roi_heads import keypoint_head
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 
@@ -369,14 +368,28 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         )
 
         # hack to reuse inference code from RetinaNet
-        self.inference = functools.partial(meta_arch.RetinaNet.inference, self)
-        self.inference_single_image = functools.partial(
-            meta_arch.RetinaNet.inference_single_image, self
-        )
+        for meth in [
+            "forward_inference",
+            "inference_single_image",
+            "_transpose_dense_predictions",
+            "_decode_multi_level_predictions",
+            "_decode_per_level_predictions",
+        ]:
+            setattr(self, meth, functools.partial(getattr(meta_arch.RetinaNet, meth), self))
 
         def f(batched_inputs, c2_inputs, c2_results):
             _, im_info = c2_inputs
             image_sizes = [[int(im[0]), int(im[1])] for im in im_info]
+            dummy_images = ImageList(
+                torch.randn(
+                    (
+                        len(im_info),
+                        3,
+                    )
+                    + tuple(image_sizes[0])
+                ),
+                image_sizes,
+            )
 
             num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])
             pred_logits = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]
@@ -385,15 +398,12 @@ class Caffe2RetinaNet(Caffe2MetaArch):
             # For each feature level, feature should have the same batch size and
             # spatial dimension as the box_cls and box_delta.
             dummy_features = [x.clone()[:, 0:0, :, :] for x in pred_logits]
-            anchors = self.anchor_generator(dummy_features)
-
             # self.num_classess can be inferred
             self.num_classes = pred_logits[0].shape[1] // (pred_anchor_deltas[0].shape[1] // 4)
 
-            pred_logits = [permute_to_N_HWA_K(x, self.num_classes) for x in pred_logits]
-            pred_anchor_deltas = [permute_to_N_HWA_K(x, 4) for x in pred_anchor_deltas]
-
-            results = self.inference(anchors, pred_logits, pred_anchor_deltas, image_sizes)
+            results = self.forward_inference(
+                dummy_images, dummy_features, [pred_logits, pred_anchor_deltas]
+            )
             return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
 
         return f

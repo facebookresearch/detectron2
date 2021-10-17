@@ -230,12 +230,6 @@ workflows:
           pytorch_version: '1.9.0+cpu'
           torchvision_version: '0.10.0+cpu'
       - linux_gpu_tests:
-          name: linux_gpu_tests_pytorch1.7
-          pytorch_version: '1.7.0'
-          torchvision_version: '0.8.1'
-          # 1.7 wheels don't have +cu102 suffix, so use a cu102 specific index
-          pytorch_index: 'https://download.pytorch.org/whl/cu102/torch_stable.html'
-      - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.8
           pytorch_version: '1.8.1+cu102'
           torchvision_version: '0.9.1+cu102'

@@ -3,6 +3,7 @@ import math
 from typing import List, Tuple
 import torch
 from fvcore.nn import giou_loss, smooth_l1_loss
+from torch.nn import functional as F
 
 from detectron2.layers import cat, ciou_loss, diou_loss
 from detectron2.structures import Boxes
@@ -244,6 +245,7 @@ class Box2BoxTransformLinear:
         Get box regression transformation deltas (dx1, dy1, dx2, dy2) that can be used
         to transform the `src_boxes` into the `target_boxes`. That is, the relation
         ``target_boxes == self.apply_deltas(deltas, src_boxes)`` is true.
+        The center of src must be inside target boxes.
 
         Args:
             src_boxes (Tensor): square source boxes, e.g., anchors
@@ -277,6 +279,8 @@ class Box2BoxTransformLinear:
                 box transformations for the single box boxes[i].
             boxes (Tensor): boxes to transform, of shape (N, 4)
         """
+        # Ensure the output is a valid box. See Sec 2.1 of https://arxiv.org/abs/2006.09214
+        deltas = F.relu(deltas)
         boxes = boxes.to(deltas.dtype)
 
         ctr_x = 0.5 * (boxes[:, 0] + boxes[:, 2])
