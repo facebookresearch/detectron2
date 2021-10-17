@@ -1213,7 +1213,7 @@ class Visualizer:
     def _convert_masks(self, masks_or_polygons):
         """
         Convert different format of masks or polygons to a tuple of masks and polygons.
-        
+
         Returns:
             list[GenericMask]:
         """
