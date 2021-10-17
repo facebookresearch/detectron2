@@ -729,7 +729,6 @@ class EvalHookv2(HookBase):
             for data_loader in self._data_loaders:
                 for _, inputs in enumerate(data_loader):
                     outputs.append(model(inputs))
-        print(len(outputs))
         return outputs
 
 
