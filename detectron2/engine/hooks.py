@@ -11,6 +11,7 @@ import tempfile
 import time
 import warnings
 from collections import Counter
+from detectron2 import data
 import torch
 from fvcore.common.checkpoint import Checkpointer
 from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
@@ -710,16 +711,26 @@ class EvalHookv2(HookBase):
         """
         self._period = eval_period
         self._func = eval_function
-        self._data_loaders = []
+        self._data_loaders = None
+        self._cfg = None
+        self._num_samples = 0
 
     def _setup_eval(self):
-        cfg = self.trainer.cfg
-        for _, dataset_name in enumerate(cfg.DATASETS.TEST):
-            self._data_loaders.append(build_detection_test_loader(cfg, dataset_name))
+        self._cfg = self.trainer.cfg
+        for _, dataset_name in enumerate(self._cfg.DATASETS.TEST):
+            dataset = build_detection_test_loader(self._cfg, dataset_name)
+            self._data_loaders.append(dataset)
+            self._num_samples = self._num_samples + len(dataset)
+
         
     def _predict(self):
         if not self._data_loaders:
             self._setup_eval()
+            if not self._num_samples:
+                return []
+
+        # Infer and log atleast 8 images
+        num_batches_to_infer = max(8, int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
         outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
@@ -729,6 +740,9 @@ class EvalHookv2(HookBase):
             for data_loader in self._data_loaders:
                 for _, inputs in enumerate(data_loader):
                     outputs.append(model(inputs))
+                    if len(outputs) >= num_batches_to_infer:
+                        return outputs
+                        
         return outputs
 
 
