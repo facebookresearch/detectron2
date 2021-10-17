@@ -7,7 +7,15 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import configurable
-from detectron2.layers import ShapeSpec, batched_nms, cat, cross_entropy, nonzero_tuple
+from detectron2.layers import (
+    ShapeSpec,
+    batched_nms,
+    cat,
+    ciou_loss,
+    cross_entropy,
+    diou_loss,
+    nonzero_tuple,
+)
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
@@ -207,7 +215,8 @@ class FastRCNNOutputLayers(nn.Module):
             cls_agnostic_bbox_reg (bool): whether to use class agnostic for bbox regression
             smooth_l1_beta (float): transition point from L1 to L2 loss. Only used if
                 `box_reg_loss_type` is "smooth_l1"
-            box_reg_loss_type (str): Box regression loss type. One of: "smooth_l1", "giou"
+            box_reg_loss_type (str): Box regression loss type. One of: "smooth_l1", "giou",
+                "diou", "ciou"
             loss_weight (float|dict): weights to use for losses. Can be single float for weighting
                 all losses, or a dict of individual weightings. Valid dict keys are:
                     * "loss_cls": applied to classification loss
@@ -347,6 +356,16 @@ class FastRCNNOutputLayers(nn.Module):
                 fg_pred_deltas, proposal_boxes[fg_inds]
             )
             loss_box_reg = giou_loss(fg_pred_boxes, gt_boxes[fg_inds], reduction="sum")
+        elif self.box_reg_loss_type == "diou":
+            fg_pred_boxes = self.box2box_transform.apply_deltas(
+                fg_pred_deltas, proposal_boxes[fg_inds]
+            )
+            loss_box_reg = diou_loss(fg_pred_boxes, gt_boxes[fg_inds], reduction="sum")
+        elif self.box_reg_loss_type == "ciou":
+            fg_pred_boxes = self.box2box_transform.apply_deltas(
+                fg_pred_deltas, proposal_boxes[fg_inds]
+            )
+            loss_box_reg = ciou_loss(fg_pred_boxes, gt_boxes[fg_inds], reduction="sum")
         else:
             raise ValueError(f"Invalid bbox reg loss type '{self.box_reg_loss_type}'")
         # The reg loss is normalized using the total number of regions (R), not the number

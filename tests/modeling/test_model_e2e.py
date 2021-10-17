@@ -2,7 +2,6 @@
 
 
 import itertools
-import numpy as np
 import unittest
 from contextlib import contextmanager
 from copy import deepcopy
@@ -186,13 +185,10 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
                 tensor(1, 256, 16, 16),
                 tensor(1, 256, 8, 8),
             ]
-            anchors = self.model.anchor_generator(features)
-            _, pred_anchor_deltas = self.model.head(features)
-            HWAs = [np.prod(x.shape[-3:]) // 4 for x in pred_anchor_deltas]
-
-            pred_logits = [tensor(1, HWA, self.model.num_classes) for HWA in HWAs]
-            pred_anchor_deltas = [tensor(1, HWA, 4) for HWA in HWAs]
-            det = self.model.inference(anchors, pred_logits, pred_anchor_deltas, images.image_sizes)
+            pred_logits, pred_anchor_deltas = self.model.head(features)
+            pred_logits = [tensor(*x.shape) for x in pred_logits]
+            pred_anchor_deltas = [tensor(*x.shape) for x in pred_anchor_deltas]
+            det = self.model.forward_inference(images, features, [pred_logits, pred_anchor_deltas])
             # all predictions (if any) are infinite or nan
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)

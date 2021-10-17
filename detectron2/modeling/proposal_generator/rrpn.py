@@ -11,6 +11,7 @@ from detectron2.utils.memory import retry_if_cuda_oom
 
 from ..box_regression import Box2BoxTransformRotated
 from .build import PROPOSAL_GENERATOR_REGISTRY
+from .proposal_utils import _is_tracing
 from .rpn import RPN
 
 logger = logging.getLogger(__name__)
@@ -67,7 +68,10 @@ def find_top_rrpn_proposals(
         itertools.count(), proposals, pred_objectness_logits
     ):
         Hi_Wi_A = logits_i.shape[1]
-        num_proposals_i = min(pre_nms_topk, Hi_Wi_A)
+        if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
+            num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
+        else:
+            num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
 
         # sort is faster than topk (https://github.com/pytorch/pytorch/issues/22812)
         # topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
@@ -101,7 +105,7 @@ def find_top_rrpn_proposals(
         # filter empty boxes
         keep = boxes.nonempty(threshold=min_box_size)
         lvl = level_ids
-        if keep.sum().item() != len(boxes):
+        if _is_tracing() or keep.sum().item() != len(boxes):
             boxes, scores_per_img, lvl = (boxes[keep], scores_per_img[keep], level_ids[keep])
 
         keep = batched_nms_rotated(boxes.tensor, scores_per_img, lvl, nms_thresh)
