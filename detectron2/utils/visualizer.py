@@ -234,7 +234,6 @@ def _create_text_labels(classes, scores, class_names, is_crowd=None):
         scores (list[float] or None):
         class_names (list[str] or None):
         is_crowd (list[bool] or None):
-
     Returns:
         list[str] or None
     """
@@ -270,7 +269,6 @@ class VisImage:
         """
         Args:
             Same as in :meth:`__init__()`.
-
         Returns:
             fig (matplotlib.pyplot.figure): top level container for all the image plot elements.
             ax (matplotlib.pyplot.Axes): contains figure elements and sets the coordinate system.
@@ -331,23 +329,19 @@ class VisImage:
 class Visualizer:
     """
     Visualizer that draws data about detection/segmentation on images.
-
     It contains methods like `draw_{text,box,circle,line,binary_mask,polygon}`
     that draw primitive objects to images, as well as high-level wrappers like
     `draw_{instance_predictions,sem_seg,panoptic_seg_predictions,dataset_dict}`
     that draw composite data in some pre-defined style.
-
     Note that the exact visualization style for the high-level wrappers are subject to change.
     Style such as color, opacity, label contents, visibility of labels, or even the visibility
     of objects themselves (e.g. when the object is too small) may change according
     to different heuristics, as long as the results still look visually reasonable.
-
     To obtain a consistent style, you can implement custom drawing functions with the
     abovementioned primitive methods instead. If you need more customized visualization
     styles, you can process the data yourself following their format documented in
     tutorials (:doc:`/tutorials/models`, :doc:`/tutorials/datasets`). This class does not
     intend to satisfy everyone's preference on drawing styles.
-
     This visualizer focuses on high rendering quality rather than performance. It is not
     designed to be used for real-time applications.
     """
@@ -383,12 +377,10 @@ class Visualizer:
     def draw_instance_predictions(self, predictions):
         """
         Draw instance-level prediction results on an image.
-
         Args:
             predictions (Instances): the output of an instance detection/segmentation
                 model. Following fields will be used to draw:
                 "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -436,13 +428,11 @@ class Visualizer:
     def draw_sem_seg(self, sem_seg, area_threshold=None, alpha=0.8):
         """
         Draw semantic segmentation predictions/labels.
-
         Args:
             sem_seg (Tensor or ndarray): the segmentation of shape (H, W).
                 Each value is the integer label of the pixel.
             area_threshold (int): segments with less than `area_threshold` are not drawn.
             alpha (float): the larger it is, the more opaque the segmentations are.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -472,7 +462,6 @@ class Visualizer:
     def draw_panoptic_seg(self, panoptic_seg, segments_info, area_threshold=None, alpha=0.7):
         """
         Draw panoptic prediction annotations or results.
-
         Args:
             panoptic_seg (Tensor): of shape (height, width) where the values are ids for each
                 segment.
@@ -481,7 +470,6 @@ class Visualizer:
                 If None, category id of each pixel is computed by
                 ``pixel // metadata.label_divisor``.
             area_threshold (int): stuff segments with less than `area_threshold` are not drawn.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -538,10 +526,8 @@ class Visualizer:
     def draw_dataset_dict(self, dic):
         """
         Draw annotations/segmentaions in Detectron2 Dataset format.
-
         Args:
             dic (dict): annotation/segmentation data of one image, in Detectron2 Dataset format.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -623,7 +609,6 @@ class Visualizer:
                 for the N objects in a single image,
             labels (list[str]): the text to be displayed for each instance.
             masks (masks-like object): Supported types are:
-
                 * :class:`detectron2.structures.PolygonMasks`,
                   :class:`detectron2.structures.BitMasks`.
                 * list[list[ndarray]]: contains the segmentation masks for all objects in one image.
@@ -639,7 +624,6 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -757,7 +741,6 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -790,11 +773,9 @@ class Visualizer:
         Draws keypoints of an instance and follows the rules for keypoint connections
         to draw lines between appropriate keypoints. This follows color heuristics for
         line color.
-
         Args:
             keypoints (Tensor): a tensor of shape (K, 3), where K is the number of keypoints
                 and the last dimension corresponds to (x, y, probability).
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -867,7 +848,6 @@ class Visualizer:
                 of formats that are accepted.
             horizontal_alignment (str): see `matplotlib.text.Text`
             rotation: rotation angle in degrees CCW
-
         Returns:
             output (VisImage): image object with text drawn.
         """
@@ -904,7 +884,6 @@ class Visualizer:
             edge_color: color of the outline of the box. Refer to `matplotlib.colors`
                 for full list of formats that are accepted.
             line_style (string): the string to use to create the outline of the boxes.
-
         Returns:
             output (VisImage): image object with box drawn.
         """
@@ -933,7 +912,6 @@ class Visualizer:
     ):
         """
         Draw a rotated box with label on its top-left corner.
-
         Args:
             rotated_box (tuple): a tuple containing (cnt_x, cnt_y, w, h, angle),
                 where cnt_x and cnt_y are the center coordinates of the box.
@@ -944,7 +922,6 @@ class Visualizer:
                 for full list of formats that are accepted.
             line_style (string): the string to use to create the outline of the boxes.
             label (string): label for rotated box. It will not be rendered when set to None.
-
         Returns:
             output (VisImage): image object with box drawn.
         """
@@ -991,7 +968,6 @@ class Visualizer:
             color: color of the polygon. Refer to `matplotlib.colors` for a full list of
                 formats that are accepted.
             radius (int): radius of the circle.
-
         Returns:
             output (VisImage): image object with box drawn.
         """
@@ -1014,7 +990,6 @@ class Visualizer:
                 for a full list of formats that are accepted.
             linewidth (float or None): width of the line. When it's None,
                 a default value will be computed and used.
-
         Returns:
             output (VisImage): image object with line drawn.
         """
@@ -1047,7 +1022,6 @@ class Visualizer:
             text (str): if None, will be drawn in the object's center of mass.
             alpha (float): blending efficient. Smaller values lead to more transparent masks.
             area_threshold (float): a connected component small than this will not be shown.
-
         Returns:
             output (VisImage): image object with mask drawn.
         """
@@ -1103,7 +1077,6 @@ class Visualizer:
                 full list of formats that are accepted. If not provided, a darker shade
                 of the polygon color will be used instead.
             alpha (float): blending efficient. Smaller values lead to more transparent masks.
-
         Returns:
             output (VisImage): image object with polygon drawn.
         """
@@ -1132,11 +1105,9 @@ class Visualizer:
     def _jitter(self, color):
         """
         Randomly modifies given color to produce a slightly different color than the color given.
-
         Args:
             color (tuple[double]): a tuple of 3 elements, containing the RGB values of the color
                 picked. The values in the list are in the [0.0, 1.0] range.
-
         Returns:
             jittered_color (tuple[double]): a tuple of 3 elements, containing the RGB values of the
                 color after being jittered. The values in the list are in the [0.0, 1.0] range.
@@ -1163,14 +1134,12 @@ class Visualizer:
         """
         Depending on the brightness_factor, gives a lighter or darker color i.e. a color with
         less or more saturation than the original color.
-
         Args:
             color: color of the polygon. Refer to `matplotlib.colors` for a full list of
                 formats that are accepted.
             brightness_factor (float): a value in [-1.0, 1.0] range. A lightness factor of
                 0 will correspond to no change, a factor in [-1.0, 0) range will result in
                 a darker color and a factor in (0, 1.0] range will result in a lighter color.
-
         Returns:
             modified_color (tuple[double]): a tuple containing the RGB values of the
                 modified color. Each value in the tuple is in the [0.0, 1.0] range.
@@ -1196,7 +1165,6 @@ class Visualizer:
     def _convert_masks(self, masks_or_polygons):
         """
         Convert different format of masks or polygons to a tuple of masks and polygons.
-
         Returns:
             list[GenericMask]:
         """
