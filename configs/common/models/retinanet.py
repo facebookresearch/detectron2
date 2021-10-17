@@ -26,7 +26,8 @@ model = L(RetinaNet)(
         top_block=L(LastLevelP6P7)(in_channels=2048, out_channels="${..out_channels}"),
     ),
     head=L(RetinaNetHead)(
-        input_shape=[ShapeSpec(channels=256)],
+        # Shape for each input feature map
+        input_shape=[ShapeSpec(channels=256)] * 5,
         num_classes="${..num_classes}",
         conv_dims=[256, 256, 256, 256],
         prior_prob=0.01,

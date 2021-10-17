@@ -7,7 +7,7 @@ from fvcore.nn import sigmoid_focal_loss_jit
 from torch import Tensor, nn
 from torch.nn import functional as F
 
-from detectron2.layers import batched_nms
+from detectron2.layers import ShapeSpec, batched_nms
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_point_box_distance
 from detectron2.utils.events import get_event_storage
 
@@ -281,15 +281,17 @@ class FCOSHead(RetinaNetHead):
     prediction branch on top of :class:`RetinaNetHead`.
     """
 
-    def __init__(self, *, conv_dims: List[int], **kwargs):
-        super().__init__(conv_dims=conv_dims, num_anchors=1, **kwargs)
+    def __init__(self, *, input_shape: List[ShapeSpec], conv_dims: List[int], **kwargs):
+        super().__init__(input_shape=input_shape, conv_dims=conv_dims, num_anchors=1, **kwargs)
         # Unlike original FCOS, we do not add an additional learnable scale layer
         # because it's found to have no benefits after normalizing regression targets by stride.
+        self._num_features = len(input_shape)
         self.ctrness = nn.Conv2d(conv_dims[-1], 1, kernel_size=3, stride=1, padding=1)
         torch.nn.init.normal_(self.ctrness.weight, std=0.01)
         torch.nn.init.constant_(self.ctrness.bias, 0)
 
     def forward(self, features):
+        assert len(features) == self._num_features
         logits = []
         bbox_reg = []
         ctrness = []
