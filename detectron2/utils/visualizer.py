@@ -117,23 +117,40 @@ class GenericMask:
         return self._has_holes
 
     def mask_to_polygons(self, mask):
-        # cv2.RETR_CCOMP flag retrieves all the contours and arranges them to a 2-level
-        # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
-        # Internal contours (holes) are placed in hierarchy-2.
-        # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
-        mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
-        res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
-        hierarchy = res[-1]
-        if hierarchy is None:  # empty mask
-            return [], False
-        has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
-        res = res[-2]
-        res = [x.flatten() for x in res]
-        # These coordinates from OpenCV are integers in range [0, W-1 or H-1].
-        # We add 0.5 to turn them into real-value coordinate space. A better solution
-        # would be to first +0.5 and then dilate the returned polygon by 0.5.
-        res = [x + 0.5 for x in res if len(x) >= 6]
-        return res, has_holes
+      # cv2.RETR_CCOMP flag retrieves all the contours and arranges them to a 2-level
+      # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
+      # Internal contours (holes) are placed in hierarchy-2.
+      # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
+      mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
+      res, hierarchy = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+
+      if hierarchy is None:  # empty mask
+          return [], False
+
+      #TODO speed this search up
+      new_polys = res.copy()
+      indices_to_keep = list(range(len(res)))
+      for i,r1 in enumerate(res):
+          for j,r2 in enumerate(res):
+              if i == j:
+                  continue
+              if np.in1d(r2.ravel(), r1.ravel()).all():
+                  if len(r2) > len(r1):
+                      if i in indices_to_keep:
+                          indices_to_keep.remove(i)
+                  elif len(r1) > len(r2):
+                      if j in indices_to_keep:
+                          indices_to_keep.remove(j)
+
+      res = [val for i,val in enumerate(new_polys) if i in indices_to_keep]
+
+      has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
+      res = [x.flatten() for x in res]
+      # These coordinates from OpenCV are integers in range [0, W-1 or H-1].
+      # We add 0.5 to turn them into real-value coordinate space. A better solution
+      # would be to first +0.5 and then dilate the returned polygon by 0.5.
+      res = [x + 0.5 for x in res if len(x) >= 6]
+      return res, has_holes
 
     def polygons_to_mask(self, polygons):
         rle = mask_util.frPyObjects(polygons, self.height, self.width)
