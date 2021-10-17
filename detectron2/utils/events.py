@@ -527,18 +527,26 @@ class WandbWriter(EventWriter):
         self._val_data_loaders = []
         self._media = []
         self.cfg = cfg
-        self.class_names = None
-        self.index_to_class = None
+        self.thing_class_names = None
+        self.thing_index_to_class = {}
+        self.stuff_class_names = None
+        self.stuff_index_to_class = {}
 
         for _, dataset_name in enumerate(cfg.DATASETS.TEST):
             self._val_data_loaders.append(build_detection_test_loader(cfg, dataset_name))
 
         metadata = MetadataCatalog.get(self.cfg.DATASETS.TEST)
         if hasattr(metadata, 'thing_classes'):
-            self.class_names = metadata.thing_classes
-            self.index_to_class = {}
-            for i, name in enumerate(self.class_names, 1):
-                self.index_to_class[i] = name
+            self.thing_class_names = metadata.thing_classes
+            self.thing_index_to_class = {}
+            for i, name in enumerate(self.thing_class_names, 1):
+                self.thing_index_to_class[i] = name
+                
+        if hasattr(metadata, 'stuff_classes'):
+            self.stuff_class_names = metadata.thing_classes
+            self.stuff_index_to_class = {}
+            for i, name in enumerate(self.stuff_class_names, 1):
+                self.stuff_index_to_class[i] = name
 
         if cfg is None:
             cfg = {}
@@ -563,12 +571,18 @@ class WandbWriter(EventWriter):
             Dict (): parsed predictions
         """
         parsed_pred = {}
-
-        parsed_pred['boxes'] = pred.pred_boxes.tensor.tolist() if pred.has("pred_boxes") else None
-        parsed_pred['classes'] = pred.pred_classes.tolist() if pred.has("pred_classes") else None
-        parsed_pred['scores'] = pred.scores.tolist() if pred.has("scores") else None
-        parsed_pred['pred_masks'] = pred.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
-        parsed_pred['pred_keypoints'] = pred.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
+        if pred.get("instances") is not None:
+            pred = pred["instances"]
+            parsed_pred['boxes'] = pred.pred_boxes.tensor.tolist() if pred.has("pred_boxes") else None
+            parsed_pred['classes'] = pred.pred_classes.tolist() if pred.has("pred_classes") else None
+            parsed_pred['scores'] = pred.scores.tolist() if pred.has("scores") else None
+            parsed_pred['pred_masks'] = pred.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
+            parsed_pred['pred_keypoints'] = pred.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
+        
+        elif pred.get("sem_seg") is not None:
+            parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
+            
+            
 
         return parsed_pred
 
@@ -578,51 +592,68 @@ class WandbWriter(EventWriter):
 
         Args:
             img (str): Path to the image
-            pred (detectron2.structures.instances.Instances): Prediction instance for the image
+            pred (Dict): Prediction for one image
         """
         pred = self._parse_prediction(pred)
- 
-        box_data = []
-        if pred['boxes']:
+        
+        # Process Bounding box detections
+        boxes = {}
+        if pred.get('boxes') is not None:
+            boxes_data = []
             for i, box in enumerate(pred['boxes']):
                 pred_class = int(pred['classes'][i])
-                caption = f'{pred_class}' if not self.class_names else self.class_names[pred_class]
+                caption = f'{pred_class}' if not self.thing_class_names else self.thing_class_names[pred_class]
 
-                box_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
+                boxes_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
                                 "class_id": int(pred['classes'][i]),
                                 "box_caption": "%s %.3f" % (caption, pred['scores'][i]),
                                 "scores": {"class_score":  pred['scores'][i]},
                                 "domain": "pixel"
                                 })
+            boxes = {"predictions": {"box_data": box_data, "class_labels": self.thing_index_to_class}}
         
+        # Process instance segmentation detections
         masks = {}
-        if pred['pred_masks'] is not None:
+        if pred.get('pred_masks') is not None:
             num_pred = min(15, len(pred['pred_masks'])) # Hardcoded to max 15 masks for better UI 
             for i in range(num_pred):
                 pred_class = int(pred['classes'][i])
-                mask_title = f'class {pred_class}' if not self.class_names else self.class_names[pred_class]
+                mask_title = f'class {pred_class}' if not self.thing_class_names else self.thing_class_names[pred_class]
 
                 masks[mask_title] = {
                     "mask_data": pred['pred_masks'][i]*(pred_class+1),
                     "class_labels": {pred_class+1: mask_title}
                 }
-    
-
-        boxes = {"predictions": {"box_data": box_data, "class_labels": self.index_to_class}}
+         
+        # Process semantic segmentation predictions
+        if pred.get("sem_mask") is not None:
+            print(pred["sem_mask"])
+            masks["prediction"] = {
+                "mask_data": pred["sem_mask"],
+                #"class_labels": self.stuff_index_to_class
+            }
+        
+        
         return wandb.Image(img, boxes=boxes, masks=masks)
 
     def write(self):
+        
         storage = get_event_storage()
         log_dict = {}
 
         if len(storage._predictions):
             self._media = []
-            pred_idx = 0
             for data_loader in self._val_data_loaders:
-                for _, [input] in enumerate(data_loader): # Test dataloader has batch size set to 1
-                    pred = self._plot_prediction(input.get("file_name"), storage._predictions[pred_idx][0]['instances'])
-                    self._media.append(pred)
-                    pred_idx = pred_idx + 1
+                for i, [input] in enumerate(data_loader): # Test dataloader has batch size set to 1
+                    pred_img = self._plot_prediction(input.get("file_name"), storage._predictions[i][0])
+                    self._media.append(pred_img)
+                    
+                    # Refactor breaking loops
+                    if len(self._media) >= len(storage._predictions):
+                        break
+                if len(self._media) >= len(storage._predictions):
+                        break
+                        
             log_dict["predictions"] = self._media
                     
         for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():

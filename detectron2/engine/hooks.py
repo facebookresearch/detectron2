@@ -711,7 +711,7 @@ class EvalHookv2(HookBase):
         """
         self._period = eval_period
         self._func = eval_function
-        self._data_loaders = None
+        self._data_loaders = []
         self._cfg = None
         self._num_samples = 0
 
@@ -731,6 +731,7 @@ class EvalHookv2(HookBase):
 
         # Infer and log atleast 8 images
         num_batches_to_infer = max(8, int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
+        print("num_batches_to_infer", num_batches_to_infer , "    -- ", int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
         outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
