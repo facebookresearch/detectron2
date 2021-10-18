@@ -730,10 +730,16 @@ class EvalHookv2(HookBase):
             self.trainer.storage._misc["data_loaders"] =  self._data_loaders
             if not self._num_samples:
                 return []
-
         # Infer and log atleast 8 images
         num_batches_to_infer = max(8, int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
-        print("num_batches_to_infer", num_batches_to_infer , "    -- ", int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
+        
+        print("num_batches_to_infer   ", num_batches_to_infer)
+        
+        # if evetnstorage has enough predictions, pass
+        if len(self.trainer.storage._predictions) >= num_batches_to_infer:
+            return []
+        
+        print("predicting")
         outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
@@ -743,7 +749,9 @@ class EvalHookv2(HookBase):
             for data_loader in self._data_loaders:
                 for _, inputs in enumerate(data_loader):
                     outputs.append(model(inputs))
-                    if len(outputs) >= num_batches_to_infer:
+                    # Checks if there are enough predictions already. Also takes into account DDP mode
+                    if (len(outputs) >= num_batches_to_infer or 
+                        len(self.trainer.storage._predictions) + len(outputs)  >= num_batches_to_infer):
                         return outputs
                         
         return outputs
@@ -751,7 +759,7 @@ class EvalHookv2(HookBase):
 
     def _do_eval(self):
         results = self._func()
-
+        
         if results:
             assert isinstance(
                 results, dict

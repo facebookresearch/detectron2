@@ -534,7 +534,7 @@ class WandbWriter(EventWriter):
         self.stuff_index_to_class = []
         
         self._build_dataset_metadata()
-        print("thing stuff", self.thing_class_names, self.stuff_class_names)
+        print(" stuff", self.stuff_index_to_class)
 
         if cfg is None:
             cfg = {}
@@ -614,7 +614,7 @@ class WandbWriter(EventWriter):
         elif pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
             
-            
+        print("GOT KEYSSSSSSSS---->", pred.keys())
 
         return parsed_pred
 
@@ -659,10 +659,9 @@ class WandbWriter(EventWriter):
          
         # Process semantic segmentation predictions
         if pred.get("sem_mask") is not None:
-            print(pred["sem_mask"])
             masks["prediction"] = {
                 "mask_data": pred["sem_mask"],
-                #"class_labels": self.stuff_index_to_class
+                "class_labels": self.stuff_index_to_class[loader_i]
             }
         
         
@@ -691,6 +690,7 @@ class WandbWriter(EventWriter):
                         break
                         
             log_dict["predictions"] = self._media
+            storage.clear_predictions()
                     
         for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
             log_dict[k] = v
