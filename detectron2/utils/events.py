@@ -528,25 +528,13 @@ class WandbWriter(EventWriter):
         self._val_data_loaders = []
         self._media = []
         self.cfg = cfg
-        self.thing_class_names = None
-        self.thing_index_to_class = {}
-        self.stuff_class_names = None
-        self.stuff_index_to_class = {}
-
-        #for _, dataset_name in enumerate(cfg.DATASETS.TEST):
-        #    self._val_data_loaders.append(build_detection_test_loader(cfg, dataset_name))
-        metadata = MetadataCatalog.get(self.cfg.DATASETS.TEST)
-        if hasattr(metadata, 'thing_classes'):
-            self.thing_class_names = metadata.thing_classes
-            self.thing_index_to_class = {}
-            for i, name in enumerate(self.thing_class_names, 1):
-                self.thing_index_to_class[i] = name
-                
-        if hasattr(metadata, 'stuff_classes'):
-            self.stuff_class_names = metadata.thing_classes
-            self.stuff_index_to_class = {}
-            for i, name in enumerate(self.stuff_class_names, 1):
-                self.stuff_index_to_class[i] = name
+        self.thing_class_names = []
+        self.thing_index_to_class = []
+        self.stuff_class_names = []
+        self.stuff_index_to_class = []
+        
+        self._build_dataset_metadata()
+        print("thing stuff", self.thing_class_names, self.stuff_class_names)
 
         if cfg is None:
             cfg = {}
@@ -560,6 +548,49 @@ class WandbWriter(EventWriter):
             **kwargs
         )
     
+    def _build_dataset_metadata(self):
+        '''
+        Builds parsed metadata lists and mappings dicts to facilitate logging.
+        Builds a list of metadata for each of the validation dataloaders. Expects the metadata to present for ech dataloader or
+        combined as a list of dataloaders. If both are present, the former will be given preferance.
+
+        E.g. -- Setting the metadata in either ways will works:
+
+        DATASETS.TEST = ("val1", "val2",)
+        # set the grobal properties for both datasets
+        MetadataCatalog.get(("val1", "val2",)).property = ...
+        
+        # set the properties separately
+        MetadataCatalog.get("val1").property = ...
+        MetadataCatalog.get("val2").property = ...
+        '''
+        combined_loader_meta = MetadataCatalog.get(self.cfg.DATASETS.TEST)
+        for dataset in self.cfg.DATASETS.TEST:
+            metadata = MetadataCatalog.get(dataset)
+
+            # Parse thing_classes
+            self.thing_class_names.append([])
+            self.thing_index_to_class.append({})
+            if hasattr(metadata, 'thing_classes'): # if user provides individual lists for each dataset
+                self.thing_class_names[-1] = metadata.thing_classes
+            elif hasattr(combined_loader_meta, 'thing_classes'): # if user provides combined list for all datasets
+                self.thing_class_names[-1] = combined_loader_meta.thing_classes
+            index_to_class = {}
+            for i, name in enumerate(self.thing_class_names[-1], 1):
+                index_to_class[i] = name
+            self.thing_index_to_class[-1] = (index_to_class)
+
+            # Parse stuff_classes
+            self.stuff_class_names.append([])
+            self.stuff_index_to_class.append({})                
+            if hasattr(metadata, 'stuff_classes'):
+                self.stuff_class_names[-1] = metadata.thing_classes
+            elif hasattr(combined_loader_meta, 'stuff_classes'):
+                self.stuff_class_names[-1] = combined_loader_meta.thing_classes
+            index_to_class = {}
+            for i, name in enumerate(self.stuff_class_names[-1], 1):
+                index_to_class[i] = name
+            self.stuff_index_to_class[-1] = index_to_class
 
     def _parse_prediction(self, pred):
         """
@@ -587,7 +618,7 @@ class WandbWriter(EventWriter):
 
         return parsed_pred
 
-    def _plot_prediction(self, img, pred):
+    def _plot_prediction(self, img, pred, loader_i):
         """
         plot prediction on one image
 
@@ -603,7 +634,7 @@ class WandbWriter(EventWriter):
             boxes_data = []
             for i, box in enumerate(pred['boxes']):
                 pred_class = int(pred['classes'][i])
-                caption = f'{pred_class}' if not self.thing_class_names else self.thing_class_names[pred_class]
+                caption = f'{pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
 
                 boxes_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
                                 "class_id": int(pred['classes'][i]),
@@ -611,7 +642,7 @@ class WandbWriter(EventWriter):
                                 "scores": {"class_score":  pred['scores'][i]},
                                 "domain": "pixel"
                                 })
-            boxes = {"predictions": {"box_data": boxes_data, "class_labels": self.thing_index_to_class}}
+            boxes = {"predictions": {"box_data": boxes_data, "class_labels": self.thing_index_to_class[loader_i]}}
         
         # Process instance segmentation detections
         masks = {}
@@ -619,7 +650,7 @@ class WandbWriter(EventWriter):
             num_pred = min(15, len(pred['pred_masks'])) # Hardcoded to max 15 masks for better UI 
             for i in range(num_pred):
                 pred_class = int(pred['classes'][i])
-                mask_title = f'class {pred_class}' if not self.thing_class_names else self.thing_class_names[pred_class]
+                mask_title = f'class {pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
 
                 masks[mask_title] = {
                     "mask_data": pred['pred_masks'][i]*(pred_class+1),
@@ -648,9 +679,9 @@ class WandbWriter(EventWriter):
 
         if len(storage._predictions):
             self._media = []
-            for data_loader in self._val_data_loaders:
+            for loader_i, data_loader in enumerate(self._val_data_loaders):
                 for i, [input] in enumerate(data_loader): # Test dataloader has batch size set to 1
-                    pred_img = self._plot_prediction(input.get("file_name"), storage._predictions[i][0])
+                    pred_img = self._plot_prediction(input.get("file_name"), storage._predictions[i][0], loader_i)
                     self._media.append(pred_img)
                     
                     # Refactor breaking loops
