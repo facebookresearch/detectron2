@@ -299,6 +299,7 @@ class EventStorage:
         self._vis_data = []
         self._histograms = []
         self._predictions = []
+        self._misc = {}
 
     def put_image(self, img_name, img_tensor):
         """
@@ -532,9 +533,8 @@ class WandbWriter(EventWriter):
         self.stuff_class_names = None
         self.stuff_index_to_class = {}
 
-        for _, dataset_name in enumerate(cfg.DATASETS.TEST):
-            self._val_data_loaders.append(build_detection_test_loader(cfg, dataset_name))
-
+        #for _, dataset_name in enumerate(cfg.DATASETS.TEST):
+        #    self._val_data_loaders.append(build_detection_test_loader(cfg, dataset_name))
         metadata = MetadataCatalog.get(self.cfg.DATASETS.TEST)
         if hasattr(metadata, 'thing_classes'):
             self.thing_class_names = metadata.thing_classes
@@ -560,6 +560,7 @@ class WandbWriter(EventWriter):
             **kwargs
         )
     
+
     def _parse_prediction(self, pred):
         """
         Parse prediction of one image and return the primitive martices to plot wandb media files
@@ -610,7 +611,7 @@ class WandbWriter(EventWriter):
                                 "scores": {"class_score":  pred['scores'][i]},
                                 "domain": "pixel"
                                 })
-            boxes = {"predictions": {"box_data": box_data, "class_labels": self.thing_index_to_class}}
+            boxes = {"predictions": {"box_data": boxes_data, "class_labels": self.thing_index_to_class}}
         
         # Process instance segmentation detections
         masks = {}
@@ -639,6 +640,10 @@ class WandbWriter(EventWriter):
     def write(self):
         
         storage = get_event_storage()
+        # Use the exisitng dataloader used for predicting
+        if storage._misc.get("data_loaders") is not None and not self._val_data_loaders:
+            self._val_data_loaders = storage._misc.get("data_loaders")
+
         log_dict = {}
 
         if len(storage._predictions):

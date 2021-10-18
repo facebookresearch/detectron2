@@ -726,6 +726,8 @@ class EvalHookv2(HookBase):
     def _predict(self):
         if not self._data_loaders:
             self._setup_eval()
+            # Allows writer to use the same dataloader to get the images.
+            self.trainer.storage._misc["data_loaders"] =  self._data_loaders
             if not self._num_samples:
                 return []
 

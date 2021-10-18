@@ -67,6 +67,9 @@ class SemSegEvaluator(DatasetEvaluator):
             self._contiguous_id_to_dataset_id = None
         self._class_names = meta.stuff_classes
         self._num_classes = len(meta.stuff_classes)
+
+        print("_class_names _num_classes cont", self._class_names, self._num_classes, self._contiguous_id_to_dataset_id)
+
         if num_classes is not None:
             assert self._num_classes == num_classes, f"{self._num_classes} != {num_classes}"
         self._ignore_label = ignore_label if ignore_label is not None else meta.ignore_label
