@@ -584,9 +584,9 @@ class WandbWriter(EventWriter):
             self.stuff_class_names.append([])
             self.stuff_index_to_class.append({})                
             if hasattr(metadata, 'stuff_classes'):
-                self.stuff_class_names[-1] = metadata.thing_classes
+                self.stuff_class_names[-1] = metadata.stuff_classes
             elif hasattr(combined_loader_meta, 'stuff_classes'):
-                self.stuff_class_names[-1] = combined_loader_meta.thing_classes
+                self.stuff_class_names[-1] = combined_loader_meta.stuff_classes
             index_to_class = {}
             for i, name in enumerate(self.stuff_class_names[-1], 1):
                 index_to_class[i] = name
