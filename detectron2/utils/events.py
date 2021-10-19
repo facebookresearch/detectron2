@@ -697,6 +697,7 @@ class WandbWriter(EventWriter):
                         break
                         
             log_dict["predictions"] = self._media
+            storage.clear_predictions()
                     
         for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
             log_dict[k] = v
