@@ -534,7 +534,7 @@ class WandbWriter(EventWriter):
         self.stuff_index_to_class = []
         
         self._build_dataset_metadata()
-        print("thing stuff", self.thing_class_names, self.stuff_class_names)
+        print("thing stuff", self.stuff_class_names)
 
         if cfg is None:
             cfg = {}
@@ -611,9 +611,11 @@ class WandbWriter(EventWriter):
             parsed_pred['pred_masks'] = pred.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
             parsed_pred['pred_keypoints'] = pred.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
         
-        elif pred.get("sem_seg") is not None:
+        if pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
-            
+
+        if pred.get("panoptic_seg") is not None:
+            parsed_pred["panoptic_mask"] = pred["panoptic_mask"][0].cpu().detach().numpy()       
             
 
         return parsed_pred
@@ -659,12 +661,16 @@ class WandbWriter(EventWriter):
          
         # Process semantic segmentation predictions
         if pred.get("sem_mask") is not None:
-            print(pred["sem_mask"])
-            masks["prediction"] = {
+            masks["semantic_mask"] = {
                 "mask_data": pred["sem_mask"],
-                #"class_labels": self.stuff_index_to_class
+                "class_labels": self.stuff_index_to_class[loader_i]
             }
         
+        if pred.get("panoptic_mask") is not None:
+            masks["panoptic_mask"] = {
+                "mask_data": pred["panoptic_mask"],
+                "class_labels": self.stuff_index_to_class[loader_i]
+            }
         
         return wandb.Image(img, boxes=boxes, masks=masks)
 
