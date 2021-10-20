@@ -587,7 +587,7 @@ class WandbWriter(EventWriter):
                 self.stuff_class_names[-1] = metadata.stuff_classes
             elif hasattr(combined_loader_meta, 'stuff_classes'):
                 self.stuff_class_names[-1] = combined_loader_meta.stuff_classes
-            index_to_class = {}
+            index_to_class = {0: "void"}
             for i, name in enumerate(self.stuff_class_names[-1], 1):
                 index_to_class[i] = name
             self.stuff_index_to_class[-1] = index_to_class
@@ -615,7 +615,16 @@ class WandbWriter(EventWriter):
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
 
         if pred.get("panoptic_seg") is not None:
-            parsed_pred["panoptic_mask"] = pred["panoptic_mask"][0].cpu().detach().numpy()       
+            # NOTE: handling void labels isn't neat.
+            panoptic_mask = pred["panoptic_seg"][0].cpu().detach().numpy()
+            import numpy as np
+            np.savetxt('mask.txt', panoptic_mask)
+            print("len ===> ", len(pred["panoptic_seg"][1]))
+            print("len ===> ", pred["panoptic_seg"][1])
+
+            # handle void labels( -1 )
+            panoptic_mask[panoptic_mask < 0] = 0
+            parsed_pred["panoptic_mask"] = panoptic_mask
             
 
         return parsed_pred
