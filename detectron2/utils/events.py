@@ -603,13 +603,14 @@ class WandbWriter(EventWriter):
             Dict (): parsed predictions
         """
         parsed_pred = {}
+        print("pred keys", pred.keys())
         if pred.get("instances") is not None:
-            pred = pred["instances"]
-            parsed_pred['boxes'] = pred.pred_boxes.tensor.tolist() if pred.has("pred_boxes") else None
-            parsed_pred['classes'] = pred.pred_classes.tolist() if pred.has("pred_classes") else None
-            parsed_pred['scores'] = pred.scores.tolist() if pred.has("scores") else None
-            parsed_pred['pred_masks'] = pred.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
-            parsed_pred['pred_keypoints'] = pred.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
+            pred_ins = pred["instances"]
+            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred.has("pred_boxes") else None
+            parsed_pred['classes'] = pred_ins.pred_classes.tolist() if pred.has("pred_classes") else None
+            parsed_pred['scores'] = pred_ins.scores.tolist() if pred.has("scores") else None
+            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
+            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
         
         if pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
@@ -617,11 +618,6 @@ class WandbWriter(EventWriter):
         if pred.get("panoptic_seg") is not None:
             # NOTE: handling void labels isn't neat.
             panoptic_mask = pred["panoptic_seg"][0].cpu().detach().numpy()
-            import numpy as np
-            np.savetxt('mask.txt', panoptic_mask)
-            print("len ===> ", len(pred["panoptic_seg"][1]))
-            print("len ===> ", pred["panoptic_seg"][1])
-
             # handle void labels( -1 )
             panoptic_mask[panoptic_mask < 0] = 0
             parsed_pred["panoptic_mask"] = panoptic_mask
