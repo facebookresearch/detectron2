@@ -606,11 +606,11 @@ class WandbWriter(EventWriter):
         print("pred keys", pred.keys())
         if pred.get("instances") is not None:
             pred_ins = pred["instances"]
-            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred.has("pred_boxes") else None
-            parsed_pred['classes'] = pred_ins.pred_classes.tolist() if pred.has("pred_classes") else None
-            parsed_pred['scores'] = pred_ins.scores.tolist() if pred.has("scores") else None
-            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred.has("pred_masks") else None # wandb segmentation panel supports np
-            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred.has("pred_keypoints") else None
+            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
+            parsed_pred['classes'] = pred_ins.pred_classes.tolist() if pred_ins.has("pred_classes") else None
+            parsed_pred['scores'] = pred_ins.scores.tolist() if pred_ins.has("scores") else None
+            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
+            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
         
         if pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
