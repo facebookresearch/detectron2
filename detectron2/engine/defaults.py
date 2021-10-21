@@ -240,6 +240,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
     Returns:
         list[EventWriter]: a list of :class:`EventWriter` objects.
     """
+    PathManager.mkdirs(output_dir)
     return [
         # It may not always print what you want to see, since it prints "common" metrics only.
         CommonMetricPrinter(max_iter),
