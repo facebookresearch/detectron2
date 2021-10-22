@@ -2,6 +2,7 @@
 import copy
 import itertools
 import logging
+from collections import defaultdict
 from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 import torch
@@ -138,7 +139,7 @@ def get_default_optimizer_params(
     bias_lr_factor: Optional[float] = 1.0,
     weight_decay_bias: Optional[float] = None,
     overrides: Optional[Dict[str, Dict[str, float]]] = None,
-):
+) -> List[Dict[str, Any]]:
     """
     Get default param list for optimizer, with support for a few types of
     overrides. If no overrides needed, this is equivalent to `model.parameters()`.
@@ -214,7 +215,39 @@ def get_default_optimizer_params(
                 hyperparams["weight_decay"] = weight_decay_norm
             hyperparams.update(overrides.get(module_param_name, {}))
             params.append({"params": [value], **hyperparams})
-    return params
+    return reduce_param_groups(params)
+
+
+def _expand_param_groups(params: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    # Transform parameter groups into per-parameter structure.
+    # Later items in `params` can overwrite parameters set in previous items.
+    ret = defaultdict(dict)
+    for item in params:
+        assert "params" in item
+        cur_params = {x: y for x, y in item.items() if x != "params"}
+        for param in item["params"]:
+            ret[param].update({"params": [param], **cur_params})
+    return list(ret.values())
+
+
+def reduce_param_groups(params: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    # Reorganize the parameter groups and merge duplicated groups.
+    # The number of parameter groups needs to be as small as possible in order
+    # to efficiently use the PyTorch multi-tensor optimizer. Therefore instead
+    # of using a parameter_group per single parameter, we reorganize the
+    # parameter groups and merge duplicated groups. This approach speeds
+    # up multi-tensor optimizer significantly.
+    params = _expand_param_groups(params)
+    groups = defaultdict(list)  # re-group all parameter groups by their hyperparams
+    for item in params:
+        cur_params = tuple((x, y) for x, y in item.items() if x != "params")
+        groups[cur_params].extend(item["params"])
+    ret = []
+    for param_keys, param_values in groups.items():
+        cur = {kv[0]: kv[1] for kv in param_keys}
+        cur["params"] = param_values
+        ret.append(cur)
+    return ret
 
 
 def build_lr_scheduler(

@@ -47,7 +47,7 @@ class VertexDirectEmbedder(nn.Module):
         """
         return normalize_embeddings(self.embeddings)
 
-    @torch.no_grad()  # pyre-ignore[56]
+    @torch.no_grad()
     def load(self, fpath: str):
         """
         Load data from a file
