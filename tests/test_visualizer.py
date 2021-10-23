@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import numpy as np
 import os
 import tempfile
 import unittest
-import cv2
-import torch
 
+import cv2
+import numpy as np
+import torch
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BoxMode, Instances, RotatedBoxes
 from detectron2.utils.visualizer import ColorMode, Visualizer
@@ -24,7 +24,9 @@ class TestVisualizer(unittest.TestCase):
         def _rand_poly():
             return np.random.rand(3, 2).flatten() * H
 
-        polygons = [[_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)]
+        polygons = [
+            [_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)
+        ]
 
         mask = np.zeros_like(img[:, :, 0], dtype=np.bool)
         mask[:40, 10:20] = 1
@@ -94,17 +96,23 @@ class TestVisualizer(unittest.TestCase):
         img, boxes, labels, polygons, masks = self._random_data()
 
         v = Visualizer(img, self.metadata)
-        output = v.overlay_instances(masks=polygons, boxes=boxes, labels=labels).get_image()
+        output = v.overlay_instances(
+            masks=polygons, boxes=boxes, labels=labels
+        ).get_image()
         self.assertEqual(output.shape, img.shape)
 
         # Test 2x scaling
         v = Visualizer(img, self.metadata, scale=2.0)
-        output = v.overlay_instances(masks=polygons, boxes=boxes, labels=labels).get_image()
+        output = v.overlay_instances(
+            masks=polygons, boxes=boxes, labels=labels
+        ).get_image()
         self.assertEqual(output.shape[0], img.shape[0] * 2)
 
         # Test overlay masks
         v = Visualizer(img, self.metadata)
-        output = v.overlay_instances(masks=masks, boxes=boxes, labels=labels).get_image()
+        output = v.overlay_instances(
+            masks=masks, boxes=boxes, labels=labels
+        ).get_image()
         self.assertEqual(output.shape, img.shape)
 
     def test_overlay_instances_no_boxes(self):

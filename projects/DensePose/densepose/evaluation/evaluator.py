@@ -6,15 +6,13 @@ import copy
 import io
 import itertools
 import logging
-import numpy as np
 import os
 from collections import OrderedDict
 from typing import Dict, Iterable, List, Optional
+
+import numpy as np
 import pycocotools.mask as mask_utils
 import torch
-from pycocotools.coco import COCO
-from tabulate import tabulate
-
 from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
 from detectron2.evaluation import DatasetEvaluator
@@ -22,6 +20,8 @@ from detectron2.structures import BoxMode
 from detectron2.utils.comm import gather, get_rank, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
+from pycocotools.coco import COCO
+from tabulate import tabulate
 
 from densepose.converters import ToChartResultConverter, ToMaskConverter
 from densepose.data.datasets.coco import maybe_filter_and_map_categories_cocoapi
@@ -30,7 +30,6 @@ from densepose.structures import (
     DensePoseEmbeddingPredictorOutput,
     quantize_densepose_chart_result,
 )
-
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
 from .mesh_alignment_evaluator import MeshAlignmentEvaluator
 from .tensor_storage import (
@@ -125,11 +124,15 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         else:
             predictions = self._predictions
 
-        multi_storage = storage_gather(self._storage) if self._storage is not None else None
+        multi_storage = (
+            storage_gather(self._storage) if self._storage is not None else None
+        )
 
         if not is_main_process():
             return
-        return copy.deepcopy(self._eval_predictions(predictions, multi_storage, img_ids))
+        return copy.deepcopy(
+            self._eval_predictions(predictions, multi_storage, img_ids)
+        )
 
     def _eval_predictions(self, predictions, multi_storage=None, img_ids=None):
         """
@@ -177,7 +180,9 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._print_mesh_alignment_results(results, mesh_names)
         return results
 
-    def _print_mesh_alignment_results(self, results: Dict[str, float], mesh_names: Iterable[str]):
+    def _print_mesh_alignment_results(
+        self, results: Dict[str, float], mesh_names: Iterable[str]
+    ):
         self._logger.info("Evaluation results for densepose, mesh alignment:")
         self._logger.info(f'| {"Mesh":13s} | {"GErr":7s} | {"GPS":7s} |')
         self._logger.info("| :-----------: | :-----: | :-----: |")
@@ -240,7 +245,9 @@ def densepose_chart_predictions_to_dict(instances):
     results = []
     for k in range(len(instances)):
         densepose_results_quantized = quantize_densepose_chart_result(
-            ToChartResultConverter.convert(instances.pred_densepose[k], instances.pred_boxes[k])
+            ToChartResultConverter.convert(
+                instances.pred_densepose[k], instances.pred_boxes[k]
+            )
         )
         densepose_results_quantized.labels_uv_uint8 = (
             densepose_results_quantized.labels_uv_uint8.cpu()
@@ -272,7 +279,9 @@ def densepose_chart_predictions_to_storage_dict(instances):
     return results
 
 
-def densepose_cse_predictions_to_dict(instances, embedder, class_to_mesh_name, use_storage):
+def densepose_cse_predictions_to_dict(
+    instances, embedder, class_to_mesh_name, use_storage
+):
     results = []
     for k in range(len(instances)):
         cse = instances.pred_densepose[k]
@@ -313,7 +322,12 @@ def _evaluate_predictions_on_coco(
             coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode
         )
         result = _derive_results_from_coco_eval(
-            coco_eval, eval_mode_name, densepose_metrics, class_names, min_threshold, img_ids
+            coco_eval,
+            eval_mode_name,
+            densepose_metrics,
+            class_names,
+            min_threshold,
+            img_ids,
         )
         results.append(result)
     return results
@@ -337,12 +351,17 @@ def _derive_results_from_coco_eval(
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
-        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
+        min_threshold,
+        0.95,
+        int(np.round((0.95 - min_threshold) / 0.05)) + 1,
+        endpoint=True,
     )
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
-    results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
+    results = {
+        metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)
+    }
     logger = logging.getLogger(__name__)
     logger.info(
         f"Evaluation results for densepose, {eval_mode_name} metric: \n"
@@ -369,7 +388,9 @@ def _derive_results_from_coco_eval(
     # tabulate it
     n_cols = min(6, len(results_per_category) * 2)
     results_flatten = list(itertools.chain(*results_per_category))
-    results_2d = itertools.zip_longest(*[results_flatten[i::n_cols] for i in range(n_cols)])
+    results_2d = itertools.zip_longest(
+        *[results_flatten[i::n_cols] for i in range(n_cols)]
+    )
     table = tabulate(
         results_2d,
         tablefmt="pipe",
@@ -413,7 +434,9 @@ def build_densepose_evaluator_storage(cfg: CfgNode, output_folder: str):
     if storage_spec == "ram":
         storage = SingleProcessRamTensorStorage(schema, io.BytesIO())
     elif storage_spec == "file":
-        fpath = os.path.join(output_folder, f"DensePoseEvaluatorStorage.{get_rank()}.bin")
+        fpath = os.path.join(
+            output_folder, f"DensePoseEvaluatorStorage.{get_rank()}.bin"
+        )
         PathManager.mkdirs(output_folder)
         storage = SingleProcessFileTensorStorage(schema, fpath, "wb")
     else:

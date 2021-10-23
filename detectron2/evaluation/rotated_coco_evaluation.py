@@ -1,14 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
 import json
-import numpy as np
 import os
+
+import numpy as np
 import torch
 from pycocotools.cocoeval import COCOeval, maskUtils
 
 from detectron2.structures import BoxMode, RotatedBoxes, pairwise_iou_rotated
 from detectron2.utils.file_io import PathManager
-
 from .coco_evaluation import COCOEvaluator
 
 
@@ -23,7 +23,8 @@ class RotatedCOCOeval(COCOeval):
             return np.all(
                 np.array(
                     [
-                        (len(obj) == 5) and ((type(obj) == list) or (type(obj) == np.ndarray))
+                        (len(obj) == 5)
+                        and ((type(obj) == list) or (type(obj) == np.ndarray))
                         for obj in box_list
                     ]
                 )
@@ -45,7 +46,9 @@ class RotatedCOCOeval(COCOeval):
         input_box_dim = box_tensor.shape[1]
         if input_box_dim != output_box_dim:
             if input_box_dim == 4 and output_box_dim == 5:
-                box_tensor = BoxMode.convert(box_tensor, BoxMode.XYWH_ABS, BoxMode.XYWHA_ABS)
+                box_tensor = BoxMode.convert(
+                    box_tensor, BoxMode.XYWH_ABS, BoxMode.XYWHA_ABS
+                )
             else:
                 raise Exception(
                     "Unable to convert from {}-dim box to {}-dim box".format(
@@ -116,7 +119,9 @@ class RotatedCOCOEvaluator(COCOEvaluator):
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
 
-                prediction["instances"] = self.instances_to_json(instances, input["image_id"])
+                prediction["instances"] = self.instances_to_json(
+                    instances, input["image_id"]
+                )
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             self._predictions.append(prediction)
@@ -156,7 +161,8 @@ class RotatedCOCOEvaluator(COCOEvaluator):
         # unmap the category ids for COCO
         if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
             reverse_id_mapping = {
-                v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
+                v: k
+                for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
             }
             for result in coco_results:
                 result["category_id"] = reverse_id_mapping[result["category_id"]]

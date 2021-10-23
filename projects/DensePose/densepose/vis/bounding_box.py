@@ -13,7 +13,9 @@ class BoundingBoxVisualizer(object):
 
 
 class ScoredBoundingBoxVisualizer(object):
-    def __init__(self, bbox_visualizer_params=None, score_visualizer_params=None, **kwargs):
+    def __init__(
+        self, bbox_visualizer_params=None, score_visualizer_params=None, **kwargs
+    ):
         if bbox_visualizer_params is None:
             bbox_visualizer_params = {}
         if score_visualizer_params is None:
@@ -33,5 +35,7 @@ class ScoredBoundingBoxVisualizer(object):
             image_bgr = self.visualizer_bbox.visualize(image_bgr, box_xywh)
             score_txt = "{0:6.4f}".format(score_i)
             topleft_xy = box_xywh[0], box_xywh[1]
-            image_bgr = self.visualizer_score.visualize(image_bgr, score_txt, topleft_xy)
+            image_bgr = self.visualizer_score.visualize(
+                image_bgr, score_txt, topleft_xy
+            )
         return image_bgr

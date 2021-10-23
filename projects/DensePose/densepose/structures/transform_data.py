@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import BinaryIO, Dict, Union
+
 import torch
 
 
@@ -67,5 +68,7 @@ class DensePoseTransformData(object):
             for i in range(map_src.shape[1]):
                 map_dst.append(torch.from_numpy(map_src[0, i]).to(dtype=torch.float))
             uv_symmetry_map_torch[key] = torch.stack(map_dst, dim=0)
-        transform_data = DensePoseTransformData(uv_symmetry_map_torch, device=torch.device("cpu"))
+        transform_data = DensePoseTransformData(
+            uv_symmetry_map_torch, device=torch.device("cpu")
+        )
         return transform_data

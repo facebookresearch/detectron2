@@ -1,10 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import torch
+from detectron2.layers.wrappers import _NewEmptyTensorOp
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.modules.utils import _pair
-
-from detectron2.layers.wrappers import _NewEmptyTensorOp
 
 
 class TridentConv(nn.Module):
@@ -56,14 +55,20 @@ class TridentConv(nn.Module):
             nn.init.constant_(self.bias, 0)
 
     def forward(self, inputs):
-        num_branch = self.num_branch if self.training or self.test_branch_idx == -1 else 1
+        num_branch = (
+            self.num_branch if self.training or self.test_branch_idx == -1 else 1
+        )
         assert len(inputs) == num_branch
 
         if inputs[0].numel() == 0:
             output_shape = [
                 (i + 2 * p - (di * (k - 1) + 1)) // s + 1
                 for i, p, di, k, s in zip(
-                    inputs[0].shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
+                    inputs[0].shape[-2:],
+                    self.padding,
+                    self.dilation,
+                    self.kernel_size,
+                    self.stride,
                 )
             ]
             output_shape = [input[0].shape[0], self.weight.shape[0]] + output_shape
@@ -71,8 +76,18 @@ class TridentConv(nn.Module):
 
         if self.training or self.test_branch_idx == -1:
             outputs = [
-                F.conv2d(input, self.weight, self.bias, self.stride, padding, dilation, self.groups)
-                for input, dilation, padding in zip(inputs, self.dilations, self.paddings)
+                F.conv2d(
+                    input,
+                    self.weight,
+                    self.bias,
+                    self.stride,
+                    padding,
+                    dilation,
+                    self.groups,
+                )
+                for input, dilation, padding in zip(
+                    inputs, self.dilations, self.paddings
+                )
             ]
         else:
             outputs = [

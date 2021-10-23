@@ -5,14 +5,14 @@
 import functools
 import json
 import multiprocessing as mp
-import numpy as np
 import os
 import time
+
+import numpy as np
+from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
 from fvcore.common.download import download
 from panopticapi.utils import rgb2id
 from PIL import Image
-
-from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
 
 
 def _process_panoptic_to_semantic(input_panoptic, output_semantic, segments, id_map):
@@ -26,7 +26,9 @@ def _process_panoptic_to_semantic(input_panoptic, output_semantic, segments, id_
     Image.fromarray(output).save(output_semantic)
 
 
-def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root, sem_seg_root, categories):
+def separate_coco_semantic_from_panoptic(
+    panoptic_json, panoptic_root, sem_seg_root, categories
+):
     """
     Create semantic segmentation annotations from panoptic segmentation
     annotations, to be used by PanopticFPN.

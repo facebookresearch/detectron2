@@ -3,8 +3,8 @@
 import pickle
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
-import torch
 
+import torch
 from detectron2.utils.file_io import PathManager
 
 from densepose.data.meshes.catalog import MeshCatalog, MeshInfo
@@ -79,7 +79,9 @@ class Mesh:
     def to(self, device: torch.device):
         device_symmetry = self._symmetry
         if device_symmetry:
-            device_symmetry = {key: value.to(device) for key, value in device_symmetry.items()}
+            device_symmetry = {
+                key: value.to(device) for key, value in device_symmetry.items()
+            }
         return Mesh(
             _maybe_copy_to_device(self._vertices, device),
             _maybe_copy_to_device(self._faces, device),
@@ -93,7 +95,9 @@ class Mesh:
     @property
     def vertices(self):
         if self._vertices is None and self.mesh_info is not None:
-            self._vertices = load_mesh_data(self.mesh_info.data, "vertices", self.device)
+            self._vertices = load_mesh_data(
+                self.mesh_info.data, "vertices", self.device
+            )
         return self._vertices
 
     @property
@@ -105,7 +109,9 @@ class Mesh:
     @property
     def geodists(self):
         if self._geodists is None and self.mesh_info is not None:
-            self._geodists = load_mesh_auxiliary_data(self.mesh_info.geodists, self.device)
+            self._geodists = load_mesh_auxiliary_data(
+                self.mesh_info.geodists, self.device
+            )
         return self._geodists
 
     @property
@@ -117,7 +123,9 @@ class Mesh:
     @property
     def texcoords(self):
         if self._texcoords is None and self.mesh_info is not None:
-            self._texcoords = load_mesh_auxiliary_data(self.mesh_info.texcoords, self.device)
+            self._texcoords = load_mesh_auxiliary_data(
+                self.mesh_info.texcoords, self.device
+            )
         return self._texcoords
 
     def get_geodists(self):
@@ -135,7 +143,9 @@ def load_mesh_data(
     mesh_fpath: str, field: str, device: Optional[torch.device] = None
 ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
     with PathManager.open(mesh_fpath, "rb") as hFile:
-        return torch.as_tensor(pickle.load(hFile)[field], dtype=torch.float).to(  # pyre-ignore[6]
+        return torch.as_tensor(
+            pickle.load(hFile)[field], dtype=torch.float
+        ).to(  # pyre-ignore[6]
             device
         )
     return None
@@ -146,7 +156,9 @@ def load_mesh_auxiliary_data(
 ) -> Optional[torch.Tensor]:
     fpath_local = PathManager.get_local_path(fpath)
     with PathManager.open(fpath_local, "rb") as hFile:
-        return torch.as_tensor(pickle.load(hFile), dtype=torch.float).to(device)  # pyre-ignore[6]
+        return torch.as_tensor(pickle.load(hFile), dtype=torch.float).to(
+            device
+        )  # pyre-ignore[6]
     return None
 
 

@@ -6,6 +6,7 @@ import logging
 import os
 import pickle
 from collections import OrderedDict
+
 import torch
 
 import detectron2.utils.comm as comm
@@ -14,7 +15,6 @@ from detectron2.data import MetadataCatalog
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
-
 from .coco_evaluation import instances_to_coco_json
 from .evaluator import DatasetEvaluator
 
@@ -91,7 +91,9 @@ class LVISEvaluator(DatasetEvaluator):
 
             if "instances" in output:
                 instances = output["instances"].to(self._cpu_device)
-                prediction["instances"] = instances_to_coco_json(instances, input["image_id"])
+                prediction["instances"] = instances_to_coco_json(
+                    instances, input["image_id"]
+                )
             if "proposals" in output:
                 prediction["proposals"] = output["proposals"].to(self._cpu_device)
             self._predictions.append(prediction)
@@ -146,7 +148,8 @@ class LVISEvaluator(DatasetEvaluator):
         # In this case `_metadata` variable will have a field with COCO-specific category mapping.
         if hasattr(self._metadata, "thing_dataset_id_to_contiguous_id"):
             reverse_id_mapping = {
-                v: k for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
+                v: k
+                for k, v in self._metadata.thing_dataset_id_to_contiguous_id.items()
             }
             for result in lvis_results:
                 result["category_id"] = reverse_id_mapping[result["category_id"]]
@@ -190,7 +193,9 @@ class LVISEvaluator(DatasetEvaluator):
             for prediction in predictions:
                 ids.append(prediction["image_id"])
                 boxes.append(prediction["proposals"].proposal_boxes.tensor.numpy())
-                objectness_logits.append(prediction["proposals"].objectness_logits.numpy())
+                objectness_logits.append(
+                    prediction["proposals"].objectness_logits.numpy()
+                )
 
             proposal_data = {
                 "boxes": boxes,
@@ -198,7 +203,9 @@ class LVISEvaluator(DatasetEvaluator):
                 "ids": ids,
                 "bbox_mode": bbox_mode,
             }
-            with PathManager.open(os.path.join(self._output_dir, "box_proposals.pkl"), "wb") as f:
+            with PathManager.open(
+                os.path.join(self._output_dir, "box_proposals.pkl"), "wb"
+            ) as f:
                 pickle.dump(proposal_data, f)
 
         if not self._do_evaluation:
@@ -210,7 +217,9 @@ class LVISEvaluator(DatasetEvaluator):
         areas = {"all": "", "small": "s", "medium": "m", "large": "l"}
         for limit in [100, 1000]:
             for area, suffix in areas.items():
-                stats = _evaluate_box_proposals(predictions, self._lvis_api, area=area, limit=limit)
+                stats = _evaluate_box_proposals(
+                    predictions, self._lvis_api, area=area, limit=limit
+                )
                 key = "AR{}@{:d}".format(suffix, limit)
                 res[key] = float(stats["ar"].item() * 100)
         self._logger.info("Proposal metrics: \n" + create_small_table(res))
@@ -219,7 +228,9 @@ class LVISEvaluator(DatasetEvaluator):
 
 # inspired from Detectron:
 # https://github.com/facebookresearch/Detectron/blob/a6a835f5b8208c45d0dce217ce9bbda915f44df7/detectron/datasets/json_dataset_evaluator.py#L255 # noqa
-def _evaluate_box_proposals(dataset_predictions, lvis_api, thresholds=None, area="all", limit=None):
+def _evaluate_box_proposals(
+    dataset_predictions, lvis_api, thresholds=None, area="all", limit=None
+):
     """
     Evaluate detection proposal recall metrics. This function is a much
     faster alternative to the official LVIS API recall evaluation code. However,
@@ -263,7 +274,8 @@ def _evaluate_box_proposals(dataset_predictions, lvis_api, thresholds=None, area
         ann_ids = lvis_api.get_ann_ids(img_ids=[prediction_dict["image_id"]])
         anno = lvis_api.load_anns(ann_ids)
         gt_boxes = [
-            BoxMode.convert(obj["bbox"], BoxMode.XYWH_ABS, BoxMode.XYXY_ABS) for obj in anno
+            BoxMode.convert(obj["bbox"], BoxMode.XYWH_ABS, BoxMode.XYXY_ABS)
+            for obj in anno
         ]
         gt_boxes = torch.as_tensor(gt_boxes).reshape(-1, 4)  # guard against no boxes
         gt_boxes = Boxes(gt_boxes)
@@ -306,7 +318,9 @@ def _evaluate_box_proposals(dataset_predictions, lvis_api, thresholds=None, area
         # append recorded iou coverage level
         gt_overlaps.append(_gt_overlaps)
     gt_overlaps = (
-        torch.cat(gt_overlaps, dim=0) if len(gt_overlaps) else torch.zeros(0, dtype=torch.float32)
+        torch.cat(gt_overlaps, dim=0)
+        if len(gt_overlaps)
+        else torch.zeros(0, dtype=torch.float32)
     )
     gt_overlaps, _ = torch.sort(gt_overlaps)
 
@@ -376,5 +390,7 @@ def _evaluate_predictions_on_lvis(
     # Pull the standard metrics from the LVIS results
     results = lvis_eval.get_results()
     results = {metric: float(results[metric] * 100) for metric in metrics}
-    logger.info("Evaluation results for {}: \n".format(iou_type) + create_small_table(results))
+    logger.info(
+        "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
+    )
     return results

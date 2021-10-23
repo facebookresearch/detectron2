@@ -1,5 +1,3 @@
-from omegaconf import OmegaConf
-
 import detectron2.data.transforms as T
 from detectron2.config import LazyCall as L
 from detectron2.data import (
@@ -9,6 +7,7 @@ from detectron2.data import (
     get_detection_dataset_dicts,
 )
 from detectron2.evaluation import COCOEvaluator
+from omegaconf import OmegaConf
 
 dataloader = OmegaConf.create()
 

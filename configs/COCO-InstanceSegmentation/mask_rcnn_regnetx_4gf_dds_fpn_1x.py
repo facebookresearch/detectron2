@@ -1,12 +1,12 @@
-from ..common.optim import SGD as optimizer
-from ..common.coco_schedule import lr_multiplier_1x as lr_multiplier
-from ..common.data.coco import dataloader
-from ..common.models.mask_rcnn_fpn import model
-from ..common.train import train
-
 from detectron2.config import LazyCall as L
 from detectron2.modeling.backbone import RegNet
 from detectron2.modeling.backbone.regnet import SimpleStem, ResBottleneckBlock
+
+from ..common.coco_schedule import lr_multiplier_1x as lr_multiplier
+from ..common.data.coco import dataloader
+from ..common.models.mask_rcnn_fpn import model
+from ..common.optim import SGD as optimizer
+from ..common.train import train
 
 
 # Replace default ResNet with RegNetX-4GF from the DDS paper. Config source:
@@ -27,8 +27,6 @@ model.backbone.bottom_up = L(RegNet)(
 model.pixel_std = [57.375, 57.120, 58.395]
 
 optimizer.weight_decay = 5e-5
-train.init_checkpoint = (
-    "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906383/RegNetX-4.0GF_dds_8gpu.pyth"
-)
+train.init_checkpoint = "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906383/RegNetX-4.0GF_dds_8gpu.pyth"
 # RegNets benefit from enabling cudnn benchmark mode
 train.cudnn_benchmark = True

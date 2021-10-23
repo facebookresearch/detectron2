@@ -4,18 +4,17 @@ import io
 import tempfile
 import unittest
 from contextlib import ExitStack
+
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
-
-from detectron2.utils import comm
-
 from densepose.evaluation.tensor_storage import (
     SingleProcessFileTensorStorage,
     SingleProcessRamTensorStorage,
     SizeData,
     storage_gather,
 )
+from detectron2.utils import comm
 
 
 class TestSingleProcessRamTensorStorage(unittest.TestCase):
@@ -44,9 +43,15 @@ class TestSingleProcessRamTensorStorage(unittest.TestCase):
             self.assertEqual(len(record), len(schema))
             for field_name in schema:
                 self.assertTrue(field_name in record)
-                self.assertEqual(data_elts[i][field_name].shape, record[field_name].shape)
-                self.assertEqual(data_elts[i][field_name].dtype, record[field_name].dtype)
-                self.assertTrue(torch.allclose(data_elts[i][field_name], record[field_name]))
+                self.assertEqual(
+                    data_elts[i][field_name].shape, record[field_name].shape
+                )
+                self.assertEqual(
+                    data_elts[i][field_name].dtype, record[field_name].dtype
+                )
+                self.assertTrue(
+                    torch.allclose(data_elts[i][field_name], record[field_name])
+                )
 
 
 class TestSingleProcessFileTensorStorage(unittest.TestCase):
@@ -79,9 +84,15 @@ class TestSingleProcessFileTensorStorage(unittest.TestCase):
                 self.assertEqual(len(record), len(schema))
                 for field_name in schema:
                     self.assertTrue(field_name in record)
-                    self.assertEqual(data_elts[i][field_name].shape, record[field_name].shape)
-                    self.assertEqual(data_elts[i][field_name].dtype, record[field_name].dtype)
-                    self.assertTrue(torch.allclose(data_elts[i][field_name], record[field_name]))
+                    self.assertEqual(
+                        data_elts[i][field_name].shape, record[field_name].shape
+                    )
+                    self.assertEqual(
+                        data_elts[i][field_name].dtype, record[field_name].dtype
+                    )
+                    self.assertTrue(
+                        torch.allclose(data_elts[i][field_name], record[field_name])
+                    )
 
 
 def _find_free_port():
@@ -104,7 +115,10 @@ def launch(main_func, nprocs, args=()):
     dist_url = f"tcp://127.0.0.1:{port}"
     # dist_url = "env://"
     mp.spawn(
-        distributed_worker, nprocs=nprocs, args=(main_func, nprocs, dist_url, args), daemon=False
+        distributed_worker,
+        nprocs=nprocs,
+        args=(main_func, nprocs, dist_url, args),
+        daemon=False,
     )
 
 
@@ -149,7 +163,8 @@ def ram_read_write_worker():
         for i in range(j):
             record = multi_storage.get(j, i)
             record_gt = {
-                "tf": torch.ones((112, 112), dtype=torch.float32) * (j + i * world_size),
+                "tf": torch.ones((112, 112), dtype=torch.float32)
+                * (j + i * world_size),
                 "ti": torch.ones((4, 64, 64), dtype=torch.int32) * (j + i * world_size),
             }
             assert len(record) == len(schema), (
@@ -210,7 +225,8 @@ def file_read_write_worker(rank_to_fpath):
         for i in range(j):
             record = multi_storage.get(j, i)
             record_gt = {
-                "tf": torch.ones((112, 112), dtype=torch.float32) * (j + i * world_size),
+                "tf": torch.ones((112, 112), dtype=torch.float32)
+                * (j + i * world_size),
                 "ti": torch.ones((4, 64, 64), dtype=torch.int32) * (j + i * world_size),
             }
             assert len(record) == len(schema), (
@@ -251,6 +267,7 @@ class TestMultiProcessFileTensorStorage(unittest.TestCase):
         with ExitStack() as stack:
             # WARNING: opens the files several times! may not work on all platforms
             rank_to_fpath = {
-                i: stack.enter_context(tempfile.NamedTemporaryFile()).name for i in range(8)
+                i: stack.enter_context(tempfile.NamedTemporaryFile()).name
+                for i in range(8)
             }
             launch(file_read_write_worker, 8, (rank_to_fpath,))

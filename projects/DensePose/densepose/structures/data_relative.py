@@ -65,7 +65,9 @@ class DensePoseDataRelative(object):
             self.vertex_ids = torch.as_tensor(
                 annotation[DensePoseDataRelative.VERTEX_IDS_KEY], dtype=torch.long
             )
-            self.mesh_id = MeshCatalog.get_mesh_id(annotation[DensePoseDataRelative.MESH_NAME_KEY])
+            self.mesh_id = MeshCatalog.get_mesh_id(
+                annotation[DensePoseDataRelative.MESH_NAME_KEY]
+            )
         if DensePoseDataRelative.S_KEY in annotation:
             self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
         self.device = torch.device("cpu")
@@ -178,7 +180,9 @@ class DensePoseDataRelative(object):
         import detectron2.data.transforms as T
 
         # NOTE: This assumes that HorizFlipTransform is the only one that does flip
-        do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
+        do_hflip = (
+            sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
+        )
         if do_hflip:
             self.x = self.MASK_SIZE - self.x
             if hasattr(self, "i"):
@@ -203,17 +207,19 @@ class DensePoseDataRelative(object):
                     self.i[annot_indices_i] = pt_label_symmetries[i + 1]
                 u_loc = (self.u[annot_indices_i] * 255).long()
                 v_loc = (self.v[annot_indices_i] * 255).long()
-                self.u[annot_indices_i] = uv_symmetries["U_transforms"][i][v_loc, u_loc].to(
-                    device=self.u.device
-                )
-                self.v[annot_indices_i] = uv_symmetries["V_transforms"][i][v_loc, u_loc].to(
-                    device=self.v.device
-                )
+                self.u[annot_indices_i] = uv_symmetries["U_transforms"][i][
+                    v_loc, u_loc
+                ].to(device=self.u.device)
+                self.v[annot_indices_i] = uv_symmetries["V_transforms"][i][
+                    v_loc, u_loc
+                ].to(device=self.v.device)
 
     def _flip_vertices(self):
         mesh_info = MeshCatalog[MeshCatalog.get_mesh_name(self.mesh_id)]
         mesh_symmetry = (
-            load_mesh_symmetry(mesh_info.symmetry) if mesh_info.symmetry is not None else None
+            load_mesh_symmetry(mesh_info.symmetry)
+            if mesh_info.symmetry is not None
+            else None
         )
         self.vertex_ids = mesh_symmetry["vertex_transforms"][self.vertex_ids]
 
@@ -221,7 +227,9 @@ class DensePoseDataRelative(object):
         import detectron2.data.transforms as T
 
         # NOTE: This assumes that HorizFlipTransform is the only one that does flip
-        do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
+        do_hflip = (
+            sum(isinstance(t, T.HFlipTransform) for t in transforms.transforms) % 2 == 1
+        )
         if do_hflip:
             self.segm = torch.flip(self.segm, [1])
             self._flip_segm_semantics(dp_transform_data)
@@ -238,6 +246,12 @@ class DensePoseDataRelative(object):
                 self.segm[old_segm == i + 1] = mask_label_symmetries[i + 1]
 
     def _transform_segm_rotation(self, rotation):
-        self.segm = F.interpolate(self.segm[None, None, :], (rotation.h, rotation.w)).numpy()
-        self.segm = torch.tensor(rotation.apply_segmentation(self.segm[0, 0]))[None, None, :]
-        self.segm = F.interpolate(self.segm, [DensePoseDataRelative.MASK_SIZE] * 2)[0, 0]
+        self.segm = F.interpolate(
+            self.segm[None, None, :], (rotation.h, rotation.w)
+        ).numpy()
+        self.segm = torch.tensor(rotation.apply_segmentation(self.segm[0, 0]))[
+            None, None, :
+        ]
+        self.segm = F.interpolate(self.segm, [DensePoseDataRelative.MASK_SIZE] * 2)[
+            0, 0
+        ]

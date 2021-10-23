@@ -2,16 +2,29 @@
 
 import itertools
 import logging
-import numpy as np
 from collections import UserDict, defaultdict
 from dataclasses import dataclass
-from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
-import torch
-from torch.utils.data.dataset import Dataset
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
+import numpy as np
+import torch
 from detectron2.config import CfgNode
-from detectron2.data.build import build_detection_test_loader as d2_build_detection_test_loader
-from detectron2.data.build import build_detection_train_loader as d2_build_detection_train_loader
+from detectron2.data.build import (
+    build_detection_test_loader as d2_build_detection_test_loader,
+)
+from detectron2.data.build import (
+    build_detection_train_loader as d2_build_detection_train_loader,
+)
 from detectron2.data.build import (
     load_proposals_into_dataset,
     print_instances_class_histogram,
@@ -21,13 +34,16 @@ from detectron2.data.build import (
 from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
 from detectron2.data.samplers import TrainingSampler
 from detectron2.utils.comm import get_world_size
+from torch.utils.data.dataset import Dataset
 
 from densepose.config import get_bootstrap_dataset_config
 from densepose.modeling import build_densepose_embedder
-
 from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper
-from .datasets.coco import DENSEPOSE_CSE_KEYS_WITHOUT_MASK, DENSEPOSE_IUV_KEYS_WITHOUT_MASK
+from .datasets.coco import (
+    DENSEPOSE_CSE_KEYS_WITHOUT_MASK,
+    DENSEPOSE_IUV_KEYS_WITHOUT_MASK,
+)
 from .datasets.dataset_type import DatasetType
 from .inference_based_loader import InferenceBasedLoader, ScoreBasedFilter
 from .samplers import (
@@ -73,11 +89,15 @@ def _compute_num_images_per_worker(cfg: CfgNode):
     return images_per_worker
 
 
-def _map_category_id_to_contiguous_id(dataset_name: str, dataset_dicts: Iterable[Instance]):
+def _map_category_id_to_contiguous_id(
+    dataset_name: str, dataset_dicts: Iterable[Instance]
+):
     meta = MetadataCatalog.get(dataset_name)
     for dataset_dict in dataset_dicts:
         for ann in dataset_dict["annotations"]:
-            ann["category_id"] = meta.thing_dataset_id_to_contiguous_id[ann["category_id"]]
+            ann["category_id"] = meta.thing_dataset_id_to_contiguous_id[
+                ann["category_id"]
+            ]
 
 
 @dataclass
@@ -109,7 +129,9 @@ class _DatasetCategory:
 _MergedCategoriesT = Dict[int, List[_DatasetCategory]]
 
 
-def _add_category_id_to_contiguous_id_maps_to_metadata(merged_categories: _MergedCategoriesT):
+def _add_category_id_to_contiguous_id_maps_to_metadata(
+    merged_categories: _MergedCategoriesT,
+):
     merged_categories_per_dataset = {}
     for contiguous_cat_id, cat_id in enumerate(sorted(merged_categories.keys())):
         for cat in merged_categories[cat_id]:
@@ -145,7 +167,9 @@ def _add_category_id_to_contiguous_id_maps_to_metadata(merged_categories: _Merge
                 logger.info(f"{cat.id} ({cat.name}) -> {contiguous_cat_id}")
 
 
-def _maybe_create_general_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_general_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     def has_annotations(instance: Instance) -> bool:
         return "annotations" in instance
 
@@ -163,7 +187,9 @@ def _maybe_create_general_keep_instance_predicate(cfg: CfgNode) -> Optional[Inst
     return general_keep_instance_predicate
 
 
-def _maybe_create_keypoints_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_keypoints_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
 
     min_num_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
 
@@ -180,7 +206,9 @@ def _maybe_create_keypoints_keep_instance_predicate(cfg: CfgNode) -> Optional[In
     return None
 
 
-def _maybe_create_mask_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_mask_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     if not cfg.MODEL.MASK_ON:
         return None
 
@@ -190,7 +218,9 @@ def _maybe_create_mask_keep_instance_predicate(cfg: CfgNode) -> Optional[Instanc
     return has_mask_annotations
 
 
-def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_densepose_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     if not cfg.MODEL.DENSEPOSE_ON:
         return None
 
@@ -209,7 +239,9 @@ def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[In
     return has_densepose_annotations
 
 
-def _maybe_create_specific_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_specific_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     specific_predicate_creators = [
         _maybe_create_keypoints_keep_instance_predicate,
         _maybe_create_mask_keep_instance_predicate,
@@ -228,10 +260,14 @@ def _maybe_create_specific_keep_instance_predicate(cfg: CfgNode) -> Optional[Ins
 
 def _get_train_keep_instance_predicate(cfg: CfgNode):
     general_keep_predicate = _maybe_create_general_keep_instance_predicate(cfg)
-    combined_specific_keep_predicate = _maybe_create_specific_keep_instance_predicate(cfg)
+    combined_specific_keep_predicate = _maybe_create_specific_keep_instance_predicate(
+        cfg
+    )
 
     def combined_general_specific_keep_predicate(instance: Instance) -> bool:
-        return general_keep_predicate(instance) and combined_specific_keep_predicate(instance)
+        return general_keep_predicate(instance) and combined_specific_keep_predicate(
+            instance
+        )
 
     if (general_keep_predicate is None) and (combined_specific_keep_predicate is None):
         return None
@@ -267,7 +303,10 @@ def _maybe_filter_and_map_categories(
 
 
 def _add_category_whitelists_to_metadata(cfg: CfgNode):
-    for dataset_name, whitelisted_cat_ids in cfg.DATASETS.WHITELISTED_CATEGORIES.items():
+    for (
+        dataset_name,
+        whitelisted_cat_ids,
+    ) in cfg.DATASETS.WHITELISTED_CATEGORIES.items():
         meta = MetadataCatalog.get(dataset_name)
         meta.whitelisted_categories = whitelisted_cat_ids
         logger = logging.getLogger(__name__)
@@ -281,15 +320,20 @@ def _add_category_whitelists_to_metadata(cfg: CfgNode):
 def _add_category_maps_to_metadata(cfg: CfgNode):
     for dataset_name, category_map in cfg.DATASETS.CATEGORY_MAPS.items():
         category_map = {
-            int(cat_id_src): int(cat_id_dst) for cat_id_src, cat_id_dst in category_map.items()
+            int(cat_id_src): int(cat_id_dst)
+            for cat_id_src, cat_id_dst in category_map.items()
         }
         meta = MetadataCatalog.get(dataset_name)
         meta.category_map = category_map
         logger = logging.getLogger(__name__)
-        logger.info("Category maps for dataset {}: {}".format(dataset_name, meta.category_map))
+        logger.info(
+            "Category maps for dataset {}: {}".format(dataset_name, meta.category_map)
+        )
 
 
-def _add_category_info_to_bootstrapping_metadata(dataset_name: str, dataset_cfg: CfgNode):
+def _add_category_info_to_bootstrapping_metadata(
+    dataset_name: str, dataset_cfg: CfgNode
+):
     meta = MetadataCatalog.get(dataset_name)
     meta.category_to_class_mapping = get_category_to_class_mapping(dataset_cfg)
     meta.categories = dataset_cfg.CATEGORIES
@@ -302,7 +346,9 @@ def _add_category_info_to_bootstrapping_metadata(dataset_name: str, dataset_cfg:
     )
 
 
-def _maybe_add_class_to_mesh_name_map_to_metadata(dataset_names: List[str], cfg: CfgNode):
+def _maybe_add_class_to_mesh_name_map_to_metadata(
+    dataset_names: List[str], cfg: CfgNode
+):
     for dataset_name in dataset_names:
         meta = MetadataCatalog.get(dataset_name)
         if not hasattr(meta, "class_to_mesh_name"):
@@ -317,7 +363,9 @@ def _merge_categories(dataset_names: Collection[str]) -> _MergedCategoriesT:
         whitelisted_categories = meta.get("whitelisted_categories")
         category_map = meta.get("category_map", {})
         cat_ids = (
-            whitelisted_categories if whitelisted_categories is not None else meta.categories.keys()
+            whitelisted_categories
+            if whitelisted_categories is not None
+            else meta.categories.keys()
         )
         for cat_id in cat_ids:
             cat_name = meta.categories[cat_id]
@@ -357,7 +405,10 @@ def _warn_if_merged_different_categories(merged_categories: _MergedCategoriesT):
             cat.name == first_cat_name for cat in merged_categories_i[1:]
         ):
             cat_summary_str = ", ".join(
-                [f"{cat.id} ({cat.name}) from {cat.dataset_name}" for cat in merged_categories_i]
+                [
+                    f"{cat.id} ({cat.name}) from {cat.dataset_name}"
+                    for cat in merged_categories_i
+                ]
             )
             logger.warning(
                 f"Merged category {cat_id} corresponds to the following categories: "
@@ -450,7 +501,9 @@ def build_detection_train_loader(cfg: CfgNode, mapper=None):
     dataset_dicts = combine_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
         keep_instance_predicate=_get_train_keep_instance_predicate(cfg),
-        proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
+        proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
+        if cfg.MODEL.LOAD_PROPOSALS
+        else None,
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, True)
@@ -481,7 +534,9 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         [dataset_name],
         keep_instance_predicate=_get_test_keep_instance_predicate(cfg),
         proposal_files=[
-            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]
+            cfg.DATASETS.PROPOSAL_FILES_TEST[
+                list(cfg.DATASETS.TEST).index(dataset_name)
+            ]
         ]
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
@@ -492,7 +547,10 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
     return d2_build_detection_test_loader(
-        dataset_dicts, mapper=mapper, num_workers=cfg.DATALOADER.NUM_WORKERS, sampler=sampler
+        dataset_dicts,
+        mapper=mapper,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+        sampler=sampler,
     )
 
 
@@ -517,7 +575,9 @@ def build_transform(cfg: CfgNode, data_type: str):
     raise ValueError(f"Unknown transform {cfg.TYPE} for data type {data_type}")
 
 
-def build_combined_loader(cfg: CfgNode, loaders: Collection[Loader], ratios: Sequence[float]):
+def build_combined_loader(
+    cfg: CfgNode, loaders: Collection[Loader], ratios: Sequence[float]
+):
     images_per_worker = _compute_num_images_per_worker(cfg)
     return CombinedDataLoader(loaders, images_per_worker, ratios)
 
@@ -542,11 +602,15 @@ def build_bootstrap_dataset(dataset_name: str, cfg: CfgNode) -> Sequence[torch.T
     if factory is not None:
         dataset = factory(meta, cfg)
     if dataset is None:
-        logger.warning(f"Failed to create dataset {dataset_name} of type {meta.dataset_type}")
+        logger.warning(
+            f"Failed to create dataset {dataset_name} of type {meta.dataset_type}"
+        )
     return dataset
 
 
-def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[torch.nn.Module]):
+def build_data_sampler(
+    cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[torch.nn.Module]
+):
     if sampler_cfg.TYPE == "densepose_uniform":
         data_sampler = PredictionToGroundTruthSampler()
         # transform densepose pred -> gt
@@ -555,7 +619,9 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
             "gt_densepose",
             DensePoseUniformSampler(count_per_class=sampler_cfg.COUNT_PER_CLASS),
         )
-        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        data_sampler.register_sampler(
+            "pred_densepose", "gt_masks", MaskFromDensePoseSampler()
+        )
         return data_sampler
     elif sampler_cfg.TYPE == "densepose_UV_confidence":
         data_sampler = PredictionToGroundTruthSampler()
@@ -569,7 +635,9 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
                 search_proportion=0.5,
             ),
         )
-        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        data_sampler.register_sampler(
+            "pred_densepose", "gt_masks", MaskFromDensePoseSampler()
+        )
         return data_sampler
     elif sampler_cfg.TYPE == "densepose_fine_segm_confidence":
         data_sampler = PredictionToGroundTruthSampler()
@@ -583,7 +651,9 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
                 search_proportion=0.5,
             ),
         )
-        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        data_sampler.register_sampler(
+            "pred_densepose", "gt_masks", MaskFromDensePoseSampler()
+        )
         return data_sampler
     elif sampler_cfg.TYPE == "densepose_coarse_segm_confidence":
         data_sampler = PredictionToGroundTruthSampler()
@@ -597,7 +667,9 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
                 search_proportion=0.5,
             ),
         )
-        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        data_sampler.register_sampler(
+            "pred_densepose", "gt_masks", MaskFromDensePoseSampler()
+        )
         return data_sampler
     elif sampler_cfg.TYPE == "densepose_cse_uniform":
         assert embedder is not None
@@ -613,7 +685,9 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
                 count_per_class=sampler_cfg.COUNT_PER_CLASS,
             ),
         )
-        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        data_sampler.register_sampler(
+            "pred_densepose", "gt_masks", MaskFromDensePoseSampler()
+        )
         return data_sampler
     elif sampler_cfg.TYPE == "densepose_cse_coarse_segm_confidence":
         assert embedder is not None
@@ -631,7 +705,9 @@ def build_data_sampler(cfg: CfgNode, sampler_cfg: CfgNode, embedder: Optional[to
                 search_proportion=0.5,
             ),
         )
-        data_sampler.register_sampler("pred_densepose", "gt_masks", MaskFromDensePoseSampler())
+        data_sampler.register_sampler(
+            "pred_densepose", "gt_masks", MaskFromDensePoseSampler()
+        )
         return data_sampler
 
     raise ValueError(f"Unknown data sampler type {sampler_cfg.TYPE}")
@@ -707,7 +783,9 @@ def build_video_list_dataset(meta: Metadata, cfg: CfgNode):
         frame_selector = build_frame_selector(cfg.SELECT)
         transform = build_transform(cfg.TRANSFORM, data_type="image")
         video_list = video_list_from_file(video_list_fpath, video_base_path)
-        keyframe_helper_fpath = cfg.KEYFRAME_HELPER if hasattr(cfg, "KEYFRAME_HELPER") else None
+        keyframe_helper_fpath = (
+            cfg.KEYFRAME_HELPER if hasattr(cfg, "KEYFRAME_HELPER") else None
+        )
         return VideoKeyframeDataset(
             video_list, category, frame_selector, transform, keyframe_helper_fpath
         )
@@ -719,16 +797,22 @@ class _BootstrapDatasetFactoryCatalog(UserDict):
     from metadata and config, for diverse DatasetType
     """
 
-    def register(self, dataset_type: DatasetType, factory: Callable[[Metadata, CfgNode], Dataset]):
+    def register(
+        self, dataset_type: DatasetType, factory: Callable[[Metadata, CfgNode], Dataset]
+    ):
         """
         Args:
             dataset_type (DatasetType): a DatasetType e.g. DatasetType.VIDEO_LIST
             factory (Callable[Metadata, CfgNode]): a callable which takes Metadata and cfg
             arguments and returns a dataset object.
         """
-        assert dataset_type not in self, "Dataset '{}' is already registered!".format(dataset_type)
+        assert dataset_type not in self, "Dataset '{}' is already registered!".format(
+            dataset_type
+        )
         self[dataset_type] = factory
 
 
 BootstrapDatasetFactoryCatalog = _BootstrapDatasetFactoryCatalog()
-BootstrapDatasetFactoryCatalog.register(DatasetType.VIDEO_LIST, build_video_list_dataset)
+BootstrapDatasetFactoryCatalog.register(
+    DatasetType.VIDEO_LIST, build_video_list_dataset
+)

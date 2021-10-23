@@ -12,21 +12,20 @@ python tools/lazyconfig_train_net.py --config-file configs/Misc/torchvision_imag
 
 
 import torch
-from torch import nn
-from torch.nn import functional as F
-from omegaconf import OmegaConf
 import torchvision
-from torchvision.transforms import transforms as T
-from torchvision.models.resnet import ResNet, Bottleneck
-from fvcore.common.param_scheduler import MultiStepParamScheduler
-
-from detectron2.solver import WarmupParamScheduler
-from detectron2.solver.build import get_default_optimizer_params
 from detectron2.config import LazyCall as L
-from detectron2.model_zoo import get_config
 from detectron2.data.samplers import TrainingSampler, InferenceSampler
 from detectron2.evaluation import DatasetEvaluator
+from detectron2.model_zoo import get_config
+from detectron2.solver import WarmupParamScheduler
+from detectron2.solver.build import get_default_optimizer_params
 from detectron2.utils import comm
+from fvcore.common.param_scheduler import MultiStepParamScheduler
+from omegaconf import OmegaConf
+from torch import nn
+from torch.nn import functional as F
+from torchvision.models.resnet import ResNet, Bottleneck
+from torchvision.transforms import transforms as T
 
 
 """

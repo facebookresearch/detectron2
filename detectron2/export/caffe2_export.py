@@ -3,8 +3,9 @@
 import copy
 import io
 import logging
-import numpy as np
 from typing import List
+
+import numpy as np
 import onnx
 import torch
 from caffe2.proto import caffe2_pb2
@@ -81,7 +82,9 @@ def _op_stats(net_def):
 
 
 def _assign_device_option(
-    predict_net: caffe2_pb2.NetDef, init_net: caffe2_pb2.NetDef, tensor_inputs: List[torch.Tensor]
+    predict_net: caffe2_pb2.NetDef,
+    init_net: caffe2_pb2.NetDef,
+    tensor_inputs: List[torch.Tensor],
 ):
     """
     ONNX exported network doesn't have concept of device, assign necessary
@@ -109,7 +112,9 @@ def _assign_device_option(
         for name, tensor in zip(predict_net.external_input, tensor_inputs)
     }
     predict_net_device_types = infer_device_type(
-        predict_net, known_status=predict_net_input_device_types, device_name_style="pytorch"
+        predict_net,
+        known_status=predict_net_input_device_types,
+        device_name_style="pytorch",
     )
     predict_net_ssa, _ = core.get_ssa(predict_net)
     _assign_op_device_option(predict_net, predict_net_ssa, predict_net_device_types)
@@ -126,7 +131,9 @@ def _assign_device_option(
     _assign_op_device_option(init_net, init_net_ssa, init_net_device_types)
 
 
-def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[torch.Tensor]):
+def export_caffe2_detection_model(
+    model: torch.nn.Module, tensor_inputs: List[torch.Tensor]
+):
     """
     Export a caffe2-compatible Detectron2 model to caffe2 format via ONNX.
 
@@ -149,7 +156,8 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     ops_table = [[op.type, op.input, op.output] for op in predict_net.op]
     table = tabulate(ops_table, headers=["type", "input", "output"], tablefmt="pipe")
     logger.info(
-        "ONNX export Done. Exported predict_net (before optimizations):\n" + colored(table, "cyan")
+        "ONNX export Done. Exported predict_net (before optimizations):\n"
+        + colored(table, "cyan")
     )
 
     # Apply protobuf optimization
@@ -189,7 +197,9 @@ def run_and_save_graph(predict_net, init_net, tensor_inputs, graph_save_path):
     with ScopedWS("__ws_tmp__", True) as ws:
         ws.RunNetOnce(init_net)
         initialized_blobs = set(ws.Blobs())
-        uninitialized = [inp for inp in predict_net.external_input if inp not in initialized_blobs]
+        uninitialized = [
+            inp for inp in predict_net.external_input if inp not in initialized_blobs
+        ]
         for name, blob in zip(uninitialized, tensor_inputs):
             ws.FeedBlob(name, blob)
 
@@ -199,7 +209,11 @@ def run_and_save_graph(predict_net, init_net, tensor_inputs, graph_save_path):
             logger.warning("Encountered RuntimeError: \n{}".format(str(e)))
 
         ws_blobs = {b: ws.FetchBlob(b) for b in ws.Blobs()}
-        blob_sizes = {b: ws_blobs[b].shape for b in ws_blobs if isinstance(ws_blobs[b], np.ndarray)}
+        blob_sizes = {
+            b: ws_blobs[b].shape
+            for b in ws_blobs
+            if isinstance(ws_blobs[b], np.ndarray)
+        }
 
         logger.info("Saving graph with blob shapes to {} ...".format(graph_save_path))
         save_graph(predict_net, graph_save_path, op_only=False, blob_sizes=blob_sizes)

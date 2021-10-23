@@ -1,10 +1,10 @@
 from detectron2.config import LazyCall as L
 from detectron2.layers import ShapeSpec
-from detectron2.modeling.meta_arch import GeneralizedRCNN
 from detectron2.modeling.anchor_generator import DefaultAnchorGenerator
 from detectron2.modeling.backbone import BasicStem, BottleneckBlock, ResNet
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.matcher import Matcher
+from detectron2.modeling.meta_arch import GeneralizedRCNN
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.proposal_generator import RPN, StandardRPNHead
 from detectron2.modeling.roi_heads import (
@@ -67,7 +67,9 @@ model = L(GeneralizedRCNN)(
             stride_in_1x1=True,
         ),
         box_predictor=L(FastRCNNOutputLayers)(
-            input_shape=L(ShapeSpec)(channels="${...res5.out_channels}", height=1, width=1),
+            input_shape=L(ShapeSpec)(
+                channels="${...res5.out_channels}", height=1, width=1
+            ),
             test_score_thresh=0.05,
             box2box_transform=L(Box2BoxTransform)(weights=(10, 10, 5, 5)),
             num_classes="${..num_classes}",

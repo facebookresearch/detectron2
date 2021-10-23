@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
 import logging
-import numpy as np
 import operator
 import pickle
+
+import numpy as np
 import torch
 import torch.utils.data as torchdata
 from tabulate import tabulate
@@ -15,9 +16,13 @@ from detectron2.utils.comm import get_world_size
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import _log_api_usage, log_first_n
-
 from .catalog import DatasetCatalog, MetadataCatalog
-from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIterableDataset
+from .common import (
+    AspectRatioGroupedDataset,
+    DatasetFromList,
+    MapDataset,
+    ToIterableDataset,
+)
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 from .samplers import (
@@ -94,7 +99,9 @@ def filter_images_with_few_keypoints(dataset_dicts, min_keypoints_per_image):
         )
 
     dataset_dicts = [
-        x for x in dataset_dicts if visible_keypoints_in_image(x) >= min_keypoints_per_image
+        x
+        for x in dataset_dicts
+        if visible_keypoints_in_image(x) >= min_keypoints_per_image
     ]
     num_after = len(dataset_dicts)
     logger = logging.getLogger(__name__)
@@ -140,10 +147,16 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
     # Fetch the indexes of all proposals that are in the dataset
     # Convert image_id to str since they could be int.
     img_ids = set({str(record["image_id"]) for record in dataset_dicts})
-    id_to_index = {str(id): i for i, id in enumerate(proposals["ids"]) if str(id) in img_ids}
+    id_to_index = {
+        str(id): i for i, id in enumerate(proposals["ids"]) if str(id) in img_ids
+    }
 
     # Assuming default bbox_mode of precomputed proposals are 'XYXY_ABS'
-    bbox_mode = BoxMode(proposals["bbox_mode"]) if "bbox_mode" in proposals else BoxMode.XYXY_ABS
+    bbox_mode = (
+        BoxMode(proposals["bbox_mode"])
+        if "bbox_mode" in proposals
+        else BoxMode.XYXY_ABS
+    )
 
     for record in dataset_dicts:
         # Get the index of the proposal
@@ -190,7 +203,9 @@ def print_instances_class_histogram(dataset_dicts, class_names):
         return x
 
     data = list(
-        itertools.chain(*[[short_name(class_names[i]), int(v)] for i, v in enumerate(histogram)])
+        itertools.chain(
+            *[[short_name(class_names[i]), int(v)] for i, v in enumerate(histogram)]
+        )
     )
     total_num_instances = sum(data[1::2])
     data.extend([None] * (N_COLS - (len(data) % N_COLS)))
@@ -314,7 +329,9 @@ def build_batch_data_loader(
         data_loader = torchdata.DataLoader(
             dataset,
             num_workers=num_workers,
-            collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
+            collate_fn=operator.itemgetter(
+                0
+            ),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, batch_size)
@@ -340,7 +357,9 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
             min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
             if cfg.MODEL.KEYPOINT_ON
             else 0,
-            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
+            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None,
         )
         _log_api_usage("dataset." + cfg.DATASETS.TRAIN[0])
 
@@ -354,12 +373,16 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
         if sampler_name == "TrainingSampler":
             sampler = TrainingSampler(len(dataset))
         elif sampler_name == "RepeatFactorTrainingSampler":
-            repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                dataset, cfg.DATALOADER.REPEAT_THRESHOLD
+            repeat_factors = (
+                RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
+                    dataset, cfg.DATALOADER.REPEAT_THRESHOLD
+                )
             )
             sampler = RepeatFactorTrainingSampler(repeat_factors)
         elif sampler_name == "RandomSubsetTrainingSampler":
-            sampler = RandomSubsetTrainingSampler(len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO)
+            sampler = RandomSubsetTrainingSampler(
+                len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO
+            )
         else:
             raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
@@ -428,7 +451,9 @@ def build_detection_train_loader(
     else:
         if sampler is None:
             sampler = TrainingSampler(len(dataset))
-        assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
+        assert isinstance(
+            sampler, torchdata.Sampler
+        ), f"Expect a Sampler but got {type(sampler)}"
     return build_batch_data_loader(
         dataset,
         sampler,
@@ -451,18 +476,25 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         dataset_name,
         filter_empty=False,
         proposal_files=[
-            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)] for x in dataset_name
+            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)]
+            for x in dataset_name
         ]
         if cfg.MODEL.LOAD_PROPOSALS
         else None,
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS}
+    return {
+        "dataset": dataset,
+        "mapper": mapper,
+        "num_workers": cfg.DATALOADER.NUM_WORKERS,
+    }
 
 
 @configurable(from_config=_test_loader_from_config)
-def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0, collate_fn=None):
+def build_detection_test_loader(
+    dataset, *, mapper, sampler=None, num_workers=0, collate_fn=None
+):
     """
     Similar to `build_detection_train_loader`, but uses a batch size of 1,
     and :class:`InferenceSampler`. This sampler coordinates all workers to

@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import unittest
-import torch
 
+import torch
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.structures import Boxes, RotatedBoxes
 from detectron2.utils.testing import random_boxes

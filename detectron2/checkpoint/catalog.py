@@ -35,7 +35,9 @@ class ModelCatalog(object):
     )
 
     C2_DATASET_COCO = "coco_2014_train%3Acoco_2014_valminusminival"
-    C2_DATASET_COCO_KEYPOINTS = "keypoints_coco_2014_train%3Akeypoints_coco_2014_valminusminival"
+    C2_DATASET_COCO_KEYPOINTS = (
+        "keypoints_coco_2014_train%3Akeypoints_coco_2014_valminusminival"
+    )
 
     # format: {model_name} -> part of the url
     C2_DETECTRON_MODELS = {
@@ -87,7 +89,10 @@ class ModelCatalog(object):
 
         # Detectron C2 models are stored in the structure defined in `C2_DETECTRON_PATH_FORMAT`.
         url = ModelCatalog.C2_DETECTRON_PATH_FORMAT.format(
-            prefix=ModelCatalog.S3_C2_DETECTRON_PREFIX, url=url, type=type, dataset=dataset
+            prefix=ModelCatalog.S3_C2_DETECTRON_PREFIX,
+            url=url,
+            type=type,
+            dataset=dataset,
         )
         return url
 

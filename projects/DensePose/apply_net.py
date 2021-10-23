@@ -8,16 +8,13 @@ import os
 import pickle
 import sys
 from typing import Any, ClassVar, Dict, List
+
 import torch
-
-from detectron2.config import CfgNode, get_cfg
-from detectron2.data.detection_utils import read_image
-from detectron2.engine.defaults import DefaultPredictor
-from detectron2.structures.instances import Instances
-from detectron2.utils.logger import setup_logger
-
 from densepose import add_densepose_config
-from densepose.structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
+from densepose.structures import (
+    DensePoseChartPredictorOutput,
+    DensePoseEmbeddingPredictorOutput,
+)
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer
@@ -42,6 +39,11 @@ from densepose.vis.extractor import (
     DensePoseResultExtractor,
     create_extractor,
 )
+from detectron2.config import CfgNode, get_cfg
+from detectron2.data.detection_utils import read_image
+from detectron2.engine.defaults import DefaultPredictor
+from detectron2.structures.instances import Instances
+from detectron2.utils.logger import setup_logger
 
 DOC = """Apply Net - a tool to print / visualize DensePose results
 """
@@ -103,12 +105,18 @@ class InferenceAction(Action):
             img = read_image(file_name, format="BGR")  # predictor expects BGR image.
             with torch.no_grad():
                 outputs = predictor(img)["instances"]
-                cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+                cls.execute_on_outputs(
+                    context, {"file_name": file_name, "image": img}, outputs
+                )
         cls.postexecute(context)
 
     @classmethod
     def setup_config(
-        cls: type, config_fpath: str, model_fpath: str, args: argparse.Namespace, opts: List[str]
+        cls: type,
+        config_fpath: str,
+        model_fpath: str,
+        args: argparse.Namespace,
+        opts: List[str],
     ):
         cfg = get_cfg()
         add_densepose_config(cfg)
@@ -145,7 +153,9 @@ class DumpAction(InferenceAction):
 
     @classmethod
     def add_parser(cls: type, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(cls.COMMAND, help="Dump model outputs to a file.")
+        parser = subparsers.add_parser(
+            cls.COMMAND, help="Dump model outputs to a file."
+        )
         cls.add_arguments(parser)
         parser.set_defaults(func=cls.execute)
 
@@ -173,7 +183,9 @@ class DumpAction(InferenceAction):
             if outputs.has("pred_densepose"):
                 if isinstance(outputs.pred_densepose, DensePoseChartPredictorOutput):
                     extractor = DensePoseResultExtractor()
-                elif isinstance(outputs.pred_densepose, DensePoseEmbeddingPredictorOutput):
+                elif isinstance(
+                    outputs.pred_densepose, DensePoseEmbeddingPredictorOutput
+                ):
                     extractor = DensePoseOutputsExtractor()
                 result["pred_densepose"] = extractor(outputs)[0]
         context["results"].append(result)
@@ -235,7 +247,11 @@ class ShowAction(InferenceAction):
             help="Minimum detection score to visualize",
         )
         parser.add_argument(
-            "--nms_thresh", metavar="<threshold>", default=None, type=float, help="NMS threshold"
+            "--nms_thresh",
+            metavar="<threshold>",
+            default=None,
+            type=float,
+            help="NMS threshold",
         )
         parser.add_argument(
             "--texture_atlas",
@@ -258,7 +274,11 @@ class ShowAction(InferenceAction):
 
     @classmethod
     def setup_config(
-        cls: type, config_fpath: str, model_fpath: str, args: argparse.Namespace, opts: List[str]
+        cls: type,
+        config_fpath: str,
+        model_fpath: str,
+        args: argparse.Namespace,
+        opts: List[str],
     ):
         opts.append("MODEL.ROI_HEADS.SCORE_THRESH_TEST")
         opts.append(str(args.min_score))
@@ -302,7 +322,9 @@ class ShowAction(InferenceAction):
         return base + ".{0:04d}".format(entry_idx) + ext
 
     @classmethod
-    def create_context(cls: type, args: argparse.Namespace, cfg: CfgNode) -> Dict[str, Any]:
+    def create_context(
+        cls: type, args: argparse.Namespace, cfg: CfgNode
+    ) -> Dict[str, Any]:
         vis_specs = args.visualizations.split(",")
         visualizers = []
         extractors = []
@@ -331,7 +353,9 @@ class ShowAction(InferenceAction):
 def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=DOC,
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=120),
+        formatter_class=lambda prog: argparse.HelpFormatter(
+            prog, max_help_position=120
+        ),
     )
     parser.set_defaults(func=lambda _: parser.print_help(sys.stdout))
     subparsers = parser.add_subparsers(title="Actions")

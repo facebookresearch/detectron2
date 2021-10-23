@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 class TestModelZoo(unittest.TestCase):
     def test_get_returns_model(self):
-        model = model_zoo.get("Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml", trained=False)
+        model = model_zoo.get(
+            "Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml", trained=False
+        )
         self.assertIsInstance(model, GeneralizedRCNN)
         self.assertIsInstance(model.backbone, FPN)
 

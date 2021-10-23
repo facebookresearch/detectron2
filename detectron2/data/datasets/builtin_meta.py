@@ -209,9 +209,27 @@ CITYSCAPES_CATEGORIES = [
     {"color": (102, 102, 156), "isthing": 0, "id": 12, "trainId": 3, "name": "wall"},
     {"color": (190, 153, 153), "isthing": 0, "id": 13, "trainId": 4, "name": "fence"},
     {"color": (153, 153, 153), "isthing": 0, "id": 17, "trainId": 5, "name": "pole"},
-    {"color": (250, 170, 30), "isthing": 0, "id": 19, "trainId": 6, "name": "traffic light"},
-    {"color": (220, 220, 0), "isthing": 0, "id": 20, "trainId": 7, "name": "traffic sign"},
-    {"color": (107, 142, 35), "isthing": 0, "id": 21, "trainId": 8, "name": "vegetation"},
+    {
+        "color": (250, 170, 30),
+        "isthing": 0,
+        "id": 19,
+        "trainId": 6,
+        "name": "traffic light",
+    },
+    {
+        "color": (220, 220, 0),
+        "isthing": 0,
+        "id": 20,
+        "trainId": 7,
+        "name": "traffic sign",
+    },
+    {
+        "color": (107, 142, 35),
+        "isthing": 0,
+        "id": 21,
+        "trainId": 8,
+        "name": "vegetation",
+    },
     {"color": (152, 251, 152), "isthing": 0, "id": 22, "trainId": 9, "name": "terrain"},
     {"color": (70, 130, 180), "isthing": 0, "id": 23, "trainId": 10, "name": "sky"},
     {"color": (220, 20, 60), "isthing": 1, "id": 24, "trainId": 11, "name": "person"},
@@ -270,7 +288,9 @@ def _get_coco_panoptic_separated_meta():
     ]
 
     # NOTE: I randomly picked a color for things
-    stuff_colors = [[82, 18, 128]] + [k["color"] for k in COCO_CATEGORIES if k["isthing"] == 0]
+    stuff_colors = [[82, 18, 128]] + [
+        k["color"] for k in COCO_CATEGORIES if k["isthing"] == 0
+    ]
     ret = {
         "stuff_dataset_id_to_contiguous_id": stuff_dataset_id_to_contiguous_id,
         "stuff_classes": stuff_classes,

@@ -98,7 +98,9 @@ class FieldEntrySelector(EntrySelector):
             eq_idx = subspec.find(self._EQUAL)
             if eq_idx > 0:
                 field_name_with_type = subspec[:eq_idx]
-                field_name, field_type = self._parse_field_name_type(field_name_with_type)
+                field_name, field_type = self._parse_field_name_type(
+                    field_name_with_type
+                )
                 field_value_or_range = subspec[eq_idx + 1 :]
                 if self._is_range_spec(field_value_or_range):
                     vmin, vmax = self._get_range_spec(field_value_or_range)
@@ -113,10 +115,14 @@ class FieldEntrySelector(EntrySelector):
             elif eq_idx == 0:
                 self._parse_error(f'"{subspec}", field name is empty!')
             else:
-                self._parse_error(f'"{subspec}", should have format ' "<field>=<value_or_range>!")
+                self._parse_error(
+                    f'"{subspec}", should have format ' "<field>=<value_or_range>!"
+                )
         return predicates
 
-    def _parse_field_name_type(self, field_name_with_type: str) -> Tuple[str, Optional[str]]:
+    def _parse_field_name_type(
+        self, field_name_with_type: str
+    ) -> Tuple[str, Optional[str]]:
         type_delim_idx = field_name_with_type.find(self._TYPE_DELIM)
         if type_delim_idx > 0:
             field_name = field_name_with_type[:type_delim_idx]

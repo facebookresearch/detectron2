@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import Dict, List, Optional, Tuple, Union
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -10,7 +11,6 @@ from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
-
 from ..anchor_generator import build_anchor_generator
 from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
 from ..matcher import Matcher
@@ -74,7 +74,12 @@ class StandardRPNHead(nn.Module):
 
     @configurable
     def __init__(
-        self, *, in_channels: int, num_anchors: int, box_dim: int = 4, conv_dims: List[int] = (-1,)
+        self,
+        *,
+        in_channels: int,
+        num_anchors: int,
+        box_dim: int = 4,
+        conv_dims: List[int] = (-1,),
     ):
         """
         NOTE: this interface is experimental.
@@ -113,9 +118,13 @@ class StandardRPNHead(nn.Module):
                 self.conv.add_module(f"conv{k}", conv)
                 cur_channels = out_channels
         # 1x1 conv for predicting objectness logits
-        self.objectness_logits = nn.Conv2d(cur_channels, num_anchors, kernel_size=1, stride=1)
+        self.objectness_logits = nn.Conv2d(
+            cur_channels, num_anchors, kernel_size=1, stride=1
+        )
         # 1x1 conv for predicting box2box transform deltas
-        self.anchor_deltas = nn.Conv2d(cur_channels, num_anchors * box_dim, kernel_size=1, stride=1)
+        self.anchor_deltas = nn.Conv2d(
+            cur_channels, num_anchors * box_dim, kernel_size=1, stride=1
+        )
 
         # Keeping the order of weights initialization same for backwards compatiblility.
         for layer in self.modules():
@@ -266,20 +275,33 @@ class RPN(nn.Module):
             "positive_fraction": cfg.MODEL.RPN.POSITIVE_FRACTION,
             "loss_weight": {
                 "loss_rpn_cls": cfg.MODEL.RPN.LOSS_WEIGHT,
-                "loss_rpn_loc": cfg.MODEL.RPN.BBOX_REG_LOSS_WEIGHT * cfg.MODEL.RPN.LOSS_WEIGHT,
+                "loss_rpn_loc": cfg.MODEL.RPN.BBOX_REG_LOSS_WEIGHT
+                * cfg.MODEL.RPN.LOSS_WEIGHT,
             },
             "anchor_boundary_thresh": cfg.MODEL.RPN.BOUNDARY_THRESH,
-            "box2box_transform": Box2BoxTransform(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS),
+            "box2box_transform": Box2BoxTransform(
+                weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS
+            ),
             "box_reg_loss_type": cfg.MODEL.RPN.BBOX_REG_LOSS_TYPE,
             "smooth_l1_beta": cfg.MODEL.RPN.SMOOTH_L1_BETA,
         }
 
-        ret["pre_nms_topk"] = (cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN, cfg.MODEL.RPN.PRE_NMS_TOPK_TEST)
-        ret["post_nms_topk"] = (cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN, cfg.MODEL.RPN.POST_NMS_TOPK_TEST)
+        ret["pre_nms_topk"] = (
+            cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN,
+            cfg.MODEL.RPN.PRE_NMS_TOPK_TEST,
+        )
+        ret["post_nms_topk"] = (
+            cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN,
+            cfg.MODEL.RPN.POST_NMS_TOPK_TEST,
+        )
 
-        ret["anchor_generator"] = build_anchor_generator(cfg, [input_shape[f] for f in in_features])
+        ret["anchor_generator"] = build_anchor_generator(
+            cfg, [input_shape[f] for f in in_features]
+        )
         ret["anchor_matcher"] = Matcher(
-            cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
+            cfg.MODEL.RPN.IOU_THRESHOLDS,
+            cfg.MODEL.RPN.IOU_LABELS,
+            allow_low_quality_matches=True,
         )
         ret["head"] = build_rpn_head(cfg, [input_shape[f] for f in in_features])
         return ret
@@ -337,7 +359,9 @@ class RPN(nn.Module):
             """
 
             match_quality_matrix = retry_if_cuda_oom(pairwise_iou)(gt_boxes_i, anchors)
-            matched_idxs, gt_labels_i = retry_if_cuda_oom(self.anchor_matcher)(match_quality_matrix)
+            matched_idxs, gt_labels_i = retry_if_cuda_oom(self.anchor_matcher)(
+                match_quality_matrix
+            )
             # Matching is memory-expensive and may result in CPU tensors. But the result is small
             gt_labels_i = gt_labels_i.to(device=gt_boxes_i.device)
             del match_quality_matrix
@@ -345,7 +369,9 @@ class RPN(nn.Module):
             if self.anchor_boundary_thresh >= 0:
                 # Discard anchors that go out of the boundaries of the image
                 # NOTE: This is legacy functionality that is turned off by default in Detectron2
-                anchors_inside_image = anchors.inside_box(image_size_i, self.anchor_boundary_thresh)
+                anchors_inside_image = anchors.inside_box(
+                    image_size_i, self.anchor_boundary_thresh
+                )
                 gt_labels_i[~anchors_inside_image] = -1
 
             # A vector of labels (-1, 0, 1) for each anchor
@@ -460,7 +486,9 @@ class RPN(nn.Module):
         ]
         pred_anchor_deltas = [
             # (N, A*B, Hi, Wi) -> (N, A, B, Hi, Wi) -> (N, Hi, Wi, A, B) -> (N, Hi*Wi*A, B)
-            x.view(x.shape[0], -1, self.anchor_generator.box_dim, x.shape[-2], x.shape[-1])
+            x.view(
+                x.shape[0], -1, self.anchor_generator.box_dim, x.shape[-2], x.shape[-1]
+            )
             .permute(0, 3, 4, 1, 2)
             .flatten(1, -2)
             for x in pred_anchor_deltas
@@ -511,7 +539,9 @@ class RPN(nn.Module):
                 self.training,
             )
 
-    def _decode_proposals(self, anchors: List[Boxes], pred_anchor_deltas: List[torch.Tensor]):
+    def _decode_proposals(
+        self, anchors: List[Boxes], pred_anchor_deltas: List[torch.Tensor]
+    ):
         """
         Transform anchors into proposals by applying the predicted anchor deltas.
 
@@ -527,7 +557,9 @@ class RPN(nn.Module):
             pred_anchor_deltas_i = pred_anchor_deltas_i.reshape(-1, B)
             # Expand anchors to shape (N*Hi*Wi*A, B)
             anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
-            proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
+            proposals_i = self.box2box_transform.apply_deltas(
+                pred_anchor_deltas_i, anchors_i
+            )
             # Append feature map proposals with shape (N, Hi*Wi*A, B)
             proposals.append(proposals_i.view(N, -1, B))
         return proposals

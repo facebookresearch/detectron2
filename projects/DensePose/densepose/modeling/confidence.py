@@ -64,7 +64,9 @@ class DensePoseConfidenceModelConfig:
             uv_confidence=DensePoseUVConfidenceConfig(
                 enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED,
                 epsilon=cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.EPSILON,
-                type=DensePoseUVConfidenceType(cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE),
+                type=DensePoseUVConfidenceType(
+                    cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.TYPE
+                ),
             ),
             segm_confidence=DensePoseSegmConfidenceConfig(
                 enabled=cfg.MODEL.ROI_DENSEPOSE_HEAD.SEGM_CONFIDENCE.ENABLED,

@@ -1,5 +1,4 @@
 import torch
-
 from detectron2.config import LazyCall as L
 from detectron2.solver.build import get_default_optimizer_params
 

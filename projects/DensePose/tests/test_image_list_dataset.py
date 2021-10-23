@@ -4,11 +4,11 @@ import contextlib
 import os
 import tempfile
 import unittest
-import torch
-from torchvision.utils import save_image
 
+import torch
 from densepose.data.image_list_dataset import ImageListDataset
 from densepose.data.transform import ImageResizeTransform
+from torchvision.utils import save_image
 
 
 @contextlib.contextmanager

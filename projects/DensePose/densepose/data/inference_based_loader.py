@@ -2,6 +2,7 @@
 
 import random
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
+
 import torch
 from torch import nn
 
@@ -133,7 +134,9 @@ class InferenceBasedLoader:
         """
         data_batches: List[SampledData] = []
         category_to_class_mapping = self.category_to_class_mapping
-        batched_images_and_categories = _grouper(images_and_categories, self.inference_batch_size)
+        batched_images_and_categories = _grouper(
+            images_and_categories, self.inference_batch_size
+        )
         for batch in batched_images_and_categories:
             batch = [
                 {
@@ -155,7 +158,9 @@ class InferenceBasedLoader:
                     [instance_class] * len(model_output_i["instances"])
                 )
             model_output_filtered = (
-                model_output if self.data_filter is None else self.data_filter(model_output)
+                model_output
+                if self.data_filter is None
+                else self.data_filter(model_output)
             )
             data = (
                 model_output_filtered

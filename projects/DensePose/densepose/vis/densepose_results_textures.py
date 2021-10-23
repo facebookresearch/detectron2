@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 from typing import List, Optional, Tuple
-import torch
 
+import numpy as np
+import torch
 from detectron2.data.detection_utils import read_image
 
 from ..structures import DensePoseChartResult
@@ -39,7 +39,9 @@ class DensePoseResultsVisualizerWithTexture(DensePoseResultsVisualizer):
     def visualize(
         self,
         image_bgr: Image,
-        results_and_boxes_xywh: Tuple[Optional[List[DensePoseChartResult]], Optional[Boxes]],
+        results_and_boxes_xywh: Tuple[
+            Optional[List[DensePoseChartResult]], Optional[Boxes]
+        ],
     ) -> Image:
         densepose_result, boxes_xywh = results_and_boxes_xywh
         if densepose_result is None or boxes_xywh is None:
@@ -73,7 +75,9 @@ class DensePoseResultsVisualizerWithTexture(DensePoseResultsVisualizer):
 
         return texture_image, alpha
 
-    def generate_image_with_texture(self, texture_image, alpha, bbox_image_bgr, iuv_array):
+    def generate_image_with_texture(
+        self, texture_image, alpha, bbox_image_bgr, iuv_array
+    ):
 
         I, U, V = iuv_array
         generated_image_bgr = bbox_image_bgr.copy()

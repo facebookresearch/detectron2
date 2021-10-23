@@ -3,6 +3,7 @@ import logging
 import math
 from bisect import bisect_right
 from typing import List
+
 import torch
 from fvcore.common.param_scheduler import (
     CompositeParamScheduler,
@@ -145,7 +146,8 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
         )
         if not list(milestones) == sorted(milestones):
             raise ValueError(
-                "Milestones should be a list of" " increasing integers. Got {}", milestones
+                "Milestones should be a list of" " increasing integers. Got {}",
+                milestones,
             )
         self.milestones = milestones
         self.gamma = gamma
@@ -159,7 +161,9 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
             self.warmup_method, self.last_epoch, self.warmup_iters, self.warmup_factor
         )
         return [
-            base_lr * warmup_factor * self.gamma ** bisect_right(self.milestones, self.last_epoch)
+            base_lr
+            * warmup_factor
+            * self.gamma ** bisect_right(self.milestones, self.last_epoch)
             for base_lr in self.base_lrs
         ]
 

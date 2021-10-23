@@ -2,12 +2,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
-import numpy as np
 from typing import Any, Callable, Dict, List, Optional, Union
-import torch
-from torch.utils.data.dataset import Dataset
 
+import numpy as np
+import torch
 from detectron2.data.detection_utils import read_image
+from torch.utils.data.dataset import Dataset
 
 ImageTransform = Callable[[torch.Tensor], torch.Tensor]
 
@@ -57,7 +57,9 @@ class ImageListDataset(Dataset):
         transform = self.transform
 
         try:
-            image = torch.from_numpy(np.ascontiguousarray(read_image(fpath, format="BGR")))
+            image = torch.from_numpy(
+                np.ascontiguousarray(read_image(fpath, format="BGR"))
+            )
             image = image.permute(2, 0, 1).unsqueeze(0).float()  # HWC -> NCHW
             if transform is not None:
                 image = transform(image)

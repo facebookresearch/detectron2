@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
-import numpy as np
+
 import cv2
+import numpy as np
 import torch
 
 Image = np.ndarray
@@ -46,13 +47,15 @@ class MatrixVisualizer(object):
         if np.any(matrix_scaled > 255 + _EPSILON):
             logger = logging.getLogger(__name__)
             logger.warning(
-                f"Matrix has values > {255 + _EPSILON} after " f"scaling, clipping to [0..255]"
+                f"Matrix has values > {255 + _EPSILON} after "
+                f"scaling, clipping to [0..255]"
             )
         matrix_scaled_8u = matrix_scaled.clip(0, 255).astype(np.uint8)
         matrix_vis = cv2.applyColorMap(matrix_scaled_8u, self.cmap)
         matrix_vis[mask_bg] = image_target_bgr[y : y + h, x : x + w, :][mask_bg]
         image_target_bgr[y : y + h, x : x + w, :] = (
-            image_target_bgr[y : y + h, x : x + w, :] * (1.0 - self.alpha) + matrix_vis * self.alpha
+            image_target_bgr[y : y + h, x : x + w, :] * (1.0 - self.alpha)
+            + matrix_vis * self.alpha
         )
         return image_target_bgr.astype(np.uint8)
 
@@ -86,7 +89,9 @@ class RectangleVisualizer(object):
         x, y, w, h = bbox_xywh
         color = color or self.color
         thickness = thickness or self.thickness
-        cv2.rectangle(image_bgr, (int(x), int(y)), (int(x + w), int(y + h)), color, thickness)
+        cv2.rectangle(
+            image_bgr, (int(x), int(y)), (int(x + w), int(y + h)), color, thickness
+        )
         return image_bgr
 
 
@@ -149,7 +154,8 @@ class TextVisualizer(object):
             ).astype(np.float)
         if self.fill_color_transparency < 1.0:
             image_bgr[y : y + txt_h, x : x + txt_w, :] = (
-                image_bgr[y : y + txt_h, x : x + txt_w, :] * self.fill_color_transparency
+                image_bgr[y : y + txt_h, x : x + txt_w, :]
+                * self.fill_color_transparency
                 + np.array(self.fill_color_bgr) * (1.0 - self.fill_color_transparency)
             ).astype(np.float)
         cv2.putText(
@@ -176,10 +182,9 @@ class CompoundVisualizer(object):
         self.visualizers = visualizers
 
     def visualize(self, image_bgr, data):
-        assert len(data) == len(
-            self.visualizers
-        ), "The number of datas {} should match the number of visualizers" " {}".format(
-            len(data), len(self.visualizers)
+        assert len(data) == len(self.visualizers), (
+            "The number of datas {} should match the number of visualizers"
+            " {}".format(len(data), len(self.visualizers))
         )
         image = image_bgr
         for i, visualizer in enumerate(self.visualizers):

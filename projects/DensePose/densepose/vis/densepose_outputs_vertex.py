@@ -1,16 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import json
-import numpy as np
 from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
-import cv2
-import torch
 
+import cv2
+import numpy as np
+import torch
 from detectron2.utils.file_io import PathManager
 
 from densepose.modeling import build_densepose_embedder
 from densepose.modeling.cse.utils import get_closest_vertices_mask_from_ES
-
 from ..data.utils import get_class_to_mesh_name_mapping
 from ..structures import DensePoseEmbeddingPredictorOutput
 from ..structures.mesh import create_mesh
@@ -66,7 +65,9 @@ class DensePoseOutputsVertexVisualizer(object):
         self,
         image_bgr: Image,
         outputs_boxes_xywh_classes: Tuple[
-            Optional[DensePoseEmbeddingPredictorOutput], Optional[Boxes], Optional[List[int]]
+            Optional[DensePoseEmbeddingPredictorOutput],
+            Optional[Boxes],
+            Optional[List[int]],
         ],
     ) -> Image:
         if outputs_boxes_xywh_classes[0] is None:
@@ -90,7 +91,9 @@ class DensePoseOutputsVertexVisualizer(object):
             embed_map = get_xyz_vertex_embedding(mesh_name, self.device)
             vis = (embed_map[closest_vertices].clip(0, 1) * 255.0).cpu().numpy()
             mask_numpy = mask.cpu().numpy().astype(dtype=np.uint8)
-            image_bgr = self.mask_visualizer.visualize(image_bgr, mask_numpy, vis, [x, y, w, h])
+            image_bgr = self.mask_visualizer.visualize(
+                image_bgr, mask_numpy, vis, [x, y, w, h]
+            )
 
         return image_bgr
 
@@ -110,25 +113,29 @@ class DensePoseOutputsVertexVisualizer(object):
         S = densepose_output.coarse_segm
         E = densepose_output.embedding
         N = S.size(0)
-        assert N == E.size(
-            0
-        ), "CSE coarse_segm {} and embeddings {}" " should have equal first dim size".format(
-            S.size(), E.size()
+        assert N == E.size(0), (
+            "CSE coarse_segm {} and embeddings {}"
+            " should have equal first dim size".format(S.size(), E.size())
         )
-        assert N == len(
-            bboxes_xywh
-        ), "number of bounding boxes {}" " should be equal to first dim size of outputs {}".format(
-            len(bboxes_xywh), N
+        assert N == len(bboxes_xywh), (
+            "number of bounding boxes {}"
+            " should be equal to first dim size of outputs {}".format(
+                len(bboxes_xywh), N
+            )
         )
         assert N == len(pred_classes), (
             "number of predicted classes {}"
-            " should be equal to first dim size of outputs {}".format(len(bboxes_xywh), N)
+            " should be equal to first dim size of outputs {}".format(
+                len(bboxes_xywh), N
+            )
         )
 
         return S, E, N, bboxes_xywh, pred_classes
 
 
-def get_texture_atlases(json_str: Optional[str]) -> Optional[Dict[str, Optional[np.ndarray]]]:
+def get_texture_atlases(
+    json_str: Optional[str],
+) -> Optional[Dict[str, Optional[np.ndarray]]]:
     """
     json_str is a JSON string representing a mesh_name -> texture_atlas_path dictionary
     """
@@ -154,11 +161,19 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         self.alpha_dict = {}
 
         for mesh_name in texture_atlases_dict.keys():
-            if texture_atlases_dict[mesh_name].shape[-1] == 4:  # Image with alpha channel
-                self.alpha_dict[mesh_name] = texture_atlases_dict[mesh_name][:, :, -1] / 255.0
-                self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name][:, :, :3]
+            if (
+                texture_atlases_dict[mesh_name].shape[-1] == 4
+            ):  # Image with alpha channel
+                self.alpha_dict[mesh_name] = (
+                    texture_atlases_dict[mesh_name][:, :, -1] / 255.0
+                )
+                self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name][
+                    :, :, :3
+                ]
             else:
-                self.alpha_dict[mesh_name] = texture_atlases_dict[mesh_name].sum(axis=-1) > 0
+                self.alpha_dict[mesh_name] = (
+                    texture_atlases_dict[mesh_name].sum(axis=-1) > 0
+                )
                 self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name]
 
         self.device = torch.device(device)
@@ -174,7 +189,9 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         self,
         image_bgr: Image,
         outputs_boxes_xywh_classes: Tuple[
-            Optional[DensePoseEmbeddingPredictorOutput], Optional[Boxes], Optional[List[int]]
+            Optional[DensePoseEmbeddingPredictorOutput],
+            Optional[Boxes],
+            Optional[List[int]],
         ],
     ) -> Image:
         image_target_bgr = image_bgr.copy()
@@ -186,7 +203,8 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         )
 
         meshes = {
-            p: create_mesh(self.class_to_mesh_name[p], self.device) for p in np.unique(pred_classes)
+            p: create_mesh(self.class_to_mesh_name[p], self.device)
+            for p in np.unique(pred_classes)
         }
 
         for n in range(N):
@@ -200,7 +218,9 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
                 self.mesh_vertex_embeddings[mesh_name],
                 self.device,
             )
-            uv_array = meshes[pred_classes[n]].texcoords[closest_vertices].permute((2, 0, 1))
+            uv_array = (
+                meshes[pred_classes[n]].texcoords[closest_vertices].permute((2, 0, 1))
+            )
             uv_array = uv_array.cpu().numpy().clip(0, 1)
             textured_image = self.generate_image_with_texture(
                 image_target_bgr[y : y + h, x : x + w],
@@ -225,5 +245,7 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         local_texture = texture_image[y_index, x_index][mask]
         local_alpha = np.expand_dims(alpha[y_index, x_index][mask], -1)
         output_image = bbox_image_bgr.copy()
-        output_image[mask] = output_image[mask] * (1 - local_alpha) + local_texture * local_alpha
+        output_image[mask] = (
+            output_image[mask] * (1 - local_alpha) + local_texture * local_alpha
+        )
         return output_image.astype(np.uint8)

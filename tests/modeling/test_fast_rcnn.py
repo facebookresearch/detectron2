@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import unittest
-import torch
 
+import torch
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransformRotated
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers
@@ -27,7 +27,9 @@ class FastRCNNTest(unittest.TestCase):
         feature_pooled = torch.rand(2, box_head_output_size)
         predictions = box_predictor(feature_pooled)
 
-        proposal_boxes = torch.tensor([[0.8, 1.1, 3.2, 2.8], [2.3, 2.5, 7, 8]], dtype=torch.float32)
+        proposal_boxes = torch.tensor(
+            [[0.8, 1.1, 3.2, 2.8], [2.3, 2.5, 7, 8]], dtype=torch.float32
+        )
         gt_boxes = torch.tensor([[1, 1, 3, 3], [2, 2, 6, 6]], dtype=torch.float32)
         proposal = Instances((10, 10))
         proposal.proposal_boxes = Boxes(proposal_boxes)
@@ -110,7 +112,9 @@ class FastRCNNTest(unittest.TestCase):
             def forward(self, proposal_deltas, proposal_boxes):
                 instances = Instances((10, 10))
                 instances.proposal_boxes = Boxes(proposal_boxes)
-                return self._output_layer.predict_boxes((None, proposal_deltas), [instances])
+                return self._output_layer.predict_boxes(
+                    (None, proposal_deltas), [instances]
+                )
 
         box_head_output_size = 8
 

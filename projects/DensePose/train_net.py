@@ -12,15 +12,20 @@ It is an example of how a user might use detectron2 for a new project.
 from datetime import timedelta
 
 import detectron2.utils.comm as comm
-from detectron2.config import get_cfg
-from detectron2.engine import DEFAULT_TIMEOUT, default_argument_parser, default_setup, hooks, launch
-from detectron2.evaluation import verify_results
-from detectron2.utils.file_io import PathManager
-from detectron2.utils.logger import setup_logger
-
 from densepose import add_densepose_config
 from densepose.engine import Trainer
 from densepose.modeling.densepose_checkpoint import DensePoseCheckpointer
+from detectron2.config import get_cfg
+from detectron2.engine import (
+    DEFAULT_TIMEOUT,
+    default_argument_parser,
+    default_setup,
+    hooks,
+    launch,
+)
+from detectron2.evaluation import verify_results
+from detectron2.utils.file_io import PathManager
+from detectron2.utils.logger import setup_logger
 
 
 def setup(args):
@@ -31,7 +36,9 @@ def setup(args):
     cfg.freeze()
     default_setup(cfg, args)
     # Setup logger for "densepose" module
-    setup_logger(output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="densepose")
+    setup_logger(
+        output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="densepose"
+    )
     return cfg
 
 
@@ -66,7 +73,9 @@ if __name__ == "__main__":
     args = default_argument_parser().parse_args()
     cfg = setup(args)
     timeout = (
-        DEFAULT_TIMEOUT if cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE else timedelta(hours=4)
+        DEFAULT_TIMEOUT
+        if cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE
+        else timedelta(hours=4)
     )
     print("Command Line Args:", args)
     launch(

@@ -1,8 +1,8 @@
 from typing import List
-import torch
-from torch import Tensor, nn
 
+import torch
 from detectron2.modeling.meta_arch.retinanet import RetinaNetHead
+from torch import Tensor, nn
 
 
 def apply_sequential(inputs, modules):

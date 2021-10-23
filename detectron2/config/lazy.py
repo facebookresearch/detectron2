@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import is_dataclass
 from typing import List, Tuple, Union
+
 import cloudpickle
 import yaml
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -266,7 +267,9 @@ class LazyConfig:
         save_pkl = False
         try:
             dict = OmegaConf.to_container(cfg, resolve=False)
-            dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
+            dumped = yaml.dump(
+                dict, default_flow_style=None, allow_unicode=True, width=9999
+            )
             with PathManager.open(filename, "w") as f:
                 f.write(dumped)
 
@@ -388,7 +391,11 @@ class LazyConfig:
                     + "}"
                 )
             elif isinstance(obj, list):
-                return "[" + ",".join(_to_str(x, inside_call=inside_call) for x in obj) + "]"
+                return (
+                    "["
+                    + ",".join(_to_str(x, inside_call=inside_call) for x in obj)
+                    + "]"
+                )
             else:
                 return repr(obj)
 

@@ -2,8 +2,8 @@
 
 import unittest
 from typing import List, Sequence, Tuple
-import torch
 
+import torch
 from detectron2.structures import ImageList
 
 

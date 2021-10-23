@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 from typing import Tuple
+
+import numpy as np
 import torch
 from PIL import Image
 from torch.nn import functional as F
@@ -41,8 +42,12 @@ def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True
         x0_int, y0_int = torch.clamp(boxes.min(dim=0).values.floor()[:2] - 1, min=0).to(
             dtype=torch.int32
         )
-        x1_int = torch.clamp(boxes[:, 2].max().ceil() + 1, max=img_w).to(dtype=torch.int32)
-        y1_int = torch.clamp(boxes[:, 3].max().ceil() + 1, max=img_h).to(dtype=torch.int32)
+        x1_int = torch.clamp(boxes[:, 2].max().ceil() + 1, max=img_w).to(
+            dtype=torch.int32
+        )
+        y1_int = torch.clamp(boxes[:, 3].max().ceil() + 1, max=img_h).to(
+            dtype=torch.int32
+        )
     else:
         x0_int, y0_int = 0, 0
         x1_int, y1_int = img_w, img_h
@@ -72,7 +77,10 @@ def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True
 
 
 def paste_masks_in_image(
-    masks: torch.Tensor, boxes: Boxes, image_shape: Tuple[int, int], threshold: float = 0.5
+    masks: torch.Tensor,
+    boxes: Boxes,
+    image_shape: Tuple[int, int],
+    threshold: float = 0.5,
 ):
     """
     Paste a set of masks that are of a fixed resolution (e.g., 28 x 28) into an image.
@@ -100,7 +108,9 @@ def paste_masks_in_image(
         and height. img_masks[i] is a binary mask for object instance i.
     """
 
-    assert masks.shape[-1] == masks.shape[-2], "Only square mask predictions are supported"
+    assert (
+        masks.shape[-1] == masks.shape[-2]
+    ), "Only square mask predictions are supported"
     N = len(masks)
     if N == 0:
         return masks.new_empty((0,) + image_shape, dtype=torch.uint8)
@@ -120,18 +130,28 @@ def paste_masks_in_image(
     else:
         # GPU benefits from parallelism for larger chunks, but may have memory issue
         # int(img_h) because shape may be tensors in tracing
-        num_chunks = int(np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
+        num_chunks = int(
+            np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT)
+        )
         assert (
             num_chunks <= N
         ), "Default GPU_MEM_LIMIT in mask_ops.py is too small; try increasing it"
     chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
 
     img_masks = torch.zeros(
-        N, img_h, img_w, device=device, dtype=torch.bool if threshold >= 0 else torch.uint8
+        N,
+        img_h,
+        img_w,
+        device=device,
+        dtype=torch.bool if threshold >= 0 else torch.uint8,
     )
     for inds in chunks:
         masks_chunk, spatial_inds = _do_paste_mask(
-            masks[inds, None, :, :], boxes[inds], img_h, img_w, skip_empty=device.type == "cpu"
+            masks[inds, None, :, :],
+            boxes[inds],
+            img_h,
+            img_w,
+            skip_empty=device.type == "cpu",
         )
 
         if threshold >= 0:

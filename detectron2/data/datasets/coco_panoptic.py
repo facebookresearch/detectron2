@@ -5,7 +5,6 @@ import os
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.file_io import PathManager
-
 from .coco import load_coco_json, load_sem_seg
 
 __all__ = ["register_coco_panoptic", "register_coco_panoptic_separated"]
@@ -46,7 +45,9 @@ def load_coco_panoptic_json(json_file, image_dir, gt_dir, meta):
         # different extension, and images have extension ".jpg" for COCO. Need
         # to make image extension a user-provided argument if we extend this
         # function to support other COCO-like datasets.
-        image_file = os.path.join(image_dir, os.path.splitext(ann["file_name"])[0] + ".jpg")
+        image_file = os.path.join(
+            image_dir, os.path.splitext(ann["file_name"])[0] + ".jpg"
+        )
         label_file = os.path.join(gt_dir, ann["file_name"])
         segments_info = [_convert_category_id(x, meta) for x in ann["segments_info"]]
         ret.append(
@@ -85,7 +86,9 @@ def register_coco_panoptic(
     panoptic_name = name
     DatasetCatalog.register(
         panoptic_name,
-        lambda: load_coco_panoptic_json(panoptic_json, image_root, panoptic_root, metadata),
+        lambda: load_coco_panoptic_json(
+            panoptic_json, image_root, panoptic_root, metadata
+        ),
     )
     MetadataCatalog.get(panoptic_name).set(
         panoptic_root=panoptic_root,
@@ -100,7 +103,13 @@ def register_coco_panoptic(
 
 
 def register_coco_panoptic_separated(
-    name, metadata, image_root, panoptic_root, panoptic_json, sem_seg_root, instances_json
+    name,
+    metadata,
+    image_root,
+    panoptic_root,
+    panoptic_json,
+    sem_seg_root,
+    instances_json,
 ):
     """
     Register a "separated" version of COCO panoptic segmentation dataset named `name`.
@@ -155,7 +164,9 @@ def register_coco_panoptic_separated(
     )
 
     semantic_name = name + "_stuffonly"
-    DatasetCatalog.register(semantic_name, lambda: load_sem_seg(sem_seg_root, image_root))
+    DatasetCatalog.register(
+        semantic_name, lambda: load_sem_seg(sem_seg_root, image_root)
+    )
     MetadataCatalog.get(semantic_name).set(
         sem_seg_root=sem_seg_root,
         image_root=image_root,
@@ -201,18 +212,22 @@ if __name__ == "__main__":
         "dataset_name" can be "coco_2017_train_panoptic", or other
         pre-registered ones
     """
+    import sys
+
+    import numpy as np
+    from PIL import Image
+
+    import detectron2.data.datasets  # noqa # add pre-defined metadata
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
-    import detectron2.data.datasets  # noqa # add pre-defined metadata
-    import sys
-    from PIL import Image
-    import numpy as np
 
     logger = setup_logger(name=__name__)
     assert sys.argv[4] in DatasetCatalog.list()
     meta = MetadataCatalog.get(sys.argv[4])
 
-    dicts = load_coco_panoptic_json(sys.argv[3], sys.argv[1], sys.argv[2], meta.as_dict())
+    dicts = load_coco_panoptic_json(
+        sys.argv[3], sys.argv[1], sys.argv[2], meta.as_dict()
+    )
     logger.info("Done loading {} samples.".format(len(dicts)))
 
     dirname = "coco-data-vis"

@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
 import logging
-import numpy as np
 from typing import List, Union
-import torch
 
 import detectron2.data.detection_utils as utils
 import detectron2.data.transforms as T
+import numpy as np
+import torch
 from detectron2.config import configurable
 
 from .detection_utils import annotations_to_instances, transform_instance_annotations
@@ -52,7 +52,9 @@ class PointSupDatasetMapper:
         logger = logging.getLogger(__name__)
         mode = "training" if is_train else "inference"
         logger.info(f"[DatasetMapper] Augmentations used in {mode}: {augmentations}")
-        logger.info(f"Point Augmentations used in {mode}: sample {sample_points} points")
+        logger.info(
+            f"Point Augmentations used in {mode}: sample {sample_points} points"
+        )
 
     @classmethod
     def from_config(cls, cfg, is_train: bool = True):
@@ -88,7 +90,9 @@ class PointSupDatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        dataset_dict["image"] = torch.as_tensor(
+            np.ascontiguousarray(image.transpose(2, 0, 1))
+        )
 
         if not self.is_train:
             dataset_dict.pop("annotations", None)

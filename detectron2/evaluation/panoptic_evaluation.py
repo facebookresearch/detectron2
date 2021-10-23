@@ -4,18 +4,18 @@ import io
 import itertools
 import json
 import logging
-import numpy as np
 import os
 import tempfile
 from collections import OrderedDict
 from typing import Optional
+
+import numpy as np
 from PIL import Image
 from tabulate import tabulate
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
 from detectron2.utils.file_io import PathManager
-
 from .evaluator import DatasetEvaluator
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,8 @@ class COCOPanopticEvaluator(DatasetEvaluator):
                         continue
                     pred_class = panoptic_label // label_divisor
                     isthing = (
-                        pred_class in self._metadata.thing_dataset_id_to_contiguous_id.values()
+                        pred_class
+                        in self._metadata.thing_dataset_id_to_contiguous_id.values()
                     )
                     segments_info.append(
                         {
@@ -169,10 +170,19 @@ def _print_panoptic_results(pq_res):
     headers = ["", "PQ", "SQ", "RQ", "#categories"]
     data = []
     for name in ["All", "Things", "Stuff"]:
-        row = [name] + [pq_res[name][k] * 100 for k in ["pq", "sq", "rq"]] + [pq_res[name]["n"]]
+        row = (
+            [name]
+            + [pq_res[name][k] * 100 for k in ["pq", "sq", "rq"]]
+            + [pq_res[name]["n"]]
+        )
         data.append(row)
     table = tabulate(
-        data, headers=headers, tablefmt="pipe", floatfmt=".3f", stralign="center", numalign="center"
+        data,
+        headers=headers,
+        tablefmt="pipe",
+        floatfmt=".3f",
+        stralign="center",
+        numalign="center",
     )
     logger.info("Panoptic Evaluation Results:\n" + table)
 
@@ -194,6 +204,9 @@ if __name__ == "__main__":
 
     with contextlib.redirect_stdout(io.StringIO()):
         pq_res = pq_compute(
-            args.gt_json, args.pred_json, gt_folder=args.gt_dir, pred_folder=args.pred_dir
+            args.gt_json,
+            args.pred_json,
+            gt_folder=args.gt_dir,
+            pred_folder=args.pred_dir,
         )
         _print_panoptic_results(pq_res)

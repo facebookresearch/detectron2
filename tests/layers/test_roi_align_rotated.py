@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import unittest
+
 import cv2
 import torch
-from torch.autograd import Variable, gradcheck
-
 from detectron2.layers.roi_align import ROIAlign
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
+from torch.autograd import Variable, gradcheck
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,9 @@ class ROIAlignRotatedTest(unittest.TestCase):
             box = [1, 1, 3, 3]
             rotated_box = self._box_to_rotated_box(box=box, angle=90 * i)
 
-            result = self._simple_roi_align_rotated(img=img, box=rotated_box, resolution=(4, 4))
+            result = self._simple_roi_align_rotated(
+                img=img, box=rotated_box, resolution=(4, 4)
+            )
 
             # Here's an explanation for 0 degree case:
             # point 0 in the original input lies at [0.5, 0.5]
@@ -75,20 +77,28 @@ class ROIAlignRotatedTest(unittest.TestCase):
         input = torch.rand(H, W) * 100
         box = [10, 10, 20, 20]
         rotated_box = self._box_to_rotated_box(box, angle=0)
-        output = self._simple_roi_align_rotated(img=input, box=rotated_box, resolution=(5, 5))
+        output = self._simple_roi_align_rotated(
+            img=input, box=rotated_box, resolution=(5, 5)
+        )
 
-        input2x = cv2.resize(input.numpy(), (W // 2, H // 2), interpolation=cv2.INTER_LINEAR)
+        input2x = cv2.resize(
+            input.numpy(), (W // 2, H // 2), interpolation=cv2.INTER_LINEAR
+        )
         input2x = torch.from_numpy(input2x)
         box2x = [x / 2 for x in box]
         rotated_box2x = self._box_to_rotated_box(box2x, angle=0)
-        output2x = self._simple_roi_align_rotated(img=input2x, box=rotated_box2x, resolution=(5, 5))
+        output2x = self._simple_roi_align_rotated(
+            img=input2x, box=rotated_box2x, resolution=(5, 5)
+        )
         assert torch.allclose(output2x, output)
 
     def _simple_roi_align_rotated(self, img, box, resolution):
         """
         RoiAlignRotated with scale 1.0 and 0 sample ratio.
         """
-        op = ROIAlignRotated(output_size=resolution, spatial_scale=1.0, sampling_ratio=0)
+        op = ROIAlignRotated(
+            output_size=resolution, spatial_scale=1.0, sampling_ratio=0
+        )
         input = img[None, None, :, :]
 
         rois = [0] + list(box)
@@ -122,7 +132,9 @@ class ROIAlignRotatedTest(unittest.TestCase):
             return roi_align_rotated_op(input, rois)
 
         assert gradcheck(func, (x,)), "gradcheck failed for RoIAlignRotated CPU"
-        assert gradcheck(func, (x.transpose(2, 3),)), "gradcheck failed for RoIAlignRotated CPU"
+        assert gradcheck(
+            func, (x.transpose(2, 3),)
+        ), "gradcheck failed for RoIAlignRotated CPU"
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_roi_align_rotated_gradient_cuda(self):
@@ -135,9 +147,9 @@ class ROIAlignRotatedTest(unittest.TestCase):
         device = torch.device("cuda")
         pool_h, pool_w = (5, 5)
 
-        roi_align = ROIAlign(output_size=(pool_h, pool_w), spatial_scale=1, sampling_ratio=2).to(
-            device=device
-        )
+        roi_align = ROIAlign(
+            output_size=(pool_h, pool_w), spatial_scale=1, sampling_ratio=2
+        ).to(device=device)
 
         roi_align_rotated = ROIAlignRotated(
             output_size=(pool_h, pool_w), spatial_scale=1, sampling_ratio=2
@@ -160,7 +172,9 @@ class ROIAlignRotatedTest(unittest.TestCase):
 
         # roi format is (batch index, x1, y1, x2, y2)
         rois = torch.tensor(
-            [[0, 0, 0, 9, 9], [0, 0, 5, 4, 9], [0, 5, 5, 9, 9]], dtype=dtype, device=device
+            [[0, 0, 0, 9, 9], [0, 0, 5, 4, 9], [0, 5, 5, 9, 9]],
+            dtype=dtype,
+            device=device,
         )
 
         y = roi_align(x, rois)

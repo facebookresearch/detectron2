@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from abc import ABCMeta, abstractmethod
+
 import torch.nn as nn
 
 from detectron2.layers import ShapeSpec
@@ -47,7 +48,8 @@ class Backbone(nn.Module, metaclass=ABCMeta):
         # this is a backward-compatible default
         return {
             name: ShapeSpec(
-                channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
+                channels=self._out_feature_channels[name],
+                stride=self._out_feature_strides[name],
             )
             for name in self._out_features
         }

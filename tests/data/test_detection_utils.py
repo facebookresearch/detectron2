@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import copy
-import numpy as np
 import os
 import unittest
-import pycocotools.mask as mask_util
 
+import numpy as np
+import pycocotools.mask as mask_util
 from detectron2.data import MetadataCatalog, detection_utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, BoxMode
@@ -19,13 +19,20 @@ class TestTransformAnnotations(unittest.TestCase):
             "bbox": np.asarray([10, 10, 200, 300]),
             "bbox_mode": BoxMode.XYXY_ABS,
             "category_id": 3,
-            "segmentation": [[10, 10, 100, 100, 100, 10], [150, 150, 200, 150, 200, 200]],
+            "segmentation": [
+                [10, 10, 100, 100, 100, 10],
+                [150, 150, 200, 150, 200, 200],
+            ],
         }
 
-        output = detection_utils.transform_instance_annotations(anno, transforms, (400, 400))
+        output = detection_utils.transform_instance_annotations(
+            anno, transforms, (400, 400)
+        )
         self.assertTrue(np.allclose(output["bbox"], [200, 10, 390, 300]))
         self.assertEqual(len(output["segmentation"]), len(anno["segmentation"]))
-        self.assertTrue(np.allclose(output["segmentation"][0], [390, 10, 300, 100, 300, 10]))
+        self.assertTrue(
+            np.allclose(output["segmentation"][0], [390, 10, 300, 100, 300, 10])
+        )
 
         detection_utils.annotations_to_instances([output, output], (400, 400))
 
@@ -49,7 +56,9 @@ class TestTransformAnnotations(unittest.TestCase):
             ),
         )
         # The first keypoint is nose
-        self.assertTrue(np.allclose(output["keypoints"][0, 0], 400 - anno["keypoints"][0, 0]))
+        self.assertTrue(
+            np.allclose(output["keypoints"][0, 0], 400 - anno["keypoints"][0, 0])
+        )
         # The last 16 keypoints are 8 left-right pairs
         self.assertTrue(
             np.allclose(
@@ -129,14 +138,18 @@ class TestTransformAnnotations(unittest.TestCase):
 
     def test_gen_crop(self):
         instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
-        t = detection_utils.gen_crop_transform_with_instance((10, 10), (150, 150), instance)
+        t = detection_utils.gen_crop_transform_with_instance(
+            (10, 10), (150, 150), instance
+        )
         # the box center must fall into the cropped region
         self.assertTrue(t.x0 <= 55 <= t.x0 + t.w)
 
     def test_gen_crop_outside_boxes(self):
         instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
         with self.assertRaises(AssertionError):
-            detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)
+            detection_utils.gen_crop_transform_with_instance(
+                (10, 10), (15, 15), instance
+            )
 
     def test_read_sem_seg(self):
         cityscapes_dir = MetadataCatalog.get("cityscapes_fine_sem_seg_val").gt_dir
@@ -145,7 +158,9 @@ class TestTransformAnnotations(unittest.TestCase):
         )
         if not PathManager.exists(sem_seg_gt_path):
             raise unittest.SkipTest(
-                "Semantic segmentation ground truth {} not found.".format(sem_seg_gt_path)
+                "Semantic segmentation ground truth {} not found.".format(
+                    sem_seg_gt_path
+                )
             )
         sem_seg = detection_utils.read_image(sem_seg_gt_path, "L")
         self.assertEqual(sem_seg.ndim, 3)
@@ -160,7 +175,9 @@ class TestTransformAnnotations(unittest.TestCase):
         img = detection_utils.read_image(URL, "RGB")
         self.assertEqual(img.ndim, 3)
         self.assertEqual(img.dtype, np.uint8)
-        self.assertEqual(img.shape, (1200, 1800, 3))  # check that shape is not transposed
+        self.assertEqual(
+            img.shape, (1200, 1800, 3)
+        )  # check that shape is not transposed
 
     def test_opencv_exif_orientation(self):
         import cv2

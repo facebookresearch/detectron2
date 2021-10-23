@@ -4,6 +4,7 @@ import logging
 import math
 from collections import defaultdict
 from typing import Optional
+
 import torch
 from torch.utils.data.sampler import Sampler
 
@@ -43,9 +44,13 @@ class TrainingSampler(Sampler):
                 among workers (require synchronization among all workers).
         """
         if not isinstance(size, int):
-            raise TypeError(f"TrainingSampler(size=) expects an int. Got type {type(size)}.")
+            raise TypeError(
+                f"TrainingSampler(size=) expects an int. Got type {type(size)}."
+            )
         if size <= 0:
-            raise ValueError(f"TrainingSampler(size=) expects a positive int. Got {size}.")
+            raise ValueError(
+                f"TrainingSampler(size=) expects a positive int. Got {size}."
+            )
         self._size = size
         self._shuffle = shuffle
         if seed is None:
@@ -57,7 +62,9 @@ class TrainingSampler(Sampler):
 
     def __iter__(self):
         start = self._rank
-        yield from itertools.islice(self._infinite_indices(), start, None, self._world_size)
+        yield from itertools.islice(
+            self._infinite_indices(), start, None, self._world_size
+        )
 
     def _infinite_indices(self):
         g = torch.Generator()
@@ -112,7 +119,9 @@ class RandomSubsetTrainingSampler(TrainingSampler):
         self._indexes_subset = indexes_randperm[: self._size_subset]
 
         logger.info("Using RandomSubsetTrainingSampler......")
-        logger.info(f"Randomly sample {self._size_subset} data from the original {self._size} data")
+        logger.info(
+            f"Randomly sample {self._size_subset} data from the original {self._size} data"
+        )
 
     def _infinite_indices(self):
         g = torch.Generator()
@@ -226,7 +235,9 @@ class RepeatFactorTrainingSampler(Sampler):
 
     def __iter__(self):
         start = self._rank
-        yield from itertools.islice(self._infinite_indices(), start, None, self._world_size)
+        yield from itertools.islice(
+            self._infinite_indices(), start, None, self._world_size
+        )
 
     def _infinite_indices(self):
         g = torch.Generator()
@@ -259,7 +270,9 @@ class InferenceSampler(Sampler):
         assert size > 0
         self._rank = comm.get_rank()
         self._world_size = comm.get_world_size()
-        self._local_indices = self._get_local_indices(size, self._world_size, self._rank)
+        self._local_indices = self._get_local_indices(
+            size, self._world_size, self._rank
+        )
 
     @staticmethod
     def _get_local_indices(total_size, world_size, rank):

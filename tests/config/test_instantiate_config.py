@@ -3,13 +3,13 @@
 import os
 import tempfile
 import unittest
-import yaml
-from omegaconf import OmegaConf
-from omegaconf import __version__ as oc_version
 from dataclasses import dataclass
 
+import yaml
 from detectron2.config import instantiate, LazyCall as L
 from detectron2.layers import ShapeSpec
+from omegaconf import OmegaConf
+from omegaconf import __version__ as oc_version
 
 OC_VERSION = tuple(int(x) for x in oc_version.split(".")[:2])
 
@@ -70,7 +70,9 @@ class TestConstruction(unittest.TestCase):
 
     def test_instantiate_lst(self):
         lst = [1, 2, L(TestClass)(int_arg=1)]
-        x = L(TestClass)(int_arg=lst)  # list as an argument should be recursively instantiated
+        x = L(TestClass)(
+            int_arg=lst
+        )  # list as an argument should be recursively instantiated
         x = instantiate(x).int_arg
         self.assertEqual(x[:2], [1, 2])
         self.assertIsInstance(x[2], TestClass)

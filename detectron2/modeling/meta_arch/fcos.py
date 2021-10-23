@@ -2,15 +2,20 @@
 
 import logging
 from typing import List, Optional, Tuple
+
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit
 from torch import Tensor, nn
 from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, batched_nms
-from detectron2.structures import Boxes, ImageList, Instances, pairwise_point_box_distance
+from detectron2.structures import (
+    Boxes,
+    ImageList,
+    Instances,
+    pairwise_point_box_distance,
+)
 from detectron2.utils.events import get_event_storage
-
 from ..anchor_generator import DefaultAnchorGenerator
 from ..backbone import Backbone
 from ..box_regression import Box2BoxTransformLinear, _dense_box_regression_loss
@@ -86,13 +91,20 @@ class FCOS(DenseDetector):
 
     def forward_training(self, images, features, predictions, gt_instances):
         # Transpose the Hi*Wi*A dimension to the middle:
-        pred_logits, pred_anchor_deltas, pred_centerness = self._transpose_dense_predictions(
-            predictions, [self.num_classes, 4, 1]
-        )
+        (
+            pred_logits,
+            pred_anchor_deltas,
+            pred_centerness,
+        ) = self._transpose_dense_predictions(predictions, [self.num_classes, 4, 1])
         anchors = self.anchor_generator(features)
         gt_labels, gt_boxes = self.label_anchors(anchors, gt_instances)
         return self.losses(
-            anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes, pred_centerness
+            anchors,
+            pred_logits,
+            gt_labels,
+            pred_anchor_deltas,
+            gt_boxes,
+            pred_centerness,
         )
 
     @torch.no_grad()
@@ -123,10 +135,14 @@ class FCOS(DenseDetector):
         for gt_per_image in gt_instances:
             gt_centers = gt_per_image.gt_boxes.get_centers()  # Nx2
             # FCOS with center sampling: anchor point must be close enough to gt center.
-            pairwise_match = (anchor_centers[:, None, :] - gt_centers[None, :, :]).abs_().max(
-                dim=2
-            ).values < self.center_sampling_radius * anchor_sizes[:, None]
-            pairwise_dist = pairwise_point_box_distance(anchor_centers, gt_per_image.gt_boxes)
+            pairwise_match = (
+                anchor_centers[:, None, :] - gt_centers[None, :, :]
+            ).abs_().max(dim=2).values < self.center_sampling_radius * anchor_sizes[
+                :, None
+            ]
+            pairwise_dist = pairwise_point_box_distance(
+                anchor_centers, gt_per_image.gt_boxes
+            )
 
             # The original FCOS anchor matching rule: anchor point must be inside gt
             pairwise_match &= pairwise_dist.min(dim=2).values > 0
@@ -140,7 +156,9 @@ class FCOS(DenseDetector):
 
             # Match the GT box with minimum area, if there are multiple GT matches
             gt_areas = gt_per_image.gt_boxes.area()  # N
-            pairwise_match = pairwise_match.to(torch.float32) * (1e8 - gt_areas[None, :])
+            pairwise_match = pairwise_match.to(torch.float32) * (
+                1e8 - gt_areas[None, :]
+            )
             min_values, matched_idx = pairwise_match.max(dim=1)  # R, per-anchor match
             matched_idx[min_values < 1e-5] = -1  # Unmatched anchors are assigned -1
 
@@ -169,7 +187,13 @@ class FCOS(DenseDetector):
         return matched_labels, matched_boxes
 
     def losses(
-        self, anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes, pred_centerness
+        self,
+        anchors,
+        pred_logits,
+        gt_labels,
+        pred_anchor_deltas,
+        gt_boxes,
+        pred_centerness,
     ):
         """
         This method is almost identical to :meth:`RetinaNet.losses`, with an extra
@@ -217,7 +241,9 @@ class FCOS(DenseDetector):
 
     def compute_ctrness_targets(self, anchors, gt_boxes):  # NxR
         anchors = Boxes.cat(anchors).tensor  # Rx4
-        reg_targets = [self.box2box_transform.get_deltas(anchors, m.tensor) for m in gt_boxes]
+        reg_targets = [
+            self.box2box_transform.get_deltas(anchors, m.tensor) for m in gt_boxes
+        ]
         reg_targets = torch.stack(reg_targets, dim=0)  # NxRx4
         if len(reg_targets) == 0:
             return reg_targets.new_zeros(len(reg_targets))
@@ -231,9 +257,11 @@ class FCOS(DenseDetector):
     def forward_inference(
         self, images: ImageList, features: List[Tensor], predictions: List[List[Tensor]]
     ):
-        pred_logits, pred_anchor_deltas, pred_centerness = self._transpose_dense_predictions(
-            predictions, [self.num_classes, 4, 1]
-        )
+        (
+            pred_logits,
+            pred_anchor_deltas,
+            pred_centerness,
+        ) = self._transpose_dense_predictions(predictions, [self.num_classes, 4, 1])
         anchors = self.anchor_generator(features)
 
         results: List[Instances] = []
@@ -282,7 +310,9 @@ class FCOSHead(RetinaNetHead):
     """
 
     def __init__(self, *, input_shape: List[ShapeSpec], conv_dims: List[int], **kwargs):
-        super().__init__(input_shape=input_shape, conv_dims=conv_dims, num_anchors=1, **kwargs)
+        super().__init__(
+            input_shape=input_shape, conv_dims=conv_dims, num_anchors=1, **kwargs
+        )
         # Unlike original FCOS, we do not add an additional learnable scale layer
         # because it's found to have no benefits after normalizing regression targets by stride.
         self._num_features = len(input_shape)

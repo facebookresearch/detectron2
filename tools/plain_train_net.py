@@ -22,10 +22,9 @@ It also includes fewer abstraction, therefore is easier to add custom logic.
 import logging
 import os
 from collections import OrderedDict
-import torch
-from torch.nn.parallel import DistributedDataParallel
 
 import detectron2.utils.comm as comm
+import torch
 from detectron2.checkpoint import DetectionCheckpointer, PeriodicCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import (
@@ -33,7 +32,12 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.engine import default_argument_parser, default_setup, default_writers, launch
+from detectron2.engine import (
+    default_argument_parser,
+    default_setup,
+    default_writers,
+    launch,
+)
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
@@ -49,6 +53,7 @@ from detectron2.evaluation import (
 from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils.events import EventStorage
+from torch.nn.parallel import DistributedDataParallel
 
 logger = logging.getLogger("detectron2")
 
@@ -92,7 +97,9 @@ def get_evaluator(cfg, dataset_name, output_folder=None):
         return LVISEvaluator(dataset_name, cfg, True, output_folder)
     if len(evaluator_list) == 0:
         raise NotImplementedError(
-            "no Evaluator for the dataset {} with the type {}".format(dataset_name, evaluator_type)
+            "no Evaluator for the dataset {} with the type {}".format(
+                dataset_name, evaluator_type
+            )
         )
     if len(evaluator_list) == 1:
         return evaluator_list[0]
@@ -125,7 +132,10 @@ def do_train(cfg, model, resume=False):
         model, cfg.OUTPUT_DIR, optimizer=optimizer, scheduler=scheduler
     )
     start_iter = (
-        checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=resume).get("iteration", -1) + 1
+        checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=resume).get(
+            "iteration", -1
+        )
+        + 1
     )
     max_iter = cfg.SOLVER.MAX_ITER
 
@@ -133,7 +143,9 @@ def do_train(cfg, model, resume=False):
         checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_iter=max_iter
     )
 
-    writers = default_writers(cfg.OUTPUT_DIR, max_iter) if comm.is_main_process() else []
+    writers = (
+        default_writers(cfg.OUTPUT_DIR, max_iter) if comm.is_main_process() else []
+    )
 
     # compared to "train_net.py", we do not support accurate timing and
     # precise BN here, because they are not trivial to implement in a small training loop
@@ -147,7 +159,9 @@ def do_train(cfg, model, resume=False):
             losses = sum(loss_dict.values())
             assert torch.isfinite(losses).all(), loss_dict
 
-            loss_dict_reduced = {k: v.item() for k, v in comm.reduce_dict(loss_dict).items()}
+            loss_dict_reduced = {
+                k: v.item() for k, v in comm.reduce_dict(loss_dict).items()
+            }
             losses_reduced = sum(loss for loss in loss_dict_reduced.values())
             if comm.is_main_process():
                 storage.put_scalars(total_loss=losses_reduced, **loss_dict_reduced)
@@ -155,7 +169,9 @@ def do_train(cfg, model, resume=False):
             optimizer.zero_grad()
             losses.backward()
             optimizer.step()
-            storage.put_scalar("lr", optimizer.param_groups[0]["lr"], smoothing_hint=False)
+            storage.put_scalar(
+                "lr", optimizer.param_groups[0]["lr"], smoothing_hint=False
+            )
             scheduler.step()
 
             if (

@@ -1,13 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import math
-import numpy as np
 from unittest import TestCase
+
+import numpy as np
 import torch
+from detectron2.solver import LRMultiplier, WarmupParamScheduler
 from fvcore.common.param_scheduler import CosineParamScheduler, MultiStepParamScheduler
 from torch import nn
-
-from detectron2.solver import LRMultiplier, WarmupParamScheduler
 
 
 class TestScheduler(TestCase):

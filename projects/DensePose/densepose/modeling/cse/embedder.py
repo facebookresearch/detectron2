@@ -1,15 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import logging
-import numpy as np
 import pickle
 from enum import Enum
 from typing import Optional
-import torch
-from torch import nn
 
+import numpy as np
+import torch
 from detectron2.config import CfgNode
 from detectron2.utils.file_io import PathManager
+from torch import nn
 
 from .vertex_direct_embedder import VertexDirectEmbedder
 from .vertex_feature_embedder import VertexFeatureEmbedder
@@ -84,10 +84,17 @@ class Embedder(nn.Module):
         self.mesh_names = set()
         embedder_dim = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE
         logger = logging.getLogger(__name__)
-        for mesh_name, embedder_spec in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
-            logger.info(f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}")
+        for (
+            mesh_name,
+            embedder_spec,
+        ) in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
+            logger.info(
+                f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}"
+            )
             # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
-            self.add_module(f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim))
+            self.add_module(
+                f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim)
+            )
             self.mesh_names.add(mesh_name)
         if cfg.MODEL.WEIGHTS != "":
             self.load_from_model_checkpoint(cfg.MODEL.WEIGHTS)

@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import torch
-
 from detectron2.modeling import PROPOSAL_GENERATOR_REGISTRY
 from detectron2.modeling.proposal_generator.rpn import RPN
 from detectron2.structures import ImageList
@@ -27,6 +26,8 @@ class TridentRPN(RPN):
         all_images = ImageList(
             torch.cat([images.tensor] * num_branch), images.image_sizes * num_branch
         )
-        all_gt_instances = gt_instances * num_branch if gt_instances is not None else None
+        all_gt_instances = (
+            gt_instances * num_branch if gt_instances is not None else None
+        )
 
         return super(TridentRPN, self).forward(all_images, features, all_gt_instances)

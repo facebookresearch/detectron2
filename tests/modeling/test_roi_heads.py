@@ -2,9 +2,8 @@
 import logging
 import unittest
 from copy import deepcopy
-import torch
-from torch import nn
 
+import torch
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export.torchscript_patch import (
@@ -25,6 +24,7 @@ from detectron2.projects import point_rend
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import assert_instances_allclose, random_boxes
+from torch import nn
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,9 @@ class ROIHeadsTest(unittest.TestCase):
         roi_heads = StandardROIHeads(cfg, feature_shape)
 
         with EventStorage():  # capture events in a new storage to discard them
-            proposals, proposal_losses = proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses = proposal_generator(
+                images, features, gt_instances
+            )
             _, detector_losses = roi_heads(images, features, proposals, gt_instances)
 
         detector_losses.update(proposal_losses)
@@ -81,7 +83,9 @@ class ROIHeadsTest(unittest.TestCase):
             "loss_rpn_loc": 0.1104838103055954,
         }
         succ = all(
-            torch.allclose(detector_losses[name], torch.tensor(expected_losses.get(name, 0.0)))
+            torch.allclose(
+                detector_losses[name], torch.tensor(expected_losses.get(name, 0.0))
+            )
             for name in detector_losses.keys()
         )
         self.assertTrue(
@@ -112,11 +116,15 @@ class ROIHeadsTest(unittest.TestCase):
         feature_shape = {"res4": ShapeSpec(channels=num_channels, stride=16)}
 
         image_shape = (15, 15)
-        gt_boxes0 = torch.tensor([[2, 2, 2, 2, 30], [4, 4, 4, 4, 0]], dtype=torch.float32)
+        gt_boxes0 = torch.tensor(
+            [[2, 2, 2, 2, 30], [4, 4, 4, 4, 0]], dtype=torch.float32
+        )
         gt_instance0 = Instances(image_shape)
         gt_instance0.gt_boxes = RotatedBoxes(gt_boxes0)
         gt_instance0.gt_classes = torch.tensor([2, 1])
-        gt_boxes1 = torch.tensor([[1.5, 5.5, 1, 3, 0], [8.5, 4, 3, 2, -50]], dtype=torch.float32)
+        gt_boxes1 = torch.tensor(
+            [[1.5, 5.5, 1, 3, 0], [8.5, 4, 3, 2, -50]], dtype=torch.float32
+        )
         gt_instance1 = Instances(image_shape)
         gt_instance1.gt_boxes = RotatedBoxes(gt_boxes1)
         gt_instance1.gt_classes = torch.tensor([1, 2])
@@ -126,7 +134,9 @@ class ROIHeadsTest(unittest.TestCase):
         roi_heads = build_roi_heads(cfg, feature_shape)
 
         with EventStorage():  # capture events in a new storage to discard them
-            proposals, proposal_losses = proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses = proposal_generator(
+                images, features, gt_instances
+            )
             _, detector_losses = roi_heads(images, features, proposals, gt_instances)
 
         detector_losses.update(proposal_losses)
@@ -137,7 +147,9 @@ class ROIHeadsTest(unittest.TestCase):
             "loss_rpn_loc": 0.3646621108055115,
         }
         succ = all(
-            torch.allclose(detector_losses[name], torch.tensor(expected_losses.get(name, 0.0)))
+            torch.allclose(
+                detector_losses[name], torch.tensor(expected_losses.get(name, 0.0))
+            )
             for name in detector_losses.keys()
         )
         self.assertTrue(
@@ -177,14 +189,18 @@ class ROIHeadsTest(unittest.TestCase):
         ).eval()
         # pred_instance will be in-place changed during the inference
         # process of `MaskRCNNConvUpsampleHead`
-        origin_outputs = mask_head(mask_features, deepcopy([pred_instance0, pred_instance1]))
+        origin_outputs = mask_head(
+            mask_features, deepcopy([pred_instance0, pred_instance1])
+        )
 
         fields = {"pred_masks": torch.Tensor, "pred_classes": torch.Tensor}
         with freeze_training_mode(mask_head), patch_instances(fields) as NewInstances:
             sciript_mask_head = torch.jit.script(mask_head)
             pred_instance0 = NewInstances.from_instances(pred_instance0)
             pred_instance1 = NewInstances.from_instances(pred_instance1)
-            script_outputs = sciript_mask_head(mask_features, [pred_instance0, pred_instance1])
+            script_outputs = sciript_mask_head(
+                mask_features, [pred_instance0, pred_instance1]
+            )
 
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
             assert_instances_allclose(origin_ins, script_ins, rtol=0)
@@ -194,7 +210,9 @@ class ROIHeadsTest(unittest.TestCase):
         keypoint_features = torch.randn(4, 1024, 14, 14)
 
         image_shapes = [(10, 10), (15, 15)]
-        pred_boxes0 = torch.tensor([[1, 1, 3, 3], [2, 2, 6, 6], [1, 5, 2, 8]], dtype=torch.float32)
+        pred_boxes0 = torch.tensor(
+            [[1, 1, 3, 3], [2, 2, 6, 6], [1, 5, 2, 8]], dtype=torch.float32
+        )
         pred_instance0 = Instances(image_shapes[0])
         pred_instance0.pred_boxes = Boxes(pred_boxes0)
         pred_boxes1 = torch.tensor([[7, 3, 10, 5]], dtype=torch.float32)
@@ -213,7 +231,9 @@ class ROIHeadsTest(unittest.TestCase):
             "pred_keypoints": torch.Tensor,
             "pred_keypoint_heatmaps": torch.Tensor,
         }
-        with freeze_training_mode(keypoint_head), patch_instances(fields) as NewInstances:
+        with freeze_training_mode(keypoint_head), patch_instances(
+            fields
+        ) as NewInstances:
             sciript_keypoint_head = torch.jit.script(keypoint_head)
             pred_instance0 = NewInstances.from_instances(pred_instance0)
             pred_instance1 = NewInstances.from_instances(pred_instance1)
@@ -244,12 +264,16 @@ class ROIHeadsTest(unittest.TestCase):
         roi_heads = StandardROIHeads(cfg, feature_shape).eval()
 
         proposal0 = Instances(image_sizes[0])
-        proposal_boxes0 = torch.tensor([[1, 1, 3, 3], [2, 2, 6, 6]], dtype=torch.float32)
+        proposal_boxes0 = torch.tensor(
+            [[1, 1, 3, 3], [2, 2, 6, 6]], dtype=torch.float32
+        )
         proposal0.proposal_boxes = Boxes(proposal_boxes0)
         proposal0.objectness_logits = torch.tensor([0.5, 0.7], dtype=torch.float32)
 
         proposal1 = Instances(image_sizes[1])
-        proposal_boxes1 = torch.tensor([[1, 5, 2, 8], [7, 3, 10, 5]], dtype=torch.float32)
+        proposal_boxes1 = torch.tensor(
+            [[1, 5, 2, 8], [7, 3, 10, 5]], dtype=torch.float32
+        )
         proposal1.proposal_boxes = Boxes(proposal_boxes1)
         proposal1.objectness_logits = torch.tensor([0.1, 0.9], dtype=torch.float32)
         proposals = [proposal0, proposal1]
@@ -276,7 +300,9 @@ class ROIHeadsTest(unittest.TestCase):
             assert_instances_allclose(instance, scripted_instance, rtol=0)
 
     def test_PointRend_mask_head_tracing(self):
-        cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
+        cfg = model_zoo.get_config(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+        )
         point_rend.add_pointrend_config(cfg)
         cfg.MODEL.ROI_HEADS.IN_FEATURES = ["p2", "p3"]
         cfg.MODEL.ROI_MASK_HEAD.NAME = "PointRendMaskHead"

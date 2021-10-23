@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 from typing import Callable, Dict, Optional, Tuple, Union
+
 import fvcore.nn.weight_init as weight_init
+import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -10,7 +11,6 @@ from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.structures import ImageList
 from detectron2.utils.registry import Registry
-
 from ..backbone import Backbone, build_backbone
 from ..postprocessing import sem_seg_postprocess
 from .build import META_ARCH_REGISTRY
@@ -55,7 +55,9 @@ class SemanticSegmentor(nn.Module):
         super().__init__()
         self.backbone = backbone
         self.sem_seg_head = sem_seg_head
-        self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
+        self.register_buffer(
+            "pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False
+        )
         self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
 
     @classmethod
@@ -116,7 +118,9 @@ class SemanticSegmentor(nn.Module):
             return losses
 
         processed_results = []
-        for result, input_per_image, image_size in zip(results, batched_inputs, images.image_sizes):
+        for result, input_per_image, image_size in zip(
+            results, batched_inputs, images.image_sizes
+        ):
             height = input_per_image.get("height", image_size[0])
             width = input_per_image.get("width", image_size[1])
             r = sem_seg_postprocess(result, image_size, height, width)
@@ -200,18 +204,24 @@ class SemSegFPNHead(nn.Module):
                 head_ops.append(conv)
                 if stride != self.common_stride:
                     head_ops.append(
-                        nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
+                        nn.Upsample(
+                            scale_factor=2, mode="bilinear", align_corners=False
+                        )
                     )
             self.scale_heads.append(nn.Sequential(*head_ops))
             self.add_module(in_feature, self.scale_heads[-1])
-        self.predictor = Conv2d(conv_dims, num_classes, kernel_size=1, stride=1, padding=0)
+        self.predictor = Conv2d(
+            conv_dims, num_classes, kernel_size=1, stride=1, padding=0
+        )
         weight_init.c2_msra_fill(self.predictor)
 
     @classmethod
     def from_config(cls, cfg, input_shape: Dict[str, ShapeSpec]):
         return {
             "input_shape": {
-                k: v for k, v in input_shape.items() if k in cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES
+                k: v
+                for k, v in input_shape.items()
+                if k in cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES
             },
             "ignore_value": cfg.MODEL.SEM_SEG_HEAD.IGNORE_VALUE,
             "num_classes": cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES,
@@ -246,7 +256,9 @@ class SemSegFPNHead(nn.Module):
         return x
 
     def losses(self, predictions, targets):
-        predictions = predictions.float()  # https://github.com/pytorch/pytorch/issues/48163
+        predictions = (
+            predictions.float()
+        )  # https://github.com/pytorch/pytorch/issues/48163
         predictions = F.interpolate(
             predictions,
             scale_factor=self.common_stride,

@@ -1,7 +1,7 @@
 import math
+
 import torch
 import torch.distributed as dist
-
 from detectron2.modeling.roi_heads import FastRCNNConvFCHead, MaskRCNNConvUpsampleHead
 from detectron2.utils import comm
 from fvcore.nn.distributed import differentiable_all_gather
@@ -64,7 +64,9 @@ def wrap_shuffle(module_type, method):
             x = batch_unshuffle(x, idx)
         return x
 
-    return type(module_type.__name__ + "WithShuffle", (module_type,), {method: new_method})
+    return type(
+        module_type.__name__ + "WithShuffle", (module_type,), {method: new_method}
+    )
 
 
 from .mask_rcnn_BNhead import model, dataloader, lr_multiplier, optimizer, train

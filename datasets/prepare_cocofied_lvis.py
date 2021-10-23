@@ -112,8 +112,12 @@ def cocofy_lvis(input_filename, output_filename):
     lvis_json["annotations"] = lvis_annos
 
     # Mapping from lvis cat id to coco cat id via synset
-    lvis_cat_id_to_synset = {cat["id"]: cat["synset"] for cat in lvis_json["categories"]}
-    synset_to_coco_cat_id = {x["synset"]: x["coco_cat_id"] for x in COCO_SYNSET_CATEGORIES}
+    lvis_cat_id_to_synset = {
+        cat["id"]: cat["synset"] for cat in lvis_json["categories"]
+    }
+    synset_to_coco_cat_id = {
+        x["synset"]: x["coco_cat_id"] for x in COCO_SYNSET_CATEGORIES
+    }
     # Synsets that we will keep in the dataset
     synsets_to_keep = set(synset_to_coco_cat_id.keys())
     coco_cat_id_with_instances = defaultdict(int)

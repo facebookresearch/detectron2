@@ -2,12 +2,12 @@
 import logging
 import os
 from typing import Any, Dict, Iterable, List, Optional
-from fvcore.common.timer import Timer
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets.lvis import get_lvis_instances_meta
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
+from fvcore.common.timer import Timer
 
 from ..utils import maybe_prepend_base_path
 from .coco import (
@@ -64,7 +64,9 @@ def _load_lvis_annotations(json_file: str):
     timer = Timer()
     lvis_api = LVIS(json_file)
     if timer.seconds() > 1:
-        logger.info("Loading {} takes {:.2f} seconds.".format(json_file, timer.seconds()))
+        logger.info(
+            "Loading {} takes {:.2f} seconds.".format(json_file, timer.seconds())
+        )
     return lvis_api
 
 
@@ -77,11 +79,13 @@ def _add_categories_metadata(dataset_name: str):
     logger.info(f"Dataset {dataset_name} has {len(categories)} categories")
 
 
-def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str, Any]]]):
+def _verify_annotations_have_unique_ids(
+    json_file: str, anns: List[List[Dict[str, Any]]]
+):
     ann_ids = [ann["id"] for anns_per_image in anns for ann in anns_per_image]
-    assert len(set(ann_ids)) == len(ann_ids), "Annotation ids in '{}' are not unique!".format(
-        json_file
-    )
+    assert len(set(ann_ids)) == len(
+        ann_ids
+    ), "Annotation ids in '{}' are not unique!".format(json_file)
 
 
 def _maybe_add_bbox(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
@@ -144,7 +148,9 @@ def _combine_images_with_annotations(
         record["file_name"] = get_file_name(image_root, img_dict)
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
-        record["not_exhaustive_category_ids"] = img_dict.get("not_exhaustive_category_ids", [])
+        record["not_exhaustive_category_ids"] = img_dict.get(
+            "not_exhaustive_category_ids", []
+        )
         record["neg_category_ids"] = img_dict.get("neg_category_ids", [])
         record["image_id"] = img_dict["id"]
         record["dataset"] = dataset_name
@@ -201,18 +207,26 @@ def load_lvis_json(annotations_json_file: str, image_root: str, dataset_name: st
     #  'id': 1268}
     imgs = lvis_api.load_imgs(img_ids)
     logger = logging.getLogger(__name__)
-    logger.info("Loaded {} images in LVIS format from {}".format(len(imgs), annotations_json_file))
+    logger.info(
+        "Loaded {} images in LVIS format from {}".format(
+            len(imgs), annotations_json_file
+        )
+    )
     # anns is a list[list[dict]], where each dict is an annotation
     # record for an object. The inner list enumerates the objects in an image
     # and the outer list enumerates over images.
     anns = [lvis_api.img_ann_map[img_id] for img_id in img_ids]
 
     _verify_annotations_have_unique_ids(annotations_json_file, anns)
-    dataset_records = _combine_images_with_annotations(dataset_name, image_root, imgs, anns)
+    dataset_records = _combine_images_with_annotations(
+        dataset_name, image_root, imgs, anns
+    )
     return dataset_records
 
 
-def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str] = None):
+def register_dataset(
+    dataset_data: CocoDatasetInfo, datasets_root: Optional[str] = None
+):
     """
     Registers provided LVIS DensePose dataset
 
@@ -222,7 +236,9 @@ def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str]
         datasets_root: Optional[str]
             Datasets root folder (default: None)
     """
-    annotations_fpath = maybe_prepend_base_path(datasets_root, dataset_data.annotations_fpath)
+    annotations_fpath = maybe_prepend_base_path(
+        datasets_root, dataset_data.annotations_fpath
+    )
     images_root = maybe_prepend_base_path(datasets_root, dataset_data.images_root)
 
     def load_annotations():

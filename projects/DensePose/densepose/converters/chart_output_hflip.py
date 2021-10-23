@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from dataclasses import fields
+
 import torch
 
 from densepose.structures import DensePoseChartPredictorOutput, DensePoseTransformData
@@ -21,7 +22,9 @@ def densepose_chart_predictor_output_hflip(
             field_value = getattr(densepose_predictor_output, field.name)
             # flip tensors
             if isinstance(field_value, torch.Tensor):
-                setattr(densepose_predictor_output, field.name, torch.flip(field_value, [3]))
+                setattr(
+                    densepose_predictor_output, field.name, torch.flip(field_value, [3])
+                )
 
         densepose_predictor_output = _flip_iuv_semantics_tensor(
             densepose_predictor_output, transform_data
@@ -51,13 +54,17 @@ def _flip_iuv_semantics_tensor(
     Iindex = torch.arange(C - 1, device=densepose_predictor_output.u.device)[
         None, :, None, None
     ].expand(N, C - 1, H, W)
-    densepose_predictor_output.u[:, 1:, :, :] = uv_symmetries["U_transforms"][Iindex, v_loc, u_loc]
-    densepose_predictor_output.v[:, 1:, :, :] = uv_symmetries["V_transforms"][Iindex, v_loc, u_loc]
+    densepose_predictor_output.u[:, 1:, :, :] = uv_symmetries["U_transforms"][
+        Iindex, v_loc, u_loc
+    ]
+    densepose_predictor_output.v[:, 1:, :, :] = uv_symmetries["V_transforms"][
+        Iindex, v_loc, u_loc
+    ]
 
     for el in ["fine_segm", "u", "v"]:
-        densepose_predictor_output.__dict__[el] = densepose_predictor_output.__dict__[el][
-            :, point_label_symmetries, :, :
-        ]
+        densepose_predictor_output.__dict__[el] = densepose_predictor_output.__dict__[
+            el
+        ][:, point_label_symmetries, :, :]
     return densepose_predictor_output
 
 

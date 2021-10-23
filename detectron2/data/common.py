@@ -2,15 +2,21 @@
 import copy
 import itertools
 import logging
-import numpy as np
 import pickle
 import random
+
+import numpy as np
 import torch.utils.data as data
 from torch.utils.data.sampler import Sampler
 
 from detectron2.utils.serialize import PicklableWrapper
 
-__all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset", "ToIterableDataset"]
+__all__ = [
+    "MapDataset",
+    "DatasetFromList",
+    "AspectRatioGroupedDataset",
+    "ToIterableDataset",
+]
 
 
 def _shard_iterator_dataloader_worker(iterable):
@@ -20,7 +26,9 @@ def _shard_iterator_dataloader_worker(iterable):
         # do nothing
         yield from iterable
     else:
-        yield from itertools.islice(iterable, worker_info.id, None, worker_info.num_workers)
+        yield from itertools.islice(
+            iterable, worker_info.id, None, worker_info.num_workers
+        )
 
 
 class _MapIterableDataset(data.IterableDataset):
@@ -141,7 +149,9 @@ class DatasetFromList(data.Dataset):
             self._addr = np.asarray([len(x) for x in self._lst], dtype=np.int64)
             self._addr = np.cumsum(self._addr)
             self._lst = np.concatenate(self._lst)
-            logger.info("Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024 ** 2))
+            logger.info(
+                "Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024 ** 2)
+            )
 
     def __len__(self):
         if self._serialize:
@@ -167,7 +177,9 @@ class ToIterableDataset(data.IterableDataset):
     to an iterable-style dataset.
     """
 
-    def __init__(self, dataset: data.Dataset, sampler: Sampler, shard_sampler: bool = True):
+    def __init__(
+        self, dataset: data.Dataset, sampler: Sampler, shard_sampler: bool = True
+    ):
         """
         Args:
             dataset: an old-style dataset with ``__getitem__``

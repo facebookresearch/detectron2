@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from copy import deepcopy
+
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -53,7 +54,9 @@ class ASPP(nn.Module):
                 for 3x3 convs in ASPP, proposed in :paper:`DeepLabV3+`.
         """
         super(ASPP, self).__init__()
-        assert len(dilations) == 3, "ASPP expects 3 dilations, got {}".format(len(dilations))
+        assert len(dilations) == 3, "ASPP expects 3 dilations, got {}".format(
+            len(dilations)
+        )
         self.pool_kernel_size = pool_kernel_size
         self.dropout = dropout
         use_bias = norm == ""
@@ -106,12 +109,24 @@ class ASPP(nn.Module):
         if pool_kernel_size is None:
             image_pooling = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
-                Conv2d(in_channels, out_channels, 1, bias=True, activation=deepcopy(activation)),
+                Conv2d(
+                    in_channels,
+                    out_channels,
+                    1,
+                    bias=True,
+                    activation=deepcopy(activation),
+                ),
             )
         else:
             image_pooling = nn.Sequential(
                 nn.AvgPool2d(kernel_size=pool_kernel_size, stride=1),
-                Conv2d(in_channels, out_channels, 1, bias=True, activation=deepcopy(activation)),
+                Conv2d(
+                    in_channels,
+                    out_channels,
+                    1,
+                    bias=True,
+                    activation=deepcopy(activation),
+                ),
             )
         weight_init.c2_xavier_fill(image_pooling[1])
         self.convs.append(image_pooling)
@@ -132,13 +147,21 @@ class ASPP(nn.Module):
             if size[0] % self.pool_kernel_size[0] or size[1] % self.pool_kernel_size[1]:
                 raise ValueError(
                     "`pool_kernel_size` must be divisible by the shape of inputs. "
-                    "Input size: {} `pool_kernel_size`: {}".format(size, self.pool_kernel_size)
+                    "Input size: {} `pool_kernel_size`: {}".format(
+                        size, self.pool_kernel_size
+                    )
                 )
         res = []
         for conv in self.convs:
             res.append(conv(x))
-        res[-1] = F.interpolate(res[-1], size=size, mode="bilinear", align_corners=False)
+        res[-1] = F.interpolate(
+            res[-1], size=size, mode="bilinear", align_corners=False
+        )
         res = torch.cat(res, dim=1)
         res = self.project(res)
-        res = F.dropout(res, self.dropout, training=self.training) if self.dropout > 0 else res
+        res = (
+            F.dropout(res, self.dropout, training=self.training)
+            if self.dropout > 0
+            else res
+        )
         return res

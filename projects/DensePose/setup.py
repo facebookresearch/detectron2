@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+
 from setuptools import find_packages, setup
 
 try:
@@ -21,7 +22,9 @@ def get_detectron2_current_version():
     above the top level of the package. Instead, we parse it from the
     file with a regex."""
     # Get version info from detectron2 __init__.py
-    version_source = (Path(__file__).parents[2] / "detectron2" / "__init__.py").read_text()
+    version_source = (
+        Path(__file__).parents[2] / "detectron2" / "__init__.py"
+    ).read_text()
     version_number = re.findall(r'__version__ = "([0-9\.]+)"', version_source)[0]
     return version_number
 

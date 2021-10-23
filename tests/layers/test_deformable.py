@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 import unittest
-import torch
 
+import numpy as np
+import torch
 from detectron2.layers import DeformConv, ModulatedDeformConv
 
 
@@ -14,7 +14,9 @@ class DeformableTest(unittest.TestCase):
         kernel_size = 3
         padding = 1
 
-        inputs = torch.arange(np.prod(shape), dtype=torch.float32).reshape(*shape).to(device)
+        inputs = (
+            torch.arange(np.prod(shape), dtype=torch.float32).reshape(*shape).to(device)
+        )
         """
         0  1  2   3 4
         5  6  7   8 9
@@ -23,7 +25,9 @@ class DeformableTest(unittest.TestCase):
         20 21 22 23 24
         """
         offset_channels = kernel_size * kernel_size * 2
-        offset = torch.full((N, offset_channels, H, W), 0.5, dtype=torch.float32).to(device)
+        offset = torch.full((N, offset_channels, H, W), 0.5, dtype=torch.float32).to(
+            device
+        )
 
         # Test DCN v1
         deform = DeformConv(C, C, kernel_size=kernel_size, padding=padding).to(device)
@@ -44,9 +48,9 @@ class DeformableTest(unittest.TestCase):
         # Test DCN v2
         mask_channels = kernel_size * kernel_size
         mask = torch.full((N, mask_channels, H, W), 0.5, dtype=torch.float32).to(device)
-        modulate_deform = ModulatedDeformConv(C, C, kernel_size, padding=padding, bias=False).to(
-            device
-        )
+        modulate_deform = ModulatedDeformConv(
+            C, C, kernel_size, padding=padding, bias=False
+        ).to(device)
         modulate_deform.weight = deform.weight
         output = modulate_deform(inputs, offset, mask)
         output = output.detach().cpu().numpy()
@@ -58,10 +62,14 @@ class DeformableTest(unittest.TestCase):
         kernel_size = 3
         padding = 1
 
-        inputs = torch.arange(np.prod(shape), dtype=torch.float32).reshape(*shape).to(device)
+        inputs = (
+            torch.arange(np.prod(shape), dtype=torch.float32).reshape(*shape).to(device)
+        )
 
         offset_channels = kernel_size * kernel_size * 2
-        offset = torch.full((N, offset_channels, H, W), 0.5, dtype=torch.float32).to(device)
+        offset = torch.full((N, offset_channels, H, W), 0.5, dtype=torch.float32).to(
+            device
+        )
 
         # Test DCN v1 on cpu
         deform = DeformConv(C, C, kernel_size=kernel_size, padding=padding).to(device)
@@ -94,7 +102,9 @@ class DeformableTest(unittest.TestCase):
                 C, C, kernel_size=kernel_size, padding=padding, groups=groups
             ).to("cuda")
             deform_gpu.weight = torch.nn.Parameter(torch.ones_like(deform_gpu.weight))
-            output_gpu = deform_gpu(inputs.to("cuda"), offset.to("cuda")).detach().cpu().numpy()
+            output_gpu = (
+                deform_gpu(inputs.to("cuda"), offset.to("cuda")).detach().cpu().numpy()
+            )
 
             deform_cpu = DeformConv(
                 C, C, kernel_size=kernel_size, padding=padding, groups=groups
@@ -111,11 +121,17 @@ class DeformableTest(unittest.TestCase):
             padding = kernel_size // 2
             N, C, H, W = shape = (1, 1, kernel_size - 1, kernel_size - 1)
 
-            inputs = torch.rand(shape).to(device)  # input size is smaller than kernel size
+            inputs = torch.rand(shape).to(
+                device
+            )  # input size is smaller than kernel size
 
             offset_channels = kernel_size * kernel_size * 2
-            offset = torch.randn((N, offset_channels, H, W), dtype=torch.float32).to(device)
-            deform = DeformConv(C, C, kernel_size=kernel_size, padding=padding).to(device)
+            offset = torch.randn((N, offset_channels, H, W), dtype=torch.float32).to(
+                device
+            )
+            deform = DeformConv(C, C, kernel_size=kernel_size, padding=padding).to(
+                device
+            )
             output = deform(inputs, offset)
             self.assertTrue(output.shape == inputs.shape)
 
@@ -144,9 +160,9 @@ class DeformableTest(unittest.TestCase):
         offset = torch.randn((N, offset_channels, H, W), dtype=torch.float32).to(device)
         mask_channels = kernel_size * kernel_size * 2  # This is wrong channels for mask
         mask = torch.ones((N, mask_channels, H, W), dtype=torch.float32).to(device)
-        modulate_deform = ModulatedDeformConv(C, C, kernel_size, padding=padding, bias=False).to(
-            device
-        )
+        modulate_deform = ModulatedDeformConv(
+            C, C, kernel_size, padding=padding, bias=False
+        ).to(device)
         self.assertRaises(RuntimeError, modulate_deform, inputs, offset, mask)
 
     def test_repr(self):
@@ -158,7 +174,9 @@ class DeformableTest(unittest.TestCase):
         )
         self.assertEqual(repr(module), correct_string)
 
-        module = ModulatedDeformConv(3, 10, kernel_size=3, padding=1, deformable_groups=2)
+        module = ModulatedDeformConv(
+            3, 10, kernel_size=3, padding=1, deformable_groups=2
+        )
         correct_string = (
             "ModulatedDeformConv(in_channels=3, out_channels=10, kernel_size=(3, 3), "
             "stride=1, padding=1, dilation=1, groups=1, deformable_groups=2, bias=True)"

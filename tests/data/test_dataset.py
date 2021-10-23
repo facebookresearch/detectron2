@@ -5,9 +5,8 @@ import pickle
 import sys
 import unittest
 from functools import partial
-import torch
-from iopath.common.file_io import LazyPath
 
+import torch
 from detectron2 import model_zoo
 from detectron2.config import instantiate
 from detectron2.data import (
@@ -19,6 +18,7 @@ from detectron2.data import (
     build_detection_train_loader,
 )
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
+from iopath.common.file_io import LazyPath
 
 
 def _a_slow_func(x):
@@ -73,7 +73,9 @@ class TestMapDataset(unittest.TestCase):
         self.assertEqual(ds[0], 2)
 
 
-@unittest.skipIf(os.environ.get("CI"), "Skipped OSS testing due to COCO data requirement.")
+@unittest.skipIf(
+    os.environ.get("CI"), "Skipped OSS testing due to COCO data requirement."
+)
 class TestDataLoader(unittest.TestCase):
     def _get_kwargs(self):
         # get kwargs of build_detection_train_loader

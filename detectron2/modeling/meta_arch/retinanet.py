@@ -2,6 +2,7 @@
 import logging
 import math
 from typing import List, Tuple
+
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit
 from torch import Tensor, nn
@@ -11,7 +12,6 @@ from detectron2.config import configurable
 from detectron2.layers import CycleBatchNormList, ShapeSpec, batched_nms, cat, get_norm
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
-
 from ..anchor_generator import build_anchor_generator
 from ..backbone import Backbone, build_backbone
 from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
@@ -123,7 +123,9 @@ class RetinaNet(DenseDetector):
             "backbone": backbone,
             "head": head,
             "anchor_generator": anchor_generator,
-            "box2box_transform": Box2BoxTransform(weights=cfg.MODEL.RETINANET.BBOX_REG_WEIGHTS),
+            "box2box_transform": Box2BoxTransform(
+                weights=cfg.MODEL.RETINANET.BBOX_REG_WEIGHTS
+            ),
             "anchor_matcher": Matcher(
                 cfg.MODEL.RETINANET.IOU_THRESHOLDS,
                 cfg.MODEL.RETINANET.IOU_LABELS,
@@ -155,7 +157,9 @@ class RetinaNet(DenseDetector):
         )
         anchors = self.anchor_generator(features)
         gt_labels, gt_boxes = self.label_anchors(anchors, gt_instances)
-        return self.losses(anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes)
+        return self.losses(
+            anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes
+        )
 
     def losses(self, anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes):
         """
@@ -183,7 +187,9 @@ class RetinaNet(DenseDetector):
         normalizer = self._ema_update("loss_normalizer", max(num_pos_anchors, 1), 100)
 
         # classification and regression loss
-        gt_labels_target = F.one_hot(gt_labels[valid_mask], num_classes=self.num_classes + 1)[
+        gt_labels_target = F.one_hot(
+            gt_labels[valid_mask], num_classes=self.num_classes + 1
+        )[
             :, :-1
         ]  # no loss for the last (background) class
         loss_cls = sigmoid_focal_loss_jit(
@@ -387,7 +393,12 @@ class RetinaNetHead(nn.Module):
         )
 
         # Initialization
-        for modules in [self.cls_subnet, self.bbox_subnet, self.cls_score, self.bbox_pred]:
+        for modules in [
+            self.cls_subnet,
+            self.bbox_subnet,
+            self.cls_score,
+            self.bbox_pred,
+        ]:
             for layer in modules.modules():
                 if isinstance(layer, nn.Conv2d):
                     torch.nn.init.normal_(layer.weight, mean=0, std=0.01)

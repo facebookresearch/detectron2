@@ -13,6 +13,7 @@ from collections import OrderedDict
 from typing import Any, Dict, List
 
 import detectron2.utils.comm as comm
+import pytorch_lightning as pl  # type: ignore
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader, build_detection_train_loader
@@ -30,8 +31,6 @@ from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils.events import EventStorage
 from detectron2.utils.logger import setup_logger
-
-import pytorch_lightning as pl  # type: ignore
 from pytorch_lightning import LightningDataModule, LightningModule
 from train_net import build_evaluator
 
@@ -65,7 +64,9 @@ class TrainingModule(LightningModule):
                 self.model,
                 self.cfg.OUTPUT_DIR,
             )
-            logger.info(f"Load model weights from checkpoint: {self.cfg.MODEL.WEIGHTS}.")
+            logger.info(
+                f"Load model weights from checkpoint: {self.cfg.MODEL.WEIGHTS}."
+            )
             # Only load weights, use lightning checkpointing if you want to resume
             self.checkpointer.load(self.cfg.MODEL.WEIGHTS)
 
@@ -94,7 +95,9 @@ class TrainingModule(LightningModule):
 
         opt = self.optimizers()
         self.storage.put_scalar(
-            "lr", opt.param_groups[self._best_param_group_id]["lr"], smoothing_hint=False
+            "lr",
+            opt.param_groups[self._best_param_group_id]["lr"],
+            smoothing_hint=False,
         )
         self.iteration_timer.after_step()
         self.storage.step()
@@ -193,7 +196,9 @@ def train(cfg, args):
         # sure max_steps is met first
         "max_epochs": 10 ** 8,
         "max_steps": cfg.SOLVER.MAX_ITER,
-        "val_check_interval": cfg.TEST.EVAL_PERIOD if cfg.TEST.EVAL_PERIOD > 0 else 10 ** 8,
+        "val_check_interval": cfg.TEST.EVAL_PERIOD
+        if cfg.TEST.EVAL_PERIOD > 0
+        else 10 ** 8,
         "num_nodes": args.num_machines,
         "gpus": args.num_gpus,
         "num_sanity_val_steps": 0,
@@ -208,7 +213,9 @@ def train(cfg, args):
         logger.info(f"Resuming training from checkpoint: {last_checkpoint}.")
 
     trainer = pl.Trainer(**trainer_params)
-    logger.info(f"start to train with {args.num_machines} nodes and {args.num_gpus} GPUs")
+    logger.info(
+        f"start to train with {args.num_machines} nodes and {args.num_gpus} GPUs"
+    )
 
     module = TrainingModule(cfg)
     data_module = DataModule(cfg)

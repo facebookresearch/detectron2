@@ -2,12 +2,12 @@
 
 from detectron2.config import LazyCall as L
 from detectron2.layers import ShapeSpec
-from detectron2.modeling.meta_arch import RetinaNet
 from detectron2.modeling.anchor_generator import DefaultAnchorGenerator
-from detectron2.modeling.backbone.fpn import LastLevelP6P7
 from detectron2.modeling.backbone import BasicStem, FPN, ResNet
+from detectron2.modeling.backbone.fpn import LastLevelP6P7
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.matcher import Matcher
+from detectron2.modeling.meta_arch import RetinaNet
 from detectron2.modeling.meta_arch.retinanet import RetinaNetHead
 
 model = L(RetinaNet)(
@@ -34,7 +34,9 @@ model = L(RetinaNet)(
         num_anchors=9,
     ),
     anchor_generator=L(DefaultAnchorGenerator)(
-        sizes=[[x, x * 2 ** (1.0 / 3), x * 2 ** (2.0 / 3)] for x in [32, 64, 128, 256, 512]],
+        sizes=[
+            [x, x * 2 ** (1.0 / 3), x * 2 ** (2.0 / 3)] for x in [32, 64, 128, 256, 512]
+        ],
         aspect_ratios=[0.5, 1.0, 2.0],
         strides=[8, 16, 32, 64, 128],
         offset=0.0,

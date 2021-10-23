@@ -2,6 +2,7 @@
 import collections
 import math
 from typing import List
+
 import torch
 from torch import nn
 
@@ -36,13 +37,23 @@ class BufferList(nn.Module):
         return iter(self._buffers.values())
 
 
-def _create_grid_offsets(size: List[int], stride: int, offset: float, device: torch.device):
+def _create_grid_offsets(
+    size: List[int], stride: int, offset: float, device: torch.device
+):
     grid_height, grid_width = size
     shifts_x = torch.arange(
-        offset * stride, grid_width * stride, step=stride, dtype=torch.float32, device=device
+        offset * stride,
+        grid_width * stride,
+        step=stride,
+        dtype=torch.float32,
+        device=device,
     )
     shifts_y = torch.arange(
-        offset * stride, grid_height * stride, step=stride, dtype=torch.float32, device=device
+        offset * stride,
+        grid_height * stride,
+        step=stride,
+        dtype=torch.float32,
+        device=device,
     )
 
     shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
@@ -114,7 +125,9 @@ class DefaultAnchorGenerator(nn.Module):
         self.strides = strides
         self.num_features = len(self.strides)
         sizes = _broadcast_params(sizes, self.num_features, "sizes")
-        aspect_ratios = _broadcast_params(aspect_ratios, self.num_features, "aspect_ratios")
+        aspect_ratios = _broadcast_params(
+            aspect_ratios, self.num_features, "aspect_ratios"
+        )
         self.cell_anchors = self._calculate_anchors(sizes, aspect_ratios)
 
         self.offset = offset
@@ -131,7 +144,8 @@ class DefaultAnchorGenerator(nn.Module):
 
     def _calculate_anchors(self, sizes, aspect_ratios):
         cell_anchors = [
-            self.generate_cell_anchors(s, a).float() for s, a in zip(sizes, aspect_ratios)
+            self.generate_cell_anchors(s, a).float()
+            for s, a in zip(sizes, aspect_ratios)
         ]
         return BufferList(cell_anchors)
 
@@ -167,14 +181,20 @@ class DefaultAnchorGenerator(nn.Module):
         # buffers() not supported by torchscript. use named_buffers() instead
         buffers: List[torch.Tensor] = [x[1] for x in self.cell_anchors.named_buffers()]
         for size, stride, base_anchors in zip(grid_sizes, self.strides, buffers):
-            shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors.device)
+            shift_x, shift_y = _create_grid_offsets(
+                size, stride, self.offset, base_anchors.device
+            )
             shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1)
 
-            anchors.append((shifts.view(-1, 1, 4) + base_anchors.view(1, -1, 4)).reshape(-1, 4))
+            anchors.append(
+                (shifts.view(-1, 1, 4) + base_anchors.view(1, -1, 4)).reshape(-1, 4)
+            )
 
         return anchors
 
-    def generate_cell_anchors(self, sizes=(32, 64, 128, 256, 512), aspect_ratios=(0.5, 1, 2)):
+    def generate_cell_anchors(
+        self, sizes=(32, 64, 128, 256, 512), aspect_ratios=(0.5, 1, 2)
+    ):
         """
         Generate a tensor storing canonical anchor boxes, which are all anchor
         boxes of different sizes and aspect_ratios centered at (0, 0).
@@ -265,7 +285,9 @@ class RotatedAnchorGenerator(nn.Module):
         self.strides = strides
         self.num_features = len(self.strides)
         sizes = _broadcast_params(sizes, self.num_features, "sizes")
-        aspect_ratios = _broadcast_params(aspect_ratios, self.num_features, "aspect_ratios")
+        aspect_ratios = _broadcast_params(
+            aspect_ratios, self.num_features, "aspect_ratios"
+        )
         angles = _broadcast_params(angles, self.num_features, "angles")
         self.cell_anchors = self._calculate_anchors(sizes, aspect_ratios, angles)
 
@@ -313,12 +335,18 @@ class RotatedAnchorGenerator(nn.Module):
 
     def _grid_anchors(self, grid_sizes):
         anchors = []
-        for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
-            shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors.device)
+        for size, stride, base_anchors in zip(
+            grid_sizes, self.strides, self.cell_anchors
+        ):
+            shift_x, shift_y = _create_grid_offsets(
+                size, stride, self.offset, base_anchors.device
+            )
             zeros = torch.zeros_like(shift_x)
             shifts = torch.stack((shift_x, shift_y, zeros, zeros, zeros), dim=1)
 
-            anchors.append((shifts.view(-1, 1, 5) + base_anchors.view(1, -1, 5)).reshape(-1, 5))
+            anchors.append(
+                (shifts.view(-1, 1, 5) + base_anchors.view(1, -1, 5)).reshape(-1, 5)
+            )
 
         return anchors
 

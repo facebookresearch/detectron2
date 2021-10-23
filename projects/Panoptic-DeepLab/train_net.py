@@ -7,14 +7,19 @@ This script is a simplified version of the training script in detectron2/tools.
 """
 
 import os
-import torch
 
 import detectron2.data.transforms as T
 import detectron2.utils.comm as comm
+import torch
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog, build_detection_train_loader
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from detectron2.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+    launch,
+)
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
@@ -34,7 +39,9 @@ from detectron2.solver.build import maybe_add_gradient_clipping
 def build_sem_seg_train_aug(cfg):
     augs = [
         T.ResizeShortestEdge(
-            cfg.INPUT.MIN_SIZE_TRAIN, cfg.INPUT.MAX_SIZE_TRAIN, cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
+            cfg.INPUT.MIN_SIZE_TRAIN,
+            cfg.INPUT.MAX_SIZE_TRAIN,
+            cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING,
         )
     ]
     if cfg.INPUT.CROP.ENABLED:
@@ -83,7 +90,9 @@ class Trainer(DefaultTrainer):
                 "coco_2017_val_100_panoptic": "coco_2017_val_100",
             }
             evaluator_list.append(
-                COCOEvaluator(dataset_name_mapper[dataset_name], output_dir=output_folder)
+                COCOEvaluator(
+                    dataset_name_mapper[dataset_name], output_dir=output_folder
+                )
             )
         if len(evaluator_list) == 0:
             raise NotImplementedError(
@@ -97,7 +106,9 @@ class Trainer(DefaultTrainer):
 
     @classmethod
     def build_train_loader(cls, cfg):
-        mapper = PanopticDeeplabDatasetMapper(cfg, augmentations=build_sem_seg_train_aug(cfg))
+        mapper = PanopticDeeplabDatasetMapper(
+            cfg, augmentations=build_sem_seg_train_aug(cfg)
+        )
         return build_detection_train_loader(cfg, mapper=mapper)
 
     @classmethod
@@ -128,7 +139,9 @@ class Trainer(DefaultTrainer):
                 nesterov=cfg.SOLVER.NESTEROV,
             )
         elif optimizer_type == "ADAM":
-            return maybe_add_gradient_clipping(cfg, torch.optim.Adam)(params, cfg.SOLVER.BASE_LR)
+            return maybe_add_gradient_clipping(cfg, torch.optim.Adam)(
+                params, cfg.SOLVER.BASE_LR
+            )
         else:
             raise NotImplementedError(f"no optimizer type {optimizer_type}")
 

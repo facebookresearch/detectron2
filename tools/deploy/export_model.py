@@ -3,10 +3,9 @@
 import argparse
 import os
 from typing import Dict, List, Tuple
-import torch
-from torch import Tensor, nn
 
 import detectron2.data.transforms as T
+import torch
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader, detection_utils
@@ -25,6 +24,7 @@ from detectron2.structures import Boxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
+from torch import Tensor, nn
 
 
 def setup_cfg(args):
@@ -85,14 +85,18 @@ def export_scripting(torch_model):
     if isinstance(torch_model, GeneralizedRCNN):
 
         class ScriptableAdapter(ScriptableAdapterBase):
-            def forward(self, inputs: Tuple[Dict[str, torch.Tensor]]) -> List[Dict[str, Tensor]]:
+            def forward(
+                self, inputs: Tuple[Dict[str, torch.Tensor]]
+            ) -> List[Dict[str, Tensor]]:
                 instances = self.model.inference(inputs, do_postprocess=False)
                 return [i.get_fields() for i in instances]
 
     else:
 
         class ScriptableAdapter(ScriptableAdapterBase):
-            def forward(self, inputs: Tuple[Dict[str, torch.Tensor]]) -> List[Dict[str, Tensor]]:
+            def forward(
+                self, inputs: Tuple[Dict[str, torch.Tensor]]
+            ) -> List[Dict[str, Tensor]]:
                 instances = self.model(inputs)
                 return [i.get_fields() for i in instances]
 
@@ -144,7 +148,9 @@ def export_tracing(torch_model, inputs):
         unused in deployment but needed for evaluation. We add it manually here.
         """
         input = inputs[0]
-        instances = traceable_model.outputs_schema(ts_model(input["image"]))[0]["instances"]
+        instances = traceable_model.outputs_schema(ts_model(input["image"]))[0][
+            "instances"
+        ]
         postprocessed = detector_postprocess(instances, input["height"], input["width"])
         return [{"instances": postprocessed}]
 
@@ -160,7 +166,9 @@ def get_sample_inputs(args):
         return first_batch
     else:
         # get a sample data
-        original_image = detection_utils.read_image(args.sample_image, format=cfg.INPUT.FORMAT)
+        original_image = detection_utils.read_image(
+            args.sample_image, format=cfg.INPUT.FORMAT
+        )
         # Do same preprocessing as DefaultPredictor
         aug = T.ResizeShortestEdge(
             [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
@@ -190,8 +198,12 @@ if __name__ == "__main__":
         help="Method to export models",
         default="caffe2_tracing",
     )
-    parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
-    parser.add_argument("--sample-image", default=None, type=str, help="sample image for input")
+    parser.add_argument(
+        "--config-file", default="", metavar="FILE", help="path to config file"
+    )
+    parser.add_argument(
+        "--sample-image", default=None, type=str, help="sample image for input"
+    )
     parser.add_argument("--run-eval", action="store_true")
     parser.add_argument("--output", help="output directory for the converted model")
     parser.add_argument(
@@ -231,7 +243,9 @@ if __name__ == "__main__":
             "Python inference is not yet implemented for "
             f"export_method={args.export_method}, format={args.format}."
         )
-        logger.info("Running evaluation ... this takes a long time if you export to CPU.")
+        logger.info(
+            "Running evaluation ... this takes a long time if you export to CPU."
+        )
         dataset = cfg.DATASETS.TEST[0]
         data_loader = build_detection_test_loader(cfg, dataset)
         # NOTE: hard-coded evaluator. change to the evaluator for your dataset

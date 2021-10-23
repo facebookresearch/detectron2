@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
+
 import torch
 
 
@@ -117,7 +118,9 @@ class DensePoseChartResultCompressed:
     labels_uv_str: str
 
 
-def quantize_densepose_chart_result(result: DensePoseChartResult) -> DensePoseChartResultQuantized:
+def quantize_densepose_chart_result(
+    result: DensePoseChartResult,
+) -> DensePoseChartResultQuantized:
     """
     Applies quantization to DensePose chart-based result.
 
@@ -127,7 +130,9 @@ def quantize_densepose_chart_result(result: DensePoseChartResult) -> DensePoseCh
         Quantized DensePose chart-based result (DensePoseChartResultQuantized)
     """
     h, w = result.labels.shape
-    labels_uv_uint8 = torch.zeros([3, h, w], dtype=torch.uint8, device=result.labels.device)
+    labels_uv_uint8 = torch.zeros(
+        [3, h, w], dtype=torch.uint8, device=result.labels.device
+    )
     labels_uv_uint8[0] = result.labels
     labels_uv_uint8[1:] = (result.uv * 255).clamp(0, 255).byte()
     return DensePoseChartResultQuantized(labels_uv_uint8=labels_uv_uint8)
@@ -145,8 +150,9 @@ def compress_quantized_densepose_chart_result(
         Compressed DensePose chart-based result (DensePoseChartResultCompressed)
     """
     import base64
-    import numpy as np
     from io import BytesIO
+
+    import numpy as np
     from PIL import Image
 
     labels_uv_uint8_np_chw = result.labels_uv_uint8.cpu().numpy()
@@ -156,7 +162,9 @@ def compress_quantized_densepose_chart_result(
     im.save(fstream, format="png", optimize=True)
     labels_uv_str = base64.encodebytes(fstream.getvalue()).decode()
     shape_chw = labels_uv_uint8_np_chw.shape
-    return DensePoseChartResultCompressed(labels_uv_str=labels_uv_str, shape_chw=shape_chw)
+    return DensePoseChartResultCompressed(
+        labels_uv_str=labels_uv_str, shape_chw=shape_chw
+    )
 
 
 def decompress_compressed_densepose_chart_result(
@@ -171,13 +179,16 @@ def decompress_compressed_densepose_chart_result(
         Quantized DensePose chart-based result (DensePoseChartResultQuantized)
     """
     import base64
-    import numpy as np
     from io import BytesIO
+
+    import numpy as np
     from PIL import Image
 
     fstream = BytesIO(base64.decodebytes(result.labels_uv_str.encode()))
     im = Image.open(fstream)
     labels_uv_uint8_np_chw = np.moveaxis(np.array(im, dtype=np.uint8), -1, 0)
     return DensePoseChartResultQuantized(
-        labels_uv_uint8=torch.from_numpy(labels_uv_uint8_np_chw.reshape(result.shape_chw))
+        labels_uv_uint8=torch.from_numpy(
+            labels_uv_uint8_np_chw.reshape(result.shape_chw)
+        )
     )

@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from typing import Optional
-from torch import nn
 
 from detectron2.config import CfgNode
+from torch import nn
 
 from .cse.embedder import Embedder
 from .filter import DensePoseDataFilter

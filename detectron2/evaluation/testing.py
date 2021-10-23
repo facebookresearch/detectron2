@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
-import numpy as np
 import pprint
 import sys
 from collections.abc import Mapping
+
+import numpy as np
 
 
 def print_csv_format(results):
@@ -23,7 +24,10 @@ def print_csv_format(results):
             important_res = [(k, v) for k, v in res.items() if "-" not in k]
             logger.info("copypaste: Task: {}".format(task))
             logger.info("copypaste: " + ",".join([k[0] for k in important_res]))
-            logger.info("copypaste: " + ",".join(["{0:.4f}".format(k[1]) for k in important_res]))
+            logger.info(
+                "copypaste: "
+                + ",".join(["{0:.4f}".format(k[1]) for k in important_res])
+            )
         else:
             logger.info(f"copypaste: {task}={res}")
 

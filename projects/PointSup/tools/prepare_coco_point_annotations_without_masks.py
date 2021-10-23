@@ -4,11 +4,11 @@
 
 import copy
 import json
-import numpy as np
 import os
 import sys
-import pycocotools.mask as mask_utils
 
+import numpy as np
+import pycocotools.mask as mask_utils
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.file_io import PathManager
 
@@ -54,8 +54,14 @@ def get_point_annotations(input_filename, output_filename, num_points_per_instan
         point_coords_wrt_image = np.floor(point_coords_wrt_image).astype(int)
         # get labels
         assert (point_coords_wrt_image >= 0).all(), (point_coords_wrt_image, mask.shape)
-        assert (point_coords_wrt_image[:, 0] < w).all(), (point_coords_wrt_image, mask.shape)
-        assert (point_coords_wrt_image[:, 1] < h).all(), (point_coords_wrt_image, mask.shape)
+        assert (point_coords_wrt_image[:, 0] < w).all(), (
+            point_coords_wrt_image,
+            mask.shape,
+        )
+        assert (point_coords_wrt_image[:, 1] < h).all(), (
+            point_coords_wrt_image,
+            mask.shape,
+        )
         point_labels = mask[point_coords_wrt_image[:, 1], point_coords_wrt_image[:, 0]]
         # store new annotations
         new_ann["point_coords"] = point_coords_wrt_image.tolist()
@@ -85,7 +91,9 @@ if __name__ == "__main__":
     seed_all_rng(12345)
 
     assert len(sys.argv) >= 2, "Please provide number of points to sample per instance"
-    dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "coco/annotations")
+    dataset_dir = os.path.join(
+        os.getenv("DETECTRON2_DATASETS", "datasets"), "coco/annotations"
+    )
     num_points_per_instance = int(sys.argv[1])
     if len(sys.argv) == 3:
         repeat = int(sys.argv[2])
@@ -102,7 +110,9 @@ if __name__ == "__main__":
             os.path.join(dataset_dir, "{}.json".format(s)),
             os.path.join(
                 dataset_dir,
-                "{}_n{}_v{}_without_masks.json".format(s, num_points_per_instance, version + 1),
+                "{}_n{}_v{}_without_masks.json".format(
+                    s, num_points_per_instance, version + 1
+                ),
             ),
             num_points_per_instance,
         )

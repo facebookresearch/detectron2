@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import torch
-
 from detectron2.layers import cat
 
 
@@ -32,7 +31,9 @@ def get_point_coords_from_point_annotation(instances):
         proposal_boxes_per_image = instances_per_image.proposal_boxes.tensor
 
         # Convert point coordinate system, ground truth points are in image coord.
-        point_coords_wrt_box = get_point_coords_wrt_box(proposal_boxes_per_image, point_coords)
+        point_coords_wrt_box = get_point_coords_wrt_box(
+            proposal_boxes_per_image, point_coords
+        )
 
         # Ignore points that are outside predicted boxes.
         point_ignores = (

@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-import torch
 
 import detectron2.export.torchscript  # apply patch # noqa
+import torch
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.layers import ShapeSpec

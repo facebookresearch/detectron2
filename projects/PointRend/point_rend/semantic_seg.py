@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 from typing import Dict
-import torch
-from torch import nn
-from torch.nn import functional as F
 
+import numpy as np
+import torch
 from detectron2.layers import ShapeSpec, cat
 from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
+from torch import nn
+from torch.nn import functional as F
 
 from .point_features import (
     get_uncertain_point_coords_on_grid,
@@ -63,7 +63,9 @@ class PointRendSemSegHead(nn.Module):
         # fmt: on
 
         in_channels = int(np.sum([feature_channels[f] for f in self.in_features]))
-        self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
+        self.point_head = build_point_head(
+            cfg, ShapeSpec(channels=in_channels, width=1, height=1)
+        )
 
     def forward(self, features, targets=None):
         coarse_sem_seg_logits = self.coarse_sem_seg_head.layers(features)
@@ -79,11 +81,15 @@ class PointRendSemSegHead(nn.Module):
                     self.oversample_ratio,
                     self.importance_sample_ratio,
                 )
-            coarse_features = point_sample(coarse_sem_seg_logits, point_coords, align_corners=False)
+            coarse_features = point_sample(
+                coarse_sem_seg_logits, point_coords, align_corners=False
+            )
 
             fine_grained_features = cat(
                 [
-                    point_sample(features[in_feature], point_coords, align_corners=False)
+                    point_sample(
+                        features[in_feature], point_coords, align_corners=False
+                    )
                     for in_feature in self.in_features
                 ],
                 dim=1,
@@ -100,7 +106,10 @@ class PointRendSemSegHead(nn.Module):
                 .to(torch.long)
             )
             losses["loss_sem_seg_point"] = F.cross_entropy(
-                point_logits, point_targets, reduction="mean", ignore_index=self.ignore_value
+                point_logits,
+                point_targets,
+                reduction="mean",
+                ignore_index=self.ignore_value,
             )
             return None, losses
         else:
@@ -115,7 +124,9 @@ class PointRendSemSegHead(nn.Module):
                 )
                 fine_grained_features = cat(
                     [
-                        point_sample(features[in_feature], point_coords, align_corners=False)
+                        point_sample(
+                            features[in_feature], point_coords, align_corners=False
+                        )
                         for in_feature in self.in_features
                     ]
                 )

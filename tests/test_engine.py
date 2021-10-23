@@ -7,15 +7,15 @@ import tempfile
 import time
 import unittest
 from unittest import mock
-import torch
-from fvcore.common.checkpoint import Checkpointer
-from torch import nn
 
+import torch
 from detectron2 import model_zoo
 from detectron2.config import configurable, get_cfg
 from detectron2.engine import DefaultTrainer, SimpleTrainer, default_setup, hooks
 from detectron2.modeling.meta_arch import META_ARCH_REGISTRY
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter
+from fvcore.common.checkpoint import Checkpointer
+from torch import nn
 
 
 @META_ARCH_REGISTRY.register()
@@ -66,7 +66,10 @@ class TestTrainer(unittest.TestCase):
             writers = [CommonMetricPrinter(max_iter), JSONWriter(json_file)]
 
             trainer.register_hooks(
-                [hooks.EvalHook(0, lambda: {"metric": 100}), hooks.PeriodicWriter(writers)]
+                [
+                    hooks.EvalHook(0, lambda: {"metric": 100}),
+                    hooks.PeriodicWriter(writers),
+                ]
             )
             with self.assertLogs(writers[0].logger) as logs:
                 trainer.train(0, max_iter)
@@ -75,7 +78,9 @@ class TestTrainer(unittest.TestCase):
                 data = [json.loads(line.strip()) for line in f]
                 self.assertEqual([x["iteration"] for x in data], [19, 39, 49, 50])
                 # the eval metric is in the last line with iter 50
-                self.assertIn("metric", data[-1], "Eval metric must be in last line of JSON!")
+                self.assertIn(
+                    "metric", data[-1], "Eval metric must be in last line of JSON!"
+                )
 
             # test logged messages from CommonMetricPrinter
             self.assertEqual(len(logs.output), 3)
@@ -133,7 +138,9 @@ class TestTrainer(unittest.TestCase):
             )
             checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
             checkpointer.resume_or_load("non_exist.pth")
-            self.assertEqual(trainer.iter, 11)  # last finished iter number (0-based in Trainer)
+            self.assertEqual(
+                trainer.iter, 11
+            )  # last finished iter number (0-based in Trainer)
             # number of times `scheduler.step()` was called (1-based)
             self.assertEqual(scheduler.last_epoch, 12)
             self.assertAlmostEqual(opt.param_groups[0]["lr"], 1e-5)
@@ -168,8 +175,12 @@ class TestTrainer(unittest.TestCase):
                 checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
                 trainer.register_hooks(
                     [
-                        hooks.EvalHook(test_period, lambda: {metric_name: next(metrics)}),
-                        hooks.BestCheckpointer(test_period, checkpointer, metric_name, mode=mode),
+                        hooks.EvalHook(
+                            test_period, lambda: {metric_name: next(metrics)}
+                        ),
+                        hooks.BestCheckpointer(
+                            test_period, checkpointer, metric_name, mode=mode
+                        ),
                     ]
                 )
                 with mock.patch.object(checkpointer, "save") as mock_save_method:
@@ -182,6 +193,8 @@ class TestTrainer(unittest.TestCase):
             cfg.OUTPUT_DIR = os.path.join(d, "yacs")
             default_setup(cfg, {})
 
-            cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py")
+            cfg = model_zoo.get_config(
+                "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py"
+            )
             cfg.train.output_dir = os.path.join(d, "omegaconf")
             default_setup(cfg, {})

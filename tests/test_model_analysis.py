@@ -2,11 +2,15 @@
 
 
 import unittest
-import torch
-from torch import nn
 
-from detectron2.utils.analysis import find_unused_parameters, flop_count_operators, parameter_count
+import torch
+from detectron2.utils.analysis import (
+    find_unused_parameters,
+    flop_count_operators,
+    parameter_count,
+)
 from detectron2.utils.testing import get_model_no_weights
+from torch import nn
 
 
 class RetinaNetTest(unittest.TestCase):

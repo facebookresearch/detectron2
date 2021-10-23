@@ -1,13 +1,19 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import Callable, Dict, List, Optional, Tuple, Union
+
 import fvcore.nn.weight_init as weight_init
 import torch
+from detectron2.config import configurable
+from detectron2.layers import (
+    ASPP,
+    Conv2d,
+    DepthwiseSeparableConv2d,
+    ShapeSpec,
+    get_norm,
+)
+from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
 from torch import nn
 from torch.nn import functional as F
-
-from detectron2.config import configurable
-from detectron2.layers import ASPP, Conv2d, DepthwiseSeparableConv2d, ShapeSpec, get_norm
-from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
 
 from .loss import DeepLabCE
 
@@ -103,7 +109,9 @@ class DeepLabV3PlusHead(nn.Module):
                     train_h, train_w = train_size
                     encoder_stride = in_strides[-1]
                     if train_h % encoder_stride or train_w % encoder_stride:
-                        raise ValueError("Crop size need to be divisible by encoder stride.")
+                        raise ValueError(
+                            "Crop size need to be divisible by encoder stride."
+                        )
                     pool_h = train_h // encoder_stride
                     pool_w = train_w // encoder_stride
                     pool_kernel_size = (pool_h, pool_w)
@@ -181,9 +189,13 @@ class DeepLabV3PlusHead(nn.Module):
             nn.init.constant_(self.predictor.bias, 0)
 
             if self.loss_type == "cross_entropy":
-                self.loss = nn.CrossEntropyLoss(reduction="mean", ignore_index=self.ignore_value)
+                self.loss = nn.CrossEntropyLoss(
+                    reduction="mean", ignore_index=self.ignore_value
+                )
             elif self.loss_type == "hard_pixel_mining":
-                self.loss = DeepLabCE(ignore_label=self.ignore_value, top_k_percent_pixels=0.2)
+                self.loss = DeepLabCE(
+                    ignore_label=self.ignore_value, top_k_percent_pixels=0.2
+                )
             else:
                 raise ValueError("Unexpected loss type: %s" % self.loss_type)
 
@@ -199,7 +211,9 @@ class DeepLabV3PlusHead(nn.Module):
         ) + [cfg.MODEL.SEM_SEG_HEAD.ASPP_CHANNELS]
         ret = dict(
             input_shape={
-                k: v for k, v in input_shape.items() if k in cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES
+                k: v
+                for k, v in input_shape.items()
+                if k in cfg.MODEL.SEM_SEG_HEAD.IN_FEATURES
             },
             project_channels=cfg.MODEL.SEM_SEG_HEAD.PROJECT_CHANNELS,
             aspp_dilations=cfg.MODEL.SEM_SEG_HEAD.ASPP_DILATIONS,
@@ -244,7 +258,9 @@ class DeepLabV3PlusHead(nn.Module):
                 y = proj_x
             else:
                 # Upsample y
-                y = F.interpolate(y, size=proj_x.size()[2:], mode="bilinear", align_corners=False)
+                y = F.interpolate(
+                    y, size=proj_x.size()[2:], mode="bilinear", align_corners=False
+                )
                 y = torch.cat([proj_x, y], dim=1)
                 y = self.decoder[f]["fuse_conv"](y)
         if not self.decoder_only:
@@ -253,7 +269,10 @@ class DeepLabV3PlusHead(nn.Module):
 
     def losses(self, predictions, targets):
         predictions = F.interpolate(
-            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            predictions,
+            scale_factor=self.common_stride,
+            mode="bilinear",
+            align_corners=False,
         )
         loss = self.loss(predictions, targets)
         losses = {"loss_sem_seg": loss * self.loss_weight}
@@ -311,14 +330,20 @@ class DeepLabV3Head(nn.Module):
             use_depthwise_separable_conv=use_depthwise_separable_conv,
         )
 
-        self.predictor = Conv2d(conv_dims, num_classes, kernel_size=1, stride=1, padding=0)
+        self.predictor = Conv2d(
+            conv_dims, num_classes, kernel_size=1, stride=1, padding=0
+        )
         nn.init.normal_(self.predictor.weight, 0, 0.001)
         nn.init.constant_(self.predictor.bias, 0)
 
         if self.loss_type == "cross_entropy":
-            self.loss = nn.CrossEntropyLoss(reduction="mean", ignore_index=self.ignore_value)
+            self.loss = nn.CrossEntropyLoss(
+                reduction="mean", ignore_index=self.ignore_value
+            )
         elif self.loss_type == "hard_pixel_mining":
-            self.loss = DeepLabCE(ignore_label=self.ignore_value, top_k_percent_pixels=0.2)
+            self.loss = DeepLabCE(
+                ignore_label=self.ignore_value, top_k_percent_pixels=0.2
+            )
         else:
             raise ValueError("Unexpected loss type: %s" % self.loss_type)
 
@@ -341,7 +366,10 @@ class DeepLabV3Head(nn.Module):
 
     def losses(self, predictions, targets):
         predictions = F.interpolate(
-            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            predictions,
+            scale_factor=self.common_stride,
+            mode="bilinear",
+            align_corners=False,
         )
         loss = self.loss(predictions, targets)
         losses = {"loss_sem_seg": loss * self.loss_weight}

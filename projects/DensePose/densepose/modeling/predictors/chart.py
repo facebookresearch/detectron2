@@ -1,10 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import torch
-from torch import nn
-
 from detectron2.config import CfgNode
 from detectron2.layers import ConvTranspose2d, interpolate
+from torch import nn
 
 from ...structures import DensePoseChartPredictorOutput
 from ..utils import initialize_module_params
@@ -50,15 +49,27 @@ class DensePoseChartPredictor(nn.Module):
         )
         # fine segmentation
         self.index_uv_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_patches,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         # U
         self.u_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_patches,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         # V
         self.v_lowres = ConvTranspose2d(
-            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in,
+            dim_out_patches,
+            kernel_size,
+            stride=2,
+            padding=int(kernel_size / 2 - 1),
         )
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
@@ -74,7 +85,10 @@ class DensePoseChartPredictor(nn.Module):
                 by applying the scale factor to H and W
         """
         return interpolate(
-            tensor_nchw, scale_factor=self.scale_factor, mode="bilinear", align_corners=False
+            tensor_nchw,
+            scale_factor=self.scale_factor,
+            mode="bilinear",
+            align_corners=False,
         )
 
     def forward(self, head_outputs: torch.Tensor):

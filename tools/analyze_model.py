@@ -2,11 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
-import numpy as np
 from collections import Counter
-import tqdm
-from fvcore.nn import flop_count_table  # can also try flop_count_str
 
+import numpy as np
+import tqdm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
@@ -18,6 +17,7 @@ from detectron2.utils.analysis import (
     parameter_count_table,
 )
 from detectron2.utils.logger import setup_logger
+from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 logger = logging.getLogger("detectron2")
 
@@ -48,13 +48,17 @@ def do_flop(cfg):
         counts += flops.by_operator()
         total_flops.append(flops.total())
 
-    logger.info("Flops table computed from only one input sample:\n" + flop_count_table(flops))
+    logger.info(
+        "Flops table computed from only one input sample:\n" + flop_count_table(flops)
+    )
     logger.info(
         "Average GFlops for each type of operators:\n"
         + str([(k, v / (idx + 1) / 1e9) for k, v in counts.items()])
     )
     logger.info(
-        "Total GFlops: {:.1f}±{:.1f}".format(np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9)
+        "Total GFlops: {:.1f}±{:.1f}".format(
+            np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9
+        )
     )
 
 

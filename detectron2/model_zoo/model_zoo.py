@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import os
 from typing import Optional
+
 import pkg_resources
 import torch
 
@@ -121,7 +122,9 @@ def get_checkpoint_url(config_path):
     """
     url = _ModelZooUrls.query(config_path)
     if url is None:
-        raise RuntimeError("Pretrained model for {} is not available!".format(config_path))
+        raise RuntimeError(
+            "Pretrained model for {} is not available!".format(config_path)
+        )
     return url
 
 

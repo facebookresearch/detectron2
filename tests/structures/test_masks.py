@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import unittest
-import torch
 
+import torch
 from detectron2.structures.masks import BitMasks, PolygonMasks, polygons_to_bitmask
 
 
@@ -25,7 +25,9 @@ class TestBitMask(unittest.TestCase):
             ]
         )
         bitmask = BitMasks(masks)
-        box_true = torch.tensor([[1, 0, 4, 4], [1, 1, 3, 4], [0, 0, 0, 0]], dtype=torch.float32)
+        box_true = torch.tensor(
+            [[1, 0, 4, 4], [1, 1, 3, 4], [0, 0, 0, 0]], dtype=torch.float32
+        )
         box = bitmask.get_bounding_boxes()
         self.assertTrue(torch.all(box.tensor == box_true).item())
 

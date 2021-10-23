@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 import unittest
-import torch
 
+import numpy as np
+import torch
 from detectron2.layers import ciou_loss, diou_loss
 
 

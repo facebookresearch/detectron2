@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Union
+
 import torch
 
 
@@ -49,4 +50,6 @@ class DensePoseEmbeddingPredictorOutput:
         """
         coarse_segm = self.coarse_segm.to(device)
         embedding = self.embedding.to(device)
-        return DensePoseEmbeddingPredictorOutput(coarse_segm=coarse_segm, embedding=embedding)
+        return DensePoseEmbeddingPredictorOutput(
+            coarse_segm=coarse_segm, embedding=embedding
+        )

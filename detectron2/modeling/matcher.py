@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import List
+
 import torch
 
 from detectron2.layers import nonzero_tuple
@@ -23,7 +24,10 @@ class Matcher(object):
     """
 
     def __init__(
-        self, thresholds: List[float], labels: List[int], allow_low_quality_matches: bool = False
+        self,
+        thresholds: List[float],
+        labels: List[int],
+        allow_low_quality_matches: bool = False,
     ):
         """
         Args:
@@ -52,7 +56,9 @@ class Matcher(object):
         thresholds.insert(0, -float("inf"))
         thresholds.append(float("inf"))
         # Currently torchscript does not support all + generator
-        assert all([low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:])])
+        assert all(
+            [low <= high for (low, high) in zip(thresholds[:-1], thresholds[1:])]
+        )
         assert all([l in [-1, 0, 1] for l in labels])
         assert len(labels) == len(thresholds) - 1
         self.thresholds = thresholds
@@ -94,7 +100,9 @@ class Matcher(object):
 
         match_labels = matches.new_full(matches.size(), 1, dtype=torch.int8)
 
-        for (l, low, high) in zip(self.labels, self.thresholds[:-1], self.thresholds[1:]):
+        for (l, low, high) in zip(
+            self.labels, self.thresholds[:-1], self.thresholds[1:]
+        ):
             low_high = (matched_vals >= low) & (matched_vals < high)
             match_labels[low_high] = l
 

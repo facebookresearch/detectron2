@@ -3,9 +3,10 @@
 """
 Implement many useful :class:`Augmentation`.
 """
-import numpy as np
 import sys
 from typing import Tuple
+
+import numpy as np
 import torch
 from fvcore.transforms.transform import (
     BlendTransform,
@@ -56,7 +57,9 @@ class RandomApply(Augmentation):
         """
         super().__init__()
         self.aug = _transform_to_aug(tfm_or_aug)
-        assert 0.0 <= prob <= 1.0, f"Probablity must be between 0.0 and 1.0 (given: {prob})"
+        assert (
+            0.0 <= prob <= 1.0
+        ), f"Probablity must be between 0.0 and 1.0 (given: {prob})"
         self.prob = prob
 
     def get_transform(self, *args):
@@ -89,7 +92,9 @@ class RandomFlip(Augmentation):
         super().__init__()
 
         if horizontal and vertical:
-            raise ValueError("Cannot do both horiz and vert. Please use two Flip instead.")
+            raise ValueError(
+                "Cannot do both horiz and vert. Please use two Flip instead."
+            )
         if not horizontal and not vertical:
             raise ValueError("At least one of horiz or vert has to be True!")
         self._init(locals())
@@ -136,7 +141,11 @@ class ResizeShortestEdge(Augmentation):
 
     @torch.jit.unused
     def __init__(
-        self, short_edge_length, max_size=sys.maxsize, sample_style="range", interp=Image.BILINEAR
+        self,
+        short_edge_length,
+        max_size=sys.maxsize,
+        sample_style="range",
+        interp=Image.BILINEAR,
     ):
         """
         Args:
@@ -163,7 +172,9 @@ class ResizeShortestEdge(Augmentation):
     def get_transform(self, image):
         h, w = image.shape[:2]
         if self.is_range:
-            size = np.random.randint(self.short_edge_length[0], self.short_edge_length[1] + 1)
+            size = np.random.randint(
+                self.short_edge_length[0], self.short_edge_length[1] + 1
+            )
         else:
             size = np.random.choice(self.short_edge_length)
         if size == 0:
@@ -251,7 +262,9 @@ class RandomRotation(Augmentation):
     number of degrees counter clockwise around the given center.
     """
 
-    def __init__(self, angle, expand=True, center=None, sample_style="range", interp=None):
+    def __init__(
+        self, angle, expand=True, center=None, sample_style="range", interp=None
+    ):
         """
         Args:
             angle (list[float]): If ``sample_style=="range"``,
@@ -296,7 +309,9 @@ class RandomRotation(Augmentation):
         if angle % 360 == 0:
             return NoOpTransform()
 
-        return RotationTransform(h, w, angle, expand=self.expand, center=center, interp=self.interp)
+        return RotationTransform(
+            h, w, angle, expand=self.expand, center=center, interp=self.interp
+        )
 
 
 class FixedSizeCrop(Augmentation):
@@ -307,7 +322,9 @@ class FixedSizeCrop(Augmentation):
     it returns the smaller image.
     """
 
-    def __init__(self, crop_size: Tuple[int], pad: bool = True, pad_value: float = 128.0):
+    def __init__(
+        self, crop_size: Tuple[int], pad: bool = True, pad_value: float = 128.0
+    ):
         """
         Args:
             crop_size: target image (height, width).
@@ -328,7 +345,12 @@ class FixedSizeCrop(Augmentation):
         offset = np.multiply(max_offset, np.random.uniform(0.0, 1.0))
         offset = np.round(offset).astype(int)
         return CropTransform(
-            offset[1], offset[0], output_size[1], output_size[0], input_size[1], input_size[0]
+            offset[1],
+            offset[0],
+            output_size[1],
+            output_size[0],
+            input_size[1],
+            input_size[0],
         )
 
     def _get_pad(self, image: np.ndarray) -> Transform:
@@ -341,7 +363,13 @@ class FixedSizeCrop(Augmentation):
         pad_size = np.maximum(pad_size, 0)
         original_size = np.minimum(input_size, output_size)
         return PadTransform(
-            0, 0, pad_size[1], pad_size[0], original_size[1], original_size[0], self.pad_value
+            0,
+            0,
+            pad_size[1],
+            pad_size[0],
+            original_size[1],
+            original_size[0],
+            self.pad_value,
         )
 
     def get_transform(self, image: np.ndarray) -> TransformList:
@@ -381,7 +409,9 @@ class RandomCrop(Augmentation):
     def get_transform(self, image):
         h, w = image.shape[:2]
         croph, cropw = self.get_crop_size((h, w))
-        assert h >= croph and w >= cropw, "Shape computation in {} has bugs.".format(self)
+        assert h >= croph and w >= cropw, "Shape computation in {} has bugs.".format(
+            self
+        )
         h0 = np.random.randint(h - croph + 1)
         w0 = np.random.randint(w - cropw + 1)
         return CropTransform(w0, h0, cropw, croph)
@@ -406,8 +436,12 @@ class RandomCrop(Augmentation):
             return (min(self.crop_size[0], h), min(self.crop_size[1], w))
         elif self.crop_type == "absolute_range":
             assert self.crop_size[0] <= self.crop_size[1]
-            ch = np.random.randint(min(h, self.crop_size[0]), min(h, self.crop_size[1]) + 1)
-            cw = np.random.randint(min(w, self.crop_size[0]), min(w, self.crop_size[1]) + 1)
+            ch = np.random.randint(
+                min(h, self.crop_size[0]), min(h, self.crop_size[1]) + 1
+            )
+            cw = np.random.randint(
+                min(w, self.crop_size[0]), min(w, self.crop_size[1]) + 1
+            )
             return ch, cw
         else:
             raise NotImplementedError("Unknown crop type {}".format(self.crop_type))
@@ -453,7 +487,10 @@ class RandomCrop_CategoryAreaConstraint(Augmentation):
                 labels, cnt = np.unique(sem_seg_temp, return_counts=True)
                 if self.ignored_category is not None:
                     cnt = cnt[labels != self.ignored_category]
-                if len(cnt) > 1 and np.max(cnt) < np.sum(cnt) * self.single_category_max_area:
+                if (
+                    len(cnt) > 1
+                    and np.max(cnt) < np.sum(cnt) * self.single_category_max_area
+                ):
                     break
             crop_tfm = CropTransform(x0, y0, crop_size[1], crop_size[0])
             return crop_tfm
@@ -500,7 +537,10 @@ class RandomExtent(Augmentation):
 
         return ExtentTransform(
             src_rect=(src_rect[0], src_rect[1], src_rect[2], src_rect[3]),
-            output_size=(int(src_rect[3] - src_rect[1]), int(src_rect[2] - src_rect[0])),
+            output_size=(
+                int(src_rect[3] - src_rect[1]),
+                int(src_rect[2] - src_rect[0]),
+            ),
         )
 
 
@@ -602,7 +642,11 @@ class RandomLighting(Augmentation):
         super().__init__()
         self._init(locals())
         self.eigen_vecs = np.array(
-            [[-0.5675, 0.7192, 0.4009], [-0.5808, -0.0045, -0.8140], [-0.5836, -0.6948, 0.4203]]
+            [
+                [-0.5675, 0.7192, 0.4009],
+                [-0.5808, -0.0045, -0.8140],
+                [-0.5836, -0.6948, 0.4203],
+            ]
         )
         self.eigen_vals = np.array([0.2175, 0.0188, 0.0045])
 
@@ -610,5 +654,7 @@ class RandomLighting(Augmentation):
         assert image.shape[-1] == 3, "RandomLighting only works on RGB images"
         weights = np.random.normal(scale=self.scale, size=3)
         return BlendTransform(
-            src_image=self.eigen_vecs.dot(weights * self.eigen_vals), src_weight=1.0, dst_weight=1.0
+            src_image=self.eigen_vecs.dot(weights * self.eigen_vals),
+            src_weight=1.0,
+            dst_weight=1.0,
         )

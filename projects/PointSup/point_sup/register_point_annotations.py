@@ -30,7 +30,10 @@ def register_coco_instances_with_points(name, metadata, json_file, image_root):
     assert isinstance(image_root, (str, os.PathLike)), image_root
     # 1. register a function which returns dicts
     DatasetCatalog.register(
-        name, lambda: load_coco_json(json_file, image_root, name, ["point_coords", "point_labels"])
+        name,
+        lambda: load_coco_json(
+            json_file, image_root, name, ["point_coords", "point_labels"]
+        ),
     )
 
     # 2. Optionally, add metadata about this dataset,

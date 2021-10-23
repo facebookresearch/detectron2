@@ -35,7 +35,9 @@ logger = logging.getLogger("detectron2")
 def do_test(cfg, model):
     if "evaluator" in cfg.dataloader:
         ret = inference_on_dataset(
-            model, instantiate(cfg.dataloader.test), instantiate(cfg.dataloader.evaluator)
+            model,
+            instantiate(cfg.dataloader.test),
+            instantiate(cfg.dataloader.evaluator),
         )
         print_csv_format(ret)
         return ret
@@ -71,7 +73,9 @@ def do_train(args, cfg):
     train_loader = instantiate(cfg.dataloader.train)
 
     model = create_ddp_model(model, **cfg.train.ddp)
-    trainer = (AMPTrainer if cfg.train.amp.enabled else SimpleTrainer)(model, train_loader, optim)
+    trainer = (AMPTrainer if cfg.train.amp.enabled else SimpleTrainer)(
+        model, train_loader, optim
+    )
     checkpointer = DetectionCheckpointer(
         model,
         cfg.train.output_dir,

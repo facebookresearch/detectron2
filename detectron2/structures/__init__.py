@@ -1,7 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from .boxes import Boxes, BoxMode, pairwise_iou, pairwise_ioa, pairwise_point_box_distance
+from .boxes import (
+    Boxes,
+    BoxMode,
+    pairwise_iou,
+    pairwise_ioa,
+    pairwise_point_box_distance,
+)
 from .image_list import ImageList
-
 from .instances import Instances
 from .keypoints import Keypoints, heatmaps_to_keypoints
 from .masks import BitMasks, PolygonMasks, polygons_to_bitmask, ROIMasks

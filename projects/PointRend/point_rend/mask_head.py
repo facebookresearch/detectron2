@@ -1,18 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
 import math
-import numpy as np
 from typing import Dict, List, Tuple
-import fvcore.nn.weight_init as weight_init
-import torch
-from torch import Tensor, nn
-from torch.nn import functional as F
 
+import fvcore.nn.weight_init as weight_init
+import numpy as np
+import torch
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, cat, interpolate
 from detectron2.modeling import ROI_MASK_HEAD_REGISTRY
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference, mask_rcnn_loss
 from detectron2.structures import Boxes
+from torch import Tensor, nn
+from torch.nn import functional as F
 
 from .point_features import (
     generate_regular_grid_point_coords,
@@ -60,7 +60,12 @@ class ConvFCHead(nn.Module):
 
     @configurable
     def __init__(
-        self, input_shape: ShapeSpec, *, conv_dim: int, fc_dims: List[int], output_shape: Tuple[int]
+        self,
+        input_shape: ShapeSpec,
+        *,
+        conv_dim: int,
+        fc_dims: List[int],
+        output_shape: Tuple[int]
     ):
         """
         Args:
@@ -91,7 +96,13 @@ class ConvFCHead(nn.Module):
             self.conv_layers.append(self.reduce_channel_dim_conv)
 
         self.reduce_spatial_dim_conv = Conv2d(
-            conv_dim, conv_dim, kernel_size=2, stride=2, padding=0, bias=True, activation=F.relu
+            conv_dim,
+            conv_dim,
+            kernel_size=2,
+            stride=2,
+            padding=0,
+            bias=True,
+            activation=F.relu,
         )
         self.conv_layers.append(self.reduce_spatial_dim_conv)
 
@@ -145,7 +156,14 @@ class ConvFCHead(nn.Module):
         return self.prediction(x).view(*output_shape)
 
     def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
 
@@ -175,7 +193,9 @@ class PointRendMaskHead(nn.Module):
         self.roi_pooler_in_features = cfg.MODEL.ROI_MASK_HEAD.IN_FEATURES
         self.roi_pooler_size = cfg.MODEL.ROI_MASK_HEAD.POOLER_RESOLUTION
         self._feature_scales = {k: 1.0 / v.stride for k, v in input_shape.items()}
-        in_channels = np.sum([input_shape[f].channels for f in self.roi_pooler_in_features])
+        in_channels = np.sum(
+            [input_shape[f].channels for f in self.roi_pooler_in_features]
+        )
         self._init_roi_head(
             cfg,
             ShapeSpec(
@@ -204,8 +224,12 @@ class PointRendMaskHead(nn.Module):
         self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
-        in_channels = int(np.sum([input_shape[f].channels for f in self.mask_point_in_features]))
-        self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
+        in_channels = int(
+            np.sum([input_shape[f].channels for f in self.mask_point_in_features])
+        )
+        self.point_head = build_point_head(
+            cfg, ShapeSpec(channels=in_channels, width=1, height=1)
+        )
 
         # An optimization to skip unused subdivision steps: if after subdivision, all pixels on
         # the mask will be selected and recomputed anyway, we should just double our init_resolution
@@ -230,12 +254,18 @@ class PointRendMaskHead(nn.Module):
             if not self.mask_point_on:
                 return losses
 
-            point_coords, point_labels = self._sample_train_points(coarse_mask, instances)
-            point_fine_grained_features = self._point_pooler(features, proposal_boxes, point_coords)
+            point_coords, point_labels = self._sample_train_points(
+                coarse_mask, instances
+            )
+            point_fine_grained_features = self._point_pooler(
+                features, proposal_boxes, point_coords
+            )
             point_logits = self._get_point_logits(
                 point_fine_grained_features, point_coords, coarse_mask
             )
-            losses["loss_mask_point"] = roi_mask_point_loss(point_logits, instances, point_labels)
+            losses["loss_mask_point"] = roi_mask_point_loss(
+                point_logits, instances, point_labels
+            )
             return losses
         else:
             pred_boxes = [x.pred_boxes for x in instances]
@@ -258,13 +288,17 @@ class PointRendMaskHead(nn.Module):
 
         num_boxes = sum(x.tensor.size(0) for x in boxes)
         output_size = self.roi_pooler_size
-        point_coords = generate_regular_grid_point_coords(num_boxes, output_size, boxes[0].device)
+        point_coords = generate_regular_grid_point_coords(
+            num_boxes, output_size, boxes[0].device
+        )
         # For regular grids of points, this function is equivalent to `len(features_list)' calls
         # of `ROIAlign` (with `SAMPLING_RATIO=1`), and concat the results.
         roi_features, _ = point_sample_fine_grained_features(
             features_list, features_scales, boxes, point_coords
         )
-        return roi_features.view(num_boxes, roi_features.shape[1], output_size, output_size)
+        return roi_features.view(
+            num_boxes, roi_features.shape[1], output_size, output_size
+        )
 
     def _sample_train_points(self, coarse_mask, instances):
         assert self.training
@@ -281,13 +315,17 @@ class PointRendMaskHead(nn.Module):
             # sample point_labels
             proposal_boxes = [x.proposal_boxes for x in instances]
             cat_boxes = Boxes.cat(proposal_boxes)
-            point_coords_wrt_image = get_point_coords_wrt_image(cat_boxes.tensor, point_coords)
+            point_coords_wrt_image = get_point_coords_wrt_image(
+                cat_boxes.tensor, point_coords
+            )
             point_labels = sample_point_labels(instances, point_coords_wrt_image)
         return point_coords, point_labels
 
     def _point_pooler(self, features, proposal_boxes, point_coords):
         point_features_list = [features[k] for k in self.mask_point_in_features]
-        point_features_scales = [self._feature_scales[k] for k in self.mask_point_in_features]
+        point_features_scales = [
+            self._feature_scales[k] for k in self.mask_point_in_features
+        ]
         # sample image-level features
         point_fine_grained_features, _ = point_sample_fine_grained_features(
             point_features_list, point_features_scales, proposal_boxes, point_coords
@@ -328,7 +366,9 @@ class PointRendMaskHead(nn.Module):
                 )
 
             # Run the point head for every point in point_coords
-            fine_grained_features = self._point_pooler(features, pred_boxes, point_coords)
+            fine_grained_features = self._point_pooler(
+                features, pred_boxes, point_coords
+            )
             point_logits = self._get_point_logits(
                 fine_grained_features, point_coords, mask_representations
             )
@@ -366,7 +406,9 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
 
     def _init_roi_head(self, cfg, input_shape):
         assert hasattr(self, "num_params"), "Please initialize point_head first!"
-        self.parameter_head = ConvFCHead(cfg, input_shape, output_shape=(self.num_params,))
+        self.parameter_head = ConvFCHead(
+            cfg, input_shape, output_shape=(self.num_params,)
+        )
         self.regularizer = cfg.MODEL.IMPLICIT_POINTREND.PARAMS_L2_REGULARIZER
 
     def _init_point_head(self, cfg, input_shape):
@@ -380,8 +422,12 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
         self.mask_point_subdivision_num_points  = cfg.MODEL.POINT_HEAD.SUBDIVISION_NUM_POINTS
         # fmt: on
 
-        in_channels = int(np.sum([input_shape[f].channels for f in self.mask_point_in_features]))
-        self.point_head = build_point_head(cfg, ShapeSpec(channels=in_channels, width=1, height=1))
+        in_channels = int(
+            np.sum([input_shape[f].channels for f in self.mask_point_in_features])
+        )
+        self.point_head = build_point_head(
+            cfg, ShapeSpec(channels=in_channels, width=1, height=1)
+        )
         self.num_params = self.point_head.num_params
 
         # inference parameters
@@ -407,11 +453,15 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
             losses = {"loss_l2": self.regularizer * (parameters ** 2).mean()}
 
             point_coords, point_labels = self._uniform_sample_train_points(instances)
-            point_fine_grained_features = self._point_pooler(features, proposal_boxes, point_coords)
+            point_fine_grained_features = self._point_pooler(
+                features, proposal_boxes, point_coords
+            )
             point_logits = self._get_point_logits(
                 point_fine_grained_features, point_coords, parameters
             )
-            losses["loss_mask_point"] = roi_mask_point_loss(point_logits, instances, point_labels)
+            losses["loss_mask_point"] = roi_mask_point_loss(
+                point_logits, instances, point_labels
+            )
             return losses
         else:
             pred_boxes = [x.pred_boxes for x in instances]
@@ -424,10 +474,15 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
         cat_boxes = Boxes.cat(proposal_boxes)
         # uniform sample
         point_coords = torch.rand(
-            len(cat_boxes), self.mask_point_train_num_points, 2, device=cat_boxes.tensor.device
+            len(cat_boxes),
+            self.mask_point_train_num_points,
+            2,
+            device=cat_boxes.tensor.device,
         )
         # sample point_labels
-        point_coords_wrt_image = get_point_coords_wrt_image(cat_boxes.tensor, point_coords)
+        point_coords_wrt_image = get_point_coords_wrt_image(
+            cat_boxes.tensor, point_coords
+        )
         point_labels = sample_point_labels(instances, point_coords_wrt_image)
         return point_coords, point_labels
 

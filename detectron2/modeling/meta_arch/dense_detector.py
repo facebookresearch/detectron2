@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 import torch
 from torch import Tensor, nn
 
@@ -7,7 +8,6 @@ from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.modeling import Backbone
 from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
-
 from ..postprocessing import detector_postprocess
 
 
@@ -58,11 +58,15 @@ class DenseDetector(nn.Module):
         self.head = head
         if head_in_features is None:
             shapes = self.backbone.output_shape()
-            self.head_in_features = sorted(shapes.keys(), key=lambda x: shapes[x].stride)
+            self.head_in_features = sorted(
+                shapes.keys(), key=lambda x: shapes[x].stride
+            )
         else:
             self.head_in_features = head_in_features
 
-        self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
+        self.register_buffer(
+            "pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False
+        )
         self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
 
     @property
@@ -96,7 +100,9 @@ class DenseDetector(nn.Module):
 
         if self.training:
             assert not torch.jit.is_scripting(), "Not supported"
-            assert "instances" in batched_inputs[0], "Instance annotations are missing in training!"
+            assert (
+                "instances" in batched_inputs[0]
+            ), "Instance annotations are missing in training!"
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
             return self.forward_training(images, features, predictions, gt_instances)
         else:
@@ -150,7 +156,9 @@ class DenseDetector(nn.Module):
             res.append(pred)
         return res
 
-    def _ema_update(self, name: str, value: float, initial_value: float, momentum: float = 0.9):
+    def _ema_update(
+        self, name: str, value: float, initial_value: float, momentum: float = 0.9
+    ):
         """
         Apply EMA update to `self.name` using `value`.
 
@@ -219,7 +227,10 @@ class DenseDetector(nn.Module):
             pred_deltas[anchor_idxs], anchors.tensor[anchor_idxs]
         )
         return Instances(
-            image_size, pred_boxes=Boxes(pred_boxes), scores=pred_scores, pred_classes=classes_idxs
+            image_size,
+            pred_boxes=Boxes(pred_boxes),
+            scores=pred_scores,
+            pred_classes=classes_idxs,
         )
 
     def _decode_multi_level_predictions(
@@ -244,9 +255,13 @@ class DenseDetector(nn.Module):
                 image_size,
             )
             # Iterate over every feature level
-            for box_cls_i, box_reg_i, anchors_i in zip(pred_scores, pred_deltas, anchors)
+            for box_cls_i, box_reg_i, anchors_i in zip(
+                pred_scores, pred_deltas, anchors
+            )
         ]
-        return predictions[0].cat(predictions)  # 'Instances.cat' is not scriptale but this is
+        return predictions[0].cat(
+            predictions
+        )  # 'Instances.cat' is not scriptale but this is
 
     def visualize_training(self, batched_inputs, results):
         """
@@ -270,9 +285,13 @@ class DenseDetector(nn.Module):
         img = batched_inputs[image_index]["image"]
         img = convert_image_to_rgb(img.permute(1, 2, 0), self.input_format)
         v_gt = Visualizer(img, None)
-        v_gt = v_gt.overlay_instances(boxes=batched_inputs[image_index]["instances"].gt_boxes)
+        v_gt = v_gt.overlay_instances(
+            boxes=batched_inputs[image_index]["instances"].gt_boxes
+        )
         anno_img = v_gt.get_image()
-        processed_results = detector_postprocess(results[image_index], img.shape[0], img.shape[1])
+        processed_results = detector_postprocess(
+            results[image_index], img.shape[0], img.shape[1]
+        )
         predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
 
         v_pred = Visualizer(img, None)
@@ -280,5 +299,7 @@ class DenseDetector(nn.Module):
         prop_img = v_pred.get_image()
         vis_img = np.vstack((anno_img, prop_img))
         vis_img = vis_img.transpose(2, 0, 1)
-        vis_name = f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
+        vis_name = (
+            f"Top: GT bounding boxes; Bottom: {max_boxes} Highest Scoring Results"
+        )
         storage.put_image(vis_name, vis_img)

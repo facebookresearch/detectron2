@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any
 import pydoc
+from typing import Any
+
 from fvcore.common.registry import Registry  # for backward compatibility.
 
 """

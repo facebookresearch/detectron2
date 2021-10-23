@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from typing import List
+
 import torch
 from torch import nn
 from torch.autograd.function import Function
@@ -8,7 +9,6 @@ from detectron2.config import configurable
 from detectron2.layers import ShapeSpec
 from detectron2.structures import Boxes, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
-
 from ..box_regression import Box2BoxTransform
 from ..matcher import Matcher
 from ..poolers import ROIPooler
@@ -66,8 +66,12 @@ class CascadeROIHeads(StandardROIHeads):
         num_stages = self.num_cascade_stages = len(box_heads)
         box_heads = nn.ModuleList(box_heads)
         box_predictors = nn.ModuleList(box_predictors)
-        assert len(box_predictors) == num_stages, f"{len(box_predictors)} != {num_stages}!"
-        assert len(proposal_matchers) == num_stages, f"{len(proposal_matchers)} != {num_stages}!"
+        assert (
+            len(box_predictors) == num_stages
+        ), f"{len(box_predictors)} != {num_stages}!"
+        assert (
+            len(proposal_matchers) == num_stages
+        ), f"{len(proposal_matchers)} != {num_stages}!"
         super().__init__(
             box_in_features=box_in_features,
             box_pooler=box_pooler,
@@ -125,7 +129,9 @@ class CascadeROIHeads(StandardROIHeads):
                     box2box_transform=Box2BoxTransform(weights=bbox_reg_weights),
                 )
             )
-            proposal_matchers.append(Matcher([match_iou], [0, 1], allow_low_quality_matches=False))
+            proposal_matchers.append(
+                Matcher([match_iou], [0, 1], allow_low_quality_matches=False)
+            )
         return {
             "box_in_features": in_features,
             "box_pooler": box_pooler,
@@ -168,11 +174,15 @@ class CascadeROIHeads(StandardROIHeads):
             if k > 0:
                 # The output boxes of the previous stage are used to create the input
                 # proposals of the next stage.
-                proposals = self._create_proposals_from_boxes(prev_pred_boxes, image_sizes)
+                proposals = self._create_proposals_from_boxes(
+                    prev_pred_boxes, image_sizes
+                )
                 if self.training:
                     proposals = self._match_and_label_boxes(proposals, k, targets)
             predictions = self._run_stage(features, proposals, k)
-            prev_pred_boxes = self.box_predictor[k].predict_boxes(predictions, proposals)
+            prev_pred_boxes = self.box_predictor[k].predict_boxes(
+                predictions, proposals
+            )
             head_outputs.append((self.box_predictor[k], predictions, proposals))
 
         if self.training:
@@ -181,7 +191,9 @@ class CascadeROIHeads(StandardROIHeads):
             for stage, (predictor, predictions, proposals) in enumerate(head_outputs):
                 with storage.name_scope("stage{}".format(stage)):
                     stage_losses = predictor.losses(predictions, proposals)
-                losses.update({k + "_stage{}".format(stage): v for k, v in stage_losses.items()})
+                losses.update(
+                    {k + "_stage{}".format(stage): v for k, v in stage_losses.items()}
+                )
             return losses
         else:
             # Each is a list[Tensor] of length #image. Each tensor is Ri x (K+1)
@@ -226,7 +238,9 @@ class CascadeROIHeads(StandardROIHeads):
                 targets_per_image.gt_boxes, proposals_per_image.proposal_boxes
             )
             # proposal_labels are 0 or 1
-            matched_idxs, proposal_labels = self.proposal_matchers[stage](match_quality_matrix)
+            matched_idxs, proposal_labels = self.proposal_matchers[stage](
+                match_quality_matrix
+            )
             if len(targets_per_image) > 0:
                 gt_classes = targets_per_image.gt_classes[matched_idxs]
                 # Label unmatched proposals (0 label from matcher) as background (label=num_classes)
@@ -235,7 +249,9 @@ class CascadeROIHeads(StandardROIHeads):
             else:
                 gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
                 gt_boxes = Boxes(
-                    targets_per_image.gt_boxes.tensor.new_zeros((len(proposals_per_image), 4))
+                    targets_per_image.gt_boxes.tensor.new_zeros(
+                        (len(proposals_per_image), 4)
+                    )
                 )
             proposals_per_image.gt_classes = gt_classes
             proposals_per_image.gt_boxes = gt_boxes

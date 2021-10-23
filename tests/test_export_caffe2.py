@@ -5,8 +5,8 @@ import copy
 import os
 import tempfile
 import unittest
-import torch
 
+import torch
 from detectron2 import model_zoo
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.testing import get_sample_coco_image
@@ -33,7 +33,9 @@ class TestCaffe2Export(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="detectron2_unittest") as d:
             c2_model.save_protobuf(d)
-            c2_model.save_graph(os.path.join(d, "test.svg"), inputs=copy.deepcopy(inputs))
+            c2_model.save_graph(
+                os.path.join(d, "test.svg"), inputs=copy.deepcopy(inputs)
+            )
 
             c2_model = Caffe2Model.load_protobuf(d)
             c2_model(inputs)[0]["instances"]
@@ -48,7 +50,9 @@ class TestCaffe2Export(unittest.TestCase):
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNNGPU(self):
         # TODO: this test requires manifold access, see: T88318502
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", device="cuda")
+        self._test_model(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", device="cuda"
+        )
 
     def testRetinaNet(self):
         # TODO: this test requires manifold access, see: T88318502

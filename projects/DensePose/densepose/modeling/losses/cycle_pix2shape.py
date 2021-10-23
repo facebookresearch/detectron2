@@ -1,16 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 from typing import Any, List
+
 import torch
+from detectron2.config import CfgNode
+from detectron2.structures import Instances
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.config import CfgNode
-from detectron2.structures import Instances
-
 from densepose.data.meshes.catalog import MeshCatalog
-from densepose.modeling.cse.utils import normalize_embeddings, squared_euclidean_distance_matrix
-
+from densepose.modeling.cse.utils import (
+    normalize_embeddings,
+    squared_euclidean_distance_matrix,
+)
 from .embed_utils import PackedCseAnnotations
 from .mask import extract_data_for_mask_loss_from_matches
 
@@ -22,7 +24,9 @@ def _create_pixel_dist_matrix(grid_size: int) -> torch.Tensor:
     # row = i // grid_size
     # col = i % grid_size
     pix_coords = (
-        torch.stack(torch.meshgrid(rows, cols), -1).reshape((grid_size * grid_size, 2)).float()
+        torch.stack(torch.meshgrid(rows, cols), -1)
+        .reshape((grid_size * grid_size, 2))
+        .float()
     )
     return squared_euclidean_distance_matrix(pix_coords, pix_coords)
 
@@ -37,12 +41,16 @@ def _sample_fg_pixels_randperm(fg_mask: torch.Tensor, sample_size: int) -> torch
     return fg_pixel_indices[sample_indices]
 
 
-def _sample_fg_pixels_multinomial(fg_mask: torch.Tensor, sample_size: int) -> torch.Tensor:
+def _sample_fg_pixels_multinomial(
+    fg_mask: torch.Tensor, sample_size: int
+) -> torch.Tensor:
     fg_mask_flattened = fg_mask.reshape((-1,))
     num_pixels = int(fg_mask_flattened.sum().item())
     if (sample_size <= 0) or (num_pixels <= sample_size):
         return fg_mask_flattened.nonzero(as_tuple=True)[0]  # pyre-ignore[16]
-    return fg_mask_flattened.float().multinomial(sample_size, replacement=False)  # pyre-ignore[16]
+    return fg_mask_flattened.float().multinomial(
+        sample_size, replacement=False
+    )  # pyre-ignore[16]
 
 
 class PixToShapeCycleLoss(nn.Module):
@@ -61,14 +69,18 @@ class PixToShapeCycleLoss(nn.Module):
         self.num_pixels_to_sample = (
             cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.NUM_PIXELS_TO_SAMPLE
         )
-        self.pix_sigma = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.PIXEL_SIGMA
+        self.pix_sigma = (
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.PIXEL_SIGMA
+        )
         self.temperature_pix_to_vertex = (
             cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.TEMPERATURE_PIXEL_TO_VERTEX
         )
         self.temperature_vertex_to_pix = (
             cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.TEMPERATURE_VERTEX_TO_PIXEL
         )
-        self.pixel_dists = _create_pixel_dist_matrix(cfg.MODEL.ROI_DENSEPOSE_HEAD.HEATMAP_SIZE)
+        self.pixel_dists = _create_pixel_dist_matrix(
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.HEATMAP_SIZE
+        )
 
     def forward(
         self,
@@ -132,14 +144,20 @@ class PixToShapeCycleLoss(nn.Module):
                 ]
                 # pixel embeddings [M, D]
                 pixel_embeddings_sampled = normalize_embeddings(
-                    pixel_embeddings.reshape((self.embed_size, -1))[:, pixel_indices_flattened].T
+                    pixel_embeddings.reshape((self.embed_size, -1))[
+                        :, pixel_indices_flattened
+                    ].T
                 )
                 # pixel-vertex similarity [M, K]
                 sim_matrix = pixel_embeddings_sampled.mm(  # pyre-ignore[16]
                     mesh_vertex_embeddings.T
                 )
-                c_pix_vertex = F.softmax(sim_matrix / self.temperature_pix_to_vertex, dim=1)
-                c_vertex_pix = F.softmax(sim_matrix.T / self.temperature_vertex_to_pix, dim=1)
+                c_pix_vertex = F.softmax(
+                    sim_matrix / self.temperature_pix_to_vertex, dim=1
+                )
+                c_vertex_pix = F.softmax(
+                    sim_matrix.T / self.temperature_vertex_to_pix, dim=1
+                )
                 c_cycle = c_pix_vertex.mm(c_vertex_pix)
                 loss_cycle = torch.norm(pixel_dists * c_cycle, p=self.norm_p)
                 losses.append(loss_cycle)
@@ -150,7 +168,8 @@ class PixToShapeCycleLoss(nn.Module):
 
     def fake_value(self, densepose_predictor_outputs: Any, embedder: nn.Module):
         losses = [
-            embedder(mesh_name).sum() * 0 for mesh_name in embedder.mesh_names  # pyre-ignore[29]
+            embedder(mesh_name).sum() * 0
+            for mesh_name in embedder.mesh_names  # pyre-ignore[29]
         ]
         losses.append(densepose_predictor_outputs.embedding.sum() * 0)
         return torch.mean(torch.stack(losses))

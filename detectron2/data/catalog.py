@@ -33,7 +33,9 @@ class _DatasetCatalog(UserDict):
             func (callable): a callable which takes no arguments and returns a list of dicts.
                 It must return the same results if called multiple times.
         """
-        assert callable(func), "You must register a function with `DatasetCatalog.register`!"
+        assert callable(
+            func
+        ), "You must register a function with `DatasetCatalog.register`!"
         assert name not in self, "Dataset '{}' is already registered!".format(name)
         self[name] = func
 

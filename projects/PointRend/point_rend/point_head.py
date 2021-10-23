@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import numpy as np
 import fvcore.nn.weight_init as weight_init
+import numpy as np
 import torch
-from torch import nn
-from torch.nn import functional as F
-
 from detectron2.layers import ShapeSpec, cat
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
+from torch import nn
+from torch.nn import functional as F
 
 POINT_HEAD_REGISTRY = Registry("POINT_HEAD")
 POINT_HEAD_REGISTRY.__doc__ = """
@@ -47,7 +46,9 @@ def roi_mask_point_loss(mask_logits, instances, point_labels):
                 continue
 
             if not cls_agnostic_mask:
-                gt_classes_per_image = instances_per_image.gt_classes.to(dtype=torch.int64)
+                gt_classes_per_image = instances_per_image.gt_classes.to(
+                    dtype=torch.int64
+                )
                 gt_classes.append(gt_classes_per_image)
 
     gt_mask_logits = point_labels
@@ -71,7 +72,10 @@ def roi_mask_point_loss(mask_logits, instances, point_labels):
     get_event_storage().put_scalar("point/accuracy", mask_accuracy)
 
     point_loss = F.binary_cross_entropy_with_logits(
-        mask_logits, gt_mask_logits.to(dtype=torch.float32), weight=~point_ignores, reduction="mean"
+        mask_logits,
+        gt_mask_logits.to(dtype=torch.float32),
+        weight=~point_ignores,
+        reduction="mean",
     )
     return point_loss
 
@@ -104,14 +108,18 @@ class StandardPointHead(nn.Module):
         fc_dim_in = input_channels + num_classes
         self.fc_layers = []
         for k in range(num_fc):
-            fc = nn.Conv1d(fc_dim_in, fc_dim, kernel_size=1, stride=1, padding=0, bias=True)
+            fc = nn.Conv1d(
+                fc_dim_in, fc_dim, kernel_size=1, stride=1, padding=0, bias=True
+            )
             self.add_module("fc{}".format(k + 1), fc)
             self.fc_layers.append(fc)
             fc_dim_in = fc_dim
             fc_dim_in += num_classes if self.coarse_pred_each_layer else 0
 
         num_mask_classes = 1 if cls_agnostic_mask else num_classes
-        self.predictor = nn.Conv1d(fc_dim_in, num_mask_classes, kernel_size=1, stride=1, padding=0)
+        self.predictor = nn.Conv1d(
+            fc_dim_in, num_mask_classes, kernel_size=1, stride=1, padding=0
+        )
 
         for layer in self.fc_layers:
             weight_init.c2_msra_fill(layer)
@@ -160,7 +168,9 @@ class ImplicitPointHead(nn.Module):
             self.in_channels = 0
         if self.positional_encoding_enabled:
             self.in_channels += 256
-            self.register_buffer("positional_encoding_gaussian_matrix", torch.randn((2, 128)))
+            self.register_buffer(
+                "positional_encoding_gaussian_matrix", torch.randn((2, 128))
+            )
 
         assert self.in_channels > 0
 
@@ -196,18 +206,26 @@ class ImplicitPointHead(nn.Module):
         if self.positional_encoding_enabled:
             # locations: [R*K, 2]
             locations = 2 * point_coords.reshape(num_instances * num_points, 2) - 1
-            locations = locations @ self.positional_encoding_gaussian_matrix.to(locations.device)
+            locations = locations @ self.positional_encoding_gaussian_matrix.to(
+                locations.device
+            )
             locations = 2 * np.pi * locations
             locations = torch.cat([torch.sin(locations), torch.cos(locations)], dim=1)
             # locations: [R, C, K]
-            locations = locations.reshape(num_instances, num_points, 256).permute(0, 2, 1)
+            locations = locations.reshape(num_instances, num_points, 256).permute(
+                0, 2, 1
+            )
             if not self.image_feature_enabled:
                 fine_grained_features = locations
             else:
-                fine_grained_features = torch.cat([locations, fine_grained_features], dim=1)
+                fine_grained_features = torch.cat(
+                    [locations, fine_grained_features], dim=1
+                )
 
         # features [R, C, K]
-        mask_feat = fine_grained_features.reshape(num_instances, self.in_channels, num_points)
+        mask_feat = fine_grained_features.reshape(
+            num_instances, self.in_channels, num_points
+        )
 
         weights, biases = self._parse_params(
             parameters,
@@ -251,7 +269,9 @@ class ImplicitPointHead(nn.Module):
         num_layers = len(num_weight_params)
 
         params_splits = list(
-            torch.split_with_sizes(pred_params, num_weight_params + num_bias_params, dim=1)
+            torch.split_with_sizes(
+                pred_params, num_weight_params + num_bias_params, dim=1
+            )
         )
 
         weight_splits = params_splits[:num_layers]
@@ -260,15 +280,21 @@ class ImplicitPointHead(nn.Module):
         for l in range(num_layers):
             if l == 0:
                 # input layer
-                weight_splits[l] = weight_splits[l].reshape(num_instances, channels, in_channels)
+                weight_splits[l] = weight_splits[l].reshape(
+                    num_instances, channels, in_channels
+                )
                 bias_splits[l] = bias_splits[l].reshape(num_instances, channels, 1)
             elif l < num_layers - 1:
                 # intermediate layer
-                weight_splits[l] = weight_splits[l].reshape(num_instances, channels, channels)
+                weight_splits[l] = weight_splits[l].reshape(
+                    num_instances, channels, channels
+                )
                 bias_splits[l] = bias_splits[l].reshape(num_instances, channels, 1)
             else:
                 # output layer
-                weight_splits[l] = weight_splits[l].reshape(num_instances, num_classes, channels)
+                weight_splits[l] = weight_splits[l].reshape(
+                    num_instances, num_classes, channels
+                )
                 bias_splits[l] = bias_splits[l].reshape(num_instances, num_classes, 1)
 
         return weight_splits, bias_splits

@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
 from typing import List
-import torch
 
+import torch
 from detectron2.solver.lr_scheduler import _get_warmup_factor_at_iter
 
 # NOTE: PyTorch's LR scheduler interface uses names that assume the LR changes
@@ -53,7 +53,9 @@ class WarmupPolyLR(torch.optim.lr_scheduler._LRScheduler):
             ):
                 return [base_lr * self.constant_ending for base_lr in self.base_lrs]
         return [
-            base_lr * warmup_factor * math.pow((1.0 - self.last_epoch / self.max_iters), self.power)
+            base_lr
+            * warmup_factor
+            * math.pow((1.0 - self.last_epoch / self.max_iters), self.power)
             for base_lr in self.base_lrs
         ]
 

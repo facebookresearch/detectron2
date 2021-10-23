@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import os
-import torch
 
+import torch
+from densepose import add_densepose_config
 from detectron2.config import get_cfg
 from detectron2.engine import default_setup
 from detectron2.modeling import build_model
-
-from densepose import add_densepose_config
 
 _BASE_CONFIG_DIR = "configs"
 _EVOLUTION_CONFIG_SUB_DIR = "evolution"
@@ -21,7 +20,9 @@ def _get_base_config_dir():
     """
     Return the base directory for configurations
     """
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", _BASE_CONFIG_DIR)
+    return os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "..", _BASE_CONFIG_DIR
+    )
 
 
 def _get_evolution_config_dir():

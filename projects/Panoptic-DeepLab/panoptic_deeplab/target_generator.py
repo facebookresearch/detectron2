@@ -82,7 +82,9 @@ class PanopticDeepLabTargetGenerator(object):
         center_pts = []
         offset = np.zeros((2, height, width), dtype=np.float32)
         y_coord, x_coord = np.meshgrid(
-            np.arange(height, dtype=np.float32), np.arange(width, dtype=np.float32), indexing="ij"
+            np.arange(height, dtype=np.float32),
+            np.arange(width, dtype=np.float32),
+            indexing="ij",
         )
         # Generate pixel-wise loss weights
         semantic_weights = np.ones_like(panoptic, dtype=np.uint8)

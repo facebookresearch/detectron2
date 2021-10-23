@@ -12,11 +12,15 @@ import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog, build_detection_train_loader
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from detectron2.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+    launch,
+)
 from detectron2.evaluation import COCOEvaluator, DatasetEvaluators, verify_results
 from detectron2.projects.point_rend import add_pointrend_config
 from detectron2.utils.logger import setup_logger
-
 from point_sup import PointSupDatasetMapper, add_point_sup_config
 
 
@@ -73,7 +77,9 @@ def setup(args):
     cfg.freeze()
     default_setup(cfg, args)
     # Setup logger for "point_sup" module
-    setup_logger(output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="point_sup")
+    setup_logger(
+        output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="point_sup"
+    )
     return cfg
 
 

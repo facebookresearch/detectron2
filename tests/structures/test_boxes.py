@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import json
 import math
-import numpy as np
 import unittest
-import torch
 
+import numpy as np
+import torch
 from detectron2.structures import Boxes, BoxMode, pairwise_ioa, pairwise_iou
 from detectron2.utils.testing import reload_script_model
 
@@ -83,8 +83,12 @@ class TestBoxMode(unittest.TestCase):
             )
             output = self._convert_xywha_to_xyxy(box)
             self.assertEqual(output.dtype, box.dtype)
-            expected = np.asarray([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
-            self.assertTrue(np.allclose(output, expected, atol=1e-6), "output={}".format(output))
+            expected = np.asarray(
+                [[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype
+            )
+            self.assertTrue(
+                np.allclose(output, expected, atol=1e-6), "output={}".format(output)
+            )
 
     def test_box_convert_xywha_to_xyxy_tensor(self):
         for dtype in [torch.float32, torch.float64]:
@@ -98,9 +102,13 @@ class TestBoxMode(unittest.TestCase):
             )
             output = self._convert_xywha_to_xyxy(box)
             self.assertEqual(output.dtype, box.dtype)
-            expected = torch.tensor([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
+            expected = torch.tensor(
+                [[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype
+            )
 
-            self.assertTrue(torch.allclose(output, expected, atol=1e-6), "output={}".format(output))
+            self.assertTrue(
+                torch.allclose(output, expected, atol=1e-6), "output={}".format(output)
+            )
 
     def test_box_convert_xywh_to_xywha_list(self):
         for tp in [list, tuple]:
@@ -114,24 +122,32 @@ class TestBoxMode(unittest.TestCase):
 
     def test_box_convert_xywh_to_xywha_array(self):
         for dtype in [np.float64, np.float32]:
-            box = np.asarray([[30, 40, 70, 60], [30, 40, 60, 70], [-1, -1, 2, 2]], dtype=dtype)
+            box = np.asarray(
+                [[30, 40, 70, 60], [30, 40, 60, 70], [-1, -1, 2, 2]], dtype=dtype
+            )
             output = self._convert_xywh_to_xywha(box)
             self.assertEqual(output.dtype, box.dtype)
             expected = np.asarray(
                 [[65, 70, 70, 60, 0], [60, 75, 60, 70, 0], [0, 0, 2, 2, 0]], dtype=dtype
             )
-            self.assertTrue(np.allclose(output, expected, atol=1e-6), "output={}".format(output))
+            self.assertTrue(
+                np.allclose(output, expected, atol=1e-6), "output={}".format(output)
+            )
 
     def test_box_convert_xywh_to_xywha_tensor(self):
         for dtype in [torch.float32, torch.float64]:
-            box = torch.tensor([[30, 40, 70, 60], [30, 40, 60, 70], [-1, -1, 2, 2]], dtype=dtype)
+            box = torch.tensor(
+                [[30, 40, 70, 60], [30, 40, 60, 70], [-1, -1, 2, 2]], dtype=dtype
+            )
             output = self._convert_xywh_to_xywha(box)
             self.assertEqual(output.dtype, box.dtype)
             expected = torch.tensor(
                 [[65, 70, 70, 60, 0], [60, 75, 60, 70, 0], [0, 0, 2, 2, 0]], dtype=dtype
             )
 
-            self.assertTrue(torch.allclose(output, expected, atol=1e-6), "output={}".format(output))
+            self.assertTrue(
+                torch.allclose(output, expected, atol=1e-6), "output={}".format(output)
+            )
 
     def test_json_serializable(self):
         payload = {"box_mode": BoxMode.XYWH_REL}

@@ -2,18 +2,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
-import numpy as np
 import os
 import tempfile
 import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
 from functools import lru_cache
+
+import numpy as np
 import torch
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
 from detectron2.utils.file_io import PathManager
-
 from .evaluator import DatasetEvaluator
 
 
@@ -41,7 +41,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             os.path.join(meta.dirname, "Annotations/")
         )
         self._anno_file_template = os.path.join(annotation_dir_local, "{}.xml")
-        self._image_set_path = os.path.join(meta.dirname, "ImageSets", "Main", meta.split + ".txt")
+        self._image_set_path = os.path.join(
+            meta.dirname, "ImageSets", "Main", meta.split + ".txt"
+        )
         self._class_names = meta.thing_classes
         assert meta.year in [2007, 2012], meta.year
         self._is_2007 = meta.year == 2007
@@ -49,7 +51,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
     def reset(self):
-        self._predictions = defaultdict(list)  # class name -> list of prediction strings
+        self._predictions = defaultdict(
+            list
+        )  # class name -> list of prediction strings
 
     def process(self, inputs, outputs):
         for input, output in zip(inputs, outputs):
@@ -111,7 +115,11 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
-        ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
+        ret["bbox"] = {
+            "AP": np.mean(list(mAP.values())),
+            "AP50": mAP[50],
+            "AP75": mAP[75],
+        }
         return ret
 
 
@@ -184,7 +192,9 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
+def voc_eval(
+    detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False
+):
     """rec, prec, ap = voc_eval(detpath,
                                 annopath,
                                 imagesetfile,

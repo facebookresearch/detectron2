@@ -5,8 +5,8 @@ import itertools
 import unittest
 from contextlib import contextmanager
 from copy import deepcopy
-import torch
 
+import torch
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import get_model_no_weights
@@ -118,7 +118,10 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
     CONFIG_PATH = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
 
     def test_half_empty_data(self):
-        instances = [get_empty_instance(200, 250), get_regular_bitmask_instances(200, 249)]
+        instances = [
+            get_empty_instance(200, 250),
+            get_regular_bitmask_instances(200, 249),
+        ]
         self._test_train([(200, 250), (200, 249)], instances)
 
     # This test is flaky because in some environment the output features are zero due to relu
@@ -148,7 +151,9 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
                 "p6": tensor(1, 256, 16, 16),
             }
             props = [Instances((510, 510))]
-            props[0].proposal_boxes = Boxes([[10, 10, 20, 20]]).to(device=self.model.device)
+            props[0].proposal_boxes = Boxes([[10, 10, 20, 20]]).to(
+                device=self.model.device
+            )
             props[0].objectness_logits = torch.tensor([1.0]).reshape(1, 1)
             det, _ = self.model.roi_heads(images, features, props)
             self.assertEqual(len(det[0]), 0)
@@ -162,12 +167,16 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
         with autocast(), typecheck_hook(
             self.model.backbone, in_dtype=torch.float32, out_dtype=torch.float16
         ), typecheck_hook(
-            self.model.roi_heads.box_predictor, in_dtype=torch.float16, out_dtype=torch.float16
+            self.model.roi_heads.box_predictor,
+            in_dtype=torch.float16,
+            out_dtype=torch.float16,
         ):
             out = self.model.inference(inputs, do_postprocess=False)[0]
             self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
             self.assertEqual(out.pred_masks.dtype, torch.float16)
-            self.assertEqual(out.scores.dtype, torch.float32)  # scores comes from softmax
+            self.assertEqual(
+                out.scores.dtype, torch.float32
+            )  # scores comes from softmax
 
 
 class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
@@ -188,7 +197,9 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
             pred_logits, pred_anchor_deltas = self.model.head(features)
             pred_logits = [tensor(*x.shape) for x in pred_logits]
             pred_anchor_deltas = [tensor(*x.shape) for x in pred_anchor_deltas]
-            det = self.model.forward_inference(images, features, [pred_logits, pred_anchor_deltas])
+            det = self.model.forward_inference(
+                images, features, [pred_logits, pred_anchor_deltas]
+            )
             # all predictions (if any) are infinite or nan
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)
@@ -201,7 +212,9 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
         self.model.eval()
         with autocast(), typecheck_hook(
             self.model.backbone, in_dtype=torch.float32, out_dtype=torch.float16
-        ), typecheck_hook(self.model.head, in_dtype=torch.float16, out_dtype=torch.float16):
+        ), typecheck_hook(
+            self.model.head, in_dtype=torch.float16, out_dtype=torch.float16
+        ):
             out = self.model(inputs)[0]["instances"]
             self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
             self.assertEqual(out.scores.dtype, torch.float16)

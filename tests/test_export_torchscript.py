@@ -4,9 +4,8 @@ import json
 import os
 import tempfile
 import unittest
-import torch
-from torch import Tensor, nn
 
+import torch
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.config.instantiate import dump_dataclass, instantiate
@@ -24,6 +23,7 @@ from detectron2.utils.testing import (
     get_sample_coco_image,
     random_boxes,
 )
+from torch import Tensor, nn
 
 
 """
@@ -78,7 +78,9 @@ class TestScripting(unittest.TestCase):
         with torch.no_grad():
             instance = model(inputs)[0]["instances"]
             scripted_instance = convert_scripted_instances(script_model(inputs)[0])
-            scripted_instance = detector_postprocess(scripted_instance, img.shape[1], img.shape[2])
+            scripted_instance = detector_postprocess(
+                scripted_instance, img.shape[1], img.shape[2]
+            )
         assert_instances_allclose(instance, scripted_instance)
         # Note that the model currently cannot be saved and loaded into a new process:
         # https://github.com/pytorch/pytorch/issues/46944
@@ -91,14 +93,18 @@ class TestTracing(unittest.TestCase):
             inputs = [{"image": image}]
             return model.inference(inputs, do_postprocess=False)[0]
 
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
+        self._test_model(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func
+        )
 
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
             return model.inference(inputs, do_postprocess=False)[0]
 
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
+        self._test_model(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func
+        )
 
     def testRetinaNet(self):
         # TODO: this test requires manifold access, see: T88318502
@@ -127,7 +133,9 @@ class TestTracing(unittest.TestCase):
             def __init__(self):
                 super().__init__()
                 self.model = KRCNNConvDeconvUpsampleHead(
-                    ShapeSpec(channels=4, height=14, width=14), num_keypoints=17, conv_dims=(4,)
+                    ShapeSpec(channels=4, height=14, width=14),
+                    num_keypoints=17,
+                    conv_dims=(4,),
                 )
 
             def forward(self, x, predbox1, predbox2):
@@ -178,7 +186,12 @@ class TestTorchscriptUtils(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
             dump_torchscript_IR(ts_model, d)
             # check that the files are created
-            for name in ["model_ts_code", "model_ts_IR", "model_ts_IR_inlined", "model"]:
+            for name in [
+                "model_ts_code",
+                "model_ts_IR",
+                "model_ts_IR_inlined",
+                "model",
+            ]:
                 fname = os.path.join(d, name + ".txt")
                 self.assertTrue(os.stat(fname).st_size > 0, fname)
 
@@ -220,12 +233,16 @@ class TestTorchscriptUtils(unittest.TestCase):
 
     def test_flatten_instances_boxes(self):
         inst = Instances(
-            torch.tensor([5, 8]), pred_masks=torch.tensor([3]), pred_boxes=Boxes(torch.ones((1, 4)))
+            torch.tensor([5, 8]),
+            pred_masks=torch.tensor([3]),
+            pred_boxes=Boxes(torch.ones((1, 4))),
         )
         obj = [3, ([5, 6], inst)]
         res, schema = flatten_to_tuple(obj)
         self.assertEqual(res[:3], (3, 5, 6))
-        for r, expected in zip(res[3:], (inst.pred_boxes.tensor, inst.pred_masks, inst.image_size)):
+        for r, expected in zip(
+            res[3:], (inst.pred_boxes.tensor, inst.pred_masks, inst.image_size)
+        ):
             self.assertIs(r, expected)
         new_obj = schema(res)
         assert_instances_allclose(new_obj[1][1], inst, rtol=0.0, size_as_tensor=True)
