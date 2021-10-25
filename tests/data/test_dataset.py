@@ -15,6 +15,7 @@ from detectron2.data import (
     MapDataset,
     ToIterableDataset,
     build_batch_data_loader,
+    build_detection_test_loader,
     build_detection_train_loader,
 )
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
@@ -82,25 +83,46 @@ class TestDataLoader(unittest.TestCase):
         kwargs = {k: instantiate(v) for k, v in cfg.items()}
         return kwargs
 
-    def test_build_dataloader(self):
+    def test_build_dataloader_train(self):
         kwargs = self._get_kwargs()
         dl = build_detection_train_loader(**kwargs)
         next(iter(dl))
 
-    def test_build_iterable_dataloader(self):
+    def test_build_iterable_dataloader_train(self):
         kwargs = self._get_kwargs()
         ds = DatasetFromList(kwargs.pop("dataset"))
         ds = ToIterableDataset(ds, TrainingSampler(len(ds)))
         dl = build_detection_train_loader(dataset=ds, **kwargs)
         next(iter(dl))
 
-    def test_build_dataloader_inference(self):
+    def _check_is_range(self, data_loader, N):
+        # check that data_loader produces range(N)
+        data = list(iter(data_loader))
+        data = [x for batch in data for x in batch]  # flatten the batches
+        self.assertEqual(len(data), N)
+        self.assertEqual(set(data), set(range(N)))
+
+    def test_build_batch_dataloader_inference(self):
+        # Test that build_batch_data_loader can be used for inference
         N = 96
         ds = DatasetFromList(list(range(N)))
         sampler = InferenceSampler(len(ds))
         dl = build_batch_data_loader(ds, sampler, 8, num_workers=3)
+        self._check_is_range(dl, N)
 
-        data = list(iter(dl))
-        data = [x for batch in data for x in batch]  # flatten the batches
-        self.assertEqual(len(data), N)
-        self.assertEqual(set(data), set(range(N)))
+    def test_build_dataloader_inference(self):
+        N = 50
+        ds = DatasetFromList(list(range(N)))
+        sampler = InferenceSampler(len(ds))
+        dl = build_detection_test_loader(
+            dataset=ds, sampler=sampler, mapper=lambda x: x, num_workers=3
+        )
+        self._check_is_range(dl, N)
+
+    def test_build_iterable_dataloader_inference(self):
+        # Test that build_detection_test_loader supports iterable dataset
+        N = 50
+        ds = DatasetFromList(list(range(N)))
+        ds = ToIterableDataset(ds, InferenceSampler(len(ds)))
+        dl = build_detection_test_loader(dataset=ds, mapper=lambda x: x, num_workers=3)
+        self._check_is_range(dl, N)

@@ -3,8 +3,9 @@ import math
 from typing import List, Tuple
 import torch
 from fvcore.nn import giou_loss, smooth_l1_loss
+from torch.nn import functional as F
 
-from detectron2.layers import cat
+from detectron2.layers import cat, ciou_loss, diou_loss
 from detectron2.structures import Boxes
 
 # Value for clamping large dw and dh predictions. The heuristic is that we clamp
@@ -244,6 +245,7 @@ class Box2BoxTransformLinear:
         Get box regression transformation deltas (dx1, dy1, dx2, dy2) that can be used
         to transform the `src_boxes` into the `target_boxes`. That is, the relation
         ``target_boxes == self.apply_deltas(deltas, src_boxes)`` is true.
+        The center of src must be inside target boxes.
 
         Args:
             src_boxes (Tensor): square source boxes, e.g., anchors
@@ -277,6 +279,8 @@ class Box2BoxTransformLinear:
                 box transformations for the single box boxes[i].
             boxes (Tensor): boxes to transform, of shape (N, 4)
         """
+        # Ensure the output is a valid box. See Sec 2.1 of https://arxiv.org/abs/2006.09214
+        deltas = F.relu(deltas)
         boxes = boxes.to(deltas.dtype)
 
         ctr_x = 0.5 * (boxes[:, 0] + boxes[:, 2])
@@ -315,7 +319,8 @@ def _dense_box_regression_loss(
         pred_anchor_deltas: #lvl predictions, each is (N, HixWixA, 4)
         gt_boxes: N ground truth boxes, each has shape (R, 4) (R = sum(Hi * Wi * A))
         fg_mask: the foreground boolean mask of shape (N, R) to compute loss on
-        box_reg_loss_type (str): Loss type to use. Supported losses: "smooth_l1", "giou".
+        box_reg_loss_type (str): Loss type to use. Supported losses: "smooth_l1", "giou",
+            "diou", "ciou".
         smooth_l1_beta (float): beta parameter for the smooth L1 regression loss. Default to
             use L1 loss. Only used when `box_reg_loss_type` is "smooth_l1"
     """
@@ -334,6 +339,20 @@ def _dense_box_regression_loss(
             box2box_transform.apply_deltas(k, anchors) for k in cat(pred_anchor_deltas, dim=1)
         ]
         loss_box_reg = giou_loss(
+            torch.stack(pred_boxes)[fg_mask], torch.stack(gt_boxes)[fg_mask], reduction="sum"
+        )
+    elif box_reg_loss_type == "diou":
+        pred_boxes = [
+            box2box_transform.apply_deltas(k, anchors) for k in cat(pred_anchor_deltas, dim=1)
+        ]
+        loss_box_reg = diou_loss(
+            torch.stack(pred_boxes)[fg_mask], torch.stack(gt_boxes)[fg_mask], reduction="sum"
+        )
+    elif box_reg_loss_type == "ciou":
+        pred_boxes = [
+            box2box_transform.apply_deltas(k, anchors) for k in cat(pred_anchor_deltas, dim=1)
+        ]
+        loss_box_reg = ciou_loss(
             torch.stack(pred_boxes)[fg_mask], torch.stack(gt_boxes)[fg_mask], reduction="sum"
         )
     else:

@@ -15,9 +15,10 @@ jobs:
         with:
           python-version: 3.6
       - name: Install dependencies
+        # flake8-bugbear flake8-comprehensions are useful but not available internally
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8==3.8.1 flake8-bugbear flake8-comprehensions isort==4.3.21
+          python -m pip install flake8==3.8.1 isort==4.3.21
           python -m pip install black==21.4b2
           flake8 --version
       - name: Lint
@@ -36,14 +37,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: [1.7, 1.8, 1.9]
+        torch: ["1.8", "1.9", "1.10"]
         include:
-          - torch: 1.7
-            torchvision: 0.8
-          - torch: 1.8
+          - torch: "1.8"
             torchvision: 0.9
-          - torch: 1.9
+          - torch: "1.9"
             torchvision: "0.10"
+          - torch: "1.10"
+            torchvision: "0.11.1"
     steps:
       - name: Checkout
         uses: actions/checkout@v2

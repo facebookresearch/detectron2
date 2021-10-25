@@ -14,7 +14,7 @@ Any customization on the training logic is then easily controlled by the user.
 
 ### Trainer Abstraction
 
-We also provide a standarized "trainer" abstraction with a
+We also provide a standardized "trainer" abstraction with a
 hook system that helps simplify the standard training behavior.
 It includes the following two instantiations:
 

@@ -5,6 +5,7 @@ import tempfile
 from itertools import count
 
 from detectron2.config import LazyConfig, LazyCall as L
+from omegaconf import DictConfig
 
 
 class TestLazyPythonConfig(unittest.TestCase):
@@ -36,6 +37,14 @@ class TestLazyPythonConfig(unittest.TestCase):
         cfg.lazyobj.pop("_target_")
         # the rest are equal
         self.assertEqual(cfg, cfg2)
+
+    def test_failed_save(self):
+        cfg = DictConfig({"x": lambda: 3}, flags={"allow_objects": True})
+        with tempfile.TemporaryDirectory(prefix="detectron2") as d:
+            fname = os.path.join(d, "test_config.yaml")
+            LazyConfig.save(cfg, fname)
+            self.assertTrue(os.path.exists(fname))
+            self.assertTrue(os.path.exists(fname + ".pkl"))
 
     def test_overrides(self):
         cfg = LazyConfig.load(self.root_filename)

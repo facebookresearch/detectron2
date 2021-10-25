@@ -6,6 +6,7 @@ import unittest
 import yaml
 from omegaconf import OmegaConf
 from omegaconf import __version__ as oc_version
+from dataclasses import dataclass
 
 from detectron2.config import instantiate, LazyCall as L
 from detectron2.layers import ShapeSpec
@@ -22,6 +23,12 @@ class TestClass:
 
     def __call__(self, call_arg):
         return call_arg + self.int_arg
+
+
+@dataclass
+class TestDataClass:
+    x: int
+    y: str
 
 
 @unittest.skipIf(OC_VERSION < (2, 1), "omegaconf version too old")
@@ -85,3 +92,9 @@ class TestConstruction(unittest.TestCase):
     def test_bad_lazycall(self):
         with self.assertRaises(Exception):
             L(3)
+
+    def test_instantiate_dataclass(self):
+        a = L(TestDataClass)(x=1, y="s")
+        a = instantiate(a)
+        self.assertEqual(a.x, 1)
+        self.assertEqual(a.y, "s")

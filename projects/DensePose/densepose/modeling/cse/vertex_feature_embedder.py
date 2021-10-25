@@ -58,7 +58,7 @@ class VertexFeatureEmbedder(nn.Module):
         """
         return normalize_embeddings(torch.mm(self.features, self.embeddings))
 
-    @torch.no_grad()  # pyre-ignore[56]
+    @torch.no_grad()
     def load(self, fpath: str):
         """
         Load data from a file

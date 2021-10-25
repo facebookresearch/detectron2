@@ -33,7 +33,7 @@ defined in the global scope of the config file. Note that:
 * All dictionaries are turned to an [omegaconf](https://omegaconf.readthedocs.io/)
   config object during loading. This enables access to omegaconf features,
   such as its [access syntax](https://omegaconf.readthedocs.io/en/2.1_branch/usage.html#access-and-manipulation)
-  and [interoplation](https://omegaconf.readthedocs.io/en/2.1_branch/usage.html#variable-interpolation).
+  and [interpolation](https://omegaconf.readthedocs.io/en/2.1_branch/usage.html#variable-interpolation).
 * Absolute imports in `config.py` works the same as in regular Python.
 * Relative imports can only import dictionaries from config files.
   They are simply a syntax sugar for [LazyConfig.load_rel](../modules/config.html#detectron2.config.LazyConfig.load_rel).

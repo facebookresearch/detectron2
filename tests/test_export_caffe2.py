@@ -53,7 +53,3 @@ class TestCaffe2Export(unittest.TestCase):
     def testRetinaNet(self):
         # TODO: this test requires manifold access, see: T88318502
         self._test_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml")
-
-    def testPanopticFPN(self):
-        # TODO: this test requires manifold access, see: T88318502
-        self._test_model("COCO-PanopticSegmentation/panoptic_fpn_R_50_3x.yaml")

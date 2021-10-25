@@ -11,7 +11,7 @@ import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 7], "Requires PyTorch >= 1.7"
+assert torch_ver >= [1, 8], "Requires PyTorch >= 1.8"
 
 
 def get_version():
@@ -168,7 +168,7 @@ setup(
         # choosing the proper pypi package name at https://github.com/skvark/opencv-python
         # The following are pure-python dependencies that should be easily installable
         "termcolor>=1.1",
-        "yacs>=0.1.6",
+        "yacs>=0.1.8",
         "tabulate",
         "cloudpickle",
         "tqdm>4.29.0",
