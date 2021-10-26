@@ -323,7 +323,7 @@ class EventStorage:
         Args:
             preds [List]: list containing latest predictions made on test set
         """
-        self._predictions = preds
+        self._predictions.extend(preds)
 
     def put_scalar(self, name, value, smoothing_hint=True):
         """
@@ -706,6 +706,7 @@ class WandbWriter(EventWriter):
     def write(self):
         
         storage = get_event_storage()
+        
         # Use the exisitng dataloader used for predicting
         if storage._misc.get("data_loaders") is not None and not self._val_data_loaders:
             self._val_data_loaders = storage._misc.get("data_loaders")
@@ -713,9 +714,8 @@ class WandbWriter(EventWriter):
         log_dict = {}
         tables = self._build_evalset_tables()
         table_row_idx = [0 for i in range(len(tables))]
+        self._media = []
         if len(storage._predictions):
-            self._media = []
-
             # NOTE: there can be mutliple datasets used together like -('coco', 'voc')
             # we need to handle each dataset and corresponding table separately 
             for [pred] in storage._predictions:

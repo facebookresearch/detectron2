@@ -776,11 +776,16 @@ class EvalHookv2(HookBase):
                         "Got '{}: {}' instead.".format(k, v)
                     ) from e
             self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
-
-        self.trainer.storage.put_predictions(self._predict())
         # Evaluation may take different time among workers.
         # A barrier make them start the next iteration together.
         comm.synchronize()
+        predictions = self._predict()
+        all_predictions = comm.gather(predictions)
+        
+        if comm.is_main_process():
+            for predictions in all_predictions:
+                self.trainer.storage.put_predictions(predictions)
+
 
     def after_step(self):
         next_iter = self.trainer.iter + 1
