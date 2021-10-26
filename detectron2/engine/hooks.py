@@ -732,10 +732,8 @@ class EvalHookv2(HookBase):
                 return []
         # Infer atleast 8 images
         num_batches_to_infer = max(8, int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
-                
         # if event storage has enough predictions, pass
         if len(self.trainer.storage._predictions) >= num_batches_to_infer:
-            print("passing")
             return []
         
         outputs = []

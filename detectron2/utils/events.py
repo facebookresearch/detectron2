@@ -704,9 +704,7 @@ class WandbWriter(EventWriter):
         return (wandb.Image(file_name, boxes=boxes, masks=masks, classes=self._table_thing_classes[loader_i]), avg_conf_per_class)
 
     def write(self):
-        
         storage = get_event_storage()
-        
         # Use the exisitng dataloader used for predicting
         if storage._misc.get("data_loaders") is not None and not self._val_data_loaders:
             self._val_data_loaders = storage._misc.get("data_loaders")
@@ -784,7 +782,7 @@ class WandbWriter(EventWriter):
         #
         # Current design - Use cols. for each detection class score and don't use columns for mask overlays 
         tables = []
-        for loader_i in range(len(self._val_data_loaders)):   
+        for loader_i, _ in enumerate(self._val_data_loaders):
             table_cols = ["file_name", "image", "overlays"] + self.thing_class_names[loader_i]
             table = wandb.Table(columns=table_cols)
             tables.append(table)
