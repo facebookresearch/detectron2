@@ -744,9 +744,12 @@ class EvalHookv2(HookBase):
             if isinstance(model, nn.Module):
                 stack.enter_context(inference_context(model))
             stack.enter_context(torch.no_grad())
-            for data_loader in self._data_loaders:
-                for _, inputs in enumerate(data_loader):
-                    outputs.append(model(inputs))
+            for loader_idx, data_loader in enumerate(self._data_loaders):
+                for _, input in enumerate(data_loader):
+                    pred = model(input)
+                    pred[0]['file_name'] = input[0].get("file_name")
+                    pred[0]['loader_idx'] = loader_idx
+                    outputs.append(pred)
                     # Checks if there are enough predictions already. Also takes into account DDP mode
                     if (len(outputs) >= num_batches_to_infer or 
                         len(self.trainer.storage._predictions) + len(outputs)  >= num_batches_to_infer):
