@@ -532,9 +532,9 @@ class WandbWriter(EventWriter):
         self.thing_index_to_class = []
         self.stuff_class_names = []
         self.stuff_index_to_class = []
-        
+        self._table_classes = {} # wandb.Classes object needed for tables
+        self._evalset_table = []
         self._build_dataset_metadata()
-        print("thing stuff", self.stuff_class_names)
 
         if cfg is None:
             cfg = {}
@@ -566,6 +566,8 @@ class WandbWriter(EventWriter):
         '''
         combined_loader_meta = MetadataCatalog.get(self.cfg.DATASETS.TEST)
         for dataset in self.cfg.DATASETS.TEST:
+            # represent each un-initialized loader in list
+            self._evalset_table.append(None)
             metadata = MetadataCatalog.get(dataset)
 
             # Parse thing_classes
@@ -592,18 +594,18 @@ class WandbWriter(EventWriter):
                 index_to_class[i] = name
             self.stuff_index_to_class[-1] = index_to_class
 
-    def _parse_prediction(self, pred):
+    def _parse_prediction(self, pred, loader_i):
         """
         Parse prediction of one image and return the primitive martices to plot wandb media files
 
         Args:
             pred (detectron2.structures.instances.Instances): Prediction instance for the image
+            loader_i (int): index of the dataloader being used
         
         returns:
             Dict (): parsed predictions
         """
         parsed_pred = {}
-        print("pred keys", pred.keys())
         if pred.get("instances") is not None:
             pred_ins = pred["instances"]
             parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
@@ -611,9 +613,13 @@ class WandbWriter(EventWriter):
             parsed_pred['scores'] = pred_ins.scores.tolist() if pred_ins.has("scores") else None
             parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
             parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
+            if self._table_classes is None:
+                self._table_classes = wandb.Classes([{'id': id, 'name': name} for id, name in self.thing_index_to_class[loader_i].items()])
         
         if pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
+            if self._table_classes is None:
+                self._table_classes = wandb.Classes([{'id': id, 'name': name} for id, name in self.stuff_index_to_class[loader_i].items()])
 
         if pred.get("panoptic_seg") is not None:
             # NOTE: handling void labels isn't neat.
@@ -621,7 +627,8 @@ class WandbWriter(EventWriter):
             # handle void labels( -1 )
             panoptic_mask[panoptic_mask < 0] = 0
             parsed_pred["panoptic_mask"] = panoptic_mask
-            
+            if self._table_classes is None:
+                self._table_classes = wandb.Classes([{'id': id, 'name': name} for id, name in self.stuff_index_to_class[loader_i].items()])
 
         return parsed_pred
 
@@ -632,23 +639,37 @@ class WandbWriter(EventWriter):
         Args:
             img (str): Path to the image
             pred (Dict): Prediction for one image
+        
         """
-        pred = self._parse_prediction(pred)
+        pred = self._parse_prediction(pred, loader_i)
         
         # Process Bounding box detections
         boxes = {}
+        avg_conf_per_class = [0 for i in range(len(self.thing_class_names[loader_i]))]
+        counts = {}
         if pred.get('boxes') is not None:
             boxes_data = []
-            for i, box in enumerate(pred['boxes']):
+            # only plot top 20 predictions. Preds are sorted by descending conf. scores.
+            for i, box in enumerate(pred['boxes'][:20]):
                 pred_class = int(pred['classes'][i])
                 caption = f'{pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
 
                 boxes_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
-                                "class_id": int(pred['classes'][i]),
+                                "class_id": pred_class,
                                 "box_caption": "%s %.3f" % (caption, pred['scores'][i]),
                                 "scores": {"class_score":  pred['scores'][i]},
                                 "domain": "pixel"
                                 })
+
+                avg_conf_per_class[pred_class] = avg_conf_per_class[pred_class] + pred['scores'][i]
+                if pred_class in counts:
+                    counts[pred_class] = counts[pred_class] + 1
+                else:
+                    counts[pred_class] = 1
+
+                for pred_class in counts.keys():
+                    avg_conf_per_class[pred_class] = avg_conf_per_class[pred_class] / counts[pred_class]
+
             boxes = {"predictions": {"box_data": boxes_data, "class_labels": self.thing_index_to_class[loader_i]}}
         
         # Process instance segmentation detections
@@ -671,13 +692,16 @@ class WandbWriter(EventWriter):
                 "class_labels": self.stuff_index_to_class[loader_i]
             }
         
+        # TODO: Support panoptic segmentation and keypoint visualizations. If we cannot support the interactive version,
+        # use Visualizer class to log static predictions.
         if pred.get("panoptic_mask") is not None:
             masks["panoptic_mask"] = {
                 "mask_data": pred["panoptic_mask"],
                 "class_labels": self.stuff_index_to_class[loader_i]
             }
-        
-        return wandb.Image(img, boxes=boxes, masks=masks)
+
+
+        return (wandb.Image(img, boxes=boxes, masks=masks, classes=self._table_classes), avg_conf_per_class)
 
     def write(self):
         
@@ -690,24 +714,86 @@ class WandbWriter(EventWriter):
 
         if len(storage._predictions):
             self._media = []
+            pred_idx = 0
+
+            # NOTE: there can be mutliple datasets used together like -('coco', 'voc')
+            # we need to handle each dataset and corresponding table separately 
             for loader_i, data_loader in enumerate(self._val_data_loaders):
-                for i, [input] in enumerate(data_loader): # Test dataloader has batch size set to 1
-                    pred_img = self._plot_prediction(input.get("file_name"), storage._predictions[i][0], loader_i)
-                    self._media.append(pred_img)
-                    
-                    # Refactor breaking loops
-                    if len(self._media) >= len(storage._predictions):
+                # reset tables classes, table_name, table for this loader
+                self._table_classes = None
+                table_name = self.cfg.DATASETS.TEST[loader_i]
+                table = self._build_evalset_table(loader_i)
+
+                for _, [input] in enumerate(data_loader): # Test dataloader has batch size set to 1
+                    pred_img, avg_bbox_conf = self._plot_prediction(input.get("file_name"), storage._predictions[pred_idx][0], loader_i)
+
+                    # hardcode media panel images upper limit to 16
+                    if len(self._media) < 8:
+                        self._media.append(pred_img)
+                    if self._table_logging():
+                        if self._evalset_table[loader_i] is None:
+                            table.add_data(input.get("file_name"), pred_img, 0, *avg_bbox_conf)
+                        else:
+                            table_row = self._evalset_table[loader_i].data[pred_idx]
+                            table.add_data(
+                                table_row[0],
+                                 wandb.Image(table_row[1], boxes=pred_img._boxes, masks=pred_img._masks, classes=self._table_classes),
+                                 0,
+                                 *avg_bbox_conf
+                                 )
+
+                    pred_idx = pred_idx + 1
+                    # TODO: Refactor breaking loops
+                    if pred_idx >= len(storage._predictions):
                         break
-                if len(self._media) >= len(storage._predictions):
+                self._use_table_as_artifact(table, table_name, loader_i)
+                log_dict[table_name] = table
+
+                if pred_idx >= len(storage._predictions):
                         break
                         
             log_dict["predictions"] = self._media
             storage.clear_predictions()
                     
-        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+        for k, (v, _) in storage.latest_with_smoothing_hint(self._window_size).items():
             log_dict[k] = v
-        
+
         self._run.log(log_dict)
+
+    def _use_table_as_artifact(self, table, table_name, loader_i):
+        '''
+        This function logs the given table as artifact and calls `use_artifact` on it so tables from next iter-
+        ations can use the reference of already uploaded images.
+        '''
+        if self._evalset_table[loader_i] is None:
+            eval_art = wandb.Artifact(self._run.id + table_name, type="dataset")
+            eval_art.add(table, table_name)
+            self._run.use_artifact(eval_art)
+            eval_art.wait()
+            self._evalset_table[loader_i] = eval_art.get(table_name)
+
+
+    def _table_logging(self):
+        '''
+        This function returns true if user defined settings enable tables logging implicitly or explicitly
+        '''
+        return True
+
+    def _build_evalset_table(self, loader_i):
+        '''
+        
+        '''
+        # The design of tables for each task is up for discussion. 
+        # * If each prediction of a kind has its col, then there'll be 160 columns for coco detection + ins. seg. This isn't ideal
+        # * Writer doesn't have access to any mask overlay metrics like IOUs or false +ves etc,
+        #
+        # Current design - Use cols. for each detection class score and don't use columns for mask overlays        
+        table_cols = ["file_name", "image", "overlays"] + self.thing_class_names[loader_i]
+        table = wandb.Table(columns=table_cols)
+
+        return table
+
+
 
     def close(self):
         self._run.finish()

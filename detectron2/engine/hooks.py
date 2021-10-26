@@ -730,16 +730,14 @@ class EvalHookv2(HookBase):
             self.trainer.storage._misc["data_loaders"] =  self._data_loaders
             if not self._num_samples:
                 return []
-        # Infer and log atleast 8 images
+        # Infer atleast 8 images
         num_batches_to_infer = max(8, int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
-        
-        print("num_batches_to_infer   ", num_batches_to_infer)
-        
-        # if evetnstorage has enough predictions, pass
+                
+        # if event storage has enough predictions, pass
         if len(self.trainer.storage._predictions) >= num_batches_to_infer:
+            print("passing")
             return []
         
-        print("predicting")
         outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
