@@ -711,14 +711,13 @@ class WandbWriter(EventWriter):
             self._val_data_loaders = storage._misc.get("data_loaders")
 
         log_dict = {}
-
+        tables = self._build_evalset_tables()
+        table_row_idx = [0 for i in range(len(tables))]
         if len(storage._predictions):
             self._media = []
 
             # NOTE: there can be mutliple datasets used together like -('coco', 'voc')
             # we need to handle each dataset and corresponding table separately 
-            tables = self._build_evalset_tables()
-            table_row_idx = [0 for i in range(len(tables))]
             for [pred] in storage._predictions:
                 loader_i = pred['loader_idx']
                 file_name = pred['file_name']
