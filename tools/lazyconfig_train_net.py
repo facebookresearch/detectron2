@@ -34,6 +34,7 @@ logger = logging.getLogger("detectron2")
 
 def do_test(cfg, model):
     if "evaluator" in cfg.dataloader:
+        cfg.dataloader.evaluator.output_dir = os.path.join(cfg.train.output_dir, "inference")
         ret = inference_on_dataset(
             model, instantiate(cfg.dataloader.test), instantiate(cfg.dataloader.evaluator)
         )
