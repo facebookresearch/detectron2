@@ -26,10 +26,7 @@ build_one() {
   echo "Launching container $container_name ..."
   container_id="$container_name"_"$cu"_"$pytorch_ver"
 
-  py_versions=(3.6 3.7 3.8)
-  if [[ $pytorch_ver != "1.7" ]]; then
-    py_versions+=(3.9)
-  fi
+  py_versions=(3.6 3.7 3.8 3.9)
 
   for py in "${py_versions[@]}"; do
     docker run -itd \
@@ -52,6 +49,11 @@ EOF
 if [[ -n "$1" ]] && [[ -n "$2" ]]; then
   build_one "$1" "$2"
 else
+  build_one cu113 1.10
+  build_one cu111 1.10
+  build_one cu102 1.10
+  build_one cpu 1.10
+
   build_one cu111 1.9
   build_one cu102 1.9
   build_one cpu 1.9
@@ -60,10 +62,4 @@ else
   build_one cu102 1.8
   build_one cu101 1.8
   build_one cpu 1.8
-
-  build_one cu110 1.7
-  build_one cu102 1.7
-  build_one cu101 1.7
-  build_one cu92 1.7
-  build_one cpu 1.7
 fi
