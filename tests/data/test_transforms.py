@@ -17,6 +17,19 @@ from detectron2.utils.logger import setup_logger
 logger = logging.getLogger(__name__)
 
 
+def polygon_allclose(poly1, poly2):
+    """
+    Test whether two polygons are the same.
+    Both arguments are nx2 numpy arrays.
+    """
+    # ABCD and CDAB are the same polygon. So it's important to check after rolling
+    for k in range(len(poly1)):
+        rolled_poly1 = np.roll(poly1, k, axis=0)
+        if np.allclose(rolled_poly1, poly2):
+            return True
+    return False
+
+
 class TestTransforms(unittest.TestCase):
     def setUp(self):
         setup_logger()
@@ -76,7 +89,7 @@ class TestTransforms(unittest.TestCase):
         err_msg = "transformed_polygon = {}, expected {}".format(
             transformed_polygons[0], expected_polygon
         )
-        self.assertTrue(np.allclose(transformed_polygons[0], expected_polygon), err_msg)
+        self.assertTrue(polygon_allclose(transformed_polygons[0], expected_polygon), err_msg)
 
     def test_apply_rotated_boxes_unequal_scaling_factor(self):
         np.random.seed(125)
