@@ -387,6 +387,7 @@ class DefaultTrainer(TrainerBase):
             # Assume you want to save checkpoints together with logs/statistics
             model,
             cfg.OUTPUT_DIR,
+            optimizer=optimizer,
             trainer=weakref.proxy(self),
         )
         self.start_iter = 0
