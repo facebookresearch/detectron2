@@ -565,6 +565,7 @@ class WandbWriter(EventWriter):
         MetadataCatalog.get("val1").property = ...
         MetadataCatalog.get("val2").property = ...
         '''
+        self._num_loaders = len(self.cfg.DATASETS.TEST)
         combined_loader_meta = MetadataCatalog.get(self.cfg.DATASETS.TEST)
         for dataset in self.cfg.DATASETS.TEST:
             # represent each un-initialized loader in list
@@ -581,6 +582,9 @@ class WandbWriter(EventWriter):
                 self.thing_class_names[-1] = combined_loader_meta.thing_classes
             index_to_class = {}
             wandb_thing_classes = []
+            # NOTE: The classs indeces starts from 1 instead of 0 because wandb.Classes doesn't handle instance masks
+            # This is developed w.r.t cli 0.12.5
+            # TODO: link a detailed writeup about this. 
             for i, name in enumerate(self.thing_class_names[-1], 1):
                 index_to_class[i] = name
                 wandb_thing_classes.append({"id": i, "name": name})
@@ -655,7 +659,7 @@ class WandbWriter(EventWriter):
                 caption = f'{pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
 
                 boxes_data.append({"position": {"minX": box[0], "minY": box[1], "maxX": box[2], "maxY": box[3]},
-                                "class_id": pred_class,
+                                "class_id": pred_class + 1,
                                 "box_caption": "%s %.3f" % (caption, pred['scores'][i]),
                                 "scores": {"class_score":  pred['scores'][i]},
                                 "domain": "pixel"
@@ -734,7 +738,7 @@ class WandbWriter(EventWriter):
                         table_row = self._evalset_table[loader_i].data[row_idx]
                         tables[loader_i].add_data(
                             table_row[0],
-                                wandb.Image(table_row[1], boxes=pred_img._boxes, masks=pred_img._masks, classes=self._table_thing_classes[loader_i]),
+                                wandb.Image(table_row[1], boxes=pred_img._boxes, masks=pred_img._masks),
                                 0,
                                 *avg_bbox_conf
                                 )
