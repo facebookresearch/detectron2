@@ -745,9 +745,10 @@ class WandbWriter(EventWriter):
 
             if self._table_logging() and storage._predictions:
                 for loader_i, table in enumerate(tables):
-                    table_name = self.cfg.DATASETS.TEST[loader_i]
-                    self._use_table_as_artifact(table, table_name, loader_i)
-                    log_dict[table_name] = table
+                    if table_row_idx[loader_i] > 0: # check if table has any data
+                        table_name = self.cfg.DATASETS.TEST[loader_i] + "_"+ str(loader_i)
+                        self._use_table_as_artifact(table, table_name, loader_i)
+                        log_dict[table_name] = table
 
             log_dict["predictions"] = self._media
             print("___media", len(self._media))
