@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import torch
 from fvcore.nn import giou_loss, smooth_l1_loss
 from torch.nn import functional as F
@@ -308,7 +308,7 @@ class Box2BoxTransformLinear(object):
 
 
 def _dense_box_regression_loss(
-    anchors: List[Boxes],
+    anchors: List[Union[Boxes, torch.Tensor]],
     box2box_transform: Box2BoxTransform,
     pred_anchor_deltas: List[torch.Tensor],
     gt_boxes: List[torch.Tensor],
@@ -330,7 +330,10 @@ def _dense_box_regression_loss(
         smooth_l1_beta (float): beta parameter for the smooth L1 regression loss. Default to
             use L1 loss. Only used when `box_reg_loss_type` is "smooth_l1"
     """
-    anchors = type(anchors[0]).cat(anchors).tensor  # (R, 4)
+    if isinstance(anchors[0], Boxes):
+        anchors = type(anchors[0]).cat(anchors).tensor  # (R, 4)
+    else:
+        anchors = cat(anchors)
     if box_reg_loss_type == "smooth_l1":
         gt_anchor_deltas = [box2box_transform.get_deltas(anchors, k) for k in gt_boxes]
         gt_anchor_deltas = torch.stack(gt_anchor_deltas)  # (N, R, 4)
