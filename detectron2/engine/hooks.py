@@ -721,6 +721,38 @@ class EvalHookv2(HookBase):
             dataset = build_detection_test_loader(self._cfg, dataset_name)
             self._data_loaders.append(dataset)
             self._num_samples = self._num_samples + len(dataset)
+            
+    def _parse_prediction(self, pred):
+        """
+        Parse prediction of one image and return the primitive martices to plot wandb media files
+
+        Args:
+            pred (detectron2.structures.instances.Instances): Prediction instance for the image
+            loader_i (int): index of the dataloader being used
+        
+        returns:
+            Dict (): parsed predictions
+        """
+        parsed_pred = {}
+        if pred.get("instances") is not None:
+            pred_ins = pred["instances"]
+            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
+            parsed_pred['classes'] = pred_ins.pred_classes.tolist() if pred_ins.has("pred_classes") else None
+            parsed_pred['scores'] = pred_ins.scores.tolist() if pred_ins.has("scores") else None
+            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
+            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
+        
+        if pred.get("sem_seg") is not None:
+            parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
+
+        if pred.get("panoptic_seg") is not None:
+            # NOTE: handling void labels isn't neat.
+            panoptic_mask = pred["panoptic_seg"][0].cpu().detach().numpy()
+            # handle void labels( -1 )
+            panoptic_mask[panoptic_mask < 0] = 0
+            parsed_pred["panoptic_mask"] = panoptic_mask
+
+        return parsed_pred
 
         
     def _predict(self):
@@ -745,9 +777,10 @@ class EvalHookv2(HookBase):
             for loader_idx, data_loader in enumerate(self._data_loaders):
                 for _, input in enumerate(data_loader):
                     pred = model(input)
-                    pred[0]['file_name'] = input[0].get("file_name")
-                    pred[0]['loader_idx'] = loader_idx
-                    outputs.append(pred)
+                    pred = self._parse_prediction(pred[0])
+                    pred['file_name'] = input[0].get("file_name")
+                    pred['loader_idx'] = loader_idx
+                    outputs.append([pred])
                     # Checks if there are enough predictions already. Also takes into account DDP mode
                     if (len(outputs) >= num_batches_to_infer or 
                         len(self.trainer.storage._predictions) + len(outputs)  >= num_batches_to_infer):
@@ -774,16 +807,12 @@ class EvalHookv2(HookBase):
                         "Got '{}: {}' instead.".format(k, v)
                     ) from e
             self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
+        predictions = self._predict()
+        self.trainer.storage.put_predictions(predictions)
+            
         # Evaluation may take different time among workers.
         # A barrier make them start the next iteration together.
         comm.synchronize()
-        predictions = self._predict()
-        all_predictions = comm.gather(predictions)
-        
-        if comm.is_main_process():
-            for predictions in all_predictions:
-                self.trainer.storage.put_predictions(predictions)
-
 
     def after_step(self):
         next_iter = self.trainer.iter + 1

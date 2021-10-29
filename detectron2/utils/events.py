@@ -646,7 +646,7 @@ class WandbWriter(EventWriter):
         """
         loader_i = pred['loader_idx']
         file_name = pred['file_name']
-        pred = self._parse_prediction(pred)
+        #pred = self._parse_prediction(pred)
         # Process Bounding box detections
         boxes = {}
         avg_conf_per_class = [0 for i in range(len(self.thing_class_names[loader_i]))]
@@ -745,13 +745,11 @@ class WandbWriter(EventWriter):
 
             if self._table_logging() and storage._predictions:
                 for loader_i, table in enumerate(tables):
-                    if table_row_idx[loader_i] > 0: # check if table has any data
-                        table_name = self.cfg.DATASETS.TEST[loader_i] + "_"+ str(loader_i)
-                        self._use_table_as_artifact(table, table_name, loader_i)
-                        log_dict[table_name] = table
+                    table_name = self.cfg.DATASETS.TEST[loader_i] + "_"+ str(loader_i)
+                    self._use_table_as_artifact(table, table_name, loader_i)
+                    log_dict[table_name] = table
 
             log_dict["predictions"] = self._media
-            print("___media", len(self._media))
             storage.clear_predictions()
                     
         for k, (v, _) in storage.latest_with_smoothing_hint(self._window_size).items():
