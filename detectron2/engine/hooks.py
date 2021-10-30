@@ -687,44 +687,39 @@ class TorchMemoryStats(HookBase):
                     self._logger.info("\n" + mem_summary)
 
                 torch.cuda.reset_peak_memory_stats()
+                
 
-
-class EvalHookv2(HookBase):
+class PeriodicPredictor(HookBase):
     """
-    Run an evaluation function periodically, and at the end of training.
+    Write predictions to EventStorage periodically.
 
-    It is executed every ``eval_period`` iterations and after the last iteration.
+    It is executed every ``period`` iterations and after the last iteration.
     """
 
-    def __init__(self, eval_period, eval_function):
+    def __init__(self, period, split):
         """
         Args:
-            eval_period (int): the period to run `eval_function`. Set to 0 to
-                not evaluate periodically (but still after the last iteration).
-            eval_function (callable): a function which takes no arguments, and
-                returns a nested dict of evaluation metrics.
-
-        Note:
-            This hook must be enabled in all or none workers.
-            If you would like only certain workers to perform evaluation,
-            give other workers a no-op function (`eval_function=lambda: None`).
+            period (int): the period of prediction
+            split (float): the split of total dataset to predict
         """
-        self._period = eval_period
-        self._func = eval_function
-        self._data_loaders = []
+
+        self._period = period
+        self._split = split
         self._cfg = None
         self._num_samples = 0
-
+        self._data_loaders = []
+    
     def _setup_eval(self):
         self._cfg = self.trainer.cfg
         for _, dataset_name in enumerate(self._cfg.DATASETS.TEST):
             dataset = build_detection_test_loader(self._cfg, dataset_name)
             self._data_loaders.append(dataset)
             self._num_samples = self._num_samples + len(dataset)
-            
+    
     def _parse_prediction(self, pred):
         """
-        Parse prediction of one image and return the primitive martices to plot wandb media files
+        Parse prediction of one image and return the primitive martices to plot wandb media files.
+        Moves prediction from GPU to system memory.
 
         Args:
             pred (detectron2.structures.instances.Instances): Prediction instance for the image
@@ -754,27 +749,18 @@ class EvalHookv2(HookBase):
 
         return parsed_pred
 
-        
     def _predict(self):
-        if not self._data_loaders:
-            self._setup_eval()
-            # Allows writer to use the same dataloader to get the images.
-            self.trainer.storage._misc["data_loaders"] =  self._data_loaders
-            if not self._num_samples:
-                return []
         # Infer atleast 8 images
-        num_batches_to_infer = max(8, int(self._cfg.WANDB.EVAL_SPLIT * self._num_samples))
-        # if event storage has enough predictions, pass
-        if len(self.trainer.storage._predictions) >= num_batches_to_infer:
-            return []
-        
+        num_batches_to_infer = max(8, int(self._split * self._num_samples))
+        logger = logging.getLogger(__name__)
+        logger.info(f"Running inference on {num_batches_to_infer} images")
         outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
             if isinstance(model, nn.Module):
                 stack.enter_context(inference_context(model))
             stack.enter_context(torch.no_grad())
-            for loader_idx, data_loader in enumerate(self._data_loaders):
+            for loader_idx, data_loader in enumerate(self._data_loaders): 
                 for _, input in enumerate(data_loader):
                     pred = model(input)
                     pred = self._parse_prediction(pred[0])
@@ -782,52 +768,23 @@ class EvalHookv2(HookBase):
                     pred['loader_idx'] = loader_idx
                     outputs.append([pred])
                     # Checks if there are enough predictions already. Also takes into account DDP mode
-                    if (len(outputs) >= num_batches_to_infer or 
-                        len(self.trainer.storage._predictions) + len(outputs)  >= num_batches_to_infer):
+                    if (len(outputs) >= num_batches_to_infer):
                         return outputs
                         
         return outputs
 
-
-    def _do_eval(self):
-        results = self._func()
-        
-        if results:
-            assert isinstance(
-                results, dict
-            ), "Eval function must return a dict. Got {} instead.".format(results)
-
-            flattened_results = flatten_results_dict(results)
-            for k, v in flattened_results.items():
-                try:
-                    v = float(v)
-                except Exception as e:
-                    raise ValueError(
-                        "[EvalHook] eval_function should return a nested dict of float. "
-                        "Got '{}: {}' instead.".format(k, v)
-                    ) from e
-            self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
-        predictions = self._predict()
-        self.trainer.storage.put_predictions(predictions)
-            
-        # Evaluation may take different time among workers.
-        # A barrier make them start the next iteration together.
-        comm.synchronize()
-
     def after_step(self):
-        next_iter = self.trainer.iter + 1
-        if self._period > 0 and next_iter % self._period == 0:
-            # do the last eval in after_train
-            if next_iter != self.trainer.max_iter:
-                self._do_eval()
+        if self._period > 0:
+            if (self.trainer.iter + 1) % self._period == 0 or (
+                self.trainer.iter == self.trainer.max_iter - 1
+            ):
+                if not self._data_loaders:
+                    self._setup_eval()
+                predictions = self._predict()
+                self.trainer.storage.put_predictions(predictions)
 
-    def after_train(self):
-        # This condition is to prevent the eval from running after a failed training
-        if self.trainer.iter + 1 >= self.trainer.max_iter:
-            self._do_eval()
-        # func is likely a closure that holds reference to the trainer
-        # therefore we clean it to avoid circular reference in the end
-        del self._func
+
+
 
 @contextmanager
 def inference_context(model):

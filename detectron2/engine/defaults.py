@@ -458,7 +458,9 @@ class DefaultTrainer(TrainerBase):
 
         # Do evaluation after checkpointer, because then if it fails,
         # we can use the saved checkpoint to debug.
-        ret.append(hooks.EvalHookv2(cfg.TEST.EVAL_PERIOD, test_and_save_results))
+        ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
+
+        ret.append(hooks.PeriodicPredictor(cfg.TRAIN.PRED_PERIOD, cfg.TRAIN.PRED_SPLIT))
 
         if comm.is_main_process():
             # Here the default print/log frequency of each writer is used.

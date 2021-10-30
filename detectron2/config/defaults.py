@@ -637,5 +637,10 @@ _C.GLOBAL.HACK = 1.0
 ## WandB config
 _C.WANDB = CN()
 _C.WANDB.PROJECT_NAME = "Detectron2"
-_C.WANDB.EVAL_SPLIT = 0.1
 _C.WANDB.NUM_IMAGES = 8
+
+## For string a split of predictions- _C.PRED_SPLIT? _C.EVAL_SPLIT?
+_C.TRAIN = CN()
+_C.TRAIN.PRED = True # To turn on/off periodic predictions
+_C.TRAIN.PRED_SPLIT = 0.01 # The default split of predictions
+_C.TRAIN.PRED_PERIOD = 0 # 0 to disable

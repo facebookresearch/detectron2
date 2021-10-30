@@ -299,7 +299,6 @@ class EventStorage:
         self._vis_data = []
         self._histograms = []
         self._predictions = []
-        self._misc = {}
 
     def put_image(self, img_name, img_tensor):
         """
@@ -525,7 +524,6 @@ class WandbWriter(EventWriter):
             kwargs: other arguments passed to `wandb.init(...)`
         """
         self._window_size = window_size
-        self._val_data_loaders = []
         self._media = []
         self.cfg = cfg
         self.thing_class_names = []
@@ -603,38 +601,6 @@ class WandbWriter(EventWriter):
                 index_to_class[i] = name
             self.stuff_index_to_class[-1] = index_to_class
 
-    def _parse_prediction(self, pred):
-        """
-        Parse prediction of one image and return the primitive martices to plot wandb media files
-
-        Args:
-            pred (detectron2.structures.instances.Instances): Prediction instance for the image
-            loader_i (int): index of the dataloader being used
-        
-        returns:
-            Dict (): parsed predictions
-        """
-        parsed_pred = {}
-        if pred.get("instances") is not None:
-            pred_ins = pred["instances"]
-            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
-            parsed_pred['classes'] = pred_ins.pred_classes.tolist() if pred_ins.has("pred_classes") else None
-            parsed_pred['scores'] = pred_ins.scores.tolist() if pred_ins.has("scores") else None
-            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
-            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
-        
-        if pred.get("sem_seg") is not None:
-            parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
-
-        if pred.get("panoptic_seg") is not None:
-            # NOTE: handling void labels isn't neat.
-            panoptic_mask = pred["panoptic_seg"][0].cpu().detach().numpy()
-            # handle void labels( -1 )
-            panoptic_mask[panoptic_mask < 0] = 0
-            parsed_pred["panoptic_mask"] = panoptic_mask
-
-        return parsed_pred
-
     def _plot_prediction(self, pred):
         """
         plot prediction on one image
@@ -646,7 +612,7 @@ class WandbWriter(EventWriter):
         """
         loader_i = pred['loader_idx']
         file_name = pred['file_name']
-        #pred = self._parse_prediction(pred)
+
         # Process Bounding box detections
         boxes = {}
         avg_conf_per_class = [0 for i in range(len(self.thing_class_names[loader_i]))]
@@ -709,9 +675,6 @@ class WandbWriter(EventWriter):
 
     def write(self):
         storage = get_event_storage()
-        # Use the exisitng dataloader used for predicting
-        if storage._misc.get("data_loaders") is not None and not self._val_data_loaders:
-            self._val_data_loaders = storage._misc.get("data_loaders")
 
         log_dict = {}
         tables = self._build_evalset_tables()
@@ -729,6 +692,7 @@ class WandbWriter(EventWriter):
                 if len(self._media) < 8:
                     self._media.append(pred_img)
                 if self._table_logging():
+                    # Log images only once, then use their refernces to dedupe
                     if self._evalset_table[loader_i] is None:
                         tables[loader_i].add_data(file_name, pred_img, 0, *avg_bbox_conf)
                         self._map_table_row_file_name[loader_i][file_name] = table_row_idx[loader_i]
@@ -786,7 +750,7 @@ class WandbWriter(EventWriter):
         #
         # Current design - Use cols. for each detection class score and don't use columns for mask overlays 
         tables = []
-        for loader_i, _ in enumerate(self._val_data_loaders):
+        for loader_i in range(self._num_loaders):
             table_cols = ["file_name", "image", "overlays"] + self.thing_class_names[loader_i]
             table = wandb.Table(columns=table_cols)
             tables.append(table)
