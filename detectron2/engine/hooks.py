@@ -721,8 +721,6 @@ class PeriodicPredictor(HookBase):
             self._dataset = self._cfg.DATASETS.TRAIN
             logger = logging.getLogger(__name__)
             logger.info(f"TEST set is not defined! PRedicting on TRAIN set")
-            import pdb
-            pdb.set_trace()
 
         for _, dataset_name in enumerate(self._dataset):
             # use test loader because it uses batch-size of 1, which makes for eaiser processing
