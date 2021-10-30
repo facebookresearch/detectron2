@@ -546,6 +546,7 @@ class WandbWriter(EventWriter):
             config=cfg,
             **kwargs
         )
+        self._run._label(repo="detectron2")
     
     def _build_dataset_metadata(self):
         '''
@@ -555,7 +556,7 @@ class WandbWriter(EventWriter):
 
         E.g. -- Setting the metadata in either ways will works:
 
-        DATASETS.TEST = ("val1", "val2",)
+        DATASETS.TEST/TEST = ("val1", "val2",)
         # set the grobal properties for both datasets
         MetadataCatalog.get(("val1", "val2",)).property = ...
         
@@ -563,9 +564,10 @@ class WandbWriter(EventWriter):
         MetadataCatalog.get("val1").property = ...
         MetadataCatalog.get("val2").property = ...
         '''
-        self._num_loaders = len(self.cfg.DATASETS.TEST)
-        combined_loader_meta = MetadataCatalog.get(self.cfg.DATASETS.TEST)
-        for dataset in self.cfg.DATASETS.TEST:
+        self._dataset = self.cfg.DATASETS.TEST if self.cfg.DATASETS.TEST else self.cfg.DATASETS.TRAIN
+        self._num_loaders = len(self._dataset)
+        combined_loader_meta = MetadataCatalog.get(self._dataset)
+        for dataset in self._dataset:
             # represent each un-initialized loader in list
             self._evalset_table.append(None)
             self._map_table_row_file_name.append({})
@@ -709,7 +711,7 @@ class WandbWriter(EventWriter):
 
             if self._table_logging() and storage._predictions:
                 for loader_i, table in enumerate(tables):
-                    table_name = self.cfg.DATASETS.TEST[loader_i] + "_"+ str(loader_i)
+                    table_name = self._dataset[loader_i] + "_"+ str(loader_i)
                     self._use_table_as_artifact(table, table_name, loader_i)
                     log_dict[table_name] = table
 

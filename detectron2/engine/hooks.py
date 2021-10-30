@@ -687,11 +687,12 @@ class TorchMemoryStats(HookBase):
                     self._logger.info("\n" + mem_summary)
 
                 torch.cuda.reset_peak_memory_stats()
-                
+
 
 class PeriodicPredictor(HookBase):
     """
-    Write predictions to EventStorage periodically.
+    Write predictions to EventStorage periodically. Predicts on the given split of TEST set if found. If not found,
+    predicts on TRAIN set
 
     It is executed every ``period`` iterations and after the last iteration.
     """
@@ -708,13 +709,27 @@ class PeriodicPredictor(HookBase):
         self._cfg = None
         self._num_samples = 0
         self._data_loaders = []
+        self._dataset = ()
     
     def _setup_eval(self):
+        """
+        Set up the inference process. This should be called only once per experiment
+        """
         self._cfg = self.trainer.cfg
-        for _, dataset_name in enumerate(self._cfg.DATASETS.TEST):
+        self._dataset = self._cfg.DATASETS.TEST 
+        if not self._dataset:
+            self._dataset = self._cfg.DATASETS.TRAIN
+            logger = logging.getLogger(__name__)
+            logger.info(f"TEST set is not defined! PRedicting on TRAIN set")
+            import pdb
+            pdb.set_trace()
+
+        for _, dataset_name in enumerate(self._dataset):
+            # use test loader because it uses batch-size of 1, which makes for eaiser processing
             dataset = build_detection_test_loader(self._cfg, dataset_name)
             self._data_loaders.append(dataset)
             self._num_samples = self._num_samples + len(dataset)
+
     
     def _parse_prediction(self, pred):
         """
