@@ -24,7 +24,7 @@ import torch.nn as nn
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.solver import LRMultiplier
-from detectron2.utils.events import EventStorage, EventWriter
+from detectron2.utils.events import EventStorage, EventWriter, get_event_storage
 from detectron2.utils.file_io import PathManager
 from detectron2.data import build_detection_test_loader
 from .train_loop import HookBase
@@ -710,6 +710,7 @@ class PeriodicPredictor(HookBase):
         self._num_samples = 0
         self._data_loaders = []
         self._dataset = ()
+        self._predictions = []
     
     def _setup_eval(self):
         """
@@ -744,11 +745,11 @@ class PeriodicPredictor(HookBase):
         parsed_pred = {}
         if pred.get("instances") is not None:
             pred_ins = pred["instances"]
-            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
-            parsed_pred['classes'] = pred_ins.pred_classes.tolist() if pred_ins.has("pred_classes") else None
-            parsed_pred['scores'] = pred_ins.scores.tolist() if pred_ins.has("scores") else None
-            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy() if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
-            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
+            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist()[:10] if pred_ins.has("pred_boxes") else None
+            parsed_pred['classes'] = pred_ins.pred_classes.tolist()[:10] if pred_ins.has("pred_classes") else None
+            parsed_pred['scores'] = pred_ins.scores.tolist()[:10] if pred_ins.has("scores") else None
+            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy()[:10] if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
+            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist()[:10] if pred_ins.has("pred_keypoints") else None
         
         if pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
@@ -767,7 +768,6 @@ class PeriodicPredictor(HookBase):
         num_batches_to_infer = max(8, int(self._split * self._num_samples))
         logger = logging.getLogger(__name__)
         logger.info(f"Running inference on {num_batches_to_infer} images")
-        outputs = []
         model = self.trainer._trainer.model
         with ExitStack() as stack:
             if isinstance(model, nn.Module):
@@ -779,12 +779,11 @@ class PeriodicPredictor(HookBase):
                     pred = self._parse_prediction(pred[0])
                     pred['file_name'] = input[0].get("file_name")
                     pred['loader_idx'] = loader_idx
-                    outputs.append([pred])
+                    self._predictions.append(pred)
                     # Checks if there are enough predictions already. Also takes into account DDP mode
-                    if (len(outputs) >= num_batches_to_infer):
-                        return outputs
+                    if (len(self._predictions) >= num_batches_to_infer):
+                        return 
                         
-        return outputs
 
     def after_step(self):
         if self._period > 0:
@@ -793,8 +792,16 @@ class PeriodicPredictor(HookBase):
             ):
                 if not self._data_loaders:
                     self._setup_eval()
-                predictions = self._predict()
-                self.trainer.storage.put_predictions(predictions)
+                self._predictions = []
+                self._predict()
+                comm.synchronize()
+                storage = get_event_storage()
+                print("gathering")
+                predictions = comm.gather(self._predictions)
+                print("gathered")
+                if comm.is_main_process():
+                    predictions = list(itertools.chain(*predictions))
+                    storage.put_predictions(predictions)
 
 
 

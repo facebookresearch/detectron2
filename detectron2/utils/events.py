@@ -322,7 +322,10 @@ class EventStorage:
         Args:
             preds [List]: list containing latest predictions made on test set
         """
+        print("called before -> ", len(self._predictions), "  fdfdsf ", len(preds))
         self._predictions.extend(preds)
+        print("called after -> ", len(self._predictions))
+
 
     def put_scalar(self, name, value, smoothing_hint=True):
         """
@@ -622,7 +625,7 @@ class WandbWriter(EventWriter):
         if pred.get('boxes') is not None:
             boxes_data = []
             # only plot top 20 predictions. Preds are sorted by descending conf. scores.
-            for i, box in enumerate(pred['boxes'][:20]):
+            for i, box in enumerate(pred['boxes']):
                 pred_class = int(pred['classes'][i])
                 caption = f'{pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
 
@@ -685,7 +688,7 @@ class WandbWriter(EventWriter):
         if len(storage._predictions):
             # NOTE: there can be mutliple datasets used together like -('coco', 'voc')
             # we need to handle each dataset and corresponding table separately 
-            for [pred] in storage._predictions:
+            for pred in storage._predictions:
                 loader_i = pred['loader_idx']
                 file_name = pred['file_name']
                 pred_img, avg_bbox_conf = self._plot_prediction(pred)
