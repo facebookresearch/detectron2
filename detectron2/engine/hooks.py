@@ -797,6 +797,7 @@ class PeriodicPredictor(HookBase):
                 self._predict()
                 comm.synchronize()
                 storage = get_event_storage()
+                # gather all DDP mode predictions to rank 0 process
                 predictions = comm.gather(self._predictions)
                 if comm.is_main_process():
                     predictions = list(itertools.chain(*predictions))
