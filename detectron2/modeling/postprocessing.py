@@ -27,8 +27,7 @@ def detector_postprocess(
     Returns:
         Instances: the resized output from the model, based on the output resolution
     """
-    # Change to 'if is_tracing' after PT1.7
-    if isinstance(output_height, torch.Tensor):
+    if torch.jit.is_tracing():
         # Converts integer tensors to float temporaries to ensure true
         # division is performed when computing scale_x and scale_y.
         output_width_tmp = output_width.float()
