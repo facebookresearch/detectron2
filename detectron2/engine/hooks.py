@@ -796,9 +796,7 @@ class PeriodicPredictor(HookBase):
                 self._predict()
                 comm.synchronize()
                 storage = get_event_storage()
-                print("gathering")
                 predictions = comm.gather(self._predictions)
-                print("gathered")
                 if comm.is_main_process():
                     predictions = list(itertools.chain(*predictions))
                     storage.put_predictions(predictions)

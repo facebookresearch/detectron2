@@ -322,9 +322,7 @@ class EventStorage:
         Args:
             preds [List]: list containing latest predictions made on test set
         """
-        print("called before -> ", len(self._predictions), "  fdfdsf ", len(preds))
         self._predictions.extend(preds)
-        print("called after -> ", len(self._predictions))
 
 
     def put_scalar(self, name, value, smoothing_hint=True):
@@ -533,11 +531,12 @@ class WandbWriter(EventWriter):
         self.thing_index_to_class = []
         self.stuff_class_names = []
         self.stuff_index_to_class = []
-        self._table_thing_classes = [] # List[wandb.Classes] object needed for tables
+        self._table_thing_classes = [] # List[wandb.Classes] objects needed for tables
+        self._table_stuff_classes = [] 
         self._evalset_table = []
         self._map_table_row_file_name = [] # Used to dedupe images: table.get[row_num] by mapping tablle row to file name
         self._build_dataset_metadata()
-
+        metadata = MetadataCatalog.get(self._dataset[0])
         if cfg is None:
             cfg = {}
             wandb_project = "detectron2"
@@ -556,7 +555,8 @@ class WandbWriter(EventWriter):
         Builds parsed metadata lists and mappings dicts to facilitate logging.
         Builds a list of metadata for each of the validation dataloaders. Expects the metadata to present for ech dataloader or
         combined as a list of dataloaders. If both are present, the former will be given preferance.
-
+        Useful for writing labels and captions of predictions.
+        
         E.g. -- Setting the metadata in either ways will works:
 
         DATASETS.TEST/TEST = ("val1", "val2",)
@@ -566,6 +566,12 @@ class WandbWriter(EventWriter):
         # set the properties separately
         MetadataCatalog.get("val1").property = ...
         MetadataCatalog.get("val2").property = ...
+        
+        Builds 3 metadata objects for stuff and thing classes:
+        1. self.thing_class_names/self.stuff_class_names -- List[List[str]] of category names
+        2. self.thing_index_to_class/self.stuff_index_to_class-- List[Dict[int, str]]
+        3. self.thing_class_names/self.stuff_class_names -- List[wandb.Classes] for logging images to wandb.Table
+        
         '''
         self._dataset = self.cfg.DATASETS.TEST if self.cfg.DATASETS.TEST else self.cfg.DATASETS.TRAIN
         self._num_loaders = len(self._dataset)
@@ -583,11 +589,10 @@ class WandbWriter(EventWriter):
                 self.thing_class_names[-1] = metadata.thing_classes
             elif hasattr(combined_loader_meta, 'thing_classes'): # if user provides combined list for all datasets
                 self.thing_class_names[-1] = combined_loader_meta.thing_classes
+                
             index_to_class = {}
             wandb_thing_classes = []
-            # NOTE: The classs indeces starts from 1 instead of 0 because wandb.Classes doesn't handle instance masks
-            # This is developed w.r.t cli 0.12.5
-            # TODO: link a detailed writeup about this. 
+            # NOTE: The classs indeces starts from 1 instead of 0. Treat 0 as void, makes for easier vectorized operations
             for i, name in enumerate(self.thing_class_names[-1], 1):
                 index_to_class[i] = name
                 wandb_thing_classes.append({"id": i, "name": name})
@@ -601,10 +606,14 @@ class WandbWriter(EventWriter):
                 self.stuff_class_names[-1] = metadata.stuff_classes
             elif hasattr(combined_loader_meta, 'stuff_classes'):
                 self.stuff_class_names[-1] = combined_loader_meta.stuff_classes
-            index_to_class = {0: "void"}
-            for i, name in enumerate(self.stuff_class_names[-1], 1):
+                
+            index_to_class = {}
+            wandb_stuff_classes = []
+            for i, name in enumerate(self.stuff_class_names[-1]):
                 index_to_class[i] = name
+                wandb_stuff_classes.append({"id": i, "name": name})
             self.stuff_index_to_class[-1] = index_to_class
+            self._table_stuff_classes.append(wandb.Classes(wandb_stuff_classes))
 
     def _plot_prediction(self, pred):
         """
@@ -617,7 +626,7 @@ class WandbWriter(EventWriter):
         """
         loader_i = pred['loader_idx']
         file_name = pred['file_name']
-
+        classes = self._table_thing_classes[loader_i]
         # Process Bounding box detections
         boxes = {}
         avg_conf_per_class = [0 for i in range(len(self.thing_class_names[loader_i]))]
@@ -666,7 +675,8 @@ class WandbWriter(EventWriter):
                 "mask_data": pred["sem_mask"],
                 "class_labels": self.stuff_index_to_class[loader_i]
             }
-        
+            classes = self._table_stuff_classes[loader_i]
+            
         # TODO: Support panoptic segmentation and keypoint visualizations. If we cannot support the interactive version,
         # use Visualizer class to log static predictions.
         if pred.get("panoptic_mask") is not None:
@@ -676,7 +686,7 @@ class WandbWriter(EventWriter):
             }
 
 
-        return (wandb.Image(file_name, boxes=boxes, masks=masks, classes=self._table_thing_classes[loader_i]), avg_conf_per_class)
+        return (wandb.Image(file_name, boxes=boxes, masks=masks, classes=classes), avg_conf_per_class)
 
     def write(self):
         storage = get_event_storage()
