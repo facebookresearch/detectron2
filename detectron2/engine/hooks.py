@@ -784,7 +784,9 @@ class PeriodicPredictor(HookBase):
                     if (len(self._predictions) >= num_batches_to_infer):
                         return 
                         
-
+    def before_step(self):
+        self._predictions = []
+        
     def after_step(self):
         if self._period > 0:
             if (self.trainer.iter + 1) % self._period == 0 or (
@@ -792,14 +794,14 @@ class PeriodicPredictor(HookBase):
             ):
                 if not self._data_loaders:
                     self._setup_eval()
-                self._predictions = []
                 self._predict()
                 comm.synchronize()
                 storage = get_event_storage()
                 predictions = comm.gather(self._predictions)
                 if comm.is_main_process():
                     predictions = list(itertools.chain(*predictions))
-                    storage.put_predictions(predictions)
+                    storage._predictions = predictions
+                self._predictions = []
 
 
 
