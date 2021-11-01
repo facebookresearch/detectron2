@@ -639,7 +639,7 @@ _C.WANDB = CN()
 _C.WANDB.PROJECT_NAME = "Detectron2"
 _C.WANDB.NUM_IMAGES = 8
 
-## For string a split of predictions- _C.PRED_SPLIT? _C.EVAL_SPLIT?
+## For storing a split of predictions- _C.PRED_SPLIT? _C.EVAL_SPLIT?
 _C.TRAIN = CN()
 _C.TRAIN.PRED = True # To turn on/off periodic predictions
 _C.TRAIN.PRED_SPLIT = 0.01 # The default split of predictions
