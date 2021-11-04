@@ -39,6 +39,11 @@ class FasterRCNNTest(unittest.TestCase):
         # almost 0 for random inputs.
         self.assertTrue(int(res["conv"]), 117)
 
+    def test_flop_with_output_shape(self):
+        inputs = [{"image": torch.rand(3, 800, 800), "height": 700, "width": 700}]
+        res = flop_count_operators(self.model, inputs)
+        self.assertTrue(int(res["conv"]), 117)
+
     def test_param_count(self):
         res = parameter_count(self.model)
         self.assertTrue(res[""], 41699936)
