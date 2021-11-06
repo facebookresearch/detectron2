@@ -639,7 +639,6 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
