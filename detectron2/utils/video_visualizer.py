@@ -73,6 +73,9 @@ class VideoVisualizer:
         classes = predictions.pred_classes.numpy() if predictions.has("pred_classes") else None
         keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
         colors = predictions.COLOR if predictions.has("COLOR") else [None] * len(predictions)
+        durations = predictions.ID_duration if predictions.has("ID_duration") else None
+        duration_threshold = self.metadata.get("duration_threshold", 0)
+        visibilities = None if durations is None else [x > duration_threshold for x in durations]
 
         if predictions.has("pred_masks"):
             masks = predictions.pred_masks
@@ -102,12 +105,14 @@ class VideoVisualizer:
         else:
             alpha = 0.5
 
+        labels = None if labels is None else [y[0] for y in filter(lambda x: x[1], zip(labels, visibilities))] # noqa
+        assigned_colors = None if colors is None else [y[0] for y in filter(lambda x: x[1], zip(colors, visibilities))] # noqa
         frame_visualizer.overlay_instances(
-            boxes=None if masks is not None else boxes,  # boxes are a bit distracting
-            masks=masks,
+            boxes=None if masks is not None else boxes[visibilities],  # boxes are a bit distracting
+            masks=None if masks is None else masks[visibilities],
             labels=labels,
-            keypoints=keypoints,
-            assigned_colors=colors,
+            keypoints=None if keypoints is None else keypoints[visibilities],
+            assigned_colors=assigned_colors,
             alpha=alpha,
         )
 
