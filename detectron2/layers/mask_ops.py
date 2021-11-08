@@ -5,8 +5,6 @@ import torch
 from PIL import Image
 from torch.nn import functional as F
 
-from detectron2.structures import Boxes
-
 __all__ = ["paste_masks_in_image"]
 
 
@@ -71,9 +69,10 @@ def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True
         return img_masks[:, 0], ()
 
 
+# Annotate boxes as Tensor (but not Boxes) in order to use scripting
 @torch.jit.script_if_tracing
 def paste_masks_in_image(
-    masks: torch.Tensor, boxes: Boxes, image_shape: Tuple[int, int], threshold: float = 0.5
+    masks: torch.Tensor, boxes: torch.Tensor, image_shape: Tuple[int, int], threshold: float = 0.5
 ):
     """
     Paste a set of masks that are of a fixed resolution (e.g., 28 x 28) into an image.
@@ -262,19 +261,15 @@ def scale_boxes(boxes, scale):
 
 
 @torch.jit.script_if_tracing
-def _traceable_paste_masks_in_image(
+def _paste_masks_tensor_shape(
     masks: torch.Tensor,
     boxes: torch.Tensor,
     image_shape: Tuple[torch.Tensor, torch.Tensor],
     threshold: float = 0.5,
 ):
     """
-    A traceable wrapper of paste_masks_in_image that can be used during tracing.
-    It only changes the input types:
-    * Don't use Boxes because custom types cannot be used in script_if_tracing.
-    * During tracing, shapes are tensors instead of ints. The Tensor->int
-      conversion should be scripted rather than traced.
+    A wrapper of paste_masks_in_image where image_shape is Tensor.
+    During tracing, shapes might be tensors instead of ints. The Tensor->int
+    conversion should be scripted rather than traced.
     """
-    return paste_masks_in_image(
-        masks, Boxes(boxes), (int(image_shape[0]), int(image_shape[1])), threshold
-    )
+    return paste_masks_in_image(masks, boxes, (int(image_shape[0]), int(image_shape[1])), threshold)
