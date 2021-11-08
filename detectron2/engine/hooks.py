@@ -276,7 +276,7 @@ class BestCheckpointer(HookBase):
             additional_state = {"iteration": metric_iter}
             self._checkpointer.save(f"{self._file_prefix}", **additional_state)
             self._logger.info(
-                f"Saved best model as latest eval score for {self._val_metric} is"
+                f"Saved best model as latest eval score for {self._val_metric} is "
                 f"{latest_metric:0.5f}, better than last best score "
                 f"{self.best_metric:0.5f} @ iteration {self.best_iter}."
             )
