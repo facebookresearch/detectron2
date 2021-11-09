@@ -157,7 +157,7 @@ class TestMaskCropPaste(unittest.TestCase):
         scripted_f = torch.jit.script(paste_masks_in_image)
         N = 10
         masks = torch.rand(N, 28, 28)
-        boxes = Boxes(random_boxes(N, 100))
+        boxes = Boxes(random_boxes(N, 100)).tensor
         image_shape = (150, 150)
 
         out = paste_masks_in_image(masks, boxes, image_shape)

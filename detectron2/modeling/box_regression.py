@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import torch
 from fvcore.nn import giou_loss, smooth_l1_loss
 from torch.nn import functional as F
@@ -227,7 +227,7 @@ class Box2BoxTransformRotated(object):
         return pred_boxes
 
 
-class Box2BoxTransformLinear:
+class Box2BoxTransformLinear(object):
     """
     The linear box-to-box transform defined in FCOS. The transformation is parameterized
     by the distance from the center of (square) src box to 4 edges of the target box.
@@ -265,8 +265,11 @@ class Box2BoxTransformLinear:
 
         deltas = torch.stack((target_l, target_t, target_r, target_b), dim=1)
         if self.normalize_by_size:
-            stride = (src_boxes[:, 2] - src_boxes[:, 0]).unsqueeze(1)
-            deltas = deltas / stride
+            stride_w = src_boxes[:, 2] - src_boxes[:, 0]
+            stride_h = src_boxes[:, 3] - src_boxes[:, 1]
+            strides = torch.stack([stride_w, stride_h, stride_w, stride_h], axis=1)
+            deltas = deltas / strides
+
         return deltas
 
     def apply_deltas(self, deltas, boxes):
@@ -286,8 +289,11 @@ class Box2BoxTransformLinear:
         ctr_x = 0.5 * (boxes[:, 0] + boxes[:, 2])
         ctr_y = 0.5 * (boxes[:, 1] + boxes[:, 3])
         if self.normalize_by_size:
-            stride = (boxes[:, 2] - boxes[:, 0]).unsqueeze(1)
-            deltas = deltas * stride
+            stride_w = boxes[:, 2] - boxes[:, 0]
+            stride_h = boxes[:, 3] - boxes[:, 1]
+            strides = torch.stack([stride_w, stride_h, stride_w, stride_h], axis=1)
+            deltas = deltas * strides
+
         l = deltas[:, 0::4]
         t = deltas[:, 1::4]
         r = deltas[:, 2::4]
@@ -302,7 +308,7 @@ class Box2BoxTransformLinear:
 
 
 def _dense_box_regression_loss(
-    anchors: List[Boxes],
+    anchors: List[Union[Boxes, torch.Tensor]],
     box2box_transform: Box2BoxTransform,
     pred_anchor_deltas: List[torch.Tensor],
     gt_boxes: List[torch.Tensor],
@@ -324,7 +330,10 @@ def _dense_box_regression_loss(
         smooth_l1_beta (float): beta parameter for the smooth L1 regression loss. Default to
             use L1 loss. Only used when `box_reg_loss_type` is "smooth_l1"
     """
-    anchors = type(anchors[0]).cat(anchors).tensor  # (R, 4)
+    if isinstance(anchors[0], Boxes):
+        anchors = type(anchors[0]).cat(anchors).tensor  # (R, 4)
+    else:
+        anchors = cat(anchors)
     if box_reg_loss_type == "smooth_l1":
         gt_anchor_deltas = [box2box_transform.get_deltas(anchors, k) for k in gt_boxes]
         gt_anchor_deltas = torch.stack(gt_anchor_deltas)  # (N, R, 4)
