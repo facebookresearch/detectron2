@@ -458,7 +458,12 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    return {"dataset": dataset, "mapper": mapper, "num_workers": cfg.DATALOADER.NUM_WORKERS}
+    return {
+        "dataset": dataset,
+        "mapper": mapper,
+        "num_workers": cfg.DATALOADER.NUM_WORKERS,
+        "sampler": InferenceSampler(len(dataset)),
+    }
 
 
 @configurable(from_config=_test_loader_from_config)
