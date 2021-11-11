@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import operator
 import pickle
+from typing import Any, Callable, Dict, List, Optional, Union
 import torch
 import torch.utils.data as torchdata
 from tabulate import tabulate
@@ -386,7 +387,6 @@ def build_detection_train_loader(
 ):
     """
     Build a dataloader for object detection with some default features.
-    This interface is experimental.
 
     Args:
         dataset (list or torch.utils.data.Dataset): a list of dataset dicts,
@@ -400,15 +400,14 @@ def build_detection_train_loader(
             If ``dataset`` is map-style, the default sampler is a :class:`TrainingSampler`,
             which coordinates an infinite random shuffle sequence across all workers.
             Sampler must be None if ``dataset`` is iterable.
-        total_batch_size (int): total batch size across all workers. Batching
-            simply puts data into a list.
+        total_batch_size (int): total batch size across all workers.
         aspect_ratio_grouping (bool): whether to group images with similar
             aspect ratio for efficiency. When enabled, it requires each
             element in dataset be a dict with keys "width" and "height".
         num_workers (int): number of parallel data loading workers
-        collate_fn: same as the argument of `torch.utils.data.DataLoader`.
-            Defaults to do no collation and return a list of data.
-            No collation is OK for small batch size and simple data structures.
+        collate_fn: a function that determines how to do batching, same as the argument of
+            `torch.utils.data.DataLoader`. Defaults to do no collation and return a list of
+            data. No collation is OK for small batch size and simple data structures.
             If your batch size is large and each sample contains too many small tensors,
             it's more efficient to collate them in data loader.
 
@@ -467,25 +466,35 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
 
 
 @configurable(from_config=_test_loader_from_config)
-def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0, collate_fn=None):
+def build_detection_test_loader(
+    dataset: Union[List[Any], torchdata.Dataset],
+    *,
+    mapper: Callable[[Dict[str, Any]], Any],
+    sampler: Optional[torchdata.Sampler] = None,
+    batch_size: int = 1,
+    num_workers: int = 0,
+    collate_fn: Optional[Callable[[List[Any]], Any]] = None,
+) -> torchdata.DataLoader:
     """
-    Similar to `build_detection_train_loader`, but uses a batch size of 1,
-    and :class:`InferenceSampler`. This sampler coordinates all workers to
-    produce the exact set of all samples.
-    This interface is experimental.
+    Similar to `build_detection_train_loader`, with default batch size = 1,
+    and sampler = :class:`InferenceSampler`. This sampler coordinates all workers
+    to produce the exact set of all samples.
 
     Args:
-        dataset (list or torch.utils.data.Dataset): a list of dataset dicts,
+        dataset: a list of dataset dicts,
             or a pytorch dataset (either map-style or iterable). They can be obtained
             by using :func:`DatasetCatalog.get` or :func:`get_detection_dataset_dicts`.
-        mapper (callable): a callable which takes a sample (dict) from dataset
+        mapper: a callable which takes a sample (dict) from dataset
            and returns the format to be consumed by the model.
            When using cfg, the default choice is ``DatasetMapper(cfg, is_train=False)``.
-        sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces
+        sampler: a sampler that produces
             indices to be applied on ``dataset``. Default to :class:`InferenceSampler`,
             which splits the dataset across all workers. Sampler must be None
             if `dataset` is iterable.
-        num_workers (int): number of parallel data loading workers
+        batch_size: the batch size of the data loader to be created.
+            Default to 1 image per worker since this is the standard when reporting
+            inference time in papers.
+        num_workers: number of parallel data loading workers
         collate_fn: same as the argument of `torch.utils.data.DataLoader`.
             Defaults to do no collation and return a list of data.
 
@@ -511,12 +520,11 @@ def build_detection_test_loader(dataset, *, mapper, sampler=None, num_workers=0,
     else:
         if sampler is None:
             sampler = InferenceSampler(len(dataset))
-    # Always use 1 image per worker during inference since this is the
-    # standard when reporting inference time in papers.
     return torchdata.DataLoader(
         dataset,
-        batch_size=1,
+        batch_size=batch_size,
         sampler=sampler,
+        drop_last=False,
         num_workers=num_workers,
         collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
     )

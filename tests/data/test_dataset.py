@@ -114,8 +114,15 @@ class TestDataLoader(unittest.TestCase):
         N = 50
         ds = DatasetFromList(list(range(N)))
         sampler = InferenceSampler(len(ds))
+        # test that parallel loader works correctly
         dl = build_detection_test_loader(
             dataset=ds, sampler=sampler, mapper=lambda x: x, num_workers=3
+        )
+        self._check_is_range(dl, N)
+
+        # test that batch_size works correctly
+        dl = build_detection_test_loader(
+            dataset=ds, sampler=sampler, mapper=lambda x: x, batch_size=4, num_workers=0
         )
         self._check_is_range(dl, N)
 
