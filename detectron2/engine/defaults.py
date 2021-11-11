@@ -390,6 +390,9 @@ class DefaultTrainer(TrainerBase):
             optimizer=optimizer,
             trainer=weakref.proxy(self),
         )
+        if cfg.SOLVER.AMP.ENABLED:
+            self.checkpointer.add_checkpointable('grad_scaler', self._trainer.grad_scaler)
+            
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
         self.cfg = cfg
