@@ -387,12 +387,8 @@ class DefaultTrainer(TrainerBase):
             # Assume you want to save checkpoints together with logs/statistics
             model,
             cfg.OUTPUT_DIR,
-            optimizer=optimizer,
             trainer=weakref.proxy(self),
-        )
-        if cfg.SOLVER.AMP.ENABLED:
-            self.checkpointer.add_checkpointable('grad_scaler', self._trainer.grad_scaler)
-            
+        )     
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
         self.cfg = cfg
@@ -496,6 +492,15 @@ class DefaultTrainer(TrainerBase):
     def run_step(self):
         self._trainer.iter = self.iter
         self._trainer.run_step()
+        
+    def state_dict(self):
+        ret = super().state_dict()
+        ret["_trainer"] = self._trainer.state_dict()
+        return ret
+
+    def load_state_dict(self, state_dict):
+        super().load_state_dict(state_dict)
+        self._trainer.load_state_dict(state_dict["_trainer"])
 
     @classmethod
     def build_model(cls, cfg):
