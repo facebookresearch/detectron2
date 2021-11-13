@@ -107,10 +107,13 @@ install_linux_dep: &install_linux_dep
   - run:
       name: Install Dependencies
       command: |
+        # disable crash coredump, so unittests fail fast
+        sudo systemctl stop apport.service
         # install from github to get latest; install iopath first since fvcore depends on it
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
-        pip install --progress-bar off ninja opencv-python-headless pytest-xdist tensorboard pycocotools
+        # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
+        pip install --progress-bar off ninja opencv-python-headless pytest tensorboard pycocotools
         pip install --progress-bar off torch==$PYTORCH_VERSION -f $PYTORCH_INDEX
         if [[ "$TORCHVISION_VERSION" == "master" ]]; then
           pip install git+https://github.com/pytorch/vision.git
@@ -125,7 +128,7 @@ install_detectron2: &install_detectron2
   - run:
       name: Install Detectron2
       command: |
-        # Remove if it's in cache
+        # Remove first, in case it's in the CI cache
         pip uninstall -y detectron2
         pip install --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
@@ -135,7 +138,7 @@ run_unittests: &run_unittests
   - run:
       name: Run Unit Tests
       command: |
-        pytest -n 1 -v --durations=15 tests  # parallel causes some random failures
+        pytest -v --durations=15 tests  # parallel causes some random failures
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
