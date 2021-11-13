@@ -45,6 +45,9 @@ jobs:
             torchvision: "0.10"
           - torch: "1.10"
             torchvision: "0.11.1"
+    env:
+      # point datasets to ~/.torch so it's cached by CI
+      DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -73,5 +76,6 @@ jobs:
         run: |
           CC=clang CXX=clang++ python -m pip install -e .[all]
           python -m detectron2.utils.collect_env
+          ./datasets/prepare_for_tests.sh
       - name: Run unittests
-        run: python -m pytest -n 4 -v tests/
+        run: python -m pytest -n 4 --durations=15 -v tests/

@@ -73,7 +73,6 @@ class TestMapDataset(unittest.TestCase):
         self.assertEqual(ds[0], 2)
 
 
-@unittest.skipIf(os.environ.get("CI"), "Skipped OSS testing due to COCO data requirement.")
 class TestDataLoader(unittest.TestCase):
     def _get_kwargs(self):
         # get kwargs of build_detection_train_loader

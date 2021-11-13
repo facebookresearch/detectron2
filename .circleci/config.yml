@@ -45,6 +45,8 @@ version_parameters: &version_parameters
     TORCHVISION_VERSION: << parameters.torchvision_version >>
     PYTORCH_INDEX: << parameters.pytorch_index >>
     PYTHON_VERSION: << parameters.python_version>>
+    # point datasets to ~/.torch so it's cached in CI
+    DETECTRON2_DATASETS: ~/.torch/datasets
 
 # -------------------------------------------------------------------------------------
 # Re-usable commands
@@ -127,6 +129,7 @@ install_detectron2: &install_detectron2
         pip uninstall -y detectron2
         pip install --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
+        ./datasets/prepare_for_tests.sh
 
 run_unittests: &run_unittests
   - run:
