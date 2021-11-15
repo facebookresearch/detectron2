@@ -61,7 +61,7 @@ c10::IValue get_scripting_inputs(cv::Mat& img, c10::Device device) {
   // HWC to CHW
   img_tensor =
       img_tensor.to(device, torch::kFloat).permute({2, 0, 1}).contiguous();
-  c10::Dict dic = c10::Dict<std::string, torch::Tensor>();
+  auto dic = c10::Dict<std::string, torch::Tensor>();
   dic.insert("image", img_tensor);
   return std::make_tuple(dic);
 }
