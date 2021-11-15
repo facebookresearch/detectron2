@@ -1,0 +1,18 @@
+
+1) check your torch and cuda versions
+
+import torch
+TORCH_VERSION = ".".join(torch.__version__.split(".")[:2])
+CUDA_VERSION = torch.__version__.split("+")[-1]
+print("torch: ", TORCH_VERSION, "; cuda: ", CUDA_VERSION)
+
+
+2) install detectron2 for your torch and cuda versions in terminal
+
+pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/$CUDA_VERSION/torch$TORCH_VERSION/index.html
+pip install opencv-python
+
+
+3) Put images and model in demo folder
+
+4) Rename detectron2 to detectron.

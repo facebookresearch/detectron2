@@ -51,3 +51,9 @@ _darcs
 /projects/*/datasets
 /models
 /snippet
+/secret_debug.env
+venv
+/src/__pycache__
+.idea
+html_kit/_static/*
+secret_debug.env

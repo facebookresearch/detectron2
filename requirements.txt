@@ -1,0 +1,6 @@
+supervisely==6.2.2
+torch>=1.10
+torchvision>=0.11.1
+tensorboard
+ninja
+g++>=5.4
