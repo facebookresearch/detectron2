@@ -16,3 +16,15 @@ pip install opencv-python
 3) Put images and model in demo folder
 
 4) Rename detectron2 to detectron.
+
+
+Params:
+
+# to run demo.py with coco images:
+--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml --input input3.jpg input4.jpg --opts MODEL.WEIGHTS model_final_280758.pkl
+
+# to run train_net.py to train on coco
+--num-gpus 1 --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
+
+# to run inference and train on custom dataset(ex. lemons)
+--config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml --input input1.jpg input2.jpg --opts MODEL.WEIGHTS model_final.pth
