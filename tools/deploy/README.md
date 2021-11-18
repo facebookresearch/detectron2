@@ -29,7 +29,37 @@ installs all the above dependencies and builds the C++ examples.
 
 We show a few example commands to export and execute a Mask R-CNN model in C++.
 
-* `export-method=caffe2_tracing, format=caffe2`:
+* `export-method=tracing, format=torchscript`:
+```
+./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+    --output ./output --export-method tracing --format torchscript \
+    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
+    MODEL.DEVICE cuda
+
+./build/torchscript_mask_rcnn output/model.ts input.jpg tracing
+```
+
+* `export-method=scripting, format=torchscript`:
+```
+./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+    --output ./output --export-method scripting --format torchscript \
+    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
+
+./build/torchscript_mask_rcnn output/model.ts input.jpg scripting
+```
+
+* `export-method=caffe2_tracing, format=torchscript`:
+
+```
+./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
+    --output ./output --export-method caffe2_tracing --format torchscript \
+    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
+
+./build/torchscript_mask_rcnn output/model.ts input.jpg caffe2_tracing
+```
+
+
+* `export-method=caffe2_tracing, format=caffe2` (caffe2 format will be deprecated):
 ```
 ./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
     --output ./output --export-method caffe2_tracing --format caffe2 \
@@ -39,28 +69,6 @@ We show a few example commands to export and execute a Mask R-CNN model in C++.
 ./build/caffe2_mask_rcnn --predict_net=output/model.pb --init_net=output/model_init.pb --input=input.jpg
 ```
 
-* `export-method=caffe2_tracing, format=torchscript`:
-
-```
-./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
-    --output ./output --export-method caffe2_tracing --format torchscript \
-    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
-    MODEL.DEVICE cpu
-
-./build/torchscript_traced_mask_rcnn output/model.ts input.jpg caffe2_tracing
-```
-
-* `export-method=tracing, format=torchscript`:
-
-```
-# this example also tries GPU instead of CPU
-./export_model.py --config-file ../../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
-    --output ./output --export-method tracing --format torchscript \
-    MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
-    MODEL.DEVICE cuda
-
-./build/torchscript_traced_mask_rcnn output/model.ts input.jpg tracing
-```
 
 ## Notes:
 
@@ -68,7 +76,7 @@ We show a few example commands to export and execute a Mask R-CNN model in C++.
    Therefore the above commands require pre-trained models and [COCO dataset](https://detectron2.readthedocs.io/tutorials/builtin_datasets.html).
    You can modify the script to obtain sample inputs in other ways instead of from COCO.
 
-2. `--run-eval` flag can be used under certain modes
+2. `--run-eval` is implemented only for certain modes
    (caffe2_tracing with caffe2 format, or tracing with torchscript format)
    to evaluate the exported model using the dataset in the config.
    It's recommended to always verify the accuracy in case the conversion is not successful.

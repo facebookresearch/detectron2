@@ -18,6 +18,7 @@ from detectron2.modeling import build_backbone
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
 from detectron2.structures import Boxes, Instances
+from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import (
     assert_instances_allclose,
     convert_scripted_instances,
@@ -25,17 +26,22 @@ from detectron2.utils.testing import (
     random_boxes,
 )
 
-
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html
 contains some explanations of this file.
 """
+
+SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
+    os.environ.get("CI") and not torch.cuda.is_available(),
+    "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
+)
 
 
 class TestScripting(unittest.TestCase):
     def testMaskRCNNFPN(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
+    @SLOW_PUBLIC_CPU_TEST
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -100,6 +106,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
+    @SLOW_PUBLIC_CPU_TEST
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -107,6 +114,8 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
 
+    # bug fixed by https://github.com/pytorch/pytorch/pull/67734
+    @unittest.skipIf(TORCH_VERSION == (1, 10) and os.environ.get("CI"), "1.10 has bugs.")
     def testRetinaNet(self):
         def inference_func(model, image):
             return model.forward([{"image": image}])[0]["instances"]

@@ -84,7 +84,6 @@ class TestTrainer(unittest.TestCase):
 
             self.assertIn("eta: 0:00:00", logs.output[-1], "Last ETA must be 0!")
 
-    @unittest.skipIf(os.environ.get("CI"), "Require COCO data.")
     def test_default_trainer(self):
         # TODO: this test requires manifold access, so changed device to CPU. see: T88318502
         cfg = get_cfg()

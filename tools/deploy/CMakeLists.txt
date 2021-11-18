@@ -15,9 +15,9 @@ target_link_libraries(
 set_property(TARGET caffe2_mask_rcnn PROPERTY CXX_STANDARD 14)
 
 
-add_executable(torchscript_traced_mask_rcnn torchscript_traced_mask_rcnn.cpp)
+add_executable(torchscript_mask_rcnn torchscript_mask_rcnn.cpp)
 target_link_libraries(
-  torchscript_traced_mask_rcnn
+  torchscript_mask_rcnn
   -Wl,--no-as-needed TorchVision::TorchVision -Wl,--as-needed
   "${TORCH_LIBRARIES}" ${OpenCV_LIBS})
-set_property(TARGET torchscript_traced_mask_rcnn PROPERTY CXX_STANDARD 14)
+set_property(TARGET torchscript_mask_rcnn PROPERTY CXX_STANDARD 14)

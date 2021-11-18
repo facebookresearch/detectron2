@@ -30,7 +30,7 @@ def _create_pixel_dist_matrix(grid_size: int) -> torch.Tensor:
 def _sample_fg_pixels_randperm(fg_mask: torch.Tensor, sample_size: int) -> torch.Tensor:
     fg_mask_flattened = fg_mask.reshape((-1,))
     num_pixels = int(fg_mask_flattened.sum().item())
-    fg_pixel_indices = fg_mask_flattened.nonzero(as_tuple=True)[0]  # pyre-ignore[16]
+    fg_pixel_indices = fg_mask_flattened.nonzero(as_tuple=True)[0]
     if (sample_size <= 0) or (num_pixels <= sample_size):
         return fg_pixel_indices
     sample_indices = torch.randperm(num_pixels, device=fg_mask.device)[:sample_size]
@@ -41,7 +41,7 @@ def _sample_fg_pixels_multinomial(fg_mask: torch.Tensor, sample_size: int) -> to
     fg_mask_flattened = fg_mask.reshape((-1,))
     num_pixels = int(fg_mask_flattened.sum().item())
     if (sample_size <= 0) or (num_pixels <= sample_size):
-        return fg_mask_flattened.nonzero(as_tuple=True)[0]  # pyre-ignore[16]
+        return fg_mask_flattened.nonzero(as_tuple=True)[0]
     return fg_mask_flattened.float().multinomial(sample_size, replacement=False)  # pyre-ignore[16]
 
 

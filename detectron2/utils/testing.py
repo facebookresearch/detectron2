@@ -55,7 +55,9 @@ def get_sample_coco_image(tensor=True):
             raise FileNotFoundError()
     except IOError:
         # for public CI to run
-        file_name = "http://images.cocodataset.org/train2017/000000000009.jpg"
+        file_name = PathManager.get_local_path(
+            "http://images.cocodataset.org/train2017/000000000009.jpg"
+        )
     ret = read_image(file_name, format="BGR")
     if tensor:
         ret = torch.from_numpy(np.ascontiguousarray(ret.transpose(2, 0, 1)))

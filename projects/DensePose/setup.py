@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 try:
     import torch  # noqa: F401
-except ImportError:
+except ImportError as e:
     raise Exception(
         """
 You must install PyTorch prior to installing DensePose:
@@ -13,7 +13,7 @@ pip install torch
 For more information:
     https://pytorch.org/get-started/locally/
     """
-    )
+    ) from e
 
 
 def get_detectron2_current_version():
