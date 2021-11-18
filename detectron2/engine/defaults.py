@@ -390,6 +390,7 @@ class DefaultTrainer(TrainerBase):
             # Assume you want to save checkpoints together with logs/statistics
             model,
             cfg.OUTPUT_DIR,
+            optimizer=optimizer,
             trainer=weakref.proxy(self),
         )
         self.start_iter = 0
@@ -684,7 +685,6 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
         warmup_iter = cfg.SOLVER.WARMUP_ITERS = int(round(cfg.SOLVER.WARMUP_ITERS / scale))
         cfg.SOLVER.STEPS = tuple(int(round(s / scale)) for s in cfg.SOLVER.STEPS)
         cfg.TEST.EVAL_PERIOD = int(round(cfg.TEST.EVAL_PERIOD / scale))
-        print("EVAL PEriod", cfg.TEST.EVAL_PERIOD)
         cfg.SOLVER.CHECKPOINT_PERIOD = int(round(cfg.SOLVER.CHECKPOINT_PERIOD / scale))
         cfg.SOLVER.REFERENCE_WORLD_SIZE = num_workers  # maintain invariant
         logger = logging.getLogger(__name__)

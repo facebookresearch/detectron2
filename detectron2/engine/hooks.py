@@ -279,7 +279,7 @@ class BestCheckpointer(HookBase):
             additional_state = {"iteration": metric_iter}
             self._checkpointer.save(f"{self._file_prefix}", **additional_state)
             self._logger.info(
-                f"Saved best model as latest eval score for {self._val_metric} is"
+                f"Saved best model as latest eval score for {self._val_metric} is "
                 f"{latest_metric:0.5f}, better than last best score "
                 f"{self.best_metric:0.5f} @ iteration {self.best_iter}."
             )
@@ -784,7 +784,9 @@ class PeriodicPredictor(HookBase):
                     if (len(self._predictions) >= num_batches_to_infer):
                         return 
                         
-
+    def before_step(self):
+        self._predictions = []
+        
     def after_step(self):
         if self._period > 0:
             if (self.trainer.iter + 1) % self._period == 0 or (
@@ -792,16 +794,15 @@ class PeriodicPredictor(HookBase):
             ):
                 if not self._data_loaders:
                     self._setup_eval()
-                self._predictions = []
                 self._predict()
                 comm.synchronize()
                 storage = get_event_storage()
-                print("gathering")
+                # gather all DDP mode predictions to rank 0 process
                 predictions = comm.gather(self._predictions)
-                print("gathered")
                 if comm.is_main_process():
                     predictions = list(itertools.chain(*predictions))
-                    storage.put_predictions(predictions)
+                    storage._predictions = predictions
+                self._predictions = []
 
 
 
