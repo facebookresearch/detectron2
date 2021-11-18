@@ -650,11 +650,19 @@ class WandbWriter(EventWriter):
         # Process instance segmentation detections
         masks = {}
         if pred.get('pred_masks') is not None:
+            class_count = {}
             num_pred = min(15, len(pred['pred_masks'])) # Hardcoded to max 15 masks for better UI 
             for i in range(num_pred):
                 pred_class = int(pred['classes'][i])
-                mask_title = f'class {pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
+                if pred_class in class_count:
+                    class_count[pred_class] = class_count[pred_class] + 1
+                else:
+                    class_count[pred_class] = 0
 
+                # title format - class_count. E.g - person_0, person_1 ..
+                mask_title = f'class {pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
+                mask_title = f'{mask_title}_{class_count[pred_class]}'
+                
                 masks[mask_title] = {
                     "mask_data": pred['pred_masks'][i]*(pred_class+1),
                     "class_labels": {pred_class+1: mask_title}
@@ -699,7 +707,7 @@ class WandbWriter(EventWriter):
                 if self._table_logging():
                     # Log images only once, then use their refernces to dedupe
                     if self._evalset_table[loader_i] is None:
-                        tables[loader_i].add_data(file_name, pred_img, 0, *avg_bbox_conf)
+                        tables[loader_i].add_data(file_name, pred_img, *avg_bbox_conf)
                         self._map_table_row_file_name[loader_i][file_name] = table_row_idx[loader_i]
                         table_row_idx[loader_i] = table_row_idx[loader_i] + 1
                     else:
@@ -708,7 +716,6 @@ class WandbWriter(EventWriter):
                         tables[loader_i].add_data(
                             table_row[0],
                                 wandb.Image(table_row[1], boxes=pred_img._boxes, masks=pred_img._masks),
-                                0,
                                 *avg_bbox_conf
                                 )
 
@@ -756,7 +763,7 @@ class WandbWriter(EventWriter):
         # Current design - Use cols. for each detection class score and don't use columns for mask overlays 
         tables = []
         for loader_i in range(self._num_loaders):
-            table_cols = ["file_name", "image", "overlays"] + self.thing_class_names[loader_i]
+            table_cols = ["file_name", "image"] + self.thing_class_names[loader_i]
             table = wandb.Table(columns=table_cols)
             tables.append(table)
 
