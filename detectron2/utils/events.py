@@ -760,6 +760,7 @@ class WandbWriter(EventWriter):
         '''
         This function returns true if user defined settings enable tables logging implicitly or explicitly
         '''
+        # TODO: put actual logic here
         return True
 
     def _build_evalset_tables(self):
