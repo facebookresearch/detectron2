@@ -177,13 +177,13 @@ if __name__ == "__main__":
         "--format",
         choices=["caffe2", "onnx", "torchscript"],
         help="output format",
-        default="caffe2",
+        default="torchscript",
     )
     parser.add_argument(
         "--export-method",
         choices=["caffe2_tracing", "tracing", "scripting"],
         help="Method to export models",
-        default="caffe2_tracing",
+        default="tracing",
     )
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument("--sample-image", default=None, type=str, help="sample image for input")
