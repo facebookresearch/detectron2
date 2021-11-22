@@ -114,6 +114,14 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
 
+    @SLOW_PUBLIC_CPU_TEST
+    def testCascadeRCNN(self):
+        def inference_func(model, image):
+            inputs = [{"image": image}]
+            return model.inference(inputs, do_postprocess=False)[0]
+
+        self._test_model("Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml", inference_func)
+
     # bug fixed by https://github.com/pytorch/pytorch/pull/67734
     @unittest.skipIf(TORCH_VERSION == (1, 10) and os.environ.get("CI"), "1.10 has bugs.")
     def testRetinaNet(self):
