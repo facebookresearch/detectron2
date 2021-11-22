@@ -8,7 +8,7 @@ import unittest
 import torch
 
 from detectron2 import model_zoo
-from detectron2.export import Caffe2Model, Caffe2Tracer, add_export_config
+from detectron2.export import Caffe2Model, Caffe2Tracer
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.testing import get_sample_coco_image
 
@@ -22,7 +22,6 @@ class TestCaffe2Export(unittest.TestCase):
 
     def _test_model(self, config_path, device="cpu"):
         cfg = model_zoo.get_config(config_path)
-        add_export_config(cfg)
         cfg.MODEL.DEVICE = device
         model = model_zoo.get(config_path, trained=True, device=device)
 
