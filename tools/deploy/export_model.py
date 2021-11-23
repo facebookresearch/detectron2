@@ -11,13 +11,7 @@ from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader, detection_utils
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
-from detectron2.export import (
-    Caffe2Tracer,
-    TracingAdapter,
-    add_export_config,
-    dump_torchscript_IR,
-    scripting_with_instances,
-)
+from detectron2.export import TracingAdapter, dump_torchscript_IR, scripting_with_instances
 from detectron2.modeling import GeneralizedRCNN, RetinaNet, build_model
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.projects.point_rend import add_pointrend_config
@@ -31,7 +25,6 @@ def setup_cfg(args):
     cfg = get_cfg()
     # cuda context is initialized before creating dataloader, so we don't fork anymore
     cfg.DATALOADER.NUM_WORKERS = 0
-    cfg = add_export_config(cfg)
     add_pointrend_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
@@ -40,6 +33,8 @@ def setup_cfg(args):
 
 
 def export_caffe2_tracing(cfg, torch_model, inputs):
+    from detectron2.export import Caffe2Tracer
+
     tracer = Caffe2Tracer(cfg, torch_model, inputs)
     if args.format == "caffe2":
         caffe2_model = tracer.export_caffe2()
@@ -182,13 +177,13 @@ if __name__ == "__main__":
         "--format",
         choices=["caffe2", "onnx", "torchscript"],
         help="output format",
-        default="caffe2",
+        default="torchscript",
     )
     parser.add_argument(
         "--export-method",
         choices=["caffe2_tracing", "tracing", "scripting"],
         help="Method to export models",
-        default="caffe2_tracing",
+        default="tracing",
     )
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument("--sample-image", default=None, type=str, help="sample image for input")

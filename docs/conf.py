@@ -282,8 +282,6 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "ResNetBlockBase",
         "GroupedBatchSampler",
         "build_transform_gen",
-        "export_caffe2_model",
-        "export_onnx_model",
         "apply_transform_gens",
         "TransformGen",
         "apply_augmentations",
@@ -294,6 +292,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "WarmupMultiStepLR",
         "downgrade_config",
         "upgrade_config",
+        "add_export_config",
     }
     try:
         if name in HIDDEN or (

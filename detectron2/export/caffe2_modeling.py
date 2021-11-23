@@ -248,8 +248,12 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
         torch_model = patch_generalized_rcnn(torch_model)
         super().__init__(cfg, torch_model)
 
+        try:
+            use_heatmap_max_keypoint = cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT
+        except AttributeError:
+            use_heatmap_max_keypoint = False
         self.roi_heads_patcher = ROIHeadsPatcher(
-            self._wrapped_model.roi_heads, cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT
+            self._wrapped_model.roi_heads, use_heatmap_max_keypoint
         )
 
     def encode_additional_info(self, predict_net, init_net):
