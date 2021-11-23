@@ -123,7 +123,6 @@ class TestCOCOeval(unittest.TestCase):
                         msg = "%s: comparing COCO APIs, %s differs by %f" % (name, k, abs_diff)
                         self.assertTrue(abs_diff < 1e-4, msg=msg)
 
-    @unittest.skipIf(os.environ.get("CI"), "Require COCO data.")
     def test_unknown_category(self):
         dataset = "coco_2017_val_100"
         evaluator = COCOEvaluator(dataset)
