@@ -528,8 +528,6 @@ class WandbWriter(EventWriter):
         self._build_dataset_metadata()
 
         cfg_dict = yaml.load(cfg.dump())
-        import pdb
-        pdb.set_trace()
 
         self._run = wandb.init(
             project=cfg.WANDB.PROJECT_NAME,
