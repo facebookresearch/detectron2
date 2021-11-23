@@ -79,6 +79,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("get_cuda_version", &get_cuda_version, "get_cuda_version");
   m.def("has_cuda", &has_cuda, "has_cuda");
 
+
   m.def("deform_conv_forward", &deform_conv_forward, "deform_conv_forward");
   m.def(
       "deform_conv_backward_input",
