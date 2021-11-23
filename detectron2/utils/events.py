@@ -527,13 +527,14 @@ class WandbWriter(EventWriter):
         self._map_table_row_file_name = [] # Used to dedupe images: table.get[row_num] by mapping tablle row to file name
         self._build_dataset_metadata()
 
-        cfg = yaml.load(cfg.dump())
+        cfg_dict = yaml.load(cfg.dump())
+        import pdb
+        pdb.set_trace()
 
         self._run = wandb.init(
             project=cfg.WANDB.PROJECT_NAME,
             name=cfg.WANDB.RUN_NAME,
-            config=cfg,
-            **cfg.WANDB.KWARGS
+            config=cfg_dict,
         )
         self._run._label(repo="detectron2")
     
