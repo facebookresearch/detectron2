@@ -12,13 +12,18 @@ from typing import Optional
 from detectron2.structures.instances import Instances
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
-import wandb
 
 from detectron2.utils.file_io import PathManager
 from detectron2.config import CfgNode
 from detectron2.data import build_detection_test_loader
 from detectron2.data import MetadataCatalog
 
+try:
+    import wandb
+
+    assert hasattr(wandb, '__version__')  # verify package import not local dir
+except (ImportError, AssertionError):
+    wandb = None
 
 __all__ = [
     "get_event_storage",

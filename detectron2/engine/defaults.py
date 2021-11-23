@@ -16,6 +16,7 @@ import sys
 import weakref
 from collections import OrderedDict
 from typing import Optional
+from detectron2.utils import events
 import torch
 from fvcore.nn.precise_bn import get_bn_modules
 from omegaconf import OmegaConf
@@ -249,7 +250,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg: CfgNod
         JSONWriter(os.path.join(output_dir, "metrics.json")),
         TensorboardXWriter(output_dir),
     ]
-    if not cfg.WANDB.DISABLED:
+    if not cfg.WANDB.DISABLED and events.wandb is not None:
         writers.append(WandbWriter(cfg=cfg))
 
     return writers
