@@ -711,13 +711,13 @@ class PeriodicPredictor(HookBase):
         self._data_loaders = []
         self._dataset = ()
         self._predictions = []
-    
+
     def _setup_eval(self):
         """
         Set up the inference process. This should be called only once per experiment
         """
         self._cfg = self.trainer.cfg
-        self._dataset = self._cfg.DATASETS.TEST 
+        self._dataset = self._cfg.DATASETS.TEST
         if not self._dataset:
             self._dataset = self._cfg.DATASETS.TRAIN
             logger = logging.getLogger(__name__)
@@ -729,7 +729,6 @@ class PeriodicPredictor(HookBase):
             self._data_loaders.append(dataset)
             self._num_samples = self._num_samples + len(dataset)
 
-    
     def _parse_prediction(self, pred):
         """
         Parse prediction of one image and return the primitive martices to plot wandb media files.
@@ -738,19 +737,31 @@ class PeriodicPredictor(HookBase):
         Args:
             pred (detectron2.structures.instances.Instances): Prediction instance for the image
             loader_i (int): index of the dataloader being used
-        
+
         returns:
             Dict (): parsed predictions
         """
         parsed_pred = {}
         if pred.get("instances") is not None:
             pred_ins = pred["instances"]
-            parsed_pred['boxes'] = pred_ins.pred_boxes.tensor.tolist()[:10] if pred_ins.has("pred_boxes") else None
-            parsed_pred['classes'] = pred_ins.pred_classes.tolist()[:10] if pred_ins.has("pred_classes") else None
-            parsed_pred['scores'] = pred_ins.scores.tolist()[:10] if pred_ins.has("scores") else None
-            parsed_pred['pred_masks'] = pred_ins.pred_masks.cpu().detach().numpy()[:10] if pred_ins.has("pred_masks") else None # wandb segmentation panel supports np
-            parsed_pred['pred_keypoints'] = pred_ins.pred_keypoints.tolist()[:10] if pred_ins.has("pred_keypoints") else None
-        
+            parsed_pred["boxes"] = (
+                pred_ins.pred_boxes.tensor.tolist()[:10] if pred_ins.has("pred_boxes") else None
+            )
+            parsed_pred["classes"] = (
+                pred_ins.pred_classes.tolist()[:10] if pred_ins.has("pred_classes") else None
+            )
+            parsed_pred["scores"] = (
+                pred_ins.scores.tolist()[:10] if pred_ins.has("scores") else None
+            )
+            parsed_pred["pred_masks"] = (
+                pred_ins.pred_masks.cpu().detach().numpy()[:10]
+                if pred_ins.has("pred_masks")
+                else None
+            )  # wandb segmentation panel supports np
+            parsed_pred["pred_keypoints"] = (
+                pred_ins.pred_keypoints.tolist()[:10] if pred_ins.has("pred_keypoints") else None
+            )
+
         if pred.get("sem_seg") is not None:
             parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
 
@@ -773,20 +784,20 @@ class PeriodicPredictor(HookBase):
             if isinstance(model, nn.Module):
                 stack.enter_context(inference_context(model))
             stack.enter_context(torch.no_grad())
-            for loader_idx, data_loader in enumerate(self._data_loaders): 
+            for loader_idx, data_loader in enumerate(self._data_loaders):
                 for _, input in enumerate(data_loader):
                     pred = model(input)
                     pred = self._parse_prediction(pred[0])
-                    pred['file_name'] = input[0].get("file_name")
-                    pred['loader_idx'] = loader_idx
+                    pred["file_name"] = input[0].get("file_name")
+                    pred["loader_idx"] = loader_idx
                     self._predictions.append(pred)
                     # Checks if there are enough predictions already. Also takes into account DDP mode
-                    if (len(self._predictions) >= num_batches_to_infer):
-                        return 
-                        
+                    if len(self._predictions) >= num_batches_to_infer:
+                        return
+
     def before_step(self):
         self._predictions = []
-        
+
     def after_step(self):
         if self._period > 0:
             if (self.trainer.iter + 1) % self._period == 0 or (
@@ -803,8 +814,6 @@ class PeriodicPredictor(HookBase):
                     predictions = list(itertools.chain(*predictions))
                     storage._predictions = predictions
                 self._predictions = []
-
-
 
 
 @contextmanager
