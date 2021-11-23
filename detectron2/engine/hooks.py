@@ -721,10 +721,10 @@ class PeriodicPredictor(HookBase):
         if not self._dataset:
             self._dataset = self._cfg.DATASETS.TRAIN
             logger = logging.getLogger(__name__)
-            logger.info(f"TEST set is not defined! PRedicting on TRAIN set")
+            logger.info(f"TEST set is not defined! Predicting on TRAIN set")
 
         for _, dataset_name in enumerate(self._dataset):
-            # use test loader because it uses batch-size of 1, which makes for eaiser processing
+            # use test loader because it uses batch-size of 1, which is eaiser to process
             dataset = build_detection_test_loader(self._cfg, dataset_name)
             self._data_loaders.append(dataset)
             self._num_samples = self._num_samples + len(dataset)

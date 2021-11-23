@@ -237,19 +237,23 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg: CfgNod
     Args:
         output_dir: directory to store JSON metrics and tensorboard events
         max_iter: the total number of iterations
-        cfg_dict: configuration dict to initialize wandb run
+        cfg: configuration for the experiment
 
     Returns:
         list[EventWriter]: a list of :class:`EventWriter` objects.
     """
     PathManager.mkdirs(output_dir)
-    return [
+    writers = [
         # It may not always print what you want to see, since it prints "common" metrics only.
         CommonMetricPrinter(max_iter),
         JSONWriter(os.path.join(output_dir, "metrics.json")),
-        TensorboardXWriter(output_dir),
-        WandbWriter(cfg=cfg)
+        TensorboardXWriter(output_dir)
     ]
+    if not cfg.WANDB.DISABLED:
+        writers.append(WandbWriter(cfg=cfg))
+    
+    return writers
+
 
 
 class DefaultPredictor:

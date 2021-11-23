@@ -636,8 +636,11 @@ _C.GLOBAL.HACK = 1.0
 
 ## WandB config
 _C.WANDB = CN()
+_C.WANDB.DISABLED = False # Disable/enable wandb logger
 _C.WANDB.PROJECT_NAME = "Detectron2"
-_C.WANDB.NUM_IMAGES = 8
+_C.WANDB.RUN_NAME = None # Randomly assgined names by default
+_C.WANDB.LOG_PREDICTION = True # Disable/enable logging prediction tables
+_C.WANDB.KWARGS = {"job_type": "Training"} # Any additional wandb arg: value pairs
 
 ## For storing a split of predictions- _C.PRED_SPLIT? _C.EVAL_SPLIT?
 _C.TRAIN = CN()

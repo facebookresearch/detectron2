@@ -314,16 +314,6 @@ class EventStorage:
                 The `img_tensor` will be visualized in tensorboard.
         """
         self._vis_data.append((img_name, img_tensor, self._iter))
-    
-    def put_predictions(self, preds):
-        """
-        Add a list of predictions on test set
-
-        Args:
-            preds [List]: list containing latest predictions made on test set
-        """
-        self._predictions.extend(preds)
-
 
     def put_scalar(self, name, value, smoothing_hint=True):
         """
@@ -516,7 +506,7 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, cfg: CfgNode, window_size: int = 20, **kwargs):
+    def __init__(self, cfg: CfgNode, window_size: int = 20):
         """
         Args:
             cfg (CfgNode): the project level configuration object
@@ -536,17 +526,14 @@ class WandbWriter(EventWriter):
         self._evalset_table = []
         self._map_table_row_file_name = [] # Used to dedupe images: table.get[row_num] by mapping tablle row to file name
         self._build_dataset_metadata()
-        metadata = MetadataCatalog.get(self._dataset[0])
-        if cfg is None:
-            cfg = {}
-            wandb_project = "detectron2"
-        else:
-            wandb_project = cfg.WANDB.PROJECT_NAME
-            cfg = yaml.load(cfg.dump())
+
+        cfg = yaml.load(cfg.dump())
+
         self._run = wandb.init(
-            project=wandb_project,
+            project=cfg.WANDB.PROJECT_NAME,
+            name=cfg.WANDB.RUN_NAME,
             config=cfg,
-            **kwargs
+            **cfg.WANDB.KWARGS
         )
         self._run._label(repo="detectron2")
     
@@ -655,9 +642,19 @@ class WandbWriter(EventWriter):
                 avg_conf_per_class[pred_class] = avg_conf_per_class[pred_class] / counts[pred_class]
 
             boxes = {"predictions": {"box_data": boxes_data, "class_labels": self.thing_index_to_class[loader_i]}}
-        
-        # Process instance segmentation detections
+                
         masks = {}
+        # Process semantic segmentation predictions
+        if pred.get("sem_mask") is not None:
+            masks["semantic_mask"] = {
+                "mask_data": pred["sem_mask"],
+                "class_labels": self.stuff_index_to_class[loader_i]
+            }
+            classes = self._table_stuff_classes[loader_i]
+
+       # TODO: Support panoptic , instance segmentation maks & keypoint visualizations.
+
+        # Process instance segmentation detections
         if pred.get('pred_masks') is not None:
             class_count = {}
             num_pred = min(15, len(pred['pred_masks'])) # Hardcoded to max 15 masks for better UI 
@@ -672,21 +669,13 @@ class WandbWriter(EventWriter):
                 mask_title = f'class {pred_class}' if not self.thing_class_names[loader_i] else self.thing_class_names[loader_i][pred_class]
                 mask_title = f'{mask_title}_{class_count[pred_class]}'
                 
+                '''
                 masks[mask_title] = {
                     "mask_data": pred['pred_masks'][i]*(pred_class+1),
                     "class_labels": {pred_class+1: mask_title}
                 }
+                '''
          
-        # Process semantic segmentation predictions
-        if pred.get("sem_mask") is not None:
-            masks["semantic_mask"] = {
-                "mask_data": pred["sem_mask"],
-                "class_labels": self.stuff_index_to_class[loader_i]
-            }
-            classes = self._table_stuff_classes[loader_i]
-            
-        # TODO: Support panoptic segmentation and keypoint visualizations. If we cannot support the interactive version,
-        # use Visualizer class to log static predictions.
         if pred.get("panoptic_mask") is not None:
             masks["panoptic_mask"] = {
                 "mask_data": pred["panoptic_mask"],
@@ -760,7 +749,7 @@ class WandbWriter(EventWriter):
         '''
         This function returns true if user defined settings enable tables logging implicitly or explicitly
         '''
-        return True
+        return self.cfg.WANDB.LOG_PREDICTION
 
     def _build_evalset_tables(self):
         '''
