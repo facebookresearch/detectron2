@@ -23,7 +23,6 @@ from detectron2.modeling.roi_heads import (
 )
 from detectron2.projects import point_rend
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import assert_instances_allclose, random_boxes
 
@@ -148,7 +147,6 @@ class ROIHeadsTest(unittest.TestCase):
             ),
         )
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_box_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024, height=14, width=14)
         box_features = torch.randn(4, 1024, 14, 14)
@@ -162,7 +160,6 @@ class ROIHeadsTest(unittest.TestCase):
         script_output = script_box_head(box_features)
         self.assertTrue(torch.equal(origin_output, script_output))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_mask_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024)
         mask_features = torch.randn(4, 1024, 14, 14)
@@ -192,7 +189,6 @@ class ROIHeadsTest(unittest.TestCase):
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
             assert_instances_allclose(origin_ins, script_ins, rtol=0)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_keypoint_head_scriptability(self):
         input_shape = ShapeSpec(channels=1024, height=14, width=14)
         keypoint_features = torch.randn(4, 1024, 14, 14)
@@ -228,7 +224,6 @@ class ROIHeadsTest(unittest.TestCase):
         for origin_ins, script_ins in zip(origin_outputs, script_outputs):
             assert_instances_allclose(origin_ins, script_ins, rtol=0)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_StandardROIHeads_scriptability(self):
         cfg = get_cfg()
         cfg.MODEL.ROI_BOX_HEAD.NAME = "FastRCNNConvFCHead"
@@ -280,7 +275,6 @@ class ROIHeadsTest(unittest.TestCase):
         for instance, scripted_instance in zip(pred_instances, scripted_pred_instances):
             assert_instances_allclose(instance, scripted_instance, rtol=0)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_PointRend_mask_head_tracing(self):
         cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
         point_rend.add_pointrend_config(cfg)

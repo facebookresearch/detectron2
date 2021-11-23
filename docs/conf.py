@@ -282,8 +282,6 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "ResNetBlockBase",
         "GroupedBatchSampler",
         "build_transform_gen",
-        "export_caffe2_model",
-        "export_onnx_model",
         "apply_transform_gens",
         "TransformGen",
         "apply_augmentations",
@@ -292,6 +290,9 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         "draw_panoptic_seg_predictions",
         "WarmupCosineLR",
         "WarmupMultiStepLR",
+        "downgrade_config",
+        "upgrade_config",
+        "add_export_config",
     }
     try:
         if name in HIDDEN or (
@@ -331,6 +332,8 @@ _PAPER_DATA = {
     ),
     "dds": ("2003.13678", "Designing Network Design Spaces"),
     "scaling": ("2103.06877", "Fast and Accurate Model Scaling"),
+    "fcos": ("2006.09214", "FCOS: A Simple and Strong Anchor-free Object Detector"),
+    "rethinking-batchnorm": ("2105.07576", 'Rethinking "Batch" in BatchNorm'),
 }
 
 

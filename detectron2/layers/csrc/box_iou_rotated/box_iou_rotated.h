@@ -25,7 +25,7 @@ inline at::Tensor box_iou_rotated(
 #if defined(WITH_CUDA) || defined(WITH_HIP)
     return box_iou_rotated_cuda(boxes1.contiguous(), boxes2.contiguous());
 #else
-    AT_ERROR("Not compiled with GPU support");
+    AT_ERROR("Detectron2 is not compiled with GPU support!");
 #endif
   }
 

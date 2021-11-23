@@ -17,14 +17,14 @@ Please follow these steps to prepare your datasets:
 
 To train a model with 8 GPUs run:
 ```bash
-python train_net.py --config-file configs/PointSup/COCO/mask_rcnn_R_50_FPN_3x_point_annotations_aug.yaml --num-gpus 8
+python train_net.py --config-file configs/mask_rcnn_R_50_FPN_3x_point_sup_point_aug_coco.yaml --num-gpus 8
 ```
 
 ## Evaluation
 
 Model evaluation can be done similarly:
 ```bash
-python train_net.py --config-file configs/PointSup/COCO/mask_rcnn_R_50_FPN_3x_point_annotations_aug.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
+python train_net.py --config-file configs/mask_rcnn_R_50_FPN_3x_point_sup_point_aug_coco.yaml --eval-only MODEL.WEIGHTS /path/to/model_checkpoint
 ```
 
 ## <a name="CitingPointSup"></a>Citing Pointly-Supervised Instance Segmentation

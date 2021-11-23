@@ -67,7 +67,7 @@ def roi_mask_point_loss(mask_logits, instances, point_labels):
     # Log the training accuracy (using gt classes and 0.0 threshold for the logits)
     mask_accurate = (mask_logits > 0.0) == gt_mask_logits.to(dtype=torch.uint8)
     mask_accurate = mask_accurate[~point_ignores]
-    mask_accuracy = mask_accurate.nonzero().size(0) / mask_accurate.numel()
+    mask_accuracy = mask_accurate.nonzero().size(0) / max(mask_accurate.numel(), 1.0)
     get_event_storage().put_scalar("point/accuracy", mask_accuracy)
 
     point_loss = F.binary_cross_entropy_with_logits(

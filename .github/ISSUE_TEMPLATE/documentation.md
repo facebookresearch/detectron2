@@ -1,12 +1,14 @@
 ---
-name: "\U0001F4DA Documentation Improvements"
-about: Suggest an improvement about existing documentation, comments, website or tutorials.
+name: "\U0001F4DA Documentation Issue"
+about: Report a problem about existing documentation, comments, website or tutorials.
 labels: documentation
 
 ---
 
-## 📚 Documentation Improvements
+## 📚 Documentation Issue
 
-* Provide a link to the relevant documentation/comment/tutorial:
+This issue category is for problems about existing documentation, not for asking how-to questions.
 
-* How should  the above documentation/comment/tutorial improve:
+* Provide a link to an existing documentation/comment/tutorial:
+
+* How should the above documentation/comment/tutorial improve:

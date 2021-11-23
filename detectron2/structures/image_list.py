@@ -5,28 +5,15 @@ import torch
 from torch import device
 from torch.nn import functional as F
 
-from detectron2.utils.env import TORCH_VERSION
-
-
-def _as_tensor(x: Tuple[int, int]) -> torch.Tensor:
-    """
-    An equivalent of `torch.as_tensor`, but works under tracing if input
-    is a list of tensor. `torch.as_tensor` will record a constant in tracing,
-    but this function will use `torch.stack` instead.
-    """
-    if torch.jit.is_scripting():
-        return torch.as_tensor(x)
-    if isinstance(x, (list, tuple)) and all([isinstance(t, torch.Tensor) for t in x]):
-        return torch.stack(x)
-    return torch.as_tensor(x)
+from detectron2.layers.wrappers import shapes_to_tensor
 
 
 class ImageList(object):
     """
     Structure that holds a list of images (of possibly
     varying sizes) as a single tensor.
-    This works by padding the images to the same size,
-    and storing in a field the original sizes of each image
+    This works by padding the images to the same size.
+    The original sizes of each image is stored in `image_sizes`.
 
     Attributes:
         image_sizes (list[tuple[int, int]]): each tuple is (h, w).
@@ -92,20 +79,19 @@ class ImageList(object):
             assert t.shape[:-2] == tensors[0].shape[:-2], t.shape
 
         image_sizes = [(im.shape[-2], im.shape[-1]) for im in tensors]
-        image_sizes_tensor = [_as_tensor(x) for x in image_sizes]
+        image_sizes_tensor = [shapes_to_tensor(x) for x in image_sizes]
         max_size = torch.stack(image_sizes_tensor).max(0).values
 
         if size_divisibility > 1:
             stride = size_divisibility
             # the last two dims are H,W, both subject to divisibility requirement
-            max_size = (max_size + (stride - 1)) // stride * stride
+            max_size = (max_size + (stride - 1)).div(stride, rounding_mode="floor") * stride
 
         # handle weirdness of scripting and tracing ...
         if torch.jit.is_scripting():
             max_size: List[int] = max_size.to(dtype=torch.long).tolist()
         else:
-            # https://github.com/pytorch/pytorch/issues/42448
-            if TORCH_VERSION >= (1, 7) and torch.jit.is_tracing():
+            if torch.jit.is_tracing():
                 image_sizes = image_sizes_tensor
 
         if len(tensors) == 1:

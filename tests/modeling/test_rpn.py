@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import logging
-import sys
 import unittest
 import torch
 
@@ -14,7 +13,6 @@ from detectron2.modeling.proposal_generator.proposal_utils import (
     find_top_rpn_proposals,
 )
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.events import EventStorage
 
 logger = logging.getLogger(__name__)
@@ -101,10 +99,6 @@ class RPNTest(unittest.TestCase):
         expected_conv_dims = [1024, 1024, 1024]
         self.verify_rpn(conv_dims, expected_conv_dims)
 
-    # https://github.com/pytorch/pytorch/issues/46964
-    @unittest.skipIf(
-        TORCH_VERSION < (1, 7) or sys.version_info.minor <= 6, "Insufficient pytorch version"
-    )
     def test_rpn_scriptability(self):
         cfg = get_cfg()
         proposal_generator = RPN(cfg, {"res4": ShapeSpec(channels=1024, stride=16)}).eval()
@@ -207,7 +201,6 @@ class RPNTest(unittest.TestCase):
         pred_logits[0][1][3:5].fill_(float("inf"))
         find_top_rpn_proposals(proposals, pred_logits, [(10, 10)], 0.5, 1000, 1000, 0, False)
 
-    @unittest.skipIf(TORCH_VERSION < (1, 7), "Insufficient pytorch version")
     def test_find_rpn_proposals_tracing(self):
         N, Hi, Wi, A = 3, 50, 50, 9
         proposal = torch.rand(N, Hi * Wi * A, 4)

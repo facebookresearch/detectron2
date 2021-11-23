@@ -7,3 +7,5 @@ from ..common.train import train
 dataloader.train.mapper.use_instance_mask = False
 model.backbone.bottom_up.freeze_at = 2
 optimizer.lr = 0.01
+
+train.init_checkpoint = "detectron2://ImageNetPretrained/MSRA/R-50.pkl"

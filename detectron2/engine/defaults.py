@@ -132,9 +132,11 @@ Run on multiple machines:
     )
     parser.add_argument(
         "opts",
-        help="Modify config options by adding 'KEY VALUE' pairs at the end of the command. "
-        "See config references at "
-        "https://detectron2.readthedocs.io/modules/config.html#config-references",
+        help="""
+Modify config options at the end of the command. For Yacs configs, use
+space-separated "PATH.KEY VALUE" pairs.
+For python-based LazyConfig, use "path.key=value".
+        """.strip(),
         default=None,
         nargs=argparse.REMAINDER,
     )
@@ -148,14 +150,10 @@ def _try_get_key(cfg, *keys, default=None):
     if isinstance(cfg, CfgNode):
         cfg = OmegaConf.create(cfg.dump())
     for k in keys:
-        parts = k.split(".")
-        # https://github.com/omry/omegaconf/issues/674
-        for p in parts:
-            if p not in cfg:
-                break
-            cfg = OmegaConf.select(cfg, p)
-        else:
-            return cfg
+        none = object()
+        p = OmegaConf.select(cfg, k, default=none)
+        if p is not none:
+            return p
     return default
 
 
@@ -242,6 +240,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
     Returns:
         list[EventWriter]: a list of :class:`EventWriter` objects.
     """
+    PathManager.mkdirs(output_dir)
     return [
         # It may not always print what you want to see, since it prints "common" metrics only.
         CommonMetricPrinter(max_iter),
@@ -264,8 +263,8 @@ class DefaultPredictor:
 
     This is meant for simple demo purposes, so it does the above steps automatically.
     This is not meant for benchmarks or running complicated inference logic.
-    If you'd like to do anything more fancy, please refer to its source code as examples
-    to build and use the model manually.
+    If you'd like to do anything more complicated, please refer to its source code as
+    examples to build and use the model manually.
 
     Attributes:
         metadata (Metadata): the metadata of the underlying dataset, obtained from
@@ -494,6 +493,15 @@ class DefaultTrainer(TrainerBase):
         self._trainer.iter = self.iter
         self._trainer.run_step()
 
+    def state_dict(self):
+        ret = super().state_dict()
+        ret["_trainer"] = self._trainer.state_dict()
+        return ret
+
+    def load_state_dict(self, state_dict):
+        super().load_state_dict(state_dict)
+        self._trainer.load_state_dict(state_dict["_trainer"])
+
     @classmethod
     def build_model(cls, cfg):
         """
@@ -568,6 +576,9 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
     @classmethod
     def test(cls, cfg, model, evaluators=None):
         """
+        Evaluate the given model. The given model is expected to already contain
+        weights to evaluate.
+
         Args:
             cfg (CfgNode):
             model (nn.Module):

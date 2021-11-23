@@ -9,11 +9,9 @@ from detectron2.config import get_cfg
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import build_resnet_backbone
 from detectron2.modeling.backbone.fpn import build_resnet_fpn_backbone
-from detectron2.utils.env import TORCH_VERSION
 
 
 class TestBackBone(unittest.TestCase):
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_resnet_scriptability(self):
         cfg = get_cfg()
         resnet = build_resnet_backbone(cfg, ShapeSpec(channels=3))
@@ -25,7 +23,6 @@ class TestBackBone(unittest.TestCase):
         out2 = scripted_resnet(inp)["res4"]
         self.assertTrue(torch.allclose(out1, out2))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_fpn_scriptability(self):
         cfg = model_zoo.get_config("Misc/scratch_mask_rcnn_R_50_FPN_3x_gn.yaml")
         bb = build_resnet_fpn_backbone(cfg, ShapeSpec(channels=3))

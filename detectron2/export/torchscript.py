@@ -3,7 +3,6 @@
 import os
 import torch
 
-from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 
 from .torchscript_patch import freeze_training_mode, patch_instances
@@ -48,7 +47,6 @@ def scripting_with_instances(model, fields):
     Returns:
         torch.jit.ScriptModule: the model in torchscript format
     """
-    assert TORCH_VERSION >= (1, 8), "This feature is not available in PyTorch < 1.8"
     assert (
         not model.training
     ), "Currently we only support exporting models in evaluation mode to torchscript"
@@ -71,6 +69,7 @@ def dump_torchscript_IR(model, dir):
         model (TracedModule/ScriptModule/ScriptFUnction): traced or scripted module
         dir (str): output directory to dump files.
     """
+    dir = os.path.expanduser(dir)
     PathManager.mkdirs(dir)
 
     def _get_script_mod(mod):

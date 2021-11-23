@@ -19,6 +19,14 @@ class CfgNode(_CfgNode):
        the content of the file.
     2. Support config versioning.
        When attempting to merge an old config, it will convert the old config automatically.
+
+    .. automethod:: clone
+    .. automethod:: freeze
+    .. automethod:: defrost
+    .. automethod:: is_frozen
+    .. automethod:: load_yaml_with_base
+    .. automethod:: merge_from_list
+    .. automethod:: merge_from_other_cfg
     """
 
     @classmethod
@@ -27,6 +35,13 @@ class CfgNode(_CfgNode):
 
     # Note that the default value of allow_unsafe is changed to True
     def merge_from_file(self, cfg_filename: str, allow_unsafe: bool = True) -> None:
+        """
+        Load content from the given config file and merge it into self.
+
+        Args:
+            cfg_filename: config filename
+            allow_unsafe: allow unsafe yaml syntax
+        """
         assert PathManager.isfile(cfg_filename), f"Config file '{cfg_filename}' does not exist!"
         loaded_cfg = self.load_yaml_with_base(cfg_filename, allow_unsafe=allow_unsafe)
         loaded_cfg = type(self)(loaded_cfg)
@@ -194,6 +209,7 @@ def configurable(init_func=None, *, from_config=None):
                 else:
                     return orig_func(*args, **kwargs)
 
+            wrapped.from_config = from_config
             return wrapped
 
         return wrapper

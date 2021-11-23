@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 import collections
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
@@ -280,7 +281,9 @@ class TracingAdapter(nn.Module):
             if self.inputs_schema is not None:
                 inputs_orig_format = self.inputs_schema(args)
             else:
-                if args != self.flattened_inputs:
+                if len(args) != len(self.flattened_inputs) or any(
+                    x is not y for x, y in zip(args, self.flattened_inputs)
+                ):
                     raise ValueError(
                         "TracingAdapter does not contain valid inputs_schema."
                         " So it cannot generalize to other inputs and must be"

@@ -111,7 +111,9 @@ class Embedder(nn.Module):
                         v_key = torch.from_numpy(v_key)
                     state_dict_local[key[len(prefix) :]] = v_key
             # non-strict loading to finetune on different meshes
-            self.load_state_dict(state_dict_local, strict=False)  # pyre-ignore[28]
+            # pyre-fixme[6]: Expected `OrderedDict[typing.Any, typing.Any]` for 1st
+            #  param but got `Dict[typing.Any, typing.Any]`.
+            self.load_state_dict(state_dict_local, strict=False)
 
     def forward(self, mesh_name: str) -> torch.Tensor:
         """

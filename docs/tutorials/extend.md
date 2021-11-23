@@ -15,13 +15,16 @@ which is a challenge for any research engineering project of a significant size:
 In detectron2, there are two types of interfaces that address this tension together:
 
 1. Functions and classes that take a config (`cfg`) argument
+   created from a yaml file
    (sometimes with few extra arguments).
 
    Such functions and classes implement
-   the "standard default" behavior: it will read what it needs from the
+   the "standard default" behavior: it will read what it needs from a given
    config and do the "standard" thing.
-   Users only need to load a given config and pass it around, without having to worry about
+   Users only need to load an expert-made config and pass it around, without having to worry about
    which arguments are used and what they all mean.
+
+   See [Yacs Configs](configs.md) for a detailed tutorial.
 
 2. Functions and classes that have well-defined explicit arguments.
 
@@ -33,6 +36,8 @@ In detectron2, there are two types of interfaces that address this tension toget
    When you need to implement something not supported by the "standard defaults"
    included in detectron2, these well-defined components can be reused.
 
+   The [LazyConfig system](lazyconfigs.md) relies on such functions and classes.
+
 3. A few functions and classes are implemented with the
    [@configurable](../modules/config.html#detectron2.config.configurable)
    decorator - they can be called with either a config, or with explicit arguments, or a mixture of both.
@@ -42,7 +47,7 @@ In detectron2, there are two types of interfaces that address this tension toget
 
    1. Config-only:
       ```python
-      # load proper config file, then
+      # load proper yaml config file, then
       model = build_model(cfg)
       ```
 

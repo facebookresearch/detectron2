@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+# Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
 import logging
 import numpy as np
@@ -46,7 +45,6 @@ class MMDetBackbone(Backbone):
         backbone: Union[nn.Module, Mapping],
         neck: Union[nn.Module, Mapping, None] = None,
         *,
-        pretrained_backbone: Optional[str] = None,
         output_shapes: List[ShapeSpec],
         output_names: Optional[List[str]] = None,
     ):
@@ -78,12 +76,11 @@ class MMDetBackbone(Backbone):
             neck = build_neck(_to_container(neck))
         self.neck = neck
 
-        # It's confusing that backbone weights are given as a separate argument,
-        # but "neck" weights, if any, are part of neck itself. This is the interface
+        # "Neck" weights, if any, are part of neck itself. This is the interface
         # of mmdet so we follow it. Reference:
         # https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/detectors/two_stage.py
-        logger.info(f"Initializing mmdet backbone weights: {pretrained_backbone} ...")
-        self.backbone.init_weights(pretrained_backbone)
+        logger.info("Initializing mmdet backbone weights...")
+        self.backbone.init_weights()
         # train() in mmdet modules is non-trivial, and has to be explicitly
         # called. Reference:
         # https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/backbones/resnet.py

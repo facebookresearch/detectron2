@@ -8,7 +8,7 @@ import tqdm
 from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
+from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import default_argument_parser
 from detectron2.modeling import build_model
@@ -23,20 +23,30 @@ logger = logging.getLogger("detectron2")
 
 
 def setup(args):
-    cfg = get_cfg()
-    cfg.merge_from_file(args.config_file)
-    cfg.DATALOADER.NUM_WORKERS = 0
-    cfg.merge_from_list(args.opts)
-    cfg.freeze()
+    if args.config_file.endswith(".yaml"):
+        cfg = get_cfg()
+        cfg.merge_from_file(args.config_file)
+        cfg.DATALOADER.NUM_WORKERS = 0
+        cfg.merge_from_list(args.opts)
+        cfg.freeze()
+    else:
+        cfg = LazyConfig.load(args.config_file)
+        cfg = LazyConfig.apply_overrides(cfg, args.opts)
     setup_logger(name="fvcore")
     setup_logger()
     return cfg
 
 
 def do_flop(cfg):
-    data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
-    model = build_model(cfg)
-    DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+    if isinstance(cfg, CfgNode):
+        data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
+        model = build_model(cfg)
+        DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+    else:
+        data_loader = instantiate(cfg.dataloader.test)
+        model = instantiate(cfg.model)
+        model.to(cfg.train.device)
+        DetectionCheckpointer(model).load(cfg.train.init_checkpoint)
     model.eval()
 
     counts = Counter()
@@ -59,9 +69,15 @@ def do_flop(cfg):
 
 
 def do_activation(cfg):
-    data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
-    model = build_model(cfg)
-    DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+    if isinstance(cfg, CfgNode):
+        data_loader = build_detection_test_loader(cfg, cfg.DATASETS.TEST[0])
+        model = build_model(cfg)
+        DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+    else:
+        data_loader = instantiate(cfg.dataloader.test)
+        model = instantiate(cfg.model)
+        model.to(cfg.train.device)
+        DetectionCheckpointer(model).load(cfg.train.init_checkpoint)
     model.eval()
 
     counts = Counter()
@@ -82,12 +98,18 @@ def do_activation(cfg):
 
 
 def do_parameter(cfg):
-    model = build_model(cfg)
+    if isinstance(cfg, CfgNode):
+        model = build_model(cfg)
+    else:
+        model = instantiate(cfg.model)
     logger.info("Parameter Count:\n" + parameter_count_table(model, max_depth=5))
 
 
 def do_structure(cfg):
-    model = build_model(cfg)
+    if isinstance(cfg, CfgNode):
+        model = build_model(cfg)
+    else:
+        model = instantiate(cfg.model)
     logger.info("Model Structure:\n" + str(model))
 
 

@@ -109,10 +109,10 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         S = densepose_output.coarse_segm
         E = densepose_output.embedding
         _, _, w, h = bbox_xywh
-        embeddings = F.interpolate(E, size=(h, w), mode="bilinear")[0].cpu()
-        coarse_segm_resized = F.interpolate(S, size=(h, w), mode="bilinear")[0].cpu()
+        embeddings = F.interpolate(E, size=(h, w), mode="bilinear")[0]
+        coarse_segm_resized = F.interpolate(S, size=(h, w), mode="bilinear")[0]
         mask = coarse_segm_resized.argmax(0) > 0
-        other_values = torch.empty((0, h, w))
+        other_values = torch.empty((0, h, w), device=E.device)
         return mask, embeddings, other_values
 
     def _resample_mask(self, output: Any) -> torch.Tensor:

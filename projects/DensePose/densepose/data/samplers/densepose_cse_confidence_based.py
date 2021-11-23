@@ -82,13 +82,13 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
             # (here best = smallest variance)
             _, sorted_confidence_indices = torch.sort(values[0])
             if self.search_count_multiplier is not None:
-                search_count = min(int(count * self.search_count_multiplier), k)  # pyre-ignore[58]
+                search_count = min(int(count * self.search_count_multiplier), k)
             elif self.search_proportion is not None:
                 search_count = min(max(int(k * self.search_proportion), count), k)
             else:
                 search_count = min(count, k)
             sample_from_top = random.sample(range(search_count), count)
-            index_sample = sorted_confidence_indices[:search_count][sample_from_top]
+            index_sample = sorted_confidence_indices[-search_count:][sample_from_top]
         return index_sample
 
     def _produce_mask_and_results(

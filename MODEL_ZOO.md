@@ -11,8 +11,8 @@ You can access these models from code using [detectron2.model_zoo](https://detec
 In addition to these official baseline models, you can find more models in [projects/](projects/).
 
 #### How to Read the Tables
-* The "Name" column contains a link to the config file. Running `tools/train_net.py --num-gpus 8` with this config file
-  will reproduce the model.
+* The "Name" column contains a link to the config file. Models can be reproduced using `tools/train_net.py` with the corresponding yaml config file,
+  or `tools/lazyconfig_train_net.py` for python config files.
 * Training speed is averaged across the entire training.
   We keep updating the speed with latest version of detectron2/pytorch/etc.,
   so they might be different from the `metrics` file.
@@ -490,7 +490,7 @@ In the following table, one epoch consists of training on 118000 COCO images.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_400ep_LSJ/42019571/model_final_14d201.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_50_FPN_400ep_LSJ/42019571/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_R_101_FPN_100ep_LSJ -->
- <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ.py">R100-FPN</a></td>
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ.py">R101-FPN</a></td>
 <td align="center">100</td>
 <td align="center">0.518</td>
 <td align="center">0.073</td>
@@ -500,7 +500,7 @@ In the following table, one epoch consists of training on 118000 COCO images.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ/42025812/model_final_4f7b58.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_100ep_LSJ/42025812/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_R_101_FPN_200ep_LSJ -->
- <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ.py">R100-FPN</a></td>
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ.py">R101-FPN</a></td>
 <td align="center">200</td>
 <td align="center">0.518</td>
 <td align="center">0.073</td>
@@ -510,7 +510,7 @@ In the following table, one epoch consists of training on 118000 COCO images.
 <td align="center"><a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ/42131867/model_final_0bb7ae.pkl">model</a>&nbsp;|&nbsp;<a href="https://dl.fbaipublicfiles.com/detectron2/new_baselines/mask_rcnn_R_101_FPN_200ep_LSJ/42131867/metrics.json">metrics</a></td>
 </tr>
 <!-- ROW: mask_rcnn_R_101_FPN_400ep_LSJ -->
- <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_400ep_LSJ.py">R100-FPN</a></td>
+ <tr><td align="left"><a href="configs/new_baselines/mask_rcnn_R_101_FPN_400ep_LSJ.py">R101-FPN</a></td>
 <td align="center">400</td>
 <td align="center">0.518</td>
 <td align="center">0.073</td>

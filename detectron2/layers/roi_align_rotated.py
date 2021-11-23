@@ -5,8 +5,6 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
-from detectron2 import _C
-
 
 class _ROIAlignRotated(Function):
     @staticmethod
@@ -16,7 +14,7 @@ class _ROIAlignRotated(Function):
         ctx.spatial_scale = spatial_scale
         ctx.sampling_ratio = sampling_ratio
         ctx.input_shape = input.size()
-        output = _C.roi_align_rotated_forward(
+        output = torch.ops.detectron2.roi_align_rotated_forward(
             input, roi, spatial_scale, output_size[0], output_size[1], sampling_ratio
         )
         return output
@@ -29,7 +27,7 @@ class _ROIAlignRotated(Function):
         spatial_scale = ctx.spatial_scale
         sampling_ratio = ctx.sampling_ratio
         bs, ch, h, w = ctx.input_shape
-        grad_input = _C.roi_align_rotated_backward(
+        grad_input = torch.ops.detectron2.roi_align_rotated_backward(
             grad_output,
             rois,
             spatial_scale,
