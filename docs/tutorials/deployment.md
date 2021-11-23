@@ -42,9 +42,12 @@ We currently support the following combination and each has some limitations:
 +----------------------------+-------------+-------------+-----------------------------+
 | PointRend R-CNN            | ✅          | ❌          | ❌                          |
 +----------------------------+-------------+-------------+-----------------------------+
+| Cascade R-CNN              | ✅          | ❌          | ❌                          |
++----------------------------+-------------+-------------+-----------------------------+
 
 ```
 
+`caffe2_tracing` is going to be deprecated.
 We don't plan to work on additional support for other formats/runtime, but contributions are welcome.
 
 
@@ -55,12 +58,12 @@ Models can be exported to TorchScript format, by either
 The output model file can be loaded without detectron2 dependency in either Python or C++.
 The exported model often requires torchvision (or its C++ library) dependency for some custom ops.
 
-This feature requires PyTorch ≥ 1.8 (or latest on github before 1.8 is released).
+This feature requires PyTorch ≥ 1.8.
 
 ### Coverage
 Most official models under the meta architectures `GeneralizedRCNN` and `RetinaNet`
-are supported in both tracing and scripting mode. Cascade R-CNN is currently not supported.
-PointRend is currently supported in tracing.
+are supported in both tracing and scripting mode.
+Cascade R-CNN and PointRend are currently supported in tracing.
 Users' custom extensions are supported if they are also scriptable or traceable.
 
 For models exported with tracing, dynamic input resolution is allowed, but batch size

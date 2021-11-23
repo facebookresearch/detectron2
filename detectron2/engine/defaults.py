@@ -240,6 +240,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
     Returns:
         list[EventWriter]: a list of :class:`EventWriter` objects.
     """
+    PathManager.mkdirs(output_dir)
     return [
         # It may not always print what you want to see, since it prints "common" metrics only.
         CommonMetricPrinter(max_iter),
@@ -491,6 +492,15 @@ class DefaultTrainer(TrainerBase):
     def run_step(self):
         self._trainer.iter = self.iter
         self._trainer.run_step()
+
+    def state_dict(self):
+        ret = super().state_dict()
+        ret["_trainer"] = self._trainer.state_dict()
+        return ret
+
+    def load_state_dict(self, state_dict):
+        super().load_state_dict(state_dict)
+        self._trainer.load_state_dict(state_dict["_trainer"])
 
     @classmethod
     def build_model(cls, cfg):

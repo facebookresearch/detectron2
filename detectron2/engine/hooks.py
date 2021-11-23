@@ -276,7 +276,7 @@ class BestCheckpointer(HookBase):
             additional_state = {"iteration": metric_iter}
             self._checkpointer.save(f"{self._file_prefix}", **additional_state)
             self._logger.info(
-                f"Saved best model as latest eval score for {self._val_metric} is"
+                f"Saved best model as latest eval score for {self._val_metric} is "
                 f"{latest_metric:0.5f}, better than last best score "
                 f"{self.best_metric:0.5f} @ iteration {self.best_iter}."
             )
@@ -414,7 +414,8 @@ class TorchProfiler(HookBase):
                         self._output_dir,
                         "log",
                         "profiler-tensorboard-iter{}".format(self.trainer.iter),
-                    )
+                    ),
+                    f"worker{comm.get_rank()}",
                 )
             else:
                 on_trace_ready = None
@@ -434,21 +435,22 @@ class TorchProfiler(HookBase):
         if self._profiler is None:
             return
         self._profiler.__exit__(None, None, None)
-        PathManager.mkdirs(self._output_dir)
-        out_file = os.path.join(
-            self._output_dir, "profiler-trace-iter{}.json".format(self.trainer.iter)
-        )
-        if "://" not in out_file:
-            self._profiler.export_chrome_trace(out_file)
-        else:
-            # Support non-posix filesystems
-            with tempfile.TemporaryDirectory(prefix="detectron2_profiler") as d:
-                tmp_file = os.path.join(d, "tmp.json")
-                self._profiler.export_chrome_trace(tmp_file)
-                with open(tmp_file) as f:
-                    content = f.read()
-            with PathManager.open(out_file, "w") as f:
-                f.write(content)
+        if not self._save_tensorboard:
+            PathManager.mkdirs(self._output_dir)
+            out_file = os.path.join(
+                self._output_dir, "profiler-trace-iter{}.json".format(self.trainer.iter)
+            )
+            if "://" not in out_file:
+                self._profiler.export_chrome_trace(out_file)
+            else:
+                # Support non-posix filesystems
+                with tempfile.TemporaryDirectory(prefix="detectron2_profiler") as d:
+                    tmp_file = os.path.join(d, "tmp.json")
+                    self._profiler.export_chrome_trace(tmp_file)
+                    with open(tmp_file) as f:
+                        content = f.read()
+                with PathManager.open(out_file, "w") as f:
+                    f.write(content)
 
 
 class AutogradProfiler(TorchProfiler):

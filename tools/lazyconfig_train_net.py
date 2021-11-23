@@ -75,7 +75,6 @@ def do_train(args, cfg):
     checkpointer = DetectionCheckpointer(
         model,
         cfg.train.output_dir,
-        optimizer=optim,
         trainer=trainer,
     )
     trainer.register_hooks(

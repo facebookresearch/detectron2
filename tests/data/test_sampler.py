@@ -11,6 +11,7 @@ from detectron2.data.build import worker_init_reset_seed
 from detectron2.data.common import DatasetFromList, ToIterableDataset
 from detectron2.data.samplers import (
     GroupedBatchSampler,
+    InferenceSampler,
     RepeatFactorTrainingSampler,
     TrainingSampler,
 )
@@ -87,3 +88,24 @@ class TestRepeatFactorTrainingSampler(unittest.TestCase):
 
         expected_rep_factors = torch.tensor([math.sqrt(3 / 2), 1.0, 1.0])
         self.assertTrue(torch.allclose(rep_factors, expected_rep_factors))
+
+
+class TestInferenceSampler(unittest.TestCase):
+    def test_local_indices(self):
+        sizes = [0, 16, 2, 42]
+        world_sizes = [5, 2, 3, 4]
+
+        expected_results = [
+            [range(0) for _ in range(5)],
+            [range(8), range(8, 16)],
+            [range(1), range(1, 2), range(0)],
+            [range(11), range(11, 22), range(22, 32), range(32, 42)],
+        ]
+
+        for size, world_size, expected_result in zip(sizes, world_sizes, expected_results):
+            with self.subTest(f"size={size}, world_size={world_size}"):
+                local_indices = [
+                    InferenceSampler._get_local_indices(size, world_size, r)
+                    for r in range(world_size)
+                ]
+                self.assertEqual(local_indices, expected_result)

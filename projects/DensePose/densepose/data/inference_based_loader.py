@@ -24,10 +24,10 @@ def _grouper(iterable: Iterable[Any], n: int, fillvalue=None) -> Iterator[Tuple[
             except StopIteration:
                 if values:
                     values.extend([fillvalue] * (n - len(values)))
-                    yield tuple(values)  # pyre-ignore[7]
+                    yield tuple(values)
                 return
             values.append(value)
-        yield tuple(values)  # pyre-ignore[7]
+        yield tuple(values)
 
 
 class ScoreBasedFilter:

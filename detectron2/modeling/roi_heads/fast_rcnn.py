@@ -2,13 +2,12 @@
 import logging
 from typing import Dict, List, Tuple, Union
 import torch
-from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, batched_nms, cat, cross_entropy, nonzero_tuple
-from detectron2.modeling.box_regression import Box2BoxTransform
+from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regression_loss
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
@@ -207,7 +206,8 @@ class FastRCNNOutputLayers(nn.Module):
             cls_agnostic_bbox_reg (bool): whether to use class agnostic for bbox regression
             smooth_l1_beta (float): transition point from L1 to L2 loss. Only used if
                 `box_reg_loss_type` is "smooth_l1"
-            box_reg_loss_type (str): Box regression loss type. One of: "smooth_l1", "giou"
+            box_reg_loss_type (str): Box regression loss type. One of: "smooth_l1", "giou",
+                "diou", "ciou"
             loss_weight (float|dict): weights to use for losses. Can be single float for weighting
                 all losses, or a dict of individual weightings. Valid dict keys are:
                     * "loss_cls": applied to classification loss
@@ -320,7 +320,8 @@ class FastRCNNOutputLayers(nn.Module):
     def box_reg_loss(self, proposal_boxes, gt_boxes, pred_deltas, gt_classes):
         """
         Args:
-            All boxes are tensors with the same shape Rx(4 or 5).
+            proposal_boxes/gt_boxes are tensors with the same shape (R, 4 or 5).
+            pred_deltas has shape (R, 4 or 5), or (R, num_classes * (4 or 5)).
             gt_classes is a long tensor of shape R, the gt class label of each proposal.
             R shall be the number of proposals.
         """
@@ -334,21 +335,16 @@ class FastRCNNOutputLayers(nn.Module):
                 fg_inds, gt_classes[fg_inds]
             ]
 
-        if self.box_reg_loss_type == "smooth_l1":
-            gt_pred_deltas = self.box2box_transform.get_deltas(
-                proposal_boxes[fg_inds],
-                gt_boxes[fg_inds],
-            )
-            loss_box_reg = smooth_l1_loss(
-                fg_pred_deltas, gt_pred_deltas, self.smooth_l1_beta, reduction="sum"
-            )
-        elif self.box_reg_loss_type == "giou":
-            fg_pred_boxes = self.box2box_transform.apply_deltas(
-                fg_pred_deltas, proposal_boxes[fg_inds]
-            )
-            loss_box_reg = giou_loss(fg_pred_boxes, gt_boxes[fg_inds], reduction="sum")
-        else:
-            raise ValueError(f"Invalid bbox reg loss type '{self.box_reg_loss_type}'")
+        loss_box_reg = _dense_box_regression_loss(
+            [proposal_boxes[fg_inds]],
+            self.box2box_transform,
+            [fg_pred_deltas.unsqueeze(0)],
+            [gt_boxes[fg_inds]],
+            ...,
+            self.box_reg_loss_type,
+            self.smooth_l1_beta,
+        )
+
         # The reg loss is normalized using the total number of regions (R), not the number
         # of foreground regions even though the box regression loss is only defined on
         # foreground regions. Why? Because doing so gives equal training influence to

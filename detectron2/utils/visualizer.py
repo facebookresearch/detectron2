@@ -86,7 +86,10 @@ class GenericMask:
 
         if isinstance(m, np.ndarray):  # assumed to be a binary mask
             assert m.shape[1] != 2, m.shape
-            assert m.shape == (height, width), m.shape
+            assert m.shape == (
+                height,
+                width,
+            ), f"mask shape: {m.shape}, target dims: {height}, {width}"
             self._mask = m.astype("uint8")
             return
 
@@ -609,7 +612,7 @@ class Visualizer:
         masks=None,
         keypoints=None,
         assigned_colors=None,
-        alpha=0.5
+        alpha=0.5,
     ):
         """
         Args:
@@ -636,7 +639,6 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -852,7 +854,7 @@ class Visualizer:
         font_size=None,
         color="g",
         horizontal_alignment="center",
-        rotation=0
+        rotation=0,
     ):
         """
         Args:
