@@ -12,14 +12,7 @@ WORKDIR $HOME
 # Let torchvision find libtorch
 ENV CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.6/site-packages/torch/
 
-RUN sudo apt-get update && sudo apt-get install libgflags-dev libgoogle-glog-dev libopencv-dev --yes
-RUN pip install mkl-include
-
-# Install the correct version of protobuf (find it at torch/caffe2/proto/caffe2.pb.h after installing pytorch):
-RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v3.13.0/protobuf-cpp-3.13.0.tar.gz && tar xf protobuf-cpp-3.13.0.tar.gz
-RUN export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=$(python3 -c 'import torch; print(int(torch.compiled_with_cxx11_abi()))'); \
-	cd protobuf-3.13.0 && \
-	./configure --prefix=$HOME/.local && make -j && make install
+RUN sudo apt-get update && sudo apt-get install libopencv-dev --yes
 
 # install libtorchvision
 RUN git clone --branch v0.11.1 https://github.com/pytorch/vision/
