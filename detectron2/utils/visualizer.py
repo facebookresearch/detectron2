@@ -1248,8 +1248,8 @@ class WandbVisualizer(DatasetEvaluator):
         self._evalset_table_ref = None # eval artifact refrence for deduping. Don't reset 
         self._row_idx = 0
         self._map_table_row_file_name = {}
-        self._table_thing_class = None
-        self._table_stuff_class = None
+        self._table_thing_classes = None
+        self._table_stuff_classes = None
         
         # parsed metadata
         self.thing_class_names = []
@@ -1259,25 +1259,22 @@ class WandbVisualizer(DatasetEvaluator):
 
 
     def process(self, inputs, outputs):
-       if self.size > -1 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
-           return
-       parsed_output = self._parse_prediction(outputs[0])
-       parsed_output["file_name"] = inputs[0].get("file_name")
-       table_row = self._plot_table_row(parsed_output)
-       self._evalset_table_rows.append(table_row)
-       if self._evalset_table is None:
-           self._evalset_table = self._build_evalset_table(parsed_output.keys())
+        if self.size > -1 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
+            return
+        parsed_output = self._parse_prediction(outputs[0])
+        parsed_output["file_name"] = inputs[0].get("file_name")
+        table_row = self._plot_table_row(parsed_output)
+        self._evalset_table_rows.append(table_row)
+        if self._evalset_table is None:
+            self._evalset_table = self._build_evalset_table(parsed_output.keys())
 
 
     def evaluate(self):
-        '''
-        Log the table. Reset the table, save reference of the current table is it's not present
-        '''
-        if self._run is None:
-            self._run = wandb.init(project=self.dataset_name) if not wandb.run else wandb.run
         comm.synchronize()
         table_rows = comm.gather(self._evalset_table_rows)
         if comm.is_main_process():
+            if self._run is None:
+                self._run = wandb.init(project=self.dataset_name) if not wandb.run else wandb.run
             table_rows = list(itertools.chain(*table_rows))
             for table_row in table_rows:
                 # use reference of table if present 
@@ -1297,7 +1294,6 @@ class WandbVisualizer(DatasetEvaluator):
             self._run.log({self.dataset_name: self._evalset_table})
             if self._evalset_table_ref is None:
                 self._use_table_as_artifact(self._evalset_table)
-
         return super().evaluate()
 
     def reset(self):
@@ -1339,7 +1335,7 @@ class WandbVisualizer(DatasetEvaluator):
             self.thing_index_to_class[i] = name
             wandb_thing_classes.append({"id": i, "name": name})
 
-        self._table_thing_class = wandb.Classes(wandb_thing_classes)
+        self._table_thing_classes = wandb.Classes(wandb_thing_classes)
 
         # Parse stuff_classes
         if hasattr(meta, "stuff_classes"):
@@ -1350,7 +1346,7 @@ class WandbVisualizer(DatasetEvaluator):
             self.stuff_index_to_class[i] = name
             wandb_stuff_classes.append({"id": i, "name": name})
 
-        self._table_stuff_class = wandb.Classes(wandb_stuff_classes)
+        self._table_stuff_classes = wandb.Classes(wandb_stuff_classes)
 
 
     def _parse_prediction(self, pred):
@@ -1408,7 +1404,7 @@ class WandbVisualizer(DatasetEvaluator):
 
         """
         file_name = pred["file_name"]
-        classes = self._table_thing_class
+        classes = self._table_thing_classes
         # Process Bounding box detections
         boxes = {}
         avg_conf_per_class = [0 for i in range(len(self.thing_class_names))]
@@ -1463,10 +1459,11 @@ class WandbVisualizer(DatasetEvaluator):
                 "mask_data": pred["sem_mask"],
                 "class_labels": self.stuff_index_to_class,
             }
+            '''
             counts = dict(zip( np.unique(pred["sem_mask"], return_counts=True) ))
             for label in counts:
                 pixles_per_class[label] = counts[label]
-
+            '''
             classes = self._table_stuff_classes
 
         # TODO: Support panoptic , instance segmentation maks & keypoint visualizations.
