@@ -1257,8 +1257,6 @@ class WandbVisualizer(DatasetEvaluator):
         self.stuff_class_names = []
         self.stuff_index_to_class = {}
 
-        self._build_dataset_metadata()
-
 
     def process(self, inputs, outputs):
        if self.size > -1 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
@@ -1300,11 +1298,16 @@ class WandbVisualizer(DatasetEvaluator):
             if self._evalset_table_ref is None:
                 self._use_table_as_artifact(self._evalset_table)
 
+        return super().evaluate()
+
+    def reset(self):
+        self._build_dataset_metadata()
         self._evalset_table = None
         self._row_idx = 0
         self._evalset_table_rows = []
+        return super().reset()
 
-        return super().evaluate()
+
 
     def _build_dataset_metadata(self):
         """
