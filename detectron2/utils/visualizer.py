@@ -2,6 +2,8 @@
 import colorsys
 import logging
 import math
+import itertools
+from detectron2 import data
 import numpy as np
 from enum import Enum, unique
 import cv2
@@ -12,10 +14,13 @@ import pycocotools.mask as mask_util
 import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
+import wandb
 
+import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
+from detectron2.evaluation import DatasetEvaluator
 
 from .colormap import random_color
 
@@ -1228,3 +1233,308 @@ class Visualizer:
             to the image.
         """
         return self.output
+
+
+class WandbVisualizer(DatasetEvaluator):
+
+    def __init__(self, dataset_name, size = -1) -> None:
+        super().__init__()
+        self.dataset_name = dataset_name
+        self.size = size
+        self._run = None
+        # Table logging utils
+        self._evalset_table = None
+        self._evalset_table_rows = [] # reset after log operation
+        self._evalset_table_ref = None # eval artifact refrence for deduping. Don't reset 
+        self._row_idx = 0
+        self._map_table_row_file_name = {}
+        self._table_thing_class = None
+        self._table_stuff_class = None
+        
+        # parsed metadata
+        self.thing_class_names = []
+        self.thing_index_to_class = {}
+        self.stuff_class_names = []
+        self.stuff_index_to_class = {}
+
+        self._build_dataset_metadata()
+
+
+    def process(self, inputs, outputs):
+       if self.size > -1 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
+           return
+       parsed_output = self._parse_prediction(outputs[0])
+       parsed_output["file_name"] = inputs[0].get("file_name")
+       table_row = self._plot_table_row(parsed_output)
+       self._evalset_table_rows.append(table_row)
+       if self._evalset_table is None:
+           self._evalset_table = self._build_evalset_table(parsed_output.keys())
+
+
+    def evaluate(self):
+        '''
+        Log the table. Reset the table, save reference of the current table is it's not present
+        '''
+        if self._run is None:
+            self._run = wandb.init(project=self.dataset_name) if not wandb.run else wandb.run
+        comm.synchronize()
+        table_rows = comm.gather(self._evalset_table_rows)
+        if comm.is_main_process():
+            table_rows = list(itertools.chain(*table_rows))
+            for table_row in table_rows:
+                # use reference of table if present 
+                if self._evalset_table_ref is None:
+                    self._evalset_table.add_data(*table_row)
+                    self._map_table_row_file_name[table_row[0]] = self._row_idx
+                    self._row_idx = self._row_idx + 1
+                else:
+                    row_idx = self._map_table_row_file_name[table_row[0]]
+                    ref_table_row = self._evalset_table_ref[row_idx]
+                    self._evalset_table.add_data(
+                            table_row[0],
+                            wandb.Image(ref_table_row[1], boxes=table_row[1]._boxes, masks=table_row[1]._masks),
+                            *table_row[2:],
+                        )
+
+            self._run.log({self.dataset_name: self._evalset_table})
+            if self._evalset_table_ref is None:
+                self._use_table_as_artifact(self._evalset_table)
+
+        self._evalset_table = None
+        self._row_idx = 0
+        self._evalset_table_rows = []
+
+        return super().evaluate()
+
+    def _build_dataset_metadata(self):
+        """
+        Builds parsed metadata lists and mappings dicts to facilitate logging.
+        Builds a list of metadata for each of the validation dataloaders. Expects the metadata to present for ech dataloader or
+        combined as a list of dataloaders. If both are present, the former will be given preferance.
+        Useful for writing labels and captions of predictions.
+
+        E.g.
+        # set the properties separately
+        MetadataCatalog.get("val1").property = ...
+        MetadataCatalog.get("val2").property = ...
+
+        Builds 3 metadata objects for stuff and thing classes:
+        1. self.thing_class_names/self.stuff_class_names -- List[List[str]] of category names
+        2. self.thing_index_to_class/self.stuff_index_to_class-- List[Dict[int, str]]
+        3. self.thing_class_names/self.stuff_class_names -- List[wandb.Classes] for logging images to wandb.Table
+
+        """
+        meta = MetadataCatalog.get(self.dataset_name)
+
+        # Parse thing_classes
+        if hasattr(meta, "thing_classes"): 
+            self.thing_class_names = meta.thing_classes
+
+        wandb_thing_classes = []
+        # NOTE: The classs indeces starts from 1 instead of 0. Treat 0 as void, makes for easier vectorized operations
+        for i, name in enumerate(self.thing_class_names, 1):
+            self.thing_index_to_class[i] = name
+            wandb_thing_classes.append({"id": i, "name": name})
+
+        self._table_thing_class = wandb.Classes(wandb_thing_classes)
+
+        # Parse stuff_classes
+        if hasattr(meta, "stuff_classes"):
+            self.stuff_class_names = meta.stuff_classes
+
+        wandb_stuff_classes = []
+        for i, name in enumerate(self.stuff_class_names):
+            self.stuff_index_to_class[i] = name
+            wandb_stuff_classes.append({"id": i, "name": name})
+
+        self._table_stuff_class = wandb.Classes(wandb_stuff_classes)
+
+
+    def _parse_prediction(self, pred):
+        """
+        Parse prediction of one image and return the primitive martices to plot wandb media files.
+        Moves prediction from GPU to system memory.
+
+        Args:
+            pred (detectron2.structures.instances.Instances): Prediction instance for the image
+            loader_i (int): index of the dataloader being used
+
+        returns:
+            Dict (): parsed predictions
+        """
+        parsed_pred = {}
+        if pred.get("instances") is not None:
+            pred_ins = pred["instances"]
+            parsed_pred["boxes"] = (
+                pred_ins.pred_boxes.tensor.tolist()[:10] if pred_ins.has("pred_boxes") else None
+            )
+            parsed_pred["classes"] = (
+                pred_ins.pred_classes.tolist()[:10] if pred_ins.has("pred_classes") else None
+            )
+            parsed_pred["scores"] = (
+                pred_ins.scores.tolist()[:10] if pred_ins.has("scores") else None
+            )
+            parsed_pred["pred_masks"] = (
+                pred_ins.pred_masks.cpu().detach().numpy()[:10]
+                if pred_ins.has("pred_masks")
+                else None
+            )  # wandb segmentation panel supports np
+            parsed_pred["pred_keypoints"] = (
+                pred_ins.pred_keypoints.tolist()[:10] if pred_ins.has("pred_keypoints") else None
+            )
+
+        if pred.get("sem_seg") is not None:
+            parsed_pred["sem_mask"] = pred["sem_seg"].argmax(0).cpu().detach().numpy()
+
+        if pred.get("panoptic_seg") is not None:
+            # NOTE: handling void labels isn't neat.
+            panoptic_mask = pred["panoptic_seg"][0].cpu().detach().numpy()
+            # handle void labels( -1 )
+            panoptic_mask[panoptic_mask < 0] = 0
+            parsed_pred["panoptic_mask"] = panoptic_mask
+
+        return parsed_pred
+
+    def _plot_table_row(self, pred):
+        """
+        plot prediction on one image
+
+        Args:
+            img (str): Path to the image
+            pred (Dict): Prediction for one image
+
+        """
+        file_name = pred["file_name"]
+        classes = self._table_thing_class
+        # Process Bounding box detections
+        boxes = {}
+        avg_conf_per_class = [0 for i in range(len(self.thing_class_names))]
+        counts = {}
+        if pred.get("boxes") is not None:
+            boxes_data = []
+            # only plot top 20 predictions. Preds are sorted by descending conf. scores.
+            for i, box in enumerate(pred["boxes"]):
+                pred_class = int(pred["classes"][i])
+                caption = (
+                    f"{pred_class}"
+                    if not self.thing_class_names
+                    else self.thing_class_names[pred_class]
+                )
+
+                boxes_data.append(
+                    {
+                        "position": {
+                            "minX": box[0],
+                            "minY": box[1],
+                            "maxX": box[2],
+                            "maxY": box[3],
+                        },
+                        "class_id": pred_class + 1,
+                        "box_caption": "%s %.3f" % (caption, pred["scores"][i]),
+                        "scores": {"class_score": pred["scores"][i]},
+                        "domain": "pixel",
+                    }
+                )
+
+                avg_conf_per_class[pred_class] = avg_conf_per_class[pred_class] + pred["scores"][i]
+                if pred_class in counts:
+                    counts[pred_class] = counts[pred_class] + 1
+                else:
+                    counts[pred_class] = 1
+
+            for pred_class in counts.keys():
+                avg_conf_per_class[pred_class] = avg_conf_per_class[pred_class] / counts[pred_class]
+
+            boxes = {
+                "predictions": {
+                    "box_data": boxes_data,
+                    "class_labels": self.thing_index_to_class,
+                }
+            }
+
+        masks = {}
+        pixles_per_class = [0 for _ in self.stuff_class_names]
+        # Process semantic segmentation predictions
+        if pred.get("sem_mask") is not None:
+            masks["semantic_mask"] = {
+                "mask_data": pred["sem_mask"],
+                "class_labels": self.stuff_index_to_class,
+            }
+            counts = dict(zip( np.unique(pred["sem_mask"], return_counts=True) ))
+            for label in counts:
+                pixles_per_class[label] = counts[label]
+
+            classes = self._table_stuff_classes
+
+        # TODO: Support panoptic , instance segmentation maks & keypoint visualizations.
+        '''
+        # Process instance segmentation detections
+        if pred.get("pred_masks") is not None:
+            class_count = {}
+            num_pred = min(15, len(pred["pred_masks"]))  # Hardcoded to max 15 masks for better UI
+            for i in range(num_pred):
+                pred_class = int(pred["classes"][i])
+                if pred_class in class_count:
+                    class_count[pred_class] = class_count[pred_class] + 1
+                else:
+                    class_count[pred_class] = 0
+
+                # title format - class_count. E.g - person_0, person_1 ..
+                mask_title = (
+                    f"class {pred_class}"
+                    if not self.thing_class_names[loader_i]
+                    else self.thing_class_names[loader_i][pred_class]
+                )
+                mask_title = f"{mask_title}_{class_count[pred_class]}"
+
+                """
+                masks[mask_title] = {
+                    "mask_data": pred['pred_masks'][i]*(pred_class+1),
+                    "class_labels": {pred_class+1: mask_title}
+                }
+                """
+
+        if pred.get("panoptic_mask") is not None:
+            masks["panoptic_mask"] = {
+                "mask_data": pred["panoptic_mask"],
+                "class_labels": self.stuff_index_to_class[loader_i],
+            }
+        '''
+
+        table_row = [file_name, wandb.Image(file_name, boxes=boxes, masks=masks, classes=classes)]
+        if pred.get("boxes") is not None:
+            table_row.extend(avg_conf_per_class)
+        
+        return table_row
+
+       
+    def _use_table_as_artifact(self, table):
+        """
+        This function logs the given table as artifact and calls `use_artifact` on it so tables from next iter-
+        ations can use the reference of already uploaded images.
+        """
+        eval_art = wandb.Artifact(self._run.id + self.dataset_name, type="dataset")
+        eval_art.add(table, self.dataset_name)
+        self._run.use_artifact(eval_art)
+        eval_art.wait()
+        self._evalset_table_ref = eval_art.get(self.dataset_name).data
+
+    def _table_logging(self):
+        """
+        This function returns true if user defined settings enable tables logging implicitly or explicitly
+        """
+        return self.cfg.WANDB.LOG_PREDICTION
+
+    def _build_evalset_table(self, pred_keys):
+        """ """
+        # The design of tables for each task is up for discussion.
+        # * If each prediction of a kind has its col, then there'll be 160 columns for coco detection + ins. seg. This isn't ideal
+        # * Writer doesn't have access to any mask overlay metrics like IOUs or false +ves etc,
+        #
+        # Current design - Use cols. for each detection class score and don't use columns for mask overlays
+        table_cols = ["file_name", "image"]
+        if "boxes" in pred_keys:
+            table_cols = table_cols + self.thing_class_names
+        table = wandb.Table(columns=table_cols)
+
+        return table
