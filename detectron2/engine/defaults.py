@@ -16,7 +16,6 @@ import sys
 import weakref
 from collections import OrderedDict
 from typing import Optional
-from detectron2.utils import events
 import torch
 from fvcore.nn.precise_bn import get_bn_modules
 from omegaconf import OmegaConf
@@ -41,7 +40,7 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter, WandbWriter
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
@@ -232,26 +231,22 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
     """
     Build a list of :class:`EventWriter` to be used.
     It now consists of a :class:`CommonMetricPrinter`,
-    :class:`TensorboardXWriter`, :class:`JSONWriter`
-    and :class `WandbWriter`
+    :class:`TensorboardXWriter` and :class:`JSONWriter`.
 
     Args:
         output_dir: directory to store JSON metrics and tensorboard events
         max_iter: the total number of iterations
-        cfg: configuration for the experiment
 
     Returns:
         list[EventWriter]: a list of :class:`EventWriter` objects.
     """
     PathManager.mkdirs(output_dir)
-    writers = [
+    return [
         # It may not always print what you want to see, since it prints "common" metrics only.
         CommonMetricPrinter(max_iter),
         JSONWriter(os.path.join(output_dir, "metrics.json")),
         TensorboardXWriter(output_dir),
     ]
-
-    return writers
 
 
 class DefaultPredictor:
@@ -461,7 +456,6 @@ class DefaultTrainer(TrainerBase):
         # Do evaluation after checkpointer, because then if it fails,
         # we can use the saved checkpoint to debug.
         ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
-
 
         if comm.is_main_process():
             # Here the default print/log frequency of each writer is used.
