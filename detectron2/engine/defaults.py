@@ -228,7 +228,7 @@ def default_setup(cfg, args):
         )
 
 
-def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg: CfgNode = None):
+def default_writers(output_dir: str, max_iter: Optional[int] = None):
     """
     Build a list of :class:`EventWriter` to be used.
     It now consists of a :class:`CommonMetricPrinter`,
@@ -250,8 +250,6 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None, cfg: CfgNod
         JSONWriter(os.path.join(output_dir, "metrics.json")),
         TensorboardXWriter(output_dir),
     ]
-    if not cfg.WANDB.DISABLED and events.wandb is not None:
-        writers.append(WandbWriter(cfg=cfg))
 
     return writers
 
@@ -464,7 +462,6 @@ class DefaultTrainer(TrainerBase):
         # we can use the saved checkpoint to debug.
         ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
 
-        ret.append(hooks.PeriodicPredictor(cfg.TRAIN.PRED_PERIOD, cfg.TRAIN.PRED_SPLIT))
 
         if comm.is_main_process():
             # Here the default print/log frequency of each writer is used.
@@ -481,7 +478,7 @@ class DefaultTrainer(TrainerBase):
         Returns:
             list[EventWriter]: a list of :class:`EventWriter` objects.
         """
-        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter, self.cfg)
+        return default_writers(self.cfg.OUTPUT_DIR, self.max_iter)
 
     def train(self):
         """

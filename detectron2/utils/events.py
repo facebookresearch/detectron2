@@ -8,7 +8,7 @@ import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-from typing import Optional
+from typing import Dict, Optional, Union
 from detectron2.structures.instances import Instances
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
@@ -511,22 +511,23 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, cfg: CfgNode, window_size: int = 20):
+    def __init__(self, project: str='detectron2', config: Union[Dict, CfgNode] = {}, window_size: int = 20, **kwargs):
         """
         Args:
-            cfg (CfgNode): the project level configuration object
+            project (str): W&B Project name
+            config Union[Dict, CfgNode]: the project level configuration object
             window_size (int): the scalars will be median-smoothed by this window size
 
             kwargs: other arguments passed to `wandb.init(...)`
         """
-        self._window_size = window_size
-        self.cfg = cfg
-        cfg_dict = yaml.load(cfg.dump())
+        if wandb is None:
+            raise Exception("WandbWriter requires wandb. please install using `pip install wandb`")
 
+        self._window_size = window_size
         self._run = wandb.init(
-            project=cfg.WANDB.PROJECT_NAME,
-            name=cfg.WANDB.RUN_NAME,
-            config=cfg_dict,
+            project=project,
+            config=config,
+            **kwargs
         )
         self._run._label(repo="detectron2")
 
