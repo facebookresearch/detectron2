@@ -1,22 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import datetime
-import enum
 import json
-import yaml
 import logging
 import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
 from typing import Dict, Optional, Union
-from detectron2.structures.instances import Instances
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
 
 from detectron2.utils.file_io import PathManager
 from detectron2.config import CfgNode
-from detectron2.data import build_detection_test_loader
-from detectron2.data import MetadataCatalog
 
 try:
     import wandb
@@ -303,7 +298,6 @@ class EventStorage:
         self._current_prefix = ""
         self._vis_data = []
         self._histograms = []
-        self._predictions = []
 
     def put_image(self, img_name, img_tensor):
         """
@@ -491,12 +485,6 @@ class EventStorage:
         after images are written to tensorboard.
         """
         self._vis_data = []
-
-    def clear_predictions(self):
-        """
-        Delete all predictions from `predictions` list.
-        """
-        self._predictions = []
 
     def clear_histograms(self):
         """
