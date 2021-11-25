@@ -23,6 +23,7 @@ from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.solver import LRMultiplier
 from detectron2.utils.events import EventStorage, EventWriter
 from detectron2.utils.file_io import PathManager
+
 from .train_loop import HookBase
 
 __all__ = [

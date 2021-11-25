@@ -4,6 +4,7 @@ import logging
 import math
 import itertools
 from detectron2 import data
+import detectron2
 import numpy as np
 from enum import Enum, unique
 import cv2
@@ -14,7 +15,6 @@ import pycocotools.mask as mask_util
 import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
-import wandb
 
 import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["ColorMode", "VisImage", "Visualizer"]
 
-
+wandb = detectron2.utils.events.wandb # conditional import
 _SMALL_OBJECT_AREA_THRESH = 1000
 _LARGE_MASK_AREA_THRESH = 120000
 _OFF_WHITE = (1.0, 1.0, 240.0 / 255)
@@ -1239,6 +1239,9 @@ class WandbVisualizer(DatasetEvaluator):
 
     def __init__(self, dataset_name, size = -1) -> None:
         super().__init__()
+        if wandb is None:
+            raise Exception("WandbVisualizer requires wandb. please install using `pip install wandb`")
+
         self.dataset_name = dataset_name
         self.size = size
         self._run = None
