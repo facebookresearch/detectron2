@@ -67,7 +67,7 @@ Click each issue for its solutions:
 
 <details>
 <summary>
-Undefined symbols that contains TH,aten,torch,caffe2.
+Undefined symbols that looks like "TH..","at::Tensor...","torch..."
 </summary>
 <br/>
 
@@ -96,7 +96,7 @@ compiled with the version of PyTorch you're running. See the previous common iss
 
 <details>
 <summary>
-Undefined C++ symbols (e.g. GLIBCXX) or C++ symbols not found.
+Undefined C++ symbols (e.g. "GLIBCXX..") or C++ symbols not found.
 </summary>
 <br/>
 Usually it's because the library is compiled with a newer C++ compiler but run with an old C++ runtime.

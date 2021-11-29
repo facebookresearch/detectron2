@@ -213,6 +213,24 @@ class TestVisualizer(unittest.TestCase):
                     # red color is drawn on the image
                 self.assertTrue(o[:, :, 0].sum() > 0)
 
+    def test_draw_soft_mask(self):
+        img = np.random.rand(100, 100, 3) * 255
+        img[:, :, 0] = 0  # remove red color
+        mask = np.zeros((100, 100), dtype=np.float32)
+        mask[30:50, 40:50] = 1.0
+        cv2.GaussianBlur(mask, (21, 21), 10)
+
+        v = Visualizer(img)
+        o = v.draw_soft_mask(mask, color="red", text="test")
+        o = o.get_image().astype("float32")
+        # red color is drawn on the image
+        self.assertTrue(o[:, :, 0].sum() > 0)
+
+        # test draw empty mask
+        v = Visualizer(img)
+        o = v.draw_soft_mask(np.zeros((100, 100), dtype=np.float32), color="red", text="test")
+        o = o.get_image().astype("float32")
+
     def test_border_mask_with_holes(self):
         H, W = 200, 200
         img = np.zeros((H, W, 3))
