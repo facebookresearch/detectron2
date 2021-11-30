@@ -13,12 +13,6 @@ from fvcore.common.history_buffer import HistoryBuffer
 from detectron2.utils.file_io import PathManager
 from detectron2.config import CfgNode
 
-try:
-    import wandb
-
-    assert hasattr(wandb, '__version__')  # verify package import not local dir
-except (ImportError, AssertionError):
-    wandb = None
 
 __all__ = [
     "get_event_storage",
@@ -508,15 +502,14 @@ class WandbWriter(EventWriter):
 
             kwargs: other arguments passed to `wandb.init(...)`
         """
-        if wandb is None:
-            raise Exception("WandbWriter requires wandb. please install using `pip install wandb`")
+        import wandb
 
         self._window_size = window_size
         self._run = wandb.init(
             project=project,
             config=config,
             **kwargs
-        )
+        ) if not wandb.run else wandb.run
         self._run._label(repo="detectron2")
 
     def write(self):

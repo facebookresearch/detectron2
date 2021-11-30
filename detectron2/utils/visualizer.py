@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["ColorMode", "VisImage", "Visualizer"]
 
-wandb = detectron2.utils.events.wandb # conditional import
 _SMALL_OBJECT_AREA_THRESH = 1000
 _LARGE_MASK_AREA_THRESH = 120000
 _OFF_WHITE = (1.0, 1.0, 240.0 / 255)
@@ -1237,11 +1236,11 @@ class Visualizer:
 
 class WandbVisualizer(DatasetEvaluator):
 
-    def __init__(self, dataset_name, size = -1) -> None:
+    def __init__(self, dataset_name, size = 50) -> None:
         super().__init__()
-        if wandb is None:
-            raise Exception("WandbVisualizer requires wandb. please install using `pip install wandb`")
 
+        import wandb
+        self.wandb = wandb
         self.dataset_name = dataset_name
         self.size = size
         self._run = None
@@ -1262,7 +1261,7 @@ class WandbVisualizer(DatasetEvaluator):
 
 
     def process(self, inputs, outputs):
-        if self.size > -1 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
+        if self.size > 0 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
             return
         parsed_output = self._parse_prediction(outputs[0])
         parsed_output["file_name"] = inputs[0].get("file_name")
@@ -1276,8 +1275,10 @@ class WandbVisualizer(DatasetEvaluator):
         comm.synchronize()
         table_rows = comm.gather(self._evalset_table_rows)
         if comm.is_main_process():
-            if self._run is None:
-                self._run = wandb.init(project=self.dataset_name) if not wandb.run else wandb.run
+            if self.wandb.run is None:
+                raise Exception("wandb run is not initialized. Either call wandb.init(...) explicitly or set WandbWriter()")
+            self._run = self.wandb.run
+
             table_rows = list(itertools.chain(*table_rows))
             for table_row in table_rows:
                 # use reference of table if present 
@@ -1290,7 +1291,7 @@ class WandbVisualizer(DatasetEvaluator):
                     ref_table_row = self._evalset_table_ref[row_idx]
                     self._evalset_table.add_data(
                             table_row[0],
-                            wandb.Image(ref_table_row[1], boxes=table_row[1]._boxes, masks=table_row[1]._masks),
+                            self.wandb.Image(ref_table_row[1], boxes=table_row[1]._boxes, masks=table_row[1]._masks),
                             *table_row[2:],
                         )
 
@@ -1338,7 +1339,7 @@ class WandbVisualizer(DatasetEvaluator):
             self.thing_index_to_class[i] = name
             wandb_thing_classes.append({"id": i, "name": name})
 
-        self._table_thing_classes = wandb.Classes(wandb_thing_classes)
+        self._table_thing_classes = self.wandb.Classes(wandb_thing_classes)
 
         # Parse stuff_classes
         if hasattr(meta, "stuff_classes"):
@@ -1349,7 +1350,7 @@ class WandbVisualizer(DatasetEvaluator):
             self.stuff_index_to_class[i] = name
             wandb_stuff_classes.append({"id": i, "name": name})
 
-        self._table_stuff_classes = wandb.Classes(wandb_stuff_classes)
+        self._table_stuff_classes = self.wandb.Classes(wandb_stuff_classes)
 
 
     def _parse_prediction(self, pred):
@@ -1504,7 +1505,7 @@ class WandbVisualizer(DatasetEvaluator):
             }
         '''
 
-        table_row = [file_name, wandb.Image(file_name, boxes=boxes, masks=masks, classes=classes)]
+        table_row = [file_name, self.wandb.Image(file_name, boxes=boxes, masks=masks, classes=classes)]
         if pred.get("boxes") is not None:
             table_row.extend(avg_conf_per_class)
         
@@ -1516,7 +1517,7 @@ class WandbVisualizer(DatasetEvaluator):
         This function logs the given table as artifact and calls `use_artifact` on it so tables from next iter-
         ations can use the reference of already uploaded images.
         """
-        eval_art = wandb.Artifact(self._run.id + self.dataset_name, type="dataset")
+        eval_art = self.wandb.Artifact(self._run.id + self.dataset_name, type="dataset")
         eval_art.add(table, self.dataset_name)
         self._run.use_artifact(eval_art)
         eval_art.wait()
@@ -1538,6 +1539,6 @@ class WandbVisualizer(DatasetEvaluator):
         table_cols = ["file_name", "image"]
         if "boxes" in pred_keys:
             table_cols = table_cols + self.thing_class_names
-        table = wandb.Table(columns=table_cols)
+        table = self.wandb.Table(columns=table_cols)
 
         return table
