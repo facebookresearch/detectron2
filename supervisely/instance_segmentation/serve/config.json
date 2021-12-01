@@ -7,7 +7,7 @@
   ],
   "description": "Deploy model as REST API service",
   "docker_image": "supervisely/base-pytorch:6.0.22",
-  "main_script": "supervisely/serve/src/sly_serve.py",
+  "main_script": "supervisely/instance_segmentation/serve/src/sly_serve.py",
   "modal_template": "supervisely/serve/src/modal.html",
   "modal_width": 700,
   "modal_template_state": {
@@ -31,10 +31,10 @@
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-C4",
+            "Model": "R50-DC5",
             "lr^sched": "1x",
-            "train_time": 0.584,
-            "inference_time": 0.110,
+            "train_time": 0.471,
+            "inference_time": 0.076,
             "train_mem": 5.2,
             "box": 36.8,
             "mask": 32.2,
