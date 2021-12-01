@@ -4,3 +4,4 @@ torchvision>=0.11.1
 tensorboard
 ninja
 g++>=5.4
+PyYAML
