@@ -1,10 +1,7 @@
 import os
-import json
-import yaml
 import pathlib
 import sys
 import supervisely_lib as sly
-from pathlib import Path
 from detectron2.engine import DefaultPredictor
 from supervisely_lib.io.fs import get_file_name_with_ext
 from detectron2.config import get_cfg
