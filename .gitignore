@@ -57,3 +57,4 @@ venv
 .idea
 html_kit/_static/*
 secret_debug.env
+!config.json
