@@ -32,8 +32,8 @@
 
     <sly-field title="Choose model weights" description="Use custom weights or pretrained on COCO">
         <el-tabs type="border-card" class="el-tabs-cards" v-model="state.modelWeightsOptions">
-            <el-tab-pane name="pretrained">
-                <el-radio slot="label" v-model="state.modelWeightsOptions" label="pretrained">
+            <el-tab-pane name="COCO">
+                <el-radio slot="label" v-model="state.modelWeightsOptions" label="COCO">
                     Pretrained on COCO
                 </el-radio>
                 <table class="beautiful-table">

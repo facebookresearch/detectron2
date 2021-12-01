@@ -11,15 +11,15 @@
   "modal_template": "supervisely/instance_segmentation/serve/src/modal.html",
   "modal_width": 700,
   "modal_template_state": {
-    "modelWeightsOptions": "pretrained",
-    "selectedModel": "R50-FPN",
+    "modelWeightsOptions": "COCO",
+    "selectedModel": "R50-FPN(3x)",
     "device": "0",
     "weightsPath": "",
     "models": [
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-C4",
+            "Model": "R50-C4(1x)",
             "lr^sched": "1x",
             "train_time": 0.584,
             "inference_time": 0.110,
@@ -31,7 +31,7 @@
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-DC5",
+            "Model": "R50-DC5(1x)",
             "lr^sched": "1x",
             "train_time": 0.471,
             "inference_time": 0.076,
@@ -43,7 +43,7 @@
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-FPN",
+            "Model": "R50-FPN(1x)",
             "lr^sched": "1x",
             "train_time": 0.261,
             "inference_time": 0.043,
@@ -55,7 +55,7 @@
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-C4",
+            "Model": "R50-C4(3x)",
             "lr^sched": "3x",
             "train_time": 0.575,
             "inference_time": 0.111,
@@ -67,7 +67,7 @@
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-DC5",
+            "Model": "R50-DC5(3x)",
             "lr^sched": "3x",
             "train_time": 0.470,
             "inference_time": 0.076,
@@ -79,7 +79,7 @@
         {
             "config": "",
             "weightsUrl": "",
-            "Model": "R50-FPN",
+            "Model": "R50-FPN(3x)",
             "lr^sched": "3x",
             "train_time": 0.261,
             "inference_time": 0.043,
