@@ -221,7 +221,7 @@ def preprocess():
     # download weights
     progress = sly.Progress("Downloading weights", 1, is_size=True, need_info_log=True)
     local_path = os.path.join(my_app.data_dir, curr_model_name)
-    #sly.fs.download(curr_model_url, local_path, my_app.cache, progress) #TODO
+    sly.fs.download(curr_model_url, local_path, my_app.cache, progress) #TODO
 
     # if modelWeightsOptions == "COCO":
     #     url = f"https://github.com/ultralytics/yolov5/releases/download/v5.0/{pretrained_weights}.pt"
@@ -253,6 +253,7 @@ def preprocess():
 
     predictor = DefaultPredictor(cfg)
     meta = construct_model_meta(predictor)
+    sly.logger.info("Model has been successfully deployed")
 
 
 def main():
