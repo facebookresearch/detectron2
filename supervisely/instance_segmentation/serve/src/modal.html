@@ -32,11 +32,21 @@
 
     <sly-field title="Choose model weights" description="Use custom weights or pretrained on COCO">
         <el-tabs type="border-card" class="el-tabs-cards" v-model="state.modelWeightsOptions">
-            <el-tab-pane name="COCO">
-                <el-radio slot="label" v-model="state.modelWeightsOptions" label="COCO">
-                    Pretrained on COCO
+            <el-tab-pane name="pretrained">
+                <el-radio slot="label" v-model="state.modelWeightsOptions" label="pretrained">
+                    Pretrained models
                 </el-radio>
-                <table class="beautiful-table">
+
+            <sly-field title="Dataset name:" style="margin: 0 10px 0 0;">
+            <el-select v-model="state.dataset" placeholder="Select dataset">
+                <el-option key="COCO" label="COCO" value="COCO"></el-option>
+                <el-option key="LVIS" label="LVIS" value="LVIS"></el-option>
+                <el-option key="Cityscapes" label="Cityscapes" value="Cityscapes"></el-option>
+            </el-select>
+            </sly-field>
+
+            <div v-if="state.dataset === 'COCO'">
+            <table class="beautiful-table">
                     <thead>
                     <tr>
                         <th v-for="row in state.modelColumns">
@@ -62,13 +72,10 @@
                     </tr>
                     </tbody>
                 </table>
-            </el-tab-pane>
+              </div>
 
-            <el-tab-pane name="LVIS">
-                <el-radio slot="label" v-model="state.modelWeightsOptions" label="LVIS">
-                    Pretrained on LVIS
-                </el-radio>
-                <table class="beautiful-table">
+            <div v-if="state.dataset === 'LVIS'">
+            <table class="beautiful-table">
                     <thead>
                     <tr>
                         <th v-for="row in state.modelColumns">
@@ -94,6 +101,17 @@
                     </tr>
                     </tbody>
                 </table>
+              </div>
+
+            </el-tab-pane>
+
+            <el-tab-pane name="custom">
+                <el-radio slot="label" v-model="state.modelWeightsOptions" label="custom">
+                    Custom
+                </el-radio>
+                <sly-field title="Weights path" description="Copy path in Team Files">
+                    <el-input v-model="state.weightsPath" placeholder="Path to .pt file in Team Files"></el-input>
+                </sly-field>
             </el-tab-pane>
 
         </el-tabs>

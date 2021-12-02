@@ -6,6 +6,7 @@ from detectron2.engine import DefaultPredictor
 from supervisely_lib.io.fs import get_file_name_with_ext
 from detectron2.config import get_cfg
 from detectron2 import model_zoo
+from pathlib import Path
 
 
 root_source_path = str(pathlib.Path(sys.argv[0]).parents[3])
@@ -53,15 +54,16 @@ model_name_to_config_LVIS = {'R50-FPN': 'mask_rcnn_R_50_FPN_1x.yaml',
                      'X101-FPN': 'mask_rcnn_X_101_32x8d_FPN_1x.yaml'}
 
 modelWeightsOptions = os.environ['modal.state.modelWeightsOptions']
+curr_dataset = os.environ['modal.state.dataset']
 pretrained_weights = os.environ['modal.state.selectedModel'] #.lower()
 custom_weights = os.environ['modal.state.weightsPath']
 
-if modelWeightsOptions == 'COCO':
+if curr_dataset == 'COCO':
     curr_model_url = model_name_to_url_COCO[pretrained_weights]
     par_folder = 'COCO-InstanceSegmentation'
     model_config = os.path.join(par_folder, model_name_to_config_COCO[pretrained_weights])
 
-elif modelWeightsOptions == 'LVIS':
+elif curr_dataset == 'LVIS':
     curr_model_url = model_name_to_url_LVIS[pretrained_weights]
     par_folder = 'LVISv1-InstanceSegmentation'
     model_config = os.path.join(par_folder, model_name_to_config_LVIS[pretrained_weights])
@@ -214,7 +216,14 @@ CONFIDENCE = "confidence"
 
 def construct_model_meta(predictor):
     names = predictor.metadata.thing_classes
-    colors = predictor.metadata.thing_colors
+
+    colors = None
+    if hasattr(predictor.metadata, 'thing_colors'):
+        colors = predictor.metadata.thing_colors
+    else:
+        colors = []
+        for i in range(len(names)):
+            colors.append(sly.color.generate_rgb(exist_colors=colors))
 
     obj_classes = [sly.ObjClass(name, sly.Rectangle, color) for name, color in zip(names, colors)]
     tags = [sly.TagMeta(CONFIDENCE, sly.TagValueType.ANY_NUMBER)]
@@ -233,30 +242,24 @@ def preprocess():
     # download weights
     progress = sly.Progress("Downloading weights", 1, is_size=True, need_info_log=True)
     local_path = os.path.join(my_app.data_dir, curr_model_name)
-    sly.fs.download(curr_model_url, local_path, my_app.cache, progress) #TODO
 
-    # if modelWeightsOptions == "COCO":
-    #     url = f"https://github.com/ultralytics/yolov5/releases/download/v5.0/{pretrained_weights}.pt"
-    #     final_weights = curr_model_url #url
-    #     sly.fs.download(curr_model_url, local_path, my_app.cache, progress)
-    # elif modelWeightsOptions == "custom":
-    #     final_weights = custom_weights
-    #     configs = os.path.join(Path(custom_weights).parents[1], 'opt.yaml')
-    #     configs_local_path = os.path.join(my_app.data_dir, 'opt.yaml')
-    #     file_info = my_app.public_api.file.get_info_by_path(TEAM_ID, custom_weights)
-    #     progress.set(current=0, total=file_info.sizeb)
-    #     my_app.public_api.file.download(TEAM_ID, custom_weights, local_path, my_app.cache, progress.iters_done_report)
-    #     my_app.public_api.file.download(TEAM_ID, configs, configs_local_path)
-    # else:
-    #     raise ValueError("Unknown weights option {!r}".format(modelWeightsOptions))
+    if modelWeightsOptions == "pretrained":
+        sly.fs.download(curr_model_url, local_path, my_app.cache, progress)  # TODO
+    elif modelWeightsOptions == "custom":
+        final_weights = custom_weights
+        configs = os.path.join(Path(custom_weights).parents[1], 'opt.yaml')
+        configs_local_path = os.path.join(my_app.data_dir, 'opt.yaml')
+        file_info = my_app.public_api.file.get_info_by_path(TEAM_ID, custom_weights)
+        progress.set(current=0, total=file_info.sizeb)
+        my_app.public_api.file.download(TEAM_ID, custom_weights, local_path, my_app.cache, progress.iters_done_report)
+        my_app.public_api.file.download(TEAM_ID, configs, configs_local_path)
+    else:
+         raise ValueError("Unknown weights option {!r}".format(modelWeightsOptions))
 
     # load model on device
     # model, half, device, imgsz, stride = load_model(local_path, device=DEVICE_STR)
     # meta = construct_model_meta(model)
     # sly.logger.info("Model has been successfully deployed")
-    #
-
-
 
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(model_config))
@@ -273,6 +276,7 @@ def main():
         "context.teamId": TEAM_ID,
         "context.workspaceId": WORKSPACE_ID,
         "modal.state.modelWeightsOptions": modelWeightsOptions,
+        "modal.state.dataset": curr_dataset,
         "modal.state.modelSize": pretrained_weights,
         "modal.state.weightsPath": custom_weights
     })

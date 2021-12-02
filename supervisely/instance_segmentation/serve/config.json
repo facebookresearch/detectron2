@@ -11,7 +11,8 @@
   "modal_template": "supervisely/instance_segmentation/serve/src/modal.html",
   "modal_width": 700,
   "modal_template_state": {
-    "modelWeightsOptions": "COCO",
+    "modelWeightsOptions": "pretrained",
+    "dataset": "COCO",
     "selectedModel": "R50-FPN(3x)",
     "device": "0",
     "weightsPath": "",
@@ -20,121 +21,81 @@
             "config": "",
             "weightsUrl": "",
             "Model": "R50-C4(1x)",
-            "lr^sched": "1x",
-            "train_time": 0.584,
             "inference_time": 0.110,
-            "train_mem": 5.2,
             "box": 36.8,
-            "mask": 32.2,
-            "model_id": "137259246"
+            "mask": 32.2
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R50-DC5(1x)",
-            "lr^sched": "1x",
-            "train_time": 0.471,
             "inference_time": 0.076,
-            "train_mem": 6.5,
             "box": 38.3,
-            "mask": 34.2,
-            "model_id": "137260150"
+            "mask": 34.2
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R50-FPN(1x)",
-            "lr^sched": "1x",
-            "train_time": 0.261,
             "inference_time": 0.043,
-            "train_mem": 3.4,
             "box": 38.6,
-            "mask": 35.2,
-            "model_id": "137260431"
+            "mask": 35.2
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R50-C4(3x)",
-            "lr^sched": "3x",
-            "train_time": 0.575,
             "inference_time": 0.111,
-            "train_mem": 5.2,
             "box": 39.8,
-            "mask": 34.4,
-            "model_id": "137849525"
+            "mask": 34.4
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R50-DC5(3x)",
-            "lr^sched": "3x",
-            "train_time": 0.470,
             "inference_time": 0.076,
-            "train_mem": 6.5,
             "box": 40.0,
-            "mask": 35.9,
-            "model_id": "137849551"
+            "mask": 35.9
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R50-FPN(3x)",
-            "lr^sched": "3x",
-            "train_time": 0.261,
             "inference_time": 0.043,
-            "train_mem": 3.4,
             "box": 41.0,
-            "mask": 37.2,
-            "model_id": "137849600"
+            "mask": 37.2
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R101-C4",
-            "lr^sched": "3x",
-            "train_time": 0.652,
             "inference_time": 0.145,
-            "train_mem": 6.3,
             "box": 42.6,
-            "mask": 36.7,
-            "model_id": "138363239"
+            "mask": 36.7
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R101-DC5",
-            "lr^sched": "3x",
-            "train_time": 0.545,
             "inference_time": 0.092,
-            "train_mem": 7.6,
             "box": 41.9,
-            "mask": 37.3,
-            "model_id": "138363294"
+            "mask": 37.3
         },
         {
               "config": "",
               "weightsUrl": "",
               "Model": "R101-FPN",
-              "lr^sched": "3x",
-              "train_time": 0.340,
               "inference_time": 0.056,
-              "train_mem": 4.6,
               "box": 42.9,
-              "mask": 38.6,
-              "model_id": "138205316"
+              "mask": 38.6
           },
         {
               "config": "",
               "weightsUrl": "",
               "Model": "X101-FPN",
-              "lr^sched": "3x",
-              "train_time": 0.690,
               "inference_time": 0.103,
-              "train_mem": 7.2,
               "box": 44.3,
-              "mask": 39.5,
-              "model_id": "139653917"
+              "mask": 39.5
           }
     ],
 
@@ -143,49 +104,34 @@
             "config": "",
             "weightsUrl": "",
             "Model": "R50-FPN",
-            "lr^sched": "1x",
-            "train_time": 0.292,
             "inference_time": 0.107,
-            "train_mem": 7.1,
             "box": 23.6,
-            "mask": 24.4,
-            "model_id": "144219072"
+            "mask": 24.4
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "R101-FPN",
-            "lr^sched": "1x",
-            "train_time": 0.371,
             "inference_time": 0.114,
-            "train_mem": 7.8,
             "box": 25.6,
-            "mask": 25.9,
-            "model_id": "144219035"
+            "mask": 25.9
         },
         {
             "config": "",
             "weightsUrl": "",
             "Model": "X101-FPN",
-            "lr^sched": "1x",
-            "train_time": 0.712,
             "inference_time": 0.151,
-            "train_mem": 10.2,
             "box": 26.7,
-            "mask": 27.1,
-            "model_id": "144219108"
+            "mask": 27.1
         }
     ],
 
     "modelColumns": [
         {"key": "Model", "title": "Model", "subtitle": null},
-        {"key": "lr^sched", "title": "lr<sub>sched</sub>", "subtitle": null},
-        {"key": "train_time", "title": "train_time", "subtitle": "(s/iter)"},
         {"key": "inference_time", "title": "inference_time", "subtitle": "(s/im)"},
-        {"key": "train_mem", "title": "train_mem", "subtitle": "(GB)"},
         {"key": "box", "title": "box", "subtitle": "AP"},
-        {"key": "mask", "title": "mask", "subtitle": "AP"},
-        {"key": "model_id", "title": "model_id", "subtitle": null}
+        {"key": "mask", "title": "mask", "subtitle": "AP"}
+
     ]
   },
   "task_location": "application_sessions",
