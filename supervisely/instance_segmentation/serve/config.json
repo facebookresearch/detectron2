@@ -15,7 +15,7 @@
     "selectedModel": "R50-FPN(3x)",
     "device": "0",
     "weightsPath": "",
-    "models": [
+    "modelsCOCO": [
         {
             "config": "",
             "weightsUrl": "",
@@ -137,6 +137,46 @@
               "model_id": "139653917"
           }
     ],
+
+    "modelsLVIS": [
+        {
+            "config": "",
+            "weightsUrl": "",
+            "Model": "R50-FPN",
+            "lr^sched": "1x",
+            "train_time": 0.292,
+            "inference_time": 0.107,
+            "train_mem": 7.1,
+            "box": 23.6,
+            "mask": 24.4,
+            "model_id": "144219072"
+        },
+        {
+            "config": "",
+            "weightsUrl": "",
+            "Model": "R101-FPN",
+            "lr^sched": "1x",
+            "train_time": 0.371,
+            "inference_time": 0.114,
+            "train_mem": 7.8,
+            "box": 25.6,
+            "mask": 25.9,
+            "model_id": "144219035"
+        },
+        {
+            "config": "",
+            "weightsUrl": "",
+            "Model": "X101-FPN",
+            "lr^sched": "1x",
+            "train_time": 0.712,
+            "inference_time": 0.151,
+            "train_mem": 10.2,
+            "box": 26.7,
+            "mask": 27.1,
+            "model_id": "144219108"
+        }
+    ],
+
     "modelColumns": [
         {"key": "Model", "title": "Model", "subtitle": null},
         {"key": "lr^sched", "title": "lr<sub>sched</sub>", "subtitle": null},

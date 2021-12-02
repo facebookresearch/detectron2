@@ -48,7 +48,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr v-for="model in state.models">
+                    <tr v-for="model in state.modelsCOCO">
                         <td v-for="column in state.modelColumns">
                             <div v-if="column.key === 'Model'">
                                 <el-radio class="radio" v-model="state.selectedModel" :label="model[column.key]">
@@ -63,6 +63,39 @@
                     </tbody>
                 </table>
             </el-tab-pane>
+
+            <el-tab-pane name="LVIS">
+                <el-radio slot="label" v-model="state.modelWeightsOptions" label="LVIS">
+                    Pretrained on LVIS
+                </el-radio>
+                <table class="beautiful-table">
+                    <thead>
+                    <tr>
+                        <th v-for="row in state.modelColumns">
+                            <div v-html="row['title']"></div>
+                            <div style="color: #7f858e; font-weight: normal; font-size: 12px;">
+                                {{row["subtitle"]}}
+                            </div>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="model in state.modelsLVIS">
+                        <td v-for="column in state.modelColumns">
+                            <div v-if="column.key === 'Model'">
+                                <el-radio class="radio" v-model="state.selectedModel" :label="model[column.key]">
+                                    {{model[column.key]}}
+                                </el-radio>
+                            </div>
+                            <div v-else>
+                                {{model[column.key]}}
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </el-tab-pane>
+
         </el-tabs>
     </sly-field>
     <sly-field title="Choose Device" description="Cuda device number (i.e. 0, 1, 2 or 3) or cpu">

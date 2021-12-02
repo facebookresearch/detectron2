@@ -21,7 +21,7 @@ WORKSPACE_ID = int(os.environ['context.workspaceId'])
 
 meta: sly.ProjectMeta = None
 
-model_name_to_url = {'R50-C4(1x)': 'https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_1x/137259246/model_final_9243eb.pkl',
+model_name_to_url_COCO = {'R50-C4(1x)': 'https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_1x/137259246/model_final_9243eb.pkl',
                      'R50-DC5(1x)': 'https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_DC5_1x/137260150/model_final_4f86c3.pkl',
                      'R50-FPN(1x)': 'https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/137260431/model_final_a54504.pkl',
                      'R50-C4(3x)': 'https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x/137849525/model_final_4ce675.pkl',
@@ -33,7 +33,7 @@ model_name_to_url = {'R50-C4(1x)': 'https://dl.fbaipublicfiles.com/detectron2/CO
                      'X101-FPN': 'https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x/139653917/model_final_2d9806.pkl'}
 
 
-model_name_to_config = {'R50-C4(1x)': 'mask_rcnn_R_50_C4_1x.yaml',
+model_name_to_config_COCO = {'R50-C4(1x)': 'mask_rcnn_R_50_C4_1x.yaml',
                      'R50-DC5(1x)': 'mask_rcnn_R_50_DC5_1x.yaml',
                      'R50-FPN(1x)': 'mask_rcnn_R_50_FPN_1x.yaml',
                      'R50-C4(3x)': 'mask_rcnn_R_50_C4_3x.yaml',
@@ -44,20 +44,32 @@ model_name_to_config = {'R50-C4(1x)': 'mask_rcnn_R_50_C4_1x.yaml',
                      'R101-FPN': 'mask_rcnn_R_101_FPN_3x.yaml',
                      'X101-FPN': 'mask_rcnn_X_101_32x8d_FPN_3x.yaml'}
 
+model_name_to_url_LVIS = {'R50-FPN': 'https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/144219072/model_final_571f7c.pkl',
+                     'R101-FPN': 'https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_R_101_FPN_1x/144219035/model_final_824ab5.pkl',
+                     'X101-FPN': 'https://dl.fbaipublicfiles.com/detectron2/LVISv0.5-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_1x/144219108/model_final_5e3439.pkl'}
+
+model_name_to_config_LVIS = {'R50-FPN': 'mask_rcnn_R_50_FPN_1x.yaml',
+                     'R101-FPN': 'mask_rcnn_R_101_FPN_1x.yaml',
+                     'X101-FPN': 'mask_rcnn_X_101_32x8d_FPN_1x.yaml'}
 
 modelWeightsOptions = os.environ['modal.state.modelWeightsOptions']
 pretrained_weights = os.environ['modal.state.selectedModel'] #.lower()
 custom_weights = os.environ['modal.state.weightsPath']
 
-curr_model_url = model_name_to_url[pretrained_weights]
+if modelWeightsOptions == 'COCO':
+    curr_model_url = model_name_to_url_COCO[pretrained_weights]
+    par_folder = 'COCO-InstanceSegmentation'
+    model_config = os.path.join(par_folder, model_name_to_config_COCO[pretrained_weights])
+
+elif modelWeightsOptions == 'LVIS':
+    curr_model_url = model_name_to_url_LVIS[pretrained_weights]
+    par_folder = 'LVISv1-InstanceSegmentation'
+    model_config = os.path.join(par_folder, model_name_to_config_LVIS[pretrained_weights])
+
 curr_model_name = get_file_name_with_ext(curr_model_url)
 
 CONFIDENCE = "confidence"
 
-if modelWeightsOptions == 'COCO':
-    par_folder = 'COCO-InstanceSegmentation'
-
-model_config = os.path.join(par_folder, model_name_to_config[pretrained_weights])
 
 # DEVICE_STR = os.environ['modal.state.device']
 # final_weights = None
