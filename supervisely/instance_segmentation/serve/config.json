@@ -12,7 +12,6 @@
   "modal_width": 700,
   "modal_template_state": {
     "modelWeightsOptions": "pretrained",
-    "selectedModel": "R50-FPN(3x)",
     "device": "0",
     "weightsPath": "",
     "modelsCOCO": [
@@ -122,6 +121,17 @@
             "inference_time": 0.151,
             "box": 26.7,
             "mask": 27.1
+        }
+    ],
+
+    "modelsCityscapes": [
+        {
+            "config": "",
+            "weightsUrl": "",
+            "Model": "R50-FPN",
+            "inference_time": 0.078,
+            "box": "",
+            "mask": 36.5
         }
     ],
 

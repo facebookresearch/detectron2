@@ -53,10 +53,18 @@ model_name_to_config_LVIS = {'R50-FPN': 'mask_rcnn_R_50_FPN_1x.yaml',
                      'R101-FPN': 'mask_rcnn_R_101_FPN_1x.yaml',
                      'X101-FPN': 'mask_rcnn_X_101_32x8d_FPN_1x.yaml'}
 
+model_name_to_url_Cityscapes = {'R50-FPN': 'https://dl.fbaipublicfiles.com/detectron2/Cityscapes/mask_rcnn_R_50_FPN/142423278/model_final_af9cf5.pkl'}
+
+model_name_to_config_Cityscapes = {'R50-FPN': 'mask_rcnn_R_50_FPN.yaml'}
+
 modelWeightsOptions = os.environ['modal.state.modelWeightsOptions']
 curr_dataset = os.environ.get('modal.state.dataset', None)
-pretrained_weights = os.environ['modal.state.selectedModel'] #.lower()
+pretrained_weights = os.environ.get('modal.state.selectedModel', None)
 custom_weights = os.environ['modal.state.weightsPath']
+
+
+if pretrained_weights is None:
+    raise ValueError('Choose model to RUN')
 
 if curr_dataset == 'COCO':
     curr_model_url = model_name_to_url_COCO[pretrained_weights]
@@ -67,6 +75,11 @@ elif curr_dataset == 'LVIS':
     curr_model_url = model_name_to_url_LVIS[pretrained_weights]
     par_folder = 'LVISv1-InstanceSegmentation'
     model_config = os.path.join(par_folder, model_name_to_config_LVIS[pretrained_weights])
+
+elif curr_dataset == 'Cityscapes':
+    curr_model_url = model_name_to_url_Cityscapes[pretrained_weights]
+    par_folder = 'Cityscapes'
+    model_config = os.path.join(par_folder, model_name_to_config_Cityscapes[pretrained_weights])
 
 else:
     raise ValueError('Choose dataset to RUN')
@@ -220,7 +233,6 @@ CONFIDENCE = "confidence"
 def construct_model_meta(predictor):
     names = predictor.metadata.thing_classes
 
-    colors = None
     if hasattr(predictor.metadata, 'thing_colors'):
         colors = predictor.metadata.thing_colors
     else:

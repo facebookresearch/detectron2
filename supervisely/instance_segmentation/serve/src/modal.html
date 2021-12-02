@@ -103,6 +103,36 @@
                 </table>
               </div>
 
+
+            <div v-if="state.dataset === 'Cityscapes'">
+            <table class="beautiful-table">
+                    <thead>
+                    <tr>
+                        <th v-for="row in state.modelColumns">
+                            <div v-html="row['title']"></div>
+                            <div style="color: #7f858e; font-weight: normal; font-size: 12px;">
+                                {{row["subtitle"]}}
+                            </div>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="model in state.modelsCityscapes">
+                        <td v-for="column in state.modelColumns">
+                            <div v-if="column.key === 'Model'">
+                                <el-radio class="radio" v-model="state.selectedModel" :label="model[column.key]">
+                                    {{model[column.key]}}
+                                </el-radio>
+                            </div>
+                            <div v-else>
+                                {{model[column.key]}}
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+              </div>
+
             </el-tab-pane>
 
             <el-tab-pane name="custom">
