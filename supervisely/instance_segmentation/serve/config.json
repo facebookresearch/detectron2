@@ -12,7 +12,6 @@
   "modal_width": 700,
   "modal_template_state": {
     "modelWeightsOptions": "pretrained",
-    "dataset": "COCO",
     "selectedModel": "R50-FPN(3x)",
     "device": "0",
     "weightsPath": "",

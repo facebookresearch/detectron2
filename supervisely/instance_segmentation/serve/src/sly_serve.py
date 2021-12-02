@@ -54,7 +54,7 @@ model_name_to_config_LVIS = {'R50-FPN': 'mask_rcnn_R_50_FPN_1x.yaml',
                      'X101-FPN': 'mask_rcnn_X_101_32x8d_FPN_1x.yaml'}
 
 modelWeightsOptions = os.environ['modal.state.modelWeightsOptions']
-curr_dataset = os.environ['modal.state.dataset']
+curr_dataset = os.environ.get('modal.state.dataset', None)
 pretrained_weights = os.environ['modal.state.selectedModel'] #.lower()
 custom_weights = os.environ['modal.state.weightsPath']
 
@@ -67,6 +67,9 @@ elif curr_dataset == 'LVIS':
     curr_model_url = model_name_to_url_LVIS[pretrained_weights]
     par_folder = 'LVISv1-InstanceSegmentation'
     model_config = os.path.join(par_folder, model_name_to_config_LVIS[pretrained_weights])
+
+else:
+    raise ValueError('Choose dataset to RUN')
 
 curr_model_name = get_file_name_with_ext(curr_model_url)
 
