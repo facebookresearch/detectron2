@@ -5,7 +5,7 @@ import supervisely_lib as sly
 import torch
 TORCH_VERSION = ".".join(torch.__version__.split(".")[:2])
 CUDA_VERSION = torch.__version__.split("+")[-1]
-sly.logger.info("torch: ", TORCH_VERSION, "; cuda: ", CUDA_VERSION)
+sly.logger.info("torch:{}".format(TORCH_VERSION), "; cuda:{}".format(CUDA_VERSION))
 from detectron2.engine import DefaultPredictor
 from supervisely_lib.io.fs import get_file_name_with_ext
 from detectron2.config import get_cfg
