@@ -1,4 +1,4 @@
-torch>=1.10
+torch>=1.8
 torchvision>=0.11.1
 tensorboard
 ninja
