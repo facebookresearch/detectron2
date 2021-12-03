@@ -4,3 +4,4 @@ tensorboard
 ninja
 PyYAML
 supervisely==6.2.9
+detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/$CUDA_VERSION/torch$TORCH_VERSION/index.html
