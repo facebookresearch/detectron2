@@ -4,7 +4,8 @@ import sys
 import torch
 import supervisely_lib as sly
 
-sly.logger.info(".".join(torch.__version__.split(".")[:2]), torch.__version__.split("+")[-1])
+sly.logger.info(".".join(torch.__version__.split(".")[:2]))
+sly.logger.info(torch.__version__.split("+")[-1])
 
 from detectron2.engine import DefaultPredictor
 from supervisely_lib.io.fs import get_file_name_with_ext
