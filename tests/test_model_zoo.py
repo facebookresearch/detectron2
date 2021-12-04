@@ -15,6 +15,17 @@ class TestModelZoo(unittest.TestCase):
         self.assertIsInstance(model, GeneralizedRCNN)
         self.assertIsInstance(model.backbone, FPN)
 
+    def test_get_config_trained(self):
+        cfg = model_zoo.get_config(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml", trained=True
+        )
+        self.assertTrue(cfg.MODEL.WEIGHTS.endswith("model_final_a54504.pkl"))
+
+        cfg = model_zoo.get_config(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py", trained=True
+        )
+        self.assertTrue(cfg.train.init_checkpoint.endswith("model_final_a54504.pkl"))
+
     def test_get_invalid_model(self):
         self.assertRaises(RuntimeError, model_zoo.get, "Invalid/config.yaml")
 
