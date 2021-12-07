@@ -113,7 +113,7 @@ def main(args):
         model = instantiate(cfg.model)
         model.to(cfg.train.device)
         model = create_ddp_model(model)
-        DetectionCheckpointer(model).load(cfg.train.init_checkpoint)
+        DetectionCheckpointer(model, cfg.train.output_dir).load(cfg.train.init_checkpoint, resume=args.resume)
         print(do_test(cfg, model))
     else:
         do_train(args, cfg)
