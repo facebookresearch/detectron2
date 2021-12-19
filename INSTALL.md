@@ -1,34 +1,34 @@
-## Installation
+## 설치
 
 ### Requirements
-- Linux or macOS with Python ≥ 3.6
-- PyTorch ≥ 1.8 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
-  Install them together at [pytorch.org](https://pytorch.org) to make sure of this
-- OpenCV is optional but needed by demo and visualization
+- Linux 혹은 macOS 및 Python ≥ 3.6
+- PyTorch ≥ 1.8 및 해당 버전에 맞는 [torchvision](https://github.com/pytorch/vision/).
+  [pytorch.org](https://pytorch.org)에서 둘을 함께 설치하여 반드시 호환성을 확인하십시오.
+- OpenCV는 선택 사항이지만 데모 및 시각화에 필요합니다.
 
 
-### Build Detectron2 from Source
+### Detectron2 소스로부터 빌드하기
 
-gcc & g++ ≥ 5.4 are required. [ninja](https://ninja-build.org/) is optional but recommended for faster build.
-After having them, run:
+gcc & g++ ≥ 5.4 가 필요합니다. [ninja](https://ninja-build.org/) 는 선택사항이나 빠른 빌드를 위해 권장드립니다.
+아래 명령을 통해 설치합니다:
 ```
 python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-# (add --user if you don't have permission)
+# (권한이 없을 경우 --user 추가)
 
-# Or, to install it from a local clone:
+# 혹은, 로컬 사본을 설치하려면:
 git clone https://github.com/facebookresearch/detectron2.git
 python -m pip install -e detectron2
 
-# On macOS, you may need to prepend the above commands with a few environment variables:
+# macOS에서는 위의 명령에 앞서 몇 가지 환경 변수를 추가해야 할 수 있습니다.
 CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install ...
 ```
 
-To __rebuild__ detectron2 that's built from a local clone, use `rm -rf build/ **/*.so` to clean the
-old build first. You often need to rebuild detectron2 after reinstalling PyTorch.
+로컬 클론에서 빌드된 detectron2를 __재빌드__ 하려면 먼저 `rm -rf build/ **/*.so` 를 통해
+이전 빌드를 정리합니다. 많은 경우에 PyTorch를 재설치한 후 detectron2를 재빌드해야 합니다.
 
-### Install Pre-Built Detectron2 (Linux only)
+### 사전 빌드된 Detectron2 설치하기 (Linux 전용)
 
-Choose from this table to install [v0.6 (Oct 2021)](https://github.com/facebookresearch/detectron2/releases):
+아래 표에서 [v0.6 (Oct 2021)](https://github.com/facebookresearch/detectron2/releases) 을 선택해 설치합니다:
 
 <table class="docutils"><tbody><th width="80"> CUDA </th><th valign="bottom" align="left" width="100">torch 1.10</th><th valign="bottom" align="left" width="100">torch 1.9</th><th valign="bottom" align="left" width="100">torch 1.8</th> <tr><td align="left">11.3</td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu113/torch1.10/index.html
@@ -54,12 +54,12 @@ Choose from this table to install [v0.6 (Oct 2021)](https://github.com/facebookr
   https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.8/index.html
 </code></pre> </details> </td> </tr></tbody></table>
 
-Note that:
-1. The pre-built packages have to be used with corresponding version of CUDA and the official package of PyTorch.
-   Otherwise, please build detectron2 from source.
-2. New packages are released every few months. Therefore, packages may not contain latest features in the main
-   branch and may not be compatible with the main branch of a research project that uses detectron2
-   (e.g. those in [projects](projects)).
+주의:
+1. 사전 빌드된 패키지들은 해당 버전의 CUDA 및 공식 PyTorch 패키지와 함께 사용해야 합니다.
+   그렇지 않으면 소스로부터 detectron2를 빌드하십시오.
+2. 수개월마다 새로운 패키지가 출시되므로, 패키지에 메인 브랜치의 최신 기능이 포함되어 있지 않을 수 있으며 
+   detectron2를 사용하는 연구 프로젝트의 메인 브랜치와 호환되지 않을 수 있습니다.
+   (e.g. [프로젝트](projects) ).
 
 ### Common Installation Issues
 
@@ -252,10 +252,11 @@ See
 </details>
 
 
-### Installation inside specific environments:
+### 특수한 환경에 설치하기:
 
-* __Colab__: see our [Colab Tutorial](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
+* __Colab__: [Colab 튜토리얼](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5) 의
+  단계별 지침을 참조하십시오.
   which has step-by-step instructions.
 
-* __Docker__: The official [Dockerfile](docker) installs detectron2 with a few simple commands.
+* __Docker__: 공식 [Dockerfile](docker)은 몇 가지 간단한 명령으로 detectron2를 설치합니다.
 
