@@ -2,7 +2,7 @@
 # 성능평가
 
 성능평가는 여러 입/출력 쌍을 입력받아 집계(aggregate)하는 절차입니다.
-누구든 [모델의](./models.md) 입/출력을 파싱하면 성능 평가를 수행할 수 있습니다.
+누구든 [모델의](./models.md) 입/출력을 파싱하면 성능평가를 수행할 수 있습니다.
 다른 방법으로, detectron2에서는 [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator) 인터페이스를 통해 성능평가를
 할 수 있습니다.
 
