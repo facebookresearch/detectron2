@@ -2,9 +2,9 @@
 # 성능평가
 
 성능평가는 여러 입/출력 쌍을 입력받아 집계(aggregate)하는 절차입니다.
-물론 직접 [모델의](./models.md) 입/출력을 수동으로 구문 분석하여 평가를 수행할 수 있습니다.
-그렇지 않은 경우, detectron2에서는 [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator) 인터페이스를 통해 성능평가가
-이뤄집니다.
+누구든 [모델의](./models.md) 입/출력을 파싱하면 성능 평가를 수행할 수 있습니다.
+다른 방법으로, detectron2에서는 [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator) 인터페이스를 통해 성능평가를
+할 수 있습니다.
 
 Detectron2는 몇 가지 `DatasetEvaluator` 를 제공하는데, 이들은 데이터셋 별 표준 API(e.g. COCO, LVIS)를 사용해
 성능지표를 계산합니다.
