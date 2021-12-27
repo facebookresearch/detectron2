@@ -272,7 +272,9 @@ def build_lr_scheduler(
             num_updates=cfg.SOLVER.MAX_ITER,
         )
     elif name == "WarmupCosineLR":
-        sched = CosineParamScheduler(1, 0)
+        end_value = cfg.SOLVER.BASE_LR_END / cfg.SOLVER.BASE_LR
+        assert end_value >= 0.0 and end_value <= 1.0, end_value
+        sched = CosineParamScheduler(1, end_value)
     else:
         raise ValueError("Unknown LR scheduler: {}".format(name))
 
