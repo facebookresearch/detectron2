@@ -121,6 +121,8 @@ def assert_instances_allclose(input, other, *, rtol=1e-5, msg="", size_as_tensor
                     msg + f"Field {f} differs too much!"
                 )
             else:
+                if not torch.equal(val1, val2):
+                    import pdb; pdb.set_trace()
                 assert torch.equal(val1, val2), msg + f"Field {f} is different!"
         else:
             raise ValueError(f"Don't know how to compare type {type(val1)}")
