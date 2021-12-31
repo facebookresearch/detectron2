@@ -1,26 +1,26 @@
-# Use Custom Datasets
+# 커스텀 데이터셋 사용
 
-This document explains how the dataset APIs
-([DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog), [MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog))
-work, and how to use them to add custom datasets.
+이 문서는 데이터셋 API([DatasetCatalog](../modules/data.html#detectron2.data.DatasetCatalog),
+[MetadataCatalog](../modules/data.html#detectron2.data.MetadataCatalog)) 의 동작 방식과 이들을 사용해
+커스텀 데이터셋을 추가하는 방법을 설명합니다.
 
-Datasets that have builtin support in detectron2 are listed in [builtin datasets](builtin_datasets.md).
-If you want to use a custom dataset while also reusing detectron2's data loaders,
-you will need to:
+detectron2에서 내장되어 지원되는 데이터셋은 [내장 데이터셋](builtin_datasets.md) 에 있습니다.
+커스텀 데이터셋을 detectron2의 기본 데이터로더와 함께 사용하려는 경우,
+다음을 수행해야 합니다.
 
-1. __Register__ your dataset (i.e., tell detectron2 how to obtain your dataset).
-2. Optionally, __register metadata__ for your dataset.
+1. 데이터셋을 __등록하십시오__ (즉, detectron2가 데이터셋에 접근할 수 있도록 합니다).
+2. 필요하다면 데이터셋에 대한 __메타데이터를 등록하십시오__.
 
-Next, we explain the above two concepts in detail.
+이제 이 두 가지 개념에 대해 자세히 살펴보겠습니다.
 
-The [Colab tutorial](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)
-has a live example of how to register and train on a dataset of custom formats.
+[Colab 튜토리얼](https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5)에
+커스텁 형식의 데이터셋을 어떻게 등록하고 학습하는지 설명하는 라이브 예시가 있습니다.
 
-### Register a Dataset
+### 데이터셋 등록
 
-To let detectron2 know how to obtain a dataset named "my_dataset", users need to implement
-a function that returns the items in your dataset and then tell detectron2 about this
-function:
+detectron2이 "my_dataset"이라는 데이터셋에 접근할 수 있도록 사용자는
+데이터셋의 아이템을 반환하는 함수를 구현하고 detectron2에게 이 함수를 전달해야
+합니다.
 ```python
 def my_dataset_function():
   ...
@@ -28,263 +28,262 @@ def my_dataset_function():
 
 from detectron2.data import DatasetCatalog
 DatasetCatalog.register("my_dataset", my_dataset_function)
-# later, to access the data:
+# 이후 아래와 같이 데이터에 접근합니다.
 data: List[Dict] = DatasetCatalog.get("my_dataset")
 ```
 
-Here, the snippet associates a dataset named "my_dataset" with a function that returns the data.
-The function must return the same data (with same order) if called multiple times.
-The registration stays effective until the process exits.
+위 코드는 "my_dataset"이라는 데이터셋을 데이터를 반환하는 함수와 연결합니다.
+이 함수는 여러 번 호출되는 경우 동일한 데이터(같은 순서로)를 반환해야 합니다.
+등록은 프로세스가 종료될 때까지 유효합니다.
 
-The function can do arbitrary things and should return the data in `list[dict]`, each dict in either
-of the following formats:
-1. Detectron2's standard dataset dict, described below. This will make it work with many other builtin
-   features in detectron2, so it's recommended to use it when it's sufficient.
-2. Any custom format. You can also return arbitrary dicts in your own format,
-   such as adding extra keys for new tasks.
-   Then you will need to handle them properly downstream as well.
-   See below for more details.
+이 함수는 임의의 작업을 수행한 후 `list[dict]` 안에 다음 중 한 가지 포맷으로
+데이터를 반환해야 합니다.
+1. 아래 설명된 detectron2의 표준 데이터셋 dict 포맷. 이 경우, detectron2의 다른 많은 내장 기능을
+   함께 사용할 수 있으므로, 이것으로 충분할 때 사용할 것을 권장합니다.
+2. 임의의 커스텀 포맷. 새로운 task를 위해 기존에 없는 키(key)를 추가하는 등,
+   여러분만의 포맷으로 임의의 dict를 반환할 수도 있습니다.
+   이후 다운스트림(downstream)에서도 이를 적절하게 처리해야 합니다.
+   자세한 내용은 아래를 참조하십시오.
 
-#### Standard Dataset Dicts
+#### 표준 데이터셋 dict
 
-For standard tasks
-(instance detection, instance/semantic/panoptic segmentation, keypoint detection),
-we load the original dataset into `list[dict]` with a specification similar to COCO's annotations.
-This is our standard representation for a dataset.
+표준 task인
+객체 검출(instance detection), 객체/시맨틱/팬옵틱 분할(instance/semantic/panoptic segmentation), 키포인트 검출(keypoint detection)을 수행하는 경우,
+COCO의 어노테이션(annotation)과 유사한 스펙으로 원본 데이터셋을 `list[dict]` 에 로드합니다.
+이것이 데이터셋 형태에 대한 우리의 표준입니다.
 
-Each dict contains information about one image.
-The dict may have the following fields,
-and the required fields vary based on what the dataloader or the task needs (see more below).
+각 dict에는 하나의 이미지에 대한 정보가 들어 있습니다.
+dict에는 아래와 같은 필드가 있을 수 있으며
+필수 필드는 데이터로더 또는 task에 필요한 항목에 따라 다릅니다(아래 내용 참조).
 
 ```eval_rst
 .. list-table::
   :header-rows: 1
 
   * - Task
-    - Fields
-  * - Common
+    - 필드
+  * - 공통
     - file_name, height, width, image_id
 
-  * - Instance detection/segmentation
+  * - 객체 검출/분할
     - annotations
 
-  * - Semantic segmentation
+  * - 시맨틱 분할
     - sem_seg_file_name
 
-  * - Panoptic segmentation
+  * - 팬옵틱 분할
     - pan_seg_file_name, segments_info
 ```
 
-+ `file_name`: the full path to the image file.
-+ `height`, `width`: integer. The shape of the image.
-+ `image_id` (str or int): a unique id that identifies this image. Required by many
-  evaluators to identify the images, but a dataset may use it for different purposes.
-+ `annotations` (list[dict]): Required by __instance detection/segmentation or keypoint detection__ tasks.
-  Each dict corresponds to annotations of one instance in this image, and
-  may contain the following keys:
-  + `bbox` (list[float], required): list of 4 numbers representing the bounding box of the instance.
-  + `bbox_mode` (int, required): the format of bbox.  It must be a member of
-    [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
-    Currently supports: `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS`.
-  + `category_id` (int, required): an integer in the range [0, num_categories-1] representing the category label.
-    The value num_categories is reserved to represent the "background" category, if applicable.
-  + `segmentation` (list[list[float]] or dict): the segmentation mask of the instance.
-    + If `list[list[float]]`, it represents a list of polygons, one for each connected component
-      of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]` (n≥3).
-      The Xs and Ys are absolute coordinates in unit of pixels.
-    + If `dict`, it represents the per-pixel segmentation mask in COCO's compressed RLE format.
-      The dict should have keys "size" and "counts". You can convert a uint8 segmentation mask of 0s and
-      1s into such dict by `pycocotools.mask.encode(np.asarray(mask, order="F"))`.
-      `cfg.INPUT.MASK_FORMAT` must be set to `bitmask` if using the default data loader with such format.
-  + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
-    v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
-    `n` must be equal to the number of keypoint categories.
-    The Xs and Ys are absolute real-value coordinates in range [0, W or H].
++ `file_name`: 이미지 파일이 위치한 전체 경로입니다.
++ `height`, `width`: 정수형으로 표현된 이미지의 shape입니다.
++ `image_id` (str or int): 이미지의 고유 식별자입니다. 주로 evaluator가
+  이미지를 식별할 때 필요하지만, 데이터셋은 이를 다른 목적으로 사용할 수 있습니다.
++ `annotations` (list[dict]): __객체 검출/분할 또는 키포인트 검출__ task에 필요합니다.
+   각 dict는 이 이미지에 있는 한 객체의 annotation에 해당하며,
+   다음과 같은 키를 포함할 수 있습니다.
+  + `bbox` (list[float], required): 객체의 바운딩 박스(bounding box)를 나타내는 4개의 숫자 목록입니다.
+  + `bbox_mode` (int, required): bbox의 포맷으로,
+    [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode) 중 하나여야 합니다.
+    현재 지원되는 포맷은 `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS` 입니다.
+  + `category_id` (int, required): 범주형 레이블(category label)을 나타내는 [0, num_categories-1] 범위의 정수입니다.
+    num_categories 값은 "배경(background)" 범주가 있는 경우를 위해 예약되어 있습니다.
+  + `segmentation` (list[list[float]] or dict): 객체 분할 마스크입니다.
+    + 값이 `list[list[float]]` 라면 폴리곤(각 connected component 별로 생성됨)의 list를
+      의미합니다. 각각의 `list[float]` 는 단순한 `[x1, y1, ..., xn, yn]` (n≥3) 포맷의 폴리곤입니다.
+      X와 Y는 픽셀 단위로 표현된 절대 좌표입니다.
+    + 값이 `dict` 라면 COCO의 압축 RLE 포맷으로 픽셀별 분할 마스크를 나타냅니다.
+       dict에는 "size"와 "counts" 키가 있어야 합니다. `pycocotools.mask.encode(np.asarray(mask, order="F"))` 를
+       사용해 0과 1로 구성된 uint8 분할 마스크를 이러한 dict로 변환할 수 있습니다.
+       이러한 포맷을 기본 데이터로더와 함께 사용하려면 `cfg.INPUT.MASK_FORMAT` 을 `bitmask` 로 설정해야 합니다.
+  + `keypoints` (list[float]): [x1, y1, v1,..., xn, yn, vn]의 포맷을 갖습니다.
+    v[i]는 해당 인덱스의 키포인트의 [가시성](http://cocodataset.org/#format-data) 을 나타냅니다.
+    `n` 은 키포인트 범주의 개수와 동일해야 합니다.
+    X와 Y는 [0, W 또는 H] 범위의 실수값을 갖는 절대 좌표입니다.
 
-    (Note that the keypoint coordinates in COCO format are integers in range [0, W-1 or H-1], which is different
-    from our standard format. Detectron2 adds 0.5 to COCO keypoint coordinates to convert them from discrete
-    pixel indices to floating point coordinates.)
-  + `iscrowd`: 0 (default) or 1. Whether this instance is labeled as COCO's "crowd
-    region". Don't include this field if you don't know what it means.
+    (COCO의 키포인트 좌표의 포맷은 표준 포맷과 달리 [0, W-1 또는 H-1] 범위의
+    정수형입니다. Detectron2는 COCO 이산 픽셀 인덱스를 부동 소수점 좌표로
+    변환하기 위해 키포인트 좌표에 0.5를 더합니다.)
+  + `iscrowd`: 0(기본값) 또는 1로 이 객체가 COCO의 "crowd region"으로 레이블링되었는지 여부를
+    나타냅니다. 이 필드의 의미를 모르면 포함하지 마십시오.
 
-  If `annotations` is an empty list, it means the image is labeled to have no objects.
-  Such images will by default be removed from training,
-  but can be included using `DATALOADER.FILTER_EMPTY_ANNOTATIONS`.
+  `annotations` 가 빈(empty) list라는 것은 이미지에 레이블링된 객체가 없다는 의미입니다.
+  이러한 이미지는 기본적으로 학습에서 제외되지만
+  `DATALOADER.FILTER_EMPTY_ANNOTATIONS` 를 통해 포함시킬 수 있습니다.
 
 + `sem_seg_file_name` (str):
-  The full path to the semantic segmentation ground truth file.
-  It should be a grayscale image whose pixel values are integer labels.
+  시맨틱 분할의 ground truth 파일이 위치한 전체 경로입니다.
+  픽셀 값이 정수형 레이블인 회색조(grayscale) 이미지여야 합니다.
 + `pan_seg_file_name` (str):
-  The full path to panoptic segmentation ground truth file.
-  It should be an RGB image whose pixel values are integer ids encoded using the
-  [panopticapi.utils.id2rgb](https://github.com/cocodataset/panopticapi/) function.
-  The ids are defined by `segments_info`.
-  If an id does not appear in `segments_info`, the pixel is considered unlabeled
-  and is usually ignored in training & evaluation.
-+ `segments_info` (list[dict]): defines the meaning of each id in panoptic segmentation ground truth.
-  Each dict has the following keys:
-  + `id` (int): integer that appears in the ground truth image.
-  + `category_id` (int): an integer in the range [0, num_categories-1] representing the category label.
-  + `iscrowd`: 0 (default) or 1. Whether this instance is labeled as COCO's "crowd region".
+  팬옵틱 분할의 ground truth 파일이 위치한 전체 경로입니다.
+  [panopticapi.utils.id2rgb](https://github.com/cocodataset/panopticapi/) 함수를 사용해
+  픽셀 값을 정수형 id로 인코딩한 RGB 이미지여야 합니다.
+  id는 `segments_info` 에 의해 정의됩니다.
+  `segments_info` 에 id가 없는 픽셀은 레이블이 없는 것으로 간주되며
+  일반적으로 학습 및 평가에서 무시됩니다.
++ `segments_info` (list[dict]): 팬옵틱 분할의 ground truth에서 각 id의 의미를 정의합니다.
+  각 dict에는 다음과 같은 키가 있습니다.
+  + `id` (int): ground truth 이미지에 나타나는 정수입니다.
+  + `category_id` (int): 범주형 레이블을 나타내는 [0, num_categories-1] 범위의 정수입니다.
+  + `iscrowd`: 0(기본값) 또는 1로 이 객체가 COCO의 "crowd region"으로 레이블링되었는지 여부를 나타냅니다.
 
 
 ```eval_rst
 
 .. note::
 
-   The PanopticFPN model does not use the panoptic segmentation
-   format defined here, but a combination of both instance segmentation and semantic segmentation data
-   format. See :doc:`builtin_datasets` for instructions on COCO.
+   PanopticFPN 모델은 여기에 정의된 팬옵틱 분할 포맷 대신에
+   객체 분할 및 시맨틱 분할 데이터의 포맷을 조합하여 사용합니다.
+   COCO에 대한 지침은 :doc:`builtin_datasets` 를 참조하십시오.
 
 ```
 
-Fast R-CNN (with pre-computed proposals) models are rarely used today.
-To train a Fast R-CNN, the following extra keys are needed:
+(proposals이 사전에 계산된) Fast R-CNN 모델은 요즘 거의 사용되지 않습니다.
+Fast R-CNN을 훈련하려면 다음과 같은 키가 추가적으로 필요합니다.
 
-+ `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
-+ `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
- logits of proposals in 'proposal_boxes'.
-+ `proposal_bbox_mode` (int): the format of the precomputed proposal bbox.
- It must be a member of
- [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode).
- Default is `BoxMode.XYXY_ABS`.
++ `proposal_boxes` (array): (K, 4) shape의 2D numpy 배열로 이 이미지에 대해 사전 계산된 K개의 proposal 박스를 의미합니다.
++ `proposal_objectness_logits` (array): 'proposal_boxes'에 있는 proposal의 objectness logit에 해당하는
+  (K, ) shape의 numpy 배열입니다.
++ `proposal_bbox_mode` (int): 사전 계산된 proposal bbox의 포맷입니다.
+ [structures.BoxMode](../modules/structures.html#detectron2.structures.BoxMode) 중에
+ 하나여야 합니다.
+ 기본값은 `BoxMode.XYXY_ABS` 입니다.
 
 
 
-#### Custom Dataset Dicts for New Tasks
+#### 새로운 task에 대한 커스텀 데이터셋 dict
 
-In the `list[dict]` that your dataset function returns, the dictionary can also have __arbitrary custom data__.
-This will be useful for a new task that needs extra information not covered
-by the standard dataset dicts. In this case, you need to make sure the downstream code can handle your data
-correctly. Usually this requires writing a new `mapper` for the dataloader (see [Use Custom Dataloaders](./data_loading.md)).
+데이터셋 함수가 반환하는 `list[dict]` 에서 dict는 __임의의 커스텀 데이터__ 일 수 있습니다.
+이것은 표준 데이터셋 dict에서 다루지 않는 추가 정보가 필요한
+새로운 task에 유용합니다. 이 경우 다운스트림 코드가 데이터를 올바르게 처리할 수 있는지 확인해야
+합니다. 일반적으로 데이터로더에 대한 새로운 `mapper` 를 작성해야 합니다([커스텀 데이터로더 사용](./data_loading.md) 참조).
 
-When designing a custom format, note that all dicts are stored in memory
-(sometimes serialized and with multiple copies).
-To save memory, each dict is meant to contain __small__ but sufficient information
-about each sample, such as file names and annotations.
-Loading full samples typically happens in the data loader.
+커스텀 포맷을 설계할 때 모든 dict는 (때로는 직렬화되어,
+여러 사본과 함께) 메모리에 저장됩니다.
+메모리를 절약하기 위해, 각각의 dict에는 샘플 별로 파일명이나 어노테이션과 같은
+__작지만__ 충분한 정보가 포함됩니다.
+전체 샘플을 로드하는 경우는 보통 데이터로더에서 발생합니다.
 
-For attributes shared among the entire dataset, use `Metadata` (see below).
-To avoid extra memory, do not save such information inside each sample.
+데이터셋 전체적으로 공유되는 속성(attribute)은 `메타데이터` 를 사용해 저장하십시오 (아래 참조).
+메모리 낭비를 방지하려면 샘플 별로 반복되는 정보를 중복하여 저장하지 마십시오.
 
-### "Metadata" for Datasets
+### 데이터셋의 "메타데이터"
 
-Each dataset is associated with some metadata, accessible through
-`MetadataCatalog.get(dataset_name).some_metadata`.
-Metadata is a key-value mapping that contains information that's shared among
-the entire dataset, and usually is used to interpret what's in the dataset, e.g.,
-names of classes, colors of classes, root of files, etc.
-This information will be useful for augmentation, evaluation, visualization, logging, etc.
-The structure of metadata depends on what is needed from the corresponding downstream code.
+각 데이터셋은 연관된 메타데이터가 있으며
+`MetadataCatalog.get(dataset_name).some_metadata` 를 통해 그것에 접근할 수 있습니다.
+메타데이터는 전체 데이터셋 간에 공유되는 정보를 포함하는
+키-밸류 매핑이며, 일반적으로 데이터셋에 있는 내용(예: 클래스 이름,
+클래스 색상, 파일 루트 등)을 해석하는 데에 사용됩니다.
+이 정보는 증강, 평가, 시각화, 로그 생성 등에 유용하게 쓰입니다.
+메타데이터의 구조는 다운스트림 코드에서 무엇이 필요한지에 따라 다릅니다.
 
-If you register a new dataset through `DatasetCatalog.register`,
-you may also want to add its corresponding metadata through
-`MetadataCatalog.get(dataset_name).some_key = some_value`, to enable any features that need the metadata.
-You can do it like this (using the metadata key "thing_classes" as an example):
+'DatasetCatalog.register'를 통해 새로운 데이터셋을 등록할 경우,
+`MetadataCatalog.get(dataset_name).some_key = some_value` 를 통해
+해당 메타데이터를 추가해 메타데이터가 필요한 기능을 활성화할 수도 있습니다.
+예를들어 메타데이터 키 "thing_classes"에 대해 다음과 같이 사용할 수 있습니다.
 
 ```python
 from detectron2.data import MetadataCatalog
 MetadataCatalog.get("my_dataset").thing_classes = ["person", "dog"]
 ```
 
-Here is a list of metadata keys that are used by builtin features in detectron2.
-If you add your own dataset without these metadata, some features may be
-unavailable to you:
+다음은 detectron2의 내장 기능에서 사용되는 메타데이터 키 목록입니다.
+이러한 메타데이터 없이 새로운 데이터셋을 추가하면 일부 기능을
+사용하지 못할 수도 있습니다.
 
-* `thing_classes` (list[str]): Used by all instance detection/segmentation tasks.
-  A list of names for each instance/thing category.
-  If you load a COCO format dataset, it will be automatically set by the function `load_coco_json`.
+* `thing_classes` (list[str]): 모든 객체 검출/분할 task에서 사용됩니다.
+  객체 또는 thing의 분류명 목록입니다.
+  COCO 포맷의 데이터셋을 로드하면 `load_coco_json` 함수에 의해 자동으로 설정됩니다.
 
-* `thing_colors` (list[tuple(r, g, b)]): Pre-defined color (in [0, 255]) for each thing category.
-  Used for visualization. If not given, random colors will be used.
+* `thing_colors` (list[tuple(r, g, b)]): 각 thing 분류에 대해 지정하는 색상([0, 255])입니다.
+  시각화에 사용되며, 지정하지 않으면 임의의 색상으로 설정됩니다.
 
-* `stuff_classes` (list[str]): Used by semantic and panoptic segmentation tasks.
-  A list of names for each stuff category.
+* `stuff_classes` (list[str]): 시맨틱 및 팬옵틱 분할 task에서 사용됩니다.
+  stuff의 분류명 목록입니다.
 
-* `stuff_colors` (list[tuple(r, g, b)]): Pre-defined color (in [0, 255]) for each stuff category.
-  Used for visualization. If not given, random colors are used.
+* `stuff_colors` (list[tuple(r, g, b)]): 각 stuff 분류에 대해 지정하는 색상([0, 255])입니다.
+  시각화에 사용되며, 지정하지 않으면 임의의 색상으로 설정됩니다.
 
-* `ignore_label` (int): Used by semantic and panoptic segmentation tasks. Pixels in ground-truth
-  annotations with this category label should be ignored in evaluation. Typically these are "unlabeled"
-  pixels.
+* `ignore_label` (int): 시맨틱 및 팬옵틱 분할 task에서 사용됩니다. 이 범주형 레이블에 속하는
+  ground-truth 어노테이션의 픽셀들은 평가 단계에서 무시됩니다. 일반적으로
+  "레이블링 되지 않은" 픽셀입니다.
 
-* `keypoint_names` (list[str]): Used by keypoint detection. A list of names for each keypoint.
+* `keypoint_names` (list[str]): 키포인트 검출에서 사용됩니다. 각 키포인트의 이름 목록입니다.
 
-* `keypoint_flip_map` (list[tuple[str]]): Used by keypoint detection. A list of pairs of names,
-  where each pair are the two keypoints that should be flipped if the image is
-  flipped horizontally during augmentation.
-* `keypoint_connection_rules`: list[tuple(str, str, (r, g, b))]. Each tuple specifies a pair of keypoints
-  that are connected and the color (in [0, 255]) to use for the line between them when visualized.
+* `keypoint_flip_map` (list[tuple[str]]): 키포인트 검출에서 사용됩니다. 키포인트 이름 쌍(pair)의 목록입니다.
+  여기서 각 쌍은 증강 과정에 이미지가 수평으로 뒤집히면서
+  위치가 뒤바뀐 두 개의 키포인트입니다.
+* `keypoint_connection_rules`: list[tuple(str, str, (r, g, b))]. 각 튜플은 연결되어 있는 키포인트 쌍 및
+  시각화 단계에서 해당 연결선의 색상([0, 255])을 지정합니다.
 
-Some additional metadata that are specific to the evaluation of certain datasets (e.g. COCO):
+특정 데이터셋(예: COCO)은 평가와 관련된 다음과 같은 추가적인 메타데이터가 있습니다.
 
-* `thing_dataset_id_to_contiguous_id` (dict[int->int]): Used by all instance detection/segmentation tasks in the COCO format.
-  A mapping from instance class ids in the dataset to contiguous ids in range [0, #class).
-  Will be automatically set by the function `load_coco_json`.
+* `thing_dataset_id_to_contiguous_id` (dict[int->int]): COCO 포맷의 모든 객체 검출/분할 task에서 사용됩니다.
+  데이터셋의 객체 클래스 id에서 [0, #class) 범위의 연속 id로의 매핑입니다.
+  `load_coco_json` 함수에 의해 자동으로 설정됩니다.
 
-* `stuff_dataset_id_to_contiguous_id` (dict[int->int]): Used when generating prediction json files for
-  semantic/panoptic segmentation.
-  A mapping from semantic segmentation class ids in the dataset
-  to contiguous ids in [0, num_categories). It is useful for evaluation only.
+* `stuff_dataset_id_to_contiguous_id` (dict[int->int]): 시맨틱/팬옵틱 분할의 예측값을 json 파일로 생성할 때 사용됩니다.
+  데이터셋의 시맨틱 분할 클래스 id에서 [0, num_categories]의
+  연속 id로의 매핑입니다. 평가 단계에서만 사용됩니다.
 
-* `json_file`: The COCO annotation json file. Used by COCO evaluation for COCO-format datasets.
-* `panoptic_root`, `panoptic_json`: Used by COCO-format panoptic evaluation.
-* `evaluator_type`: Used by the builtin main training script to select
-   evaluator. Don't use it in a new training script.
-   You can just provide the [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator)
-   for your dataset directly in your main script.
+* `json_file`: COCO 어노테이션 json 파일입니다. COCO 포맷 데이터셋에 대한 COCO 방식 평가에서 사용됩니다.
+* `panoptic_root`, `panoptic_json`: COCO 포맷의 팬옵틱 평가에서 사용됩니다.
+* `evaluator_type`: 내장된 기본 학습 스크립트에서 평가자를 선택할 떄
+   사용됩니다. 직접 작성한 학습 스크립트에서는 사용하지 마십시오.
+   기본 스크립트에서 데이터셋의 [DatasetEvaluator](../modules/evaluation.html#detectron2.evaluation.DatasetEvaluator) 를
+   직접 제공하면 됩니다.
 
 ```eval_rst
 .. note::
 
-   In recognition, sometimes we use the term "thing" for instance-level tasks,
-   and "stuff" for semantic segmentation tasks.
-   Both are used in panoptic segmentation tasks.
-   For background on the concept of "thing" and "stuff", see
+   인식(recognition)을 설명할 때 객체 수준 분할 task에 대해서는 "thing"이라는 용어를,
+   시맨틱 분할 task에 대해서는 "stuff"이라는 용어를 사용하기도 합니다.
+   팬옵틱 분할 task에서는 둘 다 사용됩니다.
+   "thing"과 "stuff"의 개념에 대한 배경 설명은
    `On Seeing Stuff: The Perception of Materials by Humans and Machines
-   <http://persci.mit.edu/pub_pdfs/adelson_spie_01.pdf>`_.
+   <http://persci.mit.edu/pub_pdfs/adelson_spie_01.pdf>`_ 를 참조하십시오.
 ```
 
-### Register a COCO Format Dataset
+### COCO 포맷 데이터셋 등록
 
-If your instance-level (detection, segmentation, keypoint) dataset is already a json file in the COCO format,
-the dataset and its associated metadata can be registered easily with:
+이미 COCO 포맷의 json 파일로 된 객체 수준(검출, 분할, 키포인트) 데이터셋의 경우,
+아래와 같이 데이터셋 및 관련 메타데이터를 쉽게 등록할 수 있습니다.
 ```python
 from detectron2.data.datasets import register_coco_instances
 register_coco_instances("my_dataset", {}, "json_annotation.json", "path/to/image/dir")
 ```
 
-If your dataset is in COCO format but need to be further processed, or has extra custom per-instance annotations,
-the [load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_json)
-function might be useful.
+데이터셋이 COCO 포맷이지만 추가적인 처리가 필요하거나 객체 단위로 커스텀 어노테이션을 추가해야 하는 경우,
+[load_coco_json](../modules/data.html#detectron2.data.datasets.load_coco_json)
+함수가 유용하게 쓰일 수 있습니다.
 
-### Update the Config for New Datasets
+### 새로운 데이터셋을 위한 설정 변경
 
-Once you've registered the dataset, you can use the name of the dataset (e.g., "my_dataset" in
-example above) in `cfg.DATASETS.{TRAIN,TEST}`.
-There are other configs you might want to change to train or evaluate on new datasets:
+데이터셋을 등록하면 `cfg.DATASETS.{TRAIN,TEST}` 에서 데이터셋의
+이름(예: 위 예시의 "my_dataset")을 사용할 수 있습니다.
+이외에 새로운 데이터셋을 학습하거나 평가하기 위해 아래 설정을 변경해야 할 수 있습니다.
 
-* `MODEL.ROI_HEADS.NUM_CLASSES` and `MODEL.RETINANET.NUM_CLASSES` are the number of thing classes
-  for R-CNN and RetinaNet models, respectively.
-* `MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS` sets the number of keypoints for Keypoint R-CNN.
-  You'll also need to set [Keypoint OKS](http://cocodataset.org/#keypoints-eval)
-  with `TEST.KEYPOINT_OKS_SIGMAS` for evaluation.
-* `MODEL.SEM_SEG_HEAD.NUM_CLASSES` sets the number of stuff classes for Semantic FPN & Panoptic FPN.
-* `TEST.DETECTIONS_PER_IMAGE` controls the maximum number of objects to be detected.
-  Set it to a larger number if test images may contain >100 objects.
-* If you're training Fast R-CNN (with precomputed proposals), `DATASETS.PROPOSAL_FILES_{TRAIN,TEST}`
-  need to match the datasets. The format of proposal files are documented
-  [here](../modules/data.html#detectron2.data.load_proposals_into_dataset).
+* `MODEL.ROI_HEADS.NUM_CLASSES` 와 `MODEL.RETINANET.NUM_CLASSES` 는 각각
+  R-CNN 및 RetinaNet 모델의 thing 클래스 수입니다.
+* `MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS` 는 Keypoint R-CNN의 키포인트 수를 설정합니다.
+  또한 평가를 위해 `TEST.KEYPOINT_OKS_SIGMAS`로
+  [Keypoint OKS](http://cocodataset.org/#keypoints-eval)를 설정해야 합니다.
+* `MODEL.SEM_SEG_HEAD.NUM_CLASSES` 는 Semantic FPN 및 Panoptic FPN의 stuff 클래스 수를 설정합니다.
+* `TEST.DETECTIONS_PER_IMAGE` 는 검출할 최대 객체 수를 제어합니다.
+  테스트 이미지가 100개 이상의 객체를 포함할 수 있는 경우 이 값을 더 크게 설정하십시오.
+* (proposals이 사전에 계산된) Fast R-CNN을 학습하는 경우 `DATASETS.PROPOSAL_FILES_{TRAIN,TEST}` 가
+  데이터셋과 일치해야 합니다. proposal 파일의 포맷은 [여기](../modules/data.html#detectron2.data.load_proposals_into_dataset)
+  문서화되어 있습니다.
 
-New models
-(e.g. [TensorMask](../../projects/TensorMask),
-[PointRend](../../projects/PointRend))
-often have similar configs of their own that need to be changed as well.
+새로운 모델들(예:
+[TensorMask](../../projects/TensorMask),
+[PointRend](../../projects/PointRend))도
+종종 마찬가지로 고유 설정을 변경해야 할 수 있습니다.
 
 ```eval_rst
 .. tip::
 
-   After changing the number of classes, certain layers in a pre-trained model will become incompatible
-   and therefore cannot be loaded to the new model.
-   This is expected, and loading such pre-trained models will produce warnings about such layers.
+   클래스 수를 변경하면 사전 학습된 모델의 몇몇 계층(layer)은 호환되지 않으므로
+   새로운 모델에 로드할 수 없습니다.
+   이는 의도된 것으로, 이와 같이 사전 학습된 모델을 로드하면 해당 계층에 대해 경고를 출력합니다.
 ```
