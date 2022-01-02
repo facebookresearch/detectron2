@@ -18,6 +18,7 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
+from detectron2.data.common import AspectRatioGroupedDataset
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
 
 
@@ -71,6 +72,23 @@ class TestMapDataset(unittest.TestCase):
         ds = MapDataset(ds, lambda x: x * 2)
         ds = pickle.loads(pickle.dumps(ds))
         self.assertEqual(ds[0], 2)
+
+
+class TestAspectRatioGrouping(unittest.TestCase):
+    def test_reiter_leak(self):
+        data = [(1, 0), (0, 1), (1, 0), (0, 1)]
+        data = [{"width": a, "height": b} for (a, b) in data]
+        batchsize = 2
+        dataset = AspectRatioGroupedDataset(data, batchsize)
+
+        for _ in range(5):
+            for idx, __ in enumerate(dataset):
+                if idx == 1:
+                    # manually break, so the iterator does not stop by itself
+                    break
+            # check that bucket sizes are valid
+            for bucket in dataset._buckets:
+                self.assertLess(len(bucket), batchsize)
 
 
 class TestDataLoader(unittest.TestCase):
