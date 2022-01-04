@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
-from ..structures import Instances
-from detectron2.utils.registry import Registry
-from ..config.config import CfgNode as CfgNode_
+from detectron2.config import CfgNode as CfgNode_
 from detectron2.config import configurable
-
+from detectron2.structures import Instances
+from detectron2.utils.registry import Registry
 
 TRACKER_HEADS_REGISTRY = Registry("TRACKER_HEADS")
 TRACKER_HEADS_REGISTRY.__doc__ = """
@@ -16,6 +15,7 @@ class BaseTracker(object):
     """
     A parent class for all trackers
     """
+
     @configurable
     def __init__(self, **kwargs):
         self._prev_instances = None  # (D2)instances for previous frame

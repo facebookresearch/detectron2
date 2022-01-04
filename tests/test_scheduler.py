@@ -1,13 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import math
-from unittest import TestCase
-
 import numpy as np
+from unittest import TestCase
 import torch
-from detectron2.solver import LRMultiplier, WarmupParamScheduler, build_lr_scheduler
 from fvcore.common.param_scheduler import CosineParamScheduler, MultiStepParamScheduler
 from torch import nn
+
+from detectron2.solver import LRMultiplier, WarmupParamScheduler, build_lr_scheduler
 
 
 class TestScheduler(TestCase):
@@ -92,24 +92,28 @@ class TestScheduler(TestCase):
 
             self.assertAlmostEqual(lrs[-1], cfg.SOLVER.BASE_LR_END)
 
-        _test_end_value({
-            "SOLVER": {
-                "LR_SCHEDULER_NAME": "WarmupCosineLR",
-                "MAX_ITER": 100,
-                "WARMUP_ITERS": 10,
-                "WARMUP_FACTOR": 0.1,
-                "BASE_LR": 5.0,
-                "BASE_LR_END": 0.0,
+        _test_end_value(
+            {
+                "SOLVER": {
+                    "LR_SCHEDULER_NAME": "WarmupCosineLR",
+                    "MAX_ITER": 100,
+                    "WARMUP_ITERS": 10,
+                    "WARMUP_FACTOR": 0.1,
+                    "BASE_LR": 5.0,
+                    "BASE_LR_END": 0.0,
+                }
             }
-        })
+        )
 
-        _test_end_value({
-            "SOLVER": {
-                "LR_SCHEDULER_NAME": "WarmupCosineLR",
-                "MAX_ITER": 100,
-                "WARMUP_ITERS": 10,
-                "WARMUP_FACTOR": 0.1,
-                "BASE_LR": 5.0,
-                "BASE_LR_END": 0.5,
+        _test_end_value(
+            {
+                "SOLVER": {
+                    "LR_SCHEDULER_NAME": "WarmupCosineLR",
+                    "MAX_ITER": 100,
+                    "WARMUP_ITERS": 10,
+                    "WARMUP_FACTOR": 0.1,
+                    "BASE_LR": 5.0,
+                    "BASE_LR_END": 0.5,
+                }
             }
-        })
+        )
