@@ -9,7 +9,9 @@ from detectron2.config import configurable, get_cfg
 from detectron2.engine import DefaultTrainer, SimpleTrainer, hooks
 from detectron2.utils.events import WandbWriter
 from detectron2.evaluation.wandb import WandbVisualizer
-from detectron2 import model_zoo
+from detectron2.structures import Boxes, Instances
+
+from detectron2.data import DatasetCatalog
 
 import wandb
 
@@ -57,27 +59,20 @@ class TestWandb(unittest.TestCase):
     def test_WandbVisualizer(self):
 
         # WandbVisualizer is more efficient is it isn't re-initialized. It reuses the references of logged tables
-        wandb_run = wandb.init(project="ci", anonymous='must')
+        wandb_run = wandb.init(project="ci", anonymous="must")
         run_id = wandb_run.id
 
         visualizer = WandbVisualizer("coco_2017_val_100")
-        class CustomTrainer(DefaultTrainer):
-            @classmethod
-            def build_evaluator(cls, cfg, dataset_name, output_folder=None):
-                return [visualizer]
-
-        cfg = get_cfg()
-        cfg.MODEL.DEVICE = "cpu"
-        cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_R_50_C4_1x.yaml"))
-
-        cfg.DATASETS.TRAIN = ("coco_2017_val_100",)
-        cfg.DATASETS.TEST = ("coco_2017_val_100",)
-        cfg.SOLVER.MAX_ITER = 3
-        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
-            cfg.OUTPUT_DIR = d
-            trainer = CustomTrainer(cfg)
-            trainer.train()
-        
+        dataset = "coco_2017_val_100"
+        visualizer.reset()
+        inputs = DatasetCatalog.get(dataset)[:2]
+        pred = Instances((100, 100))
+        pred.pred_boxes = Boxes(torch.rand(2, 4))
+        pred.scores = torch.rand(2)
+        pred.pred_classes = torch.tensor([10, 70])
+        output = {"instances": pred}
+        visualizer.process(inputs, [output])
+        visualizer.evaluate()
         api = wandb.Api()
         run = api.run("ci/"+run_id)
         assert run.summary["coco_2017_val_100"] # test is evaluation table was logged
