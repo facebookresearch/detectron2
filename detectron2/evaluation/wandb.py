@@ -46,7 +46,6 @@ class WandbVisualizer(DatasetEvaluator):
         table_row = self._plot_table_row(parsed_output)
         self._evalset_table_rows.append(table_row)
 
-
     def evaluate(self):
         comm.synchronize()
         table_rows = comm.gather(self._evalset_table_rows)
@@ -140,20 +139,16 @@ class WandbVisualizer(DatasetEvaluator):
         parsed_pred = {}
         if pred.get("instances") is not None:
             pred_ins = pred["instances"]
-            pred_ins = pred_ins[pred_ins.scores>0.7]
+            pred_ins = pred_ins[pred_ins.scores > 0.7]
             parsed_pred["boxes"] = (
                 pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
             )
             parsed_pred["classes"] = (
                 pred_ins.pred_classes.tolist() if pred_ins.has("pred_classes") else None
             )
-            parsed_pred["scores"] = (
-                pred_ins.scores.tolist() if pred_ins.has("scores") else None
-            )
+            parsed_pred["scores"] = pred_ins.scores.tolist() if pred_ins.has("scores") else None
             parsed_pred["pred_masks"] = (
-                pred_ins.pred_masks.cpu().detach().numpy()
-                if pred_ins.has("pred_masks")
-                else None
+                pred_ins.pred_masks.cpu().detach().numpy() if pred_ins.has("pred_masks") else None
             )  # wandb segmentation panel supports np
             parsed_pred["pred_keypoints"] = (
                 pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
