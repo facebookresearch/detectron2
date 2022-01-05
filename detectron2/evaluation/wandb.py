@@ -56,7 +56,7 @@ class WandbVisualizer(DatasetEvaluator):
         if comm.is_main_process():
             if self.wandb.run is None:
                 raise Exception(
-                    "wandb run is not initialized. Either call wandb.init(...) explicitly or set WandbWriter()"
+                    "wandb run is not initialized. Either call wandb.init(...) or set WandbWriter()"
                 )
             self._run = self.wandb.run
 
@@ -93,9 +93,7 @@ class WandbVisualizer(DatasetEvaluator):
     def _build_dataset_metadata(self):
         """
         Builds parsed metadata lists and mappings dicts to facilitate logging.
-        Builds a list of metadata for each of the validation dataloaders. Expects the metadata to present for ech dataloader or
-        combined as a list of dataloaders. If both are present, the former will be given preferance.
-        Useful for writing labels and captions of predictions.
+        Builds a list of metadata for each of the validation dataloaders.
 
         E.g.
         # set the properties separately
@@ -114,7 +112,7 @@ class WandbVisualizer(DatasetEvaluator):
             self.thing_class_names = meta.thing_classes
 
         wandb_thing_classes = []
-        # NOTE: The classs indeces starts from 1 instead of 0. Treat 0 as void, makes for easier vectorized operations
+        # NOTE: The classs indeces starts from 1 instead of 0.
         for i, name in enumerate(self.thing_class_names, 1):
             self.thing_index_to_class[i] = name
             wandb_thing_classes.append({"id": i, "name": name})
@@ -235,7 +233,7 @@ class WandbVisualizer(DatasetEvaluator):
             }
 
         masks = {}
-        pixles_per_class = [0 for _ in self.stuff_class_names]
+        # pixles_per_class = [0 for _ in self.stuff_class_names]
         # Process semantic segmentation predictions
         if pred.get("sem_mask") is not None:
             masks["semantic_mask"] = {
@@ -290,8 +288,8 @@ class WandbVisualizer(DatasetEvaluator):
 
     def _use_table_as_artifact(self, table):
         """
-        This function logs the given table as artifact and calls `use_artifact` on it so tables from next iter-
-        ations can use the reference of already uploaded images.
+        This function logs the given table as artifact and calls `use_artifact`
+        on it so tables from next iterations can use the reference of already uploaded images.
 
         Args:
             table (wandb.Table): Table to be logged
@@ -313,7 +311,7 @@ class WandbVisualizer(DatasetEvaluator):
             table (wandb.Table): Table object to log evaluation
 
         """
-        # Current design - Use cols. for each detection class score and don't use columns for mask overlays
+        # Current- Use cols. for each detection class score and don't use columns for overlays
         table_cols = ["file_name", "image"]
         if "boxes" in pred_keys:
             table_cols = table_cols + self.thing_class_names

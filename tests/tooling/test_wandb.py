@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import tempfile
 import time
 import unittest
 import torch
 from torch import nn
 
-from detectron2.config import configurable, get_cfg
+from detectron2.config import configurable
 from detectron2.data import DatasetCatalog
-from detectron2.engine import DefaultTrainer, SimpleTrainer, hooks
+from detectron2.engine import SimpleTrainer, hooks
 from detectron2.evaluation.wandb import WandbVisualizer
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import WandbWriter
@@ -55,7 +54,7 @@ class TestWandb(unittest.TestCase):
 
     def test_WandbVisualizer(self):
 
-        # WandbVisualizer is more efficient is it isn't re-initialized. It reuses the references of logged tables
+        # WandbVisualizer is more efficient if re-initialized.reuses references of logged tables
         wandb_run = wandb.init(project="ci", anonymous="must")
         run_id = wandb_run.id
 
@@ -71,5 +70,5 @@ class TestWandb(unittest.TestCase):
         visualizer.process(inputs, [output])
         visualizer.evaluate()
         api = wandb.Api()
-        run = api.run("ci/" + run_id)
-        # assert run.summary["coco_2017_val_100"] # test is evaluation table was logged, artifacts not logged in anony runs
+        wandb_run = api.run("ci/" + run_id)
+        # assert run.summary["coco_2017_val_100"] # artifacts not logged in anony runs

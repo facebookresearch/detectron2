@@ -495,7 +495,7 @@ class WandbWriter(EventWriter):
     def __init__(
         self,
         project: str = "detectron2",
-        config: Union[Dict, CfgNode] = {},
+        config: Union[Dict, CfgNode] = {},  # noqa: B006
         window_size: int = 20,
         **kwargs,
     ):

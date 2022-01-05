@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["ColorMode", "VisImage", "Visualizer"]
 
+
 _SMALL_OBJECT_AREA_THRESH = 1000
 _LARGE_MASK_AREA_THRESH = 120000
 _OFF_WHITE = (1.0, 1.0, 240.0 / 255)
