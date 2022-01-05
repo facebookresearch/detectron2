@@ -14,8 +14,8 @@ class WandbVisualizer(DatasetEvaluator):
     def __init__(self, dataset_name, size=50) -> None:
         """
         Args:
-            dataset_name (str): Name of the registered dataset to be Visualized
-            size (int): Maximum number of data-points/rows to be visualized
+            dataset_name (str): name of the registered dataset to be visualized
+            size (int): maximum number of samples/rows to be visualized
         """
         super().__init__()
 
