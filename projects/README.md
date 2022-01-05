@@ -44,4 +44,5 @@ External projects in the community that use detectron2:
 + [FsDet](https://github.com/ucbdrive/few-shot-object-detection), Few-Shot Object Detection.
 + [Sparse R-CNN](https://github.com/PeizeSun/SparseR-CNN)
 + [BCNet](https://github.com/lkeab/BCNet), a bilayer decoupling instance segmentation method.
++ [DD3D](https://github.com/TRI-ML/dd3d), A fully convolutional 3D detector.
 

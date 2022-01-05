@@ -33,7 +33,7 @@ class GithubURLDomain(Domain):
     """
 
     name = "githuburl"
-    ROOT = "https://github.com/facebookresearch/detectron2/blob/master/"
+    ROOT = "https://github.com/facebookresearch/detectron2/blob/main/"
     LINKED_DOC = ["tutorials/install", "tutorials/getting_started"]
 
     def resolve_any_xref(self, env, fromdocname, builder, target, node, contnode):

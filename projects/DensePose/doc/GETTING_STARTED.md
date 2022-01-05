@@ -70,7 +70,7 @@ The following dependencies are needed:
 DensePose can then be installed from this repository with:
 
 ```
-pip install git+https://github.com/facebookresearch/detectron2@master#subdirectory=projects/DensePose
+pip install git+https://github.com/facebookresearch/detectron2@main#subdirectory=projects/DensePose
 ```
 
 After installation, the package will be importable as `densepose`.

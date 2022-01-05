@@ -208,10 +208,8 @@ class DenseDetector(nn.Module):
 
         # 2. Keep top k top scoring boxes only
         num_topk = min(topk_candidates, topk_idxs.size(0))
-        # torch.sort is actually faster than .topk (https://github.com/pytorch/pytorch/issues/22812)
-        pred_scores, idxs = pred_scores.sort(descending=True)
-        pred_scores = pred_scores[:num_topk]
-        topk_idxs = topk_idxs[idxs[:num_topk]]
+        pred_scores, idxs = pred_scores.topk(num_topk)
+        topk_idxs = topk_idxs[idxs]
 
         anchor_idxs, classes_idxs = topk_idxs.unbind(dim=1)
 

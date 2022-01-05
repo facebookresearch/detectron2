@@ -37,7 +37,7 @@ a model fails to reproduce the results in detectron2 model zoo, or proves existe
 
 Paste the output of the following command:
 ```
-wget -nc -nv https://github.com/facebookresearch/detectron2/raw/master/detectron2/utils/collect_env.py && python collect_env.py
+wget -nc -nv https://github.com/facebookresearch/detectron2/raw/main/detectron2/utils/collect_env.py && python collect_env.py
 ```
 
 If your issue looks like an installation issue / environment issue,

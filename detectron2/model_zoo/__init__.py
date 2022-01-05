@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 """
 Model Zoo API for Detectron2: a collection of functions to create common model architectures
-listed in `MODEL_ZOO.md <https://github.com/facebookresearch/detectron2/blob/master/MODEL_ZOO.md>`_,
+listed in `MODEL_ZOO.md <https://github.com/facebookresearch/detectron2/blob/main/MODEL_ZOO.md>`_,
 and optionally load their pre-trained weights.
 """
 
