@@ -26,10 +26,8 @@ class WandbVisualizer(DatasetEvaluator):
         self.size = size
         self._run = None
         # Table logging utils
-        self._evalset_table = None
         self._evalset_table_rows = []  # reset after log operation
         self._evalset_table_ref = None  # eval artifact refrence for deduping. Don't reset
-        self._row_idx = 0
         self._map_table_row_file_name = {}
         self._table_thing_classes = None
         self._table_stuff_classes = None
@@ -47,8 +45,7 @@ class WandbVisualizer(DatasetEvaluator):
         parsed_output["file_name"] = inputs[0].get("file_name")
         table_row = self._plot_table_row(parsed_output)
         self._evalset_table_rows.append(table_row)
-        if self._evalset_table is None:
-            self._evalset_table = self._build_evalset_table(parsed_output.keys())
+
 
     def evaluate(self):
         comm.synchronize()
@@ -61,16 +58,17 @@ class WandbVisualizer(DatasetEvaluator):
             self._run = self.wandb.run
 
             table_rows = list(itertools.chain(*table_rows))
-            for table_row in table_rows:
+            _evalset_table = self._build_evalset_table(table_rows[-1][1])
+            for _row_idx, table_row in enumerate(table_rows):
                 # use reference of table if present
                 if self._evalset_table_ref is None:
-                    self._evalset_table.add_data(*table_row)
-                    self._map_table_row_file_name[table_row[0]] = self._row_idx
-                    self._row_idx = self._row_idx + 1
+                    _evalset_table.add_data(*table_row)
+                    self._map_table_row_file_name[table_row[0]] = _row_idx
+                    _row_idx = _row_idx + 1
                 else:
                     row_idx = self._map_table_row_file_name[table_row[0]]
                     ref_table_row = self._evalset_table_ref[row_idx]
-                    self._evalset_table.add_data(
+                    _evalset_table.add_data(
                         table_row[0],
                         self.wandb.Image(
                             ref_table_row[1], boxes=table_row[1]._boxes, masks=table_row[1]._masks
@@ -78,15 +76,13 @@ class WandbVisualizer(DatasetEvaluator):
                         *table_row[2:],
                     )
 
-            self._run.log({self.dataset_name: self._evalset_table})
+            self._run.log({self.dataset_name: _evalset_table})
             if self._evalset_table_ref is None:
-                self._use_table_as_artifact(self._evalset_table)
+                self._use_table_as_artifact(_evalset_table)
         return super().evaluate()
 
     def reset(self):
         self._build_dataset_metadata()
-        self._evalset_table = None
-        self._row_idx = 0
         self._evalset_table_rows = []
         return super().reset()
 
@@ -137,7 +133,6 @@ class WandbVisualizer(DatasetEvaluator):
 
         Args:
             pred (detectron2.structures.instances.Instances): Prediction instance for the image
-            loader_i (int): index of the dataloader being used
 
         returns:
             Dict (): parsed predictions
@@ -145,22 +140,23 @@ class WandbVisualizer(DatasetEvaluator):
         parsed_pred = {}
         if pred.get("instances") is not None:
             pred_ins = pred["instances"]
+            pred_ins = pred_ins[pred_ins.scores>0.7]
             parsed_pred["boxes"] = (
-                pred_ins.pred_boxes.tensor.tolist()[:10] if pred_ins.has("pred_boxes") else None
+                pred_ins.pred_boxes.tensor.tolist() if pred_ins.has("pred_boxes") else None
             )
             parsed_pred["classes"] = (
-                pred_ins.pred_classes.tolist()[:10] if pred_ins.has("pred_classes") else None
+                pred_ins.pred_classes.tolist() if pred_ins.has("pred_classes") else None
             )
             parsed_pred["scores"] = (
-                pred_ins.scores.tolist()[:10] if pred_ins.has("scores") else None
+                pred_ins.scores.tolist() if pred_ins.has("scores") else None
             )
             parsed_pred["pred_masks"] = (
-                pred_ins.pred_masks.cpu().detach().numpy()[:10]
+                pred_ins.pred_masks.cpu().detach().numpy()
                 if pred_ins.has("pred_masks")
                 else None
             )  # wandb segmentation panel supports np
             parsed_pred["pred_keypoints"] = (
-                pred_ins.pred_keypoints.tolist()[:10] if pred_ins.has("pred_keypoints") else None
+                pred_ins.pred_keypoints.tolist() if pred_ins.has("pred_keypoints") else None
             )
 
         if pred.get("sem_seg") is not None:
@@ -180,7 +176,6 @@ class WandbVisualizer(DatasetEvaluator):
         plot prediction on one image
 
         Args:
-            img (str): Path to the image
             pred (Dict): Prediction for one image
 
         """
@@ -192,7 +187,6 @@ class WandbVisualizer(DatasetEvaluator):
         counts = {}
         if pred.get("boxes") is not None:
             boxes_data = []
-            # only plot top 20 predictions. Preds are sorted by descending conf. scores.
             for i, box in enumerate(pred["boxes"]):
                 pred_class = int(pred["classes"][i])
                 caption = (
@@ -300,12 +294,12 @@ class WandbVisualizer(DatasetEvaluator):
         eval_art.wait()
         self._evalset_table_ref = eval_art.get(self.dataset_name).data
 
-    def _build_evalset_table(self, pred_keys):
+    def _build_evalset_table(self, pred_img):
         """
         Builds wandb.Table object for logging evaluation
 
         Args:
-            pred_keys (List[str]): Keys in the prediction dict
+            pred_img (wandb.Image): An prediction in form of wandb Image
 
         returns:
             table (wandb.Table): Table object to log evaluation
@@ -313,7 +307,7 @@ class WandbVisualizer(DatasetEvaluator):
         """
         # Current- Use cols. for each detection class score and don't use columns for overlays
         table_cols = ["file_name", "image"]
-        if "boxes" in pred_keys:
+        if pred_img._boxes:
             table_cols = table_cols + self.thing_class_names
         table = self.wandb.Table(columns=table_cols)
 
