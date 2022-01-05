@@ -52,7 +52,7 @@ class PanopticDeepLabTargetGenerator(object):
     def __call__(self, panoptic, segments_info):
         """Generates the training target.
         reference: https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/preparation/createPanopticImgs.py  # noqa
-        reference: https://github.com/facebookresearch/detectron2/blob/master/datasets/prepare_panoptic_fpn.py#L18  # noqa
+        reference: https://github.com/facebookresearch/detectron2/blob/main/datasets/prepare_panoptic_fpn.py#L18  # noqa
 
         Args:
             panoptic: numpy.array, panoptic label, we assume it is already

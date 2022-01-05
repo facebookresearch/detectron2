@@ -517,6 +517,8 @@ _C.SOLVER.LR_SCHEDULER_NAME = "WarmupMultiStepLR"
 _C.SOLVER.MAX_ITER = 40000
 
 _C.SOLVER.BASE_LR = 0.001
+# The end lr, only used by WarmupCosineLR
+_C.SOLVER.BASE_LR_END = 0.0
 
 _C.SOLVER.MOMENTUM = 0.9
 
