@@ -10,9 +10,8 @@ from typing import Dict, Optional, Union
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
 
-from detectron2.utils.file_io import PathManager
 from detectron2.config import CfgNode
-
+from detectron2.utils.file_io import PathManager
 
 __all__ = [
     "get_event_storage",
@@ -493,7 +492,13 @@ class WandbWriter(EventWriter):
     Write all scalars to a wandb tool.
     """
 
-    def __init__(self, project: str='detectron2', config: Union[Dict, CfgNode] = {}, window_size: int = 20, **kwargs):
+    def __init__(
+        self,
+        project: str = "detectron2",
+        config: Union[Dict, CfgNode] = {},
+        window_size: int = 20,
+        **kwargs,
+    ):
         """
         Args:
             project (str): W&B Project name
@@ -505,11 +510,9 @@ class WandbWriter(EventWriter):
         import wandb
 
         self._window_size = window_size
-        self._run = wandb.init(
-            project=project,
-            config=config,
-            **kwargs
-        ) if not wandb.run else wandb.run
+        self._run = (
+            wandb.init(project=project, config=config, **kwargs) if not wandb.run else wandb.run
+        )
         self._run._label(repo="detectron2")
 
     def write(self):

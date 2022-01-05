@@ -1,7 +1,9 @@
 import itertools
+
 import detectron2.utils.comm as comm
 from detectron2.data import MetadataCatalog
 from detectron2.evaluation import DatasetEvaluator
+
 
 class WandbVisualizer(DatasetEvaluator):
     """
@@ -9,7 +11,7 @@ class WandbVisualizer(DatasetEvaluator):
     Sopported tasks: Bounding Box Detection, Semantic Segmentation
     """
 
-    def __init__(self, dataset_name, size = 50) -> None:
+    def __init__(self, dataset_name, size=50) -> None:
         """
         Args:
             dataset_name (str): Name of the registered dataset to be Visualized
@@ -18,25 +20,25 @@ class WandbVisualizer(DatasetEvaluator):
         super().__init__()
 
         import wandb
+
         self.wandb = wandb
         self.dataset_name = dataset_name
         self.size = size
         self._run = None
         # Table logging utils
         self._evalset_table = None
-        self._evalset_table_rows = [] # reset after log operation
-        self._evalset_table_ref = None # eval artifact refrence for deduping. Don't reset 
+        self._evalset_table_rows = []  # reset after log operation
+        self._evalset_table_ref = None  # eval artifact refrence for deduping. Don't reset
         self._row_idx = 0
         self._map_table_row_file_name = {}
         self._table_thing_classes = None
         self._table_stuff_classes = None
-        
+
         # parsed metadata
         self.thing_class_names = []
         self.thing_index_to_class = {}
         self.stuff_class_names = []
         self.stuff_index_to_class = {}
-
 
     def process(self, inputs, outputs):
         if self.size > 0 and len(self._evalset_table_rows) >= self.size // (comm.get_world_size()):
@@ -48,18 +50,19 @@ class WandbVisualizer(DatasetEvaluator):
         if self._evalset_table is None:
             self._evalset_table = self._build_evalset_table(parsed_output.keys())
 
-
     def evaluate(self):
         comm.synchronize()
         table_rows = comm.gather(self._evalset_table_rows)
         if comm.is_main_process():
             if self.wandb.run is None:
-                raise Exception("wandb run is not initialized. Either call wandb.init(...) explicitly or set WandbWriter()")
+                raise Exception(
+                    "wandb run is not initialized. Either call wandb.init(...) explicitly or set WandbWriter()"
+                )
             self._run = self.wandb.run
 
             table_rows = list(itertools.chain(*table_rows))
             for table_row in table_rows:
-                # use reference of table if present 
+                # use reference of table if present
                 if self._evalset_table_ref is None:
                     self._evalset_table.add_data(*table_row)
                     self._map_table_row_file_name[table_row[0]] = self._row_idx
@@ -68,10 +71,12 @@ class WandbVisualizer(DatasetEvaluator):
                     row_idx = self._map_table_row_file_name[table_row[0]]
                     ref_table_row = self._evalset_table_ref[row_idx]
                     self._evalset_table.add_data(
-                            table_row[0],
-                            self.wandb.Image(ref_table_row[1], boxes=table_row[1]._boxes, masks=table_row[1]._masks),
-                            *table_row[2:],
-                        )
+                        table_row[0],
+                        self.wandb.Image(
+                            ref_table_row[1], boxes=table_row[1]._boxes, masks=table_row[1]._masks
+                        ),
+                        *table_row[2:],
+                    )
 
             self._run.log({self.dataset_name: self._evalset_table})
             if self._evalset_table_ref is None:
@@ -84,8 +89,6 @@ class WandbVisualizer(DatasetEvaluator):
         self._row_idx = 0
         self._evalset_table_rows = []
         return super().reset()
-
-
 
     def _build_dataset_metadata(self):
         """
@@ -107,7 +110,7 @@ class WandbVisualizer(DatasetEvaluator):
         meta = MetadataCatalog.get(self.dataset_name)
 
         # Parse thing_classes
-        if hasattr(meta, "thing_classes"): 
+        if hasattr(meta, "thing_classes"):
             self.thing_class_names = meta.thing_classes
 
         wandb_thing_classes = []
@@ -128,7 +131,6 @@ class WandbVisualizer(DatasetEvaluator):
             wandb_stuff_classes.append({"id": i, "name": name})
 
         self._table_stuff_classes = self.wandb.Classes(wandb_stuff_classes)
-
 
     def _parse_prediction(self, pred):
         """
@@ -277,13 +279,15 @@ class WandbVisualizer(DatasetEvaluator):
             }
         '''
 
-        table_row = [file_name, self.wandb.Image(file_name, boxes=boxes, masks=masks, classes=classes)]
+        table_row = [
+            file_name,
+            self.wandb.Image(file_name, boxes=boxes, masks=masks, classes=classes),
+        ]
         if pred.get("boxes") is not None:
             table_row.extend(avg_conf_per_class)
-        
+
         return table_row
 
-       
     def _use_table_as_artifact(self, table):
         """
         This function logs the given table as artifact and calls `use_artifact` on it so tables from next iter-
@@ -304,10 +308,10 @@ class WandbVisualizer(DatasetEvaluator):
 
         Args:
             pred_keys (List[str]): Keys in the prediction dict
-        
+
         returns:
             table (wandb.Table): Table object to log evaluation
-        
+
         """
         # Current design - Use cols. for each detection class score and don't use columns for mask overlays
         table_cols = ["file_name", "image"]

@@ -6,14 +6,14 @@ import torch
 from torch import nn
 
 from detectron2.config import configurable, get_cfg
+from detectron2.data import DatasetCatalog
 from detectron2.engine import DefaultTrainer, SimpleTrainer, hooks
-from detectron2.utils.events import WandbWriter
 from detectron2.evaluation.wandb import WandbVisualizer
 from detectron2.structures import Boxes, Instances
-
-from detectron2.data import DatasetCatalog
+from detectron2.utils.events import WandbWriter
 
 import wandb
+
 
 class _SimpleModel(nn.Module):
     @configurable
@@ -38,23 +38,20 @@ class TestWandb(unittest.TestCase):
         while True:
             yield torch.rand(3, 3).to(device)
 
-
     def test_WandbWriter(self):
         model = _SimpleModel(sleep_sec=0.1)
         trainer = SimpleTrainer(
             model, self._data_loader("cpu"), torch.optim.SGD(model.parameters(), 0.1)
         )
         max_iter = 50
-        wandb_run = wandb.init(project="ci", anonymous='must')
+        wandb_run = wandb.init(project="ci", anonymous="must")
         run_id = wandb_run.id
 
-        trainer.register_hooks(
-            [hooks.PeriodicWriter([WandbWriter()])]
-        )
+        trainer.register_hooks([hooks.PeriodicWriter([WandbWriter()])])
         trainer.train(0, max_iter)
         api = wandb.Api()
-        run = api.run("ci/"+run_id)
-        assert run.summary["total_loss"] # test if metric was logged
+        run = api.run("ci/" + run_id)
+        assert run.summary["total_loss"]  # test if metric was logged
 
     def test_WandbVisualizer(self):
 
@@ -74,5 +71,5 @@ class TestWandb(unittest.TestCase):
         visualizer.process(inputs, [output])
         visualizer.evaluate()
         api = wandb.Api()
-        run = api.run("ci/"+run_id)
+        run = api.run("ci/" + run_id)
         # assert run.summary["coco_2017_val_100"] # test is evaluation table was logged, artifacts not logged in anony runs
