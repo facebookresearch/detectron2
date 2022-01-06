@@ -50,6 +50,7 @@ class COCOEvaluator(DatasetEvaluator):
         max_dets_per_image=None,
         use_fast_impl=True,
         kpt_oks_sigmas=(),
+        allow_cached_coco=True
     ):
         """
         Args:
@@ -85,6 +86,9 @@ class COCOEvaluator(DatasetEvaluator):
                 See http://cocodataset.org/#keypoints-eval
                 When empty, it will use the defaults in COCO.
                 Otherwise it should be the same length as ROI_KEYPOINT_HEAD.NUM_KEYPOINTS.
+            allow_cached_coco (bool): Whether to use cached coco json from previous validation
+                runs. You should set this to False if you need to use different validation data.
+                Defaults to True.
         """
         self._logger = logging.getLogger(__name__)
         self._distributed = distributed
@@ -127,7 +131,7 @@ class COCOEvaluator(DatasetEvaluator):
 
             cache_path = os.path.join(output_dir, f"{dataset_name}_coco_format.json")
             self._metadata.json_file = cache_path
-            convert_to_coco_json(dataset_name, cache_path)
+            convert_to_coco_json(dataset_name, cache_path, allow_cached=allow_cached_coco)
 
         json_file = PathManager.get_local_path(self._metadata.json_file)
         with contextlib.redirect_stdout(io.StringIO()):
