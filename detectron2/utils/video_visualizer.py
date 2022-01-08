@@ -51,6 +51,11 @@ class VideoVisualizer:
             ColorMode.IMAGE_BW,
         ], "Other mode not supported yet."
         self._instance_mode = instance_mode
+        # currently _COLORS only support max=74 colors
+        self._max_num_instances = self.metadata.get("max_num_instances", 74)
+        self._assigned_colors = {}
+        self._color_pool = random_colors(self._max_num_instances, rgb=True, maximum=1)
+        self._color_idx_set = set(range(len(self._color_pool)))
 
     def draw_instance_predictions(self, frame, predictions):
         """
