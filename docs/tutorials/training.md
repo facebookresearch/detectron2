@@ -50,7 +50,7 @@ To customize a `DefaultTrainer`:
 
 During training, detectron2 models and trainer put metrics to a centralized [EventStorage](../modules/utils.html#detectron2.utils.events.EventStorage).
 You can use the following code to access it and log metrics to it:
-```
+```python
 from detectron2.utils.events import get_event_storage
 
 # inside the model:
