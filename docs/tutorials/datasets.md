@@ -39,7 +39,7 @@ data: List[Dict] = DatasetCatalog.get("my_dataset")
 이 함수는 임의의 작업을 수행한 후 `list[dict]` 안에 다음 중 한 가지 포맷으로
 데이터를 반환해야 합니다.
 1. 아래 설명된 detectron2의 표준 데이터셋 dict 포맷. 이 경우, detectron2의 다른 많은 내장 기능을
-   함께 사용할 수 있으므로, 이것으로 충분할 때 사용할 것을 권장합니다.
+   함께 사용할 수 있으므로, 이것으로 충세그멘테이션 때 사용할 것을 권장합니다.
 2. 임의의 커스텀 포맷. 새로운 task를 위해 기존에 없는 키(key)를 추가하는 등,
    여러분만의 포맷으로 임의의 dict를 반환할 수도 있습니다.
    이후 다운스트림(downstream)에서도 이를 적절하게 처리해야 합니다.
@@ -48,7 +48,7 @@ data: List[Dict] = DatasetCatalog.get("my_dataset")
 #### 표준 데이터셋 dict
 
 표준 task인
-객체 검출(instance detection), 객체/시맨틱/팬옵틱 분할(instance/semantic/panoptic segmentation), 키포인트 검출(keypoint detection)을 수행하는 경우,
+객체 검출(instance detection), 객체/시맨틱/팬옵틱 세그멘테이션(instance/semantic/panoptic segmentation), 키포인트 검출(keypoint detection)을 수행하는 경우,
 COCO의 어노테이션(annotation)과 유사한 스펙으로 원본 데이터셋을 `list[dict]` 에 로드합니다.
 이것이 데이터셋 형태에 대한 우리의 표준입니다.
 
@@ -65,13 +65,13 @@ dict에는 아래와 같은 필드가 있을 수 있으며
   * - 공통
     - file_name, height, width, image_id
 
-  * - 객체 검출/분할
+  * - 객체 검출/세그멘테이션
     - annotations
 
-  * - 시맨틱 분할
+  * - 시맨틱 세그멘테이션
     - sem_seg_file_name
 
-  * - 팬옵틱 분할
+  * - 팬옵틱 세그멘테이션
     - pan_seg_file_name, segments_info
 ```
 
@@ -79,7 +79,7 @@ dict에는 아래와 같은 필드가 있을 수 있으며
 + `height`, `width`: 정수형으로 표현된 이미지의 shape입니다.
 + `image_id` (str or int): 이미지의 고유 식별자입니다. 주로 evaluator가
   이미지를 식별할 때 필요하지만, 데이터셋은 이를 다른 목적으로 사용할 수 있습니다.
-+ `annotations` (list[dict]): __객체 검출/분할 또는 키포인트 검출__ task에 필요합니다.
++ `annotations` (list[dict]): __객체 검출/세그멘테이션 또는 키포인트 검출__ task에 필요합니다.
    각 dict는 이 이미지에 있는 한 객체의 annotation에 해당하며,
    다음과 같은 키를 포함할 수 있습니다.
   + `bbox` (list[float], required): 객체의 바운딩 박스(bounding box)를 나타내는 4개의 숫자 목록입니다.
@@ -88,13 +88,13 @@ dict에는 아래와 같은 필드가 있을 수 있으며
     현재 지원되는 포맷은 `BoxMode.XYXY_ABS`, `BoxMode.XYWH_ABS` 입니다.
   + `category_id` (int, required): 범주형 레이블(category label)을 나타내는 [0, num_categories-1] 범위의 정수입니다.
     num_categories 값은 "배경(background)" 범주가 있는 경우를 위해 예약되어 있습니다.
-  + `segmentation` (list[list[float]] or dict): 객체 분할 마스크입니다.
+  + `segmentation` (list[list[float]] or dict): 객체 세그멘테이션 마스크입니다.
     + 값이 `list[list[float]]` 라면 폴리곤(각 connected component 별로 생성됨)의 list를
       의미합니다. 각각의 `list[float]` 는 단순한 `[x1, y1, ..., xn, yn]` (n≥3) 포맷의 폴리곤입니다.
       X와 Y는 픽셀 단위로 표현된 절대 좌표입니다.
-    + 값이 `dict` 라면 COCO의 압축 RLE 포맷으로 픽셀별 분할 마스크를 나타냅니다.
+    + 값이 `dict` 라면 COCO의 압축 RLE 포맷으로 픽셀별 세그멘테이션 마스크를 나타냅니다.
        dict에는 "size"와 "counts" 키가 있어야 합니다. `pycocotools.mask.encode(np.asarray(mask, order="F"))` 를
-       사용해 0과 1로 구성된 uint8 분할 마스크를 이러한 dict로 변환할 수 있습니다.
+       사용해 0과 1로 구성된 uint8 세그멘테이션 마스크를 이러한 dict로 변환할 수 있습니다.
        이러한 포맷을 기본 데이터로더와 함께 사용하려면 `cfg.INPUT.MASK_FORMAT` 을 `bitmask` 로 설정해야 합니다.
   + `keypoints` (list[float]): [x1, y1, v1,..., xn, yn, vn]의 포맷을 갖습니다.
     v[i]는 해당 인덱스의 키포인트의 [가시성](http://cocodataset.org/#format-data) 을 나타냅니다.
@@ -112,16 +112,16 @@ dict에는 아래와 같은 필드가 있을 수 있으며
   `DATALOADER.FILTER_EMPTY_ANNOTATIONS` 를 통해 포함시킬 수 있습니다.
 
 + `sem_seg_file_name` (str):
-  시맨틱 분할의 ground truth 파일이 위치한 전체 경로입니다.
+  시맨틱 세그멘테이션의 ground truth 파일이 위치한 전체 경로입니다.
   픽셀 값이 정수형 레이블인 회색조(grayscale) 이미지여야 합니다.
 + `pan_seg_file_name` (str):
-  팬옵틱 분할의 ground truth 파일이 위치한 전체 경로입니다.
+  팬옵틱 세그멘테이션의 ground truth 파일이 위치한 전체 경로입니다.
   [panopticapi.utils.id2rgb](https://github.com/cocodataset/panopticapi/) 함수를 사용해
   픽셀 값을 정수형 id로 인코딩한 RGB 이미지여야 합니다.
   id는 `segments_info` 에 의해 정의됩니다.
   `segments_info` 에 id가 없는 픽셀은 레이블이 없는 것으로 간주되며
   일반적으로 학습 및 평가에서 무시됩니다.
-+ `segments_info` (list[dict]): 팬옵틱 분할의 ground truth에서 각 id의 의미를 정의합니다.
++ `segments_info` (list[dict]): 팬옵틱 세그멘테이션의 ground truth에서 각 id의 의미를 정의합니다.
   각 dict에는 다음과 같은 키가 있습니다.
   + `id` (int): ground truth 이미지에 나타나는 정수입니다.
   + `category_id` (int): 범주형 레이블을 나타내는 [0, num_categories-1] 범위의 정수입니다.
@@ -132,8 +132,8 @@ dict에는 아래와 같은 필드가 있을 수 있으며
 
 .. note::
 
-   PanopticFPN 모델은 여기에 정의된 팬옵틱 분할 포맷 대신에
-   객체 분할 및 시맨틱 분할 데이터의 포맷을 조합하여 사용합니다.
+   PanopticFPN 모델은 여기에 정의된 팬옵틱 세그멘테이션 포맷 대신에
+   객체 세그멘테이션 및 시맨틱 세그멘테이션 데이터의 포맷을 조합하여 사용합니다.
    COCO에 대한 지침은 :doc:`builtin_datasets` 를 참조하십시오.
 
 ```
@@ -191,20 +191,20 @@ MetadataCatalog.get("my_dataset").thing_classes = ["person", "dog"]
 이러한 메타데이터 없이 새로운 데이터셋을 추가하면 일부 기능을
 사용하지 못할 수도 있습니다.
 
-* `thing_classes` (list[str]): 모든 객체 검출/분할 task에서 사용됩니다.
+* `thing_classes` (list[str]): 모든 객체 검출/세그멘테이션 task에서 사용됩니다.
   객체 또는 thing의 분류명 목록입니다.
   COCO 포맷의 데이터셋을 로드하면 `load_coco_json` 함수에 의해 자동으로 설정됩니다.
 
 * `thing_colors` (list[tuple(r, g, b)]): 각 thing 분류에 대해 지정하는 색상([0, 255])입니다.
   시각화에 사용되며, 지정하지 않으면 임의의 색상으로 설정됩니다.
 
-* `stuff_classes` (list[str]): 시맨틱 및 팬옵틱 분할 task에서 사용됩니다.
+* `stuff_classes` (list[str]): 시맨틱 및 팬옵틱 세그멘테이션 task에서 사용됩니다.
   stuff의 분류명 목록입니다.
 
 * `stuff_colors` (list[tuple(r, g, b)]): 각 stuff 분류에 대해 지정하는 색상([0, 255])입니다.
   시각화에 사용되며, 지정하지 않으면 임의의 색상으로 설정됩니다.
 
-* `ignore_label` (int): 시맨틱 및 팬옵틱 분할 task에서 사용됩니다. 이 범주형 레이블에 속하는
+* `ignore_label` (int): 시맨틱 및 팬옵틱 세그멘테이션 task에서 사용됩니다. 이 범주형 레이블에 속하는
   ground-truth 어노테이션의 픽셀들은 평가 단계에서 무시됩니다. 일반적으로
   "레이블링 되지 않은" 픽셀입니다.
 
@@ -218,12 +218,12 @@ MetadataCatalog.get("my_dataset").thing_classes = ["person", "dog"]
 
 특정 데이터셋(예: COCO)은 평가와 관련된 다음과 같은 추가적인 메타데이터가 있습니다.
 
-* `thing_dataset_id_to_contiguous_id` (dict[int->int]): COCO 포맷의 모든 객체 검출/분할 task에서 사용됩니다.
+* `thing_dataset_id_to_contiguous_id` (dict[int->int]): COCO 포맷의 모든 객체 검출/세그멘테이션 task에서 사용됩니다.
   데이터셋의 객체 클래스 id에서 [0, #class) 범위의 연속 id로의 매핑입니다.
   `load_coco_json` 함수에 의해 자동으로 설정됩니다.
 
-* `stuff_dataset_id_to_contiguous_id` (dict[int->int]): 시맨틱/팬옵틱 분할의 예측값을 json 파일로 생성할 때 사용됩니다.
-  데이터셋의 시맨틱 분할 클래스 id에서 [0, num_categories]의
+* `stuff_dataset_id_to_contiguous_id` (dict[int->int]): 시맨틱/팬옵틱 세그멘테이션의 예측값을 json 파일로 생성할 때 사용됩니다.
+  데이터셋의 시맨틱 세그멘테이션 클래스 id에서 [0, num_categories]의
   연속 id로의 매핑입니다. 평가 단계에서만 사용됩니다.
 
 * `json_file`: COCO 어노테이션 json 파일입니다. COCO 포맷 데이터셋에 대한 COCO 방식 평가에서 사용됩니다.
@@ -236,9 +236,9 @@ MetadataCatalog.get("my_dataset").thing_classes = ["person", "dog"]
 ```eval_rst
 .. note::
 
-   인식(recognition)을 설명할 때 객체 수준 분할 task에 대해서는 "thing"이라는 용어를,
-   시맨틱 분할 task에 대해서는 "stuff"이라는 용어를 사용하기도 합니다.
-   팬옵틱 분할 task에서는 둘 다 사용됩니다.
+   인식(recognition)을 설명할 때 객체 수준 세그멘테이션 task에 대해서는 "thing"이라는 용어를,
+   시맨틱 세그멘테이션 task에 대해서는 "stuff"이라는 용어를 사용하기도 합니다.
+   팬옵틱 세그멘테이션 task에서는 둘 다 사용됩니다.
    "thing"과 "stuff"의 개념에 대한 배경 설명은
    `On Seeing Stuff: The Perception of Materials by Humans and Machines
    <http://persci.mit.edu/pub_pdfs/adelson_spie_01.pdf>`_ 를 참조하십시오.
@@ -246,7 +246,7 @@ MetadataCatalog.get("my_dataset").thing_classes = ["person", "dog"]
 
 ### COCO 포맷 데이터셋 등록
 
-이미 COCO 포맷의 json 파일로 된 객체 수준(검출, 분할, 키포인트) 데이터셋의 경우,
+이미 COCO 포맷의 json 파일로 된 객체 수준(검출, 세그멘테이션, 키포인트) 데이터셋의 경우,
 아래와 같이 데이터셋 및 관련 메타데이터를 쉽게 등록할 수 있습니다.
 ```python
 from detectron2.data.datasets import register_coco_instances

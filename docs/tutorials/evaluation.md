@@ -62,6 +62,6 @@ detectron2에는 특정 데이터셋을 위한 evaluator가 다수 존재하는�
 성능을 평가하기 위한 evaluator가 두 개 있으며,
 이를 커스텀 데이터셋의 성능을 평가하는 데에도 사용할 수 있습니다.
 
-* [COCOEvaluator](../modules/evaluation.html#detectron2.evaluation.COCOEvaluator) 는 모든 커스텀 데이터셋에 대해 박스 검출(box detection), 객체 분할(instance segmentation), 키포인트 검출(keypoint detection)
+* [COCOEvaluator](../modules/evaluation.html#detectron2.evaluation.COCOEvaluator) 는 모든 커스텀 데이터셋에 대해 박스 검출(box detection), 객체 세그멘테이션(instance segmentation), 키포인트 검출(keypoint detection)
    AP(평균 정밀도)를 평가할 수 있습니다.
-* [SemSegEvaluator](../modules/evaluation.html#detectron2.evaluation.SemSegEvaluator) 는 모든 커스텀 데이터셋에서 의미론적 분할(semantic segmentation) 성능지표를 평가할 수 있습니다.
+* [SemSegEvaluator](../modules/evaluation.html#detectron2.evaluation.SemSegEvaluator) 는 모든 커스텀 데이터셋에서 시맨틱 세그멘테이션(semantic segmentation) 성능지표를 평가할 수 있습니다.

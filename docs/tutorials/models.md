@@ -85,7 +85,7 @@ dict에는 다음 키가 포함될 수 있습니다.
     또는 [BitMasks](../modules/structures.html#detectron2.structures.BitMasks) 객체. 각 instance에 대응되는 N개의 마스크를 저장하고 있습니다.
   + "gt_keypoints": [Keypoints](../modules/structures.html#detectron2.structures.Keypoints) 객체.
     각 instance에 대응되는 N개의 키포인트 셋을 저장하고 있습니다.
-* "sem_seg": (H, W) 포맷의 `Tensor[int]`. 시맨틱 분할(semantic segmentation)의 학습을 위한 ground truth입니다.
+* "sem_seg": (H, W) 포맷의 `Tensor[int]`. 시맨틱 세그멘테이션(semantic segmentation)의 학습을 위한 ground truth입니다.
   각각의 값은 0부터 시작하는 범주 레이블을 나타냅니다.
 * "proposals": [Instances](../modules/structures.html#detectron2.structures.Instances)
   객체. Fast R-CNN 스타일 모델에서만 사용되며 다음 필드를 갖고 있습니다.
@@ -94,7 +94,7 @@ dict에는 다음 키가 포함될 수 있습니다.
 
 내장 모델의 추론을 위해 "image" 키만 필수이며 "width/height"는 선택 사항입니다.
 
-현재 팬옵틱 분할 (panoptic segmentation)의 경우, 모델이 커스텀 데이터로더에서 생성된
+현재 팬옵틱 세그멘테이션(panoptic segmentation)의 경우, 모델이 커스텀 데이터로더에서 생성된
 커스텀 포맷을 사용하기 때문에 학습을 위한 표준 입력 포맷을 정의하고 있지 않습니다.
 
 #### 데이터로더와 연결하는 방법
@@ -119,7 +119,7 @@ dict에는 다음 키가 포함될 수 있습니다.
   + "pred_masks": (N, H, W) shape의 `Tensor`. 검출된 각각의 instance에 대한 마스크입니다.
   + "pred_keypoints": (N, num_keypoint, 3) shape의 `Tensor`.
     마지막 차원(dimension)의 각 행은 (x, y, score)입니다. Confidence score는 양수입니다.
-* "sem_seg": (num_categories, H, W) shape의 `Tensor`. 시맨틱 분할에 대한 예측값입니다.
+* "sem_seg": (num_categories, H, W) shape의 `Tensor`. 시맨틱 세그멘테이션에 대한 예측값입니다.
 * "proposals": [Instances](../modules/structures.html#detectron2.structures.Instances)
   객체. 다음과 같은 필드를 갖고 있습니다.
   * "proposal_boxes": [Boxes](../modules/structures.html#detectron2.structures.Boxes)
@@ -135,7 +135,7 @@ dict에는 다음 키가 포함될 수 있습니다.
     * "category_id": segment의 범주 id
 
     픽셀의 id가 `segments_info` 에 없으면
-    [팬옵틱 분할](https://arxiv.org/abs/1801.00868) 에 정의된 void 레이블로 간주됩니다.
+    [팬옵틱 세그멘테이션](https://arxiv.org/abs/1801.00868) 에 정의된 void 레이블로 간주됩니다.
 
   * `segments_info` 가 None이면 `pred` 의 모든 픽셀 값이 -1보다 이상이어야 합니다.
     값이 -1인 픽셀에는 void 레이블이 할당됩니다.
