@@ -50,7 +50,7 @@ class COCOEvaluator(DatasetEvaluator):
         max_dets_per_image=None,
         use_fast_impl=True,
         kpt_oks_sigmas=(),
-        allow_cached_coco=True
+        allow_cached_coco=True,
     ):
         """
         Args:
