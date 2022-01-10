@@ -3,10 +3,11 @@ import unittest
 import torch
 import numpy as np
 
-from detectron2.tracking.bbox_iou_tracker import BBoxIOUTracker
 from typing import Dict
 from detectron2.structures import Boxes, Instances
 from detectron2.config import instantiate, CfgNode as CfgNode_
+from detectron2.tracking.base_tracker import build_tracker_head
+from detectron2.tracking.bbox_iou_tracker import BBoxIOUTracker  # noqa
 from copy import deepcopy
 
 
@@ -85,6 +86,7 @@ class TestBBoxIOUTracker(unittest.TestCase):
     def test_from_config(self):
         cfg = CfgNode_()
         cfg.TRACKER_HEADS = CfgNode_()
+        cfg.TRACKER_HEADS.TRACKER_NAME = "BBoxIOUTracker"
         cfg.TRACKER_HEADS.VIDEO_HEIGHT = int(self._img_size[0])
         cfg.TRACKER_HEADS.VIDEO_WIDTH = int(self._img_size[1])
         cfg.TRACKER_HEADS.MAX_NUM_INSTANCES = self._max_num_instances
@@ -92,8 +94,7 @@ class TestBBoxIOUTracker(unittest.TestCase):
         cfg.TRACKER_HEADS.MIN_BOX_REL_DIM = self._min_box_rel_dim
         cfg.TRACKER_HEADS.MIN_INSTANCE_PERIOD = self._min_instance_period
         cfg.TRACKER_HEADS.TRACK_IOU_THRESHOLD = self._track_iou_threshold
-        input_arg = BBoxIOUTracker.from_config(cfg)
-        tracker = instantiate(input_arg)
+        tracker = build_tracker_head(cfg)
         self.assertTrue(tracker._video_height == self._img_size[0])
 
     def test_initialize_extra_fields(self):
