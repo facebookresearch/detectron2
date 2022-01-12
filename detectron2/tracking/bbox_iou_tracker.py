@@ -30,6 +30,21 @@ class BBoxIOUTracker(BaseTracker):
         track_iou_threshold: float = 0.5,
         **kwargs
     ):
+        """
+        Args:
+        video_height: height the video frame
+        video_width: width of the video frame
+        max_num_instances: maximum number of id allowed to be tracked
+        max_lost_frame_count: maximum number of frame an id can lost tracking
+                              exceed this number, an id is considered as lost
+                              forever
+        min_box_rel_dim: a percentage, smaller than this dimension, a bbox is
+                         removed from tracking
+        min_instance_period: an instance will be shown after this number of period
+                             since its first showing up in the video
+        track_iou_threshold: iou threshold, below this number a bbox pair is removed
+                             from tracking
+        """
         super().__init__(**kwargs)
         self._video_height = video_height
         self._video_width = video_width
