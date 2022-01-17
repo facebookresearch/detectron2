@@ -34,3 +34,6 @@ def create_prediction_pairs(
                 }
             )
     return bbox_pairs
+
+
+LARGE_COST_VALUE = 100000
