@@ -1,9 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from .config import CfgNode as CN
-
-# NOTE: given the new config system
-# (https://detectron2.readthedocs.io/en/latest/tutorials/lazyconfigs.html),
-# we will stop adding new functionalities to default CfgNode.
+from utils.config import num_boxes
 
 # -----------------------------------------------------------------------------
 # Convention about Training / Test specific parameters
@@ -45,24 +42,21 @@ _C.MODEL.PIXEL_MEAN = [103.530, 116.280, 123.675]
 # Otherwise, you can use [57.375, 57.120, 58.395] (ImageNet std)
 _C.MODEL.PIXEL_STD = [1.0, 1.0, 1.0]
 
-
 # -----------------------------------------------------------------------------
 # INPUT
 # -----------------------------------------------------------------------------
 _C.INPUT = CN()
-# By default, {MIN,MAX}_SIZE options are used in transforms.ResizeShortestEdge.
-# Please refer to ResizeShortestEdge for detailed definition.
 # Size of the smallest side of the image during training
-_C.INPUT.MIN_SIZE_TRAIN = (800,)
+_C.INPUT.MIN_SIZE_TRAIN = (256,)
 # Sample size of smallest side by choice or random selection from range give by
 # INPUT.MIN_SIZE_TRAIN
 _C.INPUT.MIN_SIZE_TRAIN_SAMPLING = "choice"
 # Maximum size of the side of the image during training
-_C.INPUT.MAX_SIZE_TRAIN = 1333
+_C.INPUT.MAX_SIZE_TRAIN = 400
 # Size of the smallest side of the image during testing. Set to zero to disable resize in testing.
-_C.INPUT.MIN_SIZE_TEST = 800
+_C.INPUT.MIN_SIZE_TEST = 256
 # Maximum size of the side of the image during testing
-_C.INPUT.MAX_SIZE_TEST = 1333
+_C.INPUT.MAX_SIZE_TEST = 400
 # Mode for flipping images used in data augmentation during training
 # choose one of ["horizontal, "vertical", "none"]
 _C.INPUT.RANDOM_FLIP = "horizontal"
@@ -75,7 +69,6 @@ _C.INPUT.CROP.TYPE = "relative_range"
 # pixels if CROP.TYPE is "absolute"
 _C.INPUT.CROP.SIZE = [0.9, 0.9]
 
-
 # Whether the model needs RGB, YUV, HSV etc.
 # Should be one of the modes defined here, as we use PIL to read the image:
 # https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
@@ -85,7 +78,6 @@ _C.INPUT.FORMAT = "BGR"
 # The ground truth mask format that the model will use.
 # Mask R-CNN supports either "polygon" or "bitmask" as ground truth.
 _C.INPUT.MASK_FORMAT = "polygon"  # alternative: "bitmask"
-
 
 # -----------------------------------------------------------------------------
 # Dataset
@@ -105,7 +97,7 @@ _C.DATASETS.TEST = ()
 # with datasets listed in DATASETS.TEST.
 _C.DATASETS.PROPOSAL_FILES_TEST = ()
 # Number of top scoring precomputed proposals to keep for test
-_C.DATASETS.PRECOMPUTED_PROPOSAL_TOPK_TEST = 1000
+_C.DATASETS.PRECOMPUTED_PROPOSAL_TOPK_TEST = 100
 
 # -----------------------------------------------------------------------------
 # DataLoader
@@ -136,7 +128,6 @@ _C.MODEL.BACKBONE.NAME = "build_resnet_backbone"
 # stages are each group of residual blocks.
 _C.MODEL.BACKBONE.FREEZE_AT = 2
 
-
 # ---------------------------------------------------------------------------- #
 # FPN options
 # ---------------------------------------------------------------------------- #
@@ -153,7 +144,6 @@ _C.MODEL.FPN.NORM = ""
 # Types for fusing the FPN top-down and lateral features. Can be either "sum" or "avg"
 _C.MODEL.FPN.FUSE_TYPE = "sum"
 
-
 # ---------------------------------------------------------------------------- #
 # Proposal generator options
 # ---------------------------------------------------------------------------- #
@@ -163,7 +153,6 @@ _C.MODEL.PROPOSAL_GENERATOR.NAME = "RPN"
 # Proposal height and width both need to be greater than MIN_SIZE
 # (a the scale used during training or inference)
 _C.MODEL.PROPOSAL_GENERATOR.MIN_SIZE = 0
-
 
 # ---------------------------------------------------------------------------- #
 # Anchor generator options
@@ -219,7 +208,7 @@ _C.MODEL.RPN.IOU_LABELS = [0, -1, 1]
 _C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
 # Target fraction of foreground (positive) examples per RPN minibatch
 _C.MODEL.RPN.POSITIVE_FRACTION = 0.5
-# Options are: "smooth_l1", "giou", "diou", "ciou"
+# Options are: "smooth_l1", "giou"
 _C.MODEL.RPN.BBOX_REG_LOSS_TYPE = "smooth_l1"
 _C.MODEL.RPN.BBOX_REG_LOSS_WEIGHT = 1.0
 # Weights on (dx, dy, dw, dh) for normalizing RPN anchor regression targets
@@ -241,8 +230,6 @@ _C.MODEL.RPN.POST_NMS_TOPK_TRAIN = 2000
 _C.MODEL.RPN.POST_NMS_TOPK_TEST = 1000
 # NMS threshold used on RPN proposals
 _C.MODEL.RPN.NMS_THRESH = 0.7
-# Set this to -1 to use the same number of output channels as input channels.
-_C.MODEL.RPN.CONV_DIMS = [-1]
 
 # ---------------------------------------------------------------------------- #
 # ROI HEADS options
@@ -260,7 +247,7 @@ _C.MODEL.ROI_HEADS.IN_FEATURES = ["res4"]
 # Overlap threshold for an RoI to be considered foreground (if >= IOU_THRESHOLD)
 _C.MODEL.ROI_HEADS.IOU_THRESHOLDS = [0.5]
 _C.MODEL.ROI_HEADS.IOU_LABELS = [0, 1]
-# RoI minibatch size *per image* (number of regions of interest [ROIs]) during training
+# RoI minibatch size *per image* (number of regions of interest [ROIs])
 # Total number of RoIs per training minibatch =
 #   ROI_HEADS.BATCH_SIZE_PER_IMAGE * SOLVER.IMS_PER_BATCH
 # E.g., a common configuration is: 512 * 16 = 8192
@@ -290,7 +277,7 @@ _C.MODEL.ROI_BOX_HEAD = CN()
 # C4 don't use head name option
 # Options for non-C4 models: FastRCNNConvFCHead,
 _C.MODEL.ROI_BOX_HEAD.NAME = ""
-# Options are: "smooth_l1", "giou", "diou", "ciou"
+# Options are: "smooth_l1", "giou"
 _C.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE = "smooth_l1"
 # The final scaling coefficient on the box regression loss, used to balance the magnitude of its
 # gradients with other losses in the model. See also `MODEL.ROI_KEYPOINT_HEAD.LOSS_WEIGHT`.
@@ -331,7 +318,6 @@ _C.MODEL.ROI_BOX_CASCADE_HEAD.BBOX_REG_WEIGHTS = (
 )
 _C.MODEL.ROI_BOX_CASCADE_HEAD.IOUS = (0.5, 0.6, 0.7)
 
-
 # ---------------------------------------------------------------------------- #
 # Mask Head
 # ---------------------------------------------------------------------------- #
@@ -348,7 +334,6 @@ _C.MODEL.ROI_MASK_HEAD.NORM = ""
 _C.MODEL.ROI_MASK_HEAD.CLS_AGNOSTIC_MASK = False
 # Type of pooling operation applied to the incoming feature map for each RoI
 _C.MODEL.ROI_MASK_HEAD.POOLER_TYPE = "ROIAlignV2"
-
 
 # ---------------------------------------------------------------------------- #
 # Keypoint Head
@@ -414,7 +399,6 @@ _C.MODEL.PANOPTIC_FPN.COMBINE.OVERLAP_THRESH = 0.5
 _C.MODEL.PANOPTIC_FPN.COMBINE.STUFF_AREA_LIMIT = 4096
 _C.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
 
-
 # ---------------------------------------------------------------------------- #
 # RetinaNet Head
 # ---------------------------------------------------------------------------- #
@@ -455,13 +439,12 @@ _C.MODEL.RETINANET.BBOX_REG_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 _C.MODEL.RETINANET.FOCAL_LOSS_GAMMA = 2.0
 _C.MODEL.RETINANET.FOCAL_LOSS_ALPHA = 0.25
 _C.MODEL.RETINANET.SMOOTH_L1_LOSS_BETA = 0.1
-# Options are: "smooth_l1", "giou", "diou", "ciou"
+# Options are: "smooth_l1", "giou"
 _C.MODEL.RETINANET.BBOX_REG_LOSS_TYPE = "smooth_l1"
 
 # One of BN, SyncBN, FrozenBN, GN
 # Only supports GN until unshared norm is implemented
 _C.MODEL.RETINANET.NORM = ""
-
 
 # ---------------------------------------------------------------------------- #
 # ResNe[X]t options (ResNets = {ResNet, ResNeXt}
@@ -504,21 +487,17 @@ _C.MODEL.RESNETS.DEFORM_MODULATED = False
 # Number of groups in deformable conv.
 _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 
-
 # ---------------------------------------------------------------------------- #
 # Solver
 # ---------------------------------------------------------------------------- #
 _C.SOLVER = CN()
 
-# Options: WarmupMultiStepLR, WarmupCosineLR.
-# See detectron2/solver/build.py for definition.
+# See detectron2/solver/build.py for LR scheduler options
 _C.SOLVER.LR_SCHEDULER_NAME = "WarmupMultiStepLR"
 
 _C.SOLVER.MAX_ITER = 40000
 
 _C.SOLVER.BASE_LR = 0.001
-# The end lr, only used by WarmupCosineLR
-_C.SOLVER.BASE_LR_END = 0.0
 
 _C.SOLVER.MOMENTUM = 0.9
 
@@ -538,7 +517,7 @@ _C.SOLVER.WARMUP_ITERS = 1000
 _C.SOLVER.WARMUP_METHOD = "linear"
 
 # Save a checkpoint after every this number of iterations
-_C.SOLVER.CHECKPOINT_PERIOD = 5000
+_C.SOLVER.CHECKPOINT_PERIOD = 500
 
 # Number of images per batch across all machines. This is also the number
 # of training images per step (i.e. per iteration). If we use 16 GPUs
@@ -559,7 +538,7 @@ _C.SOLVER.REFERENCE_WORLD_SIZE = 0
 # changing these and they exist only to reproduce Detectron v1 training if
 # desired.
 _C.SOLVER.BIAS_LR_FACTOR = 1.0
-_C.SOLVER.WEIGHT_DECAY_BIAS = None  # None means following WEIGHT_DECAY
+_C.SOLVER.WEIGHT_DECAY_BIAS = _C.SOLVER.WEIGHT_DECAY
 
 # Gradient clipping
 _C.SOLVER.CLIP_GRADIENTS = CN({"ENABLED": False})
@@ -596,7 +575,7 @@ _C.TEST.EVAL_PERIOD = 0
 _C.TEST.KEYPOINT_OKS_SIGMAS = []
 # Maximum number of detections to return per image during inference (100 is
 # based on the limit established for the COCO dataset).
-_C.TEST.DETECTIONS_PER_IMAGE = 100
+_C.TEST.DETECTIONS_PER_IMAGE = num_boxes
 
 _C.TEST.AUG = CN({"ENABLED": False})
 _C.TEST.AUG.MIN_SIZES = (400, 500, 600, 700, 800, 900, 1000, 1100, 1200)
