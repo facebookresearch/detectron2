@@ -6,7 +6,7 @@ from typing import List
 import numpy as np
 from detectron2.structures import Instances
 from detectron2.structures.boxes import pairwise_iou
-from detectron2.tracking.utils import create_prediction_pairs
+from detectron2.tracking.utils import create_prediction_pairs, LARGE_COST_VALUE
 
 from .base_tracker import TRACKER_HEADS_REGISTRY
 from .hungarian_tracker import BaseHungarianTracker
@@ -111,8 +111,8 @@ class VanillaHungarianBBoxIOUTracker(BaseHungarianTracker):
             iou_all,
             threshold=self._track_iou_threshold
         )
-        # assign inf to make sure pair below IoU threshold won't be matched
-        cost_matrix = np.full((len(instances), len(prev_instances)), np.inf)
+        # assign large cost value to make sure pair below IoU threshold won't be matched
+        cost_matrix = np.full((len(instances), len(prev_instances)), LARGE_COST_VALUE)
         return self.assign_cost_matrix_values(cost_matrix, bbox_pairs)
 
     def assign_cost_matrix_values(self, cost_matrix: np.ndarray, bbox_pairs: List) -> np.ndarray:

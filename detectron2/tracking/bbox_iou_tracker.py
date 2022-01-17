@@ -5,11 +5,12 @@ from typing import List
 
 import numpy as np
 import torch
-from detectron2.structures.boxes import pairwise_iou
-from detectron2.structures import Boxes, Instances
-from .base_tracker import BaseTracker, TRACKER_HEADS_REGISTRY
 from detectron2.config import configurable
+from detectron2.structures import Boxes, Instances
+from detectron2.structures.boxes import pairwise_iou
+
 from ..config.config import CfgNode as CfgNode_
+from .base_tracker import BaseTracker, TRACKER_HEADS_REGISTRY
 
 
 @TRACKER_HEADS_REGISTRY.register()
@@ -102,11 +103,11 @@ class BBoxIOUTracker(BaseTracker):
             # assign previous ID to current bbox if IoU > track_iou_threshold
             self._reset_fields()
             for bbox_pair in bbox_pairs:
-                if bbox_pair["IoU"] < self._track_iou_threshold:
-                    continue
                 idx = bbox_pair["idx"]
                 prev_id = bbox_pair["prev_id"]
-                if idx in self._matched_idx or prev_id in self._matched_ID:
+                if idx in self._matched_idx \
+                   or prev_id in self._matched_ID \
+                   or bbox_pair["IoU"] < self._track_iou_threshold:
                     continue
                 instances.ID[idx] = prev_id
                 instances.ID_period[idx] = bbox_pair["prev_period"] + 1
