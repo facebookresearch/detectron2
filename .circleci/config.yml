@@ -130,6 +130,7 @@ install_detectron2: &install_detectron2
       command: |
         # Remove first, in case it's in the CI cache
         pip uninstall -y detectron2
+
         pip install --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
         ./datasets/prepare_for_tests.sh
@@ -139,6 +140,17 @@ run_unittests: &run_unittests
       name: Run Unit Tests
       command: |
         pytest -v --durations=15 tests  # parallel causes some random failures
+
+uninstall_tests: &uninstall_tests
+  - run:
+      name: Run Tests After Uninstalling
+      command: |
+        pip uninstall -y detectron2
+        # Remove built binaries
+        rm -rf build/ detectron2/*.so
+        # Tests that code is importable without installation
+        PYTHONPATH=. ./.circleci/import-tests.sh
+
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
@@ -163,6 +175,7 @@ jobs:
       - <<: *install_linux_dep
       - <<: *install_detectron2
       - <<: *run_unittests
+      - <<: *uninstall_tests
 
       - save_cache:
           paths:
@@ -188,6 +201,7 @@ jobs:
       - <<: *install_linux_dep
       - <<: *install_detectron2
       - <<: *run_unittests
+      - <<: *uninstall_tests
 
       - save_cache:
           paths:
