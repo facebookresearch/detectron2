@@ -121,6 +121,12 @@ class FCOS(DenseDetector):
 
         matched_indices = []
         for gt_per_image in gt_instances:
+            if len(gt_per_image) == 0:
+                matched_indices.append(
+                    torch.full((len(anchors),), -1, dtype=torch.int64, device=anchors.tensor.device)
+                )
+                continue
+
             gt_centers = gt_per_image.gt_boxes.get_centers()  # Nx2
             # FCOS with center sampling: anchor point must be close enough to gt center.
             pairwise_match = (anchor_centers[:, None, :] - gt_centers[None, :, :]).abs_().max(
@@ -220,7 +226,7 @@ class FCOS(DenseDetector):
         reg_targets = [self.box2box_transform.get_deltas(anchors, m.tensor) for m in gt_boxes]
         reg_targets = torch.stack(reg_targets, dim=0)  # NxRx4
         if len(reg_targets) == 0:
-            return reg_targets.new_zeros(len(reg_targets))
+            return reg_targets.new_zeros(reg_targets.size()[:-1])
         left_right = reg_targets[:, :, [0, 2]]
         top_bottom = reg_targets[:, :, [1, 3]]
         ctrness = (left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
