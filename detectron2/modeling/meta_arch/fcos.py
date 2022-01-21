@@ -165,10 +165,13 @@ class FCOS(DenseDetector):
 
         matched_labels, matched_boxes = [], []
         for gt_index, gt_per_image in zip(matched_indices, gt_instances):
-            label = gt_per_image.gt_classes[gt_index.clip(min=0)]
+            if len(gt_per_image) > 0:
+                label = gt_per_image.gt_classes[gt_index.clip(min=0)]
+                matched_gt_boxes = gt_per_image.gt_boxes[gt_index.clip(min=0)]
+            else:
+                label = gt_per_image.gt_classes.new_zeros((len(gt_index),))
+                matched_gt_boxes = gt_per_image.gt_boxes.new_zeros((len(gt_index), 4))
             label[gt_index < 0] = self.num_classes  # background
-
-            matched_gt_boxes = gt_per_image.gt_boxes[gt_index.clip(min=0)]
 
             matched_labels.append(label)
             matched_boxes.append(matched_gt_boxes)
