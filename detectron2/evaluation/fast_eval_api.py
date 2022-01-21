@@ -5,7 +5,7 @@ import numpy as np
 import time
 from pycocotools.cocoeval import COCOeval
 
-from detectron2.utils.develop import create_dummy_class
+from detectron2 import _C
 
 logger = logging.getLogger(__name__)
 
@@ -119,10 +119,3 @@ class COCOeval_opt(COCOeval):
         self.eval["scores"] = np.array(self.eval["scores"]).reshape(self.eval["counts"])
         toc = time.time()
         logger.info("COCOeval_opt.accumulate() finished in {:0.2f} seconds.".format(toc - tic))
-
-
-try:
-    from detectron2 import _C
-except ImportError:
-    _msg = "detectron2 is not compiled successfully, please build following the instructions!"
-    COCOeval_opt = create_dummy_class("COCOeval_opt", "detectron2._C", _msg)
