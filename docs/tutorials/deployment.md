@@ -3,15 +3,15 @@
 Python으로 작성된 모델을 배포 가능한 산출물로 만들기 위해서는 내보내기 (export) 프로세스를 거쳐야 합니다.
 다음은 이와 관련된 몇 가지 기본 개념입니다:
 
-__"내보내기 방식"__ 은 Python 모델이 배포 가능한 형태로 완전히 직렬화되는 방식입니다. 지원되는 방식은 다음과 같습니다.
+__"내보내기 방식(Export Method)"__ 은 Python 모델이 배포 가능한 형태로 완전히 직렬화되는 방식입니다. 지원되는 방식은 다음과 같습니다.
 
 * `tracing`: [pytorch 문서](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) 를 확인하십시오.
 * `scripting`: [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) 를 확인하십시오.
 * `caffe2_tracing`: 모델의 일부를 caffe2 연산자로 치환한 후 tracing 사용합니다.
 
-__"포맷"__ 은 직렬화된 모델이 파일에서 설명되는 방식입니다. e.g.
+__"포맷(Format)"__ 은 직렬화된 모델이 파일에서 설명되는 방식입니다. e.g.
 TorchScript, Caffe2 protobuf, ONNX format.
-__"런타임"__ 은 직렬화된 모델을 로드하고 실행하는 엔진입니다. 
+__"런타임(Runtime)"__ 은 직렬화된 모델을 로드하고 실행하는 엔진입니다.
 e.g. PyTorch, Caffe2, TensorFlow, onnxruntime, TensorRT 등
 런타임은 종종 특정 포맷에 종속됩니다. (e.g. PyTorch에는 TorchScript 형식이 필요하고 Caffe2에는 protobuf 형식이 필요합니다.)
 현재 지원되는 배포 조합과 각각의 제약 사항은 다음과 같습니다.
@@ -19,19 +19,19 @@ e.g. PyTorch, Caffe2, TensorFlow, onnxruntime, TensorRT 등
 
 ```eval_rst
 +----------------------------+-------------+-------------+-----------------------------+
-|         내보내기 방식            |   tracing   |  scripting  |       caffe2_tracing        |
+|       Export Method        |   tracing   |  scripting  |       caffe2_tracing        |
 +============================+=============+=============+=============================+
-|    **포맷**                  | TorchScript | TorchScript | Caffe2, TorchScript, ONNX   |
+| **Formats**                | TorchScript | TorchScript | Caffe2, TorchScript, ONNX   |
 +----------------------------+-------------+-------------+-----------------------------+
-|   **런타임**                | PyTorch     | PyTorch     | Caffe2, PyTorch             |
+| **Runtime**                | PyTorch     | PyTorch     | Caffe2, PyTorch             |
 +----------------------------+-------------+-------------+-----------------------------+
-| C++/Python 추론              | ✅          | ✅          | ✅                          |
+| C++/Python inference       | ✅          | ✅          | ✅                          |
 +----------------------------+-------------+-------------+-----------------------------+
-|      동적 해상도                | ✅          | ✅          | ✅                          |
+| Dynamic resolution         | ✅          | ✅          | ✅                          |
 +----------------------------+-------------+-------------+-----------------------------+
-|    배치 크기 조건                | 상수          | 동적          |    배치 추론 미지원                |
+| Batch size requirement     | Constant    | Dynamic     | Batch inference unsupported |
 +----------------------------+-------------+-------------+-----------------------------+
-|    추가 런타임 종속성              | torchvision | torchvision | Caffe2 ops (usually already |
+| Extra runtime deps         | torchvision | torchvision | Caffe2 ops (usually already |
 |                            |             |             |                             |
 |                            |             |             | included in PyTorch)        |
 +----------------------------+-------------+-------------+-----------------------------+
@@ -97,20 +97,20 @@ Caffe2에서 사용할 수 없는 제어 흐름이나 연산자 (e.g. deformable
 ### 사용법
 
 API 목록은 [API 문서](../modules/export) 에 있습니다.
-[export_model.py](../../tools/deploy/) 는 이 API를 사용하여 일반적인 모델을 변환하는 예제입니다. 
+[export_model.py](../../tools/deploy/) 는 이 API를 사용하여 일반적인 모델을 변환하는 예제입니다.
 사용자 지정 모델/데이터셋 또한 예제 스크립트에 추가할 수 있습니다.
 
 ### C++/Python에서 모델 사용하기
 
-모델을 C++로 로드해 Caffe2 또는 Pytorch 런타임을 통해 배포할 수 있습니다. 참고를 위해 Mask R-CNN에 대한 [C++ 예시](../../tools/deploy/) 를 제공합니다. 
+모델을 C++로 로드해 Caffe2 또는 Pytorch 런타임을 통해 배포할 수 있습니다. 참고를 위해 Mask R-CNN에 대한 [C++ 예시](../../tools/deploy/) 를 제공합니다.
 
-* `caffe2_tracing` 방식으로 내보낸 모델은 
+* `caffe2_tracing` 방식으로 내보낸 모델은
   [문서](../modules/export.html#detectron2.export.Caffe2Tracer)에 설명된 특수 입력 포맷을 사용합니다. 위의 C++ 예제에서 이를 다룹니다.
 
 * 변환된 모델은 레이어의 출력값을 포매팅된 예측값으로
   변환하는 후처리 작업을 포함하고 있지 않습니다.
   예를 들어, 위의 C++ 예제는 최종 레이어의 출력값(28x28 마스크)에 대해 어떠한 후처리도 적용하지 않습니다.
-  이는 실제 배포 시 애플리케이션이 일반적으로 
+  이는 실제 배포 시 애플리케이션이 일반적으로
   자체적인 후처리 과정을 필요로 하기 때문이며, 이에 따라 해당 단계는 사용자의 역할로 맡겨집니다.
 
 Python에서 Caffe2 포맷의 모델 사용을 돕기 위해,
