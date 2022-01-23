@@ -1,57 +1,57 @@
-# Extend Detectron2's Defaults
+# 기본 Detectron2 확장하기
 
-__Research is about doing things in new ways__.
-This brings a tension in how to create abstractions in code,
-which is a challenge for any research engineering project of a significant size:
+__연구의 핵심은 새로운 방식으로 일을 해보는 것입니다__.
+위 문장과 관련해 코드 추상화에 대한 상충되는 두 입장이 있을 수 있는데,
+이는 모든 대규모 연구 개발 프로젝트에서 도전적인 과제입니다.
 
-1. On one hand, it needs to have very thin abstractions to allow for the possibility of doing
-   everything in new ways. It should be reasonably easy to break existing
-   abstractions and replace them with new ones.
+1. 한편으로, 모든 일에 새로운 방식을 허용하려면 추상화를 
+    최소화할 필요성이 있습니다. 기존의 추상화를 깨고 
+    새것으로 대체하는 것이 충분히 쉬워야 합니다.
 
-2. On the other hand, such a project also needs reasonably high-level
-   abstractions, so that users can easily do things in standard ways,
-   without worrying too much about the details that only certain researchers care about.
+2. 다른 한편으로, 사용자들이 표준 방식으로 쉽게 작업을 수행하러면
+   적당히 높은 수준의 추상화가 필요하기도 합니다. 그러면 소수 
+   연구자들만 관심 갖는 내용에 대해 크게 걱정하지 않아도 될 것입니다.
 
-In detectron2, there are two types of interfaces that address this tension together:
+detectron2에는 양쪽 입장을 충족하기 위한 두 종류의 인터페이스가 있습니다.
 
-1. Functions and classes that take a config (`cfg`) argument
-   created from a yaml file
-   (sometimes with few extra arguments).
+1. yaml 파일에서 생성된 환경설정 (`cfg`) argument를
+   사용하는 함수 및 클래스
+   (때로는 다른 argument가 거의 없기도 합니다).
 
-   Such functions and classes implement
-   the "standard default" behavior: it will read what it needs from a given
-   config and do the "standard" thing.
-   Users only need to load an expert-made config and pass it around, without having to worry about
-   which arguments are used and what they all mean.
+   이러한 함수와 클래스는 
+   "표준 기본값 (standard default)" 동작을 구현합니다. 즉, 주어진 환경설정에서
+   필요한 것을 읽고 "표준" 작업을 수행합니다.
+   이때 사용되는 argument가 무엇이며 어떤 의미를 갖는지 걱정하지 않고 이미 잘 만들어진 환경설정을
+   불러와서 전달하기만 하면 됩니다.
 
-   See [Yacs Configs](configs.md) for a detailed tutorial.
+   자세한 튜토리얼은 [Yacs Configs](configs.md) 에서 확인하십시오.
 
-2. Functions and classes that have well-defined explicit arguments.
+2. argument가 명시적으로 잘 정의된 함수 및 클래스.
 
-   Each of these is a small building block of the entire system.
-   They require users' expertise to understand what each argument should be,
-   and require more effort to stitch together to a larger system.
-   But they can be stitched together in more flexible ways.
+   이들 각각은 전체 시스템의 작은 구성 요소입니다.
+   각 argument가 무엇인지 이해하려면 사용자의 전문 지식이 필요하며,
+   이들을 조립해 더 큰 시스템을 만들려면 더 많은 노력이 필요합니다.
+   그러나 이들을 더 유연하게 조립할 방법은 존재합니다.
 
-   When you need to implement something not supported by the "standard defaults"
-   included in detectron2, these well-defined components can be reused.
-
-   The [LazyConfig system](lazyconfigs.md) relies on such functions and classes.
+   잘 정의된 각 구성 요소들은 detectron2의 "표준 기본값"이 
+   지원하지 않는 무언가를 구현해야 할 때 재사용될 수 있습니다.
+   
+   [LazyConfig 시스템](lazyconfigs.md) 은 이러한 함수와 클래스를 잘 활용한 사례입니다.
 
 3. A few functions and classes are implemented with the
    [@configurable](../modules/config.html#detectron2.config.configurable)
    decorator - they can be called with either a config, or with explicit arguments, or a mixture of both.
    Their explicit argument interfaces are currently experimental.
 
-   As an example, a Mask R-CNN model can be built in the following ways:
+   예를 들어 아래와 같은 방법들로 Mask R-CNN 모델을 만들 수 있습니다.
 
-   1. Config-only:
+   1. 환경설정만으로:
       ```python
       # load proper yaml config file, then
       model = build_model(cfg)
       ```
 
-   2. Mixture of config and additional argument overrides:
+   2. 환경설정에 더해 일부 추가 argument를 덮어써서:
       ```python
       model = GeneralizedRCNN(
         cfg,
@@ -59,10 +59,10 @@ In detectron2, there are two types of interfaces that address this tension toget
         pixel_std=[57.0, 57.0, 57.0])
       ```
 
-   3. Full explicit arguments:
+   3. 모든 argument를 명시해서:
    <details>
    <summary>
-   (click to expand)
+   (클릭하여 펼치기)
    </summary>
 
    ```python
@@ -127,15 +127,14 @@ In detectron2, there are two types of interfaces that address this tension toget
    </details>
 
 
-If you only need the standard behavior, the [Beginner's Tutorial](./getting_started.md)
-should suffice. If you need to extend detectron2 to your own needs,
-see the following tutorials for more details:
+표준 동작만 필요한 경우 [초보자용 튜토리얼](./getting_started.md) 으로
+충분할 것입니다. 자신의 필요에 맞게 detectron2를 확장해야 한다면,
+다음 튜토리얼에서 자세한 내용을 참조하십시오.
 
-* Detectron2 includes a few standard datasets. To use custom ones, see
-  [Use Custom Datasets](./datasets.md).
-* Detectron2 contains the standard logic that creates a data loader for training/testing from a
-  dataset, but you can write your own as well. See [Use Custom Data Loaders](./data_loading.md).
-* Detectron2 implements many standard detection models, and provide ways for you
-  to overwrite their behaviors. See [Use Models](./models.md) and [Write Models](./write-models.md).
-* Detectron2 provides a default training loop that is good for common training tasks.
-  You can customize it with hooks, or write your own loop instead. See [training](./training.md).
+* Detectron2는 몇 가지 표준 데이터셋을 제공합니다. 커스텀 데이터셋을 사용하려면 [커스텀 데이터셋 사용](./datasets.md)을 참조하십시오.
+* Detectron2는 데이터셋에서 학습/테스트를 위한 데이터로더를 생성하는 표준 로직을 제공하지만,
+   직접 작성할 수도 있습니다. [커스텀 데이터로더 사용](./data_loading.md) 을 참조하십시오.
+* Detectron2는 표준적인 검출 (detection) 모델 구현체 다수와 그 동작을
+  덮어쓸 방법을 제공합니다. [모델 사용](./models.md) 및 [모델 작성](./write-models.md) 을 참조하십시오.
+* Detectron2는 일반적인 모델 학습을 위한 기본 학습 루프를 제공합니다.
+   이를 hook으로 커스터마이징하거나 직접 루프를 작성할 수도 있습니다. [학습](./training.md) 을 참조하십시오.

@@ -1,65 +1,65 @@
 
-# Data Augmentation
+# 데이터 증강
 
-Augmentation is an important part of training.
-Detectron2's data augmentation system aims at addressing the following goals:
+증강은 학습의 중요한 부분입니다.
+Detectron2의 데이터 증강 시스템은 다음과 같은 목표를 해결하려 합니다.
 
-1. Allow augmenting multiple data types together
-   (e.g., images together with their bounding boxes and masks)
-2. Allow applying a sequence of statically-declared augmentation
-3. Allow adding custom new data types to augment (rotated bounding boxes, video clips, etc.)
-4. Process and manipulate the __operations__ that are applied by augmentations
+1. 여러 데이터 타입을 함께 증강하는 것
+   (예: 이미지를 비롯한 바운딩 박스(bounding box) 및 마스크(mask))
+2. 정적으로 선언된 증강 시퀀스를 적용하는 것
+3. 증강하려는 새로운 커스텀 데이터 타입(회전된 바운딩 박스, 비디오 클립 등)을 추가하는 것
+4. 증강에 의해 적용되는 __operation__ 을 처리하고 조작하는 것
 
-The first two features cover most of the common use cases, and is also
-available in other libraries such as [albumentations](https://medium.com/pytorch/multi-target-in-albumentations-16a777e9006e).
-Supporting other features adds some overhead to detectron2's augmentation API,
-which we'll explain in this tutorial.
+처음 두 기능이 대부분의 일반적인 용례를 다루며 
+[albumentations](https://medium.com/pytorch/multi-target-in-albumentations-16a777e9006e) 등 다른 라이브러리에서도 사용할 수 있습니다.
+나머지 기능 지원을 위해 detectron2의 증강 API에 약간의 오버헤드가 추가됩니다.
+본 튜토리얼에서 이에 대해 설명할 것입니다.
 
-This tutorial focuses on how to use augmentations when writing new data loaders,
-and how to write new augmentations.
-If you use the default data loader in detectron2, it already supports taking a user-provided list of custom augmentations,
-as explained in the [Dataloader tutorial](data_loading).
+이 튜토리얼은 새로운 데이터로더를 작성할 때 증강을 사용하는 방법,
+그리고 새로운 증강을 작성하는 방법에 중점을 두고 있습니다.
+Detectron2의 기본 데이터로더를 사용하는 경우, [데이터로더 튜토리얼](data_loading) 에 설명된 것처럼 
+사용자가 제공한 커스텀 증강 목록을 적용하는 것을 기본으로 지원합니다.
 
-## Basic Usage
+## 기본 사용법
 
-The basic usage of feature (1) and (2) is like the following:
+기능 (1)과 (2)의 기본 사용법은 다음과 같습니다.
 ```python
 from detectron2.data import transforms as T
-# Define a sequence of augmentations:
+# 적용할 증강 목록을 정의.
 augs = T.AugmentationList([
     T.RandomBrightness(0.9, 1.1),
     T.RandomFlip(prob=0.5),
     T.RandomCrop("absolute", (640, 640))
-])  # type: T.Augmentation
+])  # 타입: T.Augmentation
 
-# Define the augmentation input ("image" required, others optional):
+# 증강의 입력("image"는 필수, 나머지는 선택)을 정의.
 input = T.AugInput(image, boxes=boxes, sem_seg=sem_seg)
-# Apply the augmentation:
-transform = augs(input)  # type: T.Transform
-image_transformed = input.image  # new image
-sem_seg_transformed = input.sem_seg  # new semantic segmentation
+# 증강을 적용.
+transform = augs(input)  # 타입: T.Transform
+image_transformed = input.image  # 새로운 이미지
+sem_seg_transformed = input.sem_seg  # 새로운 시맨틱 세그멘테이션
 
-# For any extra data that needs to be augmented together, use transform, e.g.:
+# 함께 증강해야 하는 다른 데이터가 있으면 아래와 같이 변환을 사용하십시오.
 image2_transformed = transform.apply_image(image2)
 polygons_transformed = transform.apply_polygons(polygons)
 ```
 
-Three basic concepts are involved here. They are:
-* [T.Augmentation](../modules/data_transforms.html#detectron2.data.transforms.Augmentation) defines the __"policy"__ to modify inputs.
-  * its `__call__(AugInput) -> Transform` method augments the inputs in-place, and returns the operation that is applied
+다음과 같이 세 가지 기본 개념이 있습니다.
+* [T.Augmentation](../modules/data_transforms.html#detectron2.data.transforms.Augmentation) 은 입력을 수정하기 위한 __"policy"__ 를 정의합니다.
+  * `__call__(AugInput) -> Transform` 메소드가 in-place로 입력을 증강하고 적용된 operation을 반환합니다.
 * [T.Transform](../modules/data_transforms.html#detectron2.data.transforms.Transform)
-  implements the actual __operations__ to transform data
-  * it has methods such as `apply_image`, `apply_coords` that define how to transform each data type
+  은 실제 데이터를 변환(transform)하는 __operations__ 을 구현합니다.
+  * `apply_image`, `apply_coords` 와 같은 메소드가 각 데이터 타입의 변환 방법을 정의합니다.
 * [T.AugInput](../modules/data_transforms.html#detectron2.data.transforms.AugInput)
-  stores inputs needed by `T.Augmentation` and how they should be transformed.
-  This concept is needed for some advanced usage.
-  Using this class directly should be sufficient for all common use cases,
-  since extra data not in `T.AugInput` can be augmented using the returned
-  `transform`, as shown in the above example.
+  은 `T.Augmentation` 에 필요한 입력과 변환 방법을 저장합니다.
+  이 개념은 일부 고급 사용법에 필요합니다.
+  앞선 예시와 같이 반환된 `transform` 을 사용하여
+  `T.AugInput` 에 없는 다른 데이터도 증강할 수 있으므로
+  일반적인 모든 사례에서는 이 클래스를 직접 사용하는 것만으로 충분할 것입니다.
 
-## Write New Augmentations
+## 새로운 증강 작성
 
-Most 2D augmentations only need to know about the input image. Such augmentation can be implemented easily like this:
+대부분의 2D 증강은 입력 이미지에 대한 정보만을 필요로 합니다. 이러한 증강은 아래와 같이 쉽게 구현할 수 있습니다.
 
 ```python
 class MyColorAugmentation(T.Augmentation):
@@ -77,13 +77,13 @@ augs = MyCustomResize()
 transform = augs(input)
 ```
 
-In addition to image, any attributes of the given `AugInput` can be used as long
-as they are part of the function signature, e.g.:
+이미지 외에도 주어진 `AugInput` 의 속성이 아래 예시와 같이
+함수 시그니처의 일부라면 사용할 수 있습니다.
 
 ```python
 class MyCustomCrop(T.Augmentation):
     def get_transform(self, image, sem_seg):
-        # decide where to crop using both image and sem_seg
+        # image와 sem_seg 모두를 활용해 어디를 crop할지 결정
         return T.CropTransform(...)
 
 augs = MyCustomCrop()
@@ -91,66 +91,66 @@ assert hasattr(input, "image") and hasattr(input, "sem_seg")
 transform = augs(input)
 ```
 
-New transform operation can also be added by subclassing
+서브클래싱을 통해 새로운 변환 operation을 추가할 수도 있습니다.
 [T.Transform](../modules/data_transforms.html#detectron2.data.transforms.Transform).
 
-## Advanced Usage
+## 고급 사용법
 
-We give a few examples of advanced usages that
-are enabled by our system.
-These options can be interesting to new research,
-although changing them is often not needed
-for standard use cases.
+우리 시스템에서 지원하는 몇 가지 고급 사용법
+예시를 제공합니다.
+이러한 옵션은 새로운 연구를 할 때 흥미로울 수 있지만
+표준 용례에서는
+보통 변경할 필요가 없습니다.
 
-### Custom transform strategy
+### 커스텀 변환 전략
 
-Instead of only returning the augmented data, detectron2's `Augmentation` returns the __operations__ as `T.Transform`.
-This allows users to apply custom transform strategy on their data.
-We use keypoints data as an example.
+detectron2의 `Augmentation` 은 증강 데이터뿐만 아니라 __operations__ 를 `T.Transform` 으로 반환합니다.
+이를 통해 사용자는 데이터에 커스텀 변환 전략(strategy)을 적용할 수 있습니다.
+예시로 키포인트 데이터를 사용하겠습니다.
 
-Keypoints are (x, y) coordinates, but they are not so trivial to augment due to the semantic meaning they carry.
-Such meaning is only known to the users, therefore users may want to augment them manually
-by looking at the returned `transform`.
-For example, when an image is horizontally flipped, we'd like to swap the keypoint annotations for "left eye" and "right eye".
-This can be done like this (included by default in detectron2's default data loader):
+키포인트는 (x, y) 좌표이지만 고유의 시맨틱(semantic) 의미로 인해 증강하기가 쉽지 않습니다.
+이러한 의미는 사용자만 알고 있으므로 사용자는 반환된 `transform` 을 보고
+이를 수동으로 확장할 수 있습니다.
+예를 들어, 이미지가 가로로 뒤집힐 때 "왼쪽 눈"과 "오른쪽 눈"에 대한 키포인트 어노테이션(annotation)을 바꾸고 싶을 수 있습니다.
+이는 다음과 같이 해결할 수 있습니다(detectron2의 기본 데이터로더에 기본으로 포함).
 ```python
-# augs, input are defined as in previous examples
-transform = augs(input)  # type: T.Transform
-keypoints_xy = transform.apply_coords(keypoints_xy)   # transform the coordinates
+# augs와 input은 앞선 예시에서 정의
+transform = augs(input)  # 타입: T.Transform
+keypoints_xy = transform.apply_coords(keypoints_xy)   # 좌표에 변환 적용
 
-# get a list of all transforms that were applied
+# 적용된 변환 목록 전체 확인
 transforms = T.TransformList([transform]).transforms
-# check if it is flipped for odd number of times
+# 홀수번 뒤집혔는지 확인
 do_hflip = sum(isinstance(t, T.HFlipTransform) for t in transforms) % 2 == 1
 if do_hflip:
     keypoints_xy = keypoints_xy[flip_indices_mapping]
 ```
 
-As another example, keypoints annotations often have a "visibility" field.
-A sequence of augmentations might augment a visible keypoint out of the image boundary (e.g. with cropping),
-but then bring it back within the boundary afterwards (e.g. with image padding).
-If users decide to label such keypoints "invisible",
-then the visibility check has to happen after every transform step.
-This can be achieved by:
+다른 예시로, 키포인트 어노테이션에 종종 "가시성(visibility)"이라는 필드가 있습니다.
+일련의 증강(예: cropping 등)을 통해 키포인트가 이미지의 경계를 벗어날 수 있으나
+(이미지 padding 등을 통해) 다시 이미지 경계 안으로 돌아올 수 있습니다.
+사용자가 이러한 키포인트에 "invisible" 레이블을 지정한 경우,
+모든 변환 단계가 끝난 후에 가시성을 확인해야 합니다.
+이것은 다음을 통해 달성할 수 있습니다.
 
 ```python
-transform = augs(input)  # type: T.TransformList
+transform = augs(input)  # 타입: T.TransformList
 assert isinstance(transform, T.TransformList)
 for t in transform.transforms:
     keypoints_xy = t.apply_coords(keypoints_xy)
     visibility &= (keypoints_xy >= [0, 0] & keypoints_xy <= [W, H]).all(axis=1)
 
-# btw, detectron2's `transform_keypoint_annotations` function chooses to label such keypoints "visible":
+# 참고로, detectron2의 `transform_keypoint_annotations` 함수는 위와 같은 키포인트들을 "visible"로 레이블링합니다.
 # keypoints_xy = transform.apply_coords(keypoints_xy)
 # visibility &= (keypoints_xy >= [0, 0] & keypoints_xy <= [W, H]).all(axis=1)
 ```
 
 
-### Geometrically invert the transform
-If images are pre-processed by augmentations before inference, the predicted results
-such as segmentation masks are localized on the augmented image.
-We'd like to invert the applied augmentation with the [inverse()](../modules/data_transforms.html#detectron2.data.transforms.Transform.inverse)
-API, to obtain results on the original image:
+### 기하학적 역변환
+이미지가 추론 전에 증강에 의해 전처리되면, 예측 결과(예: 세그멘테이션 마스크)의
+위치가 증강된 이미지 상에 식별됩니다.
+[inverse()](../modules/data_transforms.html#detectron2.data.transforms.Transform.inverse) API로
+증강의 역변환을 적용해 원본 이미지에 대한 추론 결과를 얻어보겠습니다.
 ```python
 transform = augs(input)
 pred_mask = make_prediction(input.image)
@@ -158,29 +158,29 @@ inv_transform = transform.inverse()
 pred_mask_orig = inv_transform.apply_segmentation(pred_mask)
 ```
 
-### Add new data types
+### 새로운 데이터 타입 추가
 
-[T.Transform](../modules/data_transforms.html#detectron2.data.transforms.Transform)
-supports a few common data types to transform, including images, coordinates, masks, boxes, polygons.
-It allows registering new data types, e.g.:
+[T.Transform](../modules/data_transforms.html#detectron2.data.transforms.Transform) 은
+이미지, 좌표, 마스크, 박스, 폴리곤을 비롯해 변환을 적용할 일반적인 데이터 타입을 몇 가지 지원합니다.
+아래 예시와 같이 새로운 데이터 타입을 등록할 수도 있습니다.
 ```python
 @T.HFlipTransform.register_type("rotated_boxes")
 def func(flip_transform: T.HFlipTransform, rotated_boxes: Any):
-    # do the work
+    # 함수 코드를 작성
     return flipped_rotated_boxes
 
 t = HFlipTransform(width=800)
-transformed_rotated_boxes = t.apply_rotated_boxes(rotated_boxes)  # func will be called
+transformed_rotated_boxes = t.apply_rotated_boxes(rotated_boxes)  # 정의한 함수가 호출됨
 ```
 
-### Extend T.AugInput
+### T.AugInput 확장
 
-An augmentation can only access attributes available in the given input.
-[T.AugInput](../modules/data_transforms.html#detectron2.data.transforms.StandardAugInput) defines "image", "boxes", "sem_seg",
-which are sufficient for common augmentation strategies to decide how to augment.
-If not, a custom implementation is needed.
+증강 과정은 주어진 입력값에 포함되어 있는 속성에만 접근할 수 있습니다.
+[T.AugInput](../modules/data_transforms.html#detectron2.data.transforms.StandardAugInput) 는 "image", "boxes", "sem_seg"를 정의하는데
+이들만으로도 일반적인 증강 전략에서 증강 방법을 결정하기에 충분합니다.
+그렇지 않으면 커스텀 구현이 필요합니다.
 
-By re-implement the "transform()" method in AugInput, it is also possible to
-augment different fields in ways that are dependent on each other.
-Such use case is uncommon (e.g. post-process bounding box based on augmented masks), but allowed by the system.
+AugInput에서 "transform()" 메소드를 다시 구현하면
+서로 의존성이 있는 필드들을 함께 증강할 수도 있습니다.
+이러한 용례가 드물긴 하지만 (예: 증강된 마스크를 기반으로 바운딩 박스를 후처리) 시스템에서 지원합니다.
 
