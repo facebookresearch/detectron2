@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional, Tuple
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, batched_nms
@@ -239,9 +239,7 @@ class FCOS(DenseDetector):
         }
 
     def compute_ctrness_targets(
-        self,
-        anchors: List[torch.Tensor],
-        gt_boxes: List[torch.Tensor],
+        self, anchors: List[Boxes], gt_boxes: List[torch.Tensor]
     ):
         anchors = Boxes.cat(anchors).tensor  # Rx4
         reg_targets = [self.box2box_transform.get_deltas(anchors, m) for m in gt_boxes]
@@ -256,7 +254,10 @@ class FCOS(DenseDetector):
         return torch.sqrt(ctrness)
 
     def forward_inference(
-        self, images: ImageList, features: List[Tensor], predictions: List[List[Tensor]]
+        self,
+        images: ImageList,
+        features: List[torch.Tensor],
+        predictions: List[List[torch.Tensor]],
     ):
         pred_logits, pred_anchor_deltas, pred_centerness = self._transpose_dense_predictions(
             predictions, [self.num_classes, 4, 1]
@@ -281,8 +282,8 @@ class FCOS(DenseDetector):
     def inference_single_image(
         self,
         anchors: List[Boxes],
-        box_cls: List[Tensor],
-        box_delta: List[Tensor],
+        box_cls: List[torch.Tensor],
+        box_delta: List[torch.Tensor],
         image_size: Tuple[int, int],
     ):
         """
