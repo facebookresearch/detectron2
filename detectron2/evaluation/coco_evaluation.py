@@ -19,12 +19,16 @@ import detectron2.utils.comm as comm
 from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
 from detectron2.data.datasets.coco import convert_to_coco_json
-from detectron2.evaluation.fast_eval_api import COCOeval_opt
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
 from .evaluator import DatasetEvaluator
+
+try:
+    from detectron2.evaluation.fast_eval_api import COCOeval_opt
+except ImportError:
+    COCOeval_opt = COCOeval
 
 
 class COCOEvaluator(DatasetEvaluator):
@@ -93,6 +97,10 @@ class COCOEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
         self._distributed = distributed
         self._output_dir = output_dir
+
+        if use_fast_impl and (COCOeval_opt is COCOeval):
+            self._logger.info("Fast COCO eval is not built. Falling back to official COCO eval.")
+            use_fast_impl = False
         self._use_fast_impl = use_fast_impl
 
         # COCOeval requires the limit on the number of detections per image (maxDets) to be a list
