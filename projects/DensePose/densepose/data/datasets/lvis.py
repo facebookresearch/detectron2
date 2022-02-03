@@ -68,7 +68,7 @@ def _load_lvis_annotations(json_file: str):
     return lvis_api
 
 
-def _add_categories_metadata(dataset_name: str):
+def _add_categories_metadata(dataset_name: str) -> None:
     metadict = get_lvis_instances_meta(dataset_name)
     categories = metadict["thing_classes"]
     metadata = MetadataCatalog.get(dataset_name)
@@ -77,21 +77,21 @@ def _add_categories_metadata(dataset_name: str):
     logger.info(f"Dataset {dataset_name} has {len(categories)} categories")
 
 
-def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str, Any]]]):
+def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str, Any]]]) -> None:
     ann_ids = [ann["id"] for anns_per_image in anns for ann in anns_per_image]
     assert len(set(ann_ids)) == len(ann_ids), "Annotation ids in '{}' are not unique!".format(
         json_file
     )
 
 
-def _maybe_add_bbox(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
+def _maybe_add_bbox(obj: Dict[str, Any], ann_dict: Dict[str, Any]) -> None:
     if "bbox" not in ann_dict:
         return
     obj["bbox"] = ann_dict["bbox"]
     obj["bbox_mode"] = BoxMode.XYWH_ABS
 
 
-def _maybe_add_segm(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
+def _maybe_add_segm(obj: Dict[str, Any], ann_dict: Dict[str, Any]) -> None:
     if "segmentation" not in ann_dict:
         return
     segm = ann_dict["segmentation"]
@@ -103,7 +103,7 @@ def _maybe_add_segm(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
     obj["segmentation"] = segm
 
 
-def _maybe_add_keypoints(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
+def _maybe_add_keypoints(obj: Dict[str, Any], ann_dict: Dict[str, Any]) -> None:
     if "keypoints" not in ann_dict:
         return
     keypts = ann_dict["keypoints"]  # list[int]
@@ -117,7 +117,7 @@ def _maybe_add_keypoints(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
     obj["keypoints"] = keypts
 
 
-def _maybe_add_densepose(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
+def _maybe_add_densepose(obj: Dict[str, Any], ann_dict: Dict[str, Any]) -> None:
     for key in DENSEPOSE_ALL_POSSIBLE_KEYS:
         if key in ann_dict:
             obj[key] = ann_dict[key]
@@ -212,7 +212,7 @@ def load_lvis_json(annotations_json_file: str, image_root: str, dataset_name: st
     return dataset_records
 
 
-def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str] = None):
+def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str] = None) -> None:
     """
     Registers provided LVIS DensePose dataset
 
@@ -243,7 +243,7 @@ def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str]
 
 def register_datasets(
     datasets_data: Iterable[CocoDatasetInfo], datasets_root: Optional[str] = None
-):
+) -> None:
     """
     Registers provided LVIS DensePose datasets
 
