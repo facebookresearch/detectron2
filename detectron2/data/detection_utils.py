@@ -192,17 +192,20 @@ def check_image_size(dataset_dict, image):
     if "width" in dataset_dict or "height" in dataset_dict:
         image_wh = (image.shape[1], image.shape[0])
         expected_wh = (dataset_dict["width"], dataset_dict["height"])
-        if not image_wh == expected_wh:
-            raise SizeMismatchError(
-                "Mismatched image shape{}, got {}, expect {}.".format(
-                    " for image " + dataset_dict["file_name"]
-                    if "file_name" in dataset_dict
-                    else "",
-                    image_wh,
-                    expected_wh,
+        
+        # add a condition if image was not rotated as PIL rotate the image
+        if image_wh[0] != expected_wh[1]:
+            if not image_wh == expected_wh:
+                raise SizeMismatchError(
+                    "Mismatched image shape{}, got {}, expect {}.".format(
+                        " for image " + dataset_dict["file_name"]
+                        if "file_name" in dataset_dict
+                        else "",
+                        image_wh,
+                        expected_wh,
+                    )
+                    + " Please check the width/height in your annotation."
                 )
-                + " Please check the width/height in your annotation."
-            )
 
     # To ensure bbox always remap to original image size
     if "width" not in dataset_dict:
