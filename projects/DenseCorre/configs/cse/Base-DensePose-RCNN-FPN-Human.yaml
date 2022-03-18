@@ -1,0 +1,20 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  ROI_DENSEPOSE_HEAD:
+    CSE:
+      EMBEDDERS:
+        "smpl_27554":
+          TYPE: vertex_feature
+          NUM_VERTICES: 27554
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_smpl_27554_256.pkl"
+DATASETS:
+  TRAIN:
+    - "densepose_coco_2014_train_cse"
+    - "densepose_coco_2014_valminusminival_cse"
+  TEST:
+    - "densepose_coco_2014_minival_cse"
+  CLASS_TO_MESH_NAME_MAPPING:
+    "0": "smpl_27554"
