@@ -57,12 +57,13 @@ class DensePoseChartLoss:
         self.w_part       = cfg.MODEL.ROI_DENSEPOSE_HEAD.PART_WEIGHTS
         self.w_segm       = cfg.MODEL.ROI_DENSEPOSE_HEAD.INDEX_WEIGHTS
         self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
+        self.w_corre      = cfg.MODEL.ROI_DENSEPOSE_HEAD.CORRE_WEIGHTS
         # fmt: on
         self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
         self.segm_loss = MaskOrSegmentationLoss(cfg)
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, **kwargs
+        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, densepose_predictor_fliped_outputs: Any, **kwargs
     ) -> LossDict:
         """
         Produce chart-based DensePose losses
@@ -132,8 +133,34 @@ class DensePoseChartLoss:
             interpolator,
             j_valid_fg,  # pyre-ignore[6]
         )
+        
+        losses_corre = self.produce_densepose_losses_corre(
+            densepose_predictor_outputs,
+            densepose_predictor_fliped_outputs
+        )
 
-        return {**losses_uv, **losses_segm}
+        return {**losses_uv, **losses_segm, **losses_corre}
+    
+    
+    def produce_densepose_losses_corre(
+        self,
+        densepose_predictor_outputs: Any, 
+        densepose_predictor_fliped_outputs: Any,
+    ) -> LossDict:
+        fine_segm = densepose_predictor_outputs.fine_segm
+        corre_fine_segm = torch.flip(densepose_predictor_fliped_outputs.fine_segm, -1)
+        
+        u = densepose_predictor_outputs.u
+        corre_u = torch.flip(densepose_predictor_fliped_outputs.u, -1)
+        v = densepose_predictor_outputs.v
+        corre_v = torch.flip(densepose_predictor_fliped_outputs.v, -1)
+        
+        losses = {
+            "loss_correspondence_segm": F.kl_div(F.log_softmax(corre_fine_segm, dim=1), F.softmax(fine_segm, dim=1), reduce='sum') * self.w_corre,
+            "loss_correspondence_u"   : F.mse_loss(corre_u, u, reduction="sum") * self.w_corre,
+            "loss_correspondence_v"   : F.mse_loss(corre_v, v, reduction='sum') * self.w_corre
+        }
+    
 
     def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any) -> LossDict:
         """
@@ -158,7 +185,17 @@ class DensePoseChartLoss:
         """
         losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs)
         losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs)
+        losses_corre = self.produce_fake_densepose_losses_corre(densepose_predictor_outputs)
         return {**losses_uv, **losses_segm}
+    
+    
+    def produce_fake_densepose_losses_corre(self, densepose_predictor_outputs: Any) -> LossDict:
+        return {
+            "loss_correspondence_segm": densepose_predictor_outputs.fine_segm.sum() * 0,
+            "loss_correspondence_u"   : densepose_predictor_outputs.u.sum() * 0,
+            "loss_correspondence_v"   : densepose_predictor_outputs.v.sum() * 0
+        }
+    
 
     def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any) -> LossDict:
         """
