@@ -148,18 +148,20 @@ class DensePoseChartLoss:
         densepose_predictor_fliped_outputs: Any,
     ) -> LossDict:
         fine_segm = densepose_predictor_outputs.fine_segm
-        corre_fine_segm = torch.flip(densepose_predictor_fliped_outputs.fine_segm, -1)
+        corre_fine_segm = torch.flip(densepose_predictor_fliped_outputs.fine_segm, [-1])
         
         u = densepose_predictor_outputs.u
-        corre_u = torch.flip(densepose_predictor_fliped_outputs.u, -1)
+        corre_u = torch.flip(densepose_predictor_fliped_outputs.u, [-1])
         v = densepose_predictor_outputs.v
-        corre_v = torch.flip(densepose_predictor_fliped_outputs.v, -1)
+        corre_v = torch.flip(densepose_predictor_fliped_outputs.v, [-1])
         
         losses = {
-            "loss_correspondence_segm": F.kl_div(F.log_softmax(corre_fine_segm, dim=1), F.softmax(fine_segm, dim=1), reduce='sum') * self.w_corre,
-            "loss_correspondence_u"   : F.mse_loss(corre_u, u, reduction="sum") * self.w_corre,
-            "loss_correspondence_v"   : F.mse_loss(corre_v, v, reduction='sum') * self.w_corre
+            "loss_correspondence_segm": F.kl_div(F.log_softmax(corre_fine_segm, dim=1), F.softmax(fine_segm, dim=1), reduce='mean') * self.w_corre,
+            "loss_correspondence_u"   : F.mse_loss(corre_u, u, reduction="mean") * self.w_corre,
+            "loss_correspondence_v"   : F.mse_loss(corre_v, v, reduction='mean') * self.w_corre
         }
+        
+        return losses
     
 
     def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any) -> LossDict:
@@ -186,7 +188,7 @@ class DensePoseChartLoss:
         losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs)
         losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs)
         losses_corre = self.produce_fake_densepose_losses_corre(densepose_predictor_outputs)
-        return {**losses_uv, **losses_segm}
+        return {**losses_uv, **losses_segm, **losses_corre}
     
     
     def produce_fake_densepose_losses_corre(self, densepose_predictor_outputs: Any) -> LossDict:

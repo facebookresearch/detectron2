@@ -17,7 +17,7 @@ from detectron2.modeling.proposal_generator import build_proposal_generator
 from detectron2.modeling.roi_heads import build_roi_heads
 from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
 
-__all__ = ["GeneralizedRCNN"]
+__all__ = ["GeneralizedCorreRCNN"]
 
 @META_ARCH_REGISTRY.register()
 class GeneralizedCorreRCNN(nn.Module):
@@ -159,7 +159,7 @@ class GeneralizedCorreRCNN(nn.Module):
             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
             proposal_losses = {}
             
-        fliped_features = self.backbone(torch.flip(images.tensor, -1))
+        fliped_features = self.backbone(torch.flip(images.tensor, [-1]))
 
         _, detector_losses = self.roi_heads(images, features, fliped_features, proposals, gt_instances)
         if self.vis_period > 0:
@@ -207,14 +207,14 @@ class GeneralizedCorreRCNN(nn.Module):
                 assert "proposals" in batched_inputs[0]
                 proposals = [x["proposals"].to(self.device) for x in batched_inputs]
 
-            results, _ = self.roi_heads(images, features, proposals, None)
+            results, _ = self.roi_heads(images, features, None, proposals, None)
         else:
             detected_instances = [x.to(self.device) for x in detected_instances]
             results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
 
         if do_postprocess:
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
-            return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
+            return GeneralizedCorreRCNN._postprocess(results, batched_inputs, images.image_sizes)
         else:
             return results
 

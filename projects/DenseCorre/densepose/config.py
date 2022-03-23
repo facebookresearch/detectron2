@@ -230,6 +230,9 @@ def add_densepose_head_config(cfg: CN) -> None:
     # List of angles for rotation in data augmentation during training
     _C.INPUT.ROTATION_ANGLES = [0]
     _C.TEST.AUG.ROTATION_ANGLES = ()  # Rotation TTA
+    
+    # Loss weights for dense correspondence
+    _C.MODEL.ROI_DENSEPOSE_HEAD.CORRE_WEIGHTS = 1.0
 
     add_densepose_head_cse_config(cfg)
 

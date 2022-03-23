@@ -146,18 +146,19 @@ class DensePoseROIHeads(StandardROIHeads):
             return {} if self.training else instances
 
         features_list = [features[f] for f in self.in_features]
-        fliped_features_list = [fliped_features[f] for f in self.in_features]
         if self.training:
+            fliped_features_list = [fliped_features[f] for f in self.in_features]
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             features_list, proposals = self.densepose_data_filter(features_list, proposals)
             if len(proposals) > 0:
                 proposal_boxes = [x.proposal_boxes for x in proposals]
                 image_width = [x.image_size[1] for x in proposals]
                 fliped_proposal_boxes = []
-                for i, proposal_box in proposal_boxes:
-                    fliped_proposal_box = torch.permute(proposal_box, (2, 1, 0 ,3))
-                    fliped_proposal_box[0] = image_width[i] - fliped_proposal_box[0]
-                    fliped_proposal_box[2] = image_width[i] - fliped_proposal_box[2]
+                for i, proposal_box in enumerate(proposal_boxes):
+                    fliped_proposal_box = proposal_box.tensor
+                    fliped_proposal_box = fliped_proposal_box[:, [2, 1, 0, 3]]
+                    fliped_proposal_box[:, 0] = image_width[i] - fliped_proposal_box[:, 0]
+                    fliped_proposal_box[:, 2] = image_width[i] - fliped_proposal_box[:, 2]
                     fliped_proposal_boxes.append(fliped_proposal_box)
 
                 if self.use_decoder:
@@ -233,5 +234,5 @@ class DensePoseROIHeads(StandardROIHeads):
         """
 
         instances = super().forward_with_given_boxes(features, instances)
-        instances = self._forward_densepose(features, instances)
+        instances = self._forward_densepose(features, None, instances)
         return instances
