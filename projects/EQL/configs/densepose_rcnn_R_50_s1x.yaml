@@ -1,0 +1,17 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  ROI_DENSEPOSE_HEAD:
+    DECODER_ON: False
+    # LOSS_NAME: "DensePoseMeshChartLoss"
+    # MESH_UVLOSS: True
+    SEGLOSS_TYPE: "eql"
+    CLASS_FREQ: [1,7,8,11,12] # wait to improve
+    # THRESHOLD_FUNC_TYPE: "gompertz_decay"
+SOLVER:
+  MAX_ITER: 130000
+  STEPS: (100000, 120000)
+  # IMS_PER_BATCH: 16
+OUTPUT_DIR: "./output/densepose_rcnn_R_50_s1x-eql/"

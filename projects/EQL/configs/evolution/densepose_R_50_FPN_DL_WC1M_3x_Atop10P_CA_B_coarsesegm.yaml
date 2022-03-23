@@ -1,0 +1,56 @@
+_BASE_: "Base-RCNN-FPN-Atop10P_CA.yaml"
+MODEL:
+  WEIGHTS: https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA/217578784/model_final_9fe1cc.pkl
+  RESNETS:
+    DEPTH: 50
+  DENSEPOSE_ON: True
+  ROI_HEADS:
+    NAME: "DensePoseROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NUM_CLASSES: 1
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseDeepLabHead"
+    UV_CONFIDENCE:
+      ENABLED: True
+      TYPE: "iid_iso"
+    SEGM_CONFIDENCE:
+      ENABLED: True
+    POINT_REGRESSION_WEIGHTS: 0.0005
+    POOLER_TYPE: "ROIAlign"
+    NUM_COARSE_SEGM_CHANNELS: 2
+    COARSE_SEGM_TRAINED_BY_MASKS: True
+BOOTSTRAP_DATASETS:
+  - DATASET: "chimpnsee"
+    RATIO: 1.0
+    IMAGE_LOADER:
+      TYPE: "video_keyframe"
+      SELECT:
+        STRATEGY: "random_k"
+        NUM_IMAGES: 4
+      TRANSFORM:
+        TYPE: "resize"
+        MIN_SIZE: 800
+        MAX_SIZE: 1333
+      BATCH_SIZE: 8
+      NUM_WORKERS: 1
+    INFERENCE:
+      INPUT_BATCH_SIZE: 1
+      OUTPUT_BATCH_SIZE: 1
+    DATA_SAMPLER:
+      # supported types:
+      #   densepose_uniform
+      #   densepose_UV_confidence
+      #   densepose_fine_segm_confidence
+      #   densepose_coarse_segm_confidence
+      TYPE: "densepose_coarse_segm_confidence"
+      COUNT_PER_CLASS: 8
+    FILTER:
+      TYPE: "detection_score"
+      MIN_VALUE: 0.8
+BOOTSTRAP_MODEL:
+  WEIGHTS: https://dl.fbaipublicfiles.com/densepose/evolution/densepose_R_50_FPN_DL_WC1M_3x_Atop10P_CA/217578784/model_final_9fe1cc.pkl
+SOLVER:
+  CLIP_GRADIENTS:
+    ENABLED: True
+  MAX_ITER: 270000
+  STEPS: (210000, 250000)

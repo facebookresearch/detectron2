@@ -1,0 +1,16 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseDeepLabHead"
+    UV_CONFIDENCE:
+      ENABLED: True
+      TYPE: "indep_aniso"
+    POINT_REGRESSION_WEIGHTS: 0.0005
+SOLVER:
+  CLIP_GRADIENTS:
+    ENABLED: True
+  MAX_ITER: 130000
+  STEPS: (100000, 120000)

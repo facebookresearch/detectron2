@@ -1,0 +1,139 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "https://dl.fbaipublicfiles.com/densepose/cse/densepose_rcnn_R_50_FPN_soft_s1x/250533982/model_final_2c4512.pkl"
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 9
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseV1ConvXHead"
+    COARSE_SEGM_TRAINED_BY_MASKS: True
+    CSE:
+      EMBED_LOSS_NAME: "SoftEmbeddingLoss"
+      EMBEDDING_DIST_GAUSS_SIGMA: 0.1
+      GEODESIC_DIST_GAUSS_SIGMA: 0.1
+      EMBEDDERS:
+        "cat_7466":
+          TYPE: vertex_feature
+          NUM_VERTICES: 7466
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_cat_7466_256.pkl"
+        "dog_7466":
+          TYPE: vertex_feature
+          NUM_VERTICES: 7466
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_dog_7466_256.pkl"
+        "sheep_5004":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5004
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_sheep_5004_256.pkl"
+        "horse_5004":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5004
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_horse_5004_256.pkl"
+        "zebra_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_zebra_5002_256.pkl"
+        "giraffe_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_giraffe_5002_256.pkl"
+        "elephant_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_elephant_5002_256.pkl"
+        "cow_5002":
+          TYPE: vertex_feature
+          NUM_VERTICES: 5002
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_cow_5002_256.pkl"
+        "bear_4936":
+          TYPE: vertex_feature
+          NUM_VERTICES: 4936
+          FEATURE_DIM: 256
+          FEATURES_TRAINABLE: False
+          IS_TRAINABLE: True
+          INIT_FILE: "https://dl.fbaipublicfiles.com/densepose/data/cse/lbo/phi_bear_4936_256.pkl"
+DATASETS:
+  TRAIN:
+    - "densepose_lvis_v1_train1"
+    - "densepose_lvis_v1_train2"
+    - "densepose_lvis_v1_train_CVPR2021"
+  TEST:
+    - "densepose_lvis_v1_val_CVPR2021"
+  WHITELISTED_CATEGORIES:
+    "densepose_lvis_v1_train1":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+        #- 225  # cat
+        #- 378  # dog
+    "densepose_lvis_v1_train2":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+        #- 225  # cat
+        #- 378  # dog
+    "densepose_lvis_v1_train_CVPR2021":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+      - 225  # cat
+      - 378  # dog
+    "densepose_lvis_v1_val_CVPR2021":
+      - 943  # sheep
+      - 1202 # zebra
+      - 569  # horse
+      - 496  # giraffe
+      - 422  # elephant
+      - 80   # cow
+      - 76   # bear
+      - 225  # cat
+      - 378  # dog
+  CLASS_TO_MESH_NAME_MAPPING:
+    "0": "bear_4936"
+    "1": "cow_5002"
+    "2": "cat_7466"
+    "3": "dog_7466"
+    "4": "elephant_5002"
+    "5": "giraffe_5002"
+    "6": "horse_5004"
+    "7": "sheep_5004"
+    "8": "zebra_5002"
+SOLVER:
+  MAX_ITER: 16000
+  STEPS: (12000, 14000)

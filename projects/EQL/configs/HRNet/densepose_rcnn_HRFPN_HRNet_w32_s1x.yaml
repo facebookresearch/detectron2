@@ -1,0 +1,16 @@
+_BASE_: "../Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "https://1drv.ms/u/s!Aus8VCZ_C_33dYBMemi9xOUFR0w"
+  BACKBONE:
+    NAME: "build_hrfpn_backbone"
+  RPN:
+    IN_FEATURES: ['p1', 'p2', 'p3', 'p4', 'p5']
+  ROI_HEADS:
+    IN_FEATURES: ['p1', 'p2', 'p3', 'p4', 'p5']
+SOLVER:
+  MAX_ITER: 130000
+  STEPS: (100000, 120000)
+  CLIP_GRADIENTS:
+    ENABLED: True
+    CLIP_TYPE: "norm"
+  BASE_LR: 0.03
