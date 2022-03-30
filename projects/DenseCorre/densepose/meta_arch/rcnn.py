@@ -159,9 +159,12 @@ class GeneralizedCorreRCNN(nn.Module):
             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
             proposal_losses = {}
             
-        fliped_features = self.backbone(torch.flip(images.tensor, [-1]))
+        angle = np.random.uniform(-60, 60)
+        transformed_images = torch.flip(images.tensor, [-1])
 
-        _, detector_losses = self.roi_heads(images, features, fliped_features, proposals, gt_instances)
+        transformed_features = self.backbone(transformed_images)
+
+        _, detector_losses = self.roi_heads(images, features, transformed_features, proposals, gt_instances)
         if self.vis_period > 0:
             storage = get_event_storage()
             if storage.iter % self.vis_period == 0:

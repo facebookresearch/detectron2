@@ -124,7 +124,7 @@ class DensePoseROIHeads(StandardROIHeads):
         self.densepose_losses = build_densepose_losses(cfg)
         self.embedder = build_densepose_embedder(cfg)
 
-    def _forward_densepose(self, features: Dict[str, torch.Tensor], fliped_features: Dict[str, torch.Tensor], instances: List[Instances]):
+    def _forward_densepose(self, features: Dict[str, torch.Tensor], transformed_features: Dict[str, torch.Tensor], instances: List[Instances], angle=0):
         """
         Forward logic of the densepose prediction branch.
 
@@ -147,7 +147,7 @@ class DensePoseROIHeads(StandardROIHeads):
 
         features_list = [features[f] for f in self.in_features]
         if self.training:
-            fliped_features_list = [fliped_features[f] for f in self.in_features]
+            transformed_features_list = [transformed_features[f] for f in self.in_features]
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             features_list, proposals = self.densepose_data_filter(features_list, proposals)
             if len(proposals) > 0:
@@ -165,19 +165,19 @@ class DensePoseROIHeads(StandardROIHeads):
                     # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a
                     #  function.
                     features_list = [self.decoder(features_list)]
-                    fliped_features_list = [self.decoder(fliped_features_list)]
+                    transformed_features_list = [self.decoder(transformed_features_list)]
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
-                fliped_features_dp = self.densepose_pooler(fliped_features_list, fliped_proposal_boxes)
+                transformed_features_dp = self.densepose_pooler(transformed_features_list, fliped_proposal_boxes)
                 
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_head_fliped_outputs = self.densepose_head(fliped_features_dp)
+                densepose_head_transformed_outputs = self.densepose_head(transformed_features_dp)
                 
                 densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
-                densepose_predictor_fliped_outputs = self.densepose_predictor(densepose_head_fliped_outputs)
+                densepose_predictor_transformed_outputs = self.densepose_predictor(densepose_head_transformed_outputs)
                 
                 densepose_loss_dict = self.densepose_losses(
-                    proposals, densepose_predictor_outputs, densepose_predictor_fliped_outputs, embedder=self.embedder
+                    proposals, densepose_predictor_outputs, densepose_predictor_transformed_outputs, embedder=self.embedder
                 )
                 return densepose_loss_dict
         else:
@@ -201,15 +201,16 @@ class DensePoseROIHeads(StandardROIHeads):
         self,
         images: ImageList,
         features: Dict[str, torch.Tensor],
-        fliped_features: Dict[str, torch.Tensor],
+        transformed_features: Dict[str, torch.Tensor],
         proposals: List[Instances],
         targets: Optional[List[Instances]] = None,
+        angle = 0,
     ):
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
 
         if self.training:
-            losses.update(self._forward_densepose(features, fliped_features, instances))
+            losses.update(self._forward_densepose(features, transformed_features, instances, angle))
         return instances, losses
 
     def forward_with_given_boxes(
