@@ -547,7 +547,10 @@ class DensePoseCocoEval(object):
                 F.interpolate(
                     # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
                     #  `Tuple[int, int]`.
-                    dt["coarse_segm"].unsqueeze(0), (dy, dx), mode="bilinear", align_corners=False
+                    dt["coarse_segm"].unsqueeze(0),
+                    (dy, dx),
+                    mode="bilinear",
+                    align_corners=False,
                 )
                 .squeeze(0)
                 .argmax(0)
@@ -566,7 +569,10 @@ class DensePoseCocoEval(object):
                 F.interpolate(
                     # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
                     #  `Tuple[int, int]`.
-                    coarse_segm.unsqueeze(0), (dy, dx), mode="bilinear", align_corners=False
+                    coarse_segm.unsqueeze(0),
+                    (dy, dx),
+                    mode="bilinear",
+                    align_corners=False,
                 )
                 .squeeze(0)
                 .argmax(0)

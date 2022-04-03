@@ -2,19 +2,19 @@
 import itertools
 import json
 import logging
+import numpy as np
 import os
 from collections import OrderedDict
-
-import numpy as np
+from typing import Optional, Union
 import pycocotools.mask as mask_util
 import torch
+from PIL import Image
+
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 
 from .evaluator import DatasetEvaluator
-from PIL import Image
-from typing import Union, Optional
 
 
 def load_image_into_numpy_array(
