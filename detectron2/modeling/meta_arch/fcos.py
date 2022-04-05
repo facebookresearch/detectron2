@@ -8,7 +8,6 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, batched_nms
-from detectron2.modeling.matcher import Matcher
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_point_box_distance
 from detectron2.utils.events import get_event_storage
 
@@ -180,7 +179,7 @@ class FCOS(DenseDetector):
             else:
                 matched_gt_boxes_i = torch.zeros_like(Boxes.cat(anchors).tensor)
                 gt_labels_i = torch.full(
-                    (len(matched_gt_boxes_i), ),
+                    (len(matched_gt_boxes_i),),
                     fill_value=self.num_classes,
                     dtype=torch.long,
                     device=matched_gt_boxes_i.device,
@@ -238,9 +237,7 @@ class FCOS(DenseDetector):
             "loss_fcos_ctr": ctrness_loss / normalizer,
         }
 
-    def compute_ctrness_targets(
-        self, anchors: List[Boxes], gt_boxes: List[torch.Tensor]
-    ):
+    def compute_ctrness_targets(self, anchors: List[Boxes], gt_boxes: List[torch.Tensor]):
         anchors = Boxes.cat(anchors).tensor  # Rx4
         reg_targets = [self.box2box_transform.get_deltas(anchors, m) for m in gt_boxes]
         reg_targets = torch.stack(reg_targets, dim=0)  # NxRx4

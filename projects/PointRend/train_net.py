@@ -8,7 +8,6 @@ This script is a simplified version of the training script in detectron2/tools.
 """
 
 import os
-import torch
 
 import detectron2.data.transforms as T
 import detectron2.utils.comm as comm

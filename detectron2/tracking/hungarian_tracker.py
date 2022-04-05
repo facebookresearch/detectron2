@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
 import copy
-
 import numpy as np
+from typing import Dict
 import torch
+from scipy.optimize import linear_sum_assignment
+
+from detectron2.config import configurable
 from detectron2.structures import Boxes, Instances
 
-from .base_tracker import BaseTracker
-from scipy.optimize import linear_sum_assignment
 from ..config.config import CfgNode as CfgNode_
-from typing import Dict
-from detectron2.config import configurable
+from .base_tracker import BaseTracker
 
 
 class BaseHungarianTracker(BaseTracker):
@@ -95,16 +95,14 @@ class BaseHungarianTracker(BaseTracker):
         return instances
 
     def _process_matched_idx(
-        self,
-        instances: Instances,
-        matched_idx: np.ndarray,
-        matched_prev_idx: np.ndarray
+        self, instances: Instances, matched_idx: np.ndarray, matched_prev_idx: np.ndarray
     ) -> Instances:
         assert matched_idx.size == matched_prev_idx.size
         for i in range(matched_idx.size):
             instances.ID[matched_idx[i]] = self._prev_instances.ID[matched_prev_idx[i]]
-            instances.ID_period[matched_idx[i]] = \
+            instances.ID_period[matched_idx[i]] = (
                 self._prev_instances.ID_period[matched_prev_idx[i]] + 1
+            )
             instances.lost_frame_count[matched_idx[i]] = 0
         return instances
 
@@ -118,10 +116,7 @@ class BaseHungarianTracker(BaseTracker):
         return instances
 
     def _process_unmatched_prev_idx(
-        self,
-        instances: Instances,
-        matched_prev_idx:
-        np.ndarray
+        self, instances: Instances, matched_prev_idx: np.ndarray
     ) -> Instances:
         untracked_instances = Instances(
             image_size=instances.image_size,

@@ -52,9 +52,12 @@ def resample_fine_and_coarse_segm_tensors_to_bbox(
     # coarse segmentation
     # pyre-fixme[16]: `Tensor` has no attribute `argmax`.
     coarse_segm_bbox = F.interpolate(
+        coarse_segm,
         # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int,
         #  int]`.
-        coarse_segm, (h, w), mode="bilinear", align_corners=False
+        (h, w),
+        mode="bilinear",
+        align_corners=False,
     ).argmax(dim=1)
     # combined coarse and fine segmentation
     labels = (
