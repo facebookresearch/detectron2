@@ -114,6 +114,8 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
         other_values = F.interpolate(
             # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
             #  `Tuple[int, int]`.
-            getattr(densepose_output, self.confidence_channel), size=(h, w), mode="bilinear"
+            getattr(densepose_output, self.confidence_channel),
+            size=(h, w),
+            mode="bilinear",
         )[0].cpu()
         return mask, embeddings, other_values

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
 import copy
-from typing import List
-
 import numpy as np
+from typing import List
 import torch
+
 from detectron2.config import configurable
 from detectron2.structures import Boxes, Instances
 from detectron2.structures.boxes import pairwise_iou
 
 from ..config.config import CfgNode as CfgNode_
-from .base_tracker import BaseTracker, TRACKER_HEADS_REGISTRY
+from .base_tracker import TRACKER_HEADS_REGISTRY, BaseTracker
 
 
 @TRACKER_HEADS_REGISTRY.register()
@@ -18,6 +18,7 @@ class BBoxIOUTracker(BaseTracker):
     """
     A bounding box tracker to assign ID based on IoU between current and previous instances
     """
+
     @configurable
     def __init__(
         self,
@@ -29,7 +30,7 @@ class BBoxIOUTracker(BaseTracker):
         min_box_rel_dim: float = 0.02,
         min_instance_period: int = 1,
         track_iou_threshold: float = 0.5,
-        **kwargs
+        **kwargs,
     ):
         """
         Args:
@@ -82,7 +83,7 @@ class BBoxIOUTracker(BaseTracker):
             "max_lost_frame_count": max_lost_frame_count,
             "min_box_rel_dim": min_box_rel_dim,
             "min_instance_period": min_instance_period,
-            "track_iou_threshold": track_iou_threshold
+            "track_iou_threshold": track_iou_threshold,
         }
 
     def update(self, instances: Instances) -> Instances:
@@ -105,9 +106,11 @@ class BBoxIOUTracker(BaseTracker):
             for bbox_pair in bbox_pairs:
                 idx = bbox_pair["idx"]
                 prev_id = bbox_pair["prev_id"]
-                if idx in self._matched_idx \
-                   or prev_id in self._matched_ID \
-                   or bbox_pair["IoU"] < self._track_iou_threshold:
+                if (
+                    idx in self._matched_idx
+                    or prev_id in self._matched_ID
+                    or bbox_pair["IoU"] < self._track_iou_threshold
+                ):
                     continue
                 instances.ID[idx] = prev_id
                 instances.ID_period[idx] = bbox_pair["prev_period"] + 1
@@ -120,9 +123,7 @@ class BBoxIOUTracker(BaseTracker):
         self._prev_instances = copy.deepcopy(instances)
         return instances
 
-    def _create_prediction_pairs(
-        self, instances: Instances, iou_all: np.ndarray
-    ) -> List:
+    def _create_prediction_pairs(self, instances: Instances, iou_all: np.ndarray) -> List:
         """
         For all instances in previous and current frames, create pairs. For each
         pair, store index of the instance in current frame predcitions, index in

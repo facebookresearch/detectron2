@@ -33,6 +33,9 @@ class ImageResizeTransform:
         images = torch.nn.functional.interpolate(
             # pyre-fixme[6]: Expected `Optional[typing.List[float]]` for 2nd param
             #  but got `float`.
-            images, scale_factor=scale, mode="bilinear", align_corners=False
+            images,
+            scale_factor=scale,
+            mode="bilinear",
+            align_corners=False,
         )
         return images
