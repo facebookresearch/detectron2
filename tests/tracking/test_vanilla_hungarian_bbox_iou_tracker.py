@@ -9,9 +9,9 @@ from detectron2.config import CfgNode as CfgNode_
 from detectron2.config import instantiate
 from detectron2.structures import Boxes, Instances
 from detectron2.tracking.base_tracker import build_tracker_head
-from detectron2.tracking.vanilla_hungarian_bbox_iou_tracker import (
+from detectron2.tracking.vanilla_hungarian_bbox_iou_tracker import (  # noqa
     VanillaHungarianBBoxIOUTracker,
-)  # noqa
+)
 
 
 class TestVanillaHungarianBBoxIOUTracker(unittest.TestCase):
