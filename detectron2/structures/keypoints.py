@@ -4,17 +4,6 @@ from typing import Any, List, Tuple, Union
 import torch
 from torch.nn import functional as F
 
-from detectron2.utils.env import TORCH_VERSION
-
-if TORCH_VERSION < (1, 8):
-
-    def script_if_tracing(fn):
-        return fn
-
-
-else:
-    script_if_tracing = torch.jit.script_if_tracing
-
 
 class Keypoints:
     """
@@ -91,6 +80,26 @@ class Keypoints:
         s += "num_instances={})".format(len(self.tensor))
         return s
 
+    @staticmethod
+    def cat(keypoints_list: List["Keypoints"]) -> "Keypoints":
+        """
+        Concatenates a list of Keypoints into a single Keypoints
+
+        Arguments:
+            keypoints_list (list[Keypoints])
+
+        Returns:
+            Keypoints: the concatenated Keypoints
+        """
+        assert isinstance(keypoints_list, (list, tuple))
+        assert len(keypoints_list) > 0
+        assert all(isinstance(keypoints, Keypoints) for keypoints in keypoints_list)
+
+        cat_kpts = type(keypoints_list[0])(
+            torch.cat([kpts.tensor for kpts in keypoints_list], dim=0)
+        )
+        return cat_kpts
+
 
 # TODO make this nicer, this is a direct translation from C2 (but removing the inner loop)
 def _keypoints_to_heatmap(
@@ -152,7 +161,7 @@ def _keypoints_to_heatmap(
     return heatmaps, valid
 
 
-@script_if_tracing
+@torch.jit.script_if_tracing
 def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tensor:
     """
     Extract predicted keypoint locations from heatmaps.

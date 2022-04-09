@@ -62,7 +62,7 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
 
         mask, embeddings, other_values = self._produce_mask_and_results(instance, bbox_xywh)
         indices = torch.nonzero(mask, as_tuple=True)
-        selected_embeddings = embeddings.permute(1, 2, 0)[indices]
+        selected_embeddings = embeddings.permute(1, 2, 0)[indices].cpu()
         values = other_values[:, indices[0], indices[1]]
         k = values.shape[1]
 
@@ -109,7 +109,11 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         S = densepose_output.coarse_segm
         E = densepose_output.embedding
         _, _, w, h = bbox_xywh
+        # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int,
+        #  int]`.
         embeddings = F.interpolate(E, size=(h, w), mode="bilinear")[0]
+        # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int,
+        #  int]`.
         coarse_segm_resized = F.interpolate(S, size=(h, w), mode="bilinear")[0]
         mask = coarse_segm_resized.argmax(0) > 0
         other_values = torch.empty((0, h, w), device=E.device)
@@ -130,6 +134,9 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         """
         sz = DensePoseDataRelative.MASK_SIZE
         mask = (
+            # pyre-fixme[16]: `Tensor` has no attribute `argmax`.
+            # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
+            #  `Tuple[int, int]`.
             F.interpolate(output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False)
             .argmax(dim=1)
             .long()

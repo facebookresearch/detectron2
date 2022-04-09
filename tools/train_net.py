@@ -19,7 +19,6 @@ You may want to write your own script with your datasets and other customization
 import logging
 import os
 from collections import OrderedDict
-import torch
 
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
@@ -64,14 +63,8 @@ def build_evaluator(cfg, dataset_name, output_folder=None):
     if evaluator_type == "coco_panoptic_seg":
         evaluator_list.append(COCOPanopticEvaluator(dataset_name, output_folder))
     if evaluator_type == "cityscapes_instance":
-        assert (
-            torch.cuda.device_count() >= comm.get_rank()
-        ), "CityscapesEvaluator currently do not work with multiple machines."
         return CityscapesInstanceEvaluator(dataset_name)
     if evaluator_type == "cityscapes_sem_seg":
-        assert (
-            torch.cuda.device_count() >= comm.get_rank()
-        ), "CityscapesEvaluator currently do not work with multiple machines."
         return CityscapesSemSegEvaluator(dataset_name)
     elif evaluator_type == "pascal_voc":
         return PascalVOCDetectionEvaluator(dataset_name)

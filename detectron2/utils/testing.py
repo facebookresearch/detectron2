@@ -4,6 +4,7 @@ import numpy as np
 import torch
 
 from detectron2 import model_zoo
+from detectron2.config import CfgNode, instantiate
 from detectron2.data import DatasetCatalog
 from detectron2.data.detection_utils import read_image
 from detectron2.modeling import build_model
@@ -21,9 +22,12 @@ def get_model_no_weights(config_path):
     Like model_zoo.get, but do not load any weights (even pretrained)
     """
     cfg = model_zoo.get_config(config_path)
-    if not torch.cuda.is_available():
-        cfg.MODEL.DEVICE = "cpu"
-    return build_model(cfg)
+    if isinstance(cfg, CfgNode):
+        if not torch.cuda.is_available():
+            cfg.MODEL.DEVICE = "cpu"
+        return build_model(cfg)
+    else:
+        return instantiate(cfg.model)
 
 
 def random_boxes(num_boxes, max_coord=100, device="cpu"):
@@ -55,7 +59,9 @@ def get_sample_coco_image(tensor=True):
             raise FileNotFoundError()
     except IOError:
         # for public CI to run
-        file_name = "http://images.cocodataset.org/train2017/000000000009.jpg"
+        file_name = PathManager.get_local_path(
+            "http://images.cocodataset.org/train2017/000000000009.jpg"
+        )
     ret = read_image(file_name, format="BGR")
     if tensor:
         ret = torch.from_numpy(np.ascontiguousarray(ret.transpose(2, 0, 1)))
@@ -66,6 +72,9 @@ def convert_scripted_instances(instances):
     """
     Convert a scripted Instances object to a regular :class:`Instances` object
     """
+    assert hasattr(
+        instances, "image_size"
+    ), f"Expect an Instances object, but got {type(instances)}!"
     ret = Instances(instances.image_size)
     for name in instances._field_names:
         val = getattr(instances, "_" + name, None)

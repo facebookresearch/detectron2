@@ -23,24 +23,61 @@ def _shard_iterator_dataloader_worker(iterable):
         yield from itertools.islice(iterable, worker_info.id, None, worker_info.num_workers)
 
 
-class MapDataset(data.Dataset):
+class _MapIterableDataset(data.IterableDataset):
     """
-    Map a function over the elements in a dataset.
+    Map a function over elements in an IterableDataset.
 
-    Args:
-        dataset: a dataset where map function is applied.
-        map_func: a callable which maps the element in dataset. map_func is
-            responsible for error handling, when error happens, it needs to
-            return None so the MapDataset will randomly use other
-            elements from the dataset.
+    Similar to pytorch's MapIterDataPipe, but support filtering when map_func
+    returns None.
+
+    This class is not public-facing. Will be called by `MapDataset`.
     """
 
     def __init__(self, dataset, map_func):
         self._dataset = dataset
         self._map_func = PicklableWrapper(map_func)  # wrap so that a lambda will work
 
+    def __len__(self):
+        return len(self._dataset)
+
+    def __iter__(self):
+        for x in map(self._map_func, self._dataset):
+            if x is not None:
+                yield x
+
+
+class MapDataset(data.Dataset):
+    """
+    Map a function over the elements in a dataset.
+    """
+
+    def __init__(self, dataset, map_func):
+        """
+        Args:
+            dataset: a dataset where map function is applied. Can be either
+                map-style or iterable dataset. When given an iterable dataset,
+                the returned object will also be an iterable dataset.
+            map_func: a callable which maps the element in dataset. map_func can
+                return None to skip the data (e.g. in case of errors).
+                How None is handled depends on the style of `dataset`.
+                If `dataset` is map-style, it randomly tries other elements.
+                If `dataset` is iterable, it skips the data and tries the next.
+        """
+        self._dataset = dataset
+        self._map_func = PicklableWrapper(map_func)  # wrap so that a lambda will work
+
         self._rng = random.Random(42)
         self._fallback_candidates = set(range(len(dataset)))
+
+    def __new__(cls, dataset, map_func):
+        is_iterable = isinstance(dataset, data.IterableDataset)
+        if is_iterable:
+            return _MapIterableDataset(dataset, map_func)
+        else:
+            return super().__new__(cls)
+
+    def __getnewargs__(self):
+        return self._dataset, self._map_func
 
     def __len__(self):
         return len(self._dataset)
@@ -163,6 +200,9 @@ class ToIterableDataset(data.IterableDataset):
         for idx in sampler:
             yield self.dataset[idx]
 
+    def __len__(self):
+        return len(self.sampler)
+
 
 class AspectRatioGroupedDataset(data.IterableDataset):
     """
@@ -197,5 +237,8 @@ class AspectRatioGroupedDataset(data.IterableDataset):
             bucket = self._buckets[bucket_id]
             bucket.append(d)
             if len(bucket) == self.batch_size:
-                yield bucket[:]
+                data = bucket[:]
+                # Clear bucket first, because code after yield is not
+                # guaranteed to execute
                 del bucket[:]
+                yield data

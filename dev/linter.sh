@@ -1,12 +1,13 @@
 #!/bin/bash -e
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-# Run this script at project root by "./dev/linter.sh" before you commit
+# cd to detectron2 project root
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 {
-  black --version | grep -E "21.4b2" > /dev/null
+  black --version | grep -E "21\." > /dev/null
 } || {
-  echo "Linter requires 'black==21.4b2' !"
+  echo "Linter requires 'black==21.*' !"
   exit 1
 }
 

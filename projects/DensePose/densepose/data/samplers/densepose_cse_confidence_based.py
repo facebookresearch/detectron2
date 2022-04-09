@@ -82,7 +82,7 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
             # (here best = smallest variance)
             _, sorted_confidence_indices = torch.sort(values[0])
             if self.search_count_multiplier is not None:
-                search_count = min(int(count * self.search_count_multiplier), k)  # pyre-ignore[58]
+                search_count = min(int(count * self.search_count_multiplier), k)
             elif self.search_proportion is not None:
                 search_count = min(max(int(k * self.search_proportion), count), k)
             else:
@@ -112,6 +112,10 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
         densepose_output = instance.pred_densepose
         mask, embeddings, _ = super()._produce_mask_and_results(instance, bbox_xywh)
         other_values = F.interpolate(
-            getattr(densepose_output, self.confidence_channel), size=(h, w), mode="bilinear"
+            getattr(densepose_output, self.confidence_channel),
+            # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
+            #  `Tuple[int, int]`.
+            size=(h, w),
+            mode="bilinear",
         )[0].cpu()
         return mask, embeddings, other_values

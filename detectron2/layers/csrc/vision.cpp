@@ -79,8 +79,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("get_cuda_version", &get_cuda_version, "get_cuda_version");
   m.def("has_cuda", &has_cuda, "has_cuda");
 
-  m.def("box_iou_rotated", &box_iou_rotated, "IoU for rotated boxes");
-
   m.def("deform_conv_forward", &deform_conv_forward, "deform_conv_forward");
   m.def(
       "deform_conv_backward_input",
@@ -99,17 +97,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       &modulated_deform_conv_backward,
       "modulated_deform_conv_backward");
 
-  m.def("nms_rotated", &nms_rotated, "NMS for rotated boxes");
-
-  m.def(
-      "roi_align_rotated_forward",
-      &ROIAlignRotated_forward,
-      "Forward pass for Rotated ROI-Align Operator");
-  m.def(
-      "roi_align_rotated_backward",
-      &ROIAlignRotated_backward,
-      "Backward pass for Rotated ROI-Align Operator");
-
   m.def("COCOevalAccumulate", &COCOeval::Accumulate, "COCOeval::Accumulate");
   m.def(
       "COCOevalEvaluateImages",
@@ -121,9 +108,10 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       .def(pybind11::init<>());
 }
 
-#ifdef TORCH_LIBRARY
 TORCH_LIBRARY(detectron2, m) {
   m.def("nms_rotated", &nms_rotated);
+  m.def("box_iou_rotated", &box_iou_rotated);
+  m.def("roi_align_rotated_forward", &ROIAlignRotated_forward);
+  m.def("roi_align_rotated_backward", &ROIAlignRotated_backward);
 }
-#endif
 } // namespace detectron2

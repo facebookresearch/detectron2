@@ -25,7 +25,15 @@ class LVISEvaluator(DatasetEvaluator):
     LVIS's metrics and evaluation API.
     """
 
-    def __init__(self, dataset_name, tasks=None, distributed=True, output_dir=None):
+    def __init__(
+        self,
+        dataset_name,
+        tasks=None,
+        distributed=True,
+        output_dir=None,
+        *,
+        max_dets_per_image=None,
+    ):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
@@ -37,6 +45,8 @@ class LVISEvaluator(DatasetEvaluator):
             distributed (True): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
             output_dir (str): optional, an output directory to dump results.
+            max_dets_per_image (None or int): limit on maximum detections per image in evaluating AP
+                This limit, by default of the LVIS dataset, is 300.
         """
         from lvis import LVIS
 
@@ -53,6 +63,7 @@ class LVISEvaluator(DatasetEvaluator):
 
         self._distributed = distributed
         self._output_dir = output_dir
+        self._max_dets_per_image = max_dets_per_image
 
         self._cpu_device = torch.device("cpu")
 
@@ -158,7 +169,11 @@ class LVISEvaluator(DatasetEvaluator):
         self._logger.info("Evaluating predictions ...")
         for task in sorted(tasks):
             res = _evaluate_predictions_on_lvis(
-                self._lvis_api, lvis_results, task, class_names=self._metadata.get("thing_classes")
+                self._lvis_api,
+                lvis_results,
+                task,
+                max_dets_per_image=self._max_dets_per_image,
+                class_names=self._metadata.get("thing_classes"),
             )
             self._results[task] = res
 
@@ -313,11 +328,14 @@ def _evaluate_box_proposals(dataset_predictions, lvis_api, thresholds=None, area
     }
 
 
-def _evaluate_predictions_on_lvis(lvis_gt, lvis_results, iou_type, class_names=None):
+def _evaluate_predictions_on_lvis(
+    lvis_gt, lvis_results, iou_type, max_dets_per_image=None, class_names=None
+):
     """
     Args:
         iou_type (str):
-        kpt_oks_sigmas (list[float]):
+        max_dets_per_image (None or int): limit on maximum detections per image in evaluating AP
+            This limit, by default of the LVIS dataset, is 300.
         class_names (None or list[str]): if provided, will use it to predict
             per-category AP.
 
@@ -344,9 +362,13 @@ def _evaluate_predictions_on_lvis(lvis_gt, lvis_results, iou_type, class_names=N
         for c in lvis_results:
             c.pop("bbox", None)
 
+    if max_dets_per_image is None:
+        max_dets_per_image = 300  # Default for LVIS dataset
+
     from lvis import LVISEval, LVISResults
 
-    lvis_results = LVISResults(lvis_gt, lvis_results)
+    logger.info(f"Evaluating with max detections per image = {max_dets_per_image}")
+    lvis_results = LVISResults(lvis_gt, lvis_results, max_dets=max_dets_per_image)
     lvis_eval = LVISEval(lvis_gt, lvis_results, iou_type)
     lvis_eval.run()
     lvis_eval.print_results()

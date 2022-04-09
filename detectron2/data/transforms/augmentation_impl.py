@@ -6,6 +6,7 @@ Implement many useful :class:`Augmentation`.
 import numpy as np
 import sys
 from typing import Tuple
+import torch
 from fvcore.transforms.transform import (
     BlendTransform,
     CropTransform,
@@ -127,10 +128,13 @@ class Resize(Augmentation):
 
 class ResizeShortestEdge(Augmentation):
     """
-    Scale the shorter edge to the given size, with a limit of `max_size` on the longer edge.
+    Resize the image while keeping the aspect ratio unchanged.
+    It attempts to scale the shorter edge to the given `short_edge_length`,
+    as long as the longer edge does not exceed `max_size`.
     If `max_size` is reached, then downscale so that the longer edge does not exceed max_size.
     """
 
+    @torch.jit.unused
     def __init__(
         self, short_edge_length, max_size=sys.maxsize, sample_style="range", interp=Image.BILINEAR
     ):
@@ -155,6 +159,7 @@ class ResizeShortestEdge(Augmentation):
             )
         self._init(locals())
 
+    @torch.jit.unused
     def get_transform(self, image):
         h, w = image.shape[:2]
         if self.is_range:
@@ -164,18 +169,30 @@ class ResizeShortestEdge(Augmentation):
         if size == 0:
             return NoOpTransform()
 
-        scale = size * 1.0 / min(h, w)
+        newh, neww = ResizeShortestEdge.get_output_shape(h, w, size, self.max_size)
+        return ResizeTransform(h, w, newh, neww, self.interp)
+
+    @staticmethod
+    def get_output_shape(
+        oldh: int, oldw: int, short_edge_length: int, max_size: int
+    ) -> Tuple[int, int]:
+        """
+        Compute the output size given input size and target short edge length.
+        """
+        h, w = oldh, oldw
+        size = short_edge_length * 1.0
+        scale = size / min(h, w)
         if h < w:
             newh, neww = size, scale * w
         else:
             newh, neww = scale * h, size
-        if max(newh, neww) > self.max_size:
-            scale = self.max_size * 1.0 / max(newh, neww)
+        if max(newh, neww) > max_size:
+            scale = max_size * 1.0 / max(newh, neww)
             newh = newh * scale
             neww = neww * scale
         neww = int(neww + 0.5)
         newh = int(newh + 0.5)
-        return ResizeTransform(h, w, newh, neww, self.interp)
+        return (newh, neww)
 
 
 class ResizeScale(Augmentation):
@@ -393,7 +410,7 @@ class RandomCrop(Augmentation):
             cw = np.random.randint(min(w, self.crop_size[0]), min(w, self.crop_size[1]) + 1)
             return ch, cw
         else:
-            NotImplementedError("Unknown crop type {}".format(self.crop_type))
+            raise NotImplementedError("Unknown crop type {}".format(self.crop_type))
 
 
 class RandomCrop_CategoryAreaConstraint(Augmentation):

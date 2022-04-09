@@ -162,7 +162,7 @@ class HRFPN(Backbone):
 
 
 @BACKBONE_REGISTRY.register()
-def build_hrfpn_backbone(cfg, input_shape: ShapeSpec):
+def build_hrfpn_backbone(cfg, input_shape: ShapeSpec) -> HRFPN:
 
     in_channels = cfg.MODEL.HRNET.STAGE4.NUM_CHANNELS
     in_features = ["p%d" % (i + 1) for i in range(cfg.MODEL.HRNET.STAGE4.NUM_BRANCHES)]

@@ -27,5 +27,5 @@ We do not take requests for most projects in the `projects/` directory, because 
 
 Instead of adding features inside detectron2,
 you can implement many features by [extending detectron2](https://detectron2.readthedocs.io/tutorials/extend.html).
-The [projects/](https://github.com/facebookresearch/detectron2/tree/master/projects/) directory contains many of such examples.
+The [projects/](https://github.com/facebookresearch/detectron2/tree/main/projects/) directory contains many of such examples.
 

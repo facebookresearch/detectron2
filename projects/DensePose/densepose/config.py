@@ -5,7 +5,7 @@
 from detectron2.config import CfgNode as CN
 
 
-def add_dataset_category_config(cfg: CN):
+def add_dataset_category_config(cfg: CN) -> None:
     """
     Add config for additional category-related dataset options
      - category whitelisting
@@ -18,7 +18,7 @@ def add_dataset_category_config(cfg: CN):
     _C.DATASETS.CLASS_TO_MESH_NAME_MAPPING = CN(new_allowed=True)
 
 
-def add_evaluation_config(cfg: CN):
+def add_evaluation_config(cfg: CN) -> None:
     _C = cfg
     _C.DENSEPOSE_EVALUATION = CN()
     # evaluator type, possible values:
@@ -47,7 +47,7 @@ def add_evaluation_config(cfg: CN):
     _C.DENSEPOSE_EVALUATION.MESH_ALIGNMENT_MESH_NAMES = []
 
 
-def add_bootstrap_config(cfg: CN):
+def add_bootstrap_config(cfg: CN) -> None:
     """ """
     _C = cfg
     _C.BOOTSTRAP_DATASETS = []
@@ -85,7 +85,7 @@ def get_bootstrap_dataset_config() -> CN:
     return _C
 
 
-def load_bootstrap_config(cfg: CN):
+def load_bootstrap_config(cfg: CN) -> None:
     """
     Bootstrap datasets are given as a list of `dict` that are not automatically
     converted into CfgNode. This method processes all bootstrap dataset entries
@@ -102,7 +102,7 @@ def load_bootstrap_config(cfg: CN):
     cfg.BOOTSTRAP_DATASETS = bootstrap_datasets_cfgnodes
 
 
-def add_densepose_head_cse_config(cfg: CN):
+def add_densepose_head_cse_config(cfg: CN) -> None:
     """
     Add configuration options for Continuous Surface Embeddings (CSE)
     """
@@ -155,7 +155,7 @@ def add_densepose_head_cse_config(cfg: CN):
     _C.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.TEMPERATURE_VERTEX_TO_PIXEL = 0.05
 
 
-def add_densepose_head_config(cfg: CN):
+def add_densepose_head_config(cfg: CN) -> None:
     """
     Add config for densepose head.
     """
@@ -234,7 +234,7 @@ def add_densepose_head_config(cfg: CN):
     add_densepose_head_cse_config(cfg)
 
 
-def add_hrnet_config(cfg: CN):
+def add_hrnet_config(cfg: CN) -> None:
     """
     Add config for HRNet backbone.
     """
@@ -269,7 +269,7 @@ def add_hrnet_config(cfg: CN):
     _C.MODEL.HRNET.HRFPN.OUT_CHANNELS = 256
 
 
-def add_densepose_config(cfg: CN):
+def add_densepose_config(cfg: CN) -> None:
     add_densepose_head_config(cfg)
     add_hrnet_config(cfg)
     add_bootstrap_config(cfg)

@@ -10,7 +10,7 @@ from detectron2.modeling.backbone import RegNet
 from detectron2.modeling.backbone.regnet import SimpleStem, ResBottleneckBlock
 
 # Config source:
-# https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_regnety_4gf_dds_fpn_1x.py  # noqa
+# https://github.com/facebookresearch/detectron2/blob/main/configs/COCO-InstanceSegmentation/mask_rcnn_regnety_4gf_dds_fpn_1x.py  # noqa
 model.backbone.bottom_up = L(RegNet)(
     stem_class=SimpleStem,
     stem_width=32,

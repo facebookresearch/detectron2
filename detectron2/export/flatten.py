@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 import collections
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple

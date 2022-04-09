@@ -24,10 +24,10 @@ def _grouper(iterable: Iterable[Any], n: int, fillvalue=None) -> Iterator[Tuple[
             except StopIteration:
                 if values:
                     values.extend([fillvalue] * (n - len(values)))
-                    yield tuple(values)  # pyre-ignore[7]
+                    yield tuple(values)
                 return
             values.append(value)
-        yield tuple(values)  # pyre-ignore[7]
+        yield tuple(values)
 
 
 class ScoreBasedFilter:
@@ -155,14 +155,12 @@ class InferenceBasedLoader:
                     [instance_class] * len(model_output_i["instances"])
                 )
             model_output_filtered = (
-                model_output
-                if self.data_filter is None
-                else self.data_filter(model_output)  # pyre-ignore[29]
+                model_output if self.data_filter is None else self.data_filter(model_output)
             )
             data = (
                 model_output_filtered
                 if self.data_sampler is None
-                else self.data_sampler(model_output_filtered)  # pyre-ignore[29]
+                else self.data_sampler(model_output_filtered)
             )
             for data_i in data:
                 if len(data_i["instances"]):

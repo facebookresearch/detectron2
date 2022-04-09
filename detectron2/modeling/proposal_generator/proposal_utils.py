@@ -72,11 +72,7 @@ def find_top_rpn_proposals(
         else:
             num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
 
-        # sort is faster than topk: https://github.com/pytorch/pytorch/issues/22812
-        # topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
-        logits_i, idx = logits_i.sort(descending=True, dim=1)
-        topk_scores_i = logits_i.narrow(1, 0, num_proposals_i)
-        topk_idx = idx.narrow(1, 0, num_proposals_i)
+        topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
 
         # each is N x topk
         topk_proposals_i = proposals_i[batch_idx[:, None], topk_idx]  # N x topk x 4

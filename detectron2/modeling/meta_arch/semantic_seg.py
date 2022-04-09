@@ -15,7 +15,12 @@ from ..backbone import Backbone, build_backbone
 from ..postprocessing import sem_seg_postprocess
 from .build import META_ARCH_REGISTRY
 
-__all__ = ["SemanticSegmentor", "SEM_SEG_HEADS_REGISTRY", "SemSegFPNHead", "build_sem_seg_head"]
+__all__ = [
+    "SemanticSegmentor",
+    "SEM_SEG_HEADS_REGISTRY",
+    "SemSegFPNHead",
+    "build_sem_seg_head",
+]
 
 
 SEM_SEG_HEADS_REGISTRY = Registry("SEM_SEG_HEADS")
@@ -112,8 +117,8 @@ class SemanticSegmentor(nn.Module):
 
         processed_results = []
         for result, input_per_image, image_size in zip(results, batched_inputs, images.image_sizes):
-            height = input_per_image.get("height")
-            width = input_per_image.get("width")
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
             r = sem_seg_postprocess(result, image_size, height, width)
             processed_results.append({"sem_seg": r})
         return processed_results
@@ -163,6 +168,8 @@ class SemSegFPNHead(nn.Module):
         """
         super().__init__()
         input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
+        if not len(input_shape):
+            raise ValueError("SemSegFPNHead(input_shape=) cannot be empty!")
         self.in_features = [k for k, v in input_shape]
         feature_strides = [v.stride for k, v in input_shape]
         feature_channels = [v.channels for k, v in input_shape]
@@ -241,7 +248,10 @@ class SemSegFPNHead(nn.Module):
     def losses(self, predictions, targets):
         predictions = predictions.float()  # https://github.com/pytorch/pytorch/issues/48163
         predictions = F.interpolate(
-            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            predictions,
+            scale_factor=self.common_stride,
+            mode="bilinear",
+            align_corners=False,
         )
         loss = F.cross_entropy(
             predictions, targets, reduction="mean", ignore_index=self.ignore_value

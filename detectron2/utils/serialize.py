@@ -13,6 +13,9 @@ class PicklableWrapper(object):
     """
 
     def __init__(self, obj):
+        while isinstance(obj, PicklableWrapper):
+            # Wrapping an object twice is no-op
+            obj = obj._obj
         self._obj = obj
 
     def __reduce__(self):

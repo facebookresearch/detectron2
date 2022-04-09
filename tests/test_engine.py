@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import json
+import math
 import os
 import tempfile
 import time
@@ -83,7 +84,6 @@ class TestTrainer(unittest.TestCase):
 
             self.assertIn("eta: 0:00:00", logs.output[-1], "Last ETA must be 0!")
 
-    @unittest.skipIf(os.environ.get("CI"), "Require COCO data.")
     def test_default_trainer(self):
         # TODO: this test requires manifold access, so changed device to CPU. see: T88318502
         cfg = get_cfg()
@@ -148,6 +148,32 @@ class TestTrainer(unittest.TestCase):
             trainer.register_hooks([hooks.EvalHook(period, test_func)])
             trainer.train(0, total_iter)
             self.assertEqual(test_func.call_count, eval_count)
+
+    def test_best_checkpointer(self):
+        model = _SimpleModel()
+        dataloader = self._data_loader("cpu")
+        opt = torch.optim.SGD(model.parameters(), 0.1)
+        metric_name = "metric"
+        total_iter = 40
+        test_period = 10
+        test_cases = [
+            ("max", iter([0.3, 0.4, 0.35, 0.5]), 3),
+            ("min", iter([1.0, 0.8, 0.9, 0.9]), 2),
+            ("min", iter([math.nan, 0.8, 0.9, 0.9]), 1),
+        ]
+        for mode, metrics, call_count in test_cases:
+            trainer = SimpleTrainer(model, dataloader, opt)
+            with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+                checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
+                trainer.register_hooks(
+                    [
+                        hooks.EvalHook(test_period, lambda: {metric_name: next(metrics)}),
+                        hooks.BestCheckpointer(test_period, checkpointer, metric_name, mode=mode),
+                    ]
+                )
+                with mock.patch.object(checkpointer, "save") as mock_save_method:
+                    trainer.train(0, total_iter)
+                    self.assertEqual(mock_save_method.call_count, call_count)
 
     def test_setup_config(self):
         with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:

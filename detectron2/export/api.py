@@ -15,30 +15,12 @@ from .shared import get_pb_arg_vali, get_pb_arg_vals, save_graph
 
 __all__ = [
     "add_export_config",
-    "export_caffe2_model",
     "Caffe2Model",
-    "export_onnx_model",
     "Caffe2Tracer",
 ]
 
 
 def add_export_config(cfg):
-    """
-    Add options needed by caffe2 export.
-
-    Args:
-        cfg (CfgNode): a detectron2 config
-
-    Returns:
-        CfgNode:
-            an updated config with new options that will be used by :class:`Caffe2Tracer`.
-    """
-    is_frozen = cfg.is_frozen()
-    cfg.defrost()
-    cfg.EXPORT_CAFFE2 = CfgNode()
-    cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT = False
-    if is_frozen:
-        cfg.freeze()
     return cfg
 
 
@@ -68,9 +50,7 @@ class Caffe2Tracer:
     def __init__(self, cfg: CfgNode, model: nn.Module, inputs):
         """
         Args:
-            cfg (CfgNode): a detectron2 config, with extra export-related options
-                added by :func:`add_export_config`. It's used to construct
-                caffe2-compatible model.
+            cfg (CfgNode): a detectron2 config used to construct caffe2-compatible model.
             model (nn.Module): An original pytorch model. Must be among a few official models
                 in detectron2 that can be converted to become caffe2-compatible automatically.
                 Weights have to be already loaded to this model.
@@ -81,8 +61,6 @@ class Caffe2Tracer:
         assert isinstance(cfg, CfgNode), cfg
         assert isinstance(model, torch.nn.Module), type(model)
 
-        if "EXPORT_CAFFE2" not in cfg:
-            cfg = add_export_config(cfg)  # will just the defaults
         # TODO make it support custom models, by passing in c2 model directly
         C2MetaArch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[cfg.MODEL.META_ARCHITECTURE]
         self.traceable_model = C2MetaArch(cfg, copy.deepcopy(model))
@@ -255,19 +233,3 @@ class Caffe2Model(nn.Module):
         if self._predictor is None:
             self._predictor = ProtobufDetectionModel(self._predict_net, self._init_net)
         return self._predictor(inputs)
-
-
-def export_caffe2_model(cfg, model, inputs):
-    logger = logging.getLogger(__name__)
-    logger.warning(
-        "export_caffe2_model() is deprecated. Please use `Caffe2Tracer().export_caffe2() instead."
-    )
-    return Caffe2Tracer(cfg, model, inputs).export_caffe2()
-
-
-def export_onnx_model(cfg, model, inputs):
-    logger = logging.getLogger(__name__)
-    logger.warning(
-        "export_caffe2_model() is deprecated. Please use `Caffe2Tracer().export_onnx() instead."
-    )
-    return Caffe2Tracer(cfg, model, inputs).export_onnx()

@@ -3,8 +3,11 @@ import logging
 import unittest
 import torch
 
-from detectron2.modeling.box_regression import Box2BoxTransform, Box2BoxTransformRotated
-from detectron2.utils.env import TORCH_VERSION
+from detectron2.modeling.box_regression import (
+    Box2BoxTransform,
+    Box2BoxTransformLinear,
+    Box2BoxTransformRotated,
+)
 from detectron2.utils.testing import random_boxes
 
 logger = logging.getLogger(__name__)
@@ -27,7 +30,6 @@ class TestBox2BoxTransform(unittest.TestCase):
             dst_boxes_reconstructed = b2b_tfm.apply_deltas(deltas, src_boxes)
             self.assertTrue(torch.allclose(dst_boxes, dst_boxes_reconstructed))
 
-    @unittest.skipIf(TORCH_VERSION < (1, 8), "Insufficient pytorch version")
     def test_apply_deltas_tracing(self):
         weights = (5, 5, 10, 10)
         b2b_tfm = Box2BoxTransform(weights=weights)
@@ -69,6 +71,23 @@ class TestBox2BoxTransformRotated(unittest.TestCase):
                 torch.zeros_like(dst_boxes[:, 4]),
                 atol=1e-4,
             )
+
+
+class TestBox2BoxTransformLinear(unittest.TestCase):
+    def test_reconstruction(self):
+        b2b_tfm = Box2BoxTransformLinear()
+        src_boxes = random_boxes(10)
+        dst_boxes = torch.tensor([0, 0, 101, 101] * 10).reshape(10, 4).float()
+
+        devices = [torch.device("cpu")]
+        if torch.cuda.is_available():
+            devices.append(torch.device("cuda"))
+        for device in devices:
+            src_boxes = src_boxes.to(device=device)
+            dst_boxes = dst_boxes.to(device=device)
+            deltas = b2b_tfm.get_deltas(src_boxes, dst_boxes)
+            dst_boxes_reconstructed = b2b_tfm.apply_deltas(deltas, src_boxes)
+            self.assertTrue(torch.allclose(dst_boxes, dst_boxes_reconstructed, atol=1e-3))
 
 
 if __name__ == "__main__":

@@ -86,7 +86,10 @@ class GenericMask:
 
         if isinstance(m, np.ndarray):  # assumed to be a binary mask
             assert m.shape[1] != 2, m.shape
-            assert m.shape == (height, width), m.shape
+            assert m.shape == (
+                height,
+                width,
+            ), f"mask shape: {m.shape}, target dims: {height}, {width}"
             self._mask = m.astype("uint8")
             return
 
@@ -255,7 +258,7 @@ class VisImage:
     def __init__(self, img, scale=1.0):
         """
         Args:
-            img (ndarray): an RGB image of shape (H, W, 3).
+            img (ndarray): an RGB image of shape (H, W, 3) in range [0, 255].
             scale (float): scale the input image
         """
         self.img = img
@@ -284,11 +287,17 @@ class VisImage:
         # self.canvas = mpl.backends.backend_cairo.FigureCanvasCairo(fig)
         ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
         ax.axis("off")
-        # Need to imshow this first so that other patches can be drawn on top
-        ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
-
         self.fig = fig
         self.ax = ax
+        self.reset_image(img)
+
+    def reset_image(self, img):
+        """
+        Args:
+            img: same as in __init__
+        """
+        img = img.astype("uint8")
+        self.ax.imshow(img, extent=(0, self.width, self.height, 0), interpolation="nearest")
 
     def save(self, filepath):
         """
@@ -369,6 +378,7 @@ class Visualizer:
             np.sqrt(self.output.height * self.output.width) // 90, 10 // scale
         )
         self._instance_mode = instance_mode
+        self.keypoint_threshold = _KEYPOINT_THRESHOLD
 
     def draw_instance_predictions(self, predictions):
         """
@@ -404,10 +414,12 @@ class Visualizer:
             alpha = 0.5
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            self.output.img = self._create_grayscale_image(
-                (predictions.pred_masks.any(dim=0) > 0).numpy()
-                if predictions.has("pred_masks")
-                else None
+            self.output.reset_image(
+                self._create_grayscale_image(
+                    (predictions.pred_masks.any(dim=0) > 0).numpy()
+                    if predictions.has("pred_masks")
+                    else None
+                )
             )
             alpha = 0.3
 
@@ -476,7 +488,7 @@ class Visualizer:
         pred = _PanopticPrediction(panoptic_seg, segments_info, self.metadata)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
-            self.output.img = self._create_grayscale_image(pred.non_empty_mask())
+            self.output.reset_image(self._create_grayscale_image(pred.non_empty_mask()))
 
         # draw mask for all semantic segments first i.e. "stuff"
         for mask, sinfo in pred.semantic_masks():
@@ -600,7 +612,7 @@ class Visualizer:
         masks=None,
         keypoints=None,
         assigned_colors=None,
-        alpha=0.5
+        alpha=0.5,
     ):
         """
         Args:
@@ -627,7 +639,6 @@ class Visualizer:
             assigned_colors (list[matplotlib.colors]): a list of colors, where each color
                 corresponds to each mask or box in the image. Refer to 'matplotlib.colors'
                 for full list of formats that the colors are accepted in.
-
         Returns:
             output (VisImage): image object with visualizations.
         """
@@ -789,9 +800,10 @@ class Visualizer:
         visible = {}
         keypoint_names = self.metadata.get("keypoint_names")
         for idx, keypoint in enumerate(keypoints):
+
             # draw keypoint
             x, y, prob = keypoint
-            if prob > _KEYPOINT_THRESHOLD:
+            if prob > self.keypoint_threshold:
                 self.draw_circle((x, y), color=_RED)
                 if keypoint_names:
                     keypoint_name = keypoint_names[idx]
@@ -843,7 +855,7 @@ class Visualizer:
         font_size=None,
         color="g",
         horizontal_alignment="center",
-        rotation=0
+        rotation=0,
     ):
         """
         Args:
@@ -1021,7 +1033,7 @@ class Visualizer:
         return self.output
 
     def draw_binary_mask(
-        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=0
+        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=10
     ):
         """
         Args:
@@ -1032,9 +1044,9 @@ class Visualizer:
                 formats that are accepted. If None, will pick a random color.
             edge_color: color of the polygon edges. Refer to `matplotlib.colors` for a
                 full list of formats that are accepted.
-            text (str): if None, will be drawn in the object's center of mass.
+            text (str): if None, will be drawn on the object
             alpha (float): blending efficient. Smaller values lead to more transparent masks.
-            area_threshold (float): a connected component small than this will not be shown.
+            area_threshold (float): a connected component smaller than this area will not be shown.
 
         Returns:
             output (VisImage): image object with mask drawn.
@@ -1067,18 +1079,36 @@ class Visualizer:
             self.output.ax.imshow(rgba, extent=(0, self.output.width, self.output.height, 0))
 
         if text is not None and has_valid_segment:
-            # TODO sometimes drawn on wrong objects. the heuristics here can improve.
             lighter_color = self._change_color_brightness(color, brightness_factor=0.7)
-            _num_cc, cc_labels, stats, centroids = cv2.connectedComponentsWithStats(binary_mask, 8)
-            largest_component_id = np.argmax(stats[1:, -1]) + 1
+            self._draw_text_in_mask(binary_mask, text, lighter_color)
+        return self.output
 
-            # draw text on the largest component, as well as other very large components.
-            for cid in range(1, _num_cc):
-                if cid == largest_component_id or stats[cid, -1] > _LARGE_MASK_AREA_THRESH:
-                    # median is more stable than centroid
-                    # center = centroids[largest_component_id]
-                    center = np.median((cc_labels == cid).nonzero(), axis=1)[::-1]
-                    self.draw_text(text, center, color=lighter_color)
+    def draw_soft_mask(self, soft_mask, color=None, *, text=None, alpha=0.5):
+        """
+        Args:
+            soft_mask (ndarray): float array of shape (H, W), each value in [0, 1].
+            color: color of the mask. Refer to `matplotlib.colors` for a full list of
+                formats that are accepted. If None, will pick a random color.
+            text (str): if None, will be drawn on the object
+            alpha (float): blending efficient. Smaller values lead to more transparent masks.
+
+        Returns:
+            output (VisImage): image object with mask drawn.
+        """
+        if color is None:
+            color = random_color(rgb=True, maximum=1)
+        color = mplc.to_rgb(color)
+
+        shape2d = (soft_mask.shape[0], soft_mask.shape[1])
+        rgba = np.zeros(shape2d + (4,), dtype="float32")
+        rgba[:, :, :3] = color
+        rgba[:, :, 3] = soft_mask * alpha
+        self.output.ax.imshow(rgba, extent=(0, self.output.width, self.output.height, 0))
+
+        if text is not None:
+            lighter_color = self._change_color_brightness(color, brightness_factor=0.7)
+            binary_mask = (soft_mask > 0.5).astype("uint8")
+            self._draw_text_in_mask(binary_mask, text, lighter_color)
         return self.output
 
     def draw_polygon(self, segment, color, edge_color=None, alpha=0.5):
@@ -1177,7 +1207,7 @@ class Visualizer:
         Convert different format of boxes to an NxB array, where B = 4 or 5 is the box dimension.
         """
         if isinstance(boxes, Boxes) or isinstance(boxes, RotatedBoxes):
-            return boxes.tensor.numpy()
+            return boxes.tensor.detach().numpy()
         else:
             return np.asarray(boxes)
 
@@ -1203,6 +1233,24 @@ class Visualizer:
             else:
                 ret.append(GenericMask(x, self.output.height, self.output.width))
         return ret
+
+    def _draw_text_in_mask(self, binary_mask, text, color):
+        """
+        Find proper places to draw text given a binary mask.
+        """
+        # TODO sometimes drawn on wrong objects. the heuristics here can improve.
+        _num_cc, cc_labels, stats, centroids = cv2.connectedComponentsWithStats(binary_mask, 8)
+        if stats[1:, -1].size == 0:
+            return
+        largest_component_id = np.argmax(stats[1:, -1]) + 1
+
+        # draw text on the largest component, as well as other very large components.
+        for cid in range(1, _num_cc):
+            if cid == largest_component_id or stats[cid, -1] > _LARGE_MASK_AREA_THRESH:
+                # median is more stable than centroid
+                # center = centroids[largest_component_id]
+                center = np.median((cc_labels == cid).nonzero(), axis=1)[::-1]
+                self.draw_text(text, center, color=color)
 
     def _convert_keypoints(self, keypoints):
         if isinstance(keypoints, Keypoints):

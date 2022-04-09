@@ -5,7 +5,9 @@ import logging
 import numpy as np
 import unittest
 from unittest import mock
+import torch
 from PIL import Image, ImageOps
+from torch.nn import functional as F
 
 from detectron2.config import get_cfg
 from detectron2.data import detection_utils
@@ -13,6 +15,19 @@ from detectron2.data import transforms as T
 from detectron2.utils.logger import setup_logger
 
 logger = logging.getLogger(__name__)
+
+
+def polygon_allclose(poly1, poly2):
+    """
+    Test whether two polygons are the same.
+    Both arguments are nx2 numpy arrays.
+    """
+    # ABCD and CDAB are the same polygon. So it's important to check after rolling
+    for k in range(len(poly1)):
+        rolled_poly1 = np.roll(poly1, k, axis=0)
+        if np.allclose(rolled_poly1, poly2):
+            return True
+    return False
 
 
 class TestTransforms(unittest.TestCase):
@@ -74,7 +89,7 @@ class TestTransforms(unittest.TestCase):
         err_msg = "transformed_polygon = {}, expected {}".format(
             transformed_polygons[0], expected_polygon
         )
-        self.assertTrue(np.allclose(transformed_polygons[0], expected_polygon), err_msg)
+        self.assertTrue(polygon_allclose(transformed_polygons[0], expected_polygon), err_msg)
 
     def test_apply_rotated_boxes_unequal_scaling_factor(self):
         np.random.seed(125)
@@ -225,7 +240,22 @@ class TestTransforms(unittest.TestCase):
             in_img = np.random.randint(0, 255, size=in_shape, dtype=np.uint8)
             tfm = T.ResizeTransform(in_shape[0], in_shape[1], out_shape[0], out_shape[1])
             out_img = tfm.apply_image(in_img)
-            self.assertTrue(out_img.shape == out_shape)
+            self.assertEqual(out_img.shape, out_shape)
+
+    def test_resize_shorted_edge_scriptable(self):
+        def f(image):
+            newh, neww = T.ResizeShortestEdge.get_output_shape(
+                image.shape[-2], image.shape[-1], 80, 133
+            )
+            return F.interpolate(image.unsqueeze(0), size=(newh, neww))
+
+        input = torch.randn(3, 10, 10)
+        script_f = torch.jit.script(f)
+        self.assertTrue(torch.allclose(f(input), script_f(input)))
+
+        # generalize to new shapes
+        input = torch.randn(3, 8, 100)
+        self.assertTrue(torch.allclose(f(input), script_f(input)))
 
     def test_extent_transform(self):
         input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]

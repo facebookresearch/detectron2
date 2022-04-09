@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
 import unittest
 
 from detectron2.layers import ShapeSpec
@@ -45,8 +46,6 @@ class TestMMDetWrapper(unittest.TestCase):
         MMDetDetector(
             detector=dict(
                 type="MaskRCNN",
-                # skip pretrained model for tests
-                # pretrained="torchvision://resnet50",
                 backbone=dict(
                     type="ResNet",
                     depth=50,
@@ -56,6 +55,8 @@ class TestMMDetWrapper(unittest.TestCase):
                     norm_cfg=dict(type="BN", requires_grad=True),
                     norm_eval=True,
                     style="pytorch",
+                    # skip pretrained model for tests
+                    # init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'))
                 ),
                 neck=dict(
                     type="FPN", in_channels=[256, 512, 1024, 2048], out_channels=256, num_outs=5
