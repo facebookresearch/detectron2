@@ -14,6 +14,9 @@ from tabulate import tabulate
 from termcolor import colored
 from torch.onnx import OperatorExportTypes
 
+# ONNX does no ship onnx.optimizer since version 1.9+
+import onnxoptimizer
+
 from .shared import (
     ScopedWS,
     construct_init_net_from_params,
@@ -64,10 +67,10 @@ def export_onnx_model(model, inputs):
             onnx_model = onnx.load_from_string(f.getvalue())
 
     # Apply ONNX's Optimization
-    all_passes = onnx.optimizer.get_available_passes()
+    all_passes = onnxoptimizer.get_available_passes()
     passes = ["fuse_bn_into_conv"]
     assert all(p in all_passes for p in passes)
-    onnx_model = onnx.optimizer.optimize(onnx_model, passes)
+    onnx_model = onnxoptimizer.optimize(onnx_model, passes)
     return onnx_model
 
 
