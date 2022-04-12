@@ -25,7 +25,10 @@ else:
     from detectron2.utils.file_io import PathManager
 
     from .caffe2_inference import ProtobufDetectionModel
-    from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format
+    from .caffe2_modeling import (
+        META_ARCH_CAFFE2_EXPORT_TYPE_MAP,
+        convert_batched_inputs_to_c2_format,
+    )
     from .shared import get_pb_arg_vali, get_pb_arg_vals, save_graph
 
     __all__ += [
@@ -119,7 +122,6 @@ else:
             logger.info("Tracing the model with torch.jit.trace ...")
             with torch.no_grad():
                 return torch.jit.trace(self.traceable_model, (self.traceable_inputs,))
-
 
     class Caffe2Model(nn.Module):
         """
