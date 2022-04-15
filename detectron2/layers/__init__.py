@@ -16,6 +16,7 @@ from .wrappers import (
     nonzero_tuple,
     cross_entropy,
     shapes_to_tensor,
+    move_device_like,
 )
 from .blocks import CNNBlockBase, DepthwiseSeparableConv2d
 from .aspp import ASPP

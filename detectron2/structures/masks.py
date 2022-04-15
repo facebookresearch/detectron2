@@ -99,8 +99,10 @@ class BitMasks:
         Args:
             tensor: bool Tensor of N,H,W, representing N instances in the image.
         """
-        device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
-        tensor = torch.as_tensor(tensor, dtype=torch.bool, device=device)
+        if isinstance(tensor, torch.Tensor):
+            tensor = tensor.to(torch.bool)
+        else:
+            tensor = torch.as_tensor(tensor, dtype=torch.bool, device=torch.device("cpu"))
         assert tensor.dim() == 3, tensor.size()
         self.image_size = tensor.shape[1:]
         self.tensor = tensor
