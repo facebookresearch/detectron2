@@ -5,7 +5,7 @@ import torch
 from torch import device
 from torch.nn import functional as F
 
-from detectron2.layers.wrappers import shapes_to_tensor
+from detectron2.layers.wrappers import move_device_like, shapes_to_tensor
 
 
 class ImageList(object):
@@ -103,7 +103,11 @@ class ImageList(object):
         else:
             # max_size can be a tensor in tracing mode, therefore convert to list
             batch_shape = [len(tensors)] + list(tensors[0].shape[:-2]) + list(max_size)
-            batched_imgs = tensors[0].new_full(batch_shape, pad_value)
+            device = (
+                None if torch.jit.is_scripting() else ("cpu" if torch.jit.is_tracing() else None)
+            )
+            batched_imgs = tensors[0].new_full(batch_shape, pad_value, device=device)
+            batched_imgs = move_device_like(batched_imgs, tensors[0])
             for img, pad_img in zip(tensors, batched_imgs):
                 pad_img[..., : img.shape[-2], : img.shape[-1]].copy_(img)
 
