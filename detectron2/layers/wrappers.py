@@ -130,3 +130,12 @@ def nonzero_tuple(x):
         return x.nonzero().unbind(1)
     else:
         return x.nonzero(as_tuple=True)
+
+
+@torch.jit.script_if_tracing
+def move_device_like(src: torch.Tensor, dst: torch.Tensor) -> torch.Tensor:
+    """
+    Tracing friendly way to cast tensor to another tensor's device. Device will be treated
+    as constant during tracing, scripting the casting process as whole can workaround this issue.
+    """
+    return src.to(dst.device)
