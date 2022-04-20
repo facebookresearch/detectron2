@@ -269,6 +269,13 @@ def add_hrnet_config(cfg: CN) -> None:
     _C.MODEL.HRNET.HRFPN.OUT_CHANNELS = 256
 
 
+def add_semi_sup_config(cfg: CN) -> None:
+    _C = cfg
+    
+    _C.SEMI.UNSUP_WEIGHT = 4.0
+    _C.SEMI.INFERENCE_ON = "student"
+
+
 def add_densepose_config(cfg: CN) -> None:
     add_densepose_head_config(cfg)
     add_hrnet_config(cfg)
