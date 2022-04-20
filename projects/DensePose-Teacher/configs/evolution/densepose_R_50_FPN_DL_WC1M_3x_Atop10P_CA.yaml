@@ -1,0 +1,28 @@
+_BASE_: "Base-RCNN-FPN-Atop10P_CA.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  DENSEPOSE_ON: True
+  ROI_HEADS:
+    NAME: "DensePoseROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NUM_CLASSES: 1
+  ROI_DENSEPOSE_HEAD:
+    NAME: "DensePoseDeepLabHead"
+    UV_CONFIDENCE:
+      ENABLED: True
+      TYPE: "iid_iso"
+    SEGM_CONFIDENCE:
+      ENABLED: True
+    POINT_REGRESSION_WEIGHTS: 0.0005
+    POOLER_TYPE: "ROIAlign"
+    NUM_COARSE_SEGM_CHANNELS: 2
+    COARSE_SEGM_TRAINED_BY_MASKS: True
+    INDEX_WEIGHTS: 1.0
+SOLVER:
+  CLIP_GRADIENTS:
+    ENABLED: True
+  WARMUP_FACTOR: 0.025
+  MAX_ITER: 270000
+  STEPS: (210000, 250000)
