@@ -90,8 +90,6 @@ class BBoxIOUTracker(BaseTracker):
         """
         See BaseTracker description
         """
-        if instances.has("pred_keypoints"):
-            raise NotImplementedError("Need to add support for keypoints")
         instances = self._initialize_extra_fields(instances)
         if self._prev_instances is not None:
             # calculate IoU of all bbox pairs
@@ -212,7 +210,6 @@ class BBoxIOUTracker(BaseTracker):
         untracked_instances = Instances(
             image_size=instances.image_size,
             pred_boxes=[],
-            pred_masks=[],
             pred_classes=[],
             scores=[],
             ID=[],
@@ -224,7 +221,14 @@ class BBoxIOUTracker(BaseTracker):
         prev_scores = list(self._prev_instances.scores)
         prev_ID_period = self._prev_instances.ID_period
         if instances.has("pred_masks"):
+            untracked_instances.set("pred_masks", [])
             prev_masks = list(self._prev_instances.pred_masks)
+        if instances.has("pred_keypoints"):
+            untracked_instances.set("pred_keypoints", [])
+            prev_keypoints = list(self._prev_instances.pred_keypoints)
+        if instances.has("pred_keypoint_heatmaps"):
+            untracked_instances.set("pred_keypoint_heatmaps", [])
+            prev_keypoint_heatmaps = list(self._prev_instances.pred_keypoint_heatmaps)
         for idx in self._untracked_prev_idx:
             x_left, y_top, x_right, y_bot = prev_bboxes[idx]
             if (
@@ -244,14 +248,25 @@ class BBoxIOUTracker(BaseTracker):
             )
             if instances.has("pred_masks"):
                 untracked_instances.pred_masks.append(prev_masks[idx].numpy().astype(np.uint8))
-
+            if instances.has("pred_keypoints"):
+                untracked_instances.pred_keypoints.append(
+                    prev_keypoints[idx].numpy().astype(np.uint8)
+                )
+            if instances.has("pred_keypoint_heatmaps"):
+                untracked_instances.pred_keypoint_heatmaps.append(
+                    prev_keypoint_heatmaps[idx].numpy().astype(np.float32)
+                )
         untracked_instances.pred_boxes = Boxes(torch.FloatTensor(untracked_instances.pred_boxes))
         untracked_instances.pred_classes = torch.IntTensor(untracked_instances.pred_classes)
         untracked_instances.scores = torch.FloatTensor(untracked_instances.scores)
         if instances.has("pred_masks"):
             untracked_instances.pred_masks = torch.IntTensor(untracked_instances.pred_masks)
-        else:
-            untracked_instances.remove("pred_masks")
+        if instances.has("pred_keypoints"):
+            untracked_instances.pred_keypoints = torch.IntTensor(untracked_instances.pred_keypoints)
+        if instances.has("pred_keypoint_heatmaps"):
+            untracked_instances.pred_keypoint_heatmaps = torch.FloatTensor(
+                untracked_instances.pred_keypoint_heatmaps
+            )
 
         return Instances.cat(
             [
