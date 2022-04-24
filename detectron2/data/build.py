@@ -239,6 +239,15 @@ def get_detection_dataset_dicts(
         names = [names]
     assert len(names), names
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in names]
+
+    if isinstance(dataset_dicts[0], torchdata.Dataset):
+        if len(dataset_dicts) > 1:
+            # ConcatDataset does not work for iterable style dataset.
+            # We could support concat for iterable as well, but it's often
+            # not a good idea to concat iterables anyway.
+            return torchdata.ConcatDataset(dataset_dicts)
+        return dataset_dicts[0]
+
     for dataset_name, dicts in zip(names, dataset_dicts):
         assert len(dicts), "Dataset '{}' is empty!".format(dataset_name)
 
@@ -249,9 +258,6 @@ def get_detection_dataset_dicts(
             load_proposals_into_dataset(dataset_i_dicts, proposal_file)
             for dataset_i_dicts, proposal_file in zip(dataset_dicts, proposal_files)
         ]
-
-    if isinstance(dataset_dicts[0], torchdata.Dataset):
-        return torchdata.ConcatDataset(dataset_dicts)
 
     dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))
 
@@ -351,18 +357,24 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
     if sampler is None:
         sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
         logger = logging.getLogger(__name__)
-        logger.info("Using training sampler {}".format(sampler_name))
-        if sampler_name == "TrainingSampler":
-            sampler = TrainingSampler(len(dataset))
-        elif sampler_name == "RepeatFactorTrainingSampler":
-            repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                dataset, cfg.DATALOADER.REPEAT_THRESHOLD
-            )
-            sampler = RepeatFactorTrainingSampler(repeat_factors)
-        elif sampler_name == "RandomSubsetTrainingSampler":
-            sampler = RandomSubsetTrainingSampler(len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO)
+        if isinstance(dataset, torchdata.IterableDataset):
+            logger.info("Not using any sampler since the dataset is IterableDataset.")
+            sampler = None
         else:
-            raise ValueError("Unknown training sampler: {}".format(sampler_name))
+            logger.info("Using training sampler {}".format(sampler_name))
+            if sampler_name == "TrainingSampler":
+                sampler = TrainingSampler(len(dataset))
+            elif sampler_name == "RepeatFactorTrainingSampler":
+                repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
+                    dataset, cfg.DATALOADER.REPEAT_THRESHOLD
+                )
+                sampler = RepeatFactorTrainingSampler(repeat_factors)
+            elif sampler_name == "RandomSubsetTrainingSampler":
+                sampler = RandomSubsetTrainingSampler(
+                    len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO
+                )
+            else:
+                raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
     return {
         "dataset": dataset,
