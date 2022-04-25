@@ -473,7 +473,9 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": InferenceSampler(len(dataset)),
+        "sampler": InferenceSampler(len(dataset))
+        if not isinstance(dataset, torchdata.IterableDataset)
+        else None,
     }
 
 

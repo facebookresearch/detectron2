@@ -126,6 +126,9 @@ class TestDataLoader(unittest.TestCase):
         dl = build_detection_train_loader(cfg, mapper=lambda x: x, aspect_ratio_grouping=False)
         next(iter(dl))
 
+        dl = build_detection_test_loader(cfg, "iter_data", mapper=lambda x: x)
+        next(iter(dl))
+
     def _check_is_range(self, data_loader, N):
         # check that data_loader produces range(N)
         data = list(iter(data_loader))
