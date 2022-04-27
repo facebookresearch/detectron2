@@ -3,7 +3,6 @@
 import io
 import os
 import unittest
-import onnx
 import torch
 
 from detectron2 import model_zoo
@@ -12,18 +11,21 @@ from detectron2.export import add_export_config
 from detectron2.export.flatten import TracingAdapter
 from detectron2.modeling import build_model
 from detectron2.utils.env import TORCH_VERSION
-from detectron2.utils.testing import get_sample_coco_image
+from detectron2.utils.testing import (
+    get_sample_coco_image,
+    SLOW_PUBLIC_CPU_TEST,
+    is_onnx_installed)
 
-SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
-    os.environ.get("CI") and not torch.cuda.is_available(),
-    "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
-)
 
 SUPPORTED_ONNX_OPSET = 14
 
 
 # TODO: this test requires manifold access, see: T88318502
-class TestONNXTracing(unittest.TestCase):
+class TestONNXTracingExport(unittest.TestCase):
+    def setUp(self):
+        if not is_onnx_installed():
+            self.skipTest("ONNX is not installed")
+
     def testMaskRCNNFPN(self):
         def inference_func(model, images):
             inputs = [{"image": image} for image in images]
@@ -65,6 +67,7 @@ class TestONNXTracing(unittest.TestCase):
         )
 
     def _test_model(self, model, inputs):
+        import onnx  # noqa: F401
         f = io.BytesIO()
         with torch.no_grad():
             torch.onnx.export(

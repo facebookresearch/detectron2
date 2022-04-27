@@ -28,6 +28,7 @@ from detectron2.utils.testing import (
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
+    SLOW_PUBLIC_CPU_TEST
 )
 
 """
