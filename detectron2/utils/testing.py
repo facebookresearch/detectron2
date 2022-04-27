@@ -1,7 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import io
 import numpy as np
+import os
 import torch
+import unittest
 
 from detectron2 import model_zoo
 from detectron2.config import CfgNode, instantiate
@@ -10,11 +12,32 @@ from detectron2.data.detection_utils import read_image
 from detectron2.modeling import build_model
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.file_io import PathManager
+from functools import wraps
+from torch.testing._internal.common_utils import _check_module_exists
 
 
 """
 Internal utilities for tests. Don't use except for writing tests.
 """
+
+SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
+    os.environ.get("CI") and not torch.cuda.is_available(),
+    "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
+)
+
+
+def is_onnx_installed():
+    return _check_module_exists("onnx")
+
+
+def skipIfNoONNX(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not is_onnx_installed:
+            raise unittest.SkipTest("test require ONNX, but ONNX not found")
+        else:
+            fn(*args, **kwargs)
+    return wrapper
 
 
 def get_model_no_weights(config_path):
