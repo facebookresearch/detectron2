@@ -88,6 +88,7 @@ class DetectionCheckpointer(Checkpointer):
         loaded = super()._load_file(filename)  # load native pth checkpoint
         if "model" not in loaded:
             loaded = {"model": loaded}
+        loaded["matching_heuristics"] = True
         return loaded
 
     def _load_model(self, checkpoint):
