@@ -13,7 +13,7 @@ from detectron2.modeling import build_model
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.file_io import PathManager
 from functools import wraps
-from torch.testing._internal.common_utils import _check_module_exists
+from torch.hub import _check_module_exists
 
 
 """
