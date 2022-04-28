@@ -5,6 +5,8 @@ import os
 import unittest
 import torch
 
+from torch.hub import _check_module_exists
+
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export import add_export_config
@@ -13,19 +15,14 @@ from detectron2.modeling import build_model
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import (
     get_sample_coco_image,
-    SLOW_PUBLIC_CPU_TEST,
-    _check_module_exists)
+    SLOW_PUBLIC_CPU_TEST)
 
 
 SUPPORTED_ONNX_OPSET = 14
 
 
-# TODO: this test requires manifold access, see: T88318502
+@unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
 class TestONNXTracingExport(unittest.TestCase):
-    def setUp(self):
-        if not _check_module_exists("onnx"):
-            self.skipTest("ONNX is not installed")
-
     def testMaskRCNNFPN(self):
         def inference_func(model, images):
             inputs = [{"image": image} for image in images]
