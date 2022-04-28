@@ -6,6 +6,7 @@ import os
 import tempfile
 import unittest
 import torch
+from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
 from detectron2.export import Caffe2Model, Caffe2Tracer
@@ -16,6 +17,8 @@ from detectron2.utils.testing import get_sample_coco_image
 # TODO: this test requires manifold access, see: T88318502
 # Running it on CircleCI causes crash, not sure why.
 @unittest.skipIf(os.environ.get("CIRCLECI"), "Caffe2 tests crash on CircleCI.")
+@unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
+@unittest.skipIf(not _check_module_exists("onnxoptimizer"), "`onnxoptimizer` not installed.")
 class TestCaffe2Export(unittest.TestCase):
     def setUp(self):
         setup_logger()
