@@ -14,7 +14,7 @@ from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import (
     get_sample_coco_image,
     SLOW_PUBLIC_CPU_TEST,
-    is_onnx_installed)
+    _check_module_exists)
 
 
 SUPPORTED_ONNX_OPSET = 14
@@ -23,7 +23,7 @@ SUPPORTED_ONNX_OPSET = 14
 # TODO: this test requires manifold access, see: T88318502
 class TestONNXTracingExport(unittest.TestCase):
     def setUp(self):
-        if not is_onnx_installed():
+        if not _check_module_exists("onnx"):
             self.skipTest("ONNX is not installed")
 
     def testMaskRCNNFPN(self):
@@ -56,7 +56,7 @@ class TestONNXTracingExport(unittest.TestCase):
             "Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml", inference_func
         )
 
-    # # bug fixed by https://github.com/pytorch/pytorch/pull/67734
+    # bug fixed by https://github.com/pytorch/pytorch/pull/67734
     @unittest.skipIf(TORCH_VERSION == (1, 10) and os.environ.get("CI"), "1.10 has bugs.")
     def testRetinaNet(self):
         def inference_func(model, image):
@@ -81,12 +81,7 @@ class TestONNXTracingExport(unittest.TestCase):
         assert onnx.load_from_string(f.getvalue())
 
     def _test_model_zoo_from_config_path(self, config_path, inference_func, batch=1):
-        # TODO: Using device='cuda' raises
-        #   RuntimeError: isBool() INTERNAL ASSERT FAILED at
-        #   "/github/pytorch/torch/include/ATen/core/ivalue.h":590,
-        #   please report a bug to PyTorch.
-        #   from /github/pytorch/torch/_ops.py:142 (return of OpOverloadPacket.__call__)
-        model = model_zoo.get(config_path, trained=True, device="cpu")
+        model = model_zoo.get(config_path, trained=True)
         image = get_sample_coco_image()
         inputs = tuple(image.clone() for _ in range(batch))
         adapter_model = TracingAdapter(model, inputs, inference_func)
@@ -101,7 +96,6 @@ class TestONNXTracingExport(unittest.TestCase):
         cfg = add_export_config(cfg)
         point_rend.add_pointrend_config(cfg)
         cfg.merge_from_file(config_path)
-        cfg.MODEL.DEVICE = "cpu"
         cfg.freeze()
 
         model = build_model(cfg)

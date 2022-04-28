@@ -26,20 +26,6 @@ SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
 )
 
 
-def is_onnx_installed():
-    return _check_module_exists("onnx")
-
-
-def skipIfNoONNX(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        if not is_onnx_installed:
-            raise unittest.SkipTest("test require ONNX, but ONNX not found")
-        else:
-            fn(*args, **kwargs)
-    return wrapper
-
-
 def get_model_no_weights(config_path):
     """
     Like model_zoo.get, but do not load any weights (even pretrained)
