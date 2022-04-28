@@ -36,11 +36,6 @@ https://detectron2.readthedocs.io/tutorials/deployment.html
 contains some explanations of this file.
 """
 
-SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
-    os.environ.get("CI") and not torch.cuda.is_available(),
-    "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
-)
-
 
 class TestScripting(unittest.TestCase):
     def testMaskRCNNFPN(self):
