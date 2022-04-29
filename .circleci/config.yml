@@ -139,7 +139,7 @@ run_unittests: &run_unittests
   - run:
       name: Run Unit Tests
       command: |
-        pytest -v --durations=15 tests  # parallel causes some random failures
+        pytest -sv --durations=15 tests  # parallel causes some random failures
 
 uninstall_tests: &uninstall_tests
   - run:
