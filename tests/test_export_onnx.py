@@ -4,7 +4,6 @@ import io
 import os
 import unittest
 import torch
-
 from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
@@ -13,10 +12,7 @@ from detectron2.export import add_export_config
 from detectron2.export.flatten import TracingAdapter
 from detectron2.modeling import build_model
 from detectron2.utils.env import TORCH_VERSION
-from detectron2.utils.testing import (
-    get_sample_coco_image,
-    SLOW_PUBLIC_CPU_TEST)
-
+from detectron2.utils.testing import SLOW_PUBLIC_CPU_TEST, get_sample_coco_image
 
 SUPPORTED_ONNX_OPSET = 14
 
@@ -65,6 +61,7 @@ class TestONNXTracingExport(unittest.TestCase):
 
     def _test_model(self, model, inputs):
         import onnx  # noqa: F401
+
         f = io.BytesIO()
         with torch.no_grad():
             torch.onnx.export(
