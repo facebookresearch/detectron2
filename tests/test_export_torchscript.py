@@ -24,12 +24,13 @@ from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import (
+    SLOW_PUBLIC_CPU_TEST,
     assert_instances_allclose,
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
-    SLOW_PUBLIC_CPU_TEST
 )
+
 
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html
