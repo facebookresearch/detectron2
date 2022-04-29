@@ -72,14 +72,15 @@ class TestONNXTracingExport(unittest.TestCase):
             SUPPORTED_ONNX_OPSET,
             "1.12",
         ):
+            print(' lets export')
             torch.onnx.export(
                 model,
                 inputs,
                 f,
                 training=torch.onnx.TrainingMode.EVAL,
-                operator_export_type=torch.onnx.OperatorExportTypes.ONNX,
                 opset_version=SUPPORTED_ONNX_OPSET,
             )
+            print(' export went through')
         assert onnx.load_from_string(f.getvalue())
 
     def _test_model_zoo_from_config_path(self, config_path, inference_func, batch=1):
