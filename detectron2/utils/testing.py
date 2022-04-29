@@ -17,7 +17,7 @@ from detectron2.utils.file_io import PathManager
 Internal utilities for tests. Don't use except for writing tests.
 """
 
-SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
+skip_on_cpu_ci = unittest.skipIf(
     os.environ.get("CI") and not torch.cuda.is_available(),
     "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
 )

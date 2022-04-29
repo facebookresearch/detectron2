@@ -24,11 +24,11 @@ from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.testing import (
-    SLOW_PUBLIC_CPU_TEST,
     assert_instances_allclose,
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
+    skip_on_cpu_ci,
 )
 
 
@@ -42,7 +42,7 @@ class TestScripting(unittest.TestCase):
     def testMaskRCNNFPN(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -110,7 +110,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -118,7 +118,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testCascadeRCNN(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -197,7 +197,7 @@ class TestTracing(unittest.TestCase):
             else:
                 assert_instances_allclose(outputs, traced_outputs, size_as_tensor=True)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testMaskRCNNFPN_batched(self):
         def inference_func(model, image1, image2):
             inputs = [{"image": image1}, {"image": image2}]
