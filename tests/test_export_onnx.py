@@ -11,8 +11,13 @@ from detectron2.config import get_cfg
 from detectron2.export import SUPPORTED_ONNX_OPSET, add_export_config
 from detectron2.export.flatten import TracingAdapter
 from detectron2.modeling import build_model
-from detectron2.utils.env import TORCH_VERSION
-from detectron2.utils.testing import get_sample_coco_image, skip_on_cpu_ci
+from detectron2.utils.testing import (
+    get_sample_coco_image,
+    pytorch_112_symbolic_opset9_repeat_interleave,
+    pytorch_112_symbolic_opset9_to,
+    register_custom_op_onnx_export,
+    skip_on_cpu_ci,
+)
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
@@ -47,8 +52,6 @@ class TestONNXTracingExport(unittest.TestCase):
             "Misc/cascade_mask_rcnn_R_50_FPN_3x.yaml", inference_func
         )
 
-    # bug fixed by https://github.com/pytorch/pytorch/pull/67734
-    @unittest.skipIf(TORCH_VERSION == (1, 10) and os.environ.get("CI"), "1.10 has bugs.")
     def testRetinaNet(self):
         def inference_func(model, image):
             return model.forward([{"image": image}])[0]["instances"]
@@ -61,7 +64,14 @@ class TestONNXTracingExport(unittest.TestCase):
         import onnx  # noqa: F401
 
         f = io.BytesIO()
-        with torch.no_grad():
+        with torch.no_grad(), register_custom_op_onnx_export(
+            "::to", pytorch_112_symbolic_opset9_to, SUPPORTED_ONNX_OPSET, "1.12"
+        ), register_custom_op_onnx_export(
+            "::repeat_interleave",
+            pytorch_112_symbolic_opset9_repeat_interleave,
+            SUPPORTED_ONNX_OPSET,
+            "1.12",
+        ):
             torch.onnx.export(
                 model,
                 inputs,
@@ -85,7 +95,6 @@ class TestONNXTracingExport(unittest.TestCase):
 
         cfg = get_cfg()
         cfg.DATALOADER.NUM_WORKERS = 0
-        cfg = add_export_config(cfg)
         point_rend.add_pointrend_config(cfg)
         cfg.merge_from_file(config_path)
         cfg.freeze()
