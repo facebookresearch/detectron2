@@ -8,13 +8,11 @@ from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
-from detectron2.export import add_export_config
+from detectron2.export import SUPPORTED_ONNX_OPSET, add_export_config
 from detectron2.export.flatten import TracingAdapter
 from detectron2.modeling import build_model
 from detectron2.utils.env import TORCH_VERSION
-from detectron2.utils.testing import SLOW_PUBLIC_CPU_TEST, get_sample_coco_image
-
-SUPPORTED_ONNX_OPSET = 14
+from detectron2.utils.testing import get_sample_coco_image, skip_on_cpu_ci
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
@@ -29,7 +27,7 @@ class TestONNXTracingExport(unittest.TestCase):
             "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func
         )
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -39,7 +37,7 @@ class TestONNXTracingExport(unittest.TestCase):
             "COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func
         )
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testCascadeRCNN(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -100,7 +98,7 @@ class TestONNXTracingExport(unittest.TestCase):
         adapter_model.eval()
         return self._test_model(adapter_model, adapter_model.flattened_inputs)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skip_on_cpu_ci
     def testMaskRCNNFPN_batched(self):
         def inference_func(model, image1, image2):
             inputs = [{"image": image1}, {"image": image2}]
