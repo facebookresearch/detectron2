@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
 import ast
 import builtins
+import collections.abc as abc
 import importlib
 import inspect
 import logging
 import os
 import uuid
-from collections import abc
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import is_dataclass
