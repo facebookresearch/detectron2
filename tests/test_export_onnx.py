@@ -210,7 +210,7 @@ def _pytorch_112_symbolic_opset9_to(g, self, *args):
         return self
 
     if len(args) == 4:
-        # TestONNXRuntime::test_ones_bool shows args[0] of aten::to() can be onnx::Constant[value=<Tensor>]()
+        # TestONNXRuntime::test_ones_bool shows args[0] of aten::to can be onnx::Constant[Tensor]
         # In this case, the constant value is a tensor not int,
         # so sym_help._maybe_get_const(args[0], 'i') would not work.
         dtype = args[0]

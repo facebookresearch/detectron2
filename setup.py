@@ -185,6 +185,7 @@ setup(
         "hydra-core>=1.1",
         "black==21.4b2",
         "scipy>1.5.1",
+        "packaging"
         # If a new dependency is required at import time (in addition to runtime), it
         # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
     ],
