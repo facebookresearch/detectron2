@@ -96,12 +96,10 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Method to get labels and DensePose results from an instance
-
         Args:
             instance (Instances): an instance of
                 `DensePoseEmbeddingPredictorOutputWithConfidences`
             bbox_xywh (IntTupleBox): the corresponding bounding box
-
         Return:
             mask (torch.Tensor): shape [H, W], DensePose segmentation mask
             embeddings (Tuple[torch.Tensor]): a tensor of shape [D, H, W]

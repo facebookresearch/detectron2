@@ -223,7 +223,7 @@ if __name__ == "__main__":
         from detectron2.utils.collect_env import collect_env_info as f
 
         print(f())
-    except ImportError:
+    except:
         print(collect_env_info())
 
     if torch.cuda.is_available():
