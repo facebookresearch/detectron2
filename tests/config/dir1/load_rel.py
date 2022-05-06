@@ -1,4 +1,3 @@
-
 # test that load_rel can work
 from detectron2.config import LazyConfig
 

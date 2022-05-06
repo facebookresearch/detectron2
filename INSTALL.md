@@ -247,8 +247,8 @@ whose version is closer to what's used by PyTorch (available in `torch.__config_
 "library not found for -lstdc++" on older version of MacOS
 </summary>
 <br/>
-See
-[this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
+
+See [this stackoverflow answer](https://stackoverflow.com/questions/56083725/macos-build-issues-lstdc-not-found-while-building-python-package).
 
 </details>
 
