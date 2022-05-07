@@ -2,7 +2,7 @@
 
 ## Inference with Pre-trained Models
 
-1. Pick a model and its config file from [Model Zoo](MODEL_ZOO.md), for example [densepose_rcnn_R_50_FPN_s1x.yaml](../configs/densepose_rcnn_R_50_FPN_s1x.yaml)
+1. Pick a model and its config file from the [chart-based model zoo](DENSEPOSE_IUV.md#-model-zoo-and-baselines) or [continuous surface embeddings model zoo](DENSEPOSE_CSE.md#-model-zoo-and-baselines), for example [densepose_rcnn_R_50_FPN_s1x.yaml](../configs/densepose_rcnn_R_50_FPN_s1x.yaml)
 2. Run the [Apply Net](TOOL_APPLY_NET.md) tool to visualize the results or save the to disk. For example, to use contour visualization for DensePose, one can run:
 ```bash
 python apply_net.py show configs/densepose_rcnn_R_50_FPN_s1x.yaml densepose_rcnn_R_50_FPN_s1x.pkl image.jpg dp_contour,bbox --output image_densepose_contour.png
