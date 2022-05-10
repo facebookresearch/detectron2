@@ -64,6 +64,8 @@ class DensePoseChartLoss:
         self.segm_loss = MaskOrSegmentationLoss(cfg)
 
         self.w_pseudo     = cfg.MODEL.SEMI.UNSUP_WEIGHTS
+        self.w_p_segm     = cfg.MODEL.SEMI.SEGM_WEIGHTS
+        self.w_p_points   = cfg.MODEL.SEIM.POINTS_WEIGHTS
         self.pseudo_threshold = cfg.MODEL.SEMI.THRESHOLD
         self.n_channels = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
 
@@ -199,8 +201,8 @@ class DensePoseChartLoss:
     def produce_fake_densepose_losses_unsup(self, densepose_predictor_outputs: Any) -> LossDict:
         return {
             "loss_unsup_segm": densepose_predictor_outputs.fine_segm.sum() * 0,
-            # "loss_u_p": densepose_predictor_outputs.u.sum() * 0,
-            # "loss_v_p": densepose_predictor_outputs.v.sum() * 0,
+            "loss_u_p": densepose_predictor_outputs.u.sum() * 0,
+            "loss_v_p": densepose_predictor_outputs.v.sum() * 0,
         }
 
     def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any) -> LossDict:
@@ -337,8 +339,8 @@ class DensePoseChartLoss:
         """
 
         losses = {}
-        pseudo_keys = ["fine_segm_p"]  #, "u_p", "v_p"]
-        est_keys = ["fine_segm"]  #, "u", "v"]
+        pseudo_keys = ["fine_segm_p", "u_p", "v_p"]
+        est_keys = ["fine_segm", "u", "v"]
         mask = None
         index = None
         for p_key, e_key in zip(pseudo_keys, est_keys):
@@ -364,13 +366,13 @@ class DensePoseChartLoss:
                 if mask.sum() <= 0:
                     return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
                 index = index[mask].long()
-                losses.update({"loss_unsup_segm": F.cross_entropy(est[mask], index) * self.w_pseudo})
+                losses.update({"loss_unsup_segm": F.cross_entropy(est[mask], index) * self.w_pseudo * self.w_p_segm})
             else:
                 pseudo = pseudo[mask]
                 pseudo = pseudo[np.arange(pseudo.shape[0]), index]
                 est = est[mask]
                 est = est[np.arange(index.shape[0]), index]
-                losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo
+                losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points
                                })
         return losses
 
@@ -390,6 +392,6 @@ class DensePoseChartLoss:
         """
         return {
             "loss_unsup_segm": densepose_predictor_outputs.fine_segm_p.sum() * 0,
-            # "loss_u_p": densepose_predictor_outputs.u_p.sum() * 0,
-            # "loss_v_p": densepose_predictor_outputs.v_p.sum() * 0,
+            "loss_u_p": densepose_predictor_outputs.u_p.sum() * 0,
+            "loss_v_p": densepose_predictor_outputs.v_p.sum() * 0,
         }
