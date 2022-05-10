@@ -299,6 +299,10 @@ class PackedChartBasedAnnotations:
     point_bbox_indices: torch.Tensor
     bbox_indices: torch.Tensor
 
+    fine_segm_p: Optional[torch.Tensor]
+    u_p: Optional[torch.Tensor]
+    v_p: Optional[torch.Tensor]
+
 
 class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
     """
@@ -320,6 +324,10 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         self.bbox_indices = []
         self.nxt_bbox_with_dp_index = 0
         self.nxt_bbox_index = 0
+
+        self.s_p = []
+        self.u_p = []
+        self.v_p = []
 
     def accumulate(self, instances_one_image: Instances):
         """
@@ -373,6 +381,14 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         self.v_gt.append(dp_gt.v)
         if hasattr(dp_gt, "segm"):
             self.s_gt.append(dp_gt.segm.unsqueeze(0))
+
+        if hasattr(dp_gt, "dp_p_segm"):
+            self.s_p.append(dp_gt.dp_p_segm.unsqueeze(0))
+        if hasattr(dp_gt, "dp_p_u"):
+            self.u_p.append(dp_gt.dp_p_u.unsqueeze(0))
+        if hasattr(dp_gt, "dp_p_v"):
+            self.v_p.append(dp_gt.dp_p_v.unsqueeze(0))
+        
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
         self.bbox_xywh_est.append(box_xywh_est.view(-1, 4))
         self.point_bbox_with_dp_indices.append(
@@ -402,6 +418,15 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             # ignore segmentation annotations, if not all the instances contain those
             coarse_segm_gt=torch.cat(self.s_gt, 0)
             if len(self.s_gt) == len(self.bbox_xywh_gt)
+            else None,
+            fine_segm_p=torch.cat(self.s_p, 0)
+            if len(self.s_p) == len(self.bbox_xywh_gt)
+            else None,
+            u_p=torch.cat(self.u_p, 0)
+            if len(self.u_p) == len(self.bbox_xywh_gt)
+            else None,
+            v_p=torch.cat(self.v_p, 0)
+            if len(self.v_p) == len(self.bbox_xywh_gt)
             else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),

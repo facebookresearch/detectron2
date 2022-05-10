@@ -271,9 +271,16 @@ def add_hrnet_config(cfg: CN) -> None:
 
 def add_semi_sup_config(cfg: CN) -> None:
     _C = cfg
-    
-    _C.SEMI.UNSUP_WEIGHT = 4.0
-    _C.SEMI.INFERENCE_ON = "student"
+
+    _C.MODEL.SEMI = CN()
+    _C.MODEL.SEMI.META_ARCHITECTURE = "GeneralizedRCNN"
+    _C.MODEL.SEMI.UNSUP_WEIGHTS = 1
+    _C.MODEL.SEMI.SEGM_WEIGHTS = 0.5
+    _C.MODEL.SEMI.POINTS_WEIGHTS = 1
+    _C.MODEL.SEMI.THRESHOLD = 0.9
+    _C.MODEL.SEMI.INFERENCE_ON = "student"
+    _C.MODEL.SEMI.TEACHER_WEIGHTS = ""
+    _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
 
 
 def add_densepose_config(cfg: CN) -> None:
@@ -282,3 +289,4 @@ def add_densepose_config(cfg: CN) -> None:
     add_bootstrap_config(cfg)
     add_dataset_category_config(cfg)
     add_evaluation_config(cfg)
+    add_semi_sup_config(cfg)

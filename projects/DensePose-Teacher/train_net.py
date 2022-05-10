@@ -43,9 +43,14 @@ def main(args):
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
-        DensePoseCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
-            cfg.MODEL.WEIGHTS, resume=args.resume
-        )
+        if cfg.MODEL.SEMI.INFERENCE_ON == "student":
+            DensePoseCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
+                cfg.MODEL.WEIGHTS, resume=args.resume
+            )
+        elif cfg.MODEL.SEMI.INFERENCE_ON == "teacher":
+            DensePoseCheckpointer(model, save_dir=cfg.MODEL.SEMI.TEACHER_OUTPUT).resume_or_load(
+                cfg.MODEL.SEMI.TEACHER_WEIGHTS, resume=args.resume
+            )
         res = Trainer.test(cfg, model)
         if cfg.TEST.AUG.ENABLED:
             res.update(Trainer.test_with_TTA(cfg, model))

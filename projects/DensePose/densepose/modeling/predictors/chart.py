@@ -2,6 +2,7 @@
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.layers import ConvTranspose2d, interpolate
@@ -87,8 +88,8 @@ class DensePoseChartPredictor(nn.Module):
            An instance of DensePoseChartPredictorOutput
         """
         return DensePoseChartPredictorOutput(
-            coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
-            fine_segm=self.interp2d(self.index_uv_lowres(head_outputs)),
+            coarse_segm=self.interp2d(F.softmax(self.ann_index_lowres(head_outputs), dim=1)),
+            fine_segm=self.interp2d(F.softmax(self.index_uv_lowres(head_outputs), dim=1)),
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
         )

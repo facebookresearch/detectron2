@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from matplotlib.container import BarContainer
 import torch
 
 from detectron2.utils.logger import _log_api_usage

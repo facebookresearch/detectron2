@@ -1,4 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from typing import Any
 import numpy as np
 import torch
 from torch.nn import functional as F
@@ -47,6 +48,15 @@ class DensePoseDataRelative(object):
     N_PART_LABELS = 24
     MASK_SIZE = 256
 
+    # Key for pseudo coarse segm labels
+    PSEUDO_SEGM = "dp_p_segm"
+    # Key for pseudo u coordinates
+    PSEUDO_U = "dp_p_u"
+    # Key for pseudo v coordinates
+    PSEUDO_V = "dp_p_v"
+    # Size of pseudo labels
+    PSEUDO_MASK_SIZE = 112
+
     def __init__(self, annotation, cleanup=False):
         self.x = torch.as_tensor(annotation[DensePoseDataRelative.X_KEY])
         self.y = torch.as_tensor(annotation[DensePoseDataRelative.Y_KEY])
@@ -83,8 +93,17 @@ class DensePoseDataRelative(object):
                 setattr(new_data, attr, getattr(self, attr).to(device))
         if hasattr(self, "mesh_id"):
             new_data.mesh_id = self.mesh_id
+        if hasattr(self, "dp_p_segm"):
+            new_data.dp_p_segm = self.dp_p_segm
+        if hasattr(self, "dp_p_u"):
+            new_data.dp_p_u = self.dp_p_u
+        if hasattr(self, "dp_p_v"):
+            new_data.dp_p_v = self.dp_p_v
         new_data.device = device
         return new_data
+
+    def set(self, name: str, value: Any) -> None:
+        setattr(self, name, value)
 
     @staticmethod
     def extract_segmentation_mask(annotation):
@@ -165,6 +184,9 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.S_KEY,
             DensePoseDataRelative.VERTEX_IDS_KEY,
             DensePoseDataRelative.MESH_NAME_KEY,
+            DensePoseDataRelative.PSEUDO_SEGM,
+            DensePoseDataRelative.PSEUDO_U,
+            DensePoseDataRelative.PSEUDO_V
         ]:
             if key in annotation:
                 del annotation[key]
