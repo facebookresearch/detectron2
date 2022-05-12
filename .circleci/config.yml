@@ -131,7 +131,7 @@ install_detectron2: &install_detectron2
         # Remove first, in case it's in the CI cache
         pip uninstall -y detectron2
 
-        pip install --progress-bar off -e .[all]
+        pip install --no-build-isolation --progress-bar off -e .[all]
         python -m detectron2.utils.collect_env
         ./datasets/prepare_for_tests.sh
 
