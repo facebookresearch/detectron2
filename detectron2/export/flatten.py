@@ -1,4 +1,6 @@
+# noqa D100
 # Copyright (c) Facebook, Inc. and its affiliates.
+import warnings
 import collections
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
@@ -13,10 +15,9 @@ from .torchscript_patch import patch_builtin_len
 
 @dataclass
 class Schema:
-    """
-    A Schema defines how to flatten a possibly hierarchical object into tuple of
-    primitive objects, so it can be used as inputs/outputs of PyTorch's tracing.
+    """Schema representing a flatten hierarchical object into tuple of primitive types.
 
+    The flatten representation can be used as inputs/outputs of PyTorch's tracing.
     PyTorch does not support tracing a function that produces rich output
     structures (e.g. dict, Instances, Boxes). To trace such a function, we
     flatten the rich object into tuple of tensors, and return this tuple of tensors
@@ -34,10 +35,10 @@ class Schema:
     # inspired by FetchMapper in tensorflow/python/client/session.py
 
     @classmethod
-    def flatten(cls, obj):
+    def flatten(cls, obj):  # noqa D107
         raise NotImplementedError
 
-    def __call__(self, values):
+    def __call__(self, values):  # noqa D107
         raise NotImplementedError
 
     @staticmethod
@@ -66,10 +67,12 @@ class Schema:
 
 @dataclass
 class ListSchema(Schema):
+    """Flatten list types."""
+
     schemas: List[Schema]  # the schemas that define how to flatten each element in the list
     sizes: List[int]  # the flattened length of each element
 
-    def __call__(self, values):
+    def __call__(self, values):  # noqa D107
         values = self._split(values, self.sizes)
         if len(values) != len(self.schemas):
             raise ValueError(
@@ -79,7 +82,7 @@ class ListSchema(Schema):
         return list(values)
 
     @classmethod
-    def flatten(cls, obj):
+    def flatten(cls, obj):  # noqa D107
         res = [flatten_to_tuple(k) for k in obj]
         values, sizes = cls._concat([k[0] for k in res])
         return values, cls([k[1] for k in res], sizes)
@@ -87,30 +90,36 @@ class ListSchema(Schema):
 
 @dataclass
 class TupleSchema(ListSchema):
-    def __call__(self, values):
+    """Flatten tuple types."""
+
+    def __call__(self, values):  # noqa D107
         return tuple(super().__call__(values))
 
 
 @dataclass
 class IdentitySchema(Schema):
-    def __call__(self, values):
+    """Flatten primitive and torch.Tensor types."""
+
+    def __call__(self, values):  # noqa D107
         return values[0]
 
     @classmethod
-    def flatten(cls, obj):
+    def flatten(cls, obj):  # noqa D107
         return (obj,), cls()
 
 
 @dataclass
 class DictSchema(ListSchema):
+    """Flatten dict types."""
+
     keys: List[str]
 
-    def __call__(self, values):
+    def __call__(self, values):  # noqa D107
         values = super().__call__(values)
         return dict(zip(self.keys, values))
 
     @classmethod
-    def flatten(cls, obj):
+    def flatten(cls, obj):  # noqa D107
         for k in obj.keys():
             if not isinstance(k, str):
                 raise KeyError("Only support flattening dictionaries if keys are str.")
@@ -122,13 +131,15 @@ class DictSchema(ListSchema):
 
 @dataclass
 class InstancesSchema(DictSchema):
-    def __call__(self, values):
+    """Flatten detectron2.structures.Instances."""
+
+    def __call__(self, values):  # noqa D107
         image_size, fields = values[-1], values[:-1]
         fields = super().__call__(fields)
         return Instances(image_size, **fields)
 
     @classmethod
-    def flatten(cls, obj):
+    def flatten(cls, obj):  # noqa D107
         ret, schema = super().flatten(obj.get_fields())
         size = obj.image_size
         if not isinstance(size, torch.Tensor):
@@ -138,25 +149,27 @@ class InstancesSchema(DictSchema):
 
 @dataclass
 class TensorWrapSchema(Schema):
-    """
-    For classes that are simple wrapper of tensors, e.g.
-    Boxes, RotatedBoxes, BitMasks
+    """Flatten torch.Tensor wrappers.
+
+    Such types must have a `tensor` attribute.
+    e.g. detectron2.structures.{Boxes,RotatedBoxes,BitMasks}
     """
 
     class_name: str
 
-    def __call__(self, values):
+    def __call__(self, values):  # noqa D107
         return locate(self.class_name)(values[0])
 
     @classmethod
-    def flatten(cls, obj):
+    def flatten(cls, obj):  # noqa D107
         return (obj.tensor,), cls(_convert_target_to_string(type(obj)))
 
 
 # if more custom structures needed in the future, can allow
 # passing in extra schemas for custom types
 def flatten_to_tuple(obj):
-    """
+    """Recursively flattens rich `obj` into tuples.
+
     Flatten an object so it can be used for PyTorch tracing.
     Also returns how to rebuild the original object from the flattened outputs.
 
@@ -184,7 +197,8 @@ def flatten_to_tuple(obj):
 
 
 class TracingAdapter(nn.Module):
-    """
+    """Wraps a model to enable tracing it with rich inputs and/or outputs.
+
     A model may take rich input/output format (e.g. dict or custom classes),
     but `torch.jit.trace` requires tuple of tensors as input/output.
     This adapter flattens input/output format of a model so it becomes traceable.
@@ -205,6 +219,22 @@ class TracingAdapter(nn.Module):
         flattened_outputs = traced(*adapter.flattened_inputs)
         # adapter knows the schema to convert it back (new_outputs == outputs)
         new_outputs = adapter.outputs_schema(flattened_outputs)
+
+    Args:
+        model: an nn.Module
+        inputs: An input argument or a tuple of input arguments used to call model.
+            After flattening, it has to only consist of tensors.
+        inference_func: a callable that takes (model, *inputs), calls the
+            model with inputs, and return outputs. By default it
+            is ``lambda model, *inputs: model(*inputs)``. Can be override
+            if you need to call the model differently.
+        allow_non_tensor: allow inputs/outputs to contain non-tensor objects.
+            This option will filter out non-tensor objects to make the
+            model traceable, but ``inputs_schema``/``outputs_schema`` cannot be
+            used anymore because inputs/outputs cannot be rebuilt from pure tensors.
+            This is useful when you're only interested in the single trace of
+            execution (e.g. for flop count), but not interested in
+            generalizing the traced graph to new inputs.
     """
 
     flattened_inputs: Tuple[torch.Tensor] = None
@@ -228,24 +258,7 @@ class TracingAdapter(nn.Module):
         inputs,
         inference_func: Optional[Callable] = None,
         allow_non_tensor: bool = False,
-    ):
-        """
-        Args:
-            model: an nn.Module
-            inputs: An input argument or a tuple of input arguments used to call model.
-                After flattening, it has to only consist of tensors.
-            inference_func: a callable that takes (model, *inputs), calls the
-                model with inputs, and return outputs. By default it
-                is ``lambda model, *inputs: model(*inputs)``. Can be override
-                if you need to call the model differently.
-            allow_non_tensor: allow inputs/outputs to contain non-tensor objects.
-                This option will filter out non-tensor objects to make the
-                model traceable, but ``inputs_schema``/``outputs_schema`` cannot be
-                used anymore because inputs/outputs cannot be rebuilt from pure tensors.
-                This is useful when you're only interested in the single trace of
-                execution (e.g. for flop count), but not interested in
-                generalizing the traced graph to new inputs.
-        """
+    ):  # noqa D107
         super().__init__()
         if isinstance(model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)):
             model = model.module
@@ -254,6 +267,7 @@ class TracingAdapter(nn.Module):
             inputs = (inputs,)
         self.inputs = inputs
         self.allow_non_tensor = allow_non_tensor
+        self._is_in_torch_onnx_export = torch.onnx.is_in_onnx_export()
 
         if inference_func is None:
             inference_func = lambda model, *inputs: model(*inputs)  # noqa
@@ -277,6 +291,7 @@ class TracingAdapter(nn.Module):
                     )
 
     def forward(self, *args: torch.Tensor):
+        """Runs `model.forward` with original input format and return the output flattened."""
         with torch.no_grad(), patch_builtin_len():
             if self.inputs_schema is not None:
                 inputs_orig_format = self.inputs_schema(args)
@@ -307,6 +322,18 @@ class TracingAdapter(nn.Module):
                         "cannot flatten to tensors."
                     )
             else:  # schema is valid
+                # During torch.onnx.export(), extra outputs that `Schema` implementations
+                # can generate (e.g. `InstancesSchema`) are dropped from final ONNX graph.
+                # This is OK because ONNX graphs do not need to rebuild original data.
+                if len(flattened_output_tensors) > len(flattened_outputs) and\
+                        self.__is_in_torch_onnx_export:
+                    warnings.warn("PyTorch ONNX export (`torch.onnx.export`) detected!"
+                                  " To prevent extra outputs in the ONNX graph, the original"
+                                  " model output cannot be reconstructed through"
+                                  " `adapter.outputs_schema(flattened_outputs)`."
+                                  " For results evaluation, use `torch.jit.trace` instead.")
+                    flattened_outputs = flattened_outputs[:len(outputs)]
+
                 if self.outputs_schema is None:
                     self.outputs_schema = schema
                 else:
@@ -317,12 +344,15 @@ class TracingAdapter(nn.Module):
             return flattened_outputs
 
     def _create_wrapper(self, traced_model):
-        """
-        Return a function that has an input/output interface the same as the
-        original model, but it calls the given traced model under the hood.
-        """
+        """Returns a function that wraps input and unwraps output of `traced_model.forward`."""
 
         def forward(*args):
+            if traced_model._is_in_torch_onnx_export:
+                warnings.warn("PyTorch ONNX export (`torch.onnx.export`) detected!"
+                              " To prevent extra outputs in the ONNX graph, the original"
+                              " model output cannot be reconstructed through"
+                              " `adapter.outputs_schema(flattened_outputs)`."
+                              " For results evaluation, use `torch.jit.trace` instead.")
             flattened_inputs, _ = flatten_to_tuple(args)
             flattened_outputs = traced_model(*flattened_inputs)
             return self.outputs_schema(flattened_outputs)
