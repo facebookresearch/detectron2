@@ -4,6 +4,7 @@ import math
 import torch
 import torch.nn.functional as F
 
+from detectron2.structures import Boxes
 from detectron2.layers import cat
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
@@ -73,7 +74,11 @@ class InstancesList(object):
         return name in self.batch_extra_fields
 
     def set(self, name, value):
-        data_len = len(value)
+        # len(tensor) leads to constants during tracing mode
+        if isinstance(value, Boxes):
+            data_len = value.tensor.shape[0]
+        else:
+            data_len = value.shape[0]
         if len(self.batch_extra_fields):
             assert (
                 len(self) == data_len
