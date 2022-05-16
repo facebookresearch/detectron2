@@ -110,8 +110,7 @@ class Trainer(TrainerBase):
         )
         self.teacher_checkpointer = DetectionCheckpointer(
             teacher_model,
-            cfg.MODEL.SEMI.TEACHER_OUTPUT,
-            trainer=weakref.proxy(self),
+            cfg.MODEL.SEMI.TEACHER_OUTPUT
         )
 
         if comm.is_main_process():
@@ -138,11 +137,11 @@ class Trainer(TrainerBase):
         Args:
             resume (bool): whether to do resume or not
         """
-        self.student_checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
         teacher_weights = self.cfg.MODEL.SEMI.TEACHER_WEIGHTS
         if teacher_weights is None or teacher_weights == "":
             teacher_weights = self.cfg.MODEL.WEIGHTS
         self.teacher_checkpointer.resume_or_load(teacher_weights, resume=resume)
+        self.student_checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
         if resume and self.student_checkpointer.has_checkpoint():
             # The checkpoint stores the training iteration that just finished, thus we start
             # at the next iteration
@@ -180,8 +179,8 @@ class Trainer(TrainerBase):
         # This is not always the best: if checkpointing has a different frequency,
         # some checkpoints may have more precise statistics than others.
         if comm.is_main_process():
-            ret.append(hooks.PeriodicCheckpointer(self.student_checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
             ret.append(hooks.PeriodicCheckpointer(self.teacher_checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
+            ret.append(hooks.PeriodicCheckpointer(self.student_checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
             ret.append(MeanTeacher())
 
         def test_and_save_results():

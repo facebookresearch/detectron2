@@ -65,7 +65,7 @@ class DensePoseChartLoss:
 
         self.w_pseudo     = cfg.MODEL.SEMI.UNSUP_WEIGHTS
         self.w_p_segm     = cfg.MODEL.SEMI.SEGM_WEIGHTS
-        self.w_p_points   = cfg.MODEL.SEIM.POINTS_WEIGHTS
+        self.w_p_points   = cfg.MODEL.SEMI.POINTS_WEIGHTS
         self.pseudo_threshold = cfg.MODEL.SEMI.THRESHOLD
         self.n_channels = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
 

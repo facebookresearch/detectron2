@@ -16,7 +16,7 @@ class MeanTeacher(HookBase):
         decay_intervals=None,
         decay_factor=0.1,
     ):
-        assert momentum >= 0 and momentum <= 1
+        assert 0 <= momentum <= 1
         self.momentum = momentum
         assert isinstance(interval, int) and interval > 0
         self.warm_up = warm_up
@@ -44,3 +44,11 @@ class MeanTeacher(HookBase):
             student_model.named_parameters(), teacher_model.named_parameters()
         ):
             tgt_parm.data.mul_(momentum).add_(src_parm.data, alpha=1 - momentum)
+
+    def state_dict(self):
+        return {"meanteacher_momentum": self.momentum}
+
+    def load_state_dict(self, state_dict):
+        logger = logging.getLogger(__name__)
+        logger.info("Loading mean teacher from state_dict ...")
+        self.momentum = state_dict["meanteacher_momentum"]
