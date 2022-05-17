@@ -1,7 +1,7 @@
 # noqa D100
 # Copyright (c) Facebook, Inc. and its affiliates.
-import warnings
 import collections
+import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 import torch
@@ -325,14 +325,18 @@ class TracingAdapter(nn.Module):
                 # During torch.onnx.export(), extra outputs that `Schema` implementations
                 # can generate (e.g. `InstancesSchema`) are dropped from final ONNX graph.
                 # This is OK because ONNX graphs do not need to rebuild original data.
-                if len(flattened_output_tensors) > len(flattened_outputs) and\
-                        self.__is_in_torch_onnx_export:
-                    warnings.warn("PyTorch ONNX export (`torch.onnx.export`) detected!"
-                                  " To prevent extra outputs in the ONNX graph, the original"
-                                  " model output cannot be reconstructed through"
-                                  " `adapter.outputs_schema(flattened_outputs)`."
-                                  " For results evaluation, use `torch.jit.trace` instead.")
-                    flattened_outputs = flattened_outputs[:len(outputs)]
+                if (
+                    len(flattened_output_tensors) > len(flattened_outputs)
+                    and self.__is_in_torch_onnx_export
+                ):
+                    warnings.warn(
+                        "PyTorch ONNX export (`torch.onnx.export`) detected!"
+                        " To prevent extra outputs in the ONNX graph, the original"
+                        " model output cannot be reconstructed through"
+                        " `adapter.outputs_schema(flattened_outputs)`."
+                        " For results evaluation, use `torch.jit.trace` instead."
+                    )
+                    flattened_outputs = flattened_outputs[: len(outputs)]
 
                 if self.outputs_schema is None:
                     self.outputs_schema = schema
@@ -348,11 +352,13 @@ class TracingAdapter(nn.Module):
 
         def forward(*args):
             if traced_model._is_in_torch_onnx_export:
-                warnings.warn("PyTorch ONNX export (`torch.onnx.export`) detected!"
-                              " To prevent extra outputs in the ONNX graph, the original"
-                              " model output cannot be reconstructed through"
-                              " `adapter.outputs_schema(flattened_outputs)`."
-                              " For results evaluation, use `torch.jit.trace` instead.")
+                warnings.warn(
+                    "PyTorch ONNX export (`torch.onnx.export`) detected!"
+                    " To prevent extra outputs in the ONNX graph, the original"
+                    " model output cannot be reconstructed through"
+                    " `adapter.outputs_schema(flattened_outputs)`."
+                    " For results evaluation, use `torch.jit.trace` instead."
+                )
             flattened_inputs, _ = flatten_to_tuple(args)
             flattened_outputs = traced_model(*flattened_inputs)
             return self.outputs_schema(flattened_outputs)

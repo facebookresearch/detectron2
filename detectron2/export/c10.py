@@ -4,7 +4,6 @@ import math
 import torch
 import torch.nn.functional as F
 
-from detectron2.structures import Boxes
 from detectron2.layers import cat
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers

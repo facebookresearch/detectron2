@@ -4,7 +4,6 @@ import numpy as np
 import os
 import unittest
 import torch
-from packaging import version
 
 from detectron2 import model_zoo
 from detectron2.config import CfgNode, instantiate
@@ -146,15 +145,3 @@ def reload_script_model(module):
     torch.jit.save(module, buffer)
     buffer.seek(0)
     return torch.jit.load(buffer)
-
-
-def min_torch_version(min_version: str) -> bool:
-    """Returns True when torch's  version is at least `min_version`"""
-    try:
-        import torch
-    except ImportError:
-        return False
-
-    installed_version = version.parse(torch.__version__.split("+")[0])
-    min_version = version.parse(min_version)
-    return installed_version >= min_version
