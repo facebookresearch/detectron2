@@ -88,8 +88,8 @@ class DensePoseChartPredictor(nn.Module):
            An instance of DensePoseChartPredictorOutput
         """
         return DensePoseChartPredictorOutput(
-            coarse_segm=self.interp2d(F.softmax(self.ann_index_lowres(head_outputs), dim=1)),
-            fine_segm=self.interp2d(F.softmax(self.index_uv_lowres(head_outputs), dim=1)),
+            coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
+            fine_segm=self.interp2d(self.index_uv_lowres(head_outputs)),
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
         )

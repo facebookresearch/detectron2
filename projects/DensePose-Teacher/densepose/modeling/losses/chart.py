@@ -367,13 +367,14 @@ class DensePoseChartLoss:
                     return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
                 index = index[mask].long()
                 losses.update({"loss_unsup_segm": F.cross_entropy(est[mask], index) * self.w_pseudo * self.w_p_segm})
+                # losses.update({"loss_unsup_segm": F.cross_entropy(est, torch.argmax(pseudo, dim=1).long()) * self.w_pseudo * self.w_p_segm})
             else:
                 pseudo = pseudo[mask]
                 pseudo = pseudo[np.arange(pseudo.shape[0]), index]
                 est = est[mask]
                 est = est[np.arange(index.shape[0]), index]
-                losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points
-                               })
+                losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points})
+                # losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points})
         return losses
 
     def fake_value(self, densepose_predictor_outputs: Any) -> LossDict:
