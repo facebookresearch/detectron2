@@ -182,7 +182,7 @@ setup(
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
         "omegaconf>=2.1",
-        "hydra-core>=1.1",
+        "hydra-core==1.1",
         "black==21.4b2",
         "scipy>1.5.1",
         # If a new dependency is required at import time (in addition to runtime), it
