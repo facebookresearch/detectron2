@@ -81,3 +81,18 @@ class PredictionToGroundTruthSampler:
         self._samplers[(prediction_attr, gt_attr)] = _Sampler(
             src=prediction_attr, dst=gt_attr, func=func
         )
+
+    def remove_sampler(
+        self,
+        prediction_attr: str,
+        gt_attr: Optional[str] = None,
+    ):
+        """
+        Remove sampler for a field
+
+        Args:
+          prediction_attr (str): field to replace with a sampled value
+          gt_attr (Optional[str]): field to store the sampled value to, if not None
+        """
+        assert (prediction_attr, gt_attr) in self._samplers
+        del self._samplers[(prediction_attr, gt_attr)]

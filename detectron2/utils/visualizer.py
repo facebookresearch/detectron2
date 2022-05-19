@@ -800,6 +800,7 @@ class Visualizer:
         visible = {}
         keypoint_names = self.metadata.get("keypoint_names")
         for idx, keypoint in enumerate(keypoints):
+
             # draw keypoint
             x, y, prob = keypoint
             if prob > self.keypoint_threshold:

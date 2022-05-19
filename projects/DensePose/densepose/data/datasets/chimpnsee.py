@@ -10,7 +10,7 @@ from .dataset_type import DatasetType
 CHIMPNSEE_DATASET_NAME = "chimpnsee"
 
 
-def register_dataset(datasets_root: Optional[str] = None):
+def register_dataset(datasets_root: Optional[str] = None) -> None:
     def empty_load_callback():
         pass
 

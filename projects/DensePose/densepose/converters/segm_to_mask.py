@@ -25,6 +25,8 @@ def resample_coarse_segm_tensor_to_bbox(coarse_segm: torch.Tensor, box_xywh_abs:
     x, y, w, h = box_xywh_abs
     w = max(int(w), 1)
     h = max(int(h), 1)
+    # pyre-fixme[16]: `Tensor` has no attribute `argmax`.
+    # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int, int]`.
     labels = F.interpolate(coarse_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
     return labels
 
@@ -48,11 +50,19 @@ def resample_fine_and_coarse_segm_tensors_to_bbox(
     w = max(int(w), 1)
     h = max(int(h), 1)
     # coarse segmentation
+    # pyre-fixme[16]: `Tensor` has no attribute `argmax`.
     coarse_segm_bbox = F.interpolate(
-        coarse_segm, (h, w), mode="bilinear", align_corners=False
+        coarse_segm,
+        # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int,
+        #  int]`.
+        (h, w),
+        mode="bilinear",
+        align_corners=False,
     ).argmax(dim=1)
     # combined coarse and fine segmentation
     labels = (
+        # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int,
+        #  int]`.
         F.interpolate(fine_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
         * (coarse_segm_bbox > 0).long()
     )

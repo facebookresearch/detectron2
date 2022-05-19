@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from detectron2.config import CfgNode
 
 
-def is_relative_local_path(path: str):
+def is_relative_local_path(path: str) -> bool:
     path_str = os.fsdecode(path)
     return ("://" not in path_str) and not os.path.isabs(path)
 

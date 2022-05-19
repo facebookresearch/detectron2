@@ -4,6 +4,7 @@ import torch
 from torch import Tensor, nn
 
 from detectron2.data.detection_utils import convert_image_to_rgb
+from detectron2.layers import move_device_like
 from detectron2.modeling import Backbone
 from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
@@ -69,6 +70,9 @@ class DenseDetector(nn.Module):
     def device(self):
         return self.pixel_mean.device
 
+    def _move_to_current_device(self, x):
+        return move_device_like(x, self.pixel_mean)
+
     def forward(self, batched_inputs: List[Dict[str, Tensor]]):
         """
         Args:
@@ -121,7 +125,7 @@ class DenseDetector(nn.Module):
         """
         Normalize, pad and batch the input images.
         """
-        images = [x["image"].to(self.device) for x in batched_inputs]
+        images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         return images

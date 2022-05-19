@@ -35,7 +35,7 @@ We provided several base configs for standard model architectures.
 Many builtin tools in detectron2 accept command line config overwrite:
 Key-value pairs provided in the command line will overwrite the existing values in the config file.
 For example, [demo.py](../../demo/demo.py) can be used with
-```
+```sh
 ./demo.py --config-file config.yaml [--other-options] \
   --opts MODEL.WEIGHTS /path/to/weights INPUT.MIN_SIZE_TEST 1000
 ```

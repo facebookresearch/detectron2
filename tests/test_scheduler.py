@@ -7,7 +7,7 @@ import torch
 from fvcore.common.param_scheduler import CosineParamScheduler, MultiStepParamScheduler
 from torch import nn
 
-from detectron2.solver import LRMultiplier, WarmupParamScheduler
+from detectron2.solver import LRMultiplier, WarmupParamScheduler, build_lr_scheduler
 
 
 class TestScheduler(TestCase):
@@ -66,3 +66,54 @@ class TestScheduler(TestCase):
                 self.assertAlmostEqual(lr, expected_cosine)
             else:
                 self.assertNotAlmostEqual(lr, expected_cosine)
+
+    def test_warmup_cosine_end_value(self):
+        from detectron2.config import CfgNode, get_cfg
+
+        def _test_end_value(cfg_dict):
+            cfg = get_cfg()
+            cfg.merge_from_other_cfg(CfgNode(cfg_dict))
+
+            p = nn.Parameter(torch.zeros(0))
+            opt = torch.optim.SGD([p], lr=cfg.SOLVER.BASE_LR)
+
+            scheduler = build_lr_scheduler(cfg, opt)
+
+            p.sum().backward()
+            opt.step()
+            self.assertEqual(
+                opt.param_groups[0]["lr"], cfg.SOLVER.BASE_LR * cfg.SOLVER.WARMUP_FACTOR
+            )
+
+            lrs = []
+            for _ in range(cfg.SOLVER.MAX_ITER):
+                scheduler.step()
+                lrs.append(opt.param_groups[0]["lr"])
+
+            self.assertAlmostEqual(lrs[-1], cfg.SOLVER.BASE_LR_END)
+
+        _test_end_value(
+            {
+                "SOLVER": {
+                    "LR_SCHEDULER_NAME": "WarmupCosineLR",
+                    "MAX_ITER": 100,
+                    "WARMUP_ITERS": 10,
+                    "WARMUP_FACTOR": 0.1,
+                    "BASE_LR": 5.0,
+                    "BASE_LR_END": 0.0,
+                }
+            }
+        )
+
+        _test_end_value(
+            {
+                "SOLVER": {
+                    "LR_SCHEDULER_NAME": "WarmupCosineLR",
+                    "MAX_ITER": 100,
+                    "WARMUP_ITERS": 10,
+                    "WARMUP_FACTOR": 0.1,
+                    "BASE_LR": 5.0,
+                    "BASE_LR_END": 0.5,
+                }
+            }
+        )

@@ -291,7 +291,7 @@ def _evaluate_predictions_on_coco(
     multi_storage=None,
     embedder=None,
     class_names=None,
-    min_threshold=0.5,
+    min_threshold: float = 0.5,
     img_ids=None,
 ):
     logger = logging.getLogger(__name__)
@@ -319,7 +319,7 @@ def _evaluate_predictions_on_coco(
     return results
 
 
-def _get_densepose_metrics(min_threshold=0.5):
+def _get_densepose_metrics(min_threshold: float = 0.5):
     metrics = ["AP"]
     if min_threshold <= 0.201:
         metrics += ["AP20"]
@@ -332,7 +332,7 @@ def _get_densepose_metrics(min_threshold=0.5):
 
 
 def _derive_results_from_coco_eval(
-    coco_eval, eval_mode_name, metrics, class_names, min_threshold, img_ids
+    coco_eval, eval_mode_name, metrics, class_names, min_threshold: float, img_ids
 ):
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids

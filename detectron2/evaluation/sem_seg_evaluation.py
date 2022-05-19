@@ -5,15 +5,26 @@ import logging
 import numpy as np
 import os
 from collections import OrderedDict
-import PIL.Image as Image
+from typing import Optional, Union
 import pycocotools.mask as mask_util
 import torch
+from PIL import Image
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 
 from .evaluator import DatasetEvaluator
+
+
+def load_image_into_numpy_array(
+    filename: str,
+    copy: bool = False,
+    dtype: Optional[Union[np.dtype, str]] = None,
+) -> np.ndarray:
+    with PathManager.open(filename, "rb") as f:
+        array = np.array(Image.open(f), copy=copy, dtype=dtype)
+    return array
 
 
 class SemSegEvaluator(DatasetEvaluator):
@@ -27,6 +38,7 @@ class SemSegEvaluator(DatasetEvaluator):
         distributed=True,
         output_dir=None,
         *,
+        sem_seg_loading_fn=load_image_into_numpy_array,
         num_classes=None,
         ignore_label=None,
     ):
@@ -36,6 +48,8 @@ class SemSegEvaluator(DatasetEvaluator):
             distributed (bool): if True, will collect results from all ranks for evaluation.
                 Otherwise, will evaluate the results in the current process.
             output_dir (str): an output directory to dump results.
+            sem_seg_loading_fn: function to read sem seg file and load into numpy array.
+                Default provided, but projects can customize.
             num_classes, ignore_label: deprecated argument
         """
         self._logger = logging.getLogger(__name__)
@@ -66,6 +80,7 @@ class SemSegEvaluator(DatasetEvaluator):
         except AttributeError:
             self._contiguous_id_to_dataset_id = None
         self._class_names = meta.stuff_classes
+        self.sem_seg_loading_fn = sem_seg_loading_fn
         self._num_classes = len(meta.stuff_classes)
         if num_classes is not None:
             assert self._num_classes == num_classes, f"{self._num_classes} != {num_classes}"
@@ -88,8 +103,8 @@ class SemSegEvaluator(DatasetEvaluator):
         for input, output in zip(inputs, outputs):
             output = output["sem_seg"].argmax(dim=0).to(self._cpu_device)
             pred = np.array(output, dtype=np.int)
-            with PathManager.open(self.input_file_to_gt_file[input["file_name"]], "rb") as f:
-                gt = np.array(Image.open(f), dtype=np.int)
+            gt_filename = self.input_file_to_gt_file[input["file_name"]]
+            gt = self.sem_seg_loading_fn(gt_filename, dtype=np.int)
 
             gt[gt == self._ignore_label] = self._num_classes
 

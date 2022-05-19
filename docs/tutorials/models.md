@@ -53,7 +53,7 @@ It includes default behavior including model loading, preprocessing,
 and operates on single image rather than batches. See its documentation for usage.
 
 You can also run inference directly like this:
-```
+```python
 model.eval()
 with torch.no_grad():
   outputs = model(inputs)

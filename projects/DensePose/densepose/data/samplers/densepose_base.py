@@ -141,6 +141,9 @@ class DensePoseBaseSampler:
         """
         sz = DensePoseDataRelative.MASK_SIZE
         S = (
+            # pyre-fixme[16]: `Tensor` has no attribute `argmax`.
+            # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
+            #  `Tuple[int, int]`.
             F.interpolate(output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False)
             .argmax(dim=1)
             .long()
@@ -148,7 +151,12 @@ class DensePoseBaseSampler:
         I = (
             (
                 F.interpolate(
-                    output.fine_segm, (sz, sz), mode="bilinear", align_corners=False
+                    output.fine_segm,
+                    # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
+                    #  `Tuple[int, int]`.
+                    (sz, sz),
+                    mode="bilinear",
+                    align_corners=False,
                 ).argmax(dim=1)
                 * (S > 0).long()
             )
