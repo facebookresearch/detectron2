@@ -181,7 +181,7 @@ setup(
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
-        "omegaconf>=2.1",
+        "omegaconf>=2.1,<=2.2.0",
         "hydra-core>=1.1",
         "black==21.4b2",
         "scipy>1.5.1",
