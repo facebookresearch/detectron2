@@ -181,16 +181,16 @@ setup(
         "future",  # used by caffe2
         "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
-        "omegaconf>=2.1,<=2.2.0",
+        "omegaconf>=2.1",
         "hydra-core>=1.1",
         "black==21.4b2",
-        "scipy>1.5.1",
         # If a new dependency is required at import time (in addition to runtime), it
         # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
     ],
     extras_require={
         # optional dependencies, required by some features
         "all": [
+            "scipy>1.5.1",
             "shapely",
             "pygments>=2.2",
             "psutil",

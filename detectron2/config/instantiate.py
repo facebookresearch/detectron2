@@ -46,7 +46,7 @@ def instantiate(cfg):
     Returns:
         object instantiated by cfg
     """
-    from omegaconf import ListConfig
+    from omegaconf import ListConfig, DictConfig, OmegaConf
 
     if isinstance(cfg, ListConfig):
         lst = [instantiate(x) for x in cfg]
@@ -55,6 +55,11 @@ def instantiate(cfg):
         # Specialize for list, because many classes take
         # list[objects] as arguments, such as ResNet, DatasetMapper
         return [instantiate(x) for x in cfg]
+
+    # If input is a DictConfig backed by dataclasses (i.e. omegaconf's structured config),
+    # instantiate it to the actual dataclass.
+    if isinstance(cfg, DictConfig) and dataclasses.is_dataclass(cfg._metadata.object_type):
+        return OmegaConf.to_object(cfg)
 
     if isinstance(cfg, abc.Mapping) and "_target_" in cfg:
         # conceptually equivalent to hydra.utils.instantiate(cfg) with _convert_=all,
