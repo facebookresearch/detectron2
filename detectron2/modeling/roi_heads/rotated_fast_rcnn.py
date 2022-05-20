@@ -80,6 +80,7 @@ def fast_rcnn_inference_rotated(
     return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
 
 
+@torch.no_grad()
 def fast_rcnn_inference_single_image_rotated(
     boxes, scores, image_shape, score_thresh, nms_thresh, topk_per_image
 ):
