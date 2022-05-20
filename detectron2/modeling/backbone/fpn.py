@@ -23,7 +23,14 @@ class FPN(Backbone):
     _fuse_type: torch.jit.Final[str]
 
     def __init__(
-        self, bottom_up, in_features, out_channels, norm="", top_block=None, fuse_type="sum"
+        self,
+        bottom_up,
+        in_features,
+        out_channels,
+        norm="",
+        top_block=None,
+        fuse_type="sum",
+        square_pad=False,
     ):
         """
         Args:
@@ -103,12 +110,17 @@ class FPN(Backbone):
         self._out_features = list(self._out_feature_strides.keys())
         self._out_feature_channels = {k: out_channels for k in self._out_features}
         self._size_divisibility = strides[-1]
+        self._square_pad = square_pad
         assert fuse_type in {"avg", "sum"}
         self._fuse_type = fuse_type
 
     @property
     def size_divisibility(self):
         return self._size_divisibility
+
+    @property
+    def padding_constraints(self):
+        return {"square": int(self._square_pad)}
 
     def forward(self, x):
         """
