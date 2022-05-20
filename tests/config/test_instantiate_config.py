@@ -96,10 +96,7 @@ class TestConstruction(unittest.TestCase):
             L(3)
 
     def test_interpolation(self):
-        cfg = L(TestClass)(
-            int_arg=3,
-            extra_arg="${int_arg}"
-        )
+        cfg = L(TestClass)(int_arg=3, extra_arg="${int_arg}")
 
         cfg.int_arg = 4
         obj = instantiate(cfg)

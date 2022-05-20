@@ -273,7 +273,7 @@ class LazyConfig:
                 resolve=False,
                 # Save structures (dataclasses) in a format that can be instantiated later.
                 # Without this option, the type information of the dataclass will be erased.
-                structured_config_mode=SCMode.INSTANTIATE
+                structured_config_mode=SCMode.INSTANTIATE,
             )
             dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
             with PathManager.open(filename, "w") as f:

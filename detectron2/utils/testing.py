@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import io
 import numpy as np
-import torch
 import os
 import tempfile
+import torch
 
 from detectron2 import model_zoo
-from detectron2.config import CfgNode, instantiate, LazyConfig
+from detectron2.config import CfgNode, LazyConfig, instantiate
 from detectron2.data import DatasetCatalog
 from detectron2.data.detection_utils import read_image
 from detectron2.modeling import build_model
@@ -153,5 +153,3 @@ def reload_lazy_config(cfg):
         fname = os.path.join(d, "d2_cfg_test.yaml")
         LazyConfig.save(cfg, fname)
         return LazyConfig.load(fname)
-
-
