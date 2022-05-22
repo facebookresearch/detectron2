@@ -10,9 +10,9 @@ from ..common.optim import SGD as optimizer
 from ..common.train import train
 
 # train from scratch
-train.init_checkpoint = ""
-train.amp.enabled = True
-train.ddp.fp16_compression = True
+train["init_checkpoint"] = ""
+train["amp"]["enabled"] = True
+train["ddp"]["fp16_compression"] = True
 model.backbone.bottom_up.freeze_at = 0
 
 # SyncBN
@@ -56,7 +56,7 @@ dataloader.train.total_batch_size = 64
 
 # Equivalent to 100 epochs.
 # 100 ep = 184375 iters * 64 images/iter / 118000 images/ep
-train.max_iter = 184375
+train["max_iter"] = 184375
 
 lr_multiplier = L(WarmupParamScheduler)(
     scheduler=L(MultiStepParamScheduler)(
