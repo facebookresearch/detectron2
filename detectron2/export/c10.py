@@ -2,7 +2,6 @@
 
 import math
 from typing import Dict
-
 import torch
 import torch.nn.functional as F
 
@@ -164,12 +163,12 @@ class Caffe2Compatible(object):
 
 
 class Caffe2RPN(Caffe2Compatible, rpn.RPN):
-
     @classmethod
     def from_config(cls, cfg, input_shape: Dict[str, ShapeSpec]):
         ret = super(Caffe2Compatible, cls).from_config(cfg, input_shape)
-        assert tuple(cfg.MODEL.RPN.BBOX_REG_WEIGHTS) == (1., 1., 1., 1.) or \
-            tuple(cfg.MODEL.RPN.BBOX_REG_WEIGHTS) == (1., 1., 1., 1., 1.)
+        assert tuple(cfg.MODEL.RPN.BBOX_REG_WEIGHTS) == (1.0, 1.0, 1.0, 1.0) or tuple(
+            cfg.MODEL.RPN.BBOX_REG_WEIGHTS
+        ) == (1.0, 1.0, 1.0, 1.0, 1.0)
         return ret
 
     def _generate_proposals(
