@@ -267,7 +267,7 @@ def build_lr_scheduler(
                 "These values will be ignored."
             )
         sched = MultiStepParamScheduler(
-            values=[cfg.SOLVER.GAMMA ** k for k in range(len(steps) + 1)],
+            values=[cfg.SOLVER.GAMMA**k for k in range(len(steps) + 1)],
             milestones=steps,
             num_updates=cfg.SOLVER.MAX_ITER,
         )

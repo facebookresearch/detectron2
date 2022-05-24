@@ -210,7 +210,7 @@ class PointRendMaskHead(nn.Module):
         # An optimization to skip unused subdivision steps: if after subdivision, all pixels on
         # the mask will be selected and recomputed anyway, we should just double our init_resolution
         while (
-            4 * self.mask_point_subdivision_init_resolution ** 2
+            4 * self.mask_point_subdivision_init_resolution**2
             <= self.mask_point_subdivision_num_points
         ):
             self.mask_point_subdivision_init_resolution *= 2
@@ -404,7 +404,7 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
         if self.training:
             proposal_boxes = [x.proposal_boxes for x in instances]
             parameters = self.parameter_head(self._roi_pooler(features, proposal_boxes))
-            losses = {"loss_l2": self.regularizer * (parameters ** 2).mean()}
+            losses = {"loss_l2": self.regularizer * (parameters**2).mean()}
 
             point_coords, point_labels = self._uniform_sample_train_points(instances)
             point_fine_grained_features = self._point_pooler(features, proposal_boxes, point_coords)

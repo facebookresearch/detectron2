@@ -11,7 +11,7 @@ __all__ = ["paste_masks_in_image"]
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
 # determine it based on available resources.
-GPU_MEM_LIMIT = 1024 ** 3  # 1 GB memory limit
+GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 
 
 def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True):

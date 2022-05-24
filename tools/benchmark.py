@@ -62,7 +62,7 @@ def create_data_benchmark(cfg, args):
 def RAM_msg():
     vram = psutil.virtual_memory()
     return "RAM Usage: {:.2f}/{:.2f} GB".format(
-        (vram.total - vram.available) / 1024 ** 3, vram.total / 1024 ** 3
+        (vram.total - vram.available) / 1024**3, vram.total / 1024**3
     )
 
 
