@@ -64,6 +64,7 @@ def annotations_to_instances(annos, image_size, sample_points=0):
 
 
 def transform_instance_annotations(annotation, transforms, image_size):
+    
     """
     Apply transforms to box, and point annotations of a single instance.
     It will use `transforms.apply_box` for the box, and
@@ -73,7 +74,7 @@ def transform_instance_annotations(annotation, transforms, image_size):
             It will be modified in-place.
         transforms (TransformList or list[Transform]):
         image_size (tuple): the height, width of the transformed image
-        keypoint_hflip_indices (ndarray[int]): see `create_keypoint_hflip_indices`.
+        keypoint_hflip_indices (ndarray[int]): add argument 'keypoint_hflip_indices = None' to prevent unwanted behavior while training with person keys, see `create_keypoint_hflip_indices`. 
     Returns:
         dict:
             the same input dict with fields "bbox", "point_coords", "point_labels"
@@ -81,6 +82,10 @@ def transform_instance_annotations(annotation, transforms, image_size):
             The "bbox_mode" field will be set to XYXY_ABS.
     """
     annotation = base_transform_instance_annotations(annotation, transforms, image_size)
+    """
+     keypoint_hflip_indices 
+     add this argument to prevent unwanted behavior while training with person keys
+    """
 
     assert ("point_coords" in annotation) == ("point_labels" in annotation)
     if "point_coords" in annotation and "point_labels" in annotation:
