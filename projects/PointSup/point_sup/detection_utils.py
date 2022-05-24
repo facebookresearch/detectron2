@@ -63,9 +63,7 @@ def annotations_to_instances(annos, image_size, sample_points=0):
     return target
 
 
-def transform_instance_annotations(
-    annotation, transforms, image_size, *, keypoint_hflip_indices=None
-):
+def transform_instance_annotations(annotation, transforms, image_size):
     """
     Apply transforms to box, and point annotations of a single instance.
     It will use `transforms.apply_box` for the box, and
@@ -82,9 +80,7 @@ def transform_instance_annotations(
             transformed according to `transforms`.
             The "bbox_mode" field will be set to XYXY_ABS.
     """
-    annotation = base_transform_instance_annotations(
-        annotation, transforms, image_size, keypoint_hflip_indices
-    )
+    annotation = base_transform_instance_annotations(annotation, transforms, image_size)
 
     assert ("point_coords" in annotation) == ("point_labels" in annotation)
     if "point_coords" in annotation and "point_labels" in annotation:
