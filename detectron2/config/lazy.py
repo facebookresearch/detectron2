@@ -14,7 +14,7 @@ from dataclasses import is_dataclass
 from typing import List, Tuple, Union
 import cloudpickle
 import yaml
-from omegaconf import DictConfig, ListConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf, SCMode
 
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.registry import _convert_target_to_string
@@ -266,7 +266,15 @@ class LazyConfig:
 
         save_pkl = False
         try:
-            dict = OmegaConf.to_container(cfg, resolve=False)
+            dict = OmegaConf.to_container(
+                cfg,
+                # Do not resolve interpolation when saving, i.e. do not turn ${a} into
+                # actual values when saving.
+                resolve=False,
+                # Save structures (dataclasses) in a format that can be instantiated later.
+                # Without this option, the type information of the dataclass will be erased.
+                structured_config_mode=SCMode.INSTANTIATE,
+            )
             dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
             with PathManager.open(filename, "w") as f:
                 f.write(dumped)
