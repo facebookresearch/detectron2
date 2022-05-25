@@ -193,11 +193,11 @@ def rotate_box_inverse(rot_tfm, rotated_box):
     invrot_box = rot_tfm.inverse().apply_box(rotated_box)
     h, w = rotated_box[:, 3] - rotated_box[:, 1], rotated_box[:, 2] - rotated_box[:, 0]
     ih, iw = invrot_box[:, 3] - invrot_box[:, 1], invrot_box[:, 2] - invrot_box[:, 0]
-    assert 2 * rot_tfm.abs_sin ** 2 != 1, "45 degrees angle can't be inverted"
+    assert 2 * rot_tfm.abs_sin**2 != 1, "45 degrees angle can't be inverted"
     # 2. Inverse the corresponding computation in the rotation transform
     # to get the original height/width of the rotated boxes
-    orig_h = (h * rot_tfm.abs_cos - w * rot_tfm.abs_sin) / (1 - 2 * rot_tfm.abs_sin ** 2)
-    orig_w = (w * rot_tfm.abs_cos - h * rot_tfm.abs_sin) / (1 - 2 * rot_tfm.abs_sin ** 2)
+    orig_h = (h * rot_tfm.abs_cos - w * rot_tfm.abs_sin) / (1 - 2 * rot_tfm.abs_sin**2)
+    orig_w = (w * rot_tfm.abs_cos - h * rot_tfm.abs_sin) / (1 - 2 * rot_tfm.abs_sin**2)
     # 3. Resize the inverse-rotated bboxes to their original size
     invrot_box[:, 0] += (iw - orig_w) / 2
     invrot_box[:, 1] += (ih - orig_h) / 2

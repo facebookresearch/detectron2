@@ -62,7 +62,6 @@ class DenseDetector(nn.Module):
             self.head_in_features = sorted(shapes.keys(), key=lambda x: shapes[x].stride)
         else:
             self.head_in_features = head_in_features
-
         self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
         self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
 
@@ -127,7 +126,11 @@ class DenseDetector(nn.Module):
         """
         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(images, self.backbone.size_divisibility)
+        images = ImageList.from_tensors(
+            images,
+            self.backbone.size_divisibility,
+            padding_constraints=self.backbone.padding_constraints,
+        )
         return images
 
     def _transpose_dense_predictions(
