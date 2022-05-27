@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import collections
+import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 import torch
@@ -17,6 +18,7 @@ class Schema:
     A Schema defines how to flatten a possibly hierarchical object into tuple of
     primitive objects, so it can be used as inputs/outputs of PyTorch's tracing.
 
+    The flatten representation can be used as inputs/outputs of PyTorch's tracing.
     PyTorch does not support tracing a function that produces rich output
     structures (e.g. dict, Instances, Boxes). To trace such a function, we
     flatten the rich object into tuple of tensors, and return this tuple of tensors
@@ -254,6 +256,7 @@ class TracingAdapter(nn.Module):
             inputs = (inputs,)
         self.inputs = inputs
         self.allow_non_tensor = allow_non_tensor
+        self._is_in_torch_onnx_export = torch.onnx.is_in_onnx_export()
 
         if inference_func is None:
             inference_func = lambda model, *inputs: model(*inputs)  # noqa
@@ -307,6 +310,21 @@ class TracingAdapter(nn.Module):
                         "cannot flatten to tensors."
                     )
             else:  # schema is valid
+                # During torch.onnx.export(), extra outputs that `Schema` implementations
+                # can generate (e.g. `InstancesSchema`) are dropped from final ONNX graph.
+                # This is OK because ONNX graphs do not need to rebuild original data.
+                if (
+                    len(flattened_output_tensors) > len(flattened_outputs)
+                    and self.__is_in_torch_onnx_export
+                ):
+                    warnings.warn(
+                        "PyTorch ONNX export (`torch.onnx.export`) detected!"
+                        " To prevent extra outputs in the ONNX graph, the original"
+                        " model output cannot be reconstructed through"
+                        " `adapter.outputs_schema(flattened_outputs)`."
+                        " For results evaluation, use `torch.jit.trace` instead."
+                    )
+                    flattened_outputs = flattened_outputs[: len(outputs)]
                 if self.outputs_schema is None:
                     self.outputs_schema = schema
                 else:
@@ -323,6 +341,14 @@ class TracingAdapter(nn.Module):
         """
 
         def forward(*args):
+            if traced_model._is_in_torch_onnx_export:
+                warnings.warn(
+                    "PyTorch ONNX export (`torch.onnx.export`) detected!"
+                    " To prevent extra outputs in the ONNX graph, the original"
+                    " model output cannot be reconstructed through"
+                    " `adapter.outputs_schema(flattened_outputs)`."
+                    " For results evaluation, use `torch.jit.trace` instead."
+                )
             flattened_inputs, _ = flatten_to_tuple(args)
             flattened_outputs = traced_model(*flattened_inputs)
             return self.outputs_schema(flattened_outputs)
