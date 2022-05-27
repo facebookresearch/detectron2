@@ -96,6 +96,47 @@ class TestONNXTracingExport(unittest.TestCase):
             opset_version=STABLE_ONNX_OPSET_VERSION,
         )
 
+    @skipIfUnsupportedMinTorchVersion("1.11.1")
+    def testKeypointHead(self):
+        class M(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.model = KRCNNConvDeconvUpsampleHead(
+                    ShapeSpec(channels=4, height=14, width=14), num_keypoints=17, conv_dims=(4,)
+                )
+
+            def forward(self, x, predbox1, predbox2):
+                inst = [
+                    Instances((100, 100), pred_boxes=Boxes(predbox1)),
+                    Instances((100, 100), pred_boxes=Boxes(predbox2)),
+                ]
+                ret = self.model(x, inst)
+                return tuple(x.pred_keypoints for x in ret)
+
+        model = M()
+        model.eval()
+
+        def gen_input(num1, num2):
+            feat = torch.randn((num1 + num2, 4, 14, 14))
+            box1 = random_boxes(num1)
+            box2 = random_boxes(num2)
+            return feat, box1, box2
+
+        with patch_builtin_len():
+            self._test_model(
+                model,
+                gen_input(1, 2),
+                opset_version=STABLE_ONNX_OPSET_VERSION,
+                input_names=["features", "pred_boxes", "pred_classes"],
+                output_names=["box1", "box2"],
+                dynamic_axes={
+                    "features": {0: "batch", 1: "static_four", 2: "height", 3: "width"},
+                    "pred_boxes": {0: "batch", 1: "static_four"},
+                    "pred_classes": {0: "batch", 1: "static_four"},
+                    "box1": {0: "num_instance", 1: "K", 2: "static_three"},
+                    "box2": {0: "num_instance", 1: "K", 2: "static_three"},
+                },
+            )
 
     ################################################################################
     # Testcase internals - DO NOT add tests below this point

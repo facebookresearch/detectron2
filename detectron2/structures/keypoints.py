@@ -1,8 +1,27 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import functools
 import numpy as np
 from typing import Any, List, Tuple, Union
 import torch
 from torch.nn import functional as F
+
+
+def conditional_decorator(user_decorator, condition_fn):
+    """
+    A wrapper decorator that applies `user_decorator` only when `condition_fn` returns `True`
+    """
+
+    def wrap(fn):
+        def evaluate_condition_and_run_fn(*args, **kwargs):
+            if condition_fn():
+                return user_decorator(fn)(*args, **kwargs)
+            return fn(*args)
+
+        # Copy fn's signature to evaluate_condition_and_run_fn
+        functools.update_wrapper(evaluate_condition_and_run_fn, fn)
+        return evaluate_condition_and_run_fn
+
+    return wrap
 
 
 class Keypoints:
@@ -161,7 +180,7 @@ def _keypoints_to_heatmap(
     return heatmaps, valid
 
 
-@torch.jit.script_if_tracing
+@conditional_decorator(torch.jit.script_if_tracing, lambda: not torch.onnx.is_in_onnx_export())
 def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tensor:
     """
     Extract predicted keypoint locations from heatmaps.
