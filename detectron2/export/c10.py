@@ -74,9 +74,8 @@ class InstancesList(object):
         return name in self.batch_extra_fields
 
     def set(self, name, value):
-        # len(tensor) is a bad practice that generates ONNX constants during tracing.
-        # Although not a problem for the `assert` statement below, torch ONNX exporter
-        # still raises a misleading warning as it does not this call comes from `assert`
+        # During ONNX conversion based on tracing, `len(torch.Tensor)` generates unexpected constants.
+        # Not an issue for `assert` statements, but ONNX exporter issues misleading warnings anyway
         if isinstance(value, Boxes):
             data_len = value.tensor.shape[0]
         elif isinstance(value, torch.Tensor):
