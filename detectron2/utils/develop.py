@@ -23,7 +23,7 @@ def create_dummy_class(klass, dependency, message=""):
 
     class _DummyMetaClass(type):
         # throw error on class attribute access
-        def __getattr__(_, __):
+        def __getattr__(_, __):  # noqa: B902
             raise ImportError(err)
 
     class _Dummy(object, metaclass=_DummyMetaClass):
