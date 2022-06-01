@@ -8,7 +8,10 @@ from iopath.common.file_io import PathHandler, PathManager
 from torch import nn
 
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.checkpoint.c2_model_loading import align_and_update_state_dicts
+from detectron2.checkpoint.c2_model_loading import (
+    _longest_common_prefix_str,
+    align_and_update_state_dicts,
+)
 from detectron2.utils.logger import setup_logger
 
 
@@ -91,6 +94,11 @@ class TestCheckpointer(unittest.TestCase):
             checkpointer.path_manager = pathmgr
             checkpointer.load("detectron2_test://checkpoint.pth")
             checkpointer.load("detectron2_test://checkpoint.pth?matching_heuristics=True")
+
+    def test_lcp(self):
+        self.assertEqual(_longest_common_prefix_str(["class", "dlaps_model"]), "")
+        self.assertEqual(_longest_common_prefix_str(["classA", "classB"]), "class")
+        self.assertEqual(_longest_common_prefix_str(["classA", "classB", "clab"]), "cla")
 
 
 if __name__ == "__main__":
