@@ -1,6 +1,6 @@
 
 This directory contains code to prepare a detectron2 model for deployment.
-Currently it supports exporting a detectron2 model to both ONNX-only or Caffe2 format through ONNX.
+Currently it supports exporting a detectron2 model to TorchScript, ONNX, or (deprecated) Caffe2 format.
 
 Please see [documentation](https://detectron2.readthedocs.io/tutorials/deployment.html) for its usage.
 
