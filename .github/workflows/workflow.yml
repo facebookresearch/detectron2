@@ -48,6 +48,7 @@ jobs:
     env:
       # point datasets to ~/.torch so it's cached by CI
       DETECTRON2_DATASETS: ~/.torch/datasets
+      PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
     steps:
       - name: Checkout
         uses: actions/checkout@v2

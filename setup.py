@@ -183,9 +183,9 @@ setup(
         "dataclasses; python_version<'3.7'",
         "omegaconf>=2.1",
         "hydra-core>=1.1",
-        "black==22.3.0",
         # If a new dependency is required at import time (in addition to runtime), it
         # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
+        "black",
     ],
     extras_require={
         # optional dependencies, required by some features
@@ -198,6 +198,7 @@ setup(
         ],
         # dev dependencies. Install them by `pip install 'detectron2[dev]'`
         "dev": [
+            "black==22.3.0",
             "flake8==3.8.1",
             "isort==4.3.21",
             "flake8-bugbear",
