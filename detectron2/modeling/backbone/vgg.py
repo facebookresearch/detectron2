@@ -79,8 +79,21 @@ class VGGBlock(CNNBlockBase):
 
 
 class VGG(Backbone):
-    def __init__(self, stages, num_classes=None, out_features=None):
+    """
+    Implement :paper:`VGG`.
+    """
+
+    def __init__(self, stages, num_classes=None, out_features=None, freeze_at=0):
         """
+        Args:
+            stages (list[list[CNNBlockBase]]): several (typically 5) stages,
+                each contains multiple :class:`CNNBlockBase`.
+            num_classes (None or int): if None, will not perform classification.
+            out_features (list[str]): name of the layers whose outputs should
+                be returned in forward. Can be anything in "classifier" or "vgg_block1"
+                ... "vgg_block5". If None, will return the output of the last layer.
+            freeze_at (int): The number of stages at the beginning to freeze.
+                see :meth:`freeze` for detailed explanation.
         """
         super().__init__()
         self.num_classes = num_classes
@@ -128,6 +141,7 @@ class VGG(Backbone):
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
             assert out_feature in children, "Available children: {}".format(", ".join(children))
+        self.freeze(freeze_at)
 
     def forward(self, x):
         outputs = {}
@@ -200,4 +214,4 @@ def build_vgg_backbone(cfg, input_shape):
         in_channels = out_channels
         ind = stage_inds[idx] + 1
         stages.append(blocks)
-    return VGG(stages, out_features=out_features).freeze(freeze_at)
+    return VGG(stages, out_features=out_features, freeze_at=freeze_at)
