@@ -40,7 +40,8 @@ cfgs = {
 
 class VGGBlock(CNNBlockBase):
     def __init__(self, in_channels, channel_cfg, norm="BN", pool=True):
-        super().__init__(in_channels, channel_cfg[-1], 2)
+        stride = 2 if pool else 1
+        super().__init__(in_channels, channel_cfg[-1], stride)
 
         self.convs = []
         self.pool = pool
@@ -185,11 +186,7 @@ def build_vgg_backbone(cfg, input_shape):
     for idx, stage_idx in enumerate(range(1, max_stage_idx + 1)):
 
         # No maxpooling in the last block
-        if stage_idx == 5:
-            pool = False
-        else:
-            pool = True
-
+        pool = stage_idx != 5
         stage_kargs = {
             "block_class": VGGBlock,
             "in_channels": in_channels,
