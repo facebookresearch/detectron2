@@ -528,8 +528,8 @@ class Res5ROIHeads(ROIHeads):
 
 @ROI_HEADS_REGISTRY.register()
 class VggROIHeads(ROIHeads):
-    """
-    """
+    # TODO: Add docstring
+    """ """
 
     def __init__(self, cfg, input_shape):
         super().__init__(cfg)
