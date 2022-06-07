@@ -306,6 +306,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 
 
 _PAPER_DATA = {
+    "vgg": ("1409.1556", "Very Deep Convolutional Networks for Large-Scale Image Recognition"),
     "resnet": ("1512.03385", "Deep Residual Learning for Image Recognition"),
     "fpn": ("1612.03144", "Feature Pyramid Networks for Object Detection"),
     "mask r-cnn": ("1703.06870", "Mask R-CNN"),

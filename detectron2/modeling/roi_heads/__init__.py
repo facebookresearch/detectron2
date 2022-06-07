@@ -16,6 +16,7 @@ from .roi_heads import (
     ROI_HEADS_REGISTRY,
     ROIHeads,
     Res5ROIHeads,
+    VggROIHeads,
     StandardROIHeads,
     build_roi_heads,
     select_foreground_proposals,

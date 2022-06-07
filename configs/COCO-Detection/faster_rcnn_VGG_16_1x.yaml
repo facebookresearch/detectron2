@@ -1,0 +1,3 @@
+_BASE_: "../Base-RCNN-VGG.yaml"
+MODEL:
+  MASK_ON: False

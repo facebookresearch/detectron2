@@ -12,6 +12,7 @@ from .resnet import (
     make_stage,
     BottleneckBlock,
 )
+from .vgg import VGG, build_vgg_backbone
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
 # TODO can expose more resnet blocks after careful consideration
