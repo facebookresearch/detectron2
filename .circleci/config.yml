@@ -47,6 +47,8 @@ version_parameters: &version_parameters
     PYTHON_VERSION: << parameters.python_version>>
     # point datasets to ~/.torch so it's cached in CI
     DETECTRON2_DATASETS: ~/.torch/datasets
+    # https://github.com/protocolbuffers/protobuf/issues/10051
+    PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
 
 # -------------------------------------------------------------------------------------
 # Re-usable commands
