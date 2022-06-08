@@ -11,6 +11,8 @@ from .backbone import (
     build_backbone,
     build_resnet_backbone,
     make_stage,
+    ViT,
+    SimpleFeaturePyramid,
 )
 from .meta_arch import (
     META_ARCH_REGISTRY,

@@ -334,6 +334,11 @@ _PAPER_DATA = {
     "scaling": ("2103.06877", "Fast and Accurate Model Scaling"),
     "fcos": ("2006.09214", "FCOS: A Simple and Strong Anchor-free Object Detector"),
     "rethinking-batchnorm": ("2105.07576", 'Rethinking "Batch" in BatchNorm'),
+    "vitdet": ("2203.16527", "Exploring Plain Vision Transformer Backbones for Object Detection"),
+    "mvitv2": (
+        "2112.01526",
+        "MViTv2: Improved Multiscale Vision Transformers for Classification and Detection",
+    ),
 }
 
 

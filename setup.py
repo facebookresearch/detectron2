@@ -184,6 +184,8 @@ setup(
         "omegaconf>=2.1",
         "hydra-core>=1.1",
         "black==22.3.0",
+        "timm",
+        "fairscale",
         # If a new dependency is required at import time (in addition to runtime), it
         # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
     ],
