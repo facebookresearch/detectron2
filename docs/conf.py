@@ -339,6 +339,10 @@ _PAPER_DATA = {
         "2112.01526",
         "MViTv2: Improved Multiscale Vision Transformers for Classification and Detection",
     ),
+    "swin": (
+        "2103.14030",
+        "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows",
+    ),
 }
 
 
