@@ -13,6 +13,8 @@ from .backbone import (
     make_stage,
     ViT,
     SimpleFeaturePyramid,
+    MViT,
+    SwinTransformer,
 )
 from .meta_arch import (
     META_ARCH_REGISTRY,
