@@ -22,7 +22,7 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["ViT", "SimpleFeaturePyramid"]
+__all__ = ["ViT", "SimpleFeaturePyramid", "get_vit_lr_decay_rate"]
 
 
 class Attention(nn.Module):
@@ -372,7 +372,7 @@ class SimpleFeaturePyramid(Backbone):
         scale_factors,
         top_block=None,
         norm="LN",
-        square_pad=False,
+        square_pad=0,
     ):
         """
         Args:
@@ -391,7 +391,7 @@ class SimpleFeaturePyramid(Backbone):
                 this block, and "in_feature", which is a string representing
                 its input feature (e.g., p5).
             norm (str): the normalization to use.
-            square_pad (bool): If true, require input images to be padded to square.
+            square_pad (int): If > 0, require input images to be padded to specific square size.
         """
         super(SimpleFeaturePyramid, self).__init__()
         assert isinstance(net, Backbone)
@@ -469,7 +469,7 @@ class SimpleFeaturePyramid(Backbone):
     def padding_constraints(self):
         return {
             "size_divisiblity": self._size_divisibility,
-            "square": int(self._square_pad),
+            "square_size": self._square_pad,
         }
 
     def forward(self, x):
@@ -499,3 +499,24 @@ class SimpleFeaturePyramid(Backbone):
             results.extend(self.top_block(top_block_in_feature))
         assert len(self._out_features) == len(results)
         return {f: res for f, res in zip(self._out_features, results)}
+
+
+def get_vit_lr_decay_rate(name, lr_decay_rate=1.0, num_layers=12):
+    """
+    Calculate lr decay rate for different ViT blocks.
+    Args:
+        name (string): parameter name.
+        lr_decay_rate (float): base lr decay rate.
+        num_layers (int): number of ViT blocks.
+
+    Returns:
+        lr decay rate for the given parameter.
+    """
+    layer_id = num_layers + 1
+    if name.startswith("backbone"):
+        if ".pos_embed" in name or ".patch_embed" in name:
+            layer_id = 0
+        elif ".blocks." in name and ".residual." not in name:
+            layer_id = int(name[name.find(".blocks.") :].split(".")[2]) + 1
+
+    return lr_decay_rate ** (num_layers + 1 - layer_id)

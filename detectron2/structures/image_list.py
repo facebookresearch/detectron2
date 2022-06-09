@@ -72,10 +72,9 @@ class ImageList(object):
                 This depends on the model and many models need a divisibility of 32.
             pad_value (float): value to pad.
             padding_constraints (optional[Dict]): If given, it would follow the format as
-                {"size_divisibility": int, "square": int}, where `size_divisibility` will overwrite
-                the above one if presented and `square` indicates if require inputs to be padded to
-                square.
-
+                {"size_divisibility": int, "square_size": int}, where `size_divisibility` will
+                overwrite the above one if presented and `square_size` indicates the
+                square padding size if `square_size` > 0.
         Returns:
             an `ImageList`.
         """
@@ -90,9 +89,10 @@ class ImageList(object):
         max_size = torch.stack(image_sizes_tensor).max(0).values
 
         if padding_constraints is not None:
-            if padding_constraints.get("square", 0) > 0:
+            square_size = padding_constraints.get("square_size", 0)
+            if square_size > 0:
                 # pad to square.
-                max_size[0] = max_size[1] = max_size.max()
+                max_size[0] = max_size[1] = square_size
             if "size_divisibility" in padding_constraints:
                 size_divisibility = padding_constraints["size_divisibility"]
         if size_divisibility > 1:
