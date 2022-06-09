@@ -138,6 +138,7 @@ def get_default_optimizer_params(
     weight_decay_norm: Optional[float] = None,
     bias_lr_factor: Optional[float] = 1.0,
     weight_decay_bias: Optional[float] = None,
+    lr_factor_func: Optional[Callable] = None,
     overrides: Optional[Dict[str, Dict[str, float]]] = None,
 ) -> List[Dict[str, Any]]:
     """
@@ -150,7 +151,10 @@ def get_default_optimizer_params(
             in optimizer.
         weight_decay_norm: override weight decay for params in normalization layers
         bias_lr_factor: multiplier of lr for bias parameters.
-        weight_decay_bias: override weight decay for bias parameters
+        weight_decay_bias: override weight decay for bias parameters.
+        lr_factor_func: function to calculate lr decay rate by mapping the parameter names to
+            corresponding lr decay rate. Note that setting this option requires
+            also setting ``base_lr``.
         overrides: if not `None`, provides values for optimizer hyperparameters
             (LR, weight decay) for module parameters with a given name; e.g.
             ``{"embedding": {"lr": 0.01, "weight_decay": 0.1}}`` will set the LR and
@@ -185,7 +189,9 @@ def get_default_optimizer_params(
         if "bias" in overrides:
             raise ValueError("Conflicting overrides for 'bias'")
         overrides["bias"] = bias_overrides
-
+    if lr_factor_func is not None:
+        if base_lr is None:
+            raise ValueError("lr_factor_func requires base_lr")
     norm_module_types = (
         torch.nn.BatchNorm1d,
         torch.nn.BatchNorm2d,
@@ -201,7 +207,7 @@ def get_default_optimizer_params(
     )
     params: List[Dict[str, Any]] = []
     memo: Set[torch.nn.parameter.Parameter] = set()
-    for module in model.modules():
+    for module_name, module in model.named_modules():
         for module_param_name, value in module.named_parameters(recurse=False):
             if not value.requires_grad:
                 continue
@@ -213,6 +219,9 @@ def get_default_optimizer_params(
             hyperparams = copy.copy(defaults)
             if isinstance(module, norm_module_types) and weight_decay_norm is not None:
                 hyperparams["weight_decay"] = weight_decay_norm
+            if lr_factor_func is not None:
+                hyperparams["lr"] *= lr_factor_func(f"{module_name}.{module_param_name}")
+
             hyperparams.update(overrides.get(module_param_name, {}))
             params.append({"params": [value], **hyperparams})
     return reduce_param_groups(params)
