@@ -22,6 +22,7 @@ of support or stability as detectron2.
 + [Rethinking "Batch" in BatchNorm](Rethinking-BatchNorm/)
 + [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://github.com/facebookresearch/MaskFormer)
 + [Exploring Plain Vision Transformer Backbones for Object Detection](ViTDet/)
++ [MViTv2: Improved Multiscale Vision Transformers for Classification and Detection](MViTv2/)
 
 
 ## External Projects
