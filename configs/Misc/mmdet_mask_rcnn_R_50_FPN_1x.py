@@ -4,6 +4,7 @@ from ..common.data.coco import dataloader
 from ..common.coco_schedule import lr_multiplier_1x as lr_multiplier
 from ..common.optim import SGD as optimizer
 from ..common.train import train
+from ..common.data.constants import constants
 
 from detectron2.modeling.mmdet_wrapper import MMDetDetector
 from detectron2.config import LazyCall as L
@@ -143,8 +144,8 @@ model = L(MMDetDetector)(
             ),
         ),
     ),
-    pixel_mean=[123.675, 116.280, 103.530],
-    pixel_std=[58.395, 57.120, 57.375],
+    pixel_mean=constants.imagenet_rgb256_mean,
+    pixel_std=constants.imagenet_rgb256_std,
 )
 
 dataloader.train.mapper.image_format = "RGB"  # torchvision pretrained model

@@ -15,6 +15,7 @@ from .wrappers import (
     Linear,
     nonzero_tuple,
     cross_entropy,
+    empty_input_loss_func_wrapper,
     shapes_to_tensor,
     move_device_like,
 )

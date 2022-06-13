@@ -20,3 +20,5 @@ https://download.pytorch.org/whl/cpu/torchvision-0.9.1%2Bcpu-cp37-cp37m-linux_x8
 omegaconf>=2.1.0.dev24
 hydra-core>=1.1.0.dev5
 scipy
+timm
+fairscale
