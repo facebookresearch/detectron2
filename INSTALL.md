@@ -1,7 +1,7 @@
 ## Installation
 
 ### Requirements
-- Linux or macOS with Python ≥ 3.6
+- Linux or macOS with Python ≥ 3.7
 - PyTorch ≥ 1.8 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.
   Install them together at [pytorch.org](https://pytorch.org) to make sure of this
 - OpenCV is optional but needed by demo and visualization
@@ -259,4 +259,3 @@ See
   which has step-by-step instructions.
 
 * __Docker__: The official [Dockerfile](docker) installs detectron2 with a few simple commands.
-
