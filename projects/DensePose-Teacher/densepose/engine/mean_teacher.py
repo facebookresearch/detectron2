@@ -10,7 +10,7 @@ from detectron2.engine import HookBase
 class MeanTeacher(HookBase):
     def __init__(
         self,
-        momentum=0.999,
+        momentum=0.9,
         interval=1,
         warm_up=100,
         decay_intervals=None,
