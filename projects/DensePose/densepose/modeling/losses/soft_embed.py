@@ -73,7 +73,7 @@ class SoftEmbeddingLoss:
             dict(int -> tensor): losses for different mesh IDs
         """
         losses = {}
-        for mesh_id_tensor in packed_annotations.vertex_mesh_ids_gt.unique():  # pyre-ignore[16]
+        for mesh_id_tensor in packed_annotations.vertex_mesh_ids_gt.unique():
             mesh_id = mesh_id_tensor.item()
             mesh_name = MeshCatalog.get_mesh_name(mesh_id)
             # valid points are those that fall into estimated bbox

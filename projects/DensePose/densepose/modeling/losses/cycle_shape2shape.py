@@ -104,7 +104,7 @@ class ShapeToShapeCycleLoss(nn.Module):
         """
         embeddings_1, geodists_1 = self._get_embeddings_and_geodists_for_mesh(embedder, mesh_name_1)
         embeddings_2, geodists_2 = self._get_embeddings_and_geodists_for_mesh(embedder, mesh_name_2)
-        sim_matrix_12 = embeddings_1.mm(embeddings_2.T)  # pyre-ignore[16]
+        sim_matrix_12 = embeddings_1.mm(embeddings_2.T)
 
         c_12 = F.softmax(sim_matrix_12 / self.temperature, dim=1)
         c_21 = F.softmax(sim_matrix_12.T / self.temperature, dim=1)
