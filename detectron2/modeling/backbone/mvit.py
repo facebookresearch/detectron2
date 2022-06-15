@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import torch
 import torch.nn as nn
-
 from fairscale.nn.checkpoint import checkpoint_wrapper
 from timm.models.layers import DropPath, Mlp, trunc_normal_
 
