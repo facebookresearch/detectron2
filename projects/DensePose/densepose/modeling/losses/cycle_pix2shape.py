@@ -135,9 +135,7 @@ class PixToShapeCycleLoss(nn.Module):
                     pixel_embeddings.reshape((self.embed_size, -1))[:, pixel_indices_flattened].T
                 )
                 # pixel-vertex similarity [M, K]
-                sim_matrix = pixel_embeddings_sampled.mm(
-                    mesh_vertex_embeddings.T
-                )
+                sim_matrix = pixel_embeddings_sampled.mm(mesh_vertex_embeddings.T)
                 c_pix_vertex = F.softmax(sim_matrix / self.temperature_pix_to_vertex, dim=1)
                 c_vertex_pix = F.softmax(sim_matrix.T / self.temperature_vertex_to_pix, dim=1)
                 c_cycle = c_pix_vertex.mm(c_vertex_pix)
