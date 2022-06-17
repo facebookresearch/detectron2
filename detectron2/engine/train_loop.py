@@ -301,6 +301,11 @@ class SimpleTrainer(TrainerBase):
             self._data_loader_iter_obj = iter(self.data_loader)
         return self._data_loader_iter_obj
 
+    def reset_data_loader(self, data_loader):
+        del self.data_loader
+        self.data_loader = data_loader
+        self._data_loader_iter_obj = None
+
     def _write_metrics(
         self,
         loss_dict: Mapping[str, torch.Tensor],

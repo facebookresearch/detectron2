@@ -49,6 +49,15 @@ class TestTrainer(unittest.TestCase):
         )
         trainer.train(0, 10)
 
+    def test_simple_trainer_reset_dataloader(self, device="cpu"):
+        model = _SimpleModel().to(device=device)
+        trainer = SimpleTrainer(
+            model, self._data_loader(device), torch.optim.SGD(model.parameters(), 0.1)
+        )
+        trainer.train(0, 10)
+        trainer.reset_data_loader(self._data_loader(device))
+        trainer.train(0, 10)
+
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_simple_trainer_cuda(self):
         self.test_simple_trainer(device="cuda")
