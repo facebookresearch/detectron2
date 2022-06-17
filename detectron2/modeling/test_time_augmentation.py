@@ -254,7 +254,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
             pred_boxes = output.pred_boxes.tensor
             if pred_boxes.size()[-1] == 5:
                 original_pred_boxes = tfm.inverse.apply_rotated_box(pred_boxes.cpu().numpy())
-            else: 
+            else:
                 original_pred_boxes = tfm.inverse().apply_box(pred_boxes.cpu().numpy())
             all_boxes.append(torch.from_numpy(original_pred_boxes).to(pred_boxes.device))
 
@@ -271,7 +271,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
         all_scores_2d = torch.zeros(num_boxes, num_classes + 1, device=all_boxes.device)
         for idx, cls, score in zip(count(), all_classes, all_scores):
             all_scores_2d[idx, cls] = score
-        
+
         if all_boxes.size()[-1] == 5:
             merged_instances, _ = fast_rcnn_inference_single_image_rotated(
                 all_boxes,
@@ -284,13 +284,13 @@ class GeneralizedRCNNWithTTA(nn.Module):
 
         else:
             merged_instances, _ = fast_rcnn_inference_single_image(
-            all_boxes,
-            all_scores_2d,
-            shape_hw,
-            1e-8,
-            self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
-            self.cfg.TEST.DETECTIONS_PER_IMAGE,
-        )
+                all_boxes,
+                all_scores_2d,
+                shape_hw,
+                1e-8,
+                self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
+                self.cfg.TEST.DETECTIONS_PER_IMAGE,
+            )
 
         return merged_instances
 
