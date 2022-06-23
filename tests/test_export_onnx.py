@@ -2,6 +2,7 @@
 
 import io
 import unittest
+import warnings
 import torch
 from torch.hub import _check_module_exists
 
@@ -14,7 +15,6 @@ from detectron2.utils.testing import (
     _pytorch1111_symbolic_opset9_repeat_interleave,
     _pytorch1111_symbolic_opset9_to,
     get_sample_coco_image,
-    min_torch_version,
     register_custom_op_onnx_export,
     skipIfOnCPUCI,
     skipIfUnsupportedMinOpsetVersion,
@@ -24,14 +24,12 @@ from detectron2.utils.testing import (
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
-@unittest.skipIf(
-    not min_torch_version("1.10"),
-    f"module 'torch' has __version__ " f"{torch.__version__}, required is: 1.10",
-)
+@skipIfUnsupportedMinTorchVersion("1.10")
 class TestONNXTracingExport(unittest.TestCase):
     def testMaskRCNNFPN(self):
         def inference_func(model, images):
-            inputs = [{"image": image} for image in images]
+            with warnings.catch_warnings(record=True):
+                inputs = [{"image": image} for image in images]
             inst = model.inference(inputs, do_postprocess=False)[0]
             return [{"instances": inst}]
 

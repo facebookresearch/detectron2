@@ -185,10 +185,6 @@ def register_custom_op_onnx_export(
     IMPORTANT: symbolic must be manually unregistered after the caller function returns
     """
     if min_torch_version(min_version):
-        print(
-            f"_register_custom_op_onnx_export({opname}, {opset_version}) will be skipped."
-            f" Installed PyTorch {torch.__version__} >= {min_version}."
-        )
         return
     register_custom_op_symbolic(opname, symbolic_fn, opset_version)
     print(f"_register_custom_op_onnx_export({opname}, {opset_version}) succeeded.")
@@ -251,10 +247,6 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
                     _unregister_op(op_name, ns, ver)
 
     if min_torch_version(min_version):
-        print(
-            f"_unregister_custom_op_onnx_export({opname}, {opset_version}) will be skipped."
-            f" Installed PyTorch {torch.__version__} >= {min_version}."
-        )
         return
     _unregister_custom_op_symbolic(opname, opset_version)
     print(f"_unregister_custom_op_onnx_export({opname}, {opset_version}) succeeded.")
@@ -293,19 +285,8 @@ def skipIfUnsupportedMinTorchVersion(min_version):
     """
     Skips tests for PyTorch versions older than min_version.
     """
-
-    def skip_dec(func):
-        def wrapper(self):
-            if not min_torch_version(min_version):
-                raise unittest.SkipTest(
-                    f"module 'torch' has __version__ {torch.__version__}"
-                    f", required is: {min_version}"
-                )
-            return func(self)
-
-        return wrapper
-
-    return skip_dec
+    reason = f"module 'torch' has __version__ {torch.__version__}" f", required is: {min_version}"
+    return unittest.skipIf(not min_torch_version(min_version), reason)
 
 
 # TODO: Remove after PyTorch 1.11.1+ is used by detectron2's CI

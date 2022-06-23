@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import math
+import warnings
 from typing import Dict
 import torch
 import torch.nn.functional as F
@@ -74,7 +75,8 @@ class InstancesList(object):
         return name in self.batch_extra_fields
 
     def set(self, name, value):
-        data_len = len(value)
+        with warnings.catch_warnings(record=True):
+            data_len = len(value)
         if len(self.batch_extra_fields):
             assert (
                 len(self) == data_len

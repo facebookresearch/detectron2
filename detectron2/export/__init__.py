@@ -15,11 +15,14 @@ else:
     from .api import *
 
 
+# TODO: Update ONNX Opset version and run tests when a newer PyTorch is supported
 STABLE_ONNX_OPSET_VERSION = 11
 
 
 def add_export_config(cfg):
-    warnings.warn("add_export_config has been deprecated and behaves as no-op function.")
+    warnings.warn(
+        "add_export_config has been deprecated and behaves as no-op function.", DeprecationWarning
+    )
     return cfg
 
 

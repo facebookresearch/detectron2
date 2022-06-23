@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
+import warnings
 from typing import Any, Dict, List, Tuple, Union
 import torch
 
@@ -73,12 +74,7 @@ class Instances:
         The length of `value` must be the number of instances,
         and must agree with other existing fields in this object.
         """
-        # len(tensor) leads to constants during tracing mode
-        if isinstance(value, Boxes):
-            data_len = value.tensor.shape[0]
-        elif isinstance(value, torch.Tensor):
-            data_len = value.shape[0]
-        else:
+        with warnings.catch_warnings(record=True):
             data_len = len(value)
         if len(self._fields):
             assert (
