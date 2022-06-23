@@ -15,6 +15,8 @@ from detectron2.modeling.roi_heads import (
     FastRCNNConvFCHead,
 )
 
+from ..data.constants import constants
+
 model = L(GeneralizedRCNN)(
     backbone=L(FPN)(
         bottom_up=L(ResNet)(
@@ -87,7 +89,7 @@ model = L(GeneralizedRCNN)(
             conv_dims=[256, 256, 256, 256, 256],
         ),
     ),
-    pixel_mean=[103.530, 116.280, 123.675],
-    pixel_std=[1.0, 1.0, 1.0],
+    pixel_mean=constants.imagenet_bgr256_mean,
+    pixel_std=constants.imagenet_bgr256_std,
     input_format="BGR",
 )

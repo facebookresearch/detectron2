@@ -51,7 +51,10 @@ def _get_aug_input_args(aug, aug_input) -> List[Any]:
         else:
             names = []
             for name, prm in prms:
-                if prm.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+                if prm.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+                ):
                     raise TypeError(
                         f""" \
 The default implementation of `{type(aug)}.__call__` does not allow \
@@ -213,6 +216,19 @@ class Augmentation:
     __str__ = __repr__
 
 
+class _TransformToAug(Augmentation):
+    def __init__(self, tfm: Transform):
+        self.tfm = tfm
+
+    def get_transform(self, *args):
+        return self.tfm
+
+    def __repr__(self):
+        return repr(self.tfm)
+
+    __str__ = __repr__
+
+
 def _transform_to_aug(tfm_or_aug):
     """
     Wrap Transform into Augmentation.
@@ -222,19 +238,6 @@ def _transform_to_aug(tfm_or_aug):
     if isinstance(tfm_or_aug, Augmentation):
         return tfm_or_aug
     else:
-
-        class _TransformToAug(Augmentation):
-            def __init__(self, tfm: Transform):
-                self.tfm = tfm
-
-            def get_transform(self, *args):
-                return self.tfm
-
-            def __repr__(self):
-                return repr(self.tfm)
-
-            __str__ = __repr__
-
         return _TransformToAug(tfm_or_aug)
 
 

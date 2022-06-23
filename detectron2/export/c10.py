@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import math
+from typing import Dict
 import torch
 import torch.nn.functional as F
 
-from detectron2.layers import cat
+from detectron2.layers import ShapeSpec, cat
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
@@ -162,6 +163,14 @@ class Caffe2Compatible(object):
 
 
 class Caffe2RPN(Caffe2Compatible, rpn.RPN):
+    @classmethod
+    def from_config(cls, cfg, input_shape: Dict[str, ShapeSpec]):
+        ret = super(Caffe2Compatible, cls).from_config(cfg, input_shape)
+        assert tuple(cfg.MODEL.RPN.BBOX_REG_WEIGHTS) == (1.0, 1.0, 1.0, 1.0) or tuple(
+            cfg.MODEL.RPN.BBOX_REG_WEIGHTS
+        ) == (1.0, 1.0, 1.0, 1.0, 1.0)
+        return ret
+
     def _generate_proposals(
         self, images, objectness_logits_pred, anchor_deltas_pred, gt_instances=None
     ):

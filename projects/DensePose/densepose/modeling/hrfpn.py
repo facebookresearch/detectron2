@@ -90,7 +90,7 @@ class HRFPN(Backbone):
                         in_channels=in_channels[i],
                         out_channels=in_channels[i],
                         kernel_size=4,
-                        stride=2 ** i,
+                        stride=2**i,
                         padding=0,
                         output_padding=0,
                         bias=False,
@@ -105,7 +105,7 @@ class HRFPN(Backbone):
         for i in range(self.n_out_features):
             self.reduction_pooling_conv.append(
                 nn.Sequential(
-                    nn.Conv2d(sum(in_channels), out_channels, kernel_size=2 ** i, stride=2 ** i),
+                    nn.Conv2d(sum(in_channels), out_channels, kernel_size=2**i, stride=2**i),
                     nn.BatchNorm2d(out_channels, momentum=0.1),
                     nn.ReLU(inplace=True),
                 )
@@ -148,7 +148,7 @@ class HRFPN(Backbone):
             outs.append(self.reduction_pooling_conv[i](out))
         for i in range(len(outs)):  # Make shapes consistent
             outs[-1 - i] = outs[-1 - i][
-                :, :, : outs[-1].shape[2] * 2 ** i, : outs[-1].shape[3] * 2 ** i
+                :, :, : outs[-1].shape[2] * 2**i, : outs[-1].shape[3] * 2**i
             ]
         outputs = []
         for i in range(len(outs)):

@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import io
 import numpy as np
+import os
+import tempfile
 import torch
 
 from detectron2 import model_zoo
-from detectron2.config import CfgNode, instantiate
+from detectron2.config import CfgNode, LazyConfig, instantiate
 from detectron2.data import DatasetCatalog
 from detectron2.data.detection_utils import read_image
 from detectron2.modeling import build_model
@@ -139,3 +141,15 @@ def reload_script_model(module):
     torch.jit.save(module, buffer)
     buffer.seek(0)
     return torch.jit.load(buffer)
+
+
+def reload_lazy_config(cfg):
+    """
+    Save an object by LazyConfig.save and load it back.
+    This is used to test that a config still works the same after
+    serialization/deserialization.
+    """
+    with tempfile.TemporaryDirectory(prefix="detectron2") as d:
+        fname = os.path.join(d, "d2_cfg_test.yaml")
+        LazyConfig.save(cfg, fname)
+        return LazyConfig.load(fname)

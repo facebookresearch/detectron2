@@ -45,14 +45,19 @@ def cat(tensors: List[torch.Tensor], dim: int = 0):
     return torch.cat(tensors, dim)
 
 
-def cross_entropy(input, target, *, reduction="mean", **kwargs):
-    """
-    Same as `torch.nn.functional.cross_entropy`, but returns 0 (instead of nan)
-    for empty inputs.
-    """
-    if target.numel() == 0 and reduction == "mean":
-        return input.sum() * 0.0  # connect the gradient
-    return F.cross_entropy(input, target, reduction=reduction, **kwargs)
+def empty_input_loss_func_wrapper(loss_func):
+    def wrapped_loss_func(input, target, *, reduction="mean", **kwargs):
+        """
+        Same as `loss_func`, but returns 0 (instead of nan) for empty inputs.
+        """
+        if target.numel() == 0 and reduction == "mean":
+            return input.sum() * 0.0  # connect the gradient
+        return loss_func(input, target, reduction=reduction, **kwargs)
+
+    return wrapped_loss_func
+
+
+cross_entropy = empty_input_loss_func_wrapper(F.cross_entropy)
 
 
 class _NewEmptyTensorOp(torch.autograd.Function):
@@ -130,3 +135,12 @@ def nonzero_tuple(x):
         return x.nonzero().unbind(1)
     else:
         return x.nonzero(as_tuple=True)
+
+
+@torch.jit.script_if_tracing
+def move_device_like(src: torch.Tensor, dst: torch.Tensor) -> torch.Tensor:
+    """
+    Tracing friendly way to cast tensor to another tensor's device. Device will be treated
+    as constant during tracing, scripting the casting process as whole can workaround this issue.
+    """
+    return src.to(dst.device)

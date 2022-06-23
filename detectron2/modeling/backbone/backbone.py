@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from abc import ABCMeta, abstractmethod
+from typing import Dict
 import torch.nn as nn
 
 from detectron2.layers import ShapeSpec
@@ -38,6 +39,26 @@ class Backbone(nn.Module, metaclass=ABCMeta):
         input size divisibility is required.
         """
         return 0
+
+    @property
+    def padding_constraints(self) -> Dict[str, int]:
+        """
+        This property is a generalization of size_divisibility. Some backbones and training
+        recipes require specific padding constraints, such as enforcing divisibility by a specific
+        integer (e.g., FPN) or padding to a square (e.g., ViTDet with large-scale jitter
+        in :paper:vitdet). `padding_constraints` contains these optional items like:
+        {
+            "size_divisibility": int,
+            "square_size": int,
+            # Future options are possible
+        }
+        `size_divisibility` will read from here if presented and `square_size` indicates the
+        square padding size if `square_size` > 0.
+
+        TODO: use type of Dict[str, int] to avoid torchscipt issues. The type of padding_constraints
+        could be generalized as TypedDict (Python 3.8+) to support more types in the future.
+        """
+        return {}
 
     def output_shape(self):
         """

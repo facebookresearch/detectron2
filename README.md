@@ -1,5 +1,9 @@
 <img src=".github/Detectron2-Logo-Horz.svg" width="300" >
 
+<a href="https://opensource.facebook.com/support-ukraine">
+  <img src="https://img.shields.io/badge/Support-Ukraine-FFD500?style=flat&labelColor=005BBB" alt="Support Ukraine - Help Provide Humanitarian Aid to Ukraine." />
+</a>
+
 Detectron2 is Facebook AI Research's next generation library
 that provides state-of-the-art detection and segmentation algorithms.
 It is the successor of
@@ -20,7 +24,7 @@ Explain Like I’m 5: Detectron2            |  Using Machine Learning with Detec
 
 ## What's New
 * Includes new capabilities such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
-  DeepLab, etc.
+  DeepLab, ViTDet, MViTv2 etc.
 * Used as a library to support building [research projects](projects/) on top of it.
 * Models can be exported to TorchScript format or Caffe2 format for deployment.
 * It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).

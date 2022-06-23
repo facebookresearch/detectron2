@@ -468,7 +468,7 @@ class TensorMask(nn.Module):
         if self.mask_on:
             loss_mask = 0
             for lvl in range(self.num_levels):
-                cur_level_factor = 2 ** lvl if self.bipyramid_on else 1
+                cur_level_factor = 2**lvl if self.bipyramid_on else 1
                 for anc in range(self.num_anchors):
                     cur_gt_mask_inds = gt_mask_inds[lvl][anc]
                     if cur_gt_mask_inds is None:
@@ -477,7 +477,7 @@ class TensorMask(nn.Module):
                         cur_mask_size = self.mask_sizes[anc] * cur_level_factor
                         # TODO maybe there are numerical issues when mask sizes are large
                         cur_size_divider = torch.tensor(
-                            self.mask_loss_weight / (cur_mask_size ** 2),
+                            self.mask_loss_weight / (cur_mask_size**2),
                             dtype=torch.float32,
                             device=self.device,
                         )
@@ -591,7 +591,7 @@ class TensorMask(nn.Module):
                     for lvl in range(self.num_levels):
                         ids_lvl = matched_indexes[:, 0] == lvl
                         if torch.any(ids_lvl):
-                            cur_level_factor = 2 ** lvl if self.bipyramid_on else 1
+                            cur_level_factor = 2**lvl if self.bipyramid_on else 1
                             for anc in range(self.num_anchors):
                                 ids_lvl_anchor = ids_lvl & (matched_indexes[:, 4] == anc)
                                 if torch.any(ids_lvl_anchor):
@@ -734,7 +734,7 @@ class TensorMask(nn.Module):
             result_anchors = top_anchors[keep]
             # Get masks and do sigmoid
             for lvl, _, h, w, anc in result_indexes.tolist():
-                cur_size = self.mask_sizes[anc] * (2 ** lvl if self.bipyramid_on else 1)
+                cur_size = self.mask_sizes[anc] * (2**lvl if self.bipyramid_on else 1)
                 result_masks.append(
                     torch.sigmoid(pred_masks[lvl][anc][:, h, w].view(1, cur_size, cur_size))
                 )
@@ -831,7 +831,7 @@ class TensorMaskHead(nn.Module):
                 if self.bipyramid_on:
                     for lvl in range(num_levels):
                         cur_mask_module = "align2nat_%02d" % lvl
-                        lambda_val = 2 ** lvl
+                        lambda_val = 2**lvl
                         setattr(self, cur_mask_module, SwapAlign2Nat(lambda_val))
                     # Also the fusing layer, stay at the same channel size
                     mask_fuse = [
@@ -885,7 +885,7 @@ class TensorMaskHead(nn.Module):
                 H, W = mask_feat_high_res.shape[-2:]
                 mask_feats_up = []
                 for lvl, mask_feat in enumerate(mask_feats):
-                    lambda_val = 2.0 ** lvl
+                    lambda_val = 2.0**lvl
                     mask_feat_up = mask_feat
                     if lvl > 0:
                         mask_feat_up = F.interpolate(

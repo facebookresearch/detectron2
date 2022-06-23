@@ -252,7 +252,8 @@ class SimpleTrainer(TrainerBase):
 
         self.model = model
         self.data_loader = data_loader
-        self._data_loader_iter = iter(data_loader)
+        # to access the data loader iterator, call `self._data_loader_iter`
+        self._data_loader_iter_obj = None
         self.optimizer = optimizer
 
     def run_step(self):
@@ -292,6 +293,18 @@ class SimpleTrainer(TrainerBase):
         suboptimal as explained in https://arxiv.org/abs/2006.15704 Sec 3.2.4
         """
         self.optimizer.step()
+
+    @property
+    def _data_loader_iter(self):
+        # only create the data loader iterator when it is used
+        if self._data_loader_iter_obj is None:
+            self._data_loader_iter_obj = iter(self.data_loader)
+        return self._data_loader_iter_obj
+
+    def reset_data_loader(self, data_loader):
+        del self.data_loader
+        self.data_loader = data_loader
+        self._data_loader_iter_obj = None
 
     def _write_metrics(
         self,

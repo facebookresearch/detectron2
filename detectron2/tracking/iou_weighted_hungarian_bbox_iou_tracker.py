@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
 
+import numpy as np
 from typing import List
 
-import numpy as np
+from detectron2.config import CfgNode as CfgNode_
+from detectron2.config import configurable
 
 from .base_tracker import TRACKER_HEADS_REGISTRY
 from .vanilla_hungarian_bbox_iou_tracker import VanillaHungarianBBoxIOUTracker
-from detectron2.config import configurable, CfgNode as CfgNode_
 
 
 @TRACKER_HEADS_REGISTRY.register()
@@ -28,7 +29,7 @@ class IOUWeightedHungarianBBoxIOUTracker(VanillaHungarianBBoxIOUTracker):
         min_box_rel_dim: float = 0.02,
         min_instance_period: int = 1,
         track_iou_threshold: float = 0.5,
-        **kwargs
+        **kwargs,
     ):
         """
         Args:
@@ -52,7 +53,7 @@ class IOUWeightedHungarianBBoxIOUTracker(VanillaHungarianBBoxIOUTracker):
             max_lost_frame_count=max_lost_frame_count,
             min_box_rel_dim=min_box_rel_dim,
             min_instance_period=min_instance_period,
-            track_iou_threshold=track_iou_threshold
+            track_iou_threshold=track_iou_threshold,
         )
 
     @classmethod
@@ -82,7 +83,7 @@ class IOUWeightedHungarianBBoxIOUTracker(VanillaHungarianBBoxIOUTracker):
             "max_lost_frame_count": max_lost_frame_count,
             "min_box_rel_dim": min_box_rel_dim,
             "min_instance_period": min_instance_period,
-            "track_iou_threshold": track_iou_threshold
+            "track_iou_threshold": track_iou_threshold,
         }
 
     def assign_cost_matrix_values(self, cost_matrix: np.ndarray, bbox_pairs: List) -> np.ndarray:
