@@ -8,6 +8,7 @@
 __author__ = "tsungyi"
 
 import copy
+import os
 import datetime
 import logging
 import numpy as np
@@ -118,6 +119,9 @@ class DensePoseCocoEval(object):
         embedder=None,
         dpEvalMode: DensePoseEvalMode = DensePoseEvalMode.GPS,
         dpDataMode: DensePoseDataMode = DensePoseDataMode.IUV_DT,
+        analysis=False,
+        output_dir=None,
+        analysis_mode="confidece"
     ):
         """
         Initialize CocoEval using coco APIs for gt and dt
@@ -144,6 +148,11 @@ class DensePoseCocoEval(object):
             self.params.catIds = sorted(cocoGt.getCatIds())
         self.ignoreThrBB = 0.7
         self.ignoreThrUV = 0.9
+        self.analysis = analysis
+        self.output_dir=output_dir
+        self.analysis_mode = analysis_mode
+        self.dists = []
+        self.indicators = []
 
     def _loadGEval(self):
         smpl_subdiv_fpath = PathManager.get_local_path(
@@ -335,6 +344,11 @@ class DensePoseCocoEval(object):
         self.ious = {
             (imgId, catId): computeIoU(imgId, catId) for imgId in p.imgIds for catId in catIds
         }
+
+        if p.iouType == "densepose" and self.analysis:
+            file_path = os.path.join(self.output_dir, "{}.npy".format(self.analysis_mode))
+            with PathManager.open(file_path, 'wb') as f:
+                np.save(f, np.concatenate((np.concatenate(self.dists), np.concatenate(self.indicators)), axis=1))
 
         evaluateImg = self.evaluateImg
         maxDet = p.maxDets[-1]
@@ -656,6 +670,10 @@ class DensePoseCocoEval(object):
         ipoints[pt_mask == -1] = 0
         return ipoints, upoints, vpoints
 
+    def extract_confidence(self, dt, py, px):
+        indicator = dt["indicator"][0, py, px]
+        return indicator
+
     def extract_iuv_from_raw(self, dt, gt, py, px, pt_mask):
         labels_dt = resample_fine_and_coarse_segm_tensors_to_bbox(
             dt["fine_segm"].unsqueeze(0),
@@ -763,6 +781,10 @@ class DensePoseCocoEval(object):
                         ogps_values = np.exp(
                             -(dists_between_matches ** 2) / (2 * (dist_norm_coeffs ** 2))
                         )
+                        if self.analysis:
+                            indicator = self.extract_confidence(dt, py, px)
+                            self.indicators.append(indicator[dists_between_matches != np.inf].unsqueeze(-1))
+                            self.dists.append((dists_between_matches[dists_between_matches != np.inf])[:, np.newaxis])
                         #
                         ogps = np.mean(ogps_values) if len(ogps_values) > 0 else 0.0
                     ious[i, j] = ogps

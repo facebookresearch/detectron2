@@ -82,7 +82,7 @@ def resample_fine_and_coarse_segm_to_bbox(predictor_output: Any, box_xywh_abs: I
     return resample_fine_and_coarse_segm_tensors_to_bbox(
         predictor_output.fine_segm,
         predictor_output.coarse_segm,
-        box_xywh_abs,
+        box_xywh_abs
     )
 
 

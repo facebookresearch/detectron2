@@ -90,8 +90,12 @@ class SimpleTrainer(TrainerBase):
             pseudo_label = teacher_output[i]["instances"].pred_densepose
             # pseudo_segm = torch.argmax(pseudo_label.fine_segm, dim=1).float()
             pseudo_segm = pseudo_label.fine_segm
-            pseudo_u = pseudo_label.u
-            pseudo_v = pseudo_label.v
+            # baseline
+            # pseudo_u = pseudo_label.u
+            # pseudo_v = pseudo_label.v
+            # block
+            pseudo_u = pseudo_label.u_cls
+            pseudo_v = pseudo_label.v_cls
 
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:

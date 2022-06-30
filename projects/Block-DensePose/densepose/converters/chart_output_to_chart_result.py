@@ -79,8 +79,9 @@ def resample_block_uv_to_bbox(
     predictor_output: BlockPredictorOutput,
     labels: torch.Tensor,
     box_xywh_abs: IntTupleBox,
-    block_num: int
-) -> torch.Tensor:
+    block_num: int,
+    analysis=False
+):
     """
     Resamples U and V coordinate estimates for the given bounding box
 
@@ -111,16 +112,21 @@ def resample_block_uv_to_bbox(
                           align_corners=False)[0].reshape(24, block_num, h, w).permute(0, 2, 3, 1)
 
     uv = torch.zeros([2, h, w], dtype=torch.float32, device=predictor_output.u_cls.device)
-    index_u = torch.argmax(u_cls, dim=3)
-    index_v = torch.argmax(v_cls, dim=3)
+    conf_u, index_u = torch.max(F.softmax(u_cls, dim=3), dim=3)
+    conf_v, index_v = torch.max(F.softmax(v_cls, dim=3), dim=3)
+    conf = torch.zeros([2, h, w], dtype=torch.float32, device=predictor_output.u_cls.device)
 
     for part_id in range(1, 25):
         uv[0][labels == part_id] = u_offset[part_id-1][labels == part_id, index_u[part_id-1, (labels == part_id)]] * \
                                    block_width + block_center[index_u[part_id-1][(labels == part_id)]]
         uv[1][labels == part_id] = v_offset[part_id-1][labels == part_id, index_v[part_id-1, (labels == part_id)]] * \
                                    block_width + block_center[index_v[part_id-1][(labels == part_id)]]
+        conf[0][labels == part_id] = conf_u[part_id-1][labels == part_id]
+        conf[1][labels == part_id] = conf_v[part_id-1][labels == part_id]
 
-    return uv
+    if analysis:
+        return uv, torch.sqrt(conf[0] * conf[1]).unsqueeze(0)
+    return uv, None
 
 
 def resample_distribution_uv_to_bbox(
@@ -183,7 +189,7 @@ def densepose_chart_predictor_output_to_result(
 def block_predictor_output_to_result(
     predictor_output: BlockPredictorOutput, boxes: Boxes,
     *args, **kwargs
-) -> DensePoseChartResult:
+):
     """
     Convert densepose chart predictor outputs to results
 
@@ -205,8 +211,8 @@ def block_predictor_output_to_result(
     box_xywh = make_int_box(boxes_xywh_abs[0])
 
     labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)
-    uv = resample_block_uv_to_bbox(predictor_output, labels, box_xywh, kwargs["block_num"])
-    return DensePoseChartResult(labels=labels, uv=uv)
+    uv, conf_uv = resample_block_uv_to_bbox(predictor_output, labels, box_xywh, kwargs["block_num"], analysis=kwargs["analysis"])
+    return DensePoseChartResult(labels=labels, uv=uv), conf_uv
 
 
 def distribution_predictor_output_to_result(

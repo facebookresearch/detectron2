@@ -272,11 +272,13 @@ def add_hrnet_config(cfg: CN) -> None:
 def add_block_config(cfg: CN):
     _C = cfg
     _C.MODEL.BLOCK = CN()
-    _C.MODEL.BLOCK.BLOCK_NUM = 10
+    _C.MODEL.BLOCK.BLOCK_NUM = 5
     _C.MODEL.BLOCK.CLS_WEIGHTS = 0.0005
     _C.MODEL.BLOCK.REGRESS_WEIGHTS = 0.02
     _C.MODEL.BLOCK.DISTRI_WEIGHTS = 1.0
     _C.MODEL.BLOCK.L1_LOSS = True
+    _C.MODEL.BLOCK.ANALYSIS = False
+    _C.MODEL.BLOCK.ANALYSIS_MODE = "confidence"
 
 
 def add_densepose_config(cfg: CN) -> None:

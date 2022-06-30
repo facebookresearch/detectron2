@@ -18,7 +18,7 @@ from tabulate import tabulate
 from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
 from detectron2.evaluation import DatasetEvaluator
-from detectron2.structures import BoxMode
+from detectron2.structures import BoxMode, Boxes
 from detectron2.utils.comm import gather, get_rank, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
@@ -43,7 +43,7 @@ from .tensor_storage import (
     SizeData,
     storage_gather,
 )
-
+from torch.nn import functional as F
 
 class DensePoseCOCOEvaluator(DatasetEvaluator):
     def __init__(
@@ -58,6 +58,8 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         should_evaluate_mesh_alignment: bool = False,
         mesh_alignment_mesh_names: Optional[List[str]] = None,
         block_num=5,
+        analysis=False,
+        analysis_mode="confidence"
     ):
         self._embedder = embedder
         self._distributed = distributed
@@ -86,6 +88,8 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         maybe_filter_and_map_categories_cocoapi(dataset_name, self._coco_api)
 
         self.block_num = block_num
+        self.analysis = analysis
+        self.analysis_mode = analysis_mode
 
     def reset(self):
         self._predictions = []
@@ -111,6 +115,8 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
                 self._metadata.class_to_mesh_name,
                 self._storage is not None,
                 self.block_num,
+                self.analysis_mode,
+                self.analysis,
             )
             if self._storage is not None:
                 for prediction_dict in prediction_list:
@@ -161,6 +167,9 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             class_names=self._metadata.get("thing_classes"),
             min_threshold=self._min_threshold,
             img_ids=img_ids,
+            analysis=self.analysis,
+            output_dir=self._output_dir,
+            analysis_mode=self.analysis_mode,
         )
         res["densepose_gps"] = results_gps
         res["densepose_gpsm"] = results_gpsm
@@ -202,7 +211,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._logger.info(f'| {"MEAN":13s} | {ge_str:7s} | {gps_str:7s} |')
 
 
-def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_storage, block_num):
+def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_storage, block_num, analysis_mode, analysis=False):
     """
     Args:
         instances (Instances): the output of the model
@@ -223,11 +232,11 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_stor
         )
     elif isinstance(instances.pred_densepose, DensePoseChartPredictorOutput):
         if not use_storage:
-            results_densepose = densepose_chart_predictions_to_dict(instances)
+            results_densepose = densepose_chart_predictions_to_dict(instances, analysis)
         else:
             results_densepose = densepose_chart_predictions_to_storage_dict(instances)
     elif isinstance(instances.pred_densepose, BlockPredictorOutput):
-        results_densepose = densepose_block_predictions_to_dict(instances, block_num)
+        results_densepose = densepose_block_predictions_to_dict(instances, block_num, analysis_mode, analysis)
     elif isinstance(instances.pred_densepose, DistributionPredictorOutput):
         results_densepose = densepose_distribution_predictions_to_dict(instances, block_num)
 
@@ -243,7 +252,7 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_stor
     return results
 
 
-def densepose_chart_predictions_to_dict(instances):
+def densepose_chart_predictions_to_dict(instances, analysis=False):
     segmentations = ToMaskConverter.convert(
         instances.pred_densepose, instances.pred_boxes, instances.image_size
     )
@@ -265,20 +274,34 @@ def densepose_chart_predictions_to_dict(instances):
             "densepose": densepose_results_quantized,
             "segmentation": segmentation_encoded,
         }
+        if analysis:
+            result.update({"indicator": chart_output_to_chart_confidence(instances.pred_densepose[k],
+                                                                           instances.pred_boxes[k])})
         results.append(result)
     return results
 
 
-def densepose_block_predictions_to_dict(instances, block_num):
+def chart_output_to_chart_confidence(predictor_output: DensePoseChartPredictorOutput, boxes: Boxes):
+    boxes_xyxy_abs = boxes.tensor.clone()
+    boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+    x, y, w, h = tuple(boxes_xywh_abs[0].long().tolist())
+
+    w = max(int(w), 1)
+    h = max(int(h), 1)
+    return F.interpolate(F.softmax(predictor_output.fine_segm, dim=1), (h, w), mode="bilinear", align_corners=False).max(dim=1)[0]
+
+
+def densepose_block_predictions_to_dict(instances, block_num, analysis_mode, analysis):
     segmentations = ToMaskConverter.convert(
         instances.pred_densepose, instances.pred_boxes, instances.image_size
     )
 
     results = []
     for k in range(len(instances)):
-        densepose_results_quantized = quantize_densepose_chart_result(
-            ToChartResultConverterWithBlock.convert(instances.pred_densepose[k], instances.pred_boxes[k], block_num=block_num)
+        chart_result, conf_uv = ToChartResultConverterWithBlock.convert(
+            instances.pred_densepose[k], instances.pred_boxes[k], block_num=block_num, analysis=analysis
         )
+        densepose_results_quantized = quantize_densepose_chart_result(chart_result)
         densepose_results_quantized.labels_uv_uint8 = (
             densepose_results_quantized.labels_uv_uint8.cpu()
         )
@@ -291,6 +314,11 @@ def densepose_block_predictions_to_dict(instances, block_num):
             "densepose": densepose_results_quantized,
             "segmentation": segmentation_encoded,
         }
+        if analysis and conf_uv is not None:
+            if analysis_mode == "conf_uv_segm":
+                conf_segm = chart_output_to_chart_confidence(instances.pred_densepose[k], instances.pred_boxes[k])
+                conf_uv = torch.sqrt(conf_segm * conf_uv)
+            result.update({"indicator": conf_uv})
         results.append(result)
     return results
 
@@ -356,6 +384,9 @@ def _evaluate_predictions_on_coco(
     class_names=None,
     min_threshold: float=0.5,
     img_ids=None,
+    analysis=False,
+    output_dir=None,
+    analysis_mode="confidence",
 ):
     logger = logging.getLogger(__name__)
 
@@ -373,7 +404,8 @@ def _evaluate_predictions_on_coco(
     for eval_mode_name in ["GPS", "GPSM", "IOU"]:
         eval_mode = getattr(DensePoseEvalMode, eval_mode_name)
         coco_eval = DensePoseCocoEval(
-            coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode
+            coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode, analysis=analysis,
+            output_dir=output_dir, analysis_mode=analysis_mode,
         )
         result = _derive_results_from_coco_eval(
             coco_eval, eval_mode_name, densepose_metrics, class_names, min_threshold, img_ids

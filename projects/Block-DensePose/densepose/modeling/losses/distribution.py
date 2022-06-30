@@ -195,7 +195,7 @@ class DensePoseDistributionLoss:
                 "loss_densepose_U": densepose_predictor_outputs.u_dis.sum() * 0,
                 "loss_densepose_V": densepose_predictor_outputs.v_dis.sum() * 0,
             })
-        return
+        return loss
 
     def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any) -> LossDict:
         """

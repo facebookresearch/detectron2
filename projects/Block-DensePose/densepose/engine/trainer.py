@@ -182,7 +182,9 @@ class Trainer(DefaultTrainer):
                     embedder=embedder,
                     should_evaluate_mesh_alignment=cfg.DENSEPOSE_EVALUATION.EVALUATE_MESH_ALIGNMENT,
                     mesh_alignment_mesh_names=cfg.DENSEPOSE_EVALUATION.MESH_ALIGNMENT_MESH_NAMES,
-                    block_num=cfg.MODEL.BLOCK.BLOCK_NUM
+                    block_num=cfg.MODEL.BLOCK.BLOCK_NUM,
+                    analysis=cfg.MODEL.BLOCK.ANALYSIS,
+                    analysis_mode=cfg.MODEL.BLOCK.ANALYSIS_MODE,
                 )
             )
         return DatasetEvaluators(evaluators)

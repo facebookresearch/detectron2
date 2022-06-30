@@ -277,11 +277,19 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.UNSUP_WEIGHTS = 1
     _C.MODEL.SEMI.SEGM_WEIGHTS = 0.5
     _C.MODEL.SEMI.POINTS_WEIGHTS = 0.1
-    _C.MODEL.SEMI.THRESHOLD = 0.6  # =1 will not filter pseudo labels
+    _C.MODEL.SEMI.THRESHOLD = 1  # =1 will not filter pseudo labels
     _C.MODEL.SEMI.INFERENCE_ON = "student"
     _C.MODEL.SEMI.TEACHER_WEIGHTS = ""
     _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
     _C.MODEL.SEMI.LOSS_NAME = "ce"  # ["ce", "sce"]
+
+
+def add_block_config(cfg: CN):
+    _C = cfg
+    _C.MODEL.BLOCK = CN()
+    _C.MODEL.BLOCK.BLOCK_NUM = 5
+    _C.MODEL.BLOCK.CLS_WEIGHTS = 0.0005
+    _C.MODEL.BLOCK.REGRESS_WEIGHTS = 0.02
 
 
 def add_densepose_config(cfg: CN) -> None:
@@ -291,3 +299,4 @@ def add_densepose_config(cfg: CN) -> None:
     add_dataset_category_config(cfg)
     add_evaluation_config(cfg)
     add_semi_sup_config(cfg)
+    add_block_config(cfg)
