@@ -43,14 +43,7 @@ class FrozenBatchNorm2d(nn.Module):
 
     def forward(self, x):
         if x.requires_grad:
-            # When gradients are needed, F.batch_norm will use extra memory
-            # because its backward op computes gradients for weight/bias as well.
-            scale = self.weight * (self.running_var + self.eps).rsqrt()
-            bias = self.bias - self.running_mean * scale
-            scale = scale.reshape(1, -1, 1, 1)
-            bias = bias.reshape(1, -1, 1, 1)
-            out_dtype = x.dtype  # may be half
-            return x * scale.to(out_dtype) + bias.to(out_dtype)
+            return torch.batch_norm(x, self.weight, self.bias, self.running_mean, self.running_var, False, 0.1, self.eps, torch.backends.cudnn.enabled)
         else:
             # When gradients are not needed, F.batch_norm is a single fused op
             # and provide more optimization opportunities.
