@@ -43,7 +43,17 @@ class FrozenBatchNorm2d(nn.Module):
 
     def forward(self, x):
         if x.requires_grad:
-            return torch.batch_norm(x, self.weight, self.bias, self.running_mean, self.running_var, False, 0.1, self.eps, torch.backends.cudnn.enabled)
+            return torch.batch_norm(
+                x,
+                self.weight,
+                self.bias,
+                self.running_mean,
+                self.running_var,
+                False,
+                0.1,
+                self.eps,
+                torch.backends.cudnn.enabled,
+            )
         else:
             # When gradients are not needed, F.batch_norm is a single fused op
             # and provide more optimization opportunities.
