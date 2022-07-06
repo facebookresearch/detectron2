@@ -16,6 +16,13 @@ from detectron2.utils.file_io import PathManager
 
 from .evaluator import DatasetEvaluator
 
+_CV2_IMPORTED = True
+try:
+    import cv2  # noqa
+except ImportError:
+    # OpenCV is an optional dependency at the moment
+    _CV2_IMPORTED = False
+
 
 def load_image_into_numpy_array(
     filename: str,
@@ -86,8 +93,28 @@ class SemSegEvaluator(DatasetEvaluator):
             assert self._num_classes == num_classes, f"{self._num_classes} != {num_classes}"
         self._ignore_label = ignore_label if ignore_label is not None else meta.ignore_label
 
+        # This is because cv2.erode did not work for int datatype. Only works for uint8.
+        self._compute_boundary_iou = True
+        if not _CV2_IMPORTED:
+            self._compute_boundary_iou = False
+            self._logger.warn(
+                """Boundary IoU calculation requires OpenCV. B-IoU metrics are
+                not going to be computed because OpenCV is not available to import."""
+            )
+        if self._num_classes >= np.iinfo(np.uint8).max:
+            self._compute_boundary_iou = False
+            self._logger.warn(
+                f"""SemSegEvaluator(num_classes) is more than supported value for Boundary IoU calculation!
+                B-IoU metrics are not going to be computed. Max allowed value (exclusive)
+                for num_classes for calculating Boundary IoU is {np.iinfo(np.uint8).max}.
+                The number of classes of dataset {self._dataset_name} is {self._num_classes}"""
+            )
+
     def reset(self):
         self._conf_matrix = np.zeros((self._num_classes + 1, self._num_classes + 1), dtype=np.int64)
+        self._b_conf_matrix = np.zeros(
+            (self._num_classes + 1, self._num_classes + 1), dtype=np.int64
+        )
         self._predictions = []
 
     def process(self, inputs, outputs):
@@ -113,6 +140,15 @@ class SemSegEvaluator(DatasetEvaluator):
                 minlength=self._conf_matrix.size,
             ).reshape(self._conf_matrix.shape)
 
+            if self._compute_boundary_iou:
+                b_gt = self._mask_to_boundary(gt.astype(np.uint8))
+                b_pred = self._mask_to_boundary(pred.astype(np.uint8))
+
+                self._b_conf_matrix += np.bincount(
+                    (self._num_classes + 1) * b_pred.reshape(-1) + b_gt.reshape(-1),
+                    minlength=self._conf_matrix.size,
+                ).reshape(self._conf_matrix.shape)
+
             self._predictions.extend(self.encode_json_sem_seg(pred, input["file_name"]))
 
     def evaluate(self):
@@ -127,6 +163,7 @@ class SemSegEvaluator(DatasetEvaluator):
         if self._distributed:
             synchronize()
             conf_matrix_list = all_gather(self._conf_matrix)
+            b_conf_matrix_list = all_gather(self._b_conf_matrix)
             self._predictions = all_gather(self._predictions)
             self._predictions = list(itertools.chain(*self._predictions))
             if not is_main_process():
@@ -135,6 +172,10 @@ class SemSegEvaluator(DatasetEvaluator):
             self._conf_matrix = np.zeros_like(self._conf_matrix)
             for conf_matrix in conf_matrix_list:
                 self._conf_matrix += conf_matrix
+
+            self._b_conf_matrix = np.zeros_like(self._b_conf_matrix)
+            for b_conf_matrix in b_conf_matrix_list:
+                self._b_conf_matrix += b_conf_matrix
 
         if self._output_dir:
             PathManager.mkdirs(self._output_dir)
@@ -158,15 +199,27 @@ class SemSegEvaluator(DatasetEvaluator):
         fiou = np.sum(iou[acc_valid] * class_weights[acc_valid])
         pacc = np.sum(tp) / np.sum(pos_gt)
 
+        if self._compute_boundary_iou:
+            b_iou = np.full(self._num_classes, np.nan, dtype=np.float)
+            b_tp = self._b_conf_matrix.diagonal()[:-1].astype(np.float)
+            b_pos_gt = np.sum(self._b_conf_matrix[:-1, :-1], axis=0).astype(np.float)
+            b_pos_pred = np.sum(self._b_conf_matrix[:-1, :-1], axis=1).astype(np.float)
+            b_union = b_pos_gt + b_pos_pred - b_tp
+            b_iou_valid = b_union > 0
+            b_iou[b_iou_valid] = b_tp[b_iou_valid] / b_union[b_iou_valid]
+
         res = {}
         res["mIoU"] = 100 * miou
         res["fwIoU"] = 100 * fiou
         for i, name in enumerate(self._class_names):
-            res["IoU-{}".format(name)] = 100 * iou[i]
+            res[f"IoU-{name}"] = 100 * iou[i]
+            if self._compute_boundary_iou:
+                res[f"BoundaryIoU-{name}"] = 100 * b_iou[i]
+                res[f"min(IoU, B-Iou)-{name}"] = 100 * min(iou[i], b_iou[i])
         res["mACC"] = 100 * macc
         res["pACC"] = 100 * pacc
         for i, name in enumerate(self._class_names):
-            res["ACC-{}".format(name)] = 100 * acc[i]
+            res[f"ACC-{name}"] = 100 * acc[i]
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "sem_seg_evaluation.pth")
@@ -197,3 +250,16 @@ class SemSegEvaluator(DatasetEvaluator):
                 {"file_name": input_file_name, "category_id": dataset_id, "segmentation": mask_rle}
             )
         return json_list
+
+    def _mask_to_boundary(self, mask: np.ndarray, dilation_ratio=0.02):
+        assert mask.ndim == 2, "mask_to_boundary expects a 2-dimensional image"
+        h, w = mask.shape
+        diag_len = np.sqrt(h**2 + w**2)
+        dilation = max(1, int(round(dilation_ratio * diag_len)))
+        kernel = np.ones((3, 3), dtype=np.uint8)
+
+        padded_mask = cv2.copyMakeBorder(mask, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
+        eroded_mask_with_padding = cv2.erode(padded_mask, kernel, iterations=dilation)
+        eroded_mask = eroded_mask_with_padding[1:-1, 1:-1]
+        boundary = mask - eroded_mask
+        return boundary
