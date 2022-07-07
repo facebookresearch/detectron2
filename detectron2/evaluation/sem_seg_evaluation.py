@@ -191,12 +191,12 @@ class SemSegEvaluator(DatasetEvaluator):
         pos_pred = np.sum(self._conf_matrix[:-1, :-1], axis=1).astype(np.float)
         acc_valid = pos_gt > 0
         acc[acc_valid] = tp[acc_valid] / pos_gt[acc_valid]
-        iou_valid = (pos_gt + pos_pred) > 0
         union = pos_gt + pos_pred - tp
-        iou[acc_valid] = tp[acc_valid] / union[acc_valid]
+        iou_valid = np.logical_and(acc_valid, union > 0)
+        iou[iou_valid] = tp[iou_valid] / union[iou_valid]
         macc = np.sum(acc[acc_valid]) / np.sum(acc_valid)
-        miou = np.sum(iou[acc_valid]) / np.sum(iou_valid)
-        fiou = np.sum(iou[acc_valid] * class_weights[acc_valid])
+        miou = np.sum(iou[iou_valid]) / np.sum(iou_valid)
+        fiou = np.sum(iou[iou_valid] * class_weights[iou_valid])
         pacc = np.sum(tp) / np.sum(pos_gt)
 
         if self._compute_boundary_iou:
