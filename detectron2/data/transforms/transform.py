@@ -177,9 +177,9 @@ class RotationTransform(Transform):
                 center has no effect if expand=True because it only affects shifting
             interp: cv2 interpolation method, default cv2.INTER_LINEAR
             box_method: either _largest_ (default) or _ellipse_. Affects how bboxes are rotated.
-                If _ellipse_, then bboxes are resized as if the object is an ellipse rather than a 
+                If _ellipse_, then bboxes are resized as if the object is an ellipse rather than a
                 rectangle, which avoids creating oversized bounding boxes.
-                If _largest_, this will transform the corner points and use their minimum/maximum 
+                If _largest_, this will transform the corner points and use their minimum/maximum
                 to create a new axis-aligned box.
         """
         super().__init__()
@@ -235,19 +235,22 @@ class RotationTransform(Transform):
         If box_method="largest" (default), this will transform the corner points and use their minimum/maximum to create a new axis-aligned box.
         If box_method="elliptical", this will synthesize a new bounding box as if the object was an ellipsis, which avoids enlarging the bounding box.
         """
-        if self.box_method == 'largest':
+        if self.box_method == "largest":
             return super().apply_box(box)
         else:
             box = np.asarray(box)
             w, h = box[:, 2] - box[:, 0], box[:, 3] - box[:, 1]
-            x, y = box[:, 0]+w/2, box[:, 1]+h/2
+            x, y = box[:, 0] + w / 2, box[:, 1] + h / 2
 
             # Create 32 keypoints along ellipsis
-            coords = [[x+np.sin(t)*(w/2), y+np.cos(t)*(h/2)] for t in np.arange(0, 2*np.pi, 0.2)] # 32x2xN
-            coords = np.moveaxis(coords, 2, 0).reshape(-1, 2) # (N*32)x2
+            coords = [
+                [x + np.sin(t) * (w / 2), y + np.cos(t) * (h / 2)]
+                for t in np.arange(0, 2 * np.pi, 0.2)
+            ]  # 32x2xN
+            coords = np.moveaxis(coords, 2, 0).reshape(-1, 2)  # (N*32)x2
 
             # Transform these coordinates in the same way as rectangle coordinates
-            coords = self.apply_coords(coords).reshape(-1, 32, 2) # Nx32x2
+            coords = self.apply_coords(coords).reshape(-1, 32, 2)  # Nx32x2
             minxy = coords.min(axis=1)
             maxxy = coords.max(axis=1)
             trans_boxes = np.concatenate((minxy, maxxy), axis=1)
