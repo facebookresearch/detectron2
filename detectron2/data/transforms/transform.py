@@ -176,10 +176,10 @@ class RotationTransform(Transform):
                 if left to None, the center will be fit to the center of each image
                 center has no effect if expand=True because it only affects shifting
             interp: cv2 interpolation method, default cv2.INTER_LINEAR
-            box_method: either _largest_ (default) or _ellipse_. Affects how bboxes are rotated.
-                If _ellipse_, then bboxes are resized as if the object is an ellipse rather than a
-                rectangle, which avoids creating oversized bounding boxes.
-                If _largest_, this will transform the corner points and use their minimum/maximum
+            box_method: either `'largest'` (default) or `'ellipse'`. Affects how bboxes are rotated.
+                If `'ellipse'`, then bboxes are rotated as if the object is an ellipse rather than a
+                rectangle, which avoids creating oversized bounding boxes. (see https://arxiv.org/abs/2109.13488)
+                If `'largest'`, this will rotate the corner points and use their minimum/maximum
                 to create a new axis-aligned box.
         """
         super().__init__()
@@ -232,8 +232,6 @@ class RotationTransform(Transform):
     def apply_box(self, box):
         """
         box should be a Nx4 floating point array of XYXY format in absolute coordinates.
-        If box_method="largest" (default), this will transform the corner points and use their minimum/maximum to create a new axis-aligned box.
-        If box_method="elliptical", this will synthesize a new bounding box as if the object was an ellipsis, which avoids enlarging the bounding box.
         """
         if self.box_method == "largest":
             return super().apply_box(box)
