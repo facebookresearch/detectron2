@@ -10,11 +10,17 @@ from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export import STABLE_ONNX_OPSET_VERSION
 from detectron2.export.flatten import TracingAdapter
+from detectron2.export.torchscript_patch import patch_builtin_len
+from detectron2.layers import ShapeSpec
 from detectron2.modeling import build_model
+from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
+from detectron2.structures import Boxes, Instances
 from detectron2.utils.testing import (
     _pytorch1111_symbolic_opset9_repeat_interleave,
     _pytorch1111_symbolic_opset9_to,
     get_sample_coco_image,
+    has_dynamic_axes,
+    random_boxes,
     register_custom_op_onnx_export,
     skipIfOnCPUCI,
     skipIfUnsupportedMinOpsetVersion,
@@ -26,6 +32,8 @@ from detectron2.utils.testing import (
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
 @skipIfUnsupportedMinTorchVersion("1.10")
 class TestONNXTracingExport(unittest.TestCase):
+    opset_version = STABLE_ONNX_OPSET_VERSION
+
     def testMaskRCNNFPN(self):
         def inference_func(model, images):
             with warnings.catch_warnings(record=True):
@@ -85,8 +93,54 @@ class TestONNXTracingExport(unittest.TestCase):
         self._test_model_zoo_from_config_path(
             "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml",
             inference_func,
-            opset_version=STABLE_ONNX_OPSET_VERSION,
         )
+
+    def testKeypointHead(self):
+        class M(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.model = KRCNNConvDeconvUpsampleHead(
+                    ShapeSpec(channels=4, height=14, width=14), num_keypoints=17, conv_dims=(4,)
+                )
+
+            def forward(self, x, predbox1, predbox2):
+                inst = [
+                    Instances((100, 100), pred_boxes=Boxes(predbox1)),
+                    Instances((100, 100), pred_boxes=Boxes(predbox2)),
+                ]
+                ret = self.model(x, inst)
+                return tuple(x.pred_keypoints for x in ret)
+
+        model = M()
+        model.eval()
+
+        def gen_input(num1, num2):
+            feat = torch.randn((num1 + num2, 4, 14, 14))
+            box1 = random_boxes(num1)
+            box2 = random_boxes(num2)
+            return feat, box1, box2
+
+        with patch_builtin_len():
+            onnx_model = self._test_model(
+                model,
+                gen_input(1, 2),
+                input_names=["features", "pred_boxes", "pred_classes"],
+                output_names=["box1", "box2"],
+                dynamic_axes={
+                    "features": {0: "batch", 1: "static_four", 2: "height", 3: "width"},
+                    "pred_boxes": {0: "batch", 1: "static_four"},
+                    "pred_classes": {0: "batch", 1: "static_four"},
+                    "box1": {0: "num_instance", 1: "K", 2: "static_three"},
+                    "box2": {0: "num_instance", 1: "K", 2: "static_three"},
+                },
+            )
+
+            # Although ONNX models are not executable by PyTorch to verify
+            # support of batches with different sizes, we can verify model's IR
+            # does not hard-code input and/or output shapes.
+            # TODO: Add tests with different batch sizes when detectron2's CI
+            #       support ONNX Runtime backend.
+            assert has_dynamic_axes(onnx_model)
 
     ################################################################################
     # Testcase internals - DO NOT add tests below this point
@@ -114,6 +168,9 @@ class TestONNXTracingExport(unittest.TestCase):
         save_onnx_graph_path=None,
         **export_kwargs,
     ):
+        # Not imported in the beginning of file to prevent runtime errors
+        # for environments without ONNX.
+        # This testcase checks dependencies before running
         import onnx  # isort:skip
 
         f = io.BytesIO()
@@ -138,6 +195,7 @@ class TestONNXTracingExport(unittest.TestCase):
         assert onnx_model is not None
         if save_onnx_graph_path:
             onnx.save(onnx_model, save_onnx_graph_path)
+        return onnx_model
 
     def _test_model_zoo_from_config_path(
         self,
@@ -171,9 +229,7 @@ class TestONNXTracingExport(unittest.TestCase):
         point_rend.add_pointrend_config(cfg)
         cfg.merge_from_file(config_path)
         cfg.freeze()
-
         model = build_model(cfg)
-
         image = get_sample_coco_image()
         inputs = tuple(image.clone() for _ in range(batch))
         return self._test_model(
