@@ -7,10 +7,10 @@ try:
     from detectron2.config import get_cfg
     from detectron2.export.c10 import Caffe2RPN
     from detectron2.layers import ShapeSpec
-except ImportError:
+except ImportError as import_error:
     raise unittest.SkipTest(
         f"PyTorch does not have Caffe2 support. Skipping all tests in {__name__}"
-    )
+    ) from import_error
 
 
 class TestCaffe2RPN(unittest.TestCase):

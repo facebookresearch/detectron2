@@ -16,10 +16,10 @@ try:
     # Caffe2 used to be included in PyTorch, but since PyTorch 1.10+,
     # Caffe2 is not included in pre-built packages. This is a safety BC check
     from detectron2.export import Caffe2Model, Caffe2Tracer
-except ImportError:
+except ImportError as import_error:
     raise unittest.SkipTest(
         f"PyTorch does not have Caffe2 support. Skipping all tests in {__name__}"
-    )
+    ) from import_error
 
 
 # TODO: this test requires manifold access, see: T88318502
