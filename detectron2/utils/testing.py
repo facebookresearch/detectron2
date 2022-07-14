@@ -213,17 +213,17 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
                     from torch.onnx.utils import get_ns_op_name_from_custom_op
 
                     ns, op_name = get_ns_op_name_from_custom_op(symbolic_name)
-                except ImportError:
+                except ImportError as import_error:
                     if not bool(
                         re.match(r"^[a-zA-Z0-9-_]*::[a-zA-Z-_]+[a-zA-Z0-9-_]*$", symbolic_name)
                     ):
                         raise ValueError(
                             f"Invalid symbolic name {symbolic_name}. Must be `domain::name`"
-                        )
+                        ) from import_error
 
                     ns, op_name = symbolic_name.split("::")
                     if ns == "onnx":
-                        raise ValueError(f"{ns} domain cannot be modified.")
+                        raise ValueError(f"{ns} domain cannot be modified.") from import_error
 
                     if ns == "aten":
                         ns = ""
@@ -233,13 +233,15 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
             def _unregister_op(opname: str, domain: str, version: int):
                 try:
                     sym_registry.unregister_op(op_name, ns, ver)
-                except AttributeError:
+                except AttributeError as attribute_error:
                     if sym_registry.is_registered_op(opname, domain, version):
                         del sym_registry._registry[(domain, version)][opname]
                         if not sym_registry._registry[(domain, version)]:
                             del sym_registry._registry[(domain, version)]
                     else:
-                        raise RuntimeError(f"The opname {opname} is not registered.")
+                        raise RuntimeError(
+                            f"The opname {opname} is not registered."
+                        ) from attribute_error
 
             ns, op_name = _get_ns_op_name_from_custom_op(symbolic_name)
             for ver in _onnx_stable_opsets + [_onnx_main_opset]:
