@@ -64,11 +64,6 @@ def export_onnx_model(model, inputs):
             )
             onnx_model = onnx.load_from_string(f.getvalue())
 
-    # Apply ONNX's Optimization
-    all_passes = onnx.optimizer.get_available_passes()
-    passes = ["fuse_bn_into_conv"]
-    assert all(p in all_passes for p in passes)
-    onnx_model = onnx.optimizer.optimize(onnx_model, passes)
     return onnx_model
 
 
