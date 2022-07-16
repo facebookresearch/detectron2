@@ -186,6 +186,7 @@ setup(
         "black==22.3.0",
         "timm",
         "fairscale",
+        "packaging",
         # If a new dependency is required at import time (in addition to runtime), it
         # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
     ],
