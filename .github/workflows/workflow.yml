@@ -78,4 +78,4 @@ jobs:
           python -m detectron2.utils.collect_env
           ./datasets/prepare_for_tests.sh
       - name: Run unittests
-        run: python -m pytest -n 4 --durations=15 -v tests/
+        run: python -m pytest -n 4 --durations=15 -sv tests/
