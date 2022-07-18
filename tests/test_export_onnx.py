@@ -142,6 +142,19 @@ class TestONNXTracingExport(unittest.TestCase):
             #       support ONNX Runtime backend.
             assert has_dynamic_axes(onnx_model)
 
+    @skipIfUnsupportedMinOpsetVersion(16, STABLE_ONNX_OPSET_VERSION)
+    @skipIfUnsupportedMinTorchVersion("1.11.1")
+    def test_pointrend_rcnn_R_50_FPN_3x_coco(self):
+        def inference_func(model, image):
+            inputs = [{"image": image, "height": image.shape[1], "width": image.shape[2]}]
+            return model.inference(inputs, do_postprocess=True)[0]["instances"]
+
+        self._test_model_from_config_path(
+            "projects/PointRend/configs/InstanceSegmentation/pointrend_rcnn_R_50_FPN_3x_coco.yaml",
+            inference_func,
+            opset_version=STABLE_ONNX_OPSET_VERSION,
+        )
+
     ################################################################################
     # Testcase internals - DO NOT add tests below this point
     ################################################################################
