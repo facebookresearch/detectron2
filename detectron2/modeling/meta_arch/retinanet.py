@@ -347,10 +347,10 @@ class RetinaNetHead(nn.Module):
             )
             bn_class = nn.BatchNorm2d if norm == "BN" else nn.SyncBatchNorm
 
-            def norm(c):
-                return CycleBatchNormList(
-                    length=self._num_features, bn_class=bn_class, num_features=c
-                )
+            # def norm(c):
+            #     return CycleBatchNormList(
+            #         length=self._num_features, bn_class=bn_class, num_features=c
+            #     )
 
         else:
             norm_name = str(type(get_norm(norm, 1)))
