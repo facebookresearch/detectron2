@@ -10,7 +10,7 @@ try:
 except ImportError:
     raise unittest.SkipTest(
         f"PyTorch does not have Caffe2 support. Skipping all tests in {__name__}"
-    )
+    ) from None
 
 
 class TestCaffe2RPN(unittest.TestCase):
