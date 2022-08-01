@@ -1,0 +1,11 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "pretrain/model_0099999.pth"
+  RESNETS:
+    DEPTH: 50
+  ROI_DENSEPOSE_HEAD:
+    DECODER_ON: False
+SOLVER:
+  BASE_LR: 0.001
+  MAX_ITER: 30000
+  STEPS: (20000,)

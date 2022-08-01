@@ -22,6 +22,8 @@ class PackedCseAnnotations:
     point_bbox_indices: torch.Tensor
     bbox_indices: torch.Tensor
 
+    embed_p: Optional[torch.Tensor]
+
 
 class CseAnnotationsAccumulator(AnnotationsAccumulator):
     """
@@ -42,6 +44,8 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
         self.bbox_indices = []
         self.nxt_bbox_with_dp_index = 0
         self.nxt_bbox_index = 0
+
+        self.embed_p = []
 
     def accumulate(self, instances_one_image: Instances):
         """
@@ -94,6 +98,8 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
         self.y_gt.append(dp_gt.y)
         if hasattr(dp_gt, "segm"):
             self.s_gt.append(dp_gt.segm.unsqueeze(0))
+        if hasattr(dp_gt, "dp_p_embed"):
+            self.embed_p.append(dp_gt.dp_p_embed.unsqueeze(0))
         self.vertex_ids_gt.append(dp_gt.vertex_ids)
         self.vertex_mesh_ids_gt.append(torch.full_like(dp_gt.vertex_ids, dp_gt.mesh_id))
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
@@ -124,6 +130,9 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
             # ignore segmentation annotations, if not all the instances contain those
             coarse_segm_gt=torch.cat(self.s_gt, 0)
             if len(self.s_gt) == len(self.bbox_xywh_gt)
+            else None,
+            embed_p=torch.cat(self.embed_p, 0)
+            if len(self.embed_p) == len(self.bbox_xywh_gt)
             else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),

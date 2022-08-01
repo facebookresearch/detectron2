@@ -8,7 +8,7 @@ from detectron2.structures import Instances
 
 from .cycle_pix2shape import PixToShapeCycleLoss
 from .cycle_shape2shape import ShapeToShapeCycleLoss
-from .embed import EmbeddingLoss
+from .embed import EmbeddingLoss, EmbeddingUnsupLoss
 from .embed_utils import CseAnnotationsAccumulator
 from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
@@ -36,6 +36,7 @@ class DensePoseCseLoss:
         self.w_embed = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_WEIGHT
         self.segm_loss = MaskOrSegmentationLoss(cfg)
         self.embed_loss = DensePoseCseLoss.create_embed_loss(cfg)
+        self.embed_unsup_loss = EmbeddingUnsupLoss(cfg)
         self.do_shape2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.ENABLED
         if self.do_shape2shape:
             self.w_shape2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.WEIGHT
@@ -44,6 +45,7 @@ class DensePoseCseLoss:
         if self.do_pix2shape:
             self.w_pix2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.WEIGHT
             self.pix2shape_loss = PixToShapeCycleLoss(cfg)
+        self.embed_unsup_weight = cfg.MODEL.SEMI.UNSUP_WEIGHTS
 
     @classmethod
     def create_embed_loss(cls, cfg: CfgNode):
@@ -68,6 +70,12 @@ class DensePoseCseLoss:
             packed_annotations,
             (h, w),
         )
+        meshid_to_embed_unsup_losses = self.embed_unsup_loss(
+            proposals_with_gt,
+            densepose_predictor_outputs,
+            packed_annotations,
+            embedder,
+        )
         meshid_to_embed_losses = self.embed_loss(
             proposals_with_gt,
             densepose_predictor_outputs,
@@ -79,10 +87,15 @@ class DensePoseCseLoss:
             f"loss_densepose_E{meshid}": self.w_embed * meshid_to_embed_losses[meshid]
             for meshid in meshid_to_embed_losses
         }
+        embed_unsup_loss_dict = {
+            f"loss_densepose_UE{meshid}": self.w_embed * meshid_to_embed_unsup_losses[meshid] * self.embed_unsup_weight
+            for meshid in meshid_to_embed_unsup_losses
+        }
         all_loss_dict = {
             "loss_densepose_S": self.w_segm
             * self.segm_loss(proposals_with_gt, densepose_predictor_outputs, packed_annotations),
             **embed_loss_dict,
+            **embed_unsup_loss_dict,
         }
         if self.do_shape2shape:
             all_loss_dict["loss_shape2shape"] = self.w_shape2shape * self.shape2shape_loss(embedder)
@@ -98,13 +111,21 @@ class DensePoseCseLoss:
         meshname_to_embed_losses = self.embed_loss.fake_values(
             densepose_predictor_outputs, embedder=embedder
         )
+        meshname_to_embed_unsup_losses = self.embed_unsup_loss.fake_values(
+            densepose_predictor_outputs, embedder=embedder
+        )
         embed_loss_dict = {
             f"loss_densepose_E{mesh_name}": meshname_to_embed_losses[mesh_name]
             for mesh_name in meshname_to_embed_losses
         }
+        embed_unsup_loss_dict = {
+            f"loss_densepose_UE{mesh_name}": meshname_to_embed_unsup_losses[mesh_name]
+            for mesh_name in meshname_to_embed_unsup_losses
+        }
         all_loss_dict = {
             "loss_densepose_S": self.segm_loss.fake_value(densepose_predictor_outputs),
             **embed_loss_dict,
+            **embed_unsup_loss_dict,
         }
         if self.do_shape2shape:
             all_loss_dict["loss_shape2shape"] = self.shape2shape_loss.fake_value(embedder)

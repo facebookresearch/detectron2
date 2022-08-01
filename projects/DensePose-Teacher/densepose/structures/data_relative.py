@@ -57,6 +57,9 @@ class DensePoseDataRelative(object):
     # Size of pseudo labels
     PSEUDO_MASK_SIZE = 112
 
+    # Key for pseudo embeddings
+    PSEUDO_EMBED = "dp_p_embed"
+
     def __init__(self, annotation, cleanup=False):
         self.x = torch.as_tensor(annotation[DensePoseDataRelative.X_KEY])
         self.y = torch.as_tensor(annotation[DensePoseDataRelative.Y_KEY])
@@ -99,6 +102,8 @@ class DensePoseDataRelative(object):
             new_data.dp_p_u = self.dp_p_u
         if hasattr(self, "dp_p_v"):
             new_data.dp_p_v = self.dp_p_v
+        if hasattr(self, "dp_p_embed"):
+            new_data.dp_p_embed = self.dp_p_embed
         new_data.device = device
         return new_data
 
@@ -186,7 +191,8 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.MESH_NAME_KEY,
             DensePoseDataRelative.PSEUDO_SEGM,
             DensePoseDataRelative.PSEUDO_U,
-            DensePoseDataRelative.PSEUDO_V
+            DensePoseDataRelative.PSEUDO_V,
+            DensePoseDataRelative.PSEUDO_EMBED,
         ]:
             if key in annotation:
                 del annotation[key]

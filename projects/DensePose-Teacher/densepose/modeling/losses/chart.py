@@ -69,6 +69,7 @@ class DensePoseChartLoss:
         self.pseudo_threshold = cfg.MODEL.SEMI.THRESHOLD
         self.n_channels = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         self.loss_name = cfg.MODEL.SEMI.LOSS_NAME
+        self.uv_loss_channels = cfg.MODEL.SEMI.UV_LOSS_CHANNELS
 
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, **kwargs
@@ -343,8 +344,21 @@ class DensePoseChartLoss:
         pseudo_keys = ["fine_segm_p", "u_p", "v_p"]
         est_keys = ["fine_segm", "u", "v"]
         mask = None
-        index = None
+        pred_index = None
         weights = None
+
+        # with torch.no_grad():
+        #     pos_index = resample_data(
+        #         packed_annotations.coarse_segm_gt.unsqueeze(1),
+        #         packed_annotations.bbox_xywh_gt,
+        #         packed_annotations.bbox_xywh_est,
+        #         self.heatmap_size,
+        #         self.heatmap_size,
+        #         mode="nearest",
+        #         padding_mode="zeros",
+        #     ).squeeze(1) > 0
+        #     pos_index = pos_index.reshape(-1)
+
         for p_key, e_key in zip(pseudo_keys, est_keys):
             if getattr(packed_annotations, p_key) is None:
                 return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
@@ -363,16 +377,21 @@ class DensePoseChartLoss:
                 )
             pseudo = pseudo.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
             if p_key == "fine_segm_p":
-                mask, index = torch.max(F.softmax(pseudo, dim=1), dim=1)
+                prediction = F.softmax(pseudo, dim=1)
+                segm_conf = torch.max(prediction, dim=1).values
+                pred_index = torch.argsort(prediction, dim=1, descending=True)[:, :self.uv_loss_channels]
                 if self.pseudo_threshold < 1:
-                    mask = mask >= self.pseudo_threshold
+                    # if filter pseudo labels using segm confidence
+                    mask = segm_conf >= self.pseudo_threshold
                     if mask.sum() <= 0:
                         return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
-                    index = index[mask].long()
+                    pred_index = pred_index[mask].long()
                     est = est[mask]
-                loss = F.cross_entropy(est, index.long(), reduction='none')
+                    segm_conf = segm_conf[mask]
+                # pred_index[~pos_index] = 0
+                loss = F.cross_entropy(est, pred_index[:, 0].long(), reduction='none')
                 if self.loss_name == "sce":
-                    label_one_hot = F.one_hot(torch.clamp(index, min=0, max=self.n_channels - 1), self.n_channels).float()
+                    label_one_hot = F.one_hot(torch.clamp(pred_index[:, 0], min=0, max=self.n_channels - 1), self.n_channels).float()
                     label_one_hot = torch.clamp(label_one_hot, min=1e-4, max=1.0)
                     rce_loss = -1 * est * torch.log(label_one_hot)
                     rce_loss = torch.sum(rce_loss, dim=1)
@@ -381,19 +400,25 @@ class DensePoseChartLoss:
                     weights = mask / mask.sum()
                     losses.update({"loss_unsup_segm": (loss * weights).sum() * self.w_pseudo * self.w_p_segm})
                 elif self.loss_name == "ce":
-                    losses.update({"loss_unsup_segm": loss.mean() * self.w_pseudo * self.w_p_segm})
+                    weights = segm_conf / segm_conf.sum()
+                    losses.update({"loss_unsup_segm": (loss * weights).sum() * self.w_pseudo * self.w_p_segm})
+                    weights = torch.cat([weights for _ in range(self.uv_loss_channels)])
                 # losses.update({"loss_unsup_segm": F.cross_entropy(est, torch.argmax(pseudo, dim=1).long()) * self.w_pseudo * self.w_p_segm})
             else:
                 if self.pseudo_threshold < 1:
                     pseudo = pseudo[mask]
                     est = est[mask]
-                pseudo = pseudo[np.arange(pseudo.shape[0]), index]
-                est = est[np.arange(index.shape[0]), index]
-                loss = F.smooth_l1_loss(est, pseudo, reduction='none')
+                pseudo = torch.cat([pseudo[np.arange(pseudo.shape[0]), pred_index[:, i]]
+                                       for i in range(self.uv_loss_channels)])
+                est = torch.cat([est[np.arange(pred_index.shape[0]), pred_index[:, i]]
+                                    for i in range(self.uv_loss_channels)])
+                # use all uv coordinates
+                # weights = weights.unsqueeze(1) / 25
+                loss = F.smooth_l1_loss(est, pseudo, reduction='mean')
                 if self.loss_name == "sce":
                     losses.update({"loss_{}".format(p_key): (loss * weights).sum() * self.w_pseudo * self.w_p_points})
                 elif self.loss_name == "ce":
-                    losses.update({"loss_{}".format(p_key): loss.mean() * self.w_pseudo * self.w_p_points})
+                    losses.update({"loss_{}".format(p_key): (loss * weights).sum() * self.w_pseudo * self.w_p_points})
                 # losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points})
         return losses
 

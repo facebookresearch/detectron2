@@ -1,0 +1,91 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+  BACKBONE:
+    NAME: "build_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+  FPN:
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
+  ANCHOR_GENERATOR:
+    SIZES: [[32], [64], [128], [256], [512]]  # One size for each in feature map
+    ASPECT_RATIOS: [[0.5, 1.0, 2.0]]  # Three aspect ratios (same for all in feature maps)
+  RPN:
+    IN_FEATURES: ["p2", "p3", "p4", "p5", "p6"]
+    PRE_NMS_TOPK_TRAIN: 2000  # Per FPN level
+    PRE_NMS_TOPK_TEST: 1000  # Per FPN level
+    # Detectron1 uses 2000 proposals per-batch,
+    # (See "modeling/rpn/rpn_outputs.py" for details of this legacy issue)
+    # which is approximately 1000 proposals per-image since the default batch size for FPN is 2.
+    POST_NMS_TOPK_TRAIN: 1000
+    POST_NMS_TOPK_TEST: 1000
+  ROI_HEADS:
+    NAME: "StandardROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+    NUM_CLASSES: 1
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_FC: 2
+    POOLER_RESOLUTION: 7
+  ROI_MASK_HEAD:
+    NAME: "MaskRCNNConvUpsampleHead"
+    NUM_CONV: 4
+    POOLER_RESOLUTION: 14
+DATASETS:
+  TRAIN: ("base_coco_2017_train", "densepose_coco_2014_train")
+  TEST: ("densepose_chimps",)
+  CATEGORY_MAPS:
+    "base_coco_2017_train":
+      "16": 1 # bird -> person
+      "17": 1 # cat -> person
+      "18": 1 # dog -> person
+      "19": 1 # horse -> person
+      "20": 1 # sheep -> person
+      "21": 1 # cow -> person
+      "22": 1 # elephant -> person
+      "23": 1 # bear -> person
+      "24": 1 # zebra -> person
+      "25": 1 # girafe -> person
+    "base_coco_2017_val":
+      "16": 1 # bird -> person
+      "17": 1 # cat -> person
+      "18": 1 # dog -> person
+      "19": 1 # horse -> person
+      "20": 1 # sheep -> person
+      "21": 1 # cow -> person
+      "22": 1 # elephant -> person
+      "23": 1 # bear -> person
+      "24": 1 # zebra -> person
+      "25": 1 # girafe -> person
+  WHITELISTED_CATEGORIES:
+    "base_coco_2017_train":
+      - 1  # person
+      - 16 # bird
+      - 17 # cat
+      - 18 # dog
+      - 19 # horse
+      - 20 # sheep
+      - 21 # cow
+      - 22 # elephant
+      - 23 # bear
+      - 24 # zebra
+      - 25 # girafe
+    "base_coco_2017_val":
+      - 1  # person
+      - 16 # bird
+      - 17 # cat
+      - 18 # dog
+      - 19 # horse
+      - 20 # sheep
+      - 21 # cow
+      - 22 # elephant
+      - 23 # bear
+      - 24 # zebra
+      - 25 # girafe
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.02
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
+VERSION: 2

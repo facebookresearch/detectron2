@@ -154,6 +154,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             class_names=self._metadata.get("thing_classes"),
             min_threshold=self._min_threshold,
             img_ids=img_ids,
+            # output_dir=self._output_dir
         )
         res["densepose_gps"] = results_gps
         res["densepose_gpsm"] = results_gpsm
@@ -293,6 +294,7 @@ def _evaluate_predictions_on_coco(
     class_names=None,
     min_threshold: float=0.5,
     img_ids=None,
+    # output_dir=None,
 ):
     logger = logging.getLogger(__name__)
 
@@ -310,7 +312,7 @@ def _evaluate_predictions_on_coco(
     for eval_mode_name in ["GPS", "GPSM", "IOU"]:
         eval_mode = getattr(DensePoseEvalMode, eval_mode_name)
         coco_eval = DensePoseCocoEval(
-            coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode
+            coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode# , output_dir=output_dir,
         )
         result = _derive_results_from_coco_eval(
             coco_eval, eval_mode_name, densepose_metrics, class_names, min_threshold, img_ids

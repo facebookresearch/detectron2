@@ -10,7 +10,7 @@ from detectron2.engine import HookBase
 class MeanTeacher(HookBase):
     def __init__(
         self,
-        momentum=0.9,
+        momentum=0.99,
         interval=1,
         warm_up=100,
         decay_intervals=None,
@@ -24,6 +24,9 @@ class MeanTeacher(HookBase):
         assert isinstance(decay_intervals, list) or decay_intervals is None
         self.decay_intervals = decay_intervals
         self.decay_factor = decay_factor
+
+    def before_train(self):
+        self.momentum_update(self.trainer.teacher_model, self.trainer.student_model, 0)
 
     def before_step(self):
         if (self.trainer.iter + 1) % self.interval == 0:

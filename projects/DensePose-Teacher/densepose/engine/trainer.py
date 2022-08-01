@@ -44,6 +44,7 @@ from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, build_densepo
 from densepose.modeling.cse import Embedder
 from .train_loop import SimpleTrainer
 from .mean_teacher import MeanTeacher
+from densepose.data.transform import RandErase
 
 
 class SampleCountingLoader:
@@ -99,7 +100,13 @@ class Trainer(TrainerBase):
 
         student_model = create_ddp_model(student_model, broadcast_buffers=False)
         # teacher_model = create_ddp_model(teacher_model, broadcast_buffers=False)
-        self._trainer = SimpleTrainer({"teacher": teacher_model, "student": student_model}, data_loader, optimizer)
+
+        # get data augmentation for student model input
+        strong_aug = [
+            RandErase(size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER)
+        ]
+
+        self._trainer = SimpleTrainer({"teacher": teacher_model, "student": student_model}, data_loader, optimizer, strong_aug)
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
         self.student_checkpointer = DetectionCheckpointer(
@@ -172,6 +179,7 @@ class Trainer(TrainerBase):
             )
             if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.student_model)
             else None,
+            MeanTeacher(warm_up=0),
         ]
 
         # Do PreciseBN before checkpointer, because it updates the model and need to
@@ -181,7 +189,7 @@ class Trainer(TrainerBase):
         if comm.is_main_process():
             ret.append(hooks.PeriodicCheckpointer(self.teacher_checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
             ret.append(hooks.PeriodicCheckpointer(self.student_checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
-            ret.append(MeanTeacher())
+            # ret.append(MeanTeacher(warm_up=0))
 
         def test_and_save_results():
             if cfg.MODEL.SEMI.INFERENCE_ON == "student":

@@ -274,14 +274,25 @@ def add_semi_sup_config(cfg: CN) -> None:
 
     _C.MODEL.SEMI = CN()
     _C.MODEL.SEMI.META_ARCHITECTURE = "GeneralizedRCNN"
-    _C.MODEL.SEMI.UNSUP_WEIGHTS = 1
+    _C.MODEL.SEMI.UNSUP_WEIGHTS = 1.
     _C.MODEL.SEMI.SEGM_WEIGHTS = 0.5
-    _C.MODEL.SEMI.POINTS_WEIGHTS = 0.1
-    _C.MODEL.SEMI.THRESHOLD = 1  # =1 will not filter pseudo labels
+    _C.MODEL.SEMI.POINTS_WEIGHTS = 1.
+    _C.MODEL.SEMI.THRESHOLD = 1.  # =1 will not filter pseudo labels
     _C.MODEL.SEMI.INFERENCE_ON = "student"
     _C.MODEL.SEMI.TEACHER_WEIGHTS = ""
     _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
     _C.MODEL.SEMI.LOSS_NAME = "ce"  # ["ce", "sce"]
+    _C.MODEL.SEMI.UV_LOSS_CHANNELS = 2
+
+    # config for strong augmentation
+    _C.MODEL.SEMI.ERASE_SIZE = [0, 0.2]
+    _C.MODEL.SEMI.ERASE_ITER = (3, 9)
+
+    # config for corrector
+    _C.MODEL.SEMI.COR = CN()
+    _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 512
+    _C.MODEL.SEMI.COR.CONV_HEAD_KERNEL = 3
+    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 3
 
 
 def add_block_config(cfg: CN):

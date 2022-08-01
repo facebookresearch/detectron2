@@ -1,0 +1,14 @@
+_BASE_: "Base-DensePose-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  ROI_DENSEPOSE_HEAD:
+    DECODER_ON: False
+DATASETS:
+  TRAIN: ("densepose_coco_2014_valminusminival", )
+  TEST: ("densepose_coco_2014_minival",)
+SOLVER:
+  BASE_LR: 0.1
+  MAX_ITER: 25000
+  STEPS: (19000, 23000)

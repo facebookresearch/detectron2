@@ -18,7 +18,8 @@ def squared_euclidean_distance_matrix(pts1: torch.Tensor, pts2: torch.Tensor) ->
             it contains || pts1[m] - pts2[n] ||^2
     """
     edm = torch.mm(-2 * pts1, pts2.t())
-    edm += (pts1 * pts1).sum(1, keepdim=True) + (pts2 * pts2).sum(1, keepdim=True).t()
+    edm += (pts1 * pts1).sum(1, keepdim=True)
+    edm += (pts2 * pts2).sum(1, keepdim=True).t()
     return edm.contiguous()
 
 
