@@ -18,6 +18,7 @@ from .wrappers import (
     empty_input_loss_func_wrapper,
     shapes_to_tensor,
     move_device_like,
+    assert_fx_safe,
 )
 from .blocks import CNNBlockBase, DepthwiseSeparableConv2d
 from .aspp import ASPP

@@ -11,6 +11,7 @@ is implemented
 import warnings
 from typing import List, Optional
 import torch
+from torch.fx._symbolic_trace import is_fx_tracing
 from torch.nn import functional as F
 
 
@@ -146,3 +147,19 @@ def move_device_like(src: torch.Tensor, dst: torch.Tensor) -> torch.Tensor:
     as constant during tracing, scripting the casting process as whole can workaround this issue.
     """
     return src.to(dst.device)
+
+
+# @torch.jit.ignore
+# # Function type annotation intentionally missing `fx.proxy.Proxy` in the Union,
+# # since that type can't be understood by the Torch JIT script engine.
+# def is_fx_tracing() -> bool:
+#     """Returns True if FX tracing is underway, which can mean that types
+#     encountered can be masked inside an fx.proxy.Proxy object"""
+#     return is_tracing()
+
+
+@torch.jit.ignore
+# Build a FX-tracing safe version of assert
+def assert_fx_safe(condition: bool, message: str):
+    if not is_fx_tracing():
+        assert condition, message

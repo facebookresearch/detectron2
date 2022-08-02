@@ -5,7 +5,14 @@ import torch
 from torch import nn
 from torchvision.ops import RoIPool
 
-from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
+from detectron2.layers import (
+    ROIAlign,
+    ROIAlignRotated,
+    assert_fx_safe,
+    cat,
+    nonzero_tuple,
+    shapes_to_tensor,
+)
 from detectron2.structures import Boxes
 
 """
@@ -219,19 +226,20 @@ class ROIPooler(nn.Module):
         """
         num_level_assignments = len(self.level_poolers)
 
-        assert isinstance(x, list) and isinstance(
-            box_lists, list
-        ), "Arguments to pooler must be lists"
-        assert (
-            len(x) == num_level_assignments
-        ), "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
-            num_level_assignments, len(x)
+        assert_fx_safe(
+            isinstance(x, list) and isinstance(box_lists, list), "Arguments to pooler must be lists"
         )
-
-        assert len(box_lists) == x[0].size(
-            0
-        ), "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
-            x[0].size(0), len(box_lists)
+        assert_fx_safe(
+            len(x) == num_level_assignments,
+            "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
+                num_level_assignments, len(x)
+            ),
+        )
+        assert_fx_safe(
+            len(box_lists) == x[0].size(0),
+            "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
+                x[0].size(0), len(box_lists)
+            ),
         )
         if len(box_lists) == 0:
             return _create_zeros(None, x[0].shape[1], *self.output_size, x[0])
