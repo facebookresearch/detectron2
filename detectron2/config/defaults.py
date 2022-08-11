@@ -545,6 +545,7 @@ _C.SOLVER.STEPS = (30000,)
 _C.SOLVER.WARMUP_FACTOR = 1.0 / 1000
 _C.SOLVER.WARMUP_ITERS = 1000
 _C.SOLVER.WARMUP_METHOD = "linear"
+_C.SOLVER.INTERVAL_RESCALED = False
 
 # Save a checkpoint after every this number of iterations
 _C.SOLVER.CHECKPOINT_PERIOD = 5000
