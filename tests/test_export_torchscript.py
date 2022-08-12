@@ -28,8 +28,8 @@ from detectron2.utils.testing import (
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
-    skipIfOnCPUCI,
     skip_on_torch_nightly,
+    skipIfOnCPUCI,
 )
 
 

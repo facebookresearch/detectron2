@@ -21,6 +21,7 @@ except ImportError:
         f"PyTorch does not have Caffe2 support. Skipping all tests in {__name__}"
     ) from None
 
+
 # TODO: this test requires manifold access, see: T88318502
 # Running it on CircleCI causes crash, not sure why.
 @unittest.skipIf(os.environ.get("CIRCLECI"), "Caffe2 tests crash on CircleCI.")
