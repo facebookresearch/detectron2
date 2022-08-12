@@ -353,16 +353,11 @@ class RetinaNetHead(nn.Module):
                 )
 
         else:
-            try:
-                norm_name = str(type(get_norm(norm, 1)))
-                if "BN" in norm_name:
-                    logger.warning(
-                        f"Shared BatchNorm (type={norm_name}) may not work well in RetinaNetHead."
-                    )
-            except ValueError:
-                # https://github.com/pytorch/pytorch/pull/74293
-                if isinstance(norm, str):
-                    logger.warning(f"No BatchNorm was found for '{norm}' for RetinaNetHead.")
+            norm_name = str(type(get_norm(norm, 32)))
+            if "BN" in norm_name:
+                logger.warning(
+                    f"Shared BatchNorm (type={norm_name}) may not work well in RetinaNetHead."
+                )
 
         cls_subnet = []
         bbox_subnet = []
