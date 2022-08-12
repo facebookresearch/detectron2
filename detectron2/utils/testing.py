@@ -11,7 +11,6 @@ import torch.onnx.symbolic_helper as sym_help
 from packaging import version
 from torch._C import ListType
 from torch.onnx import register_custom_op_symbolic
-import unittest
 
 from detectron2 import model_zoo
 from detectron2.config import CfgNode, LazyConfig, instantiate
