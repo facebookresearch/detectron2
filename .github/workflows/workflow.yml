@@ -71,13 +71,13 @@ jobs:
           python -m pip install -U pip
           python -m pip install ninja opencv-python-headless onnx pytest-xdist
           if [[ "${{matrix.torch}}" == "master" ]]; then
-            echo "Installing torch/torchvision from ${{pytorch_index}}"
+            echo "Installing torch/torchvision from ${{matrix.pytorch_index}}"
             # Remove first, in case it's in the CI cache
             pip uninstall -y torch torchvision
-            pip install -v --pre torch>1.11 torchvision>0.12 --progress-bar off -f ${{pytorch_index}}
+            pip install -v --pre torch>1.11 torchvision>0.12 --progress-bar off -f ${{matrix.pytorch_index}}
           else
-            echo "Installing torch==${{matrix.torch}} and torchvision==${{matrix.torchvision}} from ${{pytorch_index}}"
-            python -m pip install --progress-bar off torch==${{matrix.torch}} torchvision==${{matrix.torchvision}} -f ${{pytorch_index}}
+            echo "Installing torch==${{matrix.torch}} and torchvision==${{matrix.torchvision}}"
+            python -m pip install --progress-bar off torch==${{matrix.torch}} torchvision==${{matrix.torchvision}}
           fi
 
           # install from github to get latest; install iopath first since fvcore depends on it
