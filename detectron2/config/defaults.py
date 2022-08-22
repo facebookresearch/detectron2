@@ -545,6 +545,8 @@ _C.SOLVER.STEPS = (30000,)
 _C.SOLVER.WARMUP_FACTOR = 1.0 / 1000
 _C.SOLVER.WARMUP_ITERS = 1000
 _C.SOLVER.WARMUP_METHOD = "linear"
+# Whether to rescale the interval for the learning schedule after warmup
+_C.SOLVER.RESCALE_INTERVAL = False
 
 # Save a checkpoint after every this number of iterations
 _C.SOLVER.CHECKPOINT_PERIOD = 5000
