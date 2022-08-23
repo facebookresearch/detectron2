@@ -7,7 +7,7 @@ from torchvision.ops import RoIPool
 
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
 from detectron2.structures import Boxes
-from detectron2.utils.tracing import assert_fx_safe
+from detectron2.utils.tracing import assert_fx_safe, is_fx_tracing
 
 """
 To export ROIPooler to torchscript, in this file, variables that should be annotated with
@@ -220,9 +220,11 @@ class ROIPooler(nn.Module):
         """
         num_level_assignments = len(self.level_poolers)
 
-        assert_fx_safe(
-            isinstance(x, list) and isinstance(box_lists, list), "Arguments to pooler must be lists"
-        )
+        if not is_fx_tracing():
+            torch._assert(
+                isinstance(x, list) and isinstance(box_lists, list),
+                "Arguments to pooler must be lists",
+            )
         assert_fx_safe(
             len(x) == num_level_assignments,
             "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
