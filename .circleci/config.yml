@@ -11,7 +11,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: ubuntu-1604-cuda-11.1:202012-01
+    image: << parameters.ubuntu_version >>
   resource_class: gpu.nvidia.small
 
 windows-cpu: &windows_cpu
@@ -39,6 +39,9 @@ version_parameters: &version_parameters
     python_version:  # NOTE: only affect linux
       type: string
       default: '3.7.9'
+    ubuntu_version:  # NOTE: only affect linux/cuda
+      type: string
+      default: 'ubuntu-1604-cuda-11.1:202012-01'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -73,6 +76,7 @@ install_python: &install_python
       command: |
         # upgrade pyenv
         cd /opt/circleci/.pyenv/plugins/python-build/../.. && git pull && cd -
+        pyenv install -l | grep 3\.
         pyenv install -s $PYTHON_VERSION
         pyenv global $PYTHON_VERSION
         python --version
@@ -123,6 +127,8 @@ install_linux_dep: &install_linux_dep
 
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
         gcc --version
+        wget https://raw.githubusercontent.com/pytorch/pytorch/master/torch/utils/collect_env.py
+        python collect_env.py
 
 install_detectron2: &install_detectron2
   - run:
@@ -169,7 +175,7 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220821
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -181,7 +187,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220821
 
 
   linux_gpu_tests:
@@ -195,7 +201,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220821
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -207,7 +213,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220821
 
   windows_cpu_build:
     <<: *windows_cpu
@@ -265,6 +271,21 @@ workflows:
           pytorch_version: '1.10+cu111'
           torchvision_version: '0.11.1+cu111'
           python_version: '3.9.6'
+      - linux_gpu_tests:
+          name: linux_gpu_tests_pytorch1.11
+          pytorch_version: '1.11.0+cu111'
+          torchvision_version: '0.12.0+cu111'
+          pytorch_index: 'https://download.pytorch.org/whl/test/torch_test.html'
+          python_version: '3.9.6'
+      # TODO: enable pytorch1.12
+      # - linux_gpu_tests:
+      #     name: linux_gpu_tests_pytorch1.12
+      #     pytorch_version: '1.12.1+cu102'
+      #     torchvision_version: '0.13.1+cu102'
+      #     pytorch_index: ''
+      #     python_version: '3.9.4'
+      #     # ubuntu_version: 'ubuntu-2004-cuda-11.4:202110-01'
+      #     ubuntu_version: 'ubuntu-1604-cuda-10.2:202012-01'
       - windows_cpu_build:
           pytorch_version: '1.10+cpu'
           torchvision_version: '0.11.1+cpu'
