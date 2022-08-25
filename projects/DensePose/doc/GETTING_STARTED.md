@@ -2,7 +2,7 @@
 
 ## Inference with Pre-trained Models
 
-1. Pick a model and its config file from [Model Zoo](MODEL_ZOO.md), for example [densepose_rcnn_R_50_FPN_s1x.yaml](../configs/densepose_rcnn_R_50_FPN_s1x.yaml)
+1. Pick a model and its config file from [Model Zoo(IUV)](DENSEPOSE_IUV.md#ModelZoo), [Model Zoo(CSE)](DENSEPOSE_CSE.md#ModelZoo), for example [densepose_rcnn_R_50_FPN_s1x.yaml](../configs/densepose_rcnn_R_50_FPN_s1x.yaml)
 2. Run the [Apply Net](TOOL_APPLY_NET.md) tool to visualize the results or save the to disk. For example, to use contour visualization for DensePose, one can run:
 ```bash
 python apply_net.py show configs/densepose_rcnn_R_50_FPN_s1x.yaml densepose_rcnn_R_50_FPN_s1x.pkl image.jpg dp_contour,bbox --output image_densepose_contour.png
@@ -22,7 +22,7 @@ datasets/coco/
 </pre>
 
 To train a model one can use the [train_net.py](../train_net.py) script.
-This script was used to train all DensePose models in [Model Zoo](MODEL_ZOO.md).
+This script was used to train all DensePose models in [Model Zoo(IUV)](DENSEPOSE_IUV.md#ModelZoo), [Model Zoo(CSE)](DENSEPOSE_CSE.md#ModelZoo).
 For example, to launch end-to-end DensePose-RCNN training with ResNet-50 FPN backbone
 on 8 GPUs following the s1x schedule, one can run
 ```bash
@@ -63,7 +63,7 @@ Please refer to [Apply Net](TOOL_APPLY_NET.md) for more details on this tool
 DensePose can also be installed as a Python package for integration with other software.
 
 The following dependencies are needed:
-- Python >= 3.6
+- Python >= 3.7
 - [PyTorch](https://pytorch.org/get-started/locally/#start-locally) >= 1.7 (to match [detectron2 requirements](https://detectron2.readthedocs.io/en/latest/tutorials/install.html#requirements))
 - [torchvision](https://pytorch.org/vision/stable/) version [compatible with your version of PyTorch](https://github.com/pytorch/vision#installation)
 

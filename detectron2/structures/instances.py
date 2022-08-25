@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import itertools
+import warnings
 from typing import Any, Dict, List, Tuple, Union
 import torch
 
@@ -71,7 +72,8 @@ class Instances:
         The length of `value` must be the number of instances,
         and must agree with other existing fields in this object.
         """
-        data_len = len(value)
+        with warnings.catch_warnings(record=True):
+            data_len = len(value)
         if len(self._fields):
             assert (
                 len(self) == data_len

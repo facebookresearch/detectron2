@@ -24,7 +24,7 @@ Explain Like I’m 5: Detectron2            |  Using Machine Learning with Detec
 
 ## What's New
 * Includes new capabilities such as panoptic segmentation, Densepose, Cascade R-CNN, rotated bounding boxes, PointRend,
-  DeepLab, etc.
+  DeepLab, ViTDet, MViTv2 etc.
 * Used as a library to support building [research projects](projects/) on top of it.
 * Models can be exported to TorchScript format or Caffe2 format for deployment.
 * It [trains much faster](https://detectron2.readthedocs.io/notes/benchmarks.html).

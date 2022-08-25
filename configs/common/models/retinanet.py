@@ -10,6 +10,8 @@ from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.matcher import Matcher
 from detectron2.modeling.meta_arch.retinanet import RetinaNetHead
 
+from ..data.constants import constants
+
 model = L(RetinaNet)(
     backbone=L(FPN)(
         bottom_up=L(ResNet)(
@@ -47,7 +49,7 @@ model = L(RetinaNet)(
     head_in_features=["p3", "p4", "p5", "p6", "p7"],
     focal_loss_alpha=0.25,
     focal_loss_gamma=2.0,
-    pixel_mean=[103.530, 116.280, 123.675],
-    pixel_std=[1.0, 1.0, 1.0],
+    pixel_mean=constants.imagenet_bgr256_mean,
+    pixel_std=constants.imagenet_bgr256_std,
     input_format="BGR",
 )

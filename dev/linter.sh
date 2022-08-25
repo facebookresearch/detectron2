@@ -5,9 +5,9 @@
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 {
-  black --version | grep -E "21\." > /dev/null
+  black --version | grep -E "22\." > /dev/null
 } || {
-  echo "Linter requires 'black==21.*' !"
+  echo "Linter requires 'black==22.*' !"
   exit 1
 }
 
@@ -26,8 +26,8 @@ echo "Running black ..."
 black -l 100 .
 
 echo "Running flake8 ..."
-if [ -x "$(command -v flake8-3)" ]; then
-  flake8-3 .
+if [ -x "$(command -v flake8)" ]; then
+  flake8 .
 else
   python3 -m flake8 .
 fi

@@ -6,7 +6,7 @@ from .base_tracker import (  # noqa
 )
 from .bbox_iou_tracker import BBoxIOUTracker  # noqa
 from .hungarian_tracker import BaseHungarianTracker  # noqa
-from .iou_weighted_hungarian_bbox_iou_tracker import ( # noqa
+from .iou_weighted_hungarian_bbox_iou_tracker import (  # noqa
     IOUWeightedHungarianBBoxIOUTracker,
 )
 from .utils import create_prediction_pairs  # noqa

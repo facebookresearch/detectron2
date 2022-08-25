@@ -109,7 +109,9 @@ class _DatasetCategory:
 _MergedCategoriesT = Dict[int, List[_DatasetCategory]]
 
 
-def _add_category_id_to_contiguous_id_maps_to_metadata(merged_categories: _MergedCategoriesT) -> None:
+def _add_category_id_to_contiguous_id_maps_to_metadata(
+    merged_categories: _MergedCategoriesT,
+) -> None:
     merged_categories_per_dataset = {}
     for contiguous_cat_id, cat_id in enumerate(sorted(merged_categories.keys())):
         for cat in merged_categories[cat_id]:

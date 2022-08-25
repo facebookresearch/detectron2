@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
 import copy
-from typing import List
-
 import numpy as np
+from typing import List
 import torch
+
 from detectron2.config import configurable
 from detectron2.structures import Boxes, Instances
 from detectron2.structures.boxes import pairwise_iou
 
 from ..config.config import CfgNode as CfgNode_
-from .base_tracker import BaseTracker, TRACKER_HEADS_REGISTRY
+from .base_tracker import TRACKER_HEADS_REGISTRY, BaseTracker
 
 
 @TRACKER_HEADS_REGISTRY.register()
@@ -18,6 +18,7 @@ class BBoxIOUTracker(BaseTracker):
     """
     A bounding box tracker to assign ID based on IoU between current and previous instances
     """
+
     @configurable
     def __init__(
         self,
@@ -29,7 +30,7 @@ class BBoxIOUTracker(BaseTracker):
         min_box_rel_dim: float = 0.02,
         min_instance_period: int = 1,
         track_iou_threshold: float = 0.5,
-        **kwargs
+        **kwargs,
     ):
         """
         Args:
@@ -82,15 +83,13 @@ class BBoxIOUTracker(BaseTracker):
             "max_lost_frame_count": max_lost_frame_count,
             "min_box_rel_dim": min_box_rel_dim,
             "min_instance_period": min_instance_period,
-            "track_iou_threshold": track_iou_threshold
+            "track_iou_threshold": track_iou_threshold,
         }
 
     def update(self, instances: Instances) -> Instances:
         """
         See BaseTracker description
         """
-        if instances.has("pred_keypoints"):
-            raise NotImplementedError("Need to add support for keypoints")
         instances = self._initialize_extra_fields(instances)
         if self._prev_instances is not None:
             # calculate IoU of all bbox pairs
@@ -105,9 +104,11 @@ class BBoxIOUTracker(BaseTracker):
             for bbox_pair in bbox_pairs:
                 idx = bbox_pair["idx"]
                 prev_id = bbox_pair["prev_id"]
-                if idx in self._matched_idx \
-                   or prev_id in self._matched_ID \
-                   or bbox_pair["IoU"] < self._track_iou_threshold:
+                if (
+                    idx in self._matched_idx
+                    or prev_id in self._matched_ID
+                    or bbox_pair["IoU"] < self._track_iou_threshold
+                ):
                     continue
                 instances.ID[idx] = prev_id
                 instances.ID_period[idx] = bbox_pair["prev_period"] + 1
@@ -120,9 +121,7 @@ class BBoxIOUTracker(BaseTracker):
         self._prev_instances = copy.deepcopy(instances)
         return instances
 
-    def _create_prediction_pairs(
-        self, instances: Instances, iou_all: np.ndarray
-    ) -> List:
+    def _create_prediction_pairs(self, instances: Instances, iou_all: np.ndarray) -> List:
         """
         For all instances in previous and current frames, create pairs. For each
         pair, store index of the instance in current frame predcitions, index in
@@ -211,7 +210,6 @@ class BBoxIOUTracker(BaseTracker):
         untracked_instances = Instances(
             image_size=instances.image_size,
             pred_boxes=[],
-            pred_masks=[],
             pred_classes=[],
             scores=[],
             ID=[],
@@ -223,7 +221,14 @@ class BBoxIOUTracker(BaseTracker):
         prev_scores = list(self._prev_instances.scores)
         prev_ID_period = self._prev_instances.ID_period
         if instances.has("pred_masks"):
+            untracked_instances.set("pred_masks", [])
             prev_masks = list(self._prev_instances.pred_masks)
+        if instances.has("pred_keypoints"):
+            untracked_instances.set("pred_keypoints", [])
+            prev_keypoints = list(self._prev_instances.pred_keypoints)
+        if instances.has("pred_keypoint_heatmaps"):
+            untracked_instances.set("pred_keypoint_heatmaps", [])
+            prev_keypoint_heatmaps = list(self._prev_instances.pred_keypoint_heatmaps)
         for idx in self._untracked_prev_idx:
             x_left, y_top, x_right, y_bot = prev_bboxes[idx]
             if (
@@ -243,14 +248,25 @@ class BBoxIOUTracker(BaseTracker):
             )
             if instances.has("pred_masks"):
                 untracked_instances.pred_masks.append(prev_masks[idx].numpy().astype(np.uint8))
-
+            if instances.has("pred_keypoints"):
+                untracked_instances.pred_keypoints.append(
+                    prev_keypoints[idx].numpy().astype(np.uint8)
+                )
+            if instances.has("pred_keypoint_heatmaps"):
+                untracked_instances.pred_keypoint_heatmaps.append(
+                    prev_keypoint_heatmaps[idx].numpy().astype(np.float32)
+                )
         untracked_instances.pred_boxes = Boxes(torch.FloatTensor(untracked_instances.pred_boxes))
         untracked_instances.pred_classes = torch.IntTensor(untracked_instances.pred_classes)
         untracked_instances.scores = torch.FloatTensor(untracked_instances.scores)
         if instances.has("pred_masks"):
             untracked_instances.pred_masks = torch.IntTensor(untracked_instances.pred_masks)
-        else:
-            untracked_instances.remove("pred_masks")
+        if instances.has("pred_keypoints"):
+            untracked_instances.pred_keypoints = torch.IntTensor(untracked_instances.pred_keypoints)
+        if instances.has("pred_keypoint_heatmaps"):
+            untracked_instances.pred_keypoint_heatmaps = torch.FloatTensor(
+                untracked_instances.pred_keypoint_heatmaps
+            )
 
         return Instances.cat(
             [

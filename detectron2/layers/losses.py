@@ -119,7 +119,7 @@ def ciou_loss(
     h_pred = y2 - y1
     w_gt = x2g - x1g
     h_gt = y2g - y1g
-    v = (4 / (math.pi ** 2)) * torch.pow((torch.atan(w_gt / h_gt) - torch.atan(w_pred / h_pred)), 2)
+    v = (4 / (math.pi**2)) * torch.pow((torch.atan(w_gt / h_gt) - torch.atan(w_pred / h_pred)), 2)
     with torch.no_grad():
         alpha = v / (1 - iou + v + eps)
 

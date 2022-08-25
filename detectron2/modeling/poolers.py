@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
-from typing import List
+from typing import List, Optional
 import torch
 from torch import nn
 from torchvision.ops import RoIPool
 
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
 from detectron2.structures import Boxes
+from detectron2.utils.tracing import assert_fx_safe, is_fx_tracing
 
 """
 To export ROIPooler to torchscript, in this file, variables that should be annotated with
@@ -58,6 +59,16 @@ def assign_boxes_to_levels(
     return level_assignments.to(torch.int64) - min_level
 
 
+# script the module to avoid hardcoded device type
+@torch.jit.script_if_tracing
+def _convert_boxes_to_pooler_format(boxes: torch.Tensor, sizes: torch.Tensor) -> torch.Tensor:
+    sizes = sizes.to(device=boxes.device)
+    indices = torch.repeat_interleave(
+        torch.arange(len(sizes), dtype=boxes.dtype, device=boxes.device), sizes
+    )
+    return cat([indices[:, None], boxes], dim=1)
+
+
 def convert_boxes_to_pooler_format(box_lists: List[Boxes]):
     """
     Convert all boxes in `box_lists` to the low-level format used by ROI pooling ops
@@ -83,11 +94,21 @@ def convert_boxes_to_pooler_format(box_lists: List[Boxes]):
     """
     boxes = torch.cat([x.tensor for x in box_lists], dim=0)
     # __len__ returns Tensor in tracing.
-    sizes = shapes_to_tensor([x.__len__() for x in box_lists], device=boxes.device)
-    indices = torch.repeat_interleave(
-        torch.arange(len(box_lists), dtype=boxes.dtype, device=boxes.device), sizes
-    )
-    return cat([indices[:, None], boxes], dim=1)
+    sizes = shapes_to_tensor([x.__len__() for x in box_lists])
+    return _convert_boxes_to_pooler_format(boxes, sizes)
+
+
+@torch.jit.script_if_tracing
+def _create_zeros(
+    batch_target: Optional[torch.Tensor],
+    channels: int,
+    height: int,
+    width: int,
+    like_tensor: torch.Tensor,
+) -> torch.Tensor:
+    batches = batch_target.shape[0] if batch_target is not None else 0
+    sizes = (batches, channels, height, width)
+    return torch.zeros(sizes, dtype=like_tensor.dtype, device=like_tensor.device)
 
 
 class ROIPooler(nn.Module):
@@ -199,24 +220,25 @@ class ROIPooler(nn.Module):
         """
         num_level_assignments = len(self.level_poolers)
 
-        assert isinstance(x, list) and isinstance(
-            box_lists, list
-        ), "Arguments to pooler must be lists"
-        assert (
-            len(x) == num_level_assignments
-        ), "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
-            num_level_assignments, len(x)
+        if not is_fx_tracing():
+            torch._assert(
+                isinstance(x, list) and isinstance(box_lists, list),
+                "Arguments to pooler must be lists",
+            )
+        assert_fx_safe(
+            len(x) == num_level_assignments,
+            "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
+                num_level_assignments, len(x)
+            ),
         )
-
-        assert len(box_lists) == x[0].size(
-            0
-        ), "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
-            x[0].size(0), len(box_lists)
+        assert_fx_safe(
+            len(box_lists) == x[0].size(0),
+            "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
+                x[0].size(0), len(box_lists)
+            ),
         )
         if len(box_lists) == 0:
-            return torch.zeros(
-                (0, x[0].shape[1]) + self.output_size, device=x[0].device, dtype=x[0].dtype
-            )
+            return _create_zeros(None, x[0].shape[1], *self.output_size, x[0])
 
         pooler_fmt_boxes = convert_boxes_to_pooler_format(box_lists)
 
@@ -227,14 +249,10 @@ class ROIPooler(nn.Module):
             box_lists, self.min_level, self.max_level, self.canonical_box_size, self.canonical_level
         )
 
-        num_boxes = pooler_fmt_boxes.size(0)
         num_channels = x[0].shape[1]
         output_size = self.output_size[0]
 
-        dtype, device = x[0].dtype, x[0].device
-        output = torch.zeros(
-            (num_boxes, num_channels, output_size, output_size), dtype=dtype, device=device
-        )
+        output = _create_zeros(pooler_fmt_boxes, num_channels, output_size, output_size, x[0])
 
         for level, pooler in enumerate(self.level_poolers):
             inds = nonzero_tuple(level_assignments == level)[0]

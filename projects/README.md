@@ -21,6 +21,8 @@ of support or stability as detectron2.
 + [Unbiased Teacher for Semi-Supervised Object Detection](https://github.com/facebookresearch/unbiased-teacher)
 + [Rethinking "Batch" in BatchNorm](Rethinking-BatchNorm/)
 + [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://github.com/facebookresearch/MaskFormer)
++ [Exploring Plain Vision Transformer Backbones for Object Detection](ViTDet/)
++ [MViTv2: Improved Multiscale Vision Transformers for Classification and Detection](MViTv2/)
 
 
 ## External Projects
@@ -45,4 +47,3 @@ External projects in the community that use detectron2:
 + [Sparse R-CNN](https://github.com/PeizeSun/SparseR-CNN)
 + [BCNet](https://github.com/lkeab/BCNet), a bilayer decoupling instance segmentation method.
 + [DD3D](https://github.com/TRI-ML/dd3d), A fully convolutional 3D detector.
-
