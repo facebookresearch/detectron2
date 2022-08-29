@@ -42,6 +42,12 @@ of the method, links to trained models along with their performance evaluation i
 
 See [ Getting Started ](doc/GETTING_STARTED.md)
 
+    git push --set-upstream origin ijonglin/detectron-project-densepose-tiyaro-support
+
+# Live Demos 
+
+* [Tiyaro.ai](https://console.tiyaro.ai/explore?q=densepose&pub=detectron2)
+
 # Model Zoo
 
 Please check the dedicated pages

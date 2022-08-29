@@ -9,11 +9,6 @@ python apply_net.py show configs/densepose_rcnn_R_50_FPN_s1x.yaml densepose_rcnn
 ```
 Please see [Apply Net](TOOL_APPLY_NET.md) for more details on the tool.
 
-DensePose pre-trained models have been made available in the form of hosted APIs by third parties 
-for inference testing:
-
-* [Tiyaro.ai](https://console.tiyaro.ai/explore?q=densepose&pub=detectron2)
- 
 ## Training
 
 First, prepare the [dataset](http://densepose.org/#dataset) into the following structure under the directory you'll run training scripts:
