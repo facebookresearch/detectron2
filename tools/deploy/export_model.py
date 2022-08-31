@@ -3,6 +3,7 @@
 import argparse
 import os
 from typing import Dict, List, Tuple
+from warnings import warn
 import torch
 from torch import Tensor, nn
 
@@ -17,7 +18,7 @@ from detectron2.export import (
     dump_torchscript_IR,
     scripting_with_instances,
 )
-from detectron2.modeling import GeneralizedRCNN, RetinaNet, build_model
+from detectron2.modeling import GeneralizedRCNN, PanopticFPN, RetinaNet, build_model
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.projects.point_rend import add_pointrend_config
 from detectron2.structures import Boxes
@@ -38,7 +39,15 @@ def setup_cfg(args):
 
 
 def export_caffe2_tracing(cfg, torch_model, inputs):
-    from detectron2.export import Caffe2Tracer
+    try:
+        # Caffe2 is not included by default on PyTorch anymore
+        from detectron2.export import Caffe2Tracer
+    except ImportError:
+        warn(
+            "Caffe2 support is not enabled in this PyTorch installation. "
+            "Please enable Caffe2 by building PyTorch from source with `BUILD_CAFFE2=1` flag."
+        )
+        raise
 
     tracer = Caffe2Tracer(cfg, torch_model, inputs)
     if args.format == "caffe2":
@@ -110,7 +119,16 @@ def export_tracing(torch_model, inputs):
     image = inputs[0]["image"]
     inputs = [{"image": image}]  # remove other unused keys
 
-    if isinstance(torch_model, GeneralizedRCNN):
+    # TODO: Implement a generic dispatcher for all supported models
+    #       (or get inference_fn as argument?)
+    if isinstance(torch_model, PanopticFPN):
+
+        def inference(model, inputs):
+            # use do_postprocess=False so it returns ROI mask
+            inst, sem_seg = model.inference(inputs, do_postprocess=False)
+            return (inst, sem_seg)
+
+    elif isinstance(torch_model, GeneralizedRCNN):
 
         def inference(model, inputs):
             # use do_postprocess=False so it returns ROI mask
