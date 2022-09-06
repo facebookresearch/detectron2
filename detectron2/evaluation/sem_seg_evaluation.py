@@ -130,8 +130,30 @@ class SemSegEvaluator(DatasetEvaluator):
         for input, output in zip(inputs, outputs):
             output = output["sem_seg"].argmax(dim=0).to(self._cpu_device)
             pred = np.array(output, dtype=np.int)
-            gt_filename = self.input_file_to_gt_file[input["file_name"]]
-            gt = self.sem_seg_loading_fn(gt_filename, dtype=np.int)
+            try:
+                gt_filename = self.input_file_to_gt_file[input["file_name"]]
+            except KeyError:
+                # This is to take care of the case where `memcache_` prefix was
+                # not included in dataset json file and was included in the
+                # `load_func`
+                if not input["file_name"].startswith("memcache_"):
+                    raise
+                gt_filename = self.input_file_to_gt_file[input["file_name"][len("memcache_") :]]
+                if not gt_filename.startswith("memcache_"):
+                    gt_filename = f"memcache_{gt_filename}"
+
+            try:
+                gt = self.sem_seg_loading_fn(gt_filename, dtype=np.int)
+            except OSError:
+                if "/image/" in gt_filename and "tree/__data__" in gt_filename:
+                    # This is for datasets hosted in DW, where the folder
+                    # structure is different than that assumed in
+                    # `_get_corresponding_mask_path()` of
+                    # `fbcode/mobile-vision/d2go/d2go/data/fb/semantic_seg.py`
+                    gt_filename = gt_filename.replace("/image/", "/mask/", 1)
+                    gt = self.sem_seg_loading_fn(gt_filename, dtype=np.int)
+                else:
+                    raise
 
             gt[gt == self._ignore_label] = self._num_classes
 
@@ -247,7 +269,11 @@ class SemSegEvaluator(DatasetEvaluator):
             mask_rle = mask_util.encode(np.array(mask[:, :, None], order="F"))[0]
             mask_rle["counts"] = mask_rle["counts"].decode("utf-8")
             json_list.append(
-                {"file_name": input_file_name, "category_id": dataset_id, "segmentation": mask_rle}
+                {
+                    "file_name": input_file_name,
+                    "category_id": dataset_id,
+                    "segmentation": mask_rle,
+                }
             )
         return json_list
 
