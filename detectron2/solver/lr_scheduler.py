@@ -25,6 +25,7 @@ class WarmupParamScheduler(CompositeParamScheduler):
         warmup_factor: float,
         warmup_length: float,
         warmup_method: str = "linear",
+        rescale_interval: bool = False,
     ):
         """
         Args:
@@ -33,6 +34,8 @@ class WarmupParamScheduler(CompositeParamScheduler):
             warmup_length: the relative length (in [0, 1]) of warmup steps w.r.t the entire
                 training, e.g. 0.01
             warmup_method: one of "linear" or "constant"
+            rescale_interval: whether we will rescale the interval of the scheduler after
+                warmup
         """
         end_value = scheduler(warmup_length)  # the value to reach when warmup ends
         start_value = warmup_factor * scheduler(0.0)
@@ -44,7 +47,7 @@ class WarmupParamScheduler(CompositeParamScheduler):
             raise ValueError("Unknown warmup method: {}".format(warmup_method))
         super().__init__(
             [warmup, scheduler],
-            interval_scaling=["rescaled", "fixed"],
+            interval_scaling=["rescaled", "rescaled" if rescale_interval else "fixed"],
             lengths=[warmup_length, 1 - warmup_length],
         )
 

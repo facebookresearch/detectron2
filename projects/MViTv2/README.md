@@ -2,7 +2,7 @@
 
 Yanghao Li*, Chao-Yuan Wu*, Haoqi Fan, Karttikeya Mangalam, Bo Xiong, Jitendra Malik, Christoph Feichtenhofer*
 
-[[`arXiv`](https://arxiv.org/abs/2203.16527)] [[`BibTeX`](#CitingMViTv2)]
+[[`arXiv`](https://arxiv.org/abs/2112.01526)] [[`BibTeX`](#CitingMViTv2)]
 
 In this repository, we provide detection configs and models for MViTv2 (CVPR 2022) in Detectron2. For image classification tasks, please refer to [MViTv2 repo](https://github.com/facebookresearch/mvit).
 

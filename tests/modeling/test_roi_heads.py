@@ -214,10 +214,10 @@ class ROIHeadsTest(unittest.TestCase):
             "pred_keypoint_heatmaps": torch.Tensor,
         }
         with freeze_training_mode(keypoint_head), patch_instances(fields) as NewInstances:
-            sciript_keypoint_head = torch.jit.script(keypoint_head)
+            script_keypoint_head = torch.jit.script(keypoint_head)
             pred_instance0 = NewInstances.from_instances(pred_instance0)
             pred_instance1 = NewInstances.from_instances(pred_instance1)
-            script_outputs = sciript_keypoint_head(
+            script_outputs = script_keypoint_head(
                 keypoint_features, [pred_instance0, pred_instance1]
             )
 

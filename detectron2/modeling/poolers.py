@@ -7,6 +7,7 @@ from torchvision.ops import RoIPool
 
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
 from detectron2.structures import Boxes
+from detectron2.utils.tracing import assert_fx_safe, is_fx_tracing
 
 """
 To export ROIPooler to torchscript, in this file, variables that should be annotated with
@@ -219,19 +220,22 @@ class ROIPooler(nn.Module):
         """
         num_level_assignments = len(self.level_poolers)
 
-        assert isinstance(x, list) and isinstance(
-            box_lists, list
-        ), "Arguments to pooler must be lists"
-        assert (
-            len(x) == num_level_assignments
-        ), "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
-            num_level_assignments, len(x)
+        if not is_fx_tracing():
+            torch._assert(
+                isinstance(x, list) and isinstance(box_lists, list),
+                "Arguments to pooler must be lists",
+            )
+        assert_fx_safe(
+            len(x) == num_level_assignments,
+            "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
+                num_level_assignments, len(x)
+            ),
         )
-
-        assert len(box_lists) == x[0].size(
-            0
-        ), "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
-            x[0].size(0), len(box_lists)
+        assert_fx_safe(
+            len(box_lists) == x[0].size(0),
+            "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
+                x[0].size(0), len(box_lists)
+            ),
         )
         if len(box_lists) == 0:
             return _create_zeros(None, x[0].shape[1], *self.output_size, x[0])
