@@ -353,7 +353,7 @@ class RetinaNetHead(nn.Module):
                 )
 
         else:
-            norm_name = str(type(get_norm(norm, 1)))
+            norm_name = str(type(get_norm(norm, 32)))
             if "BN" in norm_name:
                 logger.warning(
                     f"Shared BatchNorm (type={norm_name}) may not work well in RetinaNetHead."

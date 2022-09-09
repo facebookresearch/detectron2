@@ -63,7 +63,7 @@ Please refer to [Apply Net](TOOL_APPLY_NET.md) for more details on this tool
 DensePose can also be installed as a Python package for integration with other software.
 
 The following dependencies are needed:
-- Python >= 3.6
+- Python >= 3.7
 - [PyTorch](https://pytorch.org/get-started/locally/#start-locally) >= 1.7 (to match [detectron2 requirements](https://detectron2.readthedocs.io/en/latest/tutorials/install.html#requirements))
 - [torchvision](https://pytorch.org/vision/stable/) version [compatible with your version of PyTorch](https://github.com/pytorch/vision#installation)
 

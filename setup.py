@@ -154,7 +154,7 @@ setup(
     packages=find_packages(exclude=("configs", "tests*")) + list(PROJECTS.keys()),
     package_dir=PROJECTS,
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         # These dependencies are not pure-python.
         # In general, avoid adding more dependencies like them because they are not
@@ -183,14 +183,17 @@ setup(
         "dataclasses; python_version<'3.7'",
         "omegaconf>=2.1",
         "hydra-core>=1.1",
-        "black==21.4b2",
-        "scipy>1.5.1",
+        "black==22.3.0",
+        "timm",
+        "fairscale",
+        "packaging",
         # If a new dependency is required at import time (in addition to runtime), it
         # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
     ],
     extras_require={
         # optional dependencies, required by some features
         "all": [
+            "scipy>1.5.1",
             "shapely",
             "pygments>=2.2",
             "psutil",

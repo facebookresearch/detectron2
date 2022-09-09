@@ -32,8 +32,6 @@ class ImageResizeTransform:
         scale = min(self.min_size / min_size, self.max_size / max_size)
         images = torch.nn.functional.interpolate(
             images,
-            # pyre-fixme[6]: Expected `Optional[typing.List[float]]` for 2nd param
-            #  but got `float`.
             scale_factor=scale,
             mode="bilinear",
             align_corners=False,

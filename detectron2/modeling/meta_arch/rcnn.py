@@ -218,8 +218,7 @@ class GeneralizedRCNN(nn.Module):
         if do_postprocess:
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
             return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
-        else:
-            return results
+        return results
 
     def preprocess_image(self, batched_inputs: List[Dict[str, torch.Tensor]]):
         """
@@ -227,7 +226,11 @@ class GeneralizedRCNN(nn.Module):
         """
         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(images, self.backbone.size_divisibility)
+        images = ImageList.from_tensors(
+            images,
+            self.backbone.size_divisibility,
+            padding_constraints=self.backbone.padding_constraints,
+        )
         return images
 
     @staticmethod
@@ -305,7 +308,11 @@ class ProposalNetwork(nn.Module):
         """
         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(images, self.backbone.size_divisibility)
+        images = ImageList.from_tensors(
+            images,
+            self.backbone.size_divisibility,
+            padding_constraints=self.backbone.padding_constraints,
+        )
         features = self.backbone(images.tensor)
 
         if "instances" in batched_inputs[0]:

@@ -147,10 +147,10 @@ class IIDIsotropicGaussianUVLoss(nn.Module):
         # (sigma -> 0)
         sigma2 = F.softplus(sigma_u) + self.sigma_lower_bound
         # compute \|delta_i\|^2
+        # pyre-fixme[58]: `**` is not supported for operand types `Tensor` and `int`.
         delta_t_delta = (u - target_u) ** 2 + (v - target_v) ** 2
         # the total loss from the formula above:
         loss = 0.5 * (self.log2pi + 2 * torch.log(sigma2) + delta_t_delta / sigma2)
-        # pyre-fixme[16]: `float` has no attribute `sum`.
         return loss.sum()
 
 
@@ -188,19 +188,22 @@ class IndepAnisotropicGaussianUVLoss(nn.Module):
         # compute $\sigma_i^2$
         sigma2 = F.softplus(sigma_u) + self.sigma_lower_bound
         # compute \|r_i\|^2
-        r_sqnorm2 = kappa_u_est ** 2 + kappa_v_est ** 2
+        # pyre-fixme[58]: `**` is not supported for operand types `Tensor` and `int`.
+        r_sqnorm2 = kappa_u_est**2 + kappa_v_est**2
         delta_u = u - target_u
         delta_v = v - target_v
         # compute \|delta_i\|^2
-        delta_sqnorm = delta_u ** 2 + delta_v ** 2
+        # pyre-fixme[58]: `**` is not supported for operand types `Tensor` and `int`.
+        delta_sqnorm = delta_u**2 + delta_v**2
         delta_u_r_u = delta_u * kappa_u_est
         delta_v_r_v = delta_v * kappa_v_est
         # compute the scalar product <delta_i, r_i>
         delta_r = delta_u_r_u + delta_v_r_v
         # compute squared scalar product <delta_i, r_i>^2
-        delta_r_sqnorm = delta_r ** 2
+        # pyre-fixme[58]: `**` is not supported for operand types `Tensor` and `int`.
+        delta_r_sqnorm = delta_r**2
         denom2 = sigma2 * (sigma2 + r_sqnorm2)
         loss = 0.5 * (
             self.log2pi + torch.log(denom2) + delta_sqnorm / sigma2 - delta_r_sqnorm / denom2
         )
-        return loss.sum()  # pyre-ignore[16]
+        return loss.sum()
