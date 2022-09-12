@@ -106,28 +106,41 @@ def _patch_import():
     1. locate files purely based on relative location, regardless of packages.
        e.g. you can import file without having __init__
     2. do not cache modules globally; modifications of module states has no side effect
-    3. support other storage system through PathManager
+    3. support other storage system through PathManager, so config files can be in the cloud
     4. imported dict are turned into omegaconf.DictConfig automatically
     """
     old_import = builtins.__import__
 
     def find_relative_file(original_file, relative_import_path, level):
+        # NOTE: "from . import x" is not handled. Because then it's unclear
+        # if such import should produce `x` as a python module or DictConfig.
+        # This can be discussed further if needed.
+        relative_import_err = """
+Relative import of directories is not allowed within config files.
+Within a config file, relative import can only import other config files.
+""".replace(
+            "\n", " "
+        )
+        if not len(relative_import_path):
+            raise ImportError(relative_import_err)
+
         cur_file = os.path.dirname(original_file)
         for _ in range(level - 1):
             cur_file = os.path.dirname(cur_file)
         cur_name = relative_import_path.lstrip(".")
         for part in cur_name.split("."):
             cur_file = os.path.join(cur_file, part)
-        # NOTE: directory import is not handled. Because then it's unclear
-        # if such import should produce python module or DictConfig. This can
-        # be discussed further if needed.
         if not cur_file.endswith(".py"):
             cur_file += ".py"
         if not PathManager.isfile(cur_file):
-            raise ImportError(
-                f"Cannot import name {relative_import_path} from "
-                f"{original_file}: {cur_file} has to exist."
-            )
+            cur_file_no_suffix = cur_file[: -len(".py")]
+            if PathManager.isdir(cur_file_no_suffix):
+                raise ImportError(f"Cannot import from {cur_file_no_suffix}." + relative_import_err)
+            else:
+                raise ImportError(
+                    f"Cannot import name {relative_import_path} from "
+                    f"{original_file}: {cur_file} does not exist."
+                )
         return cur_file
 
     def new_import(name, globals=None, locals=None, fromlist=(), level=0):
