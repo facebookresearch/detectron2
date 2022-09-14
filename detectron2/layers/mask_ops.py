@@ -127,7 +127,7 @@ def paste_masks_in_image(
     chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
 
     img_masks = torch.zeros(
-        N, img_h, img_w, device=device, dtype=torch.bool if threshold >= 0 else torch.uint8
+        N, int(img_h), int(img_w), device=device, dtype=torch.bool if threshold >= 0 else torch.uint8
     )
     for inds in chunks:
         masks_chunk, spatial_inds = _do_paste_mask(
