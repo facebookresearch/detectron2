@@ -92,3 +92,11 @@ class DensePoseChartPredictor(nn.Module):
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
         )
+
+    def forward_without_upsample(self, head_outputs: torch.Tensor):
+        return DensePoseChartPredictorOutput(
+            coarse_segm=self.ann_index_lowres(head_outputs),
+            fine_segm=self.index_uv_lowres(head_outputs),
+            u=self.u_lowres(head_outputs),
+            v=self.v_lowres(head_outputs),
+        )

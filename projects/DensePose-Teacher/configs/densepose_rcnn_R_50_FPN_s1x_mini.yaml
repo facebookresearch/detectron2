@@ -7,6 +7,10 @@ MODEL:
     DECODER_ON: False
   SEMI:
     TEACHER_WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+    ERASE_ON: False
+    COR:
+      CRT_ON: True
+      WARM_ITER: 10000
 DATASETS:
   TRAIN: ("densepose_coco_2014_valminusminival", )
   TEST: ("densepose_coco_2014_minival",)

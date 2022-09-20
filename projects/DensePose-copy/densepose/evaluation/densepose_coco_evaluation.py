@@ -146,9 +146,12 @@ class DensePoseCocoEval(object):
         self.ignoreThrBB = 0.7
         self.ignoreThrUV = 0.9
 
-        self.dists = []
-        # the first column is dt, the second column is gt
-        self.segms = []
+        # self.dists = []
+        # # the first column is dt, the second column is gt
+        # self.segms = []
+
+        # self.u_dists = []
+        # self.v_dists = []
         self.output_dir = output_dir
 
     def _loadGEval(self):
@@ -350,14 +353,20 @@ class DensePoseCocoEval(object):
             for areaRng in p.areaRng
             for imgId in p.imgIds
         ]
-        if p.iouType == 'densepose':
-            import os
-            dists_file_path = os.path.join(self.output_dir, 'dists.npy')
-            with PathManager.open(dists_file_path, 'wb') as f:
-                np.save(f, torch.from_numpy(np.concatenate(self.dists)))
-            segms_file_path = os.path.join(self.output_dir, 'segms.npy')
-            with PathManager.open(segms_file_path, 'wb') as f:
-                np.save(f, torch.from_numpy(np.concatenate(self.segms)))
+        # if p.iouType == 'densepose':
+            # import os
+            # dists_file_path = os.path.join(self.output_dir, 'dists.npy')
+            # with PathManager.open(dists_file_path, 'wb') as f:
+            #     np.save(f, torch.from_numpy(np.concatenate(self.dists)))
+            # segms_file_path = os.path.join(self.output_dir, 'segms.npy')
+            # with PathManager.open(segms_file_path, 'wb') as f:
+            #     np.save(f, torch.from_numpy(np.concatenate(self.segms)))
+            # u_dists_file_path = os.path.join(self.output_dir, 'u_dists.npy')
+            # with PathManager.open(u_dists_file_path, 'wb') as f:
+            #     np.save(f, torch.from_numpy(np.concatenate(self.u_dists)))
+            # v_dists_file_path = os.path.join(self.output_dir, 'v_dists.npy')
+            # with PathManager.open(v_dists_file_path, 'wb') as f:
+            #     np.save(f, torch.from_numpy(np.concatenate(self.v_dists)))
         self._paramsEval = copy.deepcopy(self.params)
         toc = time.time()
         logger.info("DensePose evaluation DONE (t={:0.2f}s).".format(toc - tic))
@@ -742,8 +751,10 @@ class DensePoseCocoEval(object):
         if len(g) == 0 or len(d) == 0:
             return []
         ious = np.zeros((len(d), len(g)))
-        dists = [[np.zeros(0,) for i in range(len(g))] for j in range(len(d))]
-        segms = [[np.zeros((0,2)) for i in range(len(g))] for j in range(len(d))]
+        # dists = [[np.zeros(0,) for i in range(len(g))] for j in range(len(d))]
+        # segms = [[np.zeros((0,2)) for i in range(len(g))] for j in range(len(d))]
+        # u_dists = [[np.zeros((0,2)) for i in range(len(g))] for j in range(len(d))]
+        # v_dists = [[np.zeros((0,2)) for i in range(len(g))] for j in range(len(d))]
         # compute opgs between each detection and ground truth object
         # sigma = self.sigma #0.255 # dist = 0.3m corresponds to ogps = 0.5
         # 1 # dist = 0.3m corresponds to ogps = 0.96
@@ -782,10 +793,14 @@ class DensePoseCocoEval(object):
                         # record each matched dist
                         # dist = dists_between_matches.copy()
                         # dist = dist[dist != np.inf]
-                        dists[i][j] = dists_between_matches.copy()
-                        i_dt, _, _ = self.extract_iuv_from_quantized(dt, gt, py, px, pts)
-                        i_gt = np.array(gt["dp_I"])
-                        segms[i][j] = np.concatenate([np.array(i_dt[:, np.newaxis]), i_gt[:, np.newaxis]], axis=1)
+                        # dists[i][j] = dists_between_matches.copy()
+                        # i_dt, u_dt, v_dt = self.extract_iuv_from_quantized(dt, gt, py, px, pts)
+                        # i_gt = np.array(gt["dp_I"])
+                        # u_gt = np.array(gt["dp_U"])
+                        # v_gt = np.array(gt["dp_V"])
+                        # segms[i][j] = np.concatenate([np.array(i_dt[:, np.newaxis]), i_gt[:, np.newaxis]], axis=1)
+                        # u_dists[i][j] = np.concatenate([np.array(u_dt[:, np.newaxis]), u_gt[:, np.newaxis]], axis=1)
+                        # v_dists[i][j] = np.concatenate([np.array(v_dt[:, np.newaxis]), v_gt[:, np.newaxis]], axis=1)
                         #
                         ogps = np.mean(ogps_values) if len(ogps_values) > 0 else 0.0
                     ious[i, j] = ogps
@@ -796,7 +811,7 @@ class DensePoseCocoEval(object):
         # compute iou between each dt and gt region
         iscrowd = [int(o.get("iscrowd", 0)) for o in g]
         ious_bb = maskUtils.iou(dbb, gbb, iscrowd)
-        return ious, ious_bb, dists, segms
+        return ious, ious_bb#, dists, segms, u_dists, v_dists
 
     def evaluateImg(self, imgId, catId, aRng, maxDet):
         """
@@ -842,16 +857,26 @@ class DensePoseCocoEval(object):
                 if len(self.ious[imgId, catId]) > 0
                 else self.ious[imgId, catId]
             )
-            dists = (
-                self.ious[imgId, catId][2]
-                if len(self.ious[imgId, catId]) > 0
-                else None
-            )
-            segms = (
-                self.ious[imgId, catId][3]
-                if len(self.ious[imgId, catId]) > 0
-                else None
-            )
+            # dists = (
+            #     self.ious[imgId, catId][2]
+            #     if len(self.ious[imgId, catId]) > 0
+            #     else None
+            # )
+            # segms = (
+            #     self.ious[imgId, catId][3]
+            #     if len(self.ious[imgId, catId]) > 0
+            #     else None
+            # )
+            # u_dists = (
+            #     self.ious[imgId, catId][4]
+            #     if len(self.ious[imgId, catId]) > 0
+            #     else None
+            # )
+            # v_dists = (
+            #     self.ious[imgId, catId][5]
+            #     if len(self.ious[imgId, catId]) > 0
+            #     else None
+            # )
             if self._dpEvalMode in {DensePoseEvalMode.GPSM, DensePoseEvalMode.IOU}:
                 iousM = (
                     self.real_ious[imgId, catId][:, gtind]
@@ -910,11 +935,15 @@ class DensePoseCocoEval(object):
                     dtIg[tind, dind] = gtIg[m]
                     dtm[tind, dind] = gt[m]["id"]
                     gtm[tind, m] = d["id"]
-                    if tind == 0:
-                        if dists is not None:
-                            self.dists.append(dists[int(dind)][gtind[m]])
-                        if segms is not None:
-                            self.segms.append(segms[int(dind)][gtind[m]])
+                    # if tind == 0:
+                        # if dists is not None:
+                        #     self.dists.append(dists[int(dind)][gtind[m]])
+                        # if segms is not None:
+                        #     self.segms.append(segms[int(dind)][gtind[m]])
+                        # if u_dists is not None:
+                        #     self.u_dists.append(u_dists[int(dind)][gtind[m]])
+                        # if v_dists is not None:
+                        #     self.v_dists.append(v_dists[int(dind)][gtind[m]])
 
         if p.iouType == "densepose":
             if not len(ioubs) == 0:
@@ -939,8 +968,10 @@ class DensePoseCocoEval(object):
                             if gtIg[m]:
                                 dtm[tind, dind] = gt[m]["id"]
                                 gtm[tind, m] = d["id"]
-                            self.dists.append(dists[int(dind)][gtind[m]])
-                            self.segms.append(segms[int(dind)][gtind[m]])
+                            # self.dists.append(dists[int(dind)][gtind[m]])
+                            # self.segms.append(segms[int(dind)][gtind[m]])
+                            # self.u_dists.append(u_dists[int(dind)][gtind[m]])
+                            # self.v_dists.append(v_dists[int(dind)][gtind[m]])
         # set unmatched detections outside of area range to ignore
         a = np.array([d["area"] < aRng[0] or d["area"] > aRng[1] for d in dt]).reshape((1, len(dt)))
         dtIg = np.logical_or(dtIg, np.logical_and(dtm == 0, np.repeat(a, T, 0)))

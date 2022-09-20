@@ -10,6 +10,7 @@ from detectron2.structures import Instances
 
 from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
+# from densepose.modeling.correction.corrector import CorrectorPredictorOutput
 from .utils import (
     BilinearInterpolationHelper,
     ChartBasedAnnotationsAccumulator,
@@ -63,13 +64,16 @@ class DensePoseChartLoss:
         self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
         self.segm_loss = MaskOrSegmentationLoss(cfg)
 
-        self.w_pseudo     = cfg.MODEL.SEMI.UNSUP_WEIGHTS
+        # self.w_pseudo     = cfg.MODEL.SEMI.UNSUP_WEIGHTS
         self.w_p_segm     = cfg.MODEL.SEMI.SEGM_WEIGHTS
         self.w_p_points   = cfg.MODEL.SEMI.POINTS_WEIGHTS
         self.pseudo_threshold = cfg.MODEL.SEMI.THRESHOLD
         self.n_channels = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         self.loss_name = cfg.MODEL.SEMI.LOSS_NAME
         self.uv_loss_channels = cfg.MODEL.SEMI.UV_LOSS_CHANNELS
+
+        # self.w_crt_points = cfg.MODEL.SEMI.COR.POINTS_WEIGHTS
+        # self.w_crt_segm = cfg.MODEL.SEMI.COR.SEGM_WEIGHTS
 
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, **kwargs
@@ -142,6 +146,9 @@ class DensePoseChartLoss:
             interpolator,
             j_valid_fg,  # pyre-ignore[6]
         )
+        #
+        # losses_segm = {"loss_densepose_S": self.segm_loss(proposals_with_gt, densepose_predictor_outputs,
+        #                                                  packed_annotations) * self.w_segm}
 
         losses_unsup = self.produce_densepose_losses_unsup(
             proposals_with_gt,
@@ -150,6 +157,7 @@ class DensePoseChartLoss:
         )
 
         return {**losses_uv, **losses_segm, **losses_unsup}
+        # return {**losses_segm, **losses_unsup}
 
     def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any) -> LossDict:
         """
@@ -174,8 +182,10 @@ class DensePoseChartLoss:
         """
         losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs)
         losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs)
+        # losses_segm = {"loss_densepose_S": self.segm_loss.fake_value(densepose_predictor_outputs)}
         losses_unsup = self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
         return {**losses_uv, **losses_segm, **losses_unsup}
+        # return {**losses_segm, **losses_unsup}
 
     def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any) -> LossDict:
         """
@@ -195,10 +205,17 @@ class DensePoseChartLoss:
              * `loss_densepose_U`: has value 0
              * `loss_densepose_V`: has value 0
         """
-        return {
+        losses = {
             "loss_densepose_U": densepose_predictor_outputs.u.sum() * 0,
             "loss_densepose_V": densepose_predictor_outputs.v.sum() * 0,
         }
+
+        # if corrections is not None:
+        #     losses.update({
+        #         "loss_correction_U": corrections.u.sum() * 0,
+        #         "loss_correction_V": corrections.v.sum() * 0,
+        #     })
+        return losses
 
     def produce_fake_densepose_losses_unsup(self, densepose_predictor_outputs: Any) -> LossDict:
         return {
@@ -229,6 +246,12 @@ class DensePoseChartLoss:
             "loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0,
             "loss_densepose_S": self.segm_loss.fake_value(densepose_predictor_outputs),
         }
+
+        # if corrections is not None:
+        #     losses.update({
+        #         "loss_correction_I": corrections.fine_segm.sum() * 0,
+        #     })
+
         return losses
 
     def produce_densepose_losses_uv(
@@ -238,6 +261,7 @@ class DensePoseChartLoss:
         packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
+        # corrections: CorrectorPredictorOutput=None,
     ) -> LossDict:
         """
         Compute losses for U/V coordinates: smooth L1 loss between
@@ -258,10 +282,25 @@ class DensePoseChartLoss:
         u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
         v_gt = packed_annotations.v_gt[j_valid_fg]
         v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
-        return {
+        loss = {
             "loss_densepose_U": F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points,
             "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points,
         }
+
+        # if corrections is not None:
+        #     u_crt_est = interpolator.extract_at_points(corrections.u)[j_valid_fg]
+        #     v_crt_est = interpolator.extract_at_points(corrections.v)[j_valid_fg]
+        #
+        #     with torch.no_grad():
+        #         u_crt_gt = u_gt - u_est
+        #         v_crt_gt = v_gt - v_est
+        #
+        #     loss.update({
+        #         "loss_correction_U": F.smooth_l1_loss(u_crt_est, u_crt_gt, reduction='sum') * self.w_crt_points,
+        #         "loss_correction_V": F.smooth_l1_loss(v_crt_est, v_crt_gt, reduction='sum') * self.w_crt_points,
+        #     })
+
+        return loss
 
     def produce_densepose_losses_segm(
         self,
@@ -270,6 +309,7 @@ class DensePoseChartLoss:
         packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
+        # corrections: CorrectorPredictorOutput=None,
     ) -> LossDict:
         """
         Losses for fine / coarse segmentation: cross-entropy
@@ -305,13 +345,32 @@ class DensePoseChartLoss:
             w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
             w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
         )[interpolator.j_valid, :]
-        return {
+        loss = {
             "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long()) * self.w_part,
             "loss_densepose_S": self.segm_loss(
                 proposals_with_gt, densepose_predictor_outputs, packed_annotations
             )
             * self.w_segm,
         }
+
+        # if corrections is not None:
+        #     fine_segm_crt_est = interpolator.extract_at_points(
+        #         corrections.fine_segm,
+        #         slice_fine_segm=slice(None),
+        #         w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
+        #         w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
+        #         w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
+        #         w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
+        #     )[interpolator.j_valid, :]
+        #     fine_segm_crt_gt = torch.ones_like(fine_segm_gt) * self.n_channels
+        #     index = fine_segm_est.argmax(dim=1).long() != fine_segm_gt
+        #     fine_segm_crt_gt[index] = fine_segm_gt[index]
+        #     loss.update({
+        #         "loss_correction_I": F.cross_entropy(fine_segm_crt_est, fine_segm_crt_gt.long(), reduction='mean') * self.w_crt_segm
+        #     })
+
+        return loss
+
 
     def produce_densepose_losses_unsup(
         self,
@@ -377,9 +436,9 @@ class DensePoseChartLoss:
                 )
             pseudo = pseudo.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
             if p_key == "fine_segm_p":
-                prediction = F.softmax(pseudo, dim=1)
-                segm_conf = torch.max(prediction, dim=1).values
-                pred_index = torch.argsort(prediction, dim=1, descending=True)[:, :self.uv_loss_channels]
+                # prediction = F.softmax(pseudo, dim=1)
+                segm_conf = torch.max(pseudo, dim=1).values
+                pred_index = torch.argsort(pseudo, dim=1, descending=True)[:, :self.uv_loss_channels]
                 if self.pseudo_threshold < 1:
                     # if filter pseudo labels using segm confidence
                     mask = segm_conf >= self.pseudo_threshold
@@ -389,6 +448,7 @@ class DensePoseChartLoss:
                     est = est[mask]
                     segm_conf = segm_conf[mask]
                 # pred_index[~pos_index] = 0
+                # weights = segm_conf / segm_conf.sum()
                 loss = F.cross_entropy(est, pred_index[:, 0].long(), reduction='none')
                 if self.loss_name == "sce":
                     label_one_hot = F.one_hot(torch.clamp(pred_index[:, 0], min=0, max=self.n_channels - 1), self.n_channels).float()
@@ -398,11 +458,11 @@ class DensePoseChartLoss:
                     rce_loss = torch.mean(rce_loss * mask)
                     loss = loss * (1 - mask) + rce_loss
                     weights = mask / mask.sum()
-                    losses.update({"loss_unsup_segm": (loss * weights).sum() * self.w_pseudo * self.w_p_segm})
+                    losses.update({"loss_unsup_segm": (loss * weights).sum() * self.w_p_segm})
                 elif self.loss_name == "ce":
-                    weights = segm_conf / segm_conf.sum()
-                    losses.update({"loss_unsup_segm": (loss * weights).sum() * self.w_pseudo * self.w_p_segm})
-                    weights = torch.cat([weights for _ in range(self.uv_loss_channels)])
+                    # weights = segm_conf / segm_conf.sum()
+                    losses.update({"loss_unsup_segm": loss.mean() * self.w_p_segm})
+                    # weights = torch.cat([weights for _ in range(self.uv_loss_channels)])
                 # losses.update({"loss_unsup_segm": F.cross_entropy(est, torch.argmax(pseudo, dim=1).long()) * self.w_pseudo * self.w_p_segm})
             else:
                 if self.pseudo_threshold < 1:
@@ -414,11 +474,11 @@ class DensePoseChartLoss:
                                     for i in range(self.uv_loss_channels)])
                 # use all uv coordinates
                 # weights = weights.unsqueeze(1) / 25
-                loss = F.smooth_l1_loss(est, pseudo, reduction='mean')
+                loss = F.smooth_l1_loss(est, pseudo, reduction='none')
                 if self.loss_name == "sce":
-                    losses.update({"loss_{}".format(p_key): (loss * weights).sum() * self.w_pseudo * self.w_p_points})
+                    losses.update({"loss_{}".format(p_key): (loss * weights).sum() * self.w_p_points})
                 elif self.loss_name == "ce":
-                    losses.update({"loss_{}".format(p_key): (loss * weights).sum() * self.w_pseudo * self.w_p_points})
+                    losses.update({"loss_{}".format(p_key): loss.mean() * self.w_p_points})
                 # losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points})
         return losses
 

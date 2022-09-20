@@ -10,7 +10,7 @@ from detectron2.engine import HookBase
 class MeanTeacher(HookBase):
     def __init__(
         self,
-        momentum=0.99,
+        momentum=0.999,
         interval=1,
         warm_up=100,
         decay_intervals=None,
@@ -34,6 +34,7 @@ class MeanTeacher(HookBase):
                 self.momentum, 1 - (1 + self.warm_up) / (self.trainer.iter + 1 + self.warm_up)
             )
             self.momentum_update(self.trainer.teacher_model, self.trainer.student_model, momentum)
+        # pass
 
     def after_step(self):
         if self.decay_intervals is None:
@@ -41,11 +42,14 @@ class MeanTeacher(HookBase):
         self.momentum = 1 - (1 - self.momentum) * self.decay_factor ** bisect_right(
             self.decay_intervals, self.trainer.iter
         )
+        # pass
 
     def momentum_update(self, teacher_model, student_model, momentum):
         for (src_name, src_parm), (tgt_name, tgt_parm) in zip(
             student_model.named_parameters(), teacher_model.named_parameters()
         ):
+            # if 'corrector' in src_name:
+            #     continue
             tgt_parm.data.mul_(momentum).add_(src_parm.data, alpha=1 - momentum)
 
     def state_dict(self):

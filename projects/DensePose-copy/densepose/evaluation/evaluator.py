@@ -205,7 +205,7 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_stor
     Returns:
         list[dict]: the results in densepose evaluation format
     """
-    scores = instances.scores.tolist()
+    # scores = instances.scores.tolist()
     classes = instances.pred_classes.tolist()
     raw_boxes_xywh = BoxMode.convert(
         instances.pred_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
@@ -227,7 +227,7 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_stor
             "image_id": img_id,
             "category_id": classes[k],
             "bbox": raw_boxes_xywh[k].tolist(),
-            "score": scores[k],
+            # "score": scores[k],
         }
         results.append({**result, **results_densepose[k]})
     return results
@@ -421,3 +421,157 @@ def build_densepose_evaluator_storage(cfg: CfgNode, output_folder: str):
     else:
         raise ValueError(f"Unknown storage specification: {storage_spec}")
     return storage
+
+
+class DensePoseCOCOSingleEvaluator(DatasetEvaluator):
+    def __init__(
+        self,
+        dataset_name,
+        distributed,
+        output_dir=None,
+        evaluator_type: str = "iuv",
+        min_iou_threshold: float = 0.5,
+        storage: Optional[SingleProcessTensorStorage] = None,
+        embedder=None,
+        should_evaluate_mesh_alignment: bool = False,
+        mesh_alignment_mesh_names: Optional[List[str]] = None,
+    ):
+        self._embedder = embedder
+        self._distributed = distributed
+        self._output_dir = output_dir
+        self._evaluator_type = evaluator_type
+        self._storage = storage
+        self._should_evaluate_mesh_alignment = should_evaluate_mesh_alignment
+
+        assert not (
+            should_evaluate_mesh_alignment and embedder is None
+        ), "Mesh alignment evaluation is activated, but no vertex embedder provided!"
+        if should_evaluate_mesh_alignment:
+            self._mesh_alignment_evaluator = MeshAlignmentEvaluator(
+                embedder,
+                mesh_alignment_mesh_names,
+            )
+
+        self._cpu_device = torch.device("cpu")
+        self._logger = logging.getLogger(__name__)
+
+        self._metadata = MetadataCatalog.get(dataset_name)
+        self._min_threshold = min_iou_threshold
+        # json_file = PathManager.get_local_path(self._metadata.json_file)
+        # with contextlib.redirect_stdout(io.StringIO()):
+        #     self._coco_api = COCO(json_file)
+        # maybe_filter_and_map_categories_cocoapi(dataset_name, self._coco_api)
+
+    def reset(self):
+        self._predictions = []
+
+    def process(self, inputs, outputs):
+        """
+        Args:
+            inputs: the inputs to a COCO model (e.g., GeneralizedRCNN).
+                It is a list of dict. Each dict corresponds to an image and
+                contains keys like "height", "width", "file_name", "image_id".
+            outputs: the outputs of a COCO model. It is a list of dicts with key
+                "instances" that contains :class:`Instances`.
+                The :class:`Instances` object needs to have `densepose` field.
+        """
+        for input, output in zip(inputs, outputs):
+            instances = output["instances"].to(self._cpu_device)
+            if not instances.has("pred_densepose"):
+                continue
+            prediction_list = prediction_to_dict(
+                instances,
+                input["image_id"],
+                self._embedder,
+                self._metadata.class_to_mesh_name,
+                self._storage is not None,
+            )
+            if self._storage is not None:
+                for prediction_dict in prediction_list:
+                    dict_to_store = {}
+                    for field_name in self._storage.data_schema:
+                        dict_to_store[field_name] = prediction_dict[field_name]
+                    record_id = self._storage.put(dict_to_store)
+                    prediction_dict["record_id"] = record_id
+                    prediction_dict["rank"] = get_rank()
+                    for field_name in self._storage.data_schema:
+                        del prediction_dict[field_name]
+            self._predictions.extend(prediction_list)
+
+    def evaluate(self, img_ids=None):
+        if self._distributed:
+            synchronize()
+            predictions = gather(self._predictions)
+            predictions = list(itertools.chain(*predictions))
+        else:
+            predictions = self._predictions
+
+        multi_storage = storage_gather(self._storage) if self._storage is not None else None
+
+        if not is_main_process():
+            return
+        return copy.deepcopy(self._eval_predictions(predictions, multi_storage, img_ids))
+
+    def _eval_predictions(self, predictions, multi_storage=None, img_ids=None):
+        """
+        Evaluate predictions on densepose.
+        Return results with the metrics of the tasks.
+        """
+        self._logger.info("Preparing results for COCO format ...")
+
+        if self._output_dir:
+            PathManager.mkdirs(self._output_dir)
+            file_path = os.path.join(self._output_dir, "coco_densepose_predictions.pth")
+            with PathManager.open(file_path, "wb") as f:
+                torch.save(predictions, f)
+
+        self._logger.info("Evaluating predictions ...")
+        res = OrderedDict()
+        results_gps, results_gpsm, results_segm = _evaluate_predictions_on_coco(
+            self._coco_api,
+            predictions,
+            multi_storage,
+            self._embedder,
+            class_names=self._metadata.get("thing_classes"),
+            min_threshold=self._min_threshold,
+            img_ids=img_ids,
+            output_dir=self._output_dir
+        )
+        res["densepose_gps"] = results_gps
+        res["densepose_gpsm"] = results_gpsm
+        res["densepose_segm"] = results_segm
+        if self._should_evaluate_mesh_alignment:
+            res["densepose_mesh_alignment"] = self._evaluate_mesh_alignment()
+        return res
+
+    def _evaluate_mesh_alignment(self):
+        self._logger.info("Mesh alignment evaluation ...")
+        mean_ge, mean_gps, per_mesh_metrics = self._mesh_alignment_evaluator.evaluate()
+        results = {
+            "GE": mean_ge * 100,
+            "GPS": mean_gps * 100,
+        }
+        mesh_names = set()
+        for metric_name in per_mesh_metrics:
+            for mesh_name, value in per_mesh_metrics[metric_name].items():
+                results[f"{metric_name}-{mesh_name}"] = value * 100
+                mesh_names.add(mesh_name)
+        self._print_mesh_alignment_results(results, mesh_names)
+        return results
+
+    def _print_mesh_alignment_results(self, results: Dict[str, float], mesh_names: Iterable[str]):
+        self._logger.info("Evaluation results for densepose, mesh alignment:")
+        self._logger.info(f'| {"Mesh":13s} | {"GErr":7s} | {"GPS":7s} |')
+        self._logger.info("| :-----------: | :-----: | :-----: |")
+        for mesh_name in mesh_names:
+            ge_key = f"GE-{mesh_name}"
+            ge_str = f"{results[ge_key]:.4f}" if ge_key in results else " "
+            gps_key = f"GPS-{mesh_name}"
+            gps_str = f"{results[gps_key]:.4f}" if gps_key in results else " "
+            self._logger.info(f"| {mesh_name:13s} | {ge_str:7s} | {gps_str:7s} |")
+        self._logger.info("| :-------------------------------: |")
+        ge_key = "GE"
+        ge_str = f"{results[ge_key]:.4f}" if ge_key in results else " "
+        gps_key = "GPS"
+        gps_str = f"{results[gps_key]:.4f}" if gps_key in results else " "
+        self._logger.info(f'| {"MEAN":13s} | {ge_str:7s} | {gps_str:7s} |')

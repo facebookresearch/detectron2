@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-
 from requests import patch
 import torch
+from torch.nn import functional as F
+import numpy as np
 
 
 class ImageResizeTransform:
@@ -131,3 +132,79 @@ class RandErase:
             # self._erase_mask(inputs, patch)
             # self._erase_seg(inputs, patch, fill_val=self.seg_ignore_label)
         return image
+
+
+class RandomResize:
+    def __init__(
+        self,
+        short_edge_length,
+        max_size,
+        sample_styple='choice',
+        interp='bilinear'
+    ):
+        self.is_range = sample_styple == 'range'
+        if self.is_range:
+            assert len(short_edge_length) == 2, (
+                "short_edge_length must be two values using 'range' sample style."
+                f" Got {short_edge_length}!"
+            )
+        
+        self.short_edge_length = short_edge_length
+        self.max_size = max_size,
+        self.sample_stype = sample_styple
+        self.interp = interp
+
+    def __call__(self, inputs):
+        if torch.rand((1, )) < self.prob:
+            for ipt in inputs:
+                # get new h and w
+                hw = ipt['image'].shape[:-2]
+                newhw = self.get_output_shape(hw)
+                # resize the image
+                ipt['image'] = self.apply_image(ipt['image'], newhw)
+                # transform the boxes
+                ipt['gt_box'] = self.apply_box(ipt['gt_box'], newhw, hw)
+                # Resize dont neet to transform densepose annotataions
+    
+    def apply_image(self, image, newhw):
+        newh, neww = newhw
+        align_corners = None if self.interp == 'nearest' else False
+        return F.interpolate(image, (newh, neww), mode=self.interp, align_corners=align_corners)
+
+    def apply_box(self, boxes, newhw, hw):
+        newh, neww = newhw
+        h, w = hw
+        boxes = boxes[:, [0,2,1,3]]
+        boxes[:, :2] = boxes[:, :2] * (neww * 1.0 / w)
+        boxes[:, -2:] = boxes[:, -2:] * (newh * 1.0 / h)
+        return boxes[:, [0,2,1,3]]
+
+    def get_output_shape(self, hw):
+        h, w = hw
+        if self.is_range:
+            size = torch.randint(self.short_edge_length[0], self.short_edge_length[1] + 1, (1,))
+        else:
+            size = torch.tensor(np.random.choice(self.short_edge_length))
+        if size == 0:
+            return None
+        
+        scale = size / self.max_size
+        if h < w:
+            newh, neww = size, scale * w
+        else:
+            newh, neww = scale * h, size
+
+        if max(newh, neww) > self.max_size:
+            scale = self.max_size * 1.0 / max(newh, neww)
+            newh = newh * scale
+            neww = neww * scale
+        neww = int(neww + 0.5)
+        newh = int(newh + 0.5)
+        return (newh, neww)
+
+
+class RandomRotation:
+    def __init__(
+        self
+    ) -> None:
+        pass

@@ -47,9 +47,17 @@ def main(args):
     if args.eval_only:
         model = Trainer.build_model(cfg)
         DensePoseCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
-            cfg.MODEL.WEIGHTS, resume=args.resume
-        )
-        res = Trainer.test(cfg, model)
+            cfg.MODEL.WEIGHTS, resume=args.resume)
+        if cfg.MODEL.SEMI.COR.CRT_ON:
+            corrector = Corrector(cfg)
+            corrector.to(torch.device(cfg.MODEL.DEVICE))
+            corrector.eval()
+            DensePoseCheckpointer(corrector, save_dir=cfg.MODEL.SEMI.COR.OUTPUT_DIR).resume_or_load(
+                cfg.MODEL.SEMI.COR.MODEL_WEIGHTS, resume=args.resume
+            )
+            res = Trainer.single_person_test(cfg, model, None, corrector)
+        else:
+            res = Trainer.single_person_test(cfg, model)
         if cfg.TEST.AUG.ENABLED:
             res.update(Trainer.test_with_TTA(cfg, model))
         if comm.is_main_process():

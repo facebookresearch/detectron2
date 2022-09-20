@@ -274,7 +274,7 @@ def add_semi_sup_config(cfg: CN) -> None:
 
     _C.MODEL.SEMI = CN()
     _C.MODEL.SEMI.META_ARCHITECTURE = "GeneralizedRCNN"
-    _C.MODEL.SEMI.UNSUP_WEIGHTS = 1.
+    # _C.MODEL.SEMI.UNSUP_WEIGHTS = 1.
     _C.MODEL.SEMI.SEGM_WEIGHTS = 0.5
     _C.MODEL.SEMI.POINTS_WEIGHTS = 1.
     _C.MODEL.SEMI.THRESHOLD = 1.  # =1 will not filter pseudo labels
@@ -285,14 +285,21 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.UV_LOSS_CHANNELS = 2
 
     # config for strong augmentation
+    _C.MODEL.SEMI.ERASE_ON = True
     _C.MODEL.SEMI.ERASE_SIZE = [0, 0.2]
     _C.MODEL.SEMI.ERASE_ITER = (3, 9)
 
     # config for corrector
     _C.MODEL.SEMI.COR = CN()
-    _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 512
+    _C.MODEL.SEMI.COR.CRT_ON = False
+    _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 256
     _C.MODEL.SEMI.COR.CONV_HEAD_KERNEL = 3
-    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 3
+    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 4
+    _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 0.1  # 0.01
+    _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.001  # 0.0001
+    _C.MODEL.SEMI.COR.WARM_ITER = 10000
+    _C.MODEL.SEMI.COR.OUTPUT_DIR = './output/corrector'
+    _C.MODEL.SEMI.COR.MODEL_WEIGHTS = None
 
 
 def add_block_config(cfg: CN):
