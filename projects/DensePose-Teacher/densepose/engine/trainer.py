@@ -368,7 +368,6 @@ class Trainer(TrainerBase):
         cfg: CfgNode,
         model: nn.Module,
         evaluators: Optional[Union[DatasetEvaluator, List[DatasetEvaluator]]] = None,
-        corrector = None,
     ):
         """
         Args:
@@ -408,7 +407,7 @@ class Trainer(TrainerBase):
                     results[dataset_name] = {}
                     continue
             if cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE or comm.is_main_process():
-                results_i = inference_on_dataset(model, data_loader, evaluator, corrector)
+                results_i = inference_on_dataset(model, data_loader, evaluator)
             else:
                 results_i = {}
             results[dataset_name] = results_i

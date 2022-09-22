@@ -362,23 +362,26 @@ class Corrector(nn.Module):
         # else:
         #     correct_rate = 1 - (1 + self.correct_warm_iter) / (cur_iter + 1 + self.correct_warm_iter)
         with torch.no_grad():
-            crt_segm = F.softmax(corrections.fine_segm, dim=1)
-            pos_idx = (torch.argmax(crt_segm, dim=1) == self.patch_channels).unsqueeze(1)
+            crt_segm = F.softmax(corrections.fine_segm, dim=1).permute(0, 2, 3, 1)
+            # pos_idx = (torch.argmax(crt_segm, dim=1) == self.patch_channels).unsqueeze(1)
+            pos_idx = (torch.argmax(crt_segm, dim=3) > 0)
 
-            if cur_iter is None:
-                correct_rate = 1
-            else:
-                correct_rate = 1 - (1 + self.correct_warm_iter) / (cur_iter + 1 + self.correct_warm_iter)
+            # if cur_iter is None:
+            #     correct_rate = 1
+            # else:
+            #     correct_rate = 1 - (1 + self.correct_warm_iter) / (cur_iter + 1 + self.correct_warm_iter)
 
             u_corrections = corrections.u.clamp(-0.1, 0.1) # * correct_rate
             v_corrections = corrections.v.clamp(-0.1, 0.1) # * correct_rate
             teacher_outputs.u = (u_corrections + teacher_outputs.u.clamp(0., 1.)).clamp(0., 1.)
             teacher_outputs.v = (v_corrections + teacher_outputs.v.clamp(0., 1.)).clamp(0., 1.)
 
-            pos_idx = pos_idx.expand(-1, self.patch_channels, -1, -1)
-            teacher_outputs.fine_segm[~pos_idx] = (teacher_outputs.fine_segm[~pos_idx] * (1 - correct_rate) + \
-                                                corrections.fine_segm[:, :-1, :, :][~pos_idx]) * correct_rate
-            teacher_outputs.fine_segm = F.softmax(teacher_outputs.fine_segm, dim=1)
+            # teacher_outputs.fine_segm[~pos_idx] = (teacher_outputs.fine_segm[~pos_idx] * (1 - correct_rate) + \
+            #                                     corrections.fine_segm[:, :-1, :, :][~pos_idx]) * correct_rate
+            # teacher_outputs.fine_segm = F.softmax(teacher_outputs.fine_segm, dim=1)
+            # set pseudo fine_segm
+            teacher_outputs.fine_segm = teacher_outputs.fine_segm.argmax(dim=1).float()
+            teacher_outputs.fine_segm[~pos_idx] = 0.
 
     # def segm_loss(self, correction, packed_annotations, interpolator, fine_segm, coarse_segm):
     #     #segm loss - first construct gt for corrector
@@ -528,7 +531,7 @@ class CorrectorPredictor(nn.Module):
         # )
 
         self.segm_correction = ConvTranspose2d(
-            dim_in, dim_out_patches + 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in, 2, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
 
         self.u_correction = ConvTranspose2d(
@@ -591,7 +594,7 @@ class CorrectorPredictorOutput:
         fine_segm = self.fine_segm.to(device)
         u = self.u.to(device)
         v = self.v.to(device)
-        return CorrectorPredictorOutput(fine_segm=fine_segm, u=u, v=v)
+        return CorrectorPredictorOutput(fine_segm=fine_segm, u=u)
 
 
 class NonLocalBlock(nn.Module):
