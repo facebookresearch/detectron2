@@ -21,7 +21,7 @@ from .. import (
     build_densepose_predictor,
     densepose_inference,
 )
-# from ..correction import Corrector
+from ..correction import Corrector
 
 
 class Decoder(nn.Module):
@@ -131,14 +131,15 @@ class DensePoseROIHeads(StandardROIHeads):
         #     sampling_ratio=dp_pooler_sampling_ratio,
         #     pooler_type=dp_pooler_type,
         # )
-        # if cfg.MODEL.SEMI.COR.CRT_ON:
-        #     self.corrector = Corrector(cfg)
-        # else:
-        #     self.corrector = None
+        if cfg.MODEL.SEMI.COR.CRT_ON:
+            self.corrector = Corrector(cfg)
+        else:
+            self.corrector = None
         # self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
         #
         # # the role in semi supervised learning. student or teacher
         self.teacher = False
+        self.iter = 0
 
     def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances]):
         """
@@ -181,9 +182,13 @@ class DensePoseROIHeads(StandardROIHeads):
                 #     corrections = self.corrector(densepose_predictor_outputs, features_dp)
                 # else:
                 #     corrections = None
+                if self.corrector is not None:
+                    densepose_crt_outputs = self.corrector(features_dp, densepose_predictor_outputs)
+                else:
+                    densepose_crt_outputs = None
 
                 densepose_loss_dict = self.densepose_losses(
-                    proposals, densepose_predictor_outputs, embedder=self.embedder, # corrections=corrections,
+                    proposals, densepose_predictor_outputs, embedder=self.embedder, corrections=densepose_crt_outputs,
                 )
                 return densepose_loss_dict
         else:
@@ -202,12 +207,12 @@ class DensePoseROIHeads(StandardROIHeads):
                 #     self.corrector.correct(corrections, densepose_predictor_outputs)
                 # if self.teacher:
                     # self.store_pooler_features(self.densepose_teacher_pooler(features_list, pred_boxes), instances)
-                if self.teacher:
+                if self.teacher and self.corrector is not None:
                     # densepose_predictor_outputs = self.densepose_predictor.forward_without_upsample(densepose_head_outputs)
-                    self.post_process(densepose_predictor_outputs)
-                    self.store_pooler_features(features_dp, instances)
-                else:
-                    densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
+                    # self.post_process(densepose_predictor_outputs)
+                    # self.store_pooler_features(features_dp, instances)
+                    corrections = self.corrector(features_dp, densepose_predictor_outputs)
+                    self.corrector.correct(corrections, densepose_predictor_outputs, self.iter)
             else:
                 densepose_predictor_outputs = None
 
@@ -265,6 +270,9 @@ class DensePoseROIHeads(StandardROIHeads):
             n_i = len(detection_i)
             detection_i.pool_feat = features_dp[k: k + n_i]
             k += n_i
+
+    def set_iter(self, iter):
+        self.iter = iter
 
     def post_process(self, densepose_predictor_outputs):
         densepose_predictor_outputs.coarse_segm = F.softmax(densepose_predictor_outputs.coarse_segm, dim=1)

@@ -61,7 +61,7 @@ class SimpleTrainer(TrainerBase):
         self._data_loader_iter = iter(data_loader)
         self.optimizer = optimizer
         self.strong_aug = strong_aug
-        self.corrector = corrector
+        # self.corrector = corrector
         # self.corrector.eval()
         # for param in corrector.parameters():
         #     param.requires_grad = False
@@ -86,6 +86,7 @@ class SimpleTrainer(TrainerBase):
             x.pred_boxes = x.gt_boxes
             x.pred_classes = x.gt_classes
 
+        self.teacher_model.roi_heads.set_iter(self.iter)
         teacher_output = self.teacher_model.inference(copy.deepcopy(data), teacher_input, do_postprocess=False)
         # for t in teacher_output:
         #     t.pred_densepose.u = (t.pred_densepose.u * 255.0).clamp(0, 255.0) / 255.0
@@ -93,10 +94,10 @@ class SimpleTrainer(TrainerBase):
 
         del teacher_input
 
-        crt_loss = None
-        if self.corrector is not None:
-            correction, crt_loss = self.corrector(teacher_output)
-            self.corrector.correct(correction, teacher_output, self.iter)
+        # crt_loss = None
+        # if self.corrector is not None:
+        #     correction, crt_loss = self.corrector(teacher_output)
+        #     self.corrector.correct(correction, teacher_output, self.iter)
 
         # Construct input data for student model
         for i, x in enumerate(data):
@@ -131,8 +132,8 @@ class SimpleTrainer(TrainerBase):
                 data = aug(data)
 
         loss_dict = self.student_model(data)
-        if crt_loss is not None:
-            loss_dict.update(crt_loss)
+        # if crt_loss is not None:
+        #     loss_dict.update(crt_loss)
         if isinstance(loss_dict, torch.Tensor):
             losses = loss_dict
             loss_dict = {"total_loss": loss_dict}

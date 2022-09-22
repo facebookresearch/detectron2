@@ -12,7 +12,7 @@ from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from .chart import DensePoseChartLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
 from .utils import BilinearInterpolationHelper, LossDict
-# from ..correction import CorrectorPredictorOutput
+from ..correction import CorrectorPredictorOutput
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()
@@ -31,7 +31,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                 self.confidence_model_cfg.uv_confidence.epsilon
             )
 
-    def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any) -> LossDict:
+    def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput = None) -> LossDict:
         """
         Overrides fake losses for fine segmentation and U/V coordinates to
         include computation graphs for additional confidence parameters.
@@ -67,7 +67,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                 ) * 0
             return {"loss_densepose_UV": loss_uv}
         else:
-            return super().produce_fake_densepose_losses_uv(densepose_predictor_outputs) #, corrections)
+            return super().produce_fake_densepose_losses_uv(densepose_predictor_outputs, corrections=corrections)
 
     def produce_densepose_losses_uv(
         self,
@@ -76,7 +76,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
         packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
-        # corrections: CorrectorPredictorOutput=None,
+        corrections: CorrectorPredictorOutput=None,
     ) -> LossDict:
         conf_type = self.confidence_model_cfg.uv_confidence.type
         if self.confidence_model_cfg.uv_confidence.enabled:
@@ -115,7 +115,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
             packed_annotations,
             interpolator,
             j_valid_fg,
-            # corrections,
+            corrections,
         )
 
 
