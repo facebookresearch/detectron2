@@ -31,7 +31,7 @@ class SimpleTrainer(TrainerBase):
     or write your own training loop.
     """
 
-    def __init__(self, models, data_loader, optimizer, strong_aug=None, corrector=None):
+    def __init__(self, models, data_loader, optimizer, strong_aug=None, warm_up_iter=None, crt_on=False):
         """
         Args:
             model: a Dict of torch Module. Takes a data from data_loader and returns a
@@ -65,6 +65,8 @@ class SimpleTrainer(TrainerBase):
         # self.corrector.eval()
         # for param in corrector.parameters():
         #     param.requires_grad = False
+        self.warm_up_iter = warm_up_iter
+        self.crt_on = crt_on
 
     def run_step(self):
         """
@@ -86,7 +88,6 @@ class SimpleTrainer(TrainerBase):
             x.pred_boxes = x.gt_boxes
             x.pred_classes = x.gt_classes
 
-        self.teacher_model.roi_heads.set_iter(self.iter)
         teacher_output = self.teacher_model.inference(copy.deepcopy(data), teacher_input, do_postprocess=False)
         # for t in teacher_output:
         #     t.pred_densepose.u = (t.pred_densepose.u * 255.0).clamp(0, 255.0) / 255.0
@@ -108,13 +109,14 @@ class SimpleTrainer(TrainerBase):
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
 
+            x["cur_iter"] = self.iter
+
             # == block ==
             # pseudo_u = pseudo_label.u_cls
             # pseudo_v = pseudo_label.v_cls
 
             # == cse ==
             # pseudo_embed = pseudo_label.embedding
-
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:
                     # == densepose rcnn ==
@@ -138,6 +140,11 @@ class SimpleTrainer(TrainerBase):
             losses = loss_dict
             loss_dict = {"total_loss": loss_dict}
         else:
+            # if self.crt_on:
+            #     factor = np.exp(-5 * (1 - self.iter / self.warm_up_iter) ** 2)
+            #     loss_dict["loss_unsup_segm"] = loss_dict["loss_unsup_segm"] * factor
+            #     loss_dict["loss_u_p"] = loss_dict["loss_u_p"] * factor
+            #     loss_dict["loss_v_p"] = loss_dict["loss_v_p"] * factor
             losses = sum(loss_dict.values())
 
         """

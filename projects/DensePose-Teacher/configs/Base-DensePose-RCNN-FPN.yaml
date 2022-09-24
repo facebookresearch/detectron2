@@ -1,6 +1,6 @@
 VERSION: 2
 MODEL:
-  META_ARCHITECTURE: "GeneralizedRCNN"
+  META_ARCHITECTURE: "GeneralizedRCNNDP"
   BACKBONE:
     NAME: "build_resnet_fpn_backbone"
   RESNETS:

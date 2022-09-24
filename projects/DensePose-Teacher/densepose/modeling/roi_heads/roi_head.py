@@ -135,13 +135,12 @@ class DensePoseROIHeads(StandardROIHeads):
             self.corrector = Corrector(cfg)
         else:
             self.corrector = None
-        # self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
+        self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
         #
         # # the role in semi supervised learning. student or teacher
         self.teacher = False
-        self.iter = 0
 
-    def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances]):
+    def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances], cur_iter):
         """
         Forward logic of the densepose prediction branch.
 
@@ -187,8 +186,14 @@ class DensePoseROIHeads(StandardROIHeads):
                 else:
                     densepose_crt_outputs = None
 
+                if instances[0].has('cur_iter'):
+                    self.iter = instances[0].get('cur_iter')
+                else:
+                    self.iter = -1
+
                 densepose_loss_dict = self.densepose_losses(
                     proposals, densepose_predictor_outputs, embedder=self.embedder, corrections=densepose_crt_outputs,
+                    cur_iter=cur_iter
                 )
                 return densepose_loss_dict
         else:
@@ -212,7 +217,7 @@ class DensePoseROIHeads(StandardROIHeads):
                     # self.post_process(densepose_predictor_outputs)
                     # self.store_pooler_features(features_dp, instances)
                     corrections = self.corrector(features_dp, densepose_predictor_outputs)
-                    self.corrector.correct(corrections, densepose_predictor_outputs, self.iter)
+                    self.corrector.correct(corrections, densepose_predictor_outputs)
             else:
                 densepose_predictor_outputs = None
 
@@ -225,12 +230,16 @@ class DensePoseROIHeads(StandardROIHeads):
         features: Dict[str, torch.Tensor],
         proposals: List[Instances],
         targets: Optional[List[Instances]] = None,
+        cur_iter = None,
     ):
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
 
         if self.training:
-            losses.update(self._forward_densepose(features, instances))
+            if cur_iter is None:
+                losses.update(self._forward_densepose(features, instances, self.correct_warm_iter))
+            else:
+                losses.update(self._forward_densepose(features, instances, cur_iter))
         return instances, losses
 
     def forward_with_given_boxes(
@@ -255,7 +264,7 @@ class DensePoseROIHeads(StandardROIHeads):
         """
 
         instances = super().forward_with_given_boxes(features, instances)
-        instances = self._forward_densepose(features, instances)
+        instances = self._forward_densepose(features, instances, self.correct_warm_iter)
         return instances
 
     def it_is_teacher(self):
@@ -270,9 +279,6 @@ class DensePoseROIHeads(StandardROIHeads):
             n_i = len(detection_i)
             detection_i.pool_feat = features_dp[k: k + n_i]
             k += n_i
-
-    def set_iter(self, iter):
-        self.iter = iter
 
     def post_process(self, densepose_predictor_outputs):
         densepose_predictor_outputs.coarse_segm = F.softmax(densepose_predictor_outputs.coarse_segm, dim=1)

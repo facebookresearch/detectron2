@@ -18,3 +18,4 @@ from .modeling.test_time_augmentation import (
 )
 from .utils.transform import load_from_cfg
 from .modeling.hrfpn import build_hrfpn_backbone
+from .modeling.meta_arch import GeneralizedRCNNDP

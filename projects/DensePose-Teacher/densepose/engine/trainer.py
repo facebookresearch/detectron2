@@ -19,6 +19,7 @@ from detectron2.evaluation import (
     DatasetEvaluators,
     print_csv_format,
     verify_results,
+    inference_on_dataset,
 )
 from detectron2.solver.build import get_default_optimizer_params, maybe_add_gradient_clipping
 from detectron2.solver import build_lr_scheduler
@@ -39,7 +40,7 @@ from densepose.data import (
     has_inference_based_loaders,
 )
 from densepose.evaluation.d2_evaluator_adapter import Detectron2COCOEvaluatorAdapter
-from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, DensePoseCOCOSingleEvaluator, build_densepose_evaluator_storage, inference_on_dataset, inference_single_on_dataset
+from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, DensePoseCOCOSingleEvaluator, build_densepose_evaluator_storage, inference_single_on_dataset
 from densepose.modeling.cse import Embedder
 from .train_loop import SimpleTrainer
 from .mean_teacher import MeanTeacher
@@ -115,7 +116,9 @@ class Trainer(TrainerBase):
             strong_aug.append(RandErase(size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER))
             # strong_aug.append(RandomResize(short_edge_length=cfg.INPUT.MIN_SIZE_TRAIN, max_size=cfg.INPUT.MAX_SIZE_TRAIN))
 
-        self._trainer = SimpleTrainer({"teacher": teacher_model, "student": student_model}, data_loader, optimizer, strong_aug)
+        warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
+        crt_on = cfg.MODEL.SEMI.COR.CRT_ON
+        self._trainer = SimpleTrainer({"teacher": teacher_model, "student": student_model}, data_loader, optimizer, strong_aug, warm_up_iter, crt_on)
 
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
         self.student_checkpointer = DetectionCheckpointer(

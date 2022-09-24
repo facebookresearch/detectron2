@@ -197,7 +197,7 @@ class Corrector(nn.Module):
         # fmt: on
         pad_size = kernel_size // 2
         n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1) * 3
-        n_channels = n_pred_channels + 256 # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
+        n_channels = n_pred_channels + 256 + 1 # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # self.upsample = ConvTranspose2d(n_pool_channels, n_pred_channels, 4, stride=2, padding=1)
         for i in range(self.n_stacked_convs):
             layer = Conv2d(n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size)
@@ -306,12 +306,15 @@ class Corrector(nn.Module):
 
     def forward(self, features_dp, predictor_outputs):
         fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
-        fine_segm = F.softmax(fine_segm, dim=1)
+        p = F.softmax(fine_segm, dim=1)
 
         u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
         v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
 
-        output = torch.cat((features_dp, fine_segm, u, v), dim=1)
+        fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
+
+        output = torch.cat((features_dp, p, fine_segm_entropy, u, v), dim=1)
+        # output = torch.cat((features_dp, fine_segm), dim=1)
 
         for i in range(self.n_stacked_convs):
             layer_name = self._get_layer_name(i)
@@ -362,26 +365,26 @@ class Corrector(nn.Module):
         # else:
         #     correct_rate = 1 - (1 + self.correct_warm_iter) / (cur_iter + 1 + self.correct_warm_iter)
         with torch.no_grad():
-            crt_segm = F.softmax(corrections.fine_segm, dim=1).permute(0, 2, 3, 1)
+            # crt_segm = F.softmax(corrections.fine_segm, dim=1).permute(0, 2, 3, 1)
             # pos_idx = (torch.argmax(crt_segm, dim=1) == self.patch_channels).unsqueeze(1)
-            pos_idx = (torch.argmax(crt_segm, dim=3) > 0)
+            # pos_idx = (torch.argmax(crt_segm, dim=3) > 0)
 
             # if cur_iter is None:
             #     correct_rate = 1
             # else:
             #     correct_rate = 1 - (1 + self.correct_warm_iter) / (cur_iter + 1 + self.correct_warm_iter)
 
-            u_corrections = corrections.u.clamp(-0.1, 0.1) # * correct_rate
-            v_corrections = corrections.v.clamp(-0.1, 0.1) # * correct_rate
-            teacher_outputs.u = (u_corrections + teacher_outputs.u.clamp(0., 1.)).clamp(0., 1.)
-            teacher_outputs.v = (v_corrections + teacher_outputs.v.clamp(0., 1.)).clamp(0., 1.)
+            # u_corrections = corrections.u.clamp(-1, 1) # * correct_rate
+            # v_corrections = corrections.v.clamp(-1, 1) # * correct_rate
+            # teacher_outputs.u = (u_corrections + teacher_outputs.u.clamp(0., 1.)).clamp(0., 1.)
+            # teacher_outputs.v = (v_corrections + teacher_outputs.v.clamp(0., 1.)).clamp(0., 1.)
 
             # teacher_outputs.fine_segm[~pos_idx] = (teacher_outputs.fine_segm[~pos_idx] * (1 - correct_rate) + \
             #                                     corrections.fine_segm[:, :-1, :, :][~pos_idx]) * correct_rate
             # teacher_outputs.fine_segm = F.softmax(teacher_outputs.fine_segm, dim=1)
             # set pseudo fine_segm
-            teacher_outputs.fine_segm = teacher_outputs.fine_segm.argmax(dim=1).float()
-            teacher_outputs.fine_segm[~pos_idx] = 0.
+            teacher_outputs.fine_segm = teacher_outputs.fine_segm * torch.repeat_interleave(F.softplus(corrections.fine_segm) + 0.01, teacher_outputs.fine_segm.shape[1], dim=1)
+            # teacher_outputs.fine_segm[~pos_idx] = 0.
 
     # def segm_loss(self, correction, packed_annotations, interpolator, fine_segm, coarse_segm):
     #     #segm loss - first construct gt for corrector
@@ -531,7 +534,7 @@ class CorrectorPredictor(nn.Module):
         # )
 
         self.segm_correction = ConvTranspose2d(
-            dim_in, 2, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
 
         self.u_correction = ConvTranspose2d(
@@ -594,7 +597,7 @@ class CorrectorPredictorOutput:
         fine_segm = self.fine_segm.to(device)
         u = self.u.to(device)
         v = self.v.to(device)
-        return CorrectorPredictorOutput(fine_segm=fine_segm, u=u)
+        return CorrectorPredictorOutput(fine_segm=fine_segm, u=u, v=v)
 
 
 class NonLocalBlock(nn.Module):
