@@ -47,7 +47,7 @@ class PanopticDeepLabTargetGenerator(object):
         x = np.arange(0, size, 1, float)
         y = x[:, np.newaxis]
         x0, y0 = 3 * sigma + 1, 3 * sigma + 1
-        self.g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+        self.g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma**2))
 
     def __call__(self, panoptic, segments_info):
         """Generates the training target.

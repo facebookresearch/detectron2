@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
 
+import numpy as np
 from typing import List
 
-import numpy as np
+from detectron2.config import CfgNode as CfgNode_
+from detectron2.config import configurable
 from detectron2.structures import Instances
 from detectron2.structures.boxes import pairwise_iou
-from detectron2.tracking.utils import create_prediction_pairs, LARGE_COST_VALUE
+from detectron2.tracking.utils import LARGE_COST_VALUE, create_prediction_pairs
 
 from .base_tracker import TRACKER_HEADS_REGISTRY
 from .hungarian_tracker import BaseHungarianTracker
-from detectron2.config import configurable, CfgNode as CfgNode_
 
 
 @TRACKER_HEADS_REGISTRY.register()
@@ -30,7 +31,7 @@ class VanillaHungarianBBoxIOUTracker(BaseHungarianTracker):
         min_box_rel_dim: float = 0.02,
         min_instance_period: int = 1,
         track_iou_threshold: float = 0.5,
-        **kwargs
+        **kwargs,
     ):
         """
         Args:
@@ -53,7 +54,7 @@ class VanillaHungarianBBoxIOUTracker(BaseHungarianTracker):
             max_num_instances=max_num_instances,
             max_lost_frame_count=max_lost_frame_count,
             min_box_rel_dim=min_box_rel_dim,
-            min_instance_period=min_instance_period
+            min_instance_period=min_instance_period,
         )
         self._track_iou_threshold = track_iou_threshold
 
@@ -84,7 +85,7 @@ class VanillaHungarianBBoxIOUTracker(BaseHungarianTracker):
             "max_lost_frame_count": max_lost_frame_count,
             "min_box_rel_dim": min_box_rel_dim,
             "min_instance_period": min_instance_period,
-            "track_iou_threshold": track_iou_threshold
+            "track_iou_threshold": track_iou_threshold,
         }
 
     def build_cost_matrix(self, instances: Instances, prev_instances: Instances) -> np.ndarray:
@@ -106,10 +107,7 @@ class VanillaHungarianBBoxIOUTracker(BaseHungarianTracker):
             boxes2=self._prev_instances.pred_boxes,
         )
         bbox_pairs = create_prediction_pairs(
-            instances,
-            self._prev_instances,
-            iou_all,
-            threshold=self._track_iou_threshold
+            instances, self._prev_instances, iou_all, threshold=self._track_iou_threshold
         )
         # assign large cost value to make sure pair below IoU threshold won't be matched
         cost_matrix = np.full((len(instances), len(prev_instances)), LARGE_COST_VALUE)

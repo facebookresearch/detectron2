@@ -14,14 +14,9 @@ from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_i
 from .shared import get_pb_arg_vali, get_pb_arg_vals, save_graph
 
 __all__ = [
-    "add_export_config",
     "Caffe2Model",
     "Caffe2Tracer",
 ]
-
-
-def add_export_config(cfg):
-    return cfg
 
 
 class Caffe2Tracer:

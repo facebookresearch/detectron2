@@ -99,14 +99,21 @@ class SemanticSegmentor(nn.Module):
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(images, self.backbone.size_divisibility)
+        images = ImageList.from_tensors(
+            images,
+            self.backbone.size_divisibility,
+            padding_constraints=self.backbone.padding_constraints,
+        )
 
         features = self.backbone(images.tensor)
 
         if "sem_seg" in batched_inputs[0]:
             targets = [x["sem_seg"].to(self.device) for x in batched_inputs]
             targets = ImageList.from_tensors(
-                targets, self.backbone.size_divisibility, self.sem_seg_head.ignore_value
+                targets,
+                self.backbone.size_divisibility,
+                self.sem_seg_head.ignore_value,
+                self.backbone.padding_constraints,
             ).tensor
         else:
             targets = None

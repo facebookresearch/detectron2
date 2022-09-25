@@ -367,7 +367,7 @@ class EventStorage:
             max=ht_max,
             num=len(hist_tensor),
             sum=float(hist_tensor.sum()),
-            sum_squares=float(torch.sum(hist_tensor ** 2)),
+            sum_squares=float(torch.sum(hist_tensor**2)),
             bucket_limits=hist_edges[1:].tolist(),
             bucket_counts=hist_counts.tolist(),
             global_step=self._iter,

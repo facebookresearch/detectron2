@@ -37,7 +37,7 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
 
     PredictorOutput = make_dataclass(
         BasePredictorOutput.__name__ + "WithConfidences",
-        fields=[  # pyre-ignore[6]
+        fields=[
             ("sigma_1", Optional[torch.Tensor], None),
             ("sigma_2", Optional[torch.Tensor], None),
             ("kappa_u", Optional[torch.Tensor], None),

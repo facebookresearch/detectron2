@@ -7,6 +7,7 @@ from torch.nn import functional as F
 
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ConvTranspose2d, ShapeSpec, cat, get_norm
+from detectron2.layers.wrappers import move_device_like
 from detectron2.structures import Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
@@ -141,7 +142,12 @@ def mask_rcnn_inference(pred_mask_logits: torch.Tensor, pred_instances: List[Ins
         # Select masks corresponding to the predicted classes
         num_masks = pred_mask_logits.shape[0]
         class_pred = cat([i.pred_classes for i in pred_instances])
-        indices = torch.arange(num_masks, device=class_pred.device)
+        device = (
+            class_pred.device
+            if torch.jit.is_scripting()
+            else ("cpu" if torch.jit.is_tracing() else class_pred.device)
+        )
+        indices = move_device_like(torch.arange(num_masks, device=device), class_pred)
         mask_probs_pred = pred_mask_logits[indices, class_pred][:, None].sigmoid()
     # mask_probs_pred.shape: (B, 1, Hmask, Wmask)
 

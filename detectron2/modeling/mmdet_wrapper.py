@@ -56,8 +56,6 @@ class MMDetBackbone(Backbone):
             neck: either a backbone module or a mmdet config dict that defines a
                 neck. The neck takes outputs of backbone and returns a
                 sequence of tensors. If None, no neck is used.
-            pretrained_backbone: defines the backbone weights that can be loaded by
-                mmdet, such as "torchvision://resnet50".
             output_shapes: shape for every output of the backbone (or neck, if given).
                 stride and channels are often needed.
             output_names: names for every output of the backbone (or neck, if given).

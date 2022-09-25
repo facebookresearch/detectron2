@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import numpy as np
 import unittest
 from typing import Dict
-
-import numpy as np
 import torch
+
 from detectron2.config import instantiate
 from detectron2.structures import Boxes, Instances
 
@@ -75,7 +75,7 @@ class TestBaseHungarianTracker(unittest.TestCase):
             "max_lost_frame_count": self._max_lost_frame_count,
             "min_box_rel_dim": self._min_box_rel_dim,
             "min_instance_period": self._min_instance_period,
-            "track_iou_threshold": self._track_iou_threshold
+            "track_iou_threshold": self._track_iou_threshold,
         }
         tracker = instantiate(cfg)
         self.assertTrue(tracker._video_height == self._img_size[0])
@@ -89,7 +89,7 @@ class TestBaseHungarianTracker(unittest.TestCase):
             "max_lost_frame_count": self._max_lost_frame_count,
             "min_box_rel_dim": self._min_box_rel_dim,
             "min_instance_period": self._min_instance_period,
-            "track_iou_threshold": self._track_iou_threshold
+            "track_iou_threshold": self._track_iou_threshold,
         }
         tracker = instantiate(cfg)
         instances = tracker._initialize_extra_fields(self._curr_instances)

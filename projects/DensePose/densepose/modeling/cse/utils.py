@@ -32,9 +32,7 @@ def normalize_embeddings(embeddings: torch.Tensor, epsilon: float = 1e-6) -> tor
     Return:
         Normalized embeddings (tensor [N, D]), such that L2 vector norms are all equal to 1.
     """
-    return embeddings / torch.clamp(
-        embeddings.norm(p=None, dim=1, keepdim=True), min=epsilon  # pyre-ignore[6]
-    )
+    return embeddings / torch.clamp(embeddings.norm(p=None, dim=1, keepdim=True), min=epsilon)
 
 
 def get_closest_vertices_mask_from_ES(
@@ -63,9 +61,7 @@ def get_closest_vertices_mask_from_ES(
         Closest Vertices (tensor [h, w]), int, for every point of the resulting box
         Segmentation mask (tensor [h, w]), boolean, for every point of the resulting box
     """
-    # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int, int]`.
     embedding_resized = F.interpolate(E, size=(h, w), mode="bilinear")[0].to(device)
-    # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int, int]`.
     coarse_segm_resized = F.interpolate(S, size=(h, w), mode="bilinear")[0].to(device)
     mask = coarse_segm_resized.argmax(0) > 0
     closest_vertices = torch.zeros(mask.shape, dtype=torch.long, device=device)

@@ -143,14 +143,14 @@ class TestMaskCropPaste(unittest.TestCase):
         for d in [5.0, 10.0, 1000.0]:
             polygon = PolygonMasks([[[0, 0, 0, d, d, d, d, 0]]])
             area = polygon.area()[0]
-            target = d ** 2
+            target = d**2
             self.assertEqual(area, target)
 
         # Draw polygon triangles
         for d in [5.0, 10.0, 1000.0]:
             polygon = PolygonMasks([[[0, 0, 0, d, d, d]]])
             area = polygon.area()[0]
-            target = d ** 2 / 2
+            target = d**2 / 2
             self.assertEqual(area, target)
 
     def test_paste_mask_scriptable(self):

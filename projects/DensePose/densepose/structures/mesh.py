@@ -135,6 +135,8 @@ def load_mesh_data(
     mesh_fpath: str, field: str, device: Optional[torch.device] = None
 ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
     with PathManager.open(mesh_fpath, "rb") as hFile:
+        # pyre-fixme[7]: Expected `Tuple[Optional[Tensor], Optional[Tensor]]` but
+        #  got `Tensor`.
         return torch.as_tensor(pickle.load(hFile)[field], dtype=torch.float).to(  # pyre-ignore[6]
             device
         )
