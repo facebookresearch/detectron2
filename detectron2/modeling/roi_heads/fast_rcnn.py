@@ -357,8 +357,8 @@ class FastRCNNOutputLayers(nn.Module):
         """
         Args:
             gt_classes: a long tensor of shape R that contains the gt class label of each proposal.
-            num_fed_loss_classes: number of classes to keep in total, including both unique gt
-                classes and sampled negative classes
+            num_fed_loss_classes: minimum number of classes to keep when calculating federated loss.
+            Will sample negative classes if number of unique gt_classes is smaller than this value.
             num_classes: number of foreground classes
             weight: probabilities used to sample negative classes
 
@@ -377,6 +377,8 @@ class FastRCNNOutputLayers(nn.Module):
                 prob, num_fed_loss_classes - len(unique_gt_classes), replacement=False
             )
             fed_loss_classes = torch.cat([unique_gt_classes, sampled_negative_classes])
+        else:
+            fed_loss_classes = unique_gt_classes
         return fed_loss_classes
 
     # Implementation from https://github.com/xingyizhou/CenterNet2/blob/master/projects/CenterNet2/centernet/modeling/roi_heads/custom_fast_rcnn.py#L113  # noqa

@@ -202,7 +202,7 @@ class DefaultAnchorGenerator(nn.Module):
 
         anchors = []
         for size in sizes:
-            area = size ** 2.0
+            area = size**2.0
             for aspect_ratio in aspect_ratios:
                 # s * s = w * h
                 # a = h / w
@@ -349,7 +349,7 @@ class RotatedAnchorGenerator(nn.Module):
         """
         anchors = []
         for size in sizes:
-            area = size ** 2.0
+            area = size**2.0
             for aspect_ratio in aspect_ratios:
                 # s * s = w * h
                 # a = h / w

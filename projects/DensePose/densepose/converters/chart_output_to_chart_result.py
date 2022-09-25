@@ -36,9 +36,7 @@ def resample_uv_tensors_to_bbox(
     x, y, w, h = box_xywh_abs
     w = max(int(w), 1)
     h = max(int(h), 1)
-    # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int, int]`.
     u_bbox = F.interpolate(u, (h, w), mode="bilinear", align_corners=False)
-    # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got `Tuple[int, int]`.
     v_bbox = F.interpolate(v, (h, w), mode="bilinear", align_corners=False)
     uv = torch.zeros([2, h, w], dtype=torch.float32, device=u.device)
     for part_id in range(1, u_bbox.size(1)):
@@ -140,8 +138,6 @@ def resample_confidences_to_bbox(
     for key in confidence_names:
         resampled_confidence = F.interpolate(
             getattr(predictor_output, key),
-            # pyre-fixme[6]: Expected `Optional[int]` for 2nd param but got
-            #  `Tuple[int, int]`.
             (h, w),
             mode="bilinear",
             align_corners=False,
