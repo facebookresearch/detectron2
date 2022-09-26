@@ -39,6 +39,7 @@ External projects in the community that use detectron2:
  PaperCitation equals 0 otherwise.
  -->
 
+
 + [AdelaiDet](https://github.com/aim-uofa/adet), a detection toolbox including FCOS, BlendMask, etc.
 + [CenterMask](https://github.com/youngwanLEE/centermask2)
 + [Res2Net backbones](https://github.com/Res2Net/Res2Net-detectron2)
@@ -47,3 +48,4 @@ External projects in the community that use detectron2:
 + [Sparse R-CNN](https://github.com/PeizeSun/SparseR-CNN)
 + [BCNet](https://github.com/lkeab/BCNet), a bilayer decoupling instance segmentation method.
 + [DD3D](https://github.com/TRI-ML/dd3d), A fully convolutional 3D detector.
++ [detrex](https://github.com/IDEA-Research/detrex), a detection toolbox for transformer-based detection algorithms including Deformable-DETR, DAB-DETR, DN-DETR, DINO, etc.
