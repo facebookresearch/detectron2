@@ -39,7 +39,6 @@ External projects in the community that use detectron2:
  PaperCitation equals 0 otherwise.
  -->
 
-
 + [AdelaiDet](https://github.com/aim-uofa/adet), a detection toolbox including FCOS, BlendMask, etc.
 + [CenterMask](https://github.com/youngwanLEE/centermask2)
 + [Res2Net backbones](https://github.com/Res2Net/Res2Net-detectron2)
