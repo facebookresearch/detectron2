@@ -312,6 +312,7 @@ class PackedChartBasedAnnotations:
     fine_segm_p: Optional[torch.Tensor]
     u_p: Optional[torch.Tensor]
     v_p: Optional[torch.Tensor]
+    mask_p: Optional[torch.Tensor]
 
 
 class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
@@ -338,6 +339,7 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         self.s_p = []
         self.u_p = []
         self.v_p = []
+        self.mask_p = []
 
     def accumulate(self, instances_one_image: Instances):
         """
@@ -398,6 +400,8 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             self.u_p.append(dp_gt.dp_p_u.unsqueeze(0))
         if hasattr(dp_gt, "dp_p_v"):
             self.v_p.append(dp_gt.dp_p_v.unsqueeze(0))
+        if hasattr(dp_gt, "dp_p_mask"):
+            self.mask_p.append(dp_gt.dp_p_mask.unsqueeze(0))
         
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
         self.bbox_xywh_est.append(box_xywh_est.view(-1, 4))
@@ -437,6 +441,9 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             else None,
             v_p=torch.cat(self.v_p, 0)
             if len(self.v_p) == len(self.bbox_xywh_gt)
+            else None,
+            mask_p=torch.cat(self.mask_p, 0)
+            if len(self.mask_p) == len(self.bbox_xywh_gt)
             else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),

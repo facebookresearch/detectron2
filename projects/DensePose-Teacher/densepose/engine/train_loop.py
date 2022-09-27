@@ -108,6 +108,7 @@ class SimpleTrainer(TrainerBase):
             # == baseline ==
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
+            pseudo_mask = pseudo_label.pos_map
 
             x["cur_iter"] = self.iter
 
@@ -123,6 +124,7 @@ class SimpleTrainer(TrainerBase):
                     densepose_data.set("dp_p_segm", pseudo_segm[j])
                     densepose_data.set("dp_p_u", pseudo_u[j])
                     densepose_data.set("dp_p_v", pseudo_v[j])
+                    densepose_data.set("dp_p_mask", pseudo_mask[j])
 
                     # == cse ==
                     # densepose_data.set("dp_p_embed", pseudo_embed[j])

@@ -305,13 +305,14 @@ class Corrector(nn.Module):
     #     return output, None
 
     def forward(self, features_dp, predictor_outputs):
-        fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
-        p = F.softmax(fine_segm, dim=1)
+        with torch.no_grad():
+            fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
+            p = F.softmax(fine_segm, dim=1)
 
-        u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
-        v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
+            u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
+            v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
 
-        fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
+            fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
 
         output = torch.cat((features_dp, p, fine_segm_entropy, u, v), dim=1)
         # output = torch.cat((features_dp, fine_segm), dim=1)
@@ -383,8 +384,9 @@ class Corrector(nn.Module):
             #                                     corrections.fine_segm[:, :-1, :, :][~pos_idx]) * correct_rate
             # teacher_outputs.fine_segm = F.softmax(teacher_outputs.fine_segm, dim=1)
             # set pseudo fine_segm
-            teacher_outputs.fine_segm = teacher_outputs.fine_segm * torch.repeat_interleave(F.softplus(corrections.fine_segm) + 0.01, teacher_outputs.fine_segm.shape[1], dim=1)
+            # teacher_outputs.fine_segm = teacher_outputs.fine_segm * torch.repeat_interleave(F.softplus(corrections.fine_segm) + 0.01, teacher_outputs.fine_segm.shape[1], dim=1)
             # teacher_outputs.fine_segm[~pos_idx] = 0.
+            teacher_outputs.pos_map = corrections.fine_segm
 
     # def segm_loss(self, correction, packed_annotations, interpolator, fine_segm, coarse_segm):
     #     #segm loss - first construct gt for corrector

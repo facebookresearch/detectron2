@@ -283,6 +283,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
     _C.MODEL.SEMI.LOSS_NAME = "ce"  # ["ce", "sce"]
     _C.MODEL.SEMI.UV_LOSS_CHANNELS = 2
+    _C.MODEL.SEMI.TS_ON = True
 
     # config for strong augmentation
     _C.MODEL.SEMI.ERASE_ON = True
