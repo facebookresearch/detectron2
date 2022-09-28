@@ -11,7 +11,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
-from detectron2.layers import Conv2d, interpolate, ConvTranspose2d
+from detectron2.layers import Conv2d, interpolate, ConvTranspose2d, ASPP, get_norm
 from ..utils import initialize_module_params
 from detectron2.utils.file_io import PathManager
 
@@ -208,6 +208,8 @@ class Corrector(nn.Module):
         self.predictor = CorrectorPredictor(cfg, self.n_out_channels)
         initialize_module_params(self)
         self.non_local = NonLocalBlock(in_channels=n_channels)
+        self.aspp = ASPP(in_channels=n_channels, out_channels=n_channels, dilations=[6, 12, 18], 
+                            norm=get_norm("BN", out_channels=n_channels), activation=F.relu)
 
         self.w_segm = cfg.MODEL.SEMI.COR.SEGM_WEIGHTS
 
@@ -309,8 +311,8 @@ class Corrector(nn.Module):
             fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
             p = F.softmax(fine_segm, dim=1)
 
-            u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
-            v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
+            u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
+            v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
 
             fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
 
@@ -322,6 +324,7 @@ class Corrector(nn.Module):
             output = getattr(self, layer_name)(output)
             output = F.relu(output)
             if (i + 1) == self.n_stacked_convs // 2:
+                output = self.aspp(output)
                 output = self.non_local(output)
         return self.predictor(output)
 

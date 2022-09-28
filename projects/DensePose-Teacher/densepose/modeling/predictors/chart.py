@@ -61,12 +61,8 @@ class DensePoseChartPredictor(nn.Module):
         self.v_lowres = ConvTranspose2d(
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
-        # Fine Segm Calibrate
-        self.ts_on = cfg.MODEL.SEMI.TS_ON
-        if self.ts_on:
-            self.fine_segm_confidence_lowres = ConvTranspose2d(  # pyre-ignore[16]
-                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-            )
+        # Distribution Calibration
+
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
 
@@ -98,17 +94,8 @@ class DensePoseChartPredictor(nn.Module):
             fine_segm=self.interp2d(self.index_uv_lowres(head_outputs)),
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
+            err_local=None,
         )
-        if self.ts_on:
-            output.fine_segm_confidence = (
-                    F.softplus(
-                        self.interp2d(self.fine_segm_confidence_lowres(head_outputs))  # pyre-ignore[16]
-                    )
-                    + self.confidence_model_cfg.segm_confidence.epsilon
-            )
-            output.fine_segm = output.fine_segm * torch.repeat_interleave(
-                output.fine_segm_confidence, output.fine_segm.shape[1], dim=1
-            )
 
         return output
 
@@ -118,4 +105,5 @@ class DensePoseChartPredictor(nn.Module):
             fine_segm=self.index_uv_lowres(head_outputs),
             u=self.u_lowres(head_outputs),
             v=self.v_lowres(head_outputs),
+            err_local=None,
         )

@@ -28,8 +28,7 @@ class DensePoseChartPredictorOutput:
     fine_segm: torch.Tensor
     u: torch.Tensor
     v: torch.Tensor
-    fine_segm_confidence: torch.Tensor
-    pos_map: torch.Tensor
+    err_local: torch.Tensor
 
     def __len__(self):
         """
@@ -60,8 +59,7 @@ class DensePoseChartPredictorOutput:
                 fine_segm=self.fine_segm[item].unsqueeze(0),
                 u=self.u[item].unsqueeze(0),
                 v=self.v[item].unsqueeze(0),
-                fine_segm_confidence=slice_if_not_none(self.fine_segm_confidence, item),
-                pos_map=slice_if_not_none(self.pos_map, item),
+                err_local=slice_if_not_none(self.err_local, item)
             )
         else:
             return DensePoseChartPredictorOutput(
@@ -69,24 +67,23 @@ class DensePoseChartPredictorOutput:
                 fine_segm=self.fine_segm[item],
                 u=self.u[item],
                 v=self.v[item],
-                fine_segm_confidence=slice_if_not_none(self.fine_segm_confidence, item),
-                pos_map=slice_if_not_none(self.pos_map, item),
+                err_local=slice_if_not_none(self.err_local, item)
             )
 
     def to(self, device: torch.device):
         """
         Transfers all tensors to the given device
         """
-        coarse_segm = self.coarse_segm.to(device)
-        fine_segm = self.fine_segm.to(device)
-        u = self.u.to(device)
-        v = self.v.to(device)
 
         def to_device_if_tensor(var: Any):
             if isinstance(var, torch.Tensor):
                 return var.to(device)
             return var
 
-        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v,
-                                             fine_segm_confidence=to_device_if_tensor(self.fine_segm_confidence),
-                                             pos_map=to_device_if_tensor(self.pos_map))
+        coarse_segm = self.coarse_segm.to(device)
+        fine_segm = self.fine_segm.to(device)
+        u = self.u.to(device)
+        v = self.v.to(device)
+        err_local = to_device_if_tensor(self.err_local)
+
+        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v, err_local=err_local)

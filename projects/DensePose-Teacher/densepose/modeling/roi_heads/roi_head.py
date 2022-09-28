@@ -217,7 +217,8 @@ class DensePoseROIHeads(StandardROIHeads):
                     # self.post_process(densepose_predictor_outputs)
                     # self.store_pooler_features(features_dp, instances)
                     corrections = self.corrector(features_dp, densepose_predictor_outputs)
-                    self.corrector.correct(corrections, densepose_predictor_outputs)
+                    densepose_predictor_outputs.err_local = corrections.fine_segm
+                    # self.corrector.correct(corrections, densepose_predictor_outputs)
             else:
                 densepose_predictor_outputs = None
 

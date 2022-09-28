@@ -108,7 +108,7 @@ class SimpleTrainer(TrainerBase):
             # == baseline ==
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
-            pseudo_mask = pseudo_label.pos_map
+            pseudo_mask = pseudo_label.err_local
 
             x["cur_iter"] = self.iter
 
