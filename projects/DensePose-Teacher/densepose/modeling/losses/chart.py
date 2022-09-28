@@ -404,9 +404,8 @@ class DensePoseChartLoss:
 
 
             # error localization
-            with torch.no_grad():
-                segm_est_index = fine_segm_est.argmax(dim=1).long()
-                fine_segm_crt_gt = fine_segm_gt == segm_est_index
+            segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
+            fine_segm_crt_gt = fine_segm_gt == segm_est_index
                 # coarse_segm_crt_gt = coarse_segm_gt == segm_est_index
 
             # coarse_segm_crt_est = torch.zeros()
@@ -417,7 +416,7 @@ class DensePoseChartLoss:
             # crt_loss = F.cross_entropy(fine_segm_crt_est, fine_segm_gt.long(), reduction='none')
             # crt_loss[~index] = crt_loss[~index] * 2
             loss.update({
-                "loss_correction_IS": crt_loss.mean() * self.w_crt_segm
+                "loss_correction_IS": crt_fine_segm_loss.mean() * self.w_crt_segm
             })
 
         return loss

@@ -208,8 +208,8 @@ class Corrector(nn.Module):
         self.predictor = CorrectorPredictor(cfg, self.n_out_channels)
         initialize_module_params(self)
         self.non_local = NonLocalBlock(in_channels=n_channels)
-        self.aspp = ASPP(in_channels=n_channels, out_channels=n_channels, dilations=[6, 12, 18], 
-                            norm=get_norm("BN", out_channels=n_channels), activation=F.relu)
+        # self.aspp = ASPP(in_channels=n_channels, out_channels=n_channels, dilations=[6, 12, 18],
+        #                     norm="BN", activation=F.relu)
 
         self.w_segm = cfg.MODEL.SEMI.COR.SEGM_WEIGHTS
 
@@ -316,7 +316,9 @@ class Corrector(nn.Module):
 
             fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
 
-        output = torch.cat((features_dp, p, fine_segm_entropy, u, v), dim=1)
+            features_input = features_dp.detach()
+
+        output = torch.cat((features_input, p, fine_segm_entropy, u, v), dim=1)
         # output = torch.cat((features_dp, fine_segm), dim=1)
 
         for i in range(self.n_stacked_convs):
@@ -324,7 +326,7 @@ class Corrector(nn.Module):
             output = getattr(self, layer_name)(output)
             output = F.relu(output)
             if (i + 1) == self.n_stacked_convs // 2:
-                output = self.aspp(output)
+                # output = self.aspp(output)
                 output = self.non_local(output)
         return self.predictor(output)
 
