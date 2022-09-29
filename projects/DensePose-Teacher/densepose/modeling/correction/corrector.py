@@ -650,6 +650,9 @@ class NonLocalBlock(nn.Module):
     def forward(self, x):
         batch_size = x.shape[0]
 
+        if batch_size == 0:
+            return x
+
         g_x = self.g(x).view(batch_size, self.inter_channels, -1)
         g_x = g_x.permute(0, 2, 1)
 

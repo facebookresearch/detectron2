@@ -80,10 +80,6 @@ class DensePoseChartLoss:
         self.max_iter = cfg.SOLVER.MAX_ITER
         self.warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
 
-        self.coarse_part_index = np.array(
-            [0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8],
-        )
-
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None, cur_iter=None, **kwargs
     ) -> LossDict:
@@ -472,7 +468,10 @@ class DensePoseChartLoss:
         if getattr(packed_annotations, "fine_segm_p") is None:
             return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
 
-        factor = np.exp(-5 * (1 - cur_iter / self.warm_up_iter) ** 2).clip(0., 1.)
+        if (1 + cur_iter) <= self.warm_up_iter:
+            factor = np.exp(-5 * (1 - cur_iter / self.warm_up_iter) ** 2)
+        else:
+            factor = 1.
 
         est = getattr(densepose_predictor_outputs, "fine_segm")[packed_annotations.bbox_indices]
         est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)

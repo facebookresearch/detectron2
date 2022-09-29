@@ -231,7 +231,7 @@ class DensePoseROIHeads(StandardROIHeads):
         features: Dict[str, torch.Tensor],
         proposals: List[Instances],
         targets: Optional[List[Instances]] = None,
-        cur_iter = None,
+        cur_iter=None,
     ):
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
@@ -273,17 +273,3 @@ class DensePoseROIHeads(StandardROIHeads):
 
     def reset_role(self):
         self.teacher = False
-
-    def store_pooler_features(self, features_dp, detections: List[Instances]):
-        k = 0
-        for detection_i in detections:
-            n_i = len(detection_i)
-            detection_i.pool_feat = features_dp[k: k + n_i]
-            k += n_i
-
-    def post_process(self, densepose_predictor_outputs):
-        densepose_predictor_outputs.coarse_segm = F.softmax(densepose_predictor_outputs.coarse_segm, dim=1)
-        densepose_predictor_outputs.fine_segm = F.softmax(densepose_predictor_outputs.fine_segm, dim=1)
-
-        densepose_predictor_outputs.u = (densepose_predictor_outputs.u * 255.0).clamp(0, 255.0) / 255.0
-        densepose_predictor_outputs.v = (densepose_predictor_outputs.v * 255.0).clamp(0, 255.0) / 255.0

@@ -62,6 +62,11 @@ class DensePoseChartPredictor(nn.Module):
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         # Distribution Calibration
+        self.ts_on = cfg.MODEL.SEMI.TS_ON
+        if self.ts_on:
+            self.ts_factor = ConvTranspose2d(
+                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            )
 
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
@@ -89,9 +94,16 @@ class DensePoseChartPredictor(nn.Module):
         Return:
            An instance of DensePoseChartPredictorOutput
         """
+        fine_segm = self.interp2d(self.index_uv_lowres(head_outputs))
+        if self.ts_on:
+            ts_factor = F.softplus(self.interp2d(self.ts_factor(head_outputs))) + 0.01
+            fine_segm = fine_segm * torch.repeat_interleave(
+                ts_factor, fine_segm.shape[1], dim=1
+            )
+
         output = DensePoseChartPredictorOutput(
             coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
-            fine_segm=self.interp2d(self.index_uv_lowres(head_outputs)),
+            fine_segm=fine_segm,
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
             err_local=None,
