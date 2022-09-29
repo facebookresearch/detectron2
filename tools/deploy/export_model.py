@@ -214,15 +214,14 @@ if __name__ == "__main__":
     DetectionCheckpointer(torch_model).resume_or_load(cfg.MODEL.WEIGHTS)
     torch_model.eval()
 
-    # get sample data
-    sample_inputs = get_sample_inputs(args)
-
     # convert and save model
     if args.export_method == "caffe2_tracing":
+        sample_inputs = get_sample_inputs(args)
         exported_model = export_caffe2_tracing(cfg, torch_model, sample_inputs)
     elif args.export_method == "scripting":
         exported_model = export_scripting(torch_model)
     elif args.export_method == "tracing":
+        sample_inputs = get_sample_inputs(args)
         exported_model = export_tracing(torch_model, sample_inputs)
 
     # run evaluation with the converted model
