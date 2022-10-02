@@ -541,10 +541,14 @@ _C.SOLVER.WEIGHT_DECAY_NORM = 0.0
 _C.SOLVER.GAMMA = 0.1
 # The iteration number to decrease learning rate by GAMMA.
 _C.SOLVER.STEPS = (30000,)
+# Number of decays in WarmupStepWithFixedGammaLR schedule
+_C.SOLVER.NUM_DECAYS = 3
 
 _C.SOLVER.WARMUP_FACTOR = 1.0 / 1000
 _C.SOLVER.WARMUP_ITERS = 1000
 _C.SOLVER.WARMUP_METHOD = "linear"
+# Whether to rescale the interval for the learning schedule after warmup
+_C.SOLVER.RESCALE_INTERVAL = False
 
 # Save a checkpoint after every this number of iterations
 _C.SOLVER.CHECKPOINT_PERIOD = 5000

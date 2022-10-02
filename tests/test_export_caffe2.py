@@ -6,16 +6,26 @@ import os
 import tempfile
 import unittest
 import torch
+from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
-from detectron2.export import Caffe2Model, Caffe2Tracer
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.testing import get_sample_coco_image
+
+try:
+    # Caffe2 used to be included in PyTorch, but since PyTorch 1.10+,
+    # Caffe2 is not included in pre-built packages. This is a safety BC check
+    from detectron2.export import Caffe2Model, Caffe2Tracer
+except ImportError:
+    raise unittest.SkipTest(
+        f"PyTorch does not have Caffe2 support. Skipping all tests in {__name__}"
+    ) from None
 
 
 # TODO: this test requires manifold access, see: T88318502
 # Running it on CircleCI causes crash, not sure why.
 @unittest.skipIf(os.environ.get("CIRCLECI"), "Caffe2 tests crash on CircleCI.")
+@unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
 class TestCaffe2Export(unittest.TestCase):
     def setUp(self):
         setup_logger()

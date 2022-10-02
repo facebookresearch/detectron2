@@ -28,24 +28,21 @@ from detectron2.utils.testing import (
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
+    skipIfOnCPUCI,
 )
+
 
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html
 contains some explanations of this file.
 """
 
-SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
-    os.environ.get("CI") and not torch.cuda.is_available(),
-    "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
-)
-
 
 class TestScripting(unittest.TestCase):
     def testMaskRCNNFPN(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -113,7 +110,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -121,7 +118,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testCascadeRCNN(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -200,7 +197,7 @@ class TestTracing(unittest.TestCase):
             else:
                 assert_instances_allclose(outputs, traced_outputs, size_as_tensor=True)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testMaskRCNNFPN_batched(self):
         def inference_func(model, image1, image2):
             inputs = [{"image": image1}, {"image": image2}]

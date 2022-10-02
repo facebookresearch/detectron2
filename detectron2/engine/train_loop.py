@@ -301,8 +301,13 @@ class SimpleTrainer(TrainerBase):
             self._data_loader_iter_obj = iter(self.data_loader)
         return self._data_loader_iter_obj
 
-    def reset_data_loader(self, data_loader):
+    def reset_data_loader(self, data_loader_builder):
+        """
+        Delete and replace the current data loader with a new one, which will be created
+        by calling `data_loader_builder` (without argument).
+        """
         del self.data_loader
+        data_loader = data_loader_builder()
         self.data_loader = data_loader
         self._data_loader_iter_obj = None
 

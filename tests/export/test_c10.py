@@ -1,9 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import unittest
 
-from detectron2.config import get_cfg
-from detectron2.export.c10 import Caffe2RPN
-from detectron2.layers import ShapeSpec
+try:
+    # Caffe2 used to be included in PyTorch, but since PyTorch 1.10+,
+    # it is not included in pre-built packages. This is a safety BC check
+    from detectron2.config import get_cfg
+    from detectron2.export.c10 import Caffe2RPN
+    from detectron2.layers import ShapeSpec
+except ImportError:
+    raise unittest.SkipTest(
+        f"PyTorch does not have Caffe2 support. Skipping all tests in {__name__}"
+    ) from None
 
 
 class TestCaffe2RPN(unittest.TestCase):

@@ -55,7 +55,7 @@ class TestTrainer(unittest.TestCase):
             model, self._data_loader(device), torch.optim.SGD(model.parameters(), 0.1)
         )
         trainer.train(0, 10)
-        trainer.reset_data_loader(self._data_loader(device))
+        trainer.reset_data_loader(lambda: self._data_loader(device))
         trainer.train(0, 10)
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
