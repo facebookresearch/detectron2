@@ -283,7 +283,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
     _C.MODEL.SEMI.LOSS_NAME = "ce"  # ["ce", "sce"]
     _C.MODEL.SEMI.UV_LOSS_CHANNELS = 2
-    _C.MODEL.SEMI.TS_ON = True
+    _C.MODEL.SEMI.TS_ON = False
 
     # config for strong augmentation
     _C.MODEL.SEMI.ERASE_ON = True
@@ -293,12 +293,12 @@ def add_semi_sup_config(cfg: CN) -> None:
     # config for corrector
     _C.MODEL.SEMI.COR = CN()
     _C.MODEL.SEMI.COR.CRT_ON = False
-    _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 512
+    _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 256
     _C.MODEL.SEMI.COR.CONV_HEAD_KERNEL = 3
-    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 4
+    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 8
     _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 1.  # 0.01
     _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.001  # 0.0001
-    _C.MODEL.SEMI.COR.WARM_ITER = 40000
+    _C.MODEL.SEMI.COR.WARM_ITER = 60000
     _C.MODEL.SEMI.COR.OUTPUT_DIR = './output/corrector'
     _C.MODEL.SEMI.COR.MODEL_WEIGHTS = None
 

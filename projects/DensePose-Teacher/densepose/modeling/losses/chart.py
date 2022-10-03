@@ -393,26 +393,35 @@ class DensePoseChartLoss:
                 w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
                 w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
                 w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
-            )[interpolator.j_valid, :].squeeze(1)
+                )[interpolator.j_valid, :].squeeze(1)
             # alpha
             # fine_segm_crt_est = F.softplus(fine_segm_crt_est) + 0.01
             # fine_segm_crt_est = fine_segm_est * fine_segm_crt_est
-
+            # coarse segm
+            coarse_segm_crt_est = corrections.coarse_segm[packed_annotations.bbox_indices]
 
             # error localization
             segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
-            fine_segm_crt_gt = fine_segm_gt == segm_est_index
+            fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
+            one_loss = fine_segm_crt_gt.sum().detach()
+            zero_loss = (~fine_segm_crt_gt).sum().detach()
                 # coarse_segm_crt_gt = coarse_segm_gt == segm_est_index
 
             # coarse_segm_crt_est = torch.zeros()
 
             crt_fine_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, fine_segm_crt_gt.float(), reduction='none')
+            crt_fine_segm_loss[~fine_segm_crt_gt] *= (one_loss / zero_loss)
+
+            segm_est_index = coarse_segm_est.detach().argmax(dim=1).long()
+            coarse_segm_crt_gt = (coarse_segm_gt > 0).detach().long() == segm_est_index
+
+            crt_coarse_segm_loss = F.binary_cross_entropy_with_logits(coarse_segm_crt_est, coarse_segm_crt_gt.unsqueeze(1).float(), reduction='mean')
             # crt_coarse_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, coarse_segm_crt_gt.float(), reduction='none')
 
             # crt_loss = F.cross_entropy(fine_segm_crt_est, fine_segm_gt.long(), reduction='none')
             # crt_loss[~index] = crt_loss[~index] * 2
             loss.update({
-                "loss_correction_IS": crt_fine_segm_loss.mean() * self.w_crt_segm
+                "loss_correction_IS": (crt_fine_segm_loss.mean() + crt_coarse_segm_loss) * 0.5 * self.w_crt_segm
             })
 
         return loss
@@ -555,7 +564,7 @@ class DensePoseChartLoss:
                 est = est[np.arange(est.shape[0]), pred_index[pos_index]]
 
                 loss = F.smooth_l1_loss(est, pseudo, reduction='none')
-                losses.update({"loss_{}".format(p_k): loss.mean() * self.w_p_points * factor})
+                losses.update({"loss_{}".format(p_k): loss.mean() * self.w_p_points * factor * 0.})
             else:
                 loss = est.sum() * 0
                 losses.update({"loss_{}".format(p_k): loss * self.w_p_points})

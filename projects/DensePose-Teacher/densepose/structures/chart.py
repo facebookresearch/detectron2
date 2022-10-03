@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Union
 import torch
+from typing import Any
 
 
 @dataclass
