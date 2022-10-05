@@ -47,3 +47,4 @@ External projects in the community that use detectron2:
 + [Sparse R-CNN](https://github.com/PeizeSun/SparseR-CNN)
 + [BCNet](https://github.com/lkeab/BCNet), a bilayer decoupling instance segmentation method.
 + [DD3D](https://github.com/TRI-ML/dd3d), A fully convolutional 3D detector.
++ [detrex](https://github.com/IDEA-Research/detrex), a detection toolbox for transformer-based detection algorithms including Deformable-DETR, DAB-DETR, DN-DETR, DINO, etc.

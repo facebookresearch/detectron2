@@ -307,12 +307,19 @@ class FixedSizeCrop(Augmentation):
     it returns the smaller image.
     """
 
-    def __init__(self, crop_size: Tuple[int], pad: bool = True, pad_value: float = 128.0):
+    def __init__(
+        self,
+        crop_size: Tuple[int],
+        pad: bool = True,
+        pad_value: float = 128.0,
+        seg_pad_value: int = 255,
+    ):
         """
         Args:
             crop_size: target image (height, width).
             pad: if True, will pad images smaller than `crop_size` up to `crop_size`
-            pad_value: the padding value.
+            pad_value: the padding value to the image.
+            seg_pad_value: the padding value to the segmentation mask.
         """
         super().__init__()
         self._init(locals())
@@ -341,7 +348,14 @@ class FixedSizeCrop(Augmentation):
         pad_size = np.maximum(pad_size, 0)
         original_size = np.minimum(input_size, output_size)
         return PadTransform(
-            0, 0, pad_size[1], pad_size[0], original_size[1], original_size[0], self.pad_value
+            0,
+            0,
+            pad_size[1],
+            pad_size[0],
+            original_size[1],
+            original_size[0],
+            self.pad_value,
+            self.seg_pad_value,
         )
 
     def get_transform(self, image: np.ndarray) -> TransformList:
