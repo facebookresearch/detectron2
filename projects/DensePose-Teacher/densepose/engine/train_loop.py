@@ -109,6 +109,7 @@ class SimpleTrainer(TrainerBase):
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
             pseudo_mask = pseudo_label.err_local
+            pseudo_sigma = pseudo_label.sigma2
             # == block ==
             # pseudo_u = pseudo_label.u_cls
             # pseudo_v = pseudo_label.v_cls
@@ -122,6 +123,7 @@ class SimpleTrainer(TrainerBase):
                     densepose_data.set("dp_p_u", pseudo_u[j])
                     densepose_data.set("dp_p_v", pseudo_v[j])
                     densepose_data.set("dp_p_mask", pseudo_mask[j])
+                    densepose_data.set("dp_p_sigma", pseudo_sigma[j])
 
                     # == cse ==
                     # densepose_data.set("dp_p_embed", pseudo_embed[j])
@@ -132,7 +134,7 @@ class SimpleTrainer(TrainerBase):
             for aug in self.strong_aug:
                 data = aug(data)
 
-        self.student_model.update_iteration(self.iter)
+        self.student_model.module.update_iteration(self.iter)
 
         loss_dict = self.student_model(data)
         if isinstance(loss_dict, torch.Tensor):

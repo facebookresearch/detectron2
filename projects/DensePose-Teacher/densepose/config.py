@@ -299,9 +299,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 1.  # 0.01
     _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.001  # 0.0001
     _C.MODEL.SEMI.COR.WARM_ITER = 40000
-    _C.MODEL.SEMI.COR.OUTPUT_DIR = './output/corrector'
-    _C.MODEL.SEMI.COR.MODEL_WEIGHTS = None
-
+    # _C.MODEL.SEMI.COR.OUTPUT_DIR = './output/corrector'
 
 def add_block_config(cfg: CN):
     _C = cfg

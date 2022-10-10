@@ -30,6 +30,7 @@ class DensePoseChartPredictorOutput:
     u: torch.Tensor
     v: torch.Tensor
     err_local: torch.Tensor
+    sigma2: torch.Tensor
 
     def __len__(self):
         """
@@ -60,7 +61,8 @@ class DensePoseChartPredictorOutput:
                 fine_segm=self.fine_segm[item].unsqueeze(0),
                 u=self.u[item].unsqueeze(0),
                 v=self.v[item].unsqueeze(0),
-                err_local=slice_if_not_none(self.err_local, item)
+                err_local=slice_if_not_none(self.err_local, item),
+                sigma2=self.sigma2[item].unsqueeze(0)
             )
         else:
             return DensePoseChartPredictorOutput(
@@ -68,7 +70,8 @@ class DensePoseChartPredictorOutput:
                 fine_segm=self.fine_segm[item],
                 u=self.u[item],
                 v=self.v[item],
-                err_local=slice_if_not_none(self.err_local, item)
+                err_local=slice_if_not_none(self.err_local, item),
+                sigma2=self.sigma2[item],
             )
 
     def to(self, device: torch.device):
@@ -86,5 +89,7 @@ class DensePoseChartPredictorOutput:
         u = self.u.to(device)
         v = self.v.to(device)
         err_local = to_device_if_tensor(self.err_local)
+        sigma2 = self.sigma2.to(device)
 
-        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v, err_local=err_local)
+        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v, err_local=err_local,
+                                             sigma2=sigma2)

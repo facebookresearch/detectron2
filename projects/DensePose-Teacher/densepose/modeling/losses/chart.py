@@ -79,6 +79,7 @@ class DensePoseChartLoss:
 
         self.total_iteration = cfg.SOLVER.MAX_ITER
         # self.warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
+        self.log2pi = math.log(2 * math.pi)
 
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None, shuffle=None, iteration=-1, **kwargs
@@ -220,9 +221,9 @@ class DensePoseChartLoss:
         }
 
         losses.update({
-            "loss_correction_U": corrections.u.sum() * 0,
-            "loss_correction_V": corrections.v.sum() * 0,
-            # "loss_correction_UV": corrections.u.sum() * 0
+            # "loss_correction_U": corrections.u.sum() * 0,
+            # "loss_correction_V": corrections.v.sum() * 0,
+            "loss_densepose_UV": (densepose_predictor_outputs.u.sum() + densepose_predictor_outputs.v.sum()) * 0
         })
 
         return losses
@@ -296,29 +297,37 @@ class DensePoseChartLoss:
             "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points,
         }
 
-        if corrections is not None:
-            u_crt_est = interpolator.extract_at_points(corrections.u)[j_valid_fg]
-            v_crt_est = interpolator.extract_at_points(corrections.v)[j_valid_fg]
+        # sigma2
+        sigma2_est = interpolator.extract_at_points(densepose_predictor_outputs.sigma2)[j_valid_fg]
+        sigma2_est = F.softplus(sigma2_est) + 0.01
+        delta_t_delta = (u_est - u_gt) ** 2 + (v_est - v_gt) ** 2
+        loss.update({
+            "loss_densepose_UV": (0.5 * (self.log2pi + 2 * torch.log(sigma2_est) + delta_t_delta / sigma2_est)).sum() * 0.0005
+        })
 
-            # loss distribution
-            # sigma2 = F.softplus(u_crt_est) + 0.01
-
-            with torch.no_grad():
-                u_crt_gt = u_gt - u_est.clamp(0., 1.)
-                v_crt_gt = v_gt - v_est.clamp(0., 1.)
-                # delta_t_delta = (u_gt - u_est.clamp(0., 1.)) ** 2 + (v_gt - v_est.clamp(0., 1.)) ** 2
-
-            # uv_loss = 0.5 * (self.log2pi + 2 * torch.log(sigma2) + delta_t_delta / sigma2)
-            loss.update({
-                "loss_correction_U": F.smooth_l1_loss(u_crt_est, u_crt_gt, reduction='sum') * self.w_crt_points,
-                "loss_correction_V": F.smooth_l1_loss(v_crt_est, v_crt_gt, reduction='sum') * self.w_crt_points,
-                # "loss_correction_UV": uv_loss.sum() * self.w_crt_points
-            })
-        else:
-            loss.update({
-                "loss_correction_U": corrections.u.sum() * 0,
-                "loss_correction_V": corrections.v.sum() * 0,
-            })
+        # if corrections is not None:
+        #     u_crt_est = interpolator.extract_at_points(corrections.u)[j_valid_fg]
+        #     v_crt_est = interpolator.extract_at_points(corrections.v)[j_valid_fg]
+        #
+        #     # loss distribution
+        #     # sigma2 = F.softplus(u_crt_est) + 0.01
+        #
+        #     with torch.no_grad():
+        #         u_crt_gt = u_gt - u_est.clamp(0., 1.)
+        #         v_crt_gt = v_gt - v_est.clamp(0., 1.)
+        #         # delta_t_delta = (u_gt - u_est.clamp(0., 1.)) ** 2 + (v_gt - v_est.clamp(0., 1.)) ** 2
+        #
+        #     # uv_loss = 0.5 * (self.log2pi + 2 * torch.log(sigma2) + delta_t_delta / sigma2)
+        #     loss.update({
+        #         "loss_correction_U": F.smooth_l1_loss(u_crt_est, u_crt_gt, reduction='sum') * self.w_crt_points,
+        #         "loss_correction_V": F.smooth_l1_loss(v_crt_est, v_crt_gt, reduction='sum') * self.w_crt_points,
+        #         # "loss_correction_UV": uv_loss.sum() * self.w_crt_points
+        #     })
+        # else:
+        #     loss.update({
+        #         "loss_correction_U": corrections.u.sum() * 0,
+        #         "loss_correction_V": corrections.v.sum() * 0,
+        #     })
 
         return loss
 
@@ -548,6 +557,19 @@ class DensePoseChartLoss:
             )
             pos_index = torch.sigmoid(pos_index).permute(0, 2, 3, 1).reshape(-1,) > 0.5
 
+            # sigma
+            sigma2 = getattr(packed_annotations, "sigma_p")
+            sigma2 = resample_data(
+                sigma2,
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
+                self.heatmap_size,
+                self.heatmap_size,
+                mode="nearest",
+                padding_mode="zeros",
+            )
+            sigma2 = F.softplus(sigma2).permute(0, 2, 3, 1).reshape(-1, self.n_channels) + 0.01
+
         # prediction = F.softmax(pseudo, dim=1)
         # segm_conf = torch.max(pseudo, dim=1).values
             pred_conf, pred_index = pseudo.permute(0, 2, 3, 1).reshape(-1, self.n_channels).max(dim=1)
@@ -561,19 +583,24 @@ class DensePoseChartLoss:
 
         if pos_index.sum() <= 0:
             return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
+
+        pred_index = pred_index[pos_index]
+        sigma2 = sigma2[pos_index]
+        sigma2 = sigma2[np.arange(sigma2.shape[0]), pred_index]
         # pred_index[~pos_index] = 0
         # weights = segm_conf / segm_conf.sum()
-        loss = F.cross_entropy(est[pos_index], pred_index[pos_index].long(), reduction='mean')
+        loss = F.cross_entropy(est[pos_index], pred_index.long(), reduction='mean')
         # weights = segm_conf / segm_conf.sum()
         losses.update({"loss_unsup_segm": loss * self.w_p_segm * factor})
 
         # weights = torch.cat([weights for _ in range(self.uv_loss_channels)])
         # losses.update({"loss_unsup_segm": F.cross_entropy(est, torch.argmax(pseudo, dim=1).long()) * self.w_pseudo * self.w_p_segm})
+
         for p_k, e_k in zip(pseudo_keys, est_keys):
             if getattr(packed_annotations, p_k) is None:
                 return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
             est = getattr(densepose_predictor_outputs, e_k)[packed_annotations.bbox_indices]
-            est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
+            est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels).clamp(0., 1.)
             with torch.no_grad():
                 pseudo = getattr(packed_annotations, p_k)
                 pseudo = resample_data(
@@ -586,27 +613,21 @@ class DensePoseChartLoss:
                     padding_mode="zeros",
                 )
             pseudo = pseudo.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
-            if self.pseudo_threshold < 1:
-                pseudo = pseudo[mask]
-                est = est[mask]
             # pseudo = torch.cat([pseudo[np.arange(pseudo.shape[0]), pred_index[:, i]]
             #                        for i in range(self.uv_loss_channels)])
             # est = torch.cat([est[np.arange(pred_index.shape[0]), pred_index[:, i]]
             #                     for i in range(self.uv_loss_channels)])
-            if pos_index.sum() > 0:
-                # pseudo = pseudo.permute(0, 2, 3, 1)[pos_index].reshape(-1, self.n_channels)
-                # est = est.permute(0, 2, 3, 1)[pos_index].reshape(-1, self.n_channels)
-                # pseudo = pseudo[np.arange(pseudo.shape[0]), pred_index]
-                # est = est[np.arange(pseudo.shape[0]), pred_index]
-                pseudo, est = pseudo[pos_index], est[pos_index]
-                pseudo = pseudo[np.arange(pseudo.shape[0]), pred_index[pos_index]]
-                est = est[np.arange(est.shape[0]), pred_index[pos_index]]
+            # pseudo = pseudo.permute(0, 2, 3, 1)[pos_index].reshape(-1, self.n_channels)
+            # est = est.permute(0, 2, 3, 1)[pos_index].reshape(-1, self.n_channels)
+            # pseudo = pseudo[np.arange(pseudo.shape[0]), pred_index]
+            # est = est[np.arange(pseudo.shape[0]), pred_index]
+            pseudo, est = pseudo[pos_index], est[pos_index]
+            pseudo = pseudo[np.arange(pseudo.shape[0]), pred_index]
+            est = est[np.arange(est.shape[0]), pred_index]
 
-                loss = F.smooth_l1_loss(est, pseudo, reduction='none')
-                losses.update({"loss_{}".format(p_k): loss.mean() * self.w_p_points * factor * 0.})
-            else:
-                loss = est.sum() * 0
-                losses.update({"loss_{}".format(p_k): loss * self.w_p_points})
+            loss = F.smooth_l1_loss(est, pseudo, reduction='none')
+            loss *= torch.exp(-sigma2)
+            losses.update({"loss_{}".format(p_k): loss.mean() * self.w_p_points * factor})
 
             # use all uv coordinates
             # weights = weights.unsqueeze(1) / 25

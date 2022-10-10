@@ -5,6 +5,8 @@ MODEL:
     DEPTH: 50
   ROI_DENSEPOSE_HEAD:
     DECODER_ON: True
+    LOSS_NAME: "DensePoseChartLoss"
+    PREDICTOR_NAME: "DensePoseChartPredictor"
   SEMI:
     TEACHER_WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
     COR:

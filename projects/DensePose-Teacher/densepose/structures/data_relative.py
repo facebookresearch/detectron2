@@ -59,6 +59,8 @@ class DensePoseDataRelative(object):
 
     # Key for pseudo embeddings
     PSEUDO_MASK = "dp_p_mask"
+    # Key for pseudo sigma
+    PSEUDO_SIGMA = "dp_p_sigma"
 
     def __init__(self, annotation, cleanup=False):
         self.x = torch.as_tensor(annotation[DensePoseDataRelative.X_KEY])
@@ -104,6 +106,8 @@ class DensePoseDataRelative(object):
             new_data.dp_p_v = self.dp_p_v
         if hasattr(self, "dp_p_mask"):
             new_data.dp_p_mask = self.dp_p_mask
+        if hasattr(self, "dp_p_sigma"):
+            new_data.dp_p_sigma = self.dp_p_sigma
         new_data.device = device
         return new_data
 
@@ -193,6 +197,7 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.PSEUDO_U,
             DensePoseDataRelative.PSEUDO_V,
             DensePoseDataRelative.PSEUDO_MASK,
+            DensePoseDataRelative.PSEUDO_SIGMA
         ]:
             if key in annotation:
                 del annotation[key]
