@@ -67,6 +67,8 @@ class GeneralizedRCNNDP(nn.Module):
             self.pixel_mean.shape == self.pixel_std.shape
         ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
 
+        self.iteration = -1
+
     @classmethod
     def from_config(cls, cfg):
         backbone = build_backbone(cfg)
@@ -163,12 +165,7 @@ class GeneralizedRCNNDP(nn.Module):
             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
             proposal_losses = {}
 
-        if 'cur_iter' in batched_inputs[0]:
-            cur_iter = batched_inputs[0]['cur_iter']
-        else:
-            cur_iter = None
-
-        _, detector_losses = self.roi_heads(images, features, proposals, gt_instances, cur_iter)
+        _, detector_losses = self.roi_heads(images, features, proposals, gt_instances, iteration=self.iteration)
         if self.vis_period > 0:
             storage = get_event_storage()
             if storage.iter % self.vis_period == 0:
@@ -252,3 +249,6 @@ class GeneralizedRCNNDP(nn.Module):
             r = detector_postprocess(results_per_image, height, width)
             processed_results.append({"instances": r})
         return processed_results
+
+    def update_iteration(self, iteration):
+        self.iteration = iteration

@@ -197,7 +197,7 @@ class Corrector(nn.Module):
         # fmt: on
         pad_size = kernel_size // 2
         n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1) * 3 + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
-        n_channels = n_pred_channels + 256 + 2 # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
+        n_channels = n_pred_channels + 256 + 1 # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # self.upsample = ConvTranspose2d(n_pool_channels, n_pred_channels, 4, stride=2, padding=1)
         for i in range(self.n_stacked_convs):
             layer = Conv2d(n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size)
@@ -219,7 +219,7 @@ class Corrector(nn.Module):
         if self.correct_warm_iter == 0:
             self.correct_warm_iter = cfg.SOLVER.MAX_ITER
 
-        self.symm_parts_index = [0, 2, 1, 3, 4, 5, 6, 9, 7, 10, 8, 13, 11, 14, 12, 17, 15, 18, 16, 21, 19, 22, 20, 24, 23]
+        # self.symm_parts_index = [0, 2, 1, 3, 4, 5, 6, 9, 7, 10, 8, 13, 11, 14, 12, 17, 15, 18, 16, 21, 19, 22, 20, 24, 23]
 
         logger = logging.getLogger(__name__)
         logger.info(f"Adding Corrector ...")
@@ -304,7 +304,7 @@ class Corrector(nn.Module):
 
     #     return output, None
 
-    def forward(self, features_dp, predictor_outputs):
+    def forward(self, features_dp, predictor_outputs, shuffle=None):
         with torch.no_grad():
             fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
             coarse_segm = F.interpolate(predictor_outputs.coarse_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
@@ -315,17 +315,16 @@ class Corrector(nn.Module):
             v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
 
             fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
-            coarse_segm_entropy = torch.sum(-coarse_segm * F.log_softmax(coarse_segm, dim=1), dim=1).unsqueeze(1)
+            # coarse_segm_entropy = torch.sum(-coarse_segm * F.log_softmax(coarse_segm, dim=1), dim=1).unsqueeze(1)
 
             features_input = features_dp.detach()
 
-        output = torch.cat((features_input, coarse_segm, coarse_segm_entropy, p, fine_segm_entropy, u, v), dim=1)
+        output = torch.cat((features_input, coarse_segm, p, fine_segm_entropy, u, v), dim=1)
+        # output = torch.cat((features_input, p, fine_segm_entropy, u, v), dim=1)
 
-        # if self.training:
-        #     output_2 = torch.cat((features_input, coarse_segm[:, self.symm_parts_index, :, :], coarse_segm_entropy,
-        #                           p[:, self.symm_parts_index, :, :], fine_segm_entropy, u, v))
+        # if self.training and shuffle is not None:
+        #     output_2 = torch.cat((features_input, p[:, shuffle, :, :], fine_segm_entropy, u, v), dim=1)
         #     output = torch.cat((output, output_2), dim=0)
-        # output = torch.cat((features_dp, fine_segm), dim=1)
 
         for i in range(self.n_stacked_convs):
             layer_name = self._get_layer_name(i)
@@ -610,8 +609,8 @@ class CorrectorPredictorOutput:
         fine_segm = self.fine_segm.to(device)
         u = self.u.to(device)
         v = self.v.to(device)
-        return CorrectorPredictorOutput(fine_segm=fine_segm, u=u, v=v)
-
+        return CorrectorPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v)
+        # return CorrectorPredictorOutput(fine_segm=fine_segm, u=u, v=v)
 
 class NonLocalBlock(nn.Module):
     def __init__(self, in_channels, inter_channels=None, mode='embedded', bn_layer=True) -> None:

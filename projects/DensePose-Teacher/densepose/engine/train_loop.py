@@ -109,9 +109,6 @@ class SimpleTrainer(TrainerBase):
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
             pseudo_mask = pseudo_label.err_local
-
-            x["cur_iter"] = self.iter
-
             # == block ==
             # pseudo_u = pseudo_label.u_cls
             # pseudo_v = pseudo_label.v_cls
@@ -135,18 +132,13 @@ class SimpleTrainer(TrainerBase):
             for aug in self.strong_aug:
                 data = aug(data)
 
+        self.student_model.update_iteration(self.iter)
+
         loss_dict = self.student_model(data)
-        # if crt_loss is not None:
-        #     loss_dict.update(crt_loss)
         if isinstance(loss_dict, torch.Tensor):
             losses = loss_dict
             loss_dict = {"total_loss": loss_dict}
         else:
-            # if self.crt_on:
-            #     factor = np.exp(-5 * (1 - self.iter / self.warm_up_iter) ** 2)
-            #     loss_dict["loss_unsup_segm"] = loss_dict["loss_unsup_segm"] * factor
-            #     loss_dict["loss_u_p"] = loss_dict["loss_u_p"] * factor
-            #     loss_dict["loss_v_p"] = loss_dict["loss_v_p"] * factor
             losses = sum(loss_dict.values())
 
         """

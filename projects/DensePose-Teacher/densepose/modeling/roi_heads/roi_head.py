@@ -140,7 +140,7 @@ class DensePoseROIHeads(StandardROIHeads):
         # # the role in semi supervised learning. student or teacher
         self.teacher = False
 
-    def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances], cur_iter):
+    def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances], iteration):
         """
         Forward logic of the densepose prediction branch.
 
@@ -182,18 +182,15 @@ class DensePoseROIHeads(StandardROIHeads):
                 # else:
                 #     corrections = None
                 if self.corrector is not None:
+                    # shuffle = torch.randperm(25)
                     densepose_crt_outputs = self.corrector(features_dp, densepose_predictor_outputs)
                 else:
+                    # shuffle = None
                     densepose_crt_outputs = None
-
-                if instances[0].has('cur_iter'):
-                    self.iter = instances[0].get('cur_iter')
-                else:
-                    self.iter = -1
 
                 densepose_loss_dict = self.densepose_losses(
                     proposals, densepose_predictor_outputs, embedder=self.embedder, corrections=densepose_crt_outputs,
-                    cur_iter=cur_iter
+                    shuffle=None, iteration=iteration
                 )
                 return densepose_loss_dict
         else:
@@ -231,16 +228,13 @@ class DensePoseROIHeads(StandardROIHeads):
         features: Dict[str, torch.Tensor],
         proposals: List[Instances],
         targets: Optional[List[Instances]] = None,
-        cur_iter=None,
+        iteration=-1,
     ):
         instances, losses = super().forward(images, features, proposals, targets)
         del targets, images
 
         if self.training:
-            if cur_iter is None:
-                losses.update(self._forward_densepose(features, instances, self.correct_warm_iter))
-            else:
-                losses.update(self._forward_densepose(features, instances, cur_iter))
+            losses.update(self._forward_densepose(features, instances, iteration))
         return instances, losses
 
     def forward_with_given_boxes(
