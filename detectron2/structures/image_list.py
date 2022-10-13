@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import division
-from tracemalloc import is_tracing
 from typing import Any, Dict, List, Optional, Tuple
 import torch
 from torch import device
