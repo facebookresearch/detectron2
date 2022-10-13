@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import division
+from tracemalloc import is_tracing
 from typing import Any, Dict, List, Optional, Tuple
 import torch
 from torch import device
@@ -98,6 +99,8 @@ class ImageList(object):
         if size_divisibility > 1:
             stride = size_divisibility
             # the last two dims are H,W, both subject to divisibility requirement
+            if torch.jit.is_tracing():
+                stride = torch.tensor(stride)
             max_size = (max_size + (stride - 1)).div(stride, rounding_mode="floor") * stride
 
         # handle weirdness of scripting and tracing ...
