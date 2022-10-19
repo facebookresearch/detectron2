@@ -1,10 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import copy
+import glob
 import json
 import os
 import random
 import tempfile
 import unittest
+import zipfile
 import torch
 from torch import Tensor, nn
 
@@ -25,24 +28,21 @@ from detectron2.utils.testing import (
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
+    skipIfOnCPUCI,
 )
+
 
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html
 contains some explanations of this file.
 """
 
-SLOW_PUBLIC_CPU_TEST = unittest.skipIf(
-    os.environ.get("CI") and not torch.cuda.is_available(),
-    "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
-)
-
 
 class TestScripting(unittest.TestCase):
     def testMaskRCNNFPN(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -110,7 +110,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -118,7 +118,7 @@ class TestTracing(unittest.TestCase):
 
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml", inference_func)
 
-    @SLOW_PUBLIC_CPU_TEST
+    @skipIfOnCPUCI
     def testCascadeRCNN(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -133,6 +133,32 @@ class TestTracing(unittest.TestCase):
             return model.forward([{"image": image}])[0]["instances"]
 
         self._test_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml", inference_func)
+
+    def _check_torchscript_no_hardcoded_device(self, jitfile, extract_dir, device):
+        zipfile.ZipFile(jitfile).extractall(extract_dir)
+        dir_path = os.path.join(extract_dir, os.path.splitext(os.path.basename(jitfile))[0])
+        error_files = []
+        for f in glob.glob(f"{dir_path}/code/**/*.py", recursive=True):
+            content = open(f).read()
+            if device in content:
+                error_files.append((f, content))
+        if len(error_files):
+            msg = "\n".join(f"{f}\n{content}" for f, content in error_files)
+            raise ValueError(f"Found device '{device}' in following files:\n{msg}")
+
+    def _get_device_casting_test_cases(self, model):
+        # Indexing operation can causes hardcoded device type before 1.10
+        if not TORCH_VERSION >= (1, 10) or torch.cuda.device_count() == 0:
+            return [None]
+
+        testing_devices = ["cpu", "cuda:0"]
+        if torch.cuda.device_count() > 1:
+            testing_devices.append(f"cuda:{torch.cuda.device_count() - 1}")
+        assert str(model.device) in testing_devices
+        testing_devices.remove(str(model.device))
+        testing_devices = [None] + testing_devices  # test no casting first
+
+        return testing_devices
 
     def _test_model(self, config_path, inference_func, batch=1):
         model = model_zoo.get(config_path, trained=True)
@@ -149,15 +175,29 @@ class TestTracing(unittest.TestCase):
             )
             traced_model = torch.jit.trace(wrapper, trace_inputs)
 
-            outputs = inference_func(model, *inputs)
-            traced_outputs = wrapper.outputs_schema(traced_model(*inputs))
-        if batch > 1:
-            for output, traced_output in zip(outputs, traced_outputs):
-                assert_instances_allclose(output, traced_output, size_as_tensor=True)
-        else:
-            assert_instances_allclose(outputs, traced_outputs, size_as_tensor=True)
+        testing_devices = self._get_device_casting_test_cases(model)
+        # save and load back the model in order to show traceback of TorchScript
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            basename = "model"
+            jitfile = f"{d}/{basename}.jit"
+            torch.jit.save(traced_model, jitfile)
+            traced_model = torch.jit.load(jitfile)
 
-    @SLOW_PUBLIC_CPU_TEST
+            if any(device and "cuda" in device for device in testing_devices):
+                self._check_torchscript_no_hardcoded_device(jitfile, d, "cuda")
+
+        for device in testing_devices:
+            print(f"Testing casting to {device} for inference (traced on {model.device}) ...")
+            with torch.no_grad():
+                outputs = inference_func(copy.deepcopy(model).to(device), *inputs)
+                traced_outputs = wrapper.outputs_schema(traced_model.to(device)(*inputs))
+            if batch > 1:
+                for output, traced_output in zip(outputs, traced_outputs):
+                    assert_instances_allclose(output, traced_output, size_as_tensor=True)
+            else:
+                assert_instances_allclose(outputs, traced_outputs, size_as_tensor=True)
+
+    @skipIfOnCPUCI
     def testMaskRCNNFPN_batched(self):
         def inference_func(model, image1, image2):
             inputs = [{"image": image1}, {"image": image2}]

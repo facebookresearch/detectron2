@@ -4,7 +4,7 @@ import math
 from typing import List, Tuple, Union
 import torch
 
-from detectron2.layers import batched_nms, cat
+from detectron2.layers import batched_nms, cat, move_device_like
 from detectron2.structures import Boxes, Instances
 
 logger = logging.getLogger(__name__)
@@ -58,13 +58,17 @@ def find_top_rpn_proposals(
             objectness score in descending order.
     """
     num_images = len(image_sizes)
-    device = proposals[0].device
+    device = (
+        proposals[0].device
+        if torch.jit.is_scripting()
+        else ("cpu" if torch.jit.is_tracing() else proposals[0].device)
+    )
 
     # 1. Select top-k anchor for every level and every image
     topk_scores = []  # #lvl Tensor, each of shape N x topk
     topk_proposals = []
     level_ids = []  # #lvl Tensor, each of shape (topk,)
-    batch_idx = torch.arange(num_images, device=device)
+    batch_idx = move_device_like(torch.arange(num_images, device=device), proposals[0])
     for level_id, (proposals_i, logits_i) in enumerate(zip(proposals, pred_objectness_logits)):
         Hi_Wi_A = logits_i.shape[1]
         if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
@@ -79,7 +83,12 @@ def find_top_rpn_proposals(
 
         topk_proposals.append(topk_proposals_i)
         topk_scores.append(topk_scores_i)
-        level_ids.append(torch.full((num_proposals_i,), level_id, dtype=torch.int64, device=device))
+        level_ids.append(
+            move_device_like(
+                torch.full((num_proposals_i,), level_id, dtype=torch.int64, device=device),
+                proposals[0],
+            )
+        )
 
     # 2. Concat all levels together
     topk_scores = cat(topk_scores, dim=1)

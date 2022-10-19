@@ -13,7 +13,7 @@ You can also implement your own `DatasetEvaluator` that performs some other jobs
 using the inputs/outputs pairs.
 For example, to count how many instances are detected on the validation set:
 
-```
+```python
 class Counter(DatasetEvaluator):
   def reset(self):
     self.count = 0
@@ -28,7 +28,7 @@ class Counter(DatasetEvaluator):
 ## Use evaluators
 
 To evaluate using the methods of evaluators manually:
-```
+```python
 def get_all_inputs_outputs():
   for data in data_loader:
     yield data, model(data)

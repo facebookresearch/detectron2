@@ -119,7 +119,10 @@ class PanopticFPN(GeneralizedRCNN):
         assert "sem_seg" in batched_inputs[0]
         gt_sem_seg = [x["sem_seg"].to(self.device) for x in batched_inputs]
         gt_sem_seg = ImageList.from_tensors(
-            gt_sem_seg, self.backbone.size_divisibility, self.sem_seg_head.ignore_value
+            gt_sem_seg,
+            self.backbone.size_divisibility,
+            self.sem_seg_head.ignore_value,
+            self.backbone.padding_constraints,
         ).tensor
         sem_seg_results, sem_seg_losses = self.sem_seg_head(features, gt_sem_seg)
 

@@ -207,6 +207,10 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
             self.assertEqual(out.scores.dtype, torch.float16)
 
 
+class FCOSE2ETest(InstanceModelE2ETest, unittest.TestCase):
+    CONFIG_PATH = "COCO-Detection/fcos_R_50_FPN_1x.py"
+
+
 class SemSegE2ETest(unittest.TestCase):
     CONFIG_PATH = "Misc/semantic_R_50_FPN_1x.yaml"
 

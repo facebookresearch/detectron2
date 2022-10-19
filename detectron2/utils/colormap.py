@@ -6,8 +6,9 @@ Copied from Detectron, and removed gray colors.
 """
 
 import numpy as np
+import random
 
-__all__ = ["colormap", "random_color"]
+__all__ = ["colormap", "random_color", "random_colors"]
 
 # fmt: off
 # RGB:
@@ -121,6 +122,23 @@ def random_color(rgb=False, maximum=255):
     ret = _COLORS[idx] * maximum
     if not rgb:
         ret = ret[::-1]
+    return ret
+
+
+def random_colors(N, rgb=False, maximum=255):
+    """
+    Args:
+        N (int): number of unique colors needed
+        rgb (bool): whether to return RGB colors or BGR colors.
+        maximum (int): either 255 or 1
+
+    Returns:
+        ndarray: a list of random_color
+    """
+    indices = random.sample(range(len(_COLORS)), N)
+    ret = [_COLORS[i] * maximum for i in indices]
+    if not rgb:
+        ret = [x[::-1] for x in ret]
     return ret
 
 

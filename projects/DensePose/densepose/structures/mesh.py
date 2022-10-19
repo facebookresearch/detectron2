@@ -135,6 +135,8 @@ def load_mesh_data(
     mesh_fpath: str, field: str, device: Optional[torch.device] = None
 ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
     with PathManager.open(mesh_fpath, "rb") as hFile:
+        # pyre-fixme[7]: Expected `Tuple[Optional[Tensor], Optional[Tensor]]` but
+        #  got `Tensor`.
         return torch.as_tensor(pickle.load(hFile)[field], dtype=torch.float).to(  # pyre-ignore[6]
             device
         )
@@ -166,5 +168,5 @@ def load_mesh_symmetry(
 
 
 @lru_cache()
-def create_mesh(mesh_name: str, device: Optional[torch.device] = None):
+def create_mesh(mesh_name: str, device: Optional[torch.device] = None) -> Mesh:
     return Mesh(mesh_info=MeshCatalog[mesh_name], device=device)

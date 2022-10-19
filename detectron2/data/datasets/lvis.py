@@ -10,6 +10,7 @@ from detectron2.utils.file_io import PathManager
 from .builtin_meta import _get_coco_instances_meta
 from .lvis_v0_5_categories import LVIS_CATEGORIES as LVIS_V0_5_CATEGORIES
 from .lvis_v1_categories import LVIS_CATEGORIES as LVIS_V1_CATEGORIES
+from .lvis_v1_category_image_count import LVIS_CATEGORY_IMAGE_COUNT as LVIS_V1_CATEGORY_IMAGE_COUNT
 
 """
 This file contains functions to parse LVIS-format annotations into dicts in the
@@ -205,7 +206,7 @@ def _get_lvis_instances_meta_v1():
     # Ensure that the category list is sorted by id
     lvis_categories = sorted(LVIS_V1_CATEGORIES, key=lambda x: x["id"])
     thing_classes = [k["synonyms"][0] for k in lvis_categories]
-    meta = {"thing_classes": thing_classes}
+    meta = {"thing_classes": thing_classes, "class_image_count": LVIS_V1_CATEGORY_IMAGE_COUNT}
     return meta
 
 

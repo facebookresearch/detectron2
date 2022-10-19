@@ -99,6 +99,8 @@ class Embedder(nn.Module):
                 state_dict = pickle.load(hFile, encoding="latin1")  # pyre-ignore[6]
         else:
             with PathManager.open(fpath, "rb") as hFile:
+                # pyre-fixme[6]: For 1st param expected `Union[PathLike[typing.Any],
+                #  IO[bytes], str, BinaryIO]` but got `Union[IO[bytes], IO[str]]`.
                 state_dict = torch.load(hFile, map_location=torch.device("cpu"))
         if state_dict is not None and "model" in state_dict:
             state_dict_local = {}
@@ -109,8 +111,6 @@ class Embedder(nn.Module):
                         v_key = torch.from_numpy(v_key)
                     state_dict_local[key[len(prefix) :]] = v_key
             # non-strict loading to finetune on different meshes
-            # pyre-fixme[6]: Expected `OrderedDict[typing.Any, typing.Any]` for 1st
-            #  param but got `Dict[typing.Any, typing.Any]`.
             self.load_state_dict(state_dict_local, strict=False)
 
     def forward(self, mesh_name: str) -> torch.Tensor:

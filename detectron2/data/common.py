@@ -141,7 +141,7 @@ class DatasetFromList(data.Dataset):
             self._addr = np.asarray([len(x) for x in self._lst], dtype=np.int64)
             self._addr = np.cumsum(self._addr)
             self._lst = np.concatenate(self._lst)
-            logger.info("Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024 ** 2))
+            logger.info("Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024**2))
 
     def __len__(self):
         if self._serialize:
@@ -237,5 +237,8 @@ class AspectRatioGroupedDataset(data.IterableDataset):
             bucket = self._buckets[bucket_id]
             bucket.append(d)
             if len(bucket) == self.batch_size:
-                yield bucket[:]
+                data = bucket[:]
+                # Clear bucket first, because code after yield is not
+                # guaranteed to execute
                 del bucket[:]
+                yield data

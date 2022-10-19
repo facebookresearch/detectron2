@@ -8,7 +8,7 @@ from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 from torchvision.ops import deform_conv2d
 
-from detectron2 import _C
+from detectron2.utils.develop import create_dummy_class, create_dummy_func
 
 from .wrappers import _NewEmptyTensorOp
 
@@ -47,6 +47,7 @@ class _DeformConv(Function):
         ctx.bufs_ = [input.new_empty(0), input.new_empty(0)]  # columns, ones
 
         if not input.is_cuda:
+            # TODO: let torchvision support full features of our deformconv.
             if deformable_groups != 1:
                 raise NotImplementedError(
                     "Deformable Conv with deformable_groups != 1 is not supported on CPUs!"
@@ -499,3 +500,15 @@ class ModulatedDeformConv(nn.Module):
         tmpstr += ", deformable_groups=" + str(self.deformable_groups)
         tmpstr += ", bias=" + str(self.with_bias)
         return tmpstr
+
+
+try:
+    from detectron2 import _C
+except ImportError:
+    # TODO: register ops natively so there is no need to import _C.
+    _msg = "detectron2 is not compiled successfully, please build following the instructions!"
+    _args = ("detectron2._C", _msg)
+    DeformConv = create_dummy_class("DeformConv", *_args)
+    ModulatedDeformConv = create_dummy_class("ModulatedDeformConv", *_args)
+    deform_conv = create_dummy_func("deform_conv", *_args)
+    modulated_deform_conv = create_dummy_func("modulated_deform_conv", *_args)

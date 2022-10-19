@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional, Tuple
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit
-from torch import Tensor, nn
+from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, batched_nms
@@ -18,7 +18,6 @@ from .dense_detector import DenseDetector
 from .retinanet import RetinaNetHead
 
 __all__ = ["FCOS"]
-
 
 logger = logging.getLogger(__name__)
 
@@ -96,77 +95,100 @@ class FCOS(DenseDetector):
         )
 
     @torch.no_grad()
-    def match_anchors(self, anchors: List[Boxes], gt_instances: List[Instances]):
+    def _match_anchors(self, gt_boxes: Boxes, anchors: List[Boxes]):
         """
-        Match anchors with ground truth boxes.
+        Match ground-truth boxes to a set of multi-level anchors.
 
         Args:
-            anchors: #level boxes, from the highest resolution to lower resolution
-            gt_instances: ground truth instances per image
+            gt_boxes: Ground-truth boxes from instances of an image.
+            anchors: List of anchors for each feature map (of different scales).
 
         Returns:
-            List[Tensor]:
-                #image tensors, each is a vector of matched gt
-                indices (or -1 for unmatched anchors) for all anchors.
+            torch.Tensor
+                A tensor of shape `(M, R)`, given `M` ground-truth boxes and total
+                `R` anchor points from all feature levels, indicating the quality
+                of match between m-th box and r-th anchor. Higher value indicates
+                better match.
         """
+        # Naming convention: (M = ground-truth boxes, R = anchor points)
+        # Anchor points are represented as square boxes of size = stride.
         num_anchors_per_level = [len(x) for x in anchors]
-        anchors = Boxes.cat(anchors)  # Rx4
-        anchor_centers = anchors.get_centers()  # Rx2
-        anchor_sizes = anchors.tensor[:, 2] - anchors.tensor[:, 0]  # R
+        anchors = Boxes.cat(anchors)  # (R, 4)
+        anchor_centers = anchors.get_centers()  # (R, 2)
+        anchor_sizes = anchors.tensor[:, 2] - anchors.tensor[:, 0]  # (R, )
 
         lower_bound = anchor_sizes * 4
         lower_bound[: num_anchors_per_level[0]] = 0
         upper_bound = anchor_sizes * 8
         upper_bound[-num_anchors_per_level[-1] :] = float("inf")
 
-        matched_indices = []
-        for gt_per_image in gt_instances:
-            gt_centers = gt_per_image.gt_boxes.get_centers()  # Nx2
-            # FCOS with center sampling: anchor point must be close enough to gt center.
-            pairwise_match = (anchor_centers[:, None, :] - gt_centers[None, :, :]).abs_().max(
-                dim=2
-            ).values < self.center_sampling_radius * anchor_sizes[:, None]
-            pairwise_dist = pairwise_point_box_distance(anchor_centers, gt_per_image.gt_boxes)
+        gt_centers = gt_boxes.get_centers()
 
-            # The original FCOS anchor matching rule: anchor point must be inside gt
-            pairwise_match &= pairwise_dist.min(dim=2).values > 0
+        # FCOS with center sampling: anchor point must be close enough to
+        # ground-truth box center.
+        center_dists = (anchor_centers[None, :, :] - gt_centers[:, None, :]).abs_()
+        sampling_regions = self.center_sampling_radius * anchor_sizes[None, :]
 
-            # Multilevel anchor matching in FCOS: each anchor is only responsible
-            # for certain scale range.
-            pairwise_dist = pairwise_dist.max(dim=2).values
-            pairwise_match &= (pairwise_dist > lower_bound[:, None]) & (
-                pairwise_dist < upper_bound[:, None]
-            )
+        match_quality_matrix = center_dists.max(dim=2).values < sampling_regions
 
-            # Match the GT box with minimum area, if there are multiple GT matches
-            gt_areas = gt_per_image.gt_boxes.area()  # N
-            pairwise_match = pairwise_match.to(torch.float32) * (1e8 - gt_areas[None, :])
-            min_values, matched_idx = pairwise_match.max(dim=1)  # R, per-anchor match
-            matched_idx[min_values < 1e-5] = -1  # Unmatched anchors are assigned -1
+        pairwise_dist = pairwise_point_box_distance(anchor_centers, gt_boxes)
+        pairwise_dist = pairwise_dist.permute(1, 0, 2)  # (M, R, 4)
 
-            matched_indices.append(matched_idx)
-        return matched_indices
+        # The original FCOS anchor matching rule: anchor point must be inside GT.
+        match_quality_matrix &= pairwise_dist.min(dim=2).values > 0
+
+        # Multilevel anchor matching in FCOS: each anchor is only responsible
+        # for certain scale range.
+        pairwise_dist = pairwise_dist.max(dim=2).values
+        match_quality_matrix &= (pairwise_dist > lower_bound[None, :]) & (
+            pairwise_dist < upper_bound[None, :]
+        )
+        # Match the GT box with minimum area, if there are multiple GT matches.
+        gt_areas = gt_boxes.area()  # (M, )
+
+        match_quality_matrix = match_quality_matrix.to(torch.float32)
+        match_quality_matrix *= 1e8 - gt_areas[:, None]
+        return match_quality_matrix  # (M, R)
 
     @torch.no_grad()
-    def label_anchors(self, anchors, gt_instances):
+    def label_anchors(self, anchors: List[Boxes], gt_instances: List[Instances]):
         """
         Same interface as :meth:`RetinaNet.label_anchors`, but implemented with FCOS
         anchor matching rule.
 
         Unlike RetinaNet, there are no ignored anchors.
         """
-        matched_indices = self.match_anchors(anchors, gt_instances)
 
-        matched_labels, matched_boxes = [], []
-        for gt_index, gt_per_image in zip(matched_indices, gt_instances):
-            label = gt_per_image.gt_classes[gt_index.clip(min=0)]
-            label[gt_index < 0] = self.num_classes  # background
+        gt_labels, matched_gt_boxes = [], []
 
-            matched_gt_boxes = gt_per_image.gt_boxes[gt_index.clip(min=0)]
+        for inst in gt_instances:
+            if len(inst) > 0:
+                match_quality_matrix = self._match_anchors(inst.gt_boxes, anchors)
 
-            matched_labels.append(label)
-            matched_boxes.append(matched_gt_boxes)
-        return matched_labels, matched_boxes
+                # Find matched ground-truth box per anchor. Un-matched anchors are
+                # assigned -1. This is equivalent to using an anchor matcher as used
+                # in R-CNN/RetinaNet: `Matcher(thresholds=[1e-5], labels=[0, 1])`
+                match_quality, matched_idxs = match_quality_matrix.max(dim=0)
+                matched_idxs[match_quality < 1e-5] = -1
+
+                matched_gt_boxes_i = inst.gt_boxes.tensor[matched_idxs.clip(min=0)]
+                gt_labels_i = inst.gt_classes[matched_idxs.clip(min=0)]
+
+                # Anchors with matched_idxs = -1 are labeled background.
+                gt_labels_i[matched_idxs < 0] = self.num_classes
+            else:
+                matched_gt_boxes_i = torch.zeros_like(Boxes.cat(anchors).tensor)
+                gt_labels_i = torch.full(
+                    (len(matched_gt_boxes_i),),
+                    fill_value=self.num_classes,
+                    dtype=torch.long,
+                    device=matched_gt_boxes_i.device,
+                )
+
+            gt_labels.append(gt_labels_i)
+            matched_gt_boxes.append(matched_gt_boxes_i)
+
+        return gt_labels, matched_gt_boxes
 
     def losses(
         self, anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes, pred_centerness
@@ -176,7 +198,7 @@ class FCOS(DenseDetector):
         "loss_centerness" in the returned dict.
         """
         num_images = len(gt_labels)
-        gt_labels = torch.stack(gt_labels)  # (N, R)
+        gt_labels = torch.stack(gt_labels)  # (M, R)
 
         pos_mask = (gt_labels >= 0) & (gt_labels != self.num_classes)
         num_pos_anchors = pos_mask.sum().item()
@@ -199,13 +221,13 @@ class FCOS(DenseDetector):
             anchors,
             self.box2box_transform,
             pred_anchor_deltas,
-            [x.tensor for x in gt_boxes],
+            gt_boxes,
             pos_mask,
             box_reg_loss_type="giou",
         )
 
-        ctrness_targets = self.compute_ctrness_targets(anchors, gt_boxes)  # NxR
-        pred_centerness = torch.cat(pred_centerness, dim=1).squeeze(dim=2)  # NxR
+        ctrness_targets = self.compute_ctrness_targets(anchors, gt_boxes)  # (M, R)
+        pred_centerness = torch.cat(pred_centerness, dim=1).squeeze(dim=2)  # (M, R)
         ctrness_loss = F.binary_cross_entropy_with_logits(
             pred_centerness[pos_mask], ctrness_targets[pos_mask], reduction="sum"
         )
@@ -215,9 +237,9 @@ class FCOS(DenseDetector):
             "loss_fcos_ctr": ctrness_loss / normalizer,
         }
 
-    def compute_ctrness_targets(self, anchors, gt_boxes):  # NxR
+    def compute_ctrness_targets(self, anchors: List[Boxes], gt_boxes: List[torch.Tensor]):
         anchors = Boxes.cat(anchors).tensor  # Rx4
-        reg_targets = [self.box2box_transform.get_deltas(anchors, m.tensor) for m in gt_boxes]
+        reg_targets = [self.box2box_transform.get_deltas(anchors, m) for m in gt_boxes]
         reg_targets = torch.stack(reg_targets, dim=0)  # NxRx4
         if len(reg_targets) == 0:
             return reg_targets.new_zeros(len(reg_targets))
@@ -229,7 +251,10 @@ class FCOS(DenseDetector):
         return torch.sqrt(ctrness)
 
     def forward_inference(
-        self, images: ImageList, features: List[Tensor], predictions: List[List[Tensor]]
+        self,
+        images: ImageList,
+        features: List[torch.Tensor],
+        predictions: List[List[torch.Tensor]],
     ):
         pred_logits, pred_anchor_deltas, pred_centerness = self._transpose_dense_predictions(
             predictions, [self.num_classes, 4, 1]
@@ -254,8 +279,8 @@ class FCOS(DenseDetector):
     def inference_single_image(
         self,
         anchors: List[Boxes],
-        box_cls: List[Tensor],
-        box_delta: List[Tensor],
+        box_cls: List[torch.Tensor],
+        box_delta: List[torch.Tensor],
         image_size: Tuple[int, int],
     ):
         """

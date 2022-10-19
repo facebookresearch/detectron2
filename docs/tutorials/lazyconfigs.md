@@ -66,7 +66,7 @@ cfg = L(Trainer)(
 )
 ```
 creates a dictionary like this:
-```
+```python
 cfg = {
   "_target_": "my_app.Trainer",
   "optimizer": {
@@ -122,7 +122,7 @@ Despite of this, our model zoo configs still follow some simple conventions for 
 `cfg.model` defines a model object, `cfg.dataloader.{train,test}` defines dataloader objects,
 and `cfg.train` contains training options in key-value form.
 In addition to `print()`, a better way to view the structure of a config is like this:
-```
+```python
 from detectron2.model_zoo import get_config
 from detectron2.config import LazyConfig
 print(LazyConfig.to_py(get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py")))

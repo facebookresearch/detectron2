@@ -193,7 +193,7 @@ class BilinearInterpolationHelper:
 
 
 def resample_data(
-    z, bbox_xywh_src, bbox_xywh_dst, wout, hout, mode="nearest", padding_mode="zeros"
+    z, bbox_xywh_src, bbox_xywh_dst, wout, hout, mode: str = "nearest", padding_mode: str = "zeros"
 ):
     """
     Args:

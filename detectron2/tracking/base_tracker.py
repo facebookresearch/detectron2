@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
-from detectron2.config import CfgNode as CfgNode_
 from detectron2.config import configurable
-from detectron2.structures import Instances
 from detectron2.utils.registry import Registry
+
+from ..config.config import CfgNode as CfgNode_
+from ..structures import Instances
 
 TRACKER_HEADS_REGISTRY = Registry("TRACKER_HEADS")
 TRACKER_HEADS_REGISTRY.__doc__ = """
@@ -51,7 +52,13 @@ class BaseTracker(object):
 
 def build_tracker_head(cfg: CfgNode_) -> BaseTracker:
     """
-    Build a semantic segmentation head from `cfg.MODEL.SEM_SEG_HEAD.NAME`.
+    Build a tracker head from `cfg.TRACKER_HEADS.TRACKER_NAME`.
+
+    Args:
+        cfg: D2 CfgNode, config file with tracker information
+    Return:
+        tracker object
     """
-    name = cfg.TRACKING.TRACKER_NAME
-    return TRACKER_HEADS_REGISTRY.get(name)(cfg)
+    name = cfg.TRACKER_HEADS.TRACKER_NAME
+    tracker_class = TRACKER_HEADS_REGISTRY.get(name)
+    return tracker_class(cfg)

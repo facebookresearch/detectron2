@@ -103,7 +103,7 @@ def get_model_config(config_file):
     path = os.path.join(_get_base_config_dir(), config_file)
     cfg.merge_from_file(path)
     if not torch.cuda.is_available():
-        cfg.MODEL_DEVICE = "cpu"
+        cfg.MODEL.DEVICE = "cpu"
     return cfg
 
 
