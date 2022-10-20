@@ -37,6 +37,7 @@ __all__ = [
     "ResizeScale",
     "ResizeShortestEdge",
     "RandomCrop_CategoryAreaConstraint",
+    "RandomResize",
 ]
 
 
@@ -626,3 +627,21 @@ class RandomLighting(Augmentation):
         return BlendTransform(
             src_image=self.eigen_vecs.dot(weights * self.eigen_vals), src_weight=1.0, dst_weight=1.0
         )
+
+
+class RandomResize(Augmentation):
+    """Randomly resize image to a target size in shape_list"""
+
+    def __init__(self, shape_list, interp=Image.BILINEAR):
+        """
+        Args:
+            shape_list: a list of shapes in (h, w)
+            interp: PIL interpolation method
+        """
+        self.shape_list = shape_list
+        self._init(locals())
+
+    def get_transform(self, image):
+        shape_idx = np.random.randint(low=0, high=len(self.shape_list))
+        h, w = self.shape_list[shape_idx]
+        return ResizeTransform(image.shape[0], image.shape[1], h, w, self.interp)
