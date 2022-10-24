@@ -60,13 +60,6 @@ class SimpleTrainer(TrainerBase):
         self.data_loader = data_loader
         self._data_loader_iter = iter(data_loader)
         self.optimizer = optimizer
-        self.strong_aug = strong_aug
-        # self.corrector = corrector
-        # self.corrector.eval()
-        # for param in corrector.parameters():
-        #     param.requires_grad = False
-        self.warm_up_iter = warm_up_iter
-        self.crt_on = crt_on
 
     def run_step(self):
         """
@@ -83,56 +76,49 @@ class SimpleTrainer(TrainerBase):
         """
         Firstly, Use teacher model to get pseudo labels
         """
-        teacher_input = [x["instances"] for x in data]
-        for x in teacher_input:
-            x.pred_boxes = x.gt_boxes
-            x.pred_classes = x.gt_classes
+        teacher_bbox = [x.pop('detected_instances') for x in data]
 
-        teacher_output = self.teacher_model.inference(copy.deepcopy(data), teacher_input, do_postprocess=False)
-        # for t in teacher_output:
-        #     t.pred_densepose.u = (t.pred_densepose.u * 255.0).clamp(0, 255.0) / 255.0
-        #     t.pred_densepose.v = (t.pred_densepose.v * 255.0).clamp(0, 255.0) / 255.0
+        teacher_output = self.teacher_model.inference(data, teacher_bbox, do_postprocess=False)
 
-        del teacher_input
-
-        # crt_loss = None
-        # if self.corrector is not None:
-        #     correction, crt_loss = self.corrector(teacher_output)
-        #     self.corrector.correct(correction, teacher_output, self.iter)
+        del teacher_bbox
 
         # Construct input data for student model
         for i, x in enumerate(data):
             pseudo_label = teacher_output[i].pred_densepose
-            # pseudo_segm = torch.argmax(pseudo_label.fine_segm, dim=1).long()
             pseudo_segm = pseudo_label.fine_segm
             # == baseline ==
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
             pseudo_mask = pseudo_label.err_local
-            pseudo_sigma = pseudo_label.sigma2
-            # == block ==
-            # pseudo_u = pseudo_label.u_cls
-            # pseudo_v = pseudo_label.v_cls
 
-            # == cse ==
-            # pseudo_embed = pseudo_label.embedding
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:
                     # == densepose rcnn ==
-                    densepose_data.set("dp_p_segm", pseudo_segm[j])
-                    densepose_data.set("dp_p_u", pseudo_u[j])
-                    densepose_data.set("dp_p_v", pseudo_v[j])
-                    densepose_data.set("dp_p_mask", pseudo_mask[j])
-                    densepose_data.set("dp_p_sigma", pseudo_sigma[j])
+                    densepose_data.set("pseudo_segm", pseudo_segm[j])
+                    densepose_data.set("pseudo_u", pseudo_u[j])
+                    densepose_data.set("pseudo_v", pseudo_v[j])
+                    densepose_data.set("pseudo_mask", pseudo_mask[j])
 
-                    # == cse ==
-                    # densepose_data.set("dp_p_embed", pseudo_embed[j])
+        # pseudo_labels = []
+        # bbox_num = 0
+        # for i, x in enumerate(data):
+        #     cur_bbox_num = len(x['instances'].gt_boxes)
+        #     pseudo_labels.append(
+        #         x["instances"].gt_densepose.set_pseudo(teacher_output[i].pred_densepose,
+        #                                                torch.arange(bbox_num, bbox_num + cur_bbox_num))
+        #     )
+        #     bbox_num += cur_bbox_num
+        # pseudo_labels = torch.cat(pseudo_labels, dim=0)
+        #
+        # data.append(
+        #     {"pseudo_labels": pseudo_labels, "iter": self.iter}
+        # )
 
         del teacher_output
 
-        if self.strong_aug is not None:
-            for aug in self.strong_aug:
-                data = aug(data)
+        # if self.strong_aug is not None:
+        #     for aug in self.strong_aug:
+        #         data = aug(data)
 
         self.student_model.module.update_iteration(self.iter)
 

@@ -71,46 +71,18 @@ class DensePoseChartLoss:
         self.w_p_points   = cfg.MODEL.SEMI.POINTS_WEIGHTS
         self.pseudo_threshold = cfg.MODEL.SEMI.THRESHOLD
         self.n_channels = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
-        self.loss_name = cfg.MODEL.SEMI.LOSS_NAME
-        self.uv_loss_channels = cfg.MODEL.SEMI.UV_LOSS_CHANNELS
 
         self.w_crt_points = cfg.MODEL.SEMI.COR.POINTS_WEIGHTS
         self.w_crt_segm = cfg.MODEL.SEMI.COR.SEGM_WEIGHTS
 
         self.total_iteration = cfg.SOLVER.MAX_ITER
-        # self.warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
-        self.log2pi = math.log(2 * math.pi)
+        self.warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
+
+        self.uv_confidence = cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None, shuffle=None, iteration=-1, **kwargs
+        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None, iteration=-1, **kwargs
     ) -> LossDict:
-        """
-        Produce chart-based DensePose losses
-
-        Args:
-            proposals_with_gt (list of Instances): detections with associated ground truth data
-            densepose_predictor_outputs: an object of a dataclass that contains predictor outputs
-                with estimated values; assumed to have the following attributes:
-                * coarse_segm - coarse segmentation estimates, tensor of shape [N, D, S, S]
-                * fine_segm - fine segmentation estimates, tensor of shape [N, C, S, S]
-                * u - U coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-                * v - V coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-            where N is the number of detections, C is the number of fine segmentation
-            labels, S is the estimate size ( = width = height) and D is the number of
-            coarse segmentation channels.
-
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_U`: smooth L1 loss for U coordinate estimates
-             * `loss_densepose_V`: smooth L1 loss for V coordinate estimates
-             * `loss_densepose_I`: cross entropy for raw unnormalized scores for fine
-                 segmentation estimates given ground truth labels;
-             * `loss_densepose_S`: cross entropy for raw unnormalized scores for coarse
-                 segmentation estimates given ground truth labels;
-        """
-        # densepose outputs are computed for all images and all bounding boxes;
-        # i.e. if a batch has 4 images with (3, 1, 2, 1) proposals respectively,
-        # the outputs will have size(0) == 3+1+2+1 == 7
 
         if not len(proposals_with_gt):
             return self.produce_fake_densepose_losses(densepose_predictor_outputs, corrections=corrections)
@@ -118,10 +90,6 @@ class DensePoseChartLoss:
         accumulator = ChartBasedAnnotationsAccumulator()
         packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
 
-        # NOTE: we need to keep the same computation graph on all the GPUs to
-        # perform reduction properly. Hence even if we have no data on one
-        # of the GPUs, we still need to generate the computation graph.
-        # Add fake (zero) loss in the form Tensor.sum() * 0
         if packed_annotations is None:
             return self.produce_fake_densepose_losses(densepose_predictor_outputs, corrections=corrections)
 
@@ -153,11 +121,7 @@ class DensePoseChartLoss:
             interpolator,
             j_valid_fg,  # pyre-ignore[6]
             corrections=corrections,
-            shuffle=shuffle
         )
-        
-        # losses_segm = {"loss_densepose_S": self.segm_loss(proposals_with_gt, densepose_predictor_outputs,
-        #                                                  packed_annotations) * self.w_segm}
 
         losses_unsup = self.produce_densepose_losses_unsup(
             proposals_with_gt,
@@ -167,100 +131,38 @@ class DensePoseChartLoss:
         )
 
         return {**losses_uv, **losses_segm, **losses_unsup}
-        # return {**losses_segm, **losses_unsup}
 
     def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput = None) -> LossDict:
-        """
-        Fake losses for fine segmentation and U/V coordinates. These are used when
-        no suitable ground truth data was found in a batch. The loss has a value 0
-        and is primarily used to construct the computation graph, so that
-        `DistributedDataParallel` has similar graphs on all GPUs and can perform
-        reduction properly.
-
-        Args:
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * fine_segm - fine segmentation estimates, tensor of shape [N, C, S, S]
-             * u - U coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-             * v - V coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_U`: has value 0
-             * `loss_densepose_V`: has value 0
-             * `loss_densepose_I`: has value 0
-             * `loss_densepose_S`: has value 0
-        """
         losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs, corrections=corrections)
         losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs, corrections=corrections)
-        # losses_segm = {"loss_densepose_S": self.segm_loss.fake_value(densepose_predictor_outputs)}
         losses_unsup = self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
         return {**losses_uv, **losses_segm, **losses_unsup}
-        # return {**losses_segm, **losses_unsup}
 
     def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None) -> LossDict:
-        """
-        Fake losses for U/V coordinates. These are used when no suitable ground
-        truth data was found in a batch. The loss has a value 0
-        and is primarily used to construct the computation graph, so that
-        `DistributedDataParallel` has similar graphs on all GPUs and can perform
-        reduction properly.
-
-        Args:
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * u - U coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-             * v - V coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_U`: has value 0
-             * `loss_densepose_V`: has value 0
-        """
         losses = {
             "loss_densepose_U": densepose_predictor_outputs.u.sum() * 0,
             "loss_densepose_V": densepose_predictor_outputs.v.sum() * 0,
         }
 
-        losses.update({
-            # "loss_correction_U": corrections.u.sum() * 0,
-            # "loss_correction_V": corrections.v.sum() * 0,
-            "loss_densepose_UV": (densepose_predictor_outputs.u.sum() + densepose_predictor_outputs.v.sum()) * 0
-        })
+        # losses.update({s
+        #     "loss_densepose_UV": (densepose_predictor_outputs.u.sum() + densepose_predictor_outputs.v.sum()) * 0
+        # })
 
         return losses
 
     def produce_fake_densepose_losses_unsup(self, densepose_predictor_outputs: Any) -> LossDict:
         return {
             "loss_unsup_segm": densepose_predictor_outputs.fine_segm.sum() * 0,
-            "loss_u_p": densepose_predictor_outputs.u.sum() * 0,
-            "loss_v_p": densepose_predictor_outputs.v.sum() * 0,
+            "loss_unsup_u": densepose_predictor_outputs.u.sum() * 0,
+            "loss_unsup_v": densepose_predictor_outputs.v.sum() * 0,
         }
 
     def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput = None) -> LossDict:
-        """
-        Fake losses for fine / coarse segmentation. These are used when
-        no suitable ground truth data was found in a batch. The loss has a value 0
-        and is primarily used to construct the computation graph, so that
-        `DistributedDataParallel` has similar graphs on all GPUs and can perform
-        reduction properly.
-
-        Args:
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * fine_segm - fine segmentation estimates, tensor of shape [N, C, S, S]
-             * coarse_segm - coarse segmentation estimates, tensor of shape [N, D, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_I`: has value 0
-             * `loss_densepose_S`: has value 0, added only if `segm_trained_by_masks` is False
-        """
         losses = {
             "loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0,
             "loss_densepose_S": densepose_predictor_outputs.coarse_segm.sum() * 0,
+            "loss_correction_IS": (corrections.fine_segm.sum() + corrections.coarse_segm.sum()) * 0,
         }
-
-        losses.update({
-            "loss_correction_IS": corrections.fine_segm.sum() * 0,
-        })
 
         return losses
 
@@ -273,21 +175,6 @@ class DensePoseChartLoss:
         j_valid_fg: torch.Tensor,
         corrections: CorrectorPredictorOutput=None,
     ) -> LossDict:
-        """
-        Compute losses for U/V coordinates: smooth L1 loss between
-        estimated coordinates and the ground truth.
-
-        Args:
-            proposals_with_gt (list of Instances): detections with associated ground truth data
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * u - U coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-             * v - V coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_U`: smooth L1 loss for U coordinate estimates
-             * `loss_densepose_V`: smooth L1 loss for V coordinate estimates
-        """
         u_gt = packed_annotations.u_gt[j_valid_fg]
         u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
         v_gt = packed_annotations.v_gt[j_valid_fg]
@@ -296,38 +183,6 @@ class DensePoseChartLoss:
             "loss_densepose_U": F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points,
             "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points,
         }
-
-        # sigma2
-        sigma2_est = interpolator.extract_at_points(densepose_predictor_outputs.sigma2)[j_valid_fg]
-        sigma2_est = F.softplus(sigma2_est) + 0.01
-        delta_t_delta = (u_est - u_gt) ** 2 + (v_est - v_gt) ** 2
-        loss.update({
-            "loss_densepose_UV": (0.5 * (self.log2pi + 2 * torch.log(sigma2_est) + delta_t_delta / sigma2_est)).sum() * 0.0005
-        })
-
-        # if corrections is not None:
-        #     u_crt_est = interpolator.extract_at_points(corrections.u)[j_valid_fg]
-        #     v_crt_est = interpolator.extract_at_points(corrections.v)[j_valid_fg]
-        #
-        #     # loss distribution
-        #     # sigma2 = F.softplus(u_crt_est) + 0.01
-        #
-        #     with torch.no_grad():
-        #         u_crt_gt = u_gt - u_est.clamp(0., 1.)
-        #         v_crt_gt = v_gt - v_est.clamp(0., 1.)
-        #         # delta_t_delta = (u_gt - u_est.clamp(0., 1.)) ** 2 + (v_gt - v_est.clamp(0., 1.)) ** 2
-        #
-        #     # uv_loss = 0.5 * (self.log2pi + 2 * torch.log(sigma2) + delta_t_delta / sigma2)
-        #     loss.update({
-        #         "loss_correction_U": F.smooth_l1_loss(u_crt_est, u_crt_gt, reduction='sum') * self.w_crt_points,
-        #         "loss_correction_V": F.smooth_l1_loss(v_crt_est, v_crt_gt, reduction='sum') * self.w_crt_points,
-        #         # "loss_correction_UV": uv_loss.sum() * self.w_crt_points
-        #     })
-        # else:
-        #     loss.update({
-        #         "loss_correction_U": corrections.u.sum() * 0,
-        #         "loss_correction_V": corrections.v.sum() * 0,
-        #     })
 
         return loss
 
@@ -341,29 +196,6 @@ class DensePoseChartLoss:
         corrections: CorrectorPredictorOutput=None,
         shuffle = None,
     ) -> LossDict:
-        """
-        Losses for fine / coarse segmentation: cross-entropy
-        for segmentation unnormalized scores given ground truth labels at
-        annotated points for fine segmentation and dense mask annotations
-        for coarse segmentation.
-
-        Args:
-            proposals_with_gt (list of Instances): detections with associated ground truth data
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * fine_segm - fine segmentation estimates, tensor of shape [N, C, S, S]
-             * coarse_segm - coarse segmentation estimates, tensor of shape [N, D, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_I`: cross entropy for raw unnormalized scores for fine
-                 segmentation estimates given ground truth labels
-             * `loss_densepose_S`: cross entropy for raw unnormalized scores for coarse
-                 segmentation estimates given ground truth labels;
-                 may be included if coarse segmentation is only trained
-                 using DensePose ground truth; if additional supervision through
-                 instance segmentation data is performed (`segm_trained_by_masks` is True),
-                 this loss is handled by `produce_mask_losses` instead
-        """
         fine_segm_gt = packed_annotations.fine_segm_labels_gt[
             interpolator.j_valid  # pyre-ignore[16]
         ]
@@ -400,47 +232,16 @@ class DensePoseChartLoss:
         }
 
         if corrections is not None:
-            if shuffle is not None:
-                batch_size = densepose_predictor_outputs.fine_segm.shape[0]
-                fine_segm_crt_est = [
-                    interpolator.extract_at_points(
-                        corrections.fine_segm[:batch_size],
-                        slice_fine_segm=slice(None),
-                        w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
-                        w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
-                        w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
-                        w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
-                        )[interpolator.j_valid, :].squeeze(1),
-                    interpolator.extract_at_points(
-                        corrections.fine_segm[batch_size:],
-                        slice_fine_segm=slice(None),
-                        w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
-                        w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
-                        w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
-                        w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
-                    )[interpolator.j_valid, :].squeeze(1)
-                ]
-                fine_segm_crt_est = torch.cat(fine_segm_crt_est, dim=0)
-
-                segm_est_index = torch.cat([
-                    fine_segm_est.detach().argmax(dim=1).long(),
-                    fine_segm_est[:, shuffle].argmax(dim=1).long()
-                ], dim=0)
-                fine_segm_crt_gt = fine_segm_gt.detach().repeat(2) == segm_est_index
-            else:
-                fine_segm_crt_est = interpolator.extract_at_points(
-                    corrections.fine_segm,
-                    slice_fine_segm=slice(None),
-                    w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
-                    w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
-                    w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
-                    w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
-                    )[interpolator.j_valid, :].squeeze(1)
-                segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
-                fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
-            # alpha
-            # fine_segm_crt_est = F.softplus(fine_segm_crt_est) + 0.01
-            # fine_segm_crt_est = fine_segm_est * fine_segm_crt_est
+            fine_segm_crt_est = interpolator.extract_at_points(
+                corrections.fine_segm,
+                slice_fine_segm=slice(None),
+                w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
+                w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
+                w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
+                w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
+                )[interpolator.j_valid, :].squeeze(1)
+            segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
+            fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
             # coarse segm
             coarse_segm_crt_est = corrections.coarse_segm[packed_annotations.bbox_indices]
 
@@ -462,8 +263,6 @@ class DensePoseChartLoss:
             #
             crt_coarse_segm_loss = F.binary_cross_entropy_with_logits(coarse_segm_crt_est, coarse_segm_crt_gt.unsqueeze(1).float(), reduction='mean')
 
-            # crt_loss = F.cross_entropy(fine_segm_crt_est, fine_segm_gt.long(), reduction='none')
-            # crt_loss[~index] = crt_loss[~index] * 2
             loss.update({
                 "loss_correction_IS": (crt_fine_segm_loss.mean() + crt_coarse_segm_loss) * 0.5 * self.w_crt_segm
             })
@@ -482,70 +281,18 @@ class DensePoseChartLoss:
         packed_annotations: Any,
         iteration,
     ) -> LossDict:
-        """
-        Losses for pseudo segm and U V coordinate: cross-entropy/smooth l1 loss
-        for segmentation unnormalized scores given ground truth labels at
-        annotated points for fine segmentation and dense mask annotations
-        for coarse segmentation.
-
-        Args:
-            proposals_with_gt (list of Instances): detections with associated ground truth data
-            densepose_predictor_outputs: DensePose predictor outputs, an object
-                of a dataclass that is assumed to have the following attributes:
-             * fine_segm - fine segmentation estimates, tensor of shape [N, C, S, S]
-             * u - U coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-             * v - V coordinate estimates per fine labels, tensor of shape [N, C, S, S]
-        Return:
-            dict: str -> tensor: dict of losses with the following entries:
-             * `loss_densepose_PS`: cross entropy for raw unnormalized scores for fine
-                 segmentation estimates given pseudo truth labels
-             * `loss_densepose_PU`: smooth L1 loss for U coordinate estimates
-             * `loss_densepose_PV`: smooth L1 loss for V coordinate estimates
-        """
-
-        losses = {}
-        pseudo_keys = ["u_p", "v_p"]
-        est_keys = ["u", "v"]
-        mask = None
-        pos_index = None
-        pred_index = None
-
-        # with torch.no_grad():
-        #     pos_index = resample_data(
-        #         packed_annotations.coarse_segm_gt.unsqueeze(1),
-        #         packed_annotations.bbox_xywh_gt,
-        #         packed_annotations.bbox_xywh_est,
-        #         self.heatmap_size,
-        #         self.heatmap_size,
-        #         mode="nearest",
-        #         padding_mode="zeros",
-        #     ).squeeze(1) > 0
-        #     pos_index = pos_index.reshape(-1)
-
-        if getattr(packed_annotations, "fine_segm_p") is None:
+        if getattr(packed_annotations, "pseudo_segm") is None:
             return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
 
-        if (1 + iteration) > 0:
-            factor = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2)
+        if 0 <= iteration < self.warm_up_iter:
+            factor = np.exp(-5 * (1 - iteration / self.warm_up_iter) ** 2)
         else:
             factor = 1.
 
         est = getattr(densepose_predictor_outputs, "fine_segm")[packed_annotations.bbox_indices]
         est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
         with torch.no_grad():
-            pseudo = getattr(packed_annotations, "fine_segm_p")
-            pseudo = resample_data(
-                pseudo,
-                packed_annotations.bbox_xywh_gt,
-                packed_annotations.bbox_xywh_est,
-                self.heatmap_size,
-                self.heatmap_size,
-                mode="nearest",
-                padding_mode="zeros",
-            )
-            pseudo = F.softmax(pseudo, dim=1)
-
-            pos_index = getattr(packed_annotations, "mask_p")
+            pos_index = getattr(packed_annotations, "pseudo_mask")
             pos_index = resample_data(
                 pos_index,
                 packed_annotations.bbox_xywh_gt,
@@ -555,81 +302,63 @@ class DensePoseChartLoss:
                 mode="nearest",
                 padding_mode="zeros",
             )
-            pos_index = torch.sigmoid(pos_index).permute(0, 2, 3, 1).reshape(-1,) > 0.5
+            pos_index = torch.sigmoid(pos_index).permute(0, 2, 3, 1).reshape(-1, ) > 0.5
 
-            # sigma
-            sigma2 = getattr(packed_annotations, "sigma_p")
-            sigma2 = resample_data(
-                sigma2,
+            if pos_index.sum() <= 0:
+                return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
+
+            pseudo = getattr(packed_annotations, "pseudo_segm")
+            pseudo = resample_data(
+                pseudo,
                 packed_annotations.bbox_xywh_gt,
                 packed_annotations.bbox_xywh_est,
                 self.heatmap_size,
                 self.heatmap_size,
                 mode="nearest",
                 padding_mode="zeros",
-            )
-            sigma2 = F.softplus(sigma2).permute(0, 2, 3, 1).reshape(-1, self.n_channels) + 0.01
+            ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
+            pseudo = F.softmax(pseudo, dim=1)
 
-        # prediction = F.softmax(pseudo, dim=1)
-        # segm_conf = torch.max(pseudo, dim=1).values
-            pred_conf, pred_index = pseudo.permute(0, 2, 3, 1).reshape(-1, self.n_channels).max(dim=1)
-            # threhold = np.exp(-2 * (1 - cur_iter + 1 / self.max_iter) ** 2) * 0.9
-            # threshold = (cur_iter / self.warm_up_iter * 2) * 0.5
-            # if threshold > 0.75:
-            #     threshold = 0.75
-            # pos_index = pred_conf > threshold
-            # if pos_index.sum() <= 0:
-            #     pos_index = torch.topk(pred_conf, 5 * batch_size).indices
+            pred_conf, pred_index = pseudo.max(dim=1)
 
-        if pos_index.sum() <= 0:
-            return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
-
-        pred_index = pred_index[pos_index]
-        sigma2 = sigma2[pos_index]
-        sigma2 = sigma2[np.arange(sigma2.shape[0]), pred_index]
-        # pred_index[~pos_index] = 0
-        # weights = segm_conf / segm_conf.sum()
         loss = F.cross_entropy(est[pos_index], pred_index.long(), reduction='mean')
-        # weights = segm_conf / segm_conf.sum()
-        losses.update({"loss_unsup_segm": loss * self.w_p_segm * factor})
+        losses = {"loss_unsup_segm": loss * self.w_p_segm * factor}
 
-        # weights = torch.cat([weights for _ in range(self.uv_loss_channels)])
-        # losses.update({"loss_unsup_segm": F.cross_entropy(est, torch.argmax(pseudo, dim=1).long()) * self.w_pseudo * self.w_p_segm})
+        u_est = getattr(densepose_predictor_outputs, "u")[packed_annotations.bbox_indices]
+        v_est = getattr(densepose_predictor_outputs, "v")[packed_annotations.bbox_indices]
+        u_est = (u_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]).clamp(0., 1.)
+        v_est = (v_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]).clamp(0., 1.)
+        u_est = u_est[np.arange(u_est.shape[0]), pred_index]
+        v_est = v_est[np.arange(v_est.shape[0]), pred_index]
 
-        for p_k, e_k in zip(pseudo_keys, est_keys):
-            if getattr(packed_annotations, p_k) is None:
-                return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
-            est = getattr(densepose_predictor_outputs, e_k)[packed_annotations.bbox_indices]
-            est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels).clamp(0., 1.)
-            with torch.no_grad():
-                pseudo = getattr(packed_annotations, p_k)
-                pseudo = resample_data(
-                    pseudo,
-                    packed_annotations.bbox_xywh_gt,
-                    packed_annotations.bbox_xywh_est,
-                    self.heatmap_size,
-                    self.heatmap_size,
-                    mode="nearest",
-                    padding_mode="zeros",
-                )
-            pseudo = pseudo.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
-            # pseudo = torch.cat([pseudo[np.arange(pseudo.shape[0]), pred_index[:, i]]
-            #                        for i in range(self.uv_loss_channels)])
-            # est = torch.cat([est[np.arange(pred_index.shape[0]), pred_index[:, i]]
-            #                     for i in range(self.uv_loss_channels)])
-            # pseudo = pseudo.permute(0, 2, 3, 1)[pos_index].reshape(-1, self.n_channels)
-            # est = est.permute(0, 2, 3, 1)[pos_index].reshape(-1, self.n_channels)
-            # pseudo = pseudo[np.arange(pseudo.shape[0]), pred_index]
-            # est = est[np.arange(pseudo.shape[0]), pred_index]
-            pseudo, est = pseudo[pos_index], est[pos_index]
-            pseudo = pseudo[np.arange(pseudo.shape[0]), pred_index]
-            est = est[np.arange(est.shape[0]), pred_index]
+        with torch.no_grad():
+            pseudo_u = getattr(packed_annotations, "pseudo_u")
+            pseudo_v = getattr(packed_annotations, "pseudo_v")
+            pseudo_u = resample_data(
+                pseudo_u,
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
+                self.heatmap_size,
+                self.heatmap_size,
+                mode="nearest",
+                padding_mode="zeros",
+            ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
+            pseudo_v = resample_data(
+                pseudo_v,
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
+                self.heatmap_size,
+                self.heatmap_size,
+                mode="nearest",
+                padding_mode="zeros",
+            ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
 
-            loss = F.smooth_l1_loss(est, pseudo, reduction='none')
-            loss *= torch.exp(-sigma2)
-            losses.update({"loss_{}".format(p_k): loss.mean() * self.w_p_points * factor})
+        pseudo_u = pseudo_u[np.arange(pseudo_u.shape[0]), pred_index]
+        pseudo_v = pseudo_v[np.arange(pseudo_v.shape[0]), pred_index]
 
-            # use all uv coordinates
-            # weights = weights.unsqueeze(1) / 25
-            # losses.update({"loss_{}".format(p_key): F.smooth_l1_loss(est, pseudo) * self.w_pseudo * self.w_p_points})
+        losses.update({
+            "loss_unsup_u": F.smooth_l1_loss(u_est, pseudo_u, reduction='mean') * self.w_p_points * factor,
+            "loss_unsup_v": F.smooth_l1_loss(v_est, pseudo_v, reduction='mean') * self.w_p_points * factor
+        })
+
         return losses

@@ -150,6 +150,8 @@ class GeneralizedRCNNDP(nn.Module):
         if not self.training:
             return self.inference(batched_inputs)
 
+        # batched_inputs, pseudo_info = batched_inputs[:-1], batched_inputs[-1]
+
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
@@ -225,7 +227,10 @@ class GeneralizedRCNNDP(nn.Module):
         """
         Normalize, pad and batch the input images.
         """
-        images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
+        if self.training:
+            images = [self._move_to_current_device(x["strong_image"]) for x in batched_inputs]
+        else:
+            images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(
             images,

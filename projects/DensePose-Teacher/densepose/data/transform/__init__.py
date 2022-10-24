@@ -1,3 +1,3 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from .image import ImageResizeTransform, RandErase, RandomResize
+from .image import ImageResizeTransform, RandErase, RandomScale

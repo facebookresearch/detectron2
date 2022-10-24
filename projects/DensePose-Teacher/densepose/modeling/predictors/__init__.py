@@ -7,4 +7,3 @@ from .cse import DensePoseEmbeddingPredictor
 from .cse_confidence import DensePoseEmbeddingConfidencePredictorMixin
 from .cse_with_confidence import DensePoseEmbeddingWithConfidencePredictor
 from .registry import DENSEPOSE_PREDICTOR_REGISTRY
-from .block import DensePoseChartBlockPredictor

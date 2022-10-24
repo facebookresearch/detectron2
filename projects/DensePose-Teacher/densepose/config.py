@@ -204,14 +204,14 @@ def add_densepose_head_config(cfg: CN) -> None:
     #       and associated confidences for predefined charts (default)
     #   "DensePoseEmbeddingWithConfidencePredictor": predicts segmentation, embeddings
     #       and associated confidences for CSE
-    _C.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME = "DensePoseChartWithConfidencePredictor"
+    _C.MODEL.ROI_DENSEPOSE_HEAD.PREDICTOR_NAME = "DensePoseChartPredictor"
     # Loss class name, must be registered in DENSEPOSE_LOSS_REGISTRY
     # Some registered losses:
     #   "DensePoseChartLoss": loss for chart-based models that estimate
     #      segmentation and UV coordinates
     #   "DensePoseChartWithConfidenceLoss": loss for chart-based models that estimate
     #      segmentation, UV coordinates and the corresponding confidences (default)
-    _C.MODEL.ROI_DENSEPOSE_HEAD.LOSS_NAME = "DensePoseChartWithConfidenceLoss"
+    _C.MODEL.ROI_DENSEPOSE_HEAD.LOSS_NAME = "DensePoseChartLoss"
     # Confidences
     # Enable learning UV confidences (variances) along with the actual values
     _C.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE = CN({"ENABLED": False})
@@ -273,22 +273,19 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C = cfg
 
     _C.MODEL.SEMI = CN()
-    _C.MODEL.SEMI.META_ARCHITECTURE = "GeneralizedRCNN"
-    # _C.MODEL.SEMI.UNSUP_WEIGHTS = 1.
     _C.MODEL.SEMI.SEGM_WEIGHTS = 1.
     _C.MODEL.SEMI.POINTS_WEIGHTS = 5.
     _C.MODEL.SEMI.THRESHOLD = 1.  # =1 will not filter pseudo labels
     _C.MODEL.SEMI.INFERENCE_ON = "student"
     _C.MODEL.SEMI.TEACHER_WEIGHTS = ""
     _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
-    _C.MODEL.SEMI.LOSS_NAME = "ce"  # ["ce", "sce"]
-    _C.MODEL.SEMI.UV_LOSS_CHANNELS = 2
     _C.MODEL.SEMI.TS_ON = True
 
     # config for strong augmentation
-    _C.MODEL.SEMI.ERASE_ON = True
     _C.MODEL.SEMI.ERASE_SIZE = [0, 0.2]
-    _C.MODEL.SEMI.ERASE_ITER = (3, 9)
+    _C.MODEL.SEMI.ERASE_ITER = (2, 6)
+    _C.MODEL.SEMI.SCALE = (0.75, 1.25)
+    _C.MODEL.SEMI.FLOW = False
 
     # config for corrector
     _C.MODEL.SEMI.COR = CN()
@@ -299,7 +296,8 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 1.  # 0.01
     _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.001  # 0.0001
     _C.MODEL.SEMI.COR.WARM_ITER = 40000
-    # _C.MODEL.SEMI.COR.OUTPUT_DIR = './output/corrector'
+
+    _C.INPUT.ST_ANGLES = [-15, 15]
 
 def add_block_config(cfg: CN):
     _C = cfg

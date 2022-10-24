@@ -4,7 +4,6 @@ from .chart import DensePoseChartLoss
 from .chart_with_confidences import DensePoseChartWithConfidenceLoss
 from .cse import DensePoseCseLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
-from .block import DensePoseBlockLoss
 
 
 __all__ = [
@@ -12,5 +11,4 @@ __all__ = [
     "DensePoseChartWithConfidenceLoss",
     "DensePoseCseLoss",
     "DENSEPOSE_LOSS_REGISTRY",
-    "DensePoseBlockLoss"
 ]
