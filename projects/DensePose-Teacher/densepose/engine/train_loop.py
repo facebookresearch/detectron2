@@ -88,7 +88,7 @@ class SimpleTrainer(TrainerBase):
             # == baseline ==
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
-            pseudo_mask = pseudo_label.err_local
+            pseudo_mask = pseudo_label.crt_segm
 
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:

@@ -287,6 +287,10 @@ class CorrectorPredictor(nn.Module):
             dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
 
+        self.sigma_correction = ConvTranspose2d(
+            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+        )
+
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
 
@@ -299,6 +303,7 @@ class CorrectorPredictor(nn.Module):
         return CorrectorPredictorOutput(
             coarse_segm=self.interp2d(self.ann_index_correction(corrector_output)),
             fine_segm=self.interp2d(self.segm_correction(corrector_output)),
+            sigma=self.interp2d(self.sigma_correction(corrector_output))
         )
 
 
@@ -306,6 +311,7 @@ class CorrectorPredictor(nn.Module):
 class CorrectorPredictorOutput:
     coarse_segm: torch.Tensor
     fine_segm: torch.Tensor
+    sigma: torch.Tensor
 
     def __len__(self):
         return self.coarse_segm.size(0)
@@ -317,11 +323,13 @@ class CorrectorPredictorOutput:
             return CorrectorPredictorOutput(
                 coarse_segm=self.coarse_segm[item].unsqueeze(0),
                 fine_segm=self.fine_segm[item].unsqueeze(0),
+                sigma=self.sigma[item].unsqueeze(0)
             )
         else:
             return CorrectorPredictorOutput(
                 coarse_segm=self.coarse_segm[item],
                 fine_segm=self.fine_segm[item],
+                sigma=self.sigma[item],
             )
 
     def to(self, device: torch.device):
@@ -330,7 +338,8 @@ class CorrectorPredictorOutput:
         """
         coarse_segm = self.coarse_segm.to(device)
         fine_segm = self.fine_segm.to(device)
-        return CorrectorPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm)
+        sigma = self.sigma.to(device)
+        return CorrectorPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, sigma=sigma)
 
 class NonLocalBlock(nn.Module):
     def __init__(self, in_channels, inter_channels=None, mode='embedded', bn_layer=True) -> None:

@@ -5,7 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from detectron2.config import CfgNode
-from detectron2.layers import ConvTranspose2d, interpolate
+from detectron2.layers import ConvTranspose2d, interpolate, Conv2d
 
 from ...structures import DensePoseChartPredictorOutput
 from ..utils import initialize_module_params
@@ -68,6 +68,19 @@ class DensePoseChartPredictor(nn.Module):
                 dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
             )
 
+        hidden_dim = cfg.MODEL.SEMI.COR.CONV_HEAD_DIM
+        kernel_size = cfg.MODEL.SEMI.COR.CONV_HEAD_KERNEL
+        self.n_stacked_convs = cfg.MODEL.SEMI.COR.NUM_STACKED_CONVS
+        pad_size = kernel_size // 2
+        n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1) + 2
+        n_channels = n_pred_channels + 256 + 1  # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
+        for i in range(self.n_stacked_convs):
+            layer = Conv2d(n_channels, hidden_dim, kernel_size, stride=1, padding=pad_size)
+            layer_name = _get_layer_name(i)
+            self.add_module(layer_name, layer)
+            n_channels = hidden_dim
+        self.n_out_channels = n_channels
+
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
 
@@ -101,21 +114,22 @@ class DensePoseChartPredictor(nn.Module):
                 ts_factor, fine_segm.shape[1], dim=1
             )
 
+        crt_output = head_outputs
+        for i in range(self.n_stacked_convs):
+            layer_name = self._get_layer_name(i)
+            crt_output = getattr(self, layer_name)(crt_output)
+            crt_output = F.relu(crt_output)
+
         output = DensePoseChartPredictorOutput(
             coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
             fine_segm=fine_segm,
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
-            err_local=None,
+            crt_segm=self.interp2d(crt_output)
         )
-
         return output
 
-    def forward_without_upsample(self, head_outputs: torch.Tensor):
-        return DensePoseChartPredictorOutput(
-            coarse_segm=self.ann_index_lowres(head_outputs),
-            fine_segm=self.index_uv_lowres(head_outputs),
-            u=self.u_lowres(head_outputs),
-            v=self.v_lowres(head_outputs),
-            err_local=None,
-        )
+
+def _get_layer_name(i: int):
+    layer_name = "body_conv_fcn{}".format(i + 1)
+    return layer_name

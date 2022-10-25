@@ -79,19 +79,21 @@ class DensePoseChartLoss:
         self.warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
 
         self.uv_confidence = cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED
+        # self.log2pi = math.log(2 * math.pi)
+        # self.w_crt_sigma = cfg.MODEL.SEMI.COR.SIGMA_WEIGHTS
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None, iteration=-1, **kwargs
+        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, iteration=-1, **kwargs
     ) -> LossDict:
 
         if not len(proposals_with_gt):
-            return self.produce_fake_densepose_losses(densepose_predictor_outputs, corrections=corrections)
+            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
         accumulator = ChartBasedAnnotationsAccumulator()
         packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
 
         if packed_annotations is None:
-            return self.produce_fake_densepose_losses(densepose_predictor_outputs, corrections=corrections)
+            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
         h, w = densepose_predictor_outputs.u.shape[2:]
         interpolator = BilinearInterpolationHelper.from_matches(
@@ -103,7 +105,7 @@ class DensePoseChartLoss:
             packed_annotations.fine_segm_labels_gt > 0
         )
         if not torch.any(j_valid_fg):
-            return self.produce_fake_densepose_losses(densepose_predictor_outputs, corrections=corrections)
+            return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
         losses_uv = self.produce_densepose_losses_uv(
             proposals_with_gt,
@@ -119,7 +121,6 @@ class DensePoseChartLoss:
             packed_annotations,
             interpolator,
             j_valid_fg,  # pyre-ignore[6]
-            corrections=corrections,
         )
 
         losses_unsup = self.produce_densepose_losses_unsup(
@@ -131,31 +132,32 @@ class DensePoseChartLoss:
 
         return {**losses_uv, **losses_segm, **losses_unsup}
 
-    def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput = None) -> LossDict:
-        losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs, corrections=corrections)
-        losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs, corrections=corrections)
+    def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any) -> LossDict:
+        losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs)
+        losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs)
         losses_unsup = self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
         return {**losses_uv, **losses_segm, **losses_unsup}
 
-    def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput =None) -> LossDict:
+    def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any) -> LossDict:
         losses = {
             "loss_densepose_U": densepose_predictor_outputs.u.sum() * 0,
             "loss_densepose_V": densepose_predictor_outputs.v.sum() * 0,
+            # "loss_correction_UV": corrections.sigma.sum() * 0,
         }
         return losses
 
     def produce_fake_densepose_losses_unsup(self, densepose_predictor_outputs: Any) -> LossDict:
         return {
             "loss_unsup_segm": densepose_predictor_outputs.fine_segm.sum() * 0,
-            # "loss_unsup_u": densepose_predictor_outputs.u.sum() * 0,
-            # "loss_unsup_v": densepose_predictor_outputs.v.sum() * 0,
+            "loss_unsup_u": densepose_predictor_outputs.u.sum() * 0,
+            "loss_unsup_v": densepose_predictor_outputs.v.sum() * 0,
         }
 
-    def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any, corrections: CorrectorPredictorOutput = None) -> LossDict:
+    def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any) -> LossDict:
         losses = {
             "loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0,
             "loss_densepose_S": densepose_predictor_outputs.coarse_segm.sum() * 0,
-            "loss_correction_IS": (corrections.fine_segm.sum() + corrections.coarse_segm.sum()) * 0,
+            "loss_correction_IS": (densepose_predictor_outputs.fine_segm.sum() + densepose_predictor_outputs.coarse_segm.sum()) * 0,
         }
 
         return losses
@@ -172,9 +174,17 @@ class DensePoseChartLoss:
         u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
         v_gt = packed_annotations.v_gt[j_valid_fg]
         v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
+        loss_u = F.smooth_l1_loss(u_est, u_gt, reduction="none")
+        loss_v = F.smooth_l1_loss(v_est, v_gt, reduction="none")
+
+        # sigma = interpolator.extract_at_points(corrections.sigma)[j_valid_fg]
+        # sigma = F.softplus(sigma) + 0.01
+        # delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
+
         loss = {
-            "loss_densepose_U": F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points,
-            "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points,
+            "loss_densepose_U": (loss_u * uv_weights).mean() * self.w_points,
+            "loss_densepose_V": (loss_v * uv_weights).mean() * self.w_points,
+            # "loss_correction_UV": (0.5 * self.log2pi + 2 * torch.log(sigma) + delta_t_delta / sigma).sum() * self.w_crt_sigma
         }
 
         return loss
@@ -186,7 +196,6 @@ class DensePoseChartLoss:
         packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
-        corrections: CorrectorPredictorOutput=None,
     ) -> LossDict:
         fine_segm_gt = packed_annotations.fine_segm_labels_gt[
             interpolator.j_valid  # pyre-ignore[16]
@@ -223,40 +232,26 @@ class DensePoseChartLoss:
             "loss_densepose_S": loss_coarse_segm * self.w_segm,
         }
 
-        if corrections is not None:
-            fine_segm_crt_est = interpolator.extract_at_points(
-                corrections.fine_segm,
-                slice_fine_segm=slice(None),
-                w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
-                w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
-                w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
-                w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
-                )[interpolator.j_valid, :].squeeze(1)
-            segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
-            fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
-            # coarse segm
-            coarse_segm_crt_est = corrections.coarse_segm[packed_annotations.bbox_indices]
+        fine_segm_crt_est = interpolator.extract_at_points(
+            densepose_predictor_outputs.crt_segm,
+            slice_fine_segm=slice(None),
+            w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
+            w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
+            w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
+            w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
+            )[interpolator.j_valid, :].squeeze(1)
+        segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
+        fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
 
-            one_loss = fine_segm_crt_gt.sum().detach()
-            zero_loss = (~fine_segm_crt_gt).sum().detach()
+        one_loss = fine_segm_crt_gt.sum().detach()
+        zero_loss = (~fine_segm_crt_gt).sum().detach()
 
-            # coarse_segm_crt_est = torch.zeros()
+        crt_fine_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, fine_segm_crt_gt.float(), reduction='none')
+        crt_fine_segm_loss[~fine_segm_crt_gt] *= (one_loss / zero_loss)
 
-            crt_fine_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, fine_segm_crt_gt.float(), reduction='none')
-            crt_fine_segm_loss[~fine_segm_crt_gt] *= (one_loss / zero_loss)
-
-            segm_est_index = coarse_segm_est.detach().argmax(dim=1).long()
-            coarse_segm_crt_gt = (coarse_segm_gt > 0).detach().long() == segm_est_index
-
-            crt_coarse_segm_loss = F.binary_cross_entropy_with_logits(coarse_segm_crt_est, coarse_segm_crt_gt.unsqueeze(1).float(), reduction='mean')
-
-            loss.update({
-                "loss_correction_IS": (crt_fine_segm_loss.mean() + crt_coarse_segm_loss) * 0.5 * self.w_crt_segm
-            })
-        else:
-            loss.update({
-                "loss_correction_IS": corrections.fine_segm.sum() * 0 + corrections.coarse_segm.sum() * 0
-            })
+        loss.update({
+            "loss_correction_IS": crt_fine_segm_loss.mean() * self.w_crt_segm
+        })
 
         return loss
 
