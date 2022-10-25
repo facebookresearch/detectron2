@@ -79,15 +79,17 @@ class DensePoseChartLoss:
         self.warm_up_iter = cfg.MODEL.SEMI.COR.WARM_ITER
 
         self.uv_confidence = cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED
-        # self.log2pi = math.log(2 * math.pi)
-        # self.w_crt_sigma = cfg.MODEL.SEMI.COR.SIGMA_WEIGHTS
+        self.log2pi = math.log(2 * math.pi)
+        self.w_crt_sigma = cfg.MODEL.SEMI.COR.SIGMA_WEIGHTS
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, iteration=-1, **kwargs
+        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, iteration, **kwargs
     ) -> LossDict:
 
         if not len(proposals_with_gt):
             return self.produce_fake_densepose_losses(densepose_predictor_outputs)
+
+        assert iteration != -1, ("iteration should not be -1!")
 
         accumulator = ChartBasedAnnotationsAccumulator()
         packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
@@ -142,7 +144,7 @@ class DensePoseChartLoss:
         losses = {
             "loss_densepose_U": densepose_predictor_outputs.u.sum() * 0,
             "loss_densepose_V": densepose_predictor_outputs.v.sum() * 0,
-            # "loss_correction_UV": corrections.sigma.sum() * 0,
+            "loss_correction_UV": densepose_predictor_outputs.sigma.sum() * 0,
         }
         return losses
 
@@ -157,7 +159,7 @@ class DensePoseChartLoss:
         losses = {
             "loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0,
             "loss_densepose_S": densepose_predictor_outputs.coarse_segm.sum() * 0,
-            "loss_correction_IS": (densepose_predictor_outputs.fine_segm.sum() + densepose_predictor_outputs.coarse_segm.sum()) * 0,
+            "loss_correction_IS": densepose_predictor_outputs.crt_segm.sum() * 0,
         }
 
         return losses
@@ -177,14 +179,14 @@ class DensePoseChartLoss:
         loss_u = F.smooth_l1_loss(u_est, u_gt, reduction="none")
         loss_v = F.smooth_l1_loss(v_est, v_gt, reduction="none")
 
-        # sigma = interpolator.extract_at_points(corrections.sigma)[j_valid_fg]
-        # sigma = F.softplus(sigma) + 0.01
-        # delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
+        sigma = interpolator.extract_at_points(densepose_predictor_outputs.sigma)[j_valid_fg]
+        sigma = F.softplus(sigma) + 0.01
+        delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
 
         loss = {
             "loss_densepose_U": (loss_u * uv_weights).mean() * self.w_points,
             "loss_densepose_V": (loss_v * uv_weights).mean() * self.w_points,
-            # "loss_correction_UV": (0.5 * self.log2pi + 2 * torch.log(sigma) + delta_t_delta / sigma).sum() * self.w_crt_sigma
+            "loss_correction_UV": (0.5 * self.log2pi + 2 * torch.log(sigma) + delta_t_delta / sigma).sum() * self.w_crt_sigma
         }
 
         return loss
@@ -290,9 +292,9 @@ class DensePoseChartLoss:
             if pos_index.sum() <= 0:
                 return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
 
-            pseudo = getattr(packed_annotations, "pseudo_segm")
-            pseudo = resample_data(
-                pseudo,
+            pseudo_segm = getattr(packed_annotations, "pseudo_segm")
+            pseudo_segm = resample_data(
+                pseudo_segm,
                 packed_annotations.bbox_xywh_gt,
                 packed_annotations.bbox_xywh_est,
                 self.heatmap_size,
@@ -300,48 +302,62 @@ class DensePoseChartLoss:
                 mode="nearest",
                 padding_mode="zeros",
             ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
-            pseudo = F.softmax(pseudo, dim=1)
+            pseudo_segm = F.softmax(pseudo_segm, dim=1)
 
-            pred_conf, pred_index = pseudo.max(dim=1)
+            pred_conf, pred_index = pseudo_segm.max(dim=1)
 
         loss = F.cross_entropy(est[pos_index], pred_index.long(), reduction='mean')
         losses = {"loss_unsup_segm": loss * self.w_p_segm * factor}
 
-        # u_est = getattr(densepose_predictor_outputs, "u")[packed_annotations.bbox_indices]
-        # v_est = getattr(densepose_predictor_outputs, "v")[packed_annotations.bbox_indices]
-        # u_est = (u_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]).clamp(0., 1.)
-        # v_est = (v_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]).clamp(0., 1.)
-        # u_est = u_est[np.arange(u_est.shape[0]), pred_index]
-        # v_est = v_est[np.arange(v_est.shape[0]), pred_index]
-        #
-        # with torch.no_grad():
-        #     pseudo_u = getattr(packed_annotations, "pseudo_u")
-        #     pseudo_v = getattr(packed_annotations, "pseudo_v")
-        #     pseudo_u = resample_data(
-        #         pseudo_u,
-        #         packed_annotations.bbox_xywh_gt,
-        #         packed_annotations.bbox_xywh_est,
-        #         self.heatmap_size,
-        #         self.heatmap_size,
-        #         mode="nearest",
-        #         padding_mode="zeros",
-        #     ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
-        #     pseudo_v = resample_data(
-        #         pseudo_v,
-        #         packed_annotations.bbox_xywh_gt,
-        #         packed_annotations.bbox_xywh_est,
-        #         self.heatmap_size,
-        #         self.heatmap_size,
-        #         mode="nearest",
-        #         padding_mode="zeros",
-        #     ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
-        #
-        # pseudo_u = pseudo_u[np.arange(pseudo_u.shape[0]), pred_index]
-        # pseudo_v = pseudo_v[np.arange(pseudo_v.shape[0]), pred_index]
-        #
-        # losses.update({
-        #     "loss_unsup_u": F.smooth_l1_loss(u_est, pseudo_u, reduction='mean') * self.w_p_points * factor,
-        #     "loss_unsup_v": F.smooth_l1_loss(v_est, pseudo_v, reduction='mean') * self.w_p_points * factor
-        # })
+        u_est = getattr(densepose_predictor_outputs, "u")[packed_annotations.bbox_indices]
+        v_est = getattr(densepose_predictor_outputs, "v")[packed_annotations.bbox_indices]
+        u_est = (u_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index])
+        v_est = (v_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index])
+        u_est = u_est[np.arange(u_est.shape[0]), pred_index]
+        v_est = v_est[np.arange(v_est.shape[0]), pred_index]
+
+        with torch.no_grad():
+            pseudo_u = getattr(packed_annotations, "pseudo_u")
+            pseudo_v = getattr(packed_annotations, "pseudo_v")
+            pseudo_u = resample_data(
+                pseudo_u,
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
+                self.heatmap_size,
+                self.heatmap_size,
+                mode="nearest",
+                padding_mode="zeros",
+            ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
+
+            pseudo_v = resample_data(
+                pseudo_v,
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
+                self.heatmap_size,
+                self.heatmap_size,
+                mode="nearest",
+                padding_mode="zeros",
+            ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
+
+            pseudo_sigma = getattr(packed_annotations, "pseudo_sigma")
+            pseudo_sigma = resample_data(
+                pseudo_sigma,
+                packed_annotations.bbox_xywh_gt,
+                packed_annotations.bbox_xywh_est,
+                self.heatmap_size,
+                self.heatmap_size,
+                mode="nearest",
+                padding_mode="zeros",
+            ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
+
+        pseudo_u = pseudo_u[np.arange(pseudo_u.shape[0]), pred_index]
+        pseudo_v = pseudo_v[np.arange(pseudo_v.shape[0]), pred_index]
+        pseudo_sigma = pseudo_sigma[np.arange(pseudo_sigma.shape[0]), pred_index]
+        pseudo_sigma = 1. / (F.softplus(pseudo_sigma) + 0.01)
+
+        losses.update({
+            "loss_unsup_u": (F.smooth_l1_loss(u_est, pseudo_u, reduction='none') * pseudo_sigma).sum() * self.w_p_points * factor,
+            "loss_unsup_v": (F.smooth_l1_loss(v_est, pseudo_v, reduction='none') * pseudo_sigma).sum() * self.w_p_points * factor
+        })
 
         return losses

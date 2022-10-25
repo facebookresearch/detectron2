@@ -61,13 +61,8 @@ class DensePoseChartPredictor(nn.Module):
         self.v_lowres = ConvTranspose2d(
             dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
-        # Distribution Calibration
-        self.ts_on = cfg.MODEL.SEMI.TS_ON
-        if self.ts_on:
-            self.ts_factor = ConvTranspose2d(
-                dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-            )
 
+        # corrector
         hidden_dim = cfg.MODEL.SEMI.COR.CONV_HEAD_DIM
         kernel_size = cfg.MODEL.SEMI.COR.CONV_HEAD_KERNEL
         self.n_stacked_convs = cfg.MODEL.SEMI.COR.NUM_STACKED_CONVS
@@ -80,6 +75,12 @@ class DensePoseChartPredictor(nn.Module):
             self.add_module(layer_name, layer)
             n_channels = hidden_dim
         self.n_out_channels = n_channels
+        self.crt_segm = ConvTranspose2d(
+            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+        )
+        self.crt_sigma = ConvTranspose2d(
+            dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+        )
 
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
@@ -125,7 +126,8 @@ class DensePoseChartPredictor(nn.Module):
             fine_segm=fine_segm,
             u=self.interp2d(self.u_lowres(head_outputs)),
             v=self.interp2d(self.v_lowres(head_outputs)),
-            crt_segm=self.interp2d(crt_output)
+            crt_segm=self.interp2d(self.crt_segm(crt_output)),
+            crt_sigma=self.interp2d(self.crt_sigma(crt_output)),
         )
         return output
 
