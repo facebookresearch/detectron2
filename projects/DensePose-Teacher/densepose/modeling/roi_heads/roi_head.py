@@ -166,9 +166,9 @@ class DensePoseROIHeads(StandardROIHeads):
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs, ts_factor = self.densepose_predictor(densepose_head_outputs)
+                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
                 if self.crt_on:
-                    densepose_crt_outputs = self.corrector(features_dp, densepose_predictor_outputs, ts_factor)
+                    densepose_crt_outputs = self.corrector(features_dp, densepose_predictor_outputs)
                 else:
                     densepose_crt_outputs = None
 
@@ -187,9 +187,9 @@ class DensePoseROIHeads(StandardROIHeads):
             features_dp = self.densepose_pooler(features_list, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs, ts_factor = self.densepose_predictor(densepose_head_outputs)
+                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
                 if self.crt_on:
-                    corrections = self.corrector(features_dp, densepose_predictor_outputs, ts_factor)
+                    corrections = self.corrector(features_dp, densepose_predictor_outputs)
                     densepose_predictor_outputs.err_local = torch.cat((corrections.fine_segm, corrections.coarse_segm), dim=1)
             else:
                 densepose_predictor_outputs = None

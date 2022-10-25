@@ -196,7 +196,7 @@ class Corrector(nn.Module):
         self.n_stacked_convs = cfg.MODEL.SEMI.COR.NUM_STACKED_CONVS
         # fmt: on
         pad_size = kernel_size // 2
-        n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1)
+        n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1) + 2
         n_channels = n_pred_channels + 256 + 1 # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # self.upsample = ConvTranspose2d(n_pool_channels, n_pred_channels, 4, stride=2, padding=1)
         for i in range(self.n_stacked_convs):
@@ -220,21 +220,18 @@ class Corrector(nn.Module):
         if cfg.MODEL.WEIGHTS != "":
             self.load_from_model_checkpoint(cfg.MODEL.WEIGHTS)
 
-    def forward(self, features_dp, predictor_outputs, ts_factor):
+    def forward(self, features_dp, predictor_outputs):
         with torch.no_grad():
             fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
+            coarse_segm = F.interpolate(predictor_outputs.coarse_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
             p = F.softmax(fine_segm, dim=1)
-            # u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
-            # v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
+            coarse_segm = F.softmax(coarse_segm, dim=1)
 
             fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
 
             features_input = features_dp.detach()
 
-        output = torch.cat((features_input, p, fine_segm_entropy), dim=1)
-        # if ts_factor is not None:
-        #     ts_factor = F.interpolate(ts_factor, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
-        #     output = torch.cat((output, ts_factor), dim=1)
+        output = torch.cat((features_input, coarse_segm, p, fine_segm_entropy), dim=1)
 
         for i in range(self.n_stacked_convs):
             layer_name = self._get_layer_name(i)

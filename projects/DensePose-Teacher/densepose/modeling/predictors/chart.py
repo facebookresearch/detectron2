@@ -100,8 +100,6 @@ class DensePoseChartPredictor(nn.Module):
             fine_segm = fine_segm * torch.repeat_interleave(
                 ts_factor, fine_segm.shape[1], dim=1
             )
-        else:
-            ts_factor = None
 
         output = DensePoseChartPredictorOutput(
             coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
@@ -111,7 +109,7 @@ class DensePoseChartPredictor(nn.Module):
             err_local=None,
         )
 
-        return output, ts_factor
+        return output
 
     def forward_without_upsample(self, head_outputs: torch.Tensor):
         return DensePoseChartPredictorOutput(
