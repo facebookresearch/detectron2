@@ -185,20 +185,12 @@ class BilinearInterpolationHelper:
         w_yhi_xhi = self.w_yhi_xhi if w_yhi_xhi is None else w_yhi_xhi
 
         index_bbox = self.packed_annotations.point_bbox_indices
-        if block:
-            z_est_sampled = (
-                    z_est[index_bbox, slice_fine_segm, block_slice, self.y_lo, self.x_lo] * w_ylo_xlo
-                    + z_est[index_bbox, slice_fine_segm, block_slice, self.y_lo, self.x_hi] * w_ylo_xhi
-                    + z_est[index_bbox, slice_fine_segm, block_slice, self.y_hi, self.x_lo] * w_yhi_xlo
-                    + z_est[index_bbox, slice_fine_segm, block_slice, self.y_hi, self.x_hi] * w_yhi_xhi
-            )
-        else:
-            z_est_sampled = (
-                    z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_lo] * w_ylo_xlo
-                    + z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_hi] * w_ylo_xhi
-                    + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_lo] * w_yhi_xlo
-                    + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_hi] * w_yhi_xhi
-            )
+        z_est_sampled = (
+                z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_lo] * w_ylo_xlo
+                + z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_hi] * w_ylo_xhi
+                + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_lo] * w_yhi_xlo
+                + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_hi] * w_yhi_xhi
+        )
         return z_est_sampled
 
 

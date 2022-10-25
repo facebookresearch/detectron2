@@ -273,8 +273,8 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C = cfg
 
     _C.MODEL.SEMI = CN()
-    _C.MODEL.SEMI.SEGM_WEIGHTS = 1.
-    _C.MODEL.SEMI.POINTS_WEIGHTS = 5.
+    _C.MODEL.SEMI.SEGM_WEIGHTS = 0.1
+    _C.MODEL.SEMI.POINTS_WEIGHTS = 0.5
     _C.MODEL.SEMI.THRESHOLD = 1.  # =1 will not filter pseudo labels
     _C.MODEL.SEMI.INFERENCE_ON = "student"
     _C.MODEL.SEMI.TEACHER_WEIGHTS = ""

@@ -196,7 +196,7 @@ class Corrector(nn.Module):
         self.n_stacked_convs = cfg.MODEL.SEMI.COR.NUM_STACKED_CONVS
         # fmt: on
         pad_size = kernel_size // 2
-        n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1) * 3 + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
+        n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1)
         n_channels = n_pred_channels + 256 + 1 # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # self.upsample = ConvTranspose2d(n_pool_channels, n_pred_channels, 4, stride=2, padding=1)
         for i in range(self.n_stacked_convs):
@@ -215,33 +215,26 @@ class Corrector(nn.Module):
 
         self.w_points = cfg.MODEL.SEMI.COR.POINTS_WEIGHTS
         self.patch_channels = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
-        self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
-        if self.correct_warm_iter == 0:
-            self.correct_warm_iter = cfg.SOLVER.MAX_ITER
-
-        # self.symm_parts_index = [0, 2, 1, 3, 4, 5, 6, 9, 7, 10, 8, 13, 11, 14, 12, 17, 15, 18, 16, 21, 19, 22, 20, 24, 23]
-
         logger = logging.getLogger(__name__)
         logger.info(f"Adding Corrector ...")
         if cfg.MODEL.WEIGHTS != "":
             self.load_from_model_checkpoint(cfg.MODEL.WEIGHTS)
 
-    def forward(self, features_dp, predictor_outputs, shuffle=None):
+    def forward(self, features_dp, predictor_outputs, ts_factor):
         with torch.no_grad():
             fine_segm = F.interpolate(predictor_outputs.fine_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
-            coarse_segm = F.interpolate(predictor_outputs.coarse_segm, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
             p = F.softmax(fine_segm, dim=1)
-            coarse_segm = F.softmax(coarse_segm, dim=1)
-
-            u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
-            v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
+            # u = F.interpolate(predictor_outputs.u, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
+            # v = F.interpolate(predictor_outputs.v, size=features_dp.shape[-2:], mode='bilinear', align_corners=False).clamp(0., 1.)
 
             fine_segm_entropy = torch.sum(-p * F.log_softmax(fine_segm, dim=1), dim=1).unsqueeze(1)
-            # coarse_segm_entropy = torch.sum(-coarse_segm * F.log_softmax(coarse_segm, dim=1), dim=1).unsqueeze(1)
 
             features_input = features_dp.detach()
 
-        output = torch.cat((features_input, coarse_segm, p, fine_segm_entropy, u, v), dim=1)
+        output = torch.cat((features_input, p, fine_segm_entropy), dim=1)
+        # if ts_factor is not None:
+        #     ts_factor = F.interpolate(ts_factor, size=features_dp.shape[-2:], mode='bilinear', align_corners=False)
+        #     output = torch.cat((output, ts_factor), dim=1)
 
         for i in range(self.n_stacked_convs):
             layer_name = self._get_layer_name(i)
@@ -280,14 +273,6 @@ class Corrector(nn.Module):
                     state_dict_local[key[len(prefix) :]] = v_key
             self.load_state_dict(state_dict_local, strict=False)
 
-def down_sampling(z, wout, hout, mode: str='nearest', padding_mode:str='zeros'):
-    n = z.shape[0]
-    grid_w = torch.arange(wout, device=z.device, dtype=torch.float) / wout
-    grid_h = torch.arange(hout, device=z.device, dtype=torch.float) / hout
-    grid_w = grid_w[None, None, :].expand(n, hout, wout) * 2 - 1
-    grid_h = grid_h[None, :, None].expand(n, hout, wout) * 2 - 1
-    grid = torch.stack((grid_w, grid_h), dim=3)
-    return F.grid_sample(z, grid, mode=mode, padding_mode=padding_mode, align_corners=True)
 
 class CorrectorPredictor(nn.Module):
     def __init__(self, cfg: CfgNode, input_channels: int):
@@ -305,13 +290,6 @@ class CorrectorPredictor(nn.Module):
             dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
 
-        # self.u_correction = ConvTranspose2d(
-        #     dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-        # )
-
-        # self.v_correction = ConvTranspose2d(
-        #     dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
-        # )
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
         initialize_module_params(self)
 
@@ -324,17 +302,13 @@ class CorrectorPredictor(nn.Module):
         return CorrectorPredictorOutput(
             coarse_segm=self.interp2d(self.ann_index_correction(corrector_output)),
             fine_segm=self.interp2d(self.segm_correction(corrector_output)),
-            # u=self.interp2d(self.u_correction(corrector_output)),
-            # v=self.interp2d(self.v_correction(corrector_output)),
-        )  
+        )
 
 
 @dataclass
 class CorrectorPredictorOutput:
     coarse_segm: torch.Tensor
     fine_segm: torch.Tensor
-    # u: torch.Tensor
-    # v: torch.Tensor
 
     def __len__(self):
         return self.coarse_segm.size(0)
@@ -346,15 +320,11 @@ class CorrectorPredictorOutput:
             return CorrectorPredictorOutput(
                 coarse_segm=self.coarse_segm.unsqueeze(0),
                 fine_segm=self.fine_segm[item].unsqueeze(0),
-                # u=self.u[item].unsqueeze(0),
-                # v=self.v[item].unsqueeze(0),
             )
         else:
             return CorrectorPredictorOutput(
                 coarse_segm=self.coarse_segm[item],
                 fine_segm=self.fine_segm[item],
-                # u=self.u[item],
-                # v=self.v[item],
             )
 
     def to(self, device: torch.device):
@@ -363,10 +333,7 @@ class CorrectorPredictorOutput:
         """
         coarse_segm = self.coarse_segm.to(device)
         fine_segm = self.fine_segm.to(device)
-        # u = self.u.to(device)
-        # v = self.v.to(device)
-        return CorrectorPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm)#, u=u, v=v)
-        # return CorrectorPredictorOutput(fine_segm=fine_segm, u=u, v=v)
+        return CorrectorPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm)
 
 class NonLocalBlock(nn.Module):
     def __init__(self, in_channels, inter_channels=None, mode='embedded', bn_layer=True) -> None:

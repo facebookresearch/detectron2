@@ -125,20 +125,11 @@ class DensePoseROIHeads(StandardROIHeads):
         self.densepose_losses = build_densepose_losses(cfg)
         self.embedder = build_densepose_embedder(cfg)
 
-        # self.densepose_teacher_pooler = ROIPooler(
-        #     output_size=cfg.MODEL.ROI_DENSEPOSE_HEAD.HEATMAP_SIZE // 2,
-        #     scales=dp_pooler_scales,
-        #     sampling_ratio=dp_pooler_sampling_ratio,
-        #     pooler_type=dp_pooler_type,
-        # )
-        if cfg.MODEL.SEMI.COR.CRT_ON:
+        self.crt_on = cfg.MODEL.SEMI.COR.CRT_ON
+        if self.crt_on:
             self.corrector = Corrector(cfg)
-        else:
-            self.corrector = None
+
         self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
-        #
-        # # the role in semi supervised learning. student or teacher
-        self.teacher = False
 
     def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances], iteration):
         """
@@ -175,22 +166,15 @@ class DensePoseROIHeads(StandardROIHeads):
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
-                #
-                # if self.corrector is not None:
-                #     corrections = self.corrector(densepose_predictor_outputs, features_dp)
-                # else:
-                #     corrections = None
-                if self.corrector is not None:
-                    # shuffle = torch.randperm(25)
-                    densepose_crt_outputs = self.corrector(features_dp, densepose_predictor_outputs)
+                densepose_predictor_outputs, ts_factor = self.densepose_predictor(densepose_head_outputs)
+                if self.crt_on:
+                    densepose_crt_outputs = self.corrector(features_dp, densepose_predictor_outputs, ts_factor)
                 else:
-                    # shuffle = None
                     densepose_crt_outputs = None
 
                 densepose_loss_dict = self.densepose_losses(
                     proposals, densepose_predictor_outputs, embedder=self.embedder, corrections=densepose_crt_outputs,
-                    shuffle=None, iteration=iteration
+                    iteration=iteration
                 )
                 return densepose_loss_dict
         else:
@@ -203,19 +187,10 @@ class DensePoseROIHeads(StandardROIHeads):
             features_dp = self.densepose_pooler(features_list, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
-                # if self.corrector is not None and self.teacher:
-                #     corrections = self.corrector(densepose_predictor_outputs, features_dp)
-                #     self.corrector.correct(corrections, densepose_predictor_outputs)
-                # if self.teacher:
-                    # self.store_pooler_features(self.densepose_teacher_pooler(features_list, pred_boxes), instances)
-                if self.teacher and self.corrector is not None:
-                    # densepose_predictor_outputs = self.densepose_predictor.forward_without_upsample(densepose_head_outputs)
-                    # self.post_process(densepose_predictor_outputs)
-                    # self.store_pooler_features(features_dp, instances)
-                    corrections = self.corrector(features_dp, densepose_predictor_outputs)
-                    densepose_predictor_outputs.err_local = corrections.fine_segm
-                    # self.corrector.correct(corrections, densepose_predictor_outputs)
+                densepose_predictor_outputs, ts_factor = self.densepose_predictor(densepose_head_outputs)
+                if self.crt_on:
+                    corrections = self.corrector(features_dp, densepose_predictor_outputs, ts_factor)
+                    densepose_predictor_outputs.err_local = torch.cat((corrections.fine_segm, corrections.coarse_segm), dim=1)
             else:
                 densepose_predictor_outputs = None
 
@@ -244,9 +219,3 @@ class DensePoseROIHeads(StandardROIHeads):
         instances = super().forward_with_given_boxes(features, instances)
         instances = self._forward_densepose(features, instances, self.correct_warm_iter)
         return instances
-
-    def it_is_teacher(self):
-        self.teacher = True
-
-    def reset_role(self):
-        self.teacher = False

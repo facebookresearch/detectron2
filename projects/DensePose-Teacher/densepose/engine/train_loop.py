@@ -56,7 +56,6 @@ class SimpleTrainer(TrainerBase):
 
         self.student_model = student_model
         self.teacher_model = teacher_model
-        self.teacher_model.roi_heads.it_is_teacher()
         self.data_loader = data_loader
         self._data_loader_iter = iter(data_loader)
         self.optimizer = optimizer
@@ -115,10 +114,6 @@ class SimpleTrainer(TrainerBase):
         # )
 
         del teacher_output
-
-        # if self.strong_aug is not None:
-        #     for aug in self.strong_aug:
-        #         data = aug(data)
 
         self.student_model.module.update_iteration(self.iter)
 
