@@ -4,7 +4,7 @@ MODEL:
   RESNETS:
     DEPTH: 50
   ROI_DENSEPOSE_HEAD:
-    DECODER_ON: True
+    DECODER_ON: False
     LOSS_NAME: "DensePoseChartLoss"
     PREDICTOR_NAME: "DensePoseChartPredictor"
   SEMI:
