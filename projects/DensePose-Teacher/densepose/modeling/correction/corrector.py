@@ -315,7 +315,7 @@ class CorrectorPredictorOutput:
     ):
         if isinstance(item, int):
             return CorrectorPredictorOutput(
-                coarse_segm=self.coarse_segm.unsqueeze(0),
+                coarse_segm=self.coarse_segm[item].unsqueeze(0),
                 fine_segm=self.fine_segm[item].unsqueeze(0),
             )
         else:
