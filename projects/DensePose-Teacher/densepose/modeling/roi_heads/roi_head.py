@@ -125,9 +125,9 @@ class DensePoseROIHeads(StandardROIHeads):
         self.densepose_losses = build_densepose_losses(cfg)
         self.embedder = build_densepose_embedder(cfg)
 
-        self.crt_on = cfg.MODEL.SEMI.COR.CRT_ON
-        if self.crt_on:
-            self.corrector = Corrector(cfg)
+        # self.crt_on = cfg.MODEL.SEMI.COR.CRT_ON
+        # if self.crt_on:
+        #     self.corrector = Corrector(cfg)
 
         self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
 

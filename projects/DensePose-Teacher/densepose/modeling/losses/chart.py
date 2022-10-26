@@ -117,7 +117,7 @@ class DensePoseChartLoss:
             j_valid_fg,  # pyre-ignore[6]
         )
 
-        losses_segm = self.produce_densepose_losses_segm(
+        losses_segm, front_index = self.produce_densepose_losses_segm(
             proposals_with_gt,
             densepose_predictor_outputs,
             packed_annotations,
@@ -130,6 +130,7 @@ class DensePoseChartLoss:
             densepose_predictor_outputs,
             packed_annotations,
             iteration = iteration,
+            front_index = front_index,
         )
 
         return {**losses_uv, **losses_segm, **losses_unsup}
@@ -176,16 +177,16 @@ class DensePoseChartLoss:
         u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
         v_gt = packed_annotations.v_gt[j_valid_fg]
         v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
-        loss_u = F.smooth_l1_loss(u_est, u_gt, reduction="none")
-        loss_v = F.smooth_l1_loss(v_est, v_gt, reduction="none")
+        loss_u = F.smooth_l1_loss(u_est, u_gt, reduction="sum")
+        loss_v = F.smooth_l1_loss(v_est, v_gt, reduction="sum")
 
         sigma = interpolator.extract_at_points(densepose_predictor_outputs.sigma)[j_valid_fg]
         sigma = F.softplus(sigma) + 0.01
         delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
 
         loss = {
-            "loss_densepose_U": (loss_u * uv_weights).mean() * self.w_points,
-            "loss_densepose_V": (loss_v * uv_weights).mean() * self.w_points,
+            "loss_densepose_U": loss_u * self.w_points,
+            "loss_densepose_V": loss_v * self.w_points,
             "loss_correction_UV": (0.5 * self.log2pi + 2 * torch.log(sigma) + delta_t_delta / sigma).sum() * self.w_crt_sigma
         }
 
@@ -242,6 +243,8 @@ class DensePoseChartLoss:
             w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
             w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
             )[interpolator.j_valid, :].squeeze(1)
+        # coarse_segm_crt_est = densepose_predictor_outputs.crt_segm[packed_annotations.bbox_indices]
+        # coarse_segm_crt_est = coarse_segm_crt_est[:, 1]
         segm_est_index = fine_segm_est.detach().argmax(dim=1).long()
         fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
 
@@ -251,11 +254,16 @@ class DensePoseChartLoss:
         crt_fine_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, fine_segm_crt_gt.float(), reduction='none')
         crt_fine_segm_loss[~fine_segm_crt_gt] *= (one_loss / zero_loss)
 
+        # segm_est_index = coarse_segm_est.detach().argmax(dim=1).long()
+        # coarse_segm_crt_gt = (coarse_segm_gt.detach() > 0) == segm_est_index
+
         loss.update({
-            "loss_correction_IS": crt_fine_segm_loss.mean() * self.w_crt_segm
+            "loss_correction_IS": (crt_fine_segm_loss.mean() * self.w_crt_segm)
+                                   # + F.binary_cross_entropy_with_logits(coarse_segm_crt_est, coarse_segm_crt_gt.float()))
+                                   # * 0.5 * self.w_crt_segm
         })
 
-        return loss
+        return loss, (coarse_segm_gt > 0).reshape(-1, )
 
 
     def produce_densepose_losses_unsup(
@@ -264,6 +272,7 @@ class DensePoseChartLoss:
         densepose_predictor_outputs: Any,
         packed_annotations: Any,
         iteration,
+        front_index,
     ) -> LossDict:
         if getattr(packed_annotations, "pseudo_segm") is None:
             return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
@@ -287,7 +296,8 @@ class DensePoseChartLoss:
                 padding_mode="zeros",
             )
             pos_index = torch.sigmoid(pos_index).permute(0, 2, 3, 1).reshape(-1, 2) > 0.5
-            pos_index = pos_index[:, 0] * pos_index[:, 1]
+            pos_index = pos_index * front_index
+            # pos_index = pos_index[:, 0] * pos_index[:, 1]
 
             if pos_index.sum() <= 0:
                 return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
@@ -350,14 +360,14 @@ class DensePoseChartLoss:
                 padding_mode="zeros",
             ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
 
-        pseudo_u = pseudo_u[np.arange(pseudo_u.shape[0]), pred_index]
-        pseudo_v = pseudo_v[np.arange(pseudo_v.shape[0]), pred_index]
+        pseudo_u = pseudo_u[np.arange(pseudo_u.shape[0]), pred_index].clamp(0., 1.)
+        pseudo_v = pseudo_v[np.arange(pseudo_v.shape[0]), pred_index].clamp(0., 1.)
         pseudo_sigma = pseudo_sigma[np.arange(pseudo_sigma.shape[0]), pred_index]
         pseudo_sigma = 1. / (F.softplus(pseudo_sigma) + 0.01)
 
         losses.update({
-            "loss_unsup_u": (F.smooth_l1_loss(u_est, pseudo_u, reduction='none') * pseudo_sigma).sum() * self.w_p_points * factor,
-            "loss_unsup_v": (F.smooth_l1_loss(v_est, pseudo_v, reduction='none') * pseudo_sigma).sum() * self.w_p_points * factor
+            "loss_unsup_u": (F.smooth_l1_loss(u_est, pseudo_u, reduction='none')).mean() * self.w_p_points * factor,
+            "loss_unsup_v": (F.smooth_l1_loss(v_est, pseudo_v, reduction='none')).mean() * self.w_p_points * factor
         })
 
         return losses
