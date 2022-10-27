@@ -397,7 +397,7 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         if hasattr(dp_gt, "pseudo_mask"):
             self.pseudo_mask.append(dp_gt.pseudo_mask.unsqueeze(0))
         if hasattr(dp_gt, "pseudo_sigma"):
-            self.pseudo_mask.append(dp_gt.pseudo_sigma.unsqueeze(0))
+            self.pseudo_sigma.append(dp_gt.pseudo_sigma.unsqueeze(0))
         
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
         self.bbox_xywh_est.append(box_xywh_est.view(-1, 4))

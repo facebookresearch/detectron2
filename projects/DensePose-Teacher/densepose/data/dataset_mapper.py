@@ -32,10 +32,10 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        random_scale = RandomScale(
-            cfg.MODEL.SEMI.SCALE, cfg.INPUT.MAX_SIZE_TRAIN
-        )
-        result.append(random_scale)
+        # random_scale = RandomScale(
+        #     cfg.MODEL.SEMI.SCALE, cfg.INPUT.MAX_SIZE_TRAIN
+        # )
+        # result.append(random_scale)
 
         # min_size = cfg.INPUT.MIN_SIZE_TRAIN
         # max_size = cfg.INPUT.MAX_SIZE_TRAIN

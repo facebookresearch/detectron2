@@ -283,7 +283,7 @@ def add_semi_sup_config(cfg: CN) -> None:
 
     # config for strong augmentation
     _C.MODEL.SEMI.ERASE_SIZE = [0, 0.2]
-    _C.MODEL.SEMI.ERASE_ITER = (2, 6)
+    _C.MODEL.SEMI.ERASE_ITER = (2, 5)
     _C.MODEL.SEMI.SCALE = (0.75, 1.25)
     _C.MODEL.SEMI.FLOW = False
 
@@ -293,19 +293,12 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 512
     _C.MODEL.SEMI.COR.CONV_HEAD_KERNEL = 3
     _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 4
-    _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 0.1  # 0.01
+    _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 1.  # 0.01
     _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.001  # 0.0001
     _C.MODEL.SEMI.COR.SIGMA_WEIGHTS = 0.0005
     _C.MODEL.SEMI.COR.WARM_ITER = 40000
 
     _C.INPUT.ST_ANGLES = [-15, 15]
-
-def add_block_config(cfg: CN):
-    _C = cfg
-    _C.MODEL.BLOCK = CN()
-    _C.MODEL.BLOCK.BLOCK_NUM = 5
-    _C.MODEL.BLOCK.CLS_WEIGHTS = 0.0005
-    _C.MODEL.BLOCK.REGRESS_WEIGHTS = 0.02
 
 
 def add_densepose_config(cfg: CN) -> None:
@@ -315,4 +308,3 @@ def add_densepose_config(cfg: CN) -> None:
     add_dataset_category_config(cfg)
     add_evaluation_config(cfg)
     add_semi_sup_config(cfg)
-    add_block_config(cfg)
