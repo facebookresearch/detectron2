@@ -26,7 +26,8 @@ class MeanTeacher(HookBase):
         self.decay_factor = decay_factor
 
     def before_train(self):
-        self.momentum_update(self.trainer.teacher_model, self.trainer.student_model, 0)
+        if self.trainer.iter == 0:
+            self.momentum_update(self.trainer.teacher_model, self.trainer.student_model, 0)
 
     def before_step(self):
         if (self.trainer.iter + 1) % self.interval == 0:

@@ -4,6 +4,8 @@ MODEL:
   RESNETS:
     DEPTH: 50
   ROI_DENSEPOSE_HEAD:
+#    UV_CONFIDENCE:
+#      ENABLED: True
     DECODER_ON: False
     LOSS_NAME: "DensePoseChartLoss"
     PREDICTOR_NAME: "DensePoseChartPredictor"
@@ -13,6 +15,9 @@ MODEL:
       CRT_ON: True
       WARM_ITER: 40000
 SOLVER:
+#  CLIP_GRADIENTS:
+#    ENABLED: True
+#  WARMUP_FACTOR: 0.025
   MAX_ITER: 180000
   STEPS: (120000, 160000)
 #SOLVER:

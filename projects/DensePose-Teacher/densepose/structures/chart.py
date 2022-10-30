@@ -30,7 +30,7 @@ class DensePoseChartPredictorOutput:
     u: torch.Tensor
     v: torch.Tensor
     crt_segm: torch.Tensor
-    # crt_sigma: torch.Tensor
+    crt_sigma: torch.Tensor
 
     def __len__(self):
         """
@@ -62,7 +62,7 @@ class DensePoseChartPredictorOutput:
                 u=self.u[item].unsqueeze(0),
                 v=self.v[item].unsqueeze(0),
                 crt_segm=slice_if_not_none(self.crt_segm, item),
-                # crt_sigma=slice_if_not_none(self.crt_sigma, item),
+                crt_sigma=slice_if_not_none(self.crt_sigma, item),
             )
         else:
             return DensePoseChartPredictorOutput(
@@ -71,7 +71,7 @@ class DensePoseChartPredictorOutput:
                 u=self.u[item],
                 v=self.v[item],
                 crt_segm=slice_if_not_none(self.crt_segm, item),
-                # crt_sigma=slice_if_not_none(self.crt_sigma, item)
+                crt_sigma=slice_if_not_none(self.crt_sigma, item)
             )
 
     def to(self, device: torch.device):
@@ -89,7 +89,7 @@ class DensePoseChartPredictorOutput:
         u = self.u.to(device)
         v = self.v.to(device)
         crt_segm = to_device_if_tensor(self.crt_segm)
-        # crt_sigma = to_device_if_tensor(self.crt_sigma)
+        crt_sigma = to_device_if_tensor(self.crt_sigma)
 
-        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v, crt_segm=crt_segm,)
-                                             # crt_sigma=crt_sigma)
+        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v, crt_segm=crt_segm,
+                                             crt_sigma=crt_sigma)
