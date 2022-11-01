@@ -123,13 +123,11 @@ class DensePoseROIHeads(StandardROIHeads):
             cfg, self.densepose_head.n_out_channels
         )
         self.densepose_losses = build_densepose_losses(cfg)
-        self.embedder = build_densepose_embedder(cfg)
+        # self.embedder = build_densepose_embedder(cfg)
 
         # self.crt_on = cfg.MODEL.SEMI.COR.CRT_ON
         # if self.crt_on:
         #     self.corrector = Corrector(cfg)
-
-        self.correct_warm_iter = cfg.MODEL.SEMI.COR.WARM_ITER
 
     def _forward_densepose(self, features: Dict[str, torch.Tensor], instances: List[Instances], iteration):
         """
@@ -166,10 +164,10 @@ class DensePoseROIHeads(StandardROIHeads):
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
+                densepose_predictor_outputs, dp_predictions = self.densepose_predictor(densepose_head_outputs)
 
                 densepose_loss_dict = self.densepose_losses(
-                    proposals, densepose_predictor_outputs, embedder=self.embedder, iteration=iteration
+                    proposals, densepose_predictor_outputs, dp_predictions=dp_predictions, iteration=iteration
                 )
                 return densepose_loss_dict
         else:
@@ -182,7 +180,7 @@ class DensePoseROIHeads(StandardROIHeads):
             features_dp = self.densepose_pooler(features_list, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs)
+                densepose_predictor_outputs, _ = self.densepose_predictor(densepose_head_outputs)
             else:
                 densepose_predictor_outputs = None
 
@@ -209,5 +207,5 @@ class DensePoseROIHeads(StandardROIHeads):
     ):
 
         instances = super().forward_with_given_boxes(features, instances)
-        instances = self._forward_densepose(features, instances, self.correct_warm_iter)
+        instances = self._forward_densepose(features, instances, -1)
         return instances

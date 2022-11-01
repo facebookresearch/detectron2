@@ -279,7 +279,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.INFERENCE_ON = "student"
     _C.MODEL.SEMI.TEACHER_WEIGHTS = ""
     _C.MODEL.SEMI.TEACHER_OUTPUT = "./output/teacher"
-    # _C.MODEL.SEMI.TS_ON = True
+    _C.MODEL.SEMI.SEGM_SCALE = True
 
     # config for strong augmentation
     _C.MODEL.SEMI.ERASE_SIZE = [0, 0.2]
@@ -289,7 +289,8 @@ def add_semi_sup_config(cfg: CN) -> None:
 
     # config for corrector
     _C.MODEL.SEMI.COR = CN()
-    _C.MODEL.SEMI.COR.CRT_ON = False
+    _C.MODEL.SEMI.COR.DROPOUT = False
+    _C.MODEL.SEMI.COR.DP_TIMES = 4
     _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 512
     _C.MODEL.SEMI.COR.CONV_HEAD_KERNEL = 3
     _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 2
@@ -297,6 +298,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     # _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.01  # 0.0001
     _C.MODEL.SEMI.COR.SIGMA_WEIGHTS = 0.0005
     _C.MODEL.SEMI.COR.WARM_ITER = 40000
+    _C.MODEL.SEMI.COR.TS = True
 
     _C.INPUT.ST_ANGLES = [-15, 15]
 

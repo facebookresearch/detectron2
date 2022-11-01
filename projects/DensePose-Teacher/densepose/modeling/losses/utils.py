@@ -155,6 +155,43 @@ class BilinearInterpolationHelper:
             w_yhi_xhi,
         )
 
+    @staticmethod
+    def from_matches_to_pseudo(
+            packed_annotations: Any, densepose_outputs_size_hw: Tuple[int, int]
+    ) -> "BilinearInterpolationHelper":
+        zh, zw = densepose_outputs_size_hw
+        x = packed_annotations.x_gt * zw / 256.0
+        y = packed_annotations.y_gt * zh / 256.0
+        x_valid = (x >= 0) * (x <= zw)
+        y_valid = (y >= 0) * (y <= zh)
+
+        x_lo = x.floor().long().clamp(min=0, max=zw - 1)
+        y_lo = y.floor().long().clamp(min=0, max=zh - 1)
+        x_hi = (x_lo + 1).clamp(max=zw - 1)
+        y_hi = (y_lo + 1).clamp(max=zh - 1)
+        x = torch.min(x_hi.float(), x)
+        y = torch.min(y_hi.float(), y)
+        x_w = x - x_lo.float()
+        y_w = y - y_lo.float()
+
+        w_ylo_xlo = (1.0 - x_w) * (1.0 - y_w)
+        w_ylo_xhi = x_w * (1.0 - y_w)
+        w_yhi_xlo = (1.0 - x_w) * y_w
+        w_yhi_xhi = x_w * y_w
+
+        return BilinearInterpolationHelper(
+            packed_annotations,
+            x_valid * y_valid,
+            y_lo,
+            y_hi,
+            x_lo,
+            x_hi,
+            w_ylo_xlo,  # pyre-ignore[6]
+            w_ylo_xhi,
+            w_yhi_xlo,
+            w_yhi_xhi,
+        )
+
     def extract_at_points(
         self,
         z_est,
@@ -163,8 +200,6 @@ class BilinearInterpolationHelper:
         w_ylo_xhi=None,
         w_yhi_xlo=None,
         w_yhi_xhi=None,
-        block=False,
-        block_slice=None
     ):
         """
         Extract ground truth values z_gt for valid point indices and estimated
@@ -191,6 +226,46 @@ class BilinearInterpolationHelper:
                 + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_lo] * w_yhi_xlo
                 + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_hi] * w_yhi_xhi
         )
+        # x1 = z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_lo] * w_ylo_xlo
+        # x2 = z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_hi] * w_ylo_xhi
+        # x3 = z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_lo] * w_yhi_xlo
+        # x4 = z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_hi] * w_yhi_xhi
+        # z_est_sampled = x1 + x2 + x3 + x4
+        return z_est_sampled
+
+    def extract_at_points_pseduo(
+        self,
+        z_est,
+        slice_fine_segm=None,
+        w_ylo_xlo=None,
+        w_ylo_xhi=None,
+        w_yhi_xlo=None,
+        w_yhi_xhi=None,
+    ):
+        """
+        Extract ground truth values z_gt for valid point indices and estimated
+        values z_est using bilinear interpolation over top-left (y_lo, x_lo),
+        top-right (y_lo, x_hi), bottom-left (y_hi, x_lo) and bottom-right
+        (y_hi, x_hi) values in z_est with corresponding weights:
+        w_ylo_xlo, w_ylo_xhi, w_yhi_xlo and w_yhi_xhi.
+        Use slice_fine_segm to slice dim=1 in z_est
+        """
+        slice_fine_segm = (
+            self.packed_annotations.fine_segm_labels_gt
+            if slice_fine_segm is None
+            else slice_fine_segm
+        )
+        w_ylo_xlo = self.w_ylo_xlo if w_ylo_xlo is None else w_ylo_xlo
+        w_ylo_xhi = self.w_ylo_xhi if w_ylo_xhi is None else w_ylo_xhi
+        w_yhi_xlo = self.w_yhi_xlo if w_yhi_xlo is None else w_yhi_xlo
+        w_yhi_xhi = self.w_yhi_xhi if w_yhi_xhi is None else w_yhi_xhi
+
+        index_bbox = self.packed_annotations.point_bbox_with_dp_indices
+        x1 = z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_lo] * w_ylo_xlo
+        x2 = z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_hi] * w_ylo_xhi
+        x3 = z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_lo] * w_yhi_xlo
+        x4 = z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_hi] * w_yhi_xhi
+        z_est_sampled = x1 + x2 + x3 + x4
         return z_est_sampled
 
 
