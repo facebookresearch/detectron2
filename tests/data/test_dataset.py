@@ -19,7 +19,10 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.data.common import AspectRatioGroupedDataset
+from detectron2.data.common import (
+    AspectRatioGroupedDataset,
+    set_default_dataset_from_list_serialize_method,
+)
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
 
 
@@ -40,6 +43,19 @@ class TestDatasetFromList(unittest.TestCase):
             path = dataset[i]["file_name"]
             self.assertTrue(isinstance(path, LazyPath))
             self.assertEqual(os.fspath(path), _a_slow_func(i))
+
+    def test_alternative_serialize_method(self):
+        dataset = [1, 2, 3]
+        dataset = DatasetFromList(dataset, serialize=torch.tensor)
+        self.assertEqual(dataset[2], torch.tensor(3))
+
+    def test_change_default_serialize_method(self):
+        dataset = [1, 2, 3]
+        with set_default_dataset_from_list_serialize_method(torch.tensor):
+            dataset_1 = DatasetFromList(dataset, serialize=True)
+            self.assertEqual(dataset_1[2], torch.tensor(3))
+        dataset_2 = DatasetFromList(dataset, serialize=True)
+        self.assertEqual(dataset_2[2], 3)
 
 
 class TestMapDataset(unittest.TestCase):
