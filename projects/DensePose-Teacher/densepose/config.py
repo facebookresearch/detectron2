@@ -274,7 +274,7 @@ def add_semi_sup_config(cfg: CN) -> None:
 
     _C.MODEL.SEMI = CN()
     _C.MODEL.SEMI.SEGM_WEIGHTS = 0.1
-    _C.MODEL.SEMI.POINTS_WEIGHTS = 0.0001
+    _C.MODEL.SEMI.POINTS_WEIGHTS = 0.001
     _C.MODEL.SEMI.THRESHOLD = 1.  # =1 will not filter pseudo labels
     _C.MODEL.SEMI.INFERENCE_ON = "student"
     _C.MODEL.SEMI.TEACHER_WEIGHTS = ""
@@ -283,7 +283,7 @@ def add_semi_sup_config(cfg: CN) -> None:
 
     # config for strong augmentation
     _C.MODEL.SEMI.ERASE_SIZE = [0, 0.2]
-    _C.MODEL.SEMI.ERASE_ITER = (3, 9)
+    _C.MODEL.SEMI.ERASE_ITER = (2, 5)
     _C.MODEL.SEMI.SCALE = (0.75, 1.25)
     _C.MODEL.SEMI.FLOW = False
 

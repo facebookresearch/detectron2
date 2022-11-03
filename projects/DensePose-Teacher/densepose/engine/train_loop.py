@@ -89,7 +89,7 @@ class SimpleTrainer(TrainerBase):
             pseudo_u = pseudo_label.u
             pseudo_v = pseudo_label.v
             pseudo_mask = pseudo_label.crt_segm
-            # pseudo_sigma = pseudo_label.crt_sigma
+            pseudo_sigma = pseudo_label.crt_sigma
 
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:
@@ -98,7 +98,7 @@ class SimpleTrainer(TrainerBase):
                     densepose_data.set("pseudo_u", pseudo_u[j])
                     densepose_data.set("pseudo_v", pseudo_v[j])
                     densepose_data.set("pseudo_mask", pseudo_mask[j])
-                    # densepose_data.set("pseudo_sigma", pseudo_sigma[j])
+                    densepose_data.set("pseudo_sigma", pseudo_sigma[j])
 
         # pseudo_labels = []
         # bbox_num = 0

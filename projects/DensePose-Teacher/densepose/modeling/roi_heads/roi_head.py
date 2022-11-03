@@ -164,10 +164,10 @@ class DensePoseROIHeads(StandardROIHeads):
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs, dp_predictions = self.densepose_predictor(densepose_head_outputs)
+                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs, features_dp)
 
                 densepose_loss_dict = self.densepose_losses(
-                    proposals, densepose_predictor_outputs, dp_predictions=dp_predictions, iteration=iteration
+                    proposals, densepose_predictor_outputs, iteration=iteration
                 )
                 return densepose_loss_dict
         else:
@@ -180,7 +180,7 @@ class DensePoseROIHeads(StandardROIHeads):
             features_dp = self.densepose_pooler(features_list, pred_boxes)
             if len(features_dp) > 0:
                 densepose_head_outputs = self.densepose_head(features_dp)
-                densepose_predictor_outputs, _ = self.densepose_predictor(densepose_head_outputs)
+                densepose_predictor_outputs = self.densepose_predictor(densepose_head_outputs, features_dp)
             else:
                 densepose_predictor_outputs = None
 

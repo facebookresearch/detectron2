@@ -63,22 +63,22 @@ class DensePoseChartPredictor(nn.Module):
         )
 
         # corrector
-        # hidden_dim = cfg.MODEL.SEMI.COR.CONV_HEAD_DIM
-        # conv_kernel_size = cfg.MODEL.SEMI.COR.CONV_HEAD_KERNEL
-        # self.n_stacked_convs = cfg.MODEL.SEMI.COR.NUM_STACKED_CONVS
-        # pad_size = conv_kernel_size // 2
-        # n_pred_channels = (cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1) + 2
-        # n_channels = n_pred_channels + 256 + 1  # + cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
-        # n_channels = dim_in
-        # for i in range(self.n_stacked_convs):
-        #     layer = Conv2d(n_channels, hidden_dim, conv_kernel_size, stride=1, padding=pad_size)
-        #     layer_name = _get_layer_name(i)
-        #     self.add_module(layer_name, layer)
-        #     n_channels = hidden_dim
-        # self.n_out_channels = n_channels
+        hidden_dim = cfg.MODEL.SEMI.COR.CONV_HEAD_DIM
+        conv_kernel_size = cfg.MODEL.SEMI.COR.CONV_HEAD_KERNEL
+        pad_size = conv_kernel_size // 2
+        n_channels = dim_in
+        self.n_stacked_convs = cfg.MODEL.SEMI.COR.NUM_STACKED_CONVS
+        for i in range(self.n_stacked_convs):
+            layer = Conv2d(n_channels, hidden_dim, conv_kernel_size, stride=1, padding=pad_size)
+            layer_name = _get_layer_name(i)
+            self.add_module(layer_name, layer)
+            n_channels = hidden_dim
+
         self.crt_segm = ConvTranspose2d(
             dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
+        self.channels_squeeze = Conv2d(dim_in, dim_in // 2, kernel_size=1, stride=1)
+
         self.uv_confidence = cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED
         if self.uv_confidence:
             self.crt_sigma = ConvTranspose2d(
@@ -107,23 +107,17 @@ class DensePoseChartPredictor(nn.Module):
             tensor_nchw, scale_factor=self.scale_factor, mode="bilinear", align_corners=False
         )
 
-    def forward(self, head_outputs: torch.Tensor):
+    def forward(self, head_outputs: torch.Tensor, features_dp: torch.Tensor):
         fine_segm = self.interp2d(self.index_uv_lowres(head_outputs))
 
-        crt_output = head_outputs
+        crt_output = torch.cat((F.relu(self.channels_squeeze(head_outputs)), features_dp), dim=1)
         # crt_output = self.non_local(crt_output)
-        # for i in range(self.n_stacked_convs):
-        #     layer_name = _get_layer_name(i)
-        #     crt_output = getattr(self, layer_name)(crt_output)
-        #     crt_output = F.relu(crt_output)
+        for i in range(self.n_stacked_convs):
+            layer_name = _get_layer_name(i)
+            crt_output = getattr(self, layer_name)(crt_output)
+            crt_output = F.relu(crt_output)
 
         crt_segm = self.interp2d(self.crt_segm(crt_output))
-
-        if self.ts:
-            crt_segm = F.softplus(crt_segm) + 0.01
-            fine_segm = fine_segm * torch.repeat_interleave(
-                crt_segm, fine_segm.shape[1], dim=1
-            )
 
         output = DensePoseChartPredictorOutput(
             coarse_segm=self.interp2d(self.ann_index_lowres(head_outputs)),
@@ -134,22 +128,7 @@ class DensePoseChartPredictor(nn.Module):
             crt_sigma=self.interp2d(self.crt_sigma(crt_output)) if self.uv_confidence else None,
         )
 
-        dp_predictions = {"pred": [], "crt_pred": []}
-        if self.dropout_on:
-            for i in range(self.dropout_T):
-                features = F.dropout(head_outputs, p=0.5, training=True, inplace=False).detach()
-                with torch.no_grad():
-                    dp_predictions["pred"].append(
-                        self.interp2d(self.index_uv_lowres(features))
-                    )
-                crt_output = self.non_local(features)
-                for j in range(self.n_stacked_convs):
-                    layer_name = _get_layer_name(j)
-                    crt_output = getattr(self, layer_name)(crt_output)
-                    crt_output = F.relu(crt_output)
-                dp_predictions["crt_pred"].append(crt_output)
-
-        return output, dp_predictions
+        return output
 
 
 def _get_layer_name(i: int):
