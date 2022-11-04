@@ -254,8 +254,8 @@ def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk,
         dataset_dict["proposals"] = proposals
 
 
-def transform_instance_annotations(
-    annotation, transforms, strong_transforms, image_size, *, keypoint_hflip_indices=None
+def transform_train_instance_annotations(
+    annotation, transforms, strong_transforms, image_size, strong_size, *, keypoint_hflip_indices=None
 ):
     if isinstance(transforms, (tuple, list)):
         transforms = T.TransformList(transforms)
@@ -265,7 +265,22 @@ def transform_instance_annotations(
     bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     strong_bbox = strong_transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     annotation["weak_bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
-    annotation["bbox"] = np.minimum(strong_bbox, list(image_size + image_size)[::-1])
+    annotation["bbox"] = np.minimum(strong_bbox, list(strong_size + strong_size)[::-1])
+    annotation["bbox_mode"] = BoxMode.XYXY_ABS
+
+    return annotation
+
+
+def transform_test_instance_annotations(
+    annotation, transforms, image_size,
+):
+    if isinstance(transforms, (tuple, list)):
+        transforms = T.TransformList(transforms)
+    # bbox is 1d (per-instance bounding box)
+    bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
+    # clip transformed bbox to image size
+    bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
+    annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
     return annotation

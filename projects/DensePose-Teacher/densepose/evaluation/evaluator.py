@@ -115,7 +115,6 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
                 self._embedder,
                 self._metadata.class_to_mesh_name,
                 self._storage is not None,
-                self.block_num,
             )
             if self._storage is not None:
                 for prediction_dict in prediction_list:
@@ -207,7 +206,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         self._logger.info(f'| {"MEAN":13s} | {ge_str:7s} | {gps_str:7s} |')
 
 
-def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_storage, block_num):
+def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_storage):
     """
     Args:
         instances (Instances): the output of the model
@@ -231,8 +230,6 @@ def prediction_to_dict(instances, img_id, embedder, class_to_mesh_name, use_stor
             results_densepose = densepose_chart_predictions_to_dict(instances)
         else:
             results_densepose = densepose_chart_predictions_to_storage_dict(instances)
-    elif isinstance(instances.pred_densepose, BlockPredictorOutput):
-        results_densepose = densepose_block_predictions_to_dict(instances, block_num)
 
     results = []
     for k in range(len(instances)):

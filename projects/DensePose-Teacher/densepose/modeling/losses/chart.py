@@ -85,7 +85,7 @@ class DensePoseChartLoss:
         self.ts = cfg.MODEL.SEMI.COR.TS
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, iteration, **kwargs
+        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, iteration, drp_output, **kwargs
     ) -> LossDict:
 
         if not len(proposals_with_gt):
@@ -125,6 +125,7 @@ class DensePoseChartLoss:
             packed_annotations,
             interpolator,
             j_valid_fg,  # pyre-ignore[6]
+            drp_output=drp_output
         )
 
         losses_unsup = self.produce_densepose_losses_unsup(
@@ -214,6 +215,7 @@ class DensePoseChartLoss:
         packed_annotations: Any,
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
+        drp_output,
     ) -> LossDict:
         fine_segm_gt = packed_annotations.fine_segm_labels_gt[
             interpolator.j_valid  # pyre-ignore[16]
@@ -267,6 +269,31 @@ class DensePoseChartLoss:
         focal_weights[fine_segm_crt_gt] = 1 - focal_weights[fine_segm_crt_gt]
         crt_fine_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, fine_segm_crt_gt.float(), reduction='mean', weight=focal_weights)
 
+        # if drp_output is not None:
+        #     pred, crt = drp_output
+        #     pred = interpolator.extract_at_points(
+        #         densepose_predictor_outputs.fine_segm,
+        #         slice_fine_segm=slice(None),
+        #         w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
+        #         w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
+        #         w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
+        #         w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
+        #     )[interpolator.j_valid, :]
+        #
+        #     crt = interpolator.extract_at_points(
+        #         densepose_predictor_outputs.crt_segm,
+        #         slice_fine_segm=slice(None),
+        #         w_ylo_xlo=interpolator.w_ylo_xlo[:, None],  # pyre-ignore[16]
+        #         w_ylo_xhi=interpolator.w_ylo_xhi[:, None],  # pyre-ignore[16]
+        #         w_yhi_xlo=interpolator.w_yhi_xlo[:, None],  # pyre-ignore[16]
+        #         w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
+        #     )[interpolator.j_valid, :]
+        #
+        #     drp_loss = 0.
+        #     for i in torch.arange(crt.shape[1]):
+        #         index = pred[:, 25 * i: 25 * (i + 1)].detach().argmax(dim=1).long()
+        #         gt = fine_segm_gt.detach == index
+        #         drp_loss +=
         # segm_est_index = coarse_segm_est.detach().argmax(dim=1).long()
         # coarse_segm_crt_gt = (coarse_segm_gt.detach() > 0) == segm_est_index
 
@@ -337,8 +364,11 @@ class DensePoseChartLoss:
         v_est = getattr(densepose_predictor_outputs, "v")[packed_annotations.bbox_indices]
         u_est = (u_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index])
         v_est = (v_est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index])
-        u_est = u_est[np.arange(u_est.shape[0]), pred_index]
-        v_est = v_est[np.arange(v_est.shape[0]), pred_index]
+
+        pred_index = torch.zeros_like(u_est).scatter_(1, pred_index.unsqueeze(-1), 1).bool()
+
+        u_est = u_est[pred_index]
+        v_est = v_est[pred_index]
 
         with torch.no_grad():
             pseudo_u = getattr(packed_annotations, "pseudo_u")
@@ -363,8 +393,8 @@ class DensePoseChartLoss:
                 padding_mode="zeros",
             ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
 
-            pseudo_u = pseudo_u[np.arange(pseudo_u.shape[0]), pred_index]#.clamp(0., 1.)
-            pseudo_v = pseudo_v[np.arange(pseudo_v.shape[0]), pred_index]#.clamp(0., 1.)
+            pseudo_u = pseudo_u[pred_index]#.clamp(0., 1.)
+            pseudo_v = pseudo_v[pred_index]#.clamp(0., 1.)
 
             if self.uv_confidence:
                 with torch.no_grad():
@@ -378,10 +408,9 @@ class DensePoseChartLoss:
                         mode="nearest",
                         padding_mode="zeros",
                     ).permute(0, 2, 3, 1).reshape(-1, self.n_channels)[pos_index]
-                    pseudo_sigma = pseudo_sigma[np.arange(pseudo_sigma.shape[0]), pred_index]
-                    # pseudo_sigma = 1 / (torch.sigmoid(pseudo_sigma))
-                    # pseudo_sigma = pseudo_sigma.clamp(0., 1.)
-                    pseudo_sigma = 1 - torch.sigmoid(pseudo_sigma)
+                    pseudo_sigma = pseudo_sigma[pred_index]
+                    pseudo_sigma = 0.5 / (torch.sigmoid(pseudo_sigma) + 0.1)
+                    pseudo_sigma = pseudo_sigma.clamp(0., 1.)
             else:
                 pseudo_sigma = torch.ones_like(pseudo_u, dtype=torch.float32)
 

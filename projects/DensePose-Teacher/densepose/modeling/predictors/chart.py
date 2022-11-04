@@ -109,13 +109,13 @@ class DensePoseChartPredictor(nn.Module):
 
     def forward(self, head_outputs: torch.Tensor, features_dp: torch.Tensor):
         fine_segm = self.interp2d(self.index_uv_lowres(head_outputs))
-
-        crt_output = torch.cat((F.relu(self.channels_squeeze(head_outputs)), features_dp), dim=1)
+        crt_output = torch.cat((F.relu(self.channels_squeeze(head_outputs.detach())), features_dp.detach()), dim=1)
         # crt_output = self.non_local(crt_output)
         for i in range(self.n_stacked_convs):
             layer_name = _get_layer_name(i)
             crt_output = getattr(self, layer_name)(crt_output)
             crt_output = F.relu(crt_output)
+        # crt_output = head_outputs
 
         crt_segm = self.interp2d(self.crt_segm(crt_output))
 
@@ -128,7 +128,18 @@ class DensePoseChartPredictor(nn.Module):
             crt_sigma=self.interp2d(self.crt_sigma(crt_output)) if self.uv_confidence else None,
         )
 
-        return output
+        if self.dropout_on and self.training:
+            pred, crt = [], []
+            for _ in torch.arange(1, self.dropout_T):
+                drp_output = F.dropout(head_outputs, p=0.5, inplace=False, training=True)
+                crt.append(self.interp2d(self.crt_segm(drp_output)))
+                with torch.no_grad():
+                    pred.append(self.interp2d(self.index_uv_lowres(drp_output)))
+            pred = torch.cat(pred, dim=1)
+            crt = torch.cat(crt, dim=1)
+            return output, (pred, crt)
+        else:
+            return output, None
 
 
 def _get_layer_name(i: int):
