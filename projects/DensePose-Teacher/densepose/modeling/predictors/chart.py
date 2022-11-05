@@ -75,14 +75,14 @@ class DensePoseChartPredictor(nn.Module):
             n_channels = hidden_dim
 
         self.crt_segm = ConvTranspose2d(
-            dim_in, 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in, 2, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.channels_squeeze = Conv2d(dim_in, dim_in // 2, kernel_size=1, stride=1)
 
         self.uv_confidence = cfg.MODEL.ROI_DENSEPOSE_HEAD.UV_CONFIDENCE.ENABLED
         if self.uv_confidence:
             self.crt_sigma = ConvTranspose2d(
-                dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                dim_in, 2, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
             )
 
         self.scale_factor = cfg.MODEL.ROI_DENSEPOSE_HEAD.UP_SCALE
@@ -128,18 +128,7 @@ class DensePoseChartPredictor(nn.Module):
             crt_sigma=self.interp2d(self.crt_sigma(crt_output)) if self.uv_confidence else None,
         )
 
-        if self.dropout_on and self.training:
-            pred, crt = [], []
-            for _ in torch.arange(1, self.dropout_T):
-                drp_output = F.dropout(head_outputs, p=0.5, inplace=False, training=True)
-                crt.append(self.interp2d(self.crt_segm(drp_output)))
-                with torch.no_grad():
-                    pred.append(self.interp2d(self.index_uv_lowres(drp_output)))
-            pred = torch.cat(pred, dim=1)
-            crt = torch.cat(crt, dim=1)
-            return output, (pred, crt)
-        else:
-            return output, None
+        return output
 
 
 def _get_layer_name(i: int):
