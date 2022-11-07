@@ -13,6 +13,7 @@ from fvcore.common.param_scheduler import (
 )
 
 from detectron2.config import CfgNode
+from detectron2.utils.env import TORCH_VERSION
 
 from .lr_scheduler import LRMultiplier, WarmupParamScheduler
 
@@ -126,13 +127,16 @@ def build_optimizer(cfg: CfgNode, model: torch.nn.Module) -> torch.optim.Optimiz
         bias_lr_factor=cfg.SOLVER.BIAS_LR_FACTOR,
         weight_decay_bias=cfg.SOLVER.WEIGHT_DECAY_BIAS,
     )
-    return maybe_add_gradient_clipping(cfg, torch.optim.SGD)(
-        params,
-        lr=cfg.SOLVER.BASE_LR,
-        momentum=cfg.SOLVER.MOMENTUM,
-        nesterov=cfg.SOLVER.NESTEROV,
-        weight_decay=cfg.SOLVER.WEIGHT_DECAY,
-    )
+    sgd_args = {
+        "params": params,
+        "lr": cfg.SOLVER.BASE_LR,
+        "momentum": cfg.SOLVER.MOMENTUM,
+        "nesterov": cfg.SOLVER.NESTEROV,
+        "weight_decay": cfg.SOLVER.WEIGHT_DECAY,
+    }
+    if TORCH_VERSION >= (1, 12):
+        sgd_args["foreach"] = True
+    return maybe_add_gradient_clipping(cfg, torch.optim.SGD(**sgd_args))
 
 
 def get_default_optimizer_params(
