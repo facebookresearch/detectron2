@@ -75,7 +75,7 @@ class DensePoseChartPredictor(nn.Module):
             n_channels = hidden_dim
 
         self.crt_segm = ConvTranspose2d(
-            dim_in, 2, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+            dim_in, dim_out_patches + 1, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
         )
         self.channels_squeeze = Conv2d(dim_in, dim_in // 2, kernel_size=1, stride=1)
 
