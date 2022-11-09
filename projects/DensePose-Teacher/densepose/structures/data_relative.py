@@ -8,6 +8,8 @@ from densepose.data.meshes.catalog import MeshCatalog
 from densepose.structures.mesh import load_mesh_symmetry
 from densepose.structures.transform_data import DensePoseTransformData
 
+POINT_LABEL_SYMMETRIES = [0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23]
+
 
 class DensePoseDataRelative(object):
     """
@@ -62,7 +64,7 @@ class DensePoseDataRelative(object):
     # Key for pseudo sigma
     PSEUDO_SIGMA = "pseudo_sigma"
 
-    def __init__(self, annotation, cleanup=False):
+    def __init__(self, annotation, cleanup=False, do_hflip=False):
         self.x = torch.as_tensor(annotation[DensePoseDataRelative.X_KEY])
         self.y = torch.as_tensor(annotation[DensePoseDataRelative.Y_KEY])
         if (
@@ -84,6 +86,7 @@ class DensePoseDataRelative(object):
         if DensePoseDataRelative.S_KEY in annotation:
             self.segm = DensePoseDataRelative.extract_segmentation_mask(annotation)
         self.device = torch.device("cpu")
+        self.do_hflip = do_hflip
         if cleanup:
             DensePoseDataRelative.cleanup_annotation(annotation)
 
@@ -112,7 +115,17 @@ class DensePoseDataRelative(object):
         return new_data
 
     def set(self, name: str, value: Any) -> None:
-        setattr(self, name, value)
+        if self.do_hflip:
+            if name == DensePoseDataRelative.PSEUDO_SEGM:
+                setattr(self, name, torch.flip(value, [1])[POINT_LABEL_SYMMETRIES])
+            if name == DensePoseDataRelative.PSEUDO_MASK:
+                setattr(self, name, torch.flip(value, [1])[POINT_LABEL_SYMMETRIES + [25]])
+            elif name == DensePoseDataRelative.PSEUDO_U or DensePoseDataRelative.PSEUDO_V or DensePoseDataRelative.PSEUDO_SIGMA:
+                setattr(self, name, torch.flip(value, [1]))
+            else:
+                setattr(self, name, value)
+        else:
+            setattr(self, name, value)
 
     @staticmethod
     def extract_segmentation_mask(annotation):

@@ -12,7 +12,7 @@ MODEL:
   SEMI:
     TEACHER_WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
     COR:
-      WARM_ITER: 80000
+      WARM_ITER: 40000
 SOLVER:
 #  CLIP_GRADIENTS:
 #    ENABLED: True

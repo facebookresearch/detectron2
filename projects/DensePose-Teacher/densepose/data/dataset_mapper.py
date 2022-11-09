@@ -5,6 +5,7 @@ import copy
 import logging
 from typing import Any, Dict, List, Tuple
 import torch
+from random import choice
 
 from detectron2.data import MetadataCatalog
 from detectron2.data import transforms as T
@@ -32,33 +33,37 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        # result = [
-        #     T.RandomContrast(0.75, 1.25),
-        #     T.RandomBrightness(0.75, 1.25),
-        #     T.RandomSaturation(0.75, 1.25),
-        # ]
-        #
-        # random_scale = RandomScale(
-        #     cfg.MODEL.SEMI.SCALE, cfg.INPUT.MAX_SIZE_TRAIN
-        # )
-        # result.append(random_scale)
+        min_size = cfg.INPUT.MIN_SIZE_PSEUDO
+        max_size = cfg.INPUT.MAX_SIZE_TRAIN
 
-        # min_size = cfg.INPUT.MIN_SIZE_TRAIN
-        # max_size = cfg.INPUT.MAX_SIZE_TRAIN
-        # sample_style = cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
-        #
-        # random_resize = T.ResizeShortestEdge(min_size, max_size, sample_style)
-        # result.append(random_resize)
+        random_resize = T.ResizeShortestEdge(min_size, max_size, 'range')
+        result.append(random_resize)
+        # result.append(
+        #     T.RandomFlip(
+        #         horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
+        #         vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
+        #     )
+        # )
+        result.append(
+            choice(
+                [
+                    T.RandomContrast(1., 1.),  # Identity
+                    T.RandomContrast(0.6, 1.4),
+                    T.RandomBrightness(0.6, 1.4),
+                    T.RandomSaturation(0.6, 1.4),
+                ]
+            )
+        )
 
         # random_rotation = T.RandomRotation(
         #     cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
         # )
         # result.append(random_rotation)
 
-        # random_erase = RandErase(
-        #     size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER
-        # )
-        # result.append(random_erase)
+        random_erase = RandErase(
+            size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER
+        )
+        result.append(random_erase)
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
 
@@ -140,6 +145,8 @@ class DatasetMapper:
             strong_shape = strong_image.shape[:2]
             dataset_dict["strong_image"] = torch.as_tensor(strong_image.transpose(2, 0, 1).astype("float32"))
 
+            do_hflip = sum(isinstance(t, T.HFlipTransform) for t in strong_transforms.transforms) % 2 == 1
+
             transforms = weak_transforms + strong_transforms
             annos = [
                 self._transform_densepose(
@@ -147,7 +154,7 @@ class DatasetMapper:
                         obj, weak_transforms, strong_transforms, image_shape, strong_shape,
                         keypoint_hflip_indices=self.keypoint_hflip_indices
                     ),
-                    transforms,
+                    transforms, do_hflip
                 )
                 for obj in dataset_dict.pop("annotations")
                 if obj.get("iscrowd", 0) == 0
@@ -192,14 +199,14 @@ class DatasetMapper:
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
         return dataset_dict
 
-    def _transform_densepose(self, annotation, transforms):
+    def _transform_densepose(self, annotation, transforms, do_hflip=False):
         if not self.densepose_on:
             return annotation
 
         # Handle densepose annotations
         is_valid, reason_not_valid = DensePoseDataRelative.validate_annotation(annotation)
         if is_valid:
-            densepose_data = DensePoseDataRelative(annotation, cleanup=True)
+            densepose_data = DensePoseDataRelative(annotation, cleanup=True, do_hflip=do_hflip)
             densepose_data.apply_transform(transforms, self.densepose_transform_data)
             annotation["densepose"] = densepose_data
         else:
