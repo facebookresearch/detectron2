@@ -77,8 +77,6 @@ class Trainer(DefaultTrainer):
         if isinstance(model, nn.parallel.DistributedDataParallel):
             model = model.module
         if hasattr(model, "roi_heads") and hasattr(model.roi_heads, "embedder"):
-            # pyre-fixme[16]: Item `Tensor` of `Union[Tensor, Module]` has no
-            #  attribute `embedder`.
             return model.roi_heads.embedder
         return None
 
