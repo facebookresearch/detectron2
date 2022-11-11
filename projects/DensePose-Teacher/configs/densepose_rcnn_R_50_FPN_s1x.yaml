@@ -6,13 +6,13 @@ MODEL:
   ROI_DENSEPOSE_HEAD:
     UV_CONFIDENCE:
       ENABLED: True
-    DECODER_ON: False
+    DECODER_ON: True
     LOSS_NAME: "DensePoseChartLoss"
     PREDICTOR_NAME: "DensePoseChartPredictor"
   SEMI:
     TEACHER_WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
     COR:
-      WARM_ITER: 40000
+      WARM_ITER: 120000
 SOLVER:
 #  CLIP_GRADIENTS:
 #    ENABLED: True

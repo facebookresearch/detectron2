@@ -33,37 +33,37 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        min_size = cfg.INPUT.MIN_SIZE_PSEUDO
-        max_size = cfg.INPUT.MAX_SIZE_TRAIN
-
-        random_resize = T.ResizeShortestEdge(min_size, max_size, 'range')
-        result.append(random_resize)
+        # min_size = cfg.INPUT.MIN_SIZE_PSEUDO
+        # max_size = cfg.INPUT.MAX_SIZE_TRAIN
+        #
+        # random_resize = T.ResizeShortestEdge(min_size, max_size, 'range')
+        # result.append(random_resize)
         # result.append(
         #     T.RandomFlip(
         #         horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
         #         vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
         #     )
         # )
-        result.append(
-            choice(
-                [
-                    T.RandomContrast(1., 1.),  # Identity
-                    T.RandomContrast(0.6, 1.4),
-                    T.RandomBrightness(0.6, 1.4),
-                    T.RandomSaturation(0.6, 1.4),
-                ]
-            )
-        )
+        # result.append(
+        #     choice(
+        #         [
+        #             T.RandomContrast(1., 1.),  # Identity
+        #             T.RandomContrast(0.6, 1.4),
+        #             T.RandomBrightness(0.6, 1.4),
+        #             T.RandomSaturation(0.6, 1.4),
+        #         ]
+        #     )
+        # )
 
         # random_rotation = T.RandomRotation(
         #     cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
         # )
         # result.append(random_rotation)
 
-        random_erase = RandErase(
-            size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER
-        )
-        result.append(random_erase)
+        # random_erase = RandErase(
+        #     size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER
+        # )
+        # result.append(random_erase)
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
 
