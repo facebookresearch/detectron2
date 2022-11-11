@@ -378,11 +378,19 @@ class AMPTrainer(SimpleTrainer):
     in the training loop.
     """
 
-    def __init__(self, model, data_loader, optimizer, grad_scaler=None):
+    def __init__(
+        self,
+        model,
+        data_loader,
+        optimizer,
+        grad_scaler=None,
+        precision: torch.dtype = torch.float16,
+    ):
         """
         Args:
             model, data_loader, optimizer: same as in :class:`SimpleTrainer`.
             grad_scaler: torch GradScaler to automatically scale gradients.
+            precision: torch.dtype as the target precision to cast to in computations
         """
         unsupported = "AMPTrainer does not support single-process multi-device training!"
         if isinstance(model, DistributedDataParallel):
@@ -396,6 +404,7 @@ class AMPTrainer(SimpleTrainer):
 
             grad_scaler = GradScaler()
         self.grad_scaler = grad_scaler
+        self.precision = precision
 
     def run_step(self):
         """
@@ -409,7 +418,7 @@ class AMPTrainer(SimpleTrainer):
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
-        with autocast():
+        with autocast(dtype=self.precision):
             loss_dict = self.model(data)
             if isinstance(loss_dict, torch.Tensor):
                 losses = loss_dict
