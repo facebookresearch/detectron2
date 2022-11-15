@@ -48,9 +48,9 @@ def build_strong_augmentation(cfg, is_train):
         #     choice(
         #         [
         #             T.RandomContrast(1., 1.),  # Identity
-        #             T.RandomContrast(0.6, 1.4),
-        #             T.RandomBrightness(0.6, 1.4),
-        #             T.RandomSaturation(0.6, 1.4),
+        #             T.RandomContrast(0.8, 1.2),
+        #             T.RandomBrightness(0.8, 1.2),
+        #             T.RandomSaturation(0.8, 1.2),
         #         ]
         #     )
         # )

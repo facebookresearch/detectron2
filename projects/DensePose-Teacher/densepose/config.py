@@ -282,7 +282,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.SEGM_SCALE = True
 
     # config for strong augmentation
-    _C.MODEL.SEMI.ERASE_SIZE = [0.1, 0.3]
+    _C.MODEL.SEMI.ERASE_SIZE = [0., 0.2]
     _C.MODEL.SEMI.ERASE_ITER = (1, 5)
     _C.MODEL.SEMI.SCALE = (0.75, 1.25)
     _C.MODEL.SEMI.FLOW = False
@@ -301,7 +301,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.COR.TS = True
 
     _C.INPUT.ST_ANGLES = [-15, 15]
-    _C.INPUT.MIN_SIZE_PSEUDO = (400, 1200)
+    _C.INPUT.MIN_SIZE_PSEUDO = (640, 800)
 
 
 def add_densepose_config(cfg: CN) -> None:

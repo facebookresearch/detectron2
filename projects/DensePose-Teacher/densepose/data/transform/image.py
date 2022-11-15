@@ -67,7 +67,7 @@ class RandErase(Augmentation):
             self,
             n_iterations=(1, 5),
             size=None,
-            squared: bool = False,
+            squared: bool = True,
             patches=None,
             img_fill_val=125,
             random_magnitude=True,
