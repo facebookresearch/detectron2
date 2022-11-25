@@ -80,10 +80,23 @@ class RandErase(Augmentation):
         self.img_fill_val = img_fill_val
         self.random_magnitude = random_magnitude
 
-    def get_transform(self, image):
+    def get_transform(self, image, instances):
         h, w = image.shape[:2]
-        magnitude: dict = self.get_magnitude(h, w)
-        return EraseTransform(magnitude['patches'], self.img_fill_val)
+        # get magnitude
+        patches = []
+        if self.random_magnitude:
+            for bbox in instances.gt_boxes:
+                x1, y1, x2, y2 = bbox.int()
+                n_iterations = self._get_erase_cycle()
+                for _ in range(n_iterations):
+                    ph, pw = self._get_patch_size(y2 - y1, x2 - x1)
+                    px, py = torch.randint(x1, x2, (1,)).clamp(0, w - pw), torch.randint(y1, y2, (1,)).clamp(0, h - ph)
+                    patches.append([px, py, px + pw, py + ph])
+        else:
+            assert self.patches is not None
+            patches = self.patches
+
+        return EraseTransform(patches, self.img_fill_val)
 
     # def __call__(self, inputs):
     #     if torch.rand((1, )) < self.prob:
@@ -93,24 +106,24 @@ class RandErase(Augmentation):
     #
     #     return inputs
 
-    def get_magnitude(self, h, w):
-        magnitude = {}
-        if self.random_magnitude:
-            n_iterations = self._get_erase_cycle()
-            patches = []
-            for _ in range(n_iterations):
-                # random sample patch size in the image
-                ph, pw = self._get_patch_size(h, w)
-                # random sample patch left top in the image
-                # px, py = np.random.randint(0, w - pw), np.random.randint(0, h - ph)
-                px, py = torch.randint(0, w - pw, (1,)), torch.randint(0, h - ph, (1,))
-                patches.append([px, py, px + pw, py + ph])
-            magnitude["patches"] = patches
-        else:
-            assert self.patches is not None
-            magnitude["patches"] = self.patches
-
-        return magnitude
+    # def get_magnitude(self, h, w):
+    #     magnitude = {}
+    #     if self.random_magnitude:
+    #         n_iterations = self._get_erase_cycle()
+    #         patches = []
+    #         for _ in range(n_iterations):
+    #             # random sample patch size in the image
+    #             ph, pw = self._get_patch_size(h, w)
+    #             # random sample patch left top in the image
+    #             # px, py = np.random.randint(0, w - pw), np.random.randint(0, h - ph)
+    #             px, py = torch.randint(0, w - pw, (1,)), torch.randint(0, h - ph, (1,))
+    #             patches.append([px, py, px + pw, py + ph])
+    #         magnitude["patches"] = patches
+    #     else:
+    #         assert self.patches is not None
+    #         magnitude["patches"] = self.patches
+    #
+    #     return magnitude
 
     def _get_erase_cycle(self):
         if isinstance(self.n_iterations, int):

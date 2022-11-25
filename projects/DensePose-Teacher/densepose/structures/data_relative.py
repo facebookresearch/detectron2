@@ -51,7 +51,8 @@ class DensePoseDataRelative(object):
     MASK_SIZE = 256
 
     # Key for pseudo coarse segm labels
-    PSEUDO_SEGM = "pseudo_segm"
+    PSEUDO_COARSE_SEGM = "pseudo_coarse_segm"
+    PSEUDO_FINE_SEGM = "pseudo_fine_segm"
     # Key for pseudo u coordinates
     PSEUDO_U = "pseudo_u"
     # Key for pseudo v coordinates
@@ -101,8 +102,10 @@ class DensePoseDataRelative(object):
                 setattr(new_data, attr, getattr(self, attr).to(device))
         if hasattr(self, "mesh_id"):
             new_data.mesh_id = self.mesh_id
-        if hasattr(self, "pseudo_segm"):
-            new_data.pseudo_segm = self.pseudo_segm
+        if hasattr(self, "pseudo_coarse_segm"):
+            new_data.pseudo_coarse_segm = self.pseudo_coarse_segm
+        if hasattr(self, "pseudo_fine_segm"):
+            new_data.pseudo_fine_segm = self.pseudo_fine_segm
         if hasattr(self, "pseudo_u"):
             new_data.pseudo_u = self.pseudo_u
         if hasattr(self, "pseudo_v"):
@@ -206,7 +209,8 @@ class DensePoseDataRelative(object):
             DensePoseDataRelative.S_KEY,
             DensePoseDataRelative.VERTEX_IDS_KEY,
             DensePoseDataRelative.MESH_NAME_KEY,
-            DensePoseDataRelative.PSEUDO_SEGM,
+            DensePoseDataRelative.PSEUDO_COARSE_SEGM,
+            DensePoseDataRelative.PSEUDO_FINE_SEGM,
             DensePoseDataRelative.PSEUDO_U,
             DensePoseDataRelative.PSEUDO_V,
             DensePoseDataRelative.PSEUDO_MASK,

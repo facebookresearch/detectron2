@@ -84,6 +84,7 @@ class SimpleTrainer(TrainerBase):
         # Construct input data for student model
         for i, x in enumerate(data):
             pseudo_label = teacher_output[i].pred_densepose
+            pseudo_coarse_segm = pseudo_label.coarse_segm
             pseudo_segm = pseudo_label.fine_segm
             # == baseline ==
             pseudo_u = pseudo_label.u
@@ -94,7 +95,8 @@ class SimpleTrainer(TrainerBase):
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:
                     # == densepose rcnn ==
-                    densepose_data.set("pseudo_segm", pseudo_segm[j])
+                    densepose_data.set("pseudo_coarse_segm", pseudo_coarse_segm[j])
+                    densepose_data.set("pseudo_fine_segm", pseudo_segm[j])
                     densepose_data.set("pseudo_u", pseudo_u[j])
                     densepose_data.set("pseudo_v", pseudo_v[j])
                     densepose_data.set("pseudo_mask", pseudo_mask[j])

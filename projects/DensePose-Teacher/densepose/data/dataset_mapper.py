@@ -33,37 +33,27 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        # min_size = cfg.INPUT.MIN_SIZE_PSEUDO
-        # max_size = cfg.INPUT.MAX_SIZE_TRAIN
-        #
-        # random_resize = T.ResizeShortestEdge(min_size, max_size, 'range')
-        # result.append(random_resize)
+        min_size = cfg.INPUT.MIN_SIZE_TRAIN
+        max_size = cfg.INPUT.MAX_SIZE_TRAIN
+
+        random_resize = T.ResizeShortestEdge(min_size, max_size, 'choice')
+        result.append(random_resize)
         # result.append(
         #     T.RandomFlip(
         #         horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
         #         vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
         #     )
         # )
-        # result.append(
-        #     choice(
-        #         [
-        #             T.RandomContrast(1., 1.),  # Identity
-        #             T.RandomContrast(0.8, 1.2),
-        #             T.RandomBrightness(0.8, 1.2),
-        #             T.RandomSaturation(0.8, 1.2),
-        #         ]
-        #     )
-        # )
-
-        # random_rotation = T.RandomRotation(
-        #     cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
-        # )
-        # result.append(random_rotation)
-
-        # random_erase = RandErase(
-        #     size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER
-        # )
-        # result.append(random_erase)
+        result.append(
+            choice(
+                [
+                    T.RandomContrast(1., 1.),  # Identity
+                    T.RandomContrast(0.75, 1.25),
+                    T.RandomBrightness(0.75, 1.25),
+                    T.RandomSaturation(0.75, 1.25),
+                ]
+            )
+        )
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
 
@@ -76,6 +66,10 @@ class DatasetMapper:
     def __init__(self, cfg, is_train=True):
         self.augmentation = build_augmentation(cfg, is_train)
         self.strong_augmentation = build_strong_augmentation(cfg, is_train)
+
+        self.random_erase = RandErase(
+            size=cfg.MODEL.SEMI.ERASE_SIZE, n_iterations=cfg.MODEL.SEMI.ERASE_ITER
+        )
 
         # fmt: off
         self.img_format     = cfg.INPUT.FORMAT
@@ -143,9 +137,7 @@ class DatasetMapper:
         if self.is_train:
             strong_image, strong_transforms = T.apply_transform_gens(self.strong_augmentation, image.copy())
             strong_shape = strong_image.shape[:2]
-            dataset_dict["strong_image"] = torch.as_tensor(strong_image.transpose(2, 0, 1).astype("float32"))
-
-            do_hflip = sum(isinstance(t, T.HFlipTransform) for t in strong_transforms.transforms) % 2 == 1
+            # dataset_dict["strong_image"] = torch.as_tensor(strong_image.transpose(2, 0, 1).astype("float32"))
 
             transforms = weak_transforms + strong_transforms
             annos = [
@@ -154,7 +146,7 @@ class DatasetMapper:
                         obj, weak_transforms, strong_transforms, image_shape, strong_shape,
                         keypoint_hflip_indices=self.keypoint_hflip_indices
                     ),
-                    transforms, do_hflip
+                    transforms,
                 )
                 for obj in dataset_dict.pop("annotations")
                 if obj.get("iscrowd", 0) == 0
@@ -174,6 +166,13 @@ class DatasetMapper:
 
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
             dataset_dict["detected_instances"] = weak_instances[instances.gt_boxes.nonempty()]
+
+            # erase image
+            erase_transform = self.random_erase.get_transform(strong_image, dataset_dict['instances'])
+            dataset_dict['strong_image'] = torch.as_tensor(
+                erase_transform.apply_image(strong_image).transpose(2, 0, 1).astype("float32")
+            )
+
         else:
             annos = [
                 self._transform_densepose(
@@ -199,14 +198,14 @@ class DatasetMapper:
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
         return dataset_dict
 
-    def _transform_densepose(self, annotation, transforms, do_hflip=False):
+    def _transform_densepose(self, annotation, transforms):
         if not self.densepose_on:
             return annotation
 
         # Handle densepose annotations
         is_valid, reason_not_valid = DensePoseDataRelative.validate_annotation(annotation)
         if is_valid:
-            densepose_data = DensePoseDataRelative(annotation, cleanup=True, do_hflip=do_hflip)
+            densepose_data = DensePoseDataRelative(annotation, cleanup=True)
             densepose_data.apply_transform(transforms, self.densepose_transform_data)
             annotation["densepose"] = densepose_data
         else:
