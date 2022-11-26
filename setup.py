@@ -157,16 +157,19 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         # These dependencies are not pure-python.
-        # In general, avoid adding more dependencies like them because they are not
+        # In general, avoid adding dependencies that are not pure-python because they are not
         # guaranteed to be installable by `pip install` on all platforms.
-        # To tell if a package is pure-python, go to https://pypi.org/project/{name}/#files
         "Pillow>=7.1",  # or use pillow-simd for better performance
         "matplotlib",  # TODO move it to optional after we add opencv visualization
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         # Do not add opencv here. Just like pytorch, user should install
         # opencv themselves, preferrably by OS's package manager, or by
         # choosing the proper pypi package name at https://github.com/skvark/opencv-python
-        # The following are pure-python dependencies that should be easily installable
+        # Also, avoid adding dependencies that transitively depend on pytorch or opencv.
+        # ------------------------------------------------------------
+        # The following are pure-python dependencies that should be easily installable.
+        # But still be careful when adding more: fewer people are able to use the software
+        # with every new dependency added.
         "termcolor>=1.1",
         "yacs>=0.1.8",
         "tabulate",
@@ -178,21 +181,20 @@ setup(
         # on compatible version of iopath.
         "fvcore>=0.1.5,<0.1.6",  # required like this to make it pip installable
         "iopath>=0.1.7,<0.1.10",
-        "future",  # used by caffe2
-        "pydot",  # used to save caffe2 SVGs
         "dataclasses; python_version<'3.7'",
         "omegaconf>=2.1",
         "hydra-core>=1.1",
-        "black==22.3.0",
+        "black",
         "timm",
-        "fairscale",
         "packaging",
-        # If a new dependency is required at import time (in addition to runtime), it
-        # probably needs to exist in docs/requirements.txt, or as a mock in docs/conf.py
+        # NOTE: When adding new dependencies, if it is required at import time (in addition
+        # to runtime), it probably needs to appear in docs/requirements.txt, or as a mock
+        # in docs/conf.py
     ],
     extras_require={
         # optional dependencies, required by some features
         "all": [
+            "fairscale",
             "scipy>1.5.1",
             "shapely",
             "pygments>=2.2",
@@ -205,6 +207,7 @@ setup(
             "isort==4.3.21",
             "flake8-bugbear",
             "flake8-comprehensions",
+            "black==22.3.0",
         ],
     },
     ext_modules=get_extensions(),

@@ -21,4 +21,3 @@ omegaconf>=2.1.0.dev24
 hydra-core>=1.1.0.dev5
 scipy
 timm
-fairscale
