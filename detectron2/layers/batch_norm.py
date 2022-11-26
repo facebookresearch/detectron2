@@ -135,8 +135,8 @@ def get_norm(norm, out_channels):
             return None
         norm = {
             "BN": BatchNorm2d,
-            # Fixed in https://github.com/pytorch/pytorch/pull/36382
-            "SyncBN": NaiveSyncBatchNorm if env.TORCH_VERSION <= (1, 5) else nn.SyncBatchNorm,
+            # workaround https://github.com/pytorch/pytorch/issues/63662
+            "SyncBN": nn.SyncBatchNorm if comm.get_world_size() > 1 else BatchNorm2d,
             "FrozenBN": FrozenBatchNorm2d,
             "GN": lambda channels: nn.GroupNorm(32, channels),
             # for debugging:
@@ -154,6 +154,7 @@ class NaiveSyncBatchNorm(BatchNorm2d):
     In PyTorch<=1.5, ``nn.SyncBatchNorm`` has incorrect gradient
     when the batch size on each worker is different.
     (e.g., when scale augmentation is used, or when it is applied to mask head).
+    This was fixed in https://github.com/pytorch/pytorch/pull/36382.
 
     This is a slower but correct alternative to `nn.SyncBatchNorm`.
 
