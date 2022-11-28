@@ -300,7 +300,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.COR.WARM_ITER = 120000
     _C.MODEL.SEMI.COR.TS = True
 
-    _C.INPUT.ST_ANGLES = [-15, 15]
+    _C.INPUT.ST_ANGLES = [-30, 30]
     _C.INPUT.MIN_SIZE_PSEUDO = (640, 800)
 
 

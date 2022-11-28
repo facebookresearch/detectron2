@@ -6,6 +6,7 @@ import logging
 from typing import Any, Dict, List, Tuple
 import torch
 from random import choice
+import numpy as np
 
 from detectron2.data import MetadataCatalog
 from detectron2.data import transforms as T
@@ -14,7 +15,7 @@ from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
 
 from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
-from densepose.data.transform import RandErase, RandomScale
+from densepose.data.transform import RandErase
 from densepose.data import detection_utils as utils
 
 
@@ -28,6 +29,7 @@ def build_augmentation(cfg, is_train):
         result.append(random_rotation)
         logger.info("DensePose-specific augmentation used in training: " + str(random_rotation))
     return result
+
 
 def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
@@ -44,6 +46,13 @@ def build_strong_augmentation(cfg, is_train):
         #         vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
         #     )
         # )
+
+        # result.append(
+        #     T.RandomRotation(
+        #         cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
+        #     )
+        # )
+
         result.append(
             choice(
                 [
@@ -155,7 +164,13 @@ class DatasetMapper:
             if self.mask_on:
                 self._add_densepose_masks_as_segmentation(annos, strong_shape)
 
-            instances = utils.annotations_to_instances(annos, strong_shape)
+            do_hflip = sum(isinstance(t, T.HFlipTransform) for t in strong_transforms.transforms) % 2 == 1
+            dataset_dict['ratote'] = None
+            for t in strong_transforms.transforms:
+                if isinstance(t, T.RotationTransform):
+                    dataset_dict['rotate'] = t.angle
+
+            instances = utils.annotations_to_instances(annos, strong_shape, do_hflip=do_hflip)
             weak_instances = utils.annotations_to_instances(annos, image_shape, bbox_name='weak_bbox', is_pred=True)
 
             densepose_annotations = [obj.get("densepose") for obj in annos]
@@ -165,6 +180,7 @@ class DatasetMapper:
                 )
 
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
+            dataset_dict['do_hflip'] = do_hflip
             dataset_dict["detected_instances"] = weak_instances[instances.gt_boxes.nonempty()]
 
             # erase image

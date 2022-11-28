@@ -305,7 +305,7 @@ class DensePoseChartLoss:
         factor = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2) * 0.1
         factor = factor.clip(0., 0.05)
 
-        threshold = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2) * 0.49 + 0.5
+        threshold = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2) * 0.29 + 0.7
 
         est = getattr(densepose_predictor_outputs, "fine_segm")[packed_annotations.bbox_indices]
         est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
@@ -362,7 +362,7 @@ class DensePoseChartLoss:
             "loss_unsup_fine_segm": loss * self.w_part * factor,
             "loss_unsup_coarse_segm": F.cross_entropy(
                 coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
-            ) * self.w_part * factor,
+            ) * self.w_segm * factor,
         }
 
         u_est = getattr(densepose_predictor_outputs, "u")[packed_annotations.bbox_indices]

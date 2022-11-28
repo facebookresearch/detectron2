@@ -5,11 +5,10 @@ import numpy as np
 import time
 from typing import List, Mapping, Optional
 import torch
-
+from torchvision.transforms.functional import rotate
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage, get_event_storage
 from detectron2.engine import TrainerBase
-import copy
 
 
 class SimpleTrainer(TrainerBase):
@@ -59,6 +58,7 @@ class SimpleTrainer(TrainerBase):
         self.data_loader = data_loader
         self._data_loader_iter = iter(data_loader)
         self.optimizer = optimizer
+        self.pt_label_symmetries = [ 0, 1, 2, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23]
 
     def run_step(self):
         """
@@ -91,6 +91,22 @@ class SimpleTrainer(TrainerBase):
             pseudo_v = pseudo_label.v
             pseudo_mask = pseudo_label.crt_segm
             pseudo_sigma = pseudo_label.crt_sigma
+            if x['do_hflip']:
+                pseudo_coarse_segm = torch.flip(pseudo_coarse_segm, [3])
+                pseudo_segm = torch.flip(pseudo_segm, [3])[:, self.pt_label_symmetries]
+                pseudo_u = torch.flip(pseudo_u, [3])
+                pseudo_v = torch.flip(pseudo_v, [3])
+                pseudo_mask = torch.flip(pseudo_mask, [3])
+                pseudo_mask[:, :25] = pseudo_mask[:, self.pt_label_symmetries]
+                pseudo_sigma = torch.flip(pseudo_sigma, [3])
+            if x['rotate'] is not None:
+                angle = x['rotate']
+                pseudo_coarse_segm = rotate(pseudo_coarse_segm, angle)
+                pseudo_segm = rotate(pseudo_segm, angle)
+                pseudo_u = rotate(pseudo_u, angle)
+                pseudo_v = rotate(pseudo_v, angle)
+                pseudo_mask = rotate(pseudo_mask, angle)
+                pseudo_sigma = rotate(pseudo_sigma, angle)
 
             for j, densepose_data in enumerate(x["instances"].gt_densepose):
                 if densepose_data is not None:

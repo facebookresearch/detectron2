@@ -334,7 +334,7 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
     return keypoints
 
 
-def annotations_to_instances(annos, image_size, bbox_name="bbox", is_pred=False):
+def annotations_to_instances(annos, image_size, bbox_name="bbox", is_pred=False, do_hflip=False):
     """
     Create an :class:`Instances` object used by the models,
     from instance annotations in the dataset dict.
