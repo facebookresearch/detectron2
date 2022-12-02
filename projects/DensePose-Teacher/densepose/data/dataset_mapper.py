@@ -38,8 +38,8 @@ def build_strong_augmentation(cfg, is_train):
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
 
-        random_resize = T.ResizeShortestEdge(min_size, max_size, 'choice')
-        result.append(random_resize)
+        # random_resize = T.ResizeShortestEdge(min_size, max_size, 'choice')
+        # result.append(random_resize)
         # result.append(
         #     T.RandomFlip(
         #         horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
@@ -47,22 +47,22 @@ def build_strong_augmentation(cfg, is_train):
         #     )
         # )
 
-        # result.append(
-        #     T.RandomRotation(
-        #         cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
-        #     )
-        # )
-
         result.append(
-            choice(
-                [
-                    T.RandomContrast(1., 1.),  # Identity
-                    T.RandomContrast(0.75, 1.25),
-                    T.RandomBrightness(0.75, 1.25),
-                    T.RandomSaturation(0.75, 1.25),
-                ]
+            T.RandomRotation(
+                cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
             )
         )
+
+        # result.append(
+        #     choice(
+        #         [
+        #             T.RandomContrast(1., 1.),  # Identity
+        #             T.RandomContrast(0.5, 1.5),
+        #             T.RandomBrightness(0.5, 1.5),
+        #             T.RandomSaturation(0.5, 1.5),
+        #         ]
+        #     )
+        # )
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
 
@@ -165,7 +165,7 @@ class DatasetMapper:
                 self._add_densepose_masks_as_segmentation(annos, strong_shape)
 
             do_hflip = sum(isinstance(t, T.HFlipTransform) for t in strong_transforms.transforms) % 2 == 1
-            dataset_dict['ratote'] = None
+            dataset_dict['rotate'] = None
             for t in strong_transforms.transforms:
                 if isinstance(t, T.RotationTransform):
                     dataset_dict['rotate'] = t.angle

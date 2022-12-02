@@ -109,7 +109,7 @@ class DensePoseChartPredictor(nn.Module):
 
     def forward(self, head_outputs: torch.Tensor, features_dp: torch.Tensor):
         fine_segm = self.interp2d(self.index_uv_lowres(head_outputs))
-        crt_output = torch.cat((self.channels_squeeze(head_outputs.detach()), features_dp.detach()), dim=1)
+        crt_output = torch.cat((self.channels_squeeze(head_outputs), features_dp), dim=1)
         # crt_output = self.non_local(crt_output)
         for i in range(self.n_stacked_convs):
             layer_name = _get_layer_name(i)

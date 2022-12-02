@@ -194,7 +194,7 @@ class DensePoseChartLoss:
         if self.uv_confidence:
             # sigma = interpolator.extract_at_points(densepose_predictor_outputs.crt_sigma)[j_valid_fg]
             sigma = interpolator.extract_at_points(densepose_predictor_outputs.crt_sigma)[interpolator.j_valid]
-            delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
+            delta_t_delta = (u_est - u_gt.detach()) ** 2 + (v_est - v_gt.detach()) ** 2
             # sigma = F.softplus(sigma) + 1e-9
             # uv_weights = torch.ones_like(loss_u, dtype=torch.float32)
             loss = {

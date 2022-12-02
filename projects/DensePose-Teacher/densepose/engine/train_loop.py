@@ -3,8 +3,9 @@
 
 import numpy as np
 import time
-from typing import List, Mapping, Optional
+from typing import Mapping
 import torch
+import torch.nn.functional as F
 from torchvision.transforms.functional import rotate
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage, get_event_storage
@@ -94,11 +95,11 @@ class SimpleTrainer(TrainerBase):
             if x['do_hflip']:
                 pseudo_coarse_segm = torch.flip(pseudo_coarse_segm, [3])
                 pseudo_segm = torch.flip(pseudo_segm, [3])[:, self.pt_label_symmetries]
-                pseudo_u = torch.flip(pseudo_u, [3])
-                pseudo_v = torch.flip(pseudo_v, [3])
+                pseudo_u = torch.flip(pseudo_u, [3])[:, self.pt_label_symmetries]
+                pseudo_v = torch.flip(pseudo_v, [3])[:, self.pt_label_symmetries]
                 pseudo_mask = torch.flip(pseudo_mask, [3])
                 pseudo_mask[:, :25] = pseudo_mask[:, self.pt_label_symmetries]
-                pseudo_sigma = torch.flip(pseudo_sigma, [3])
+                pseudo_sigma = torch.flip(pseudo_sigma, [3])[:, self.pt_label_symmetries]
             if x['rotate'] is not None:
                 angle = x['rotate']
                 pseudo_coarse_segm = rotate(pseudo_coarse_segm, angle)

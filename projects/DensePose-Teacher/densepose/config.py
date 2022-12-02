@@ -286,6 +286,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.ERASE_ITER = (1, 5)
     _C.MODEL.SEMI.SCALE = (0.75, 1.25)
     _C.MODEL.SEMI.FLOW = False
+    _C.MODEL.SEMI.GAMMA = 9
 
     # config for corrector
     _C.MODEL.SEMI.COR = CN()

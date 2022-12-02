@@ -4,6 +4,7 @@ import numpy as np
 from detectron2.data.transforms import Augmentation, Transform, ResizeTransform
 from PIL import Image
 from fvcore.transforms.transform import NoOpTransform
+import cv2
 
 
 class ImageResizeTransform:
@@ -85,13 +86,17 @@ class RandErase(Augmentation):
         # get magnitude
         patches = []
         if self.random_magnitude:
-            for bbox in instances.gt_boxes:
+            for i, bbox in enumerate(instances.gt_boxes):
                 x1, y1, x2, y2 = bbox.int()
-                n_iterations = self._get_erase_cycle()
-                for _ in range(n_iterations):
-                    ph, pw = self._get_patch_size(y2 - y1, x2 - x1)
-                    px, py = torch.randint(x1, x2, (1,)).clamp(0, w - pw), torch.randint(y1, y2, (1,)).clamp(0, h - ph)
-                    patches.append([px, py, px + pw, py + ph])
+                if x1 != x2 and y1 != y2:
+                    if instances.gt_densepose[i] is not None:
+                        n_iterations = self._get_erase_cycle()
+                    else:
+                        n_iterations = 1
+                    for _ in range(n_iterations):
+                        ph, pw = self._get_patch_size(y2 - y1, x2 - x1)
+                        px, py = torch.randint(x1, x2, (1,)).clamp(0, w - pw), torch.randint(y1, y2, (1,)).clamp(0, h - ph)
+                        patches.append([px, py, px + pw, py + ph])
         else:
             assert self.patches is not None
             patches = self.patches
@@ -165,75 +170,156 @@ class RandErase(Augmentation):
     #         # self._erase_seg(inputs, patch, fill_val=self.seg_ignore_label)
     #     return image
 
+class RandomRotation(Augmentation):
+    """
+    This method returns a copy of this image, rotated the given
+    number of degrees counter clockwise around the given center.
+    """
 
-class RandomScale(Augmentation):
-    def __init__(
-            self,
-            scale,
-            max_size,
-            interp=Image.BILINEAR
-    ):
-        self.scale = scale
-        if isinstance(max_size, int):
-            self.max_size = max_size
-        elif isinstance(max_size, tuple):
-            self.max_size = max_size[0]
-        self.interp = interp
+    def __init__(self, angle, expand=True, center=None, sample_style="range", interp=None):
+        """
+        Args:
+            angle (list[float]): If ``sample_style=="range"``,
+                a [min, max] interval from which to sample the angle (in degrees).
+                If ``sample_style=="choice"``, a list of angles to sample from
+            expand (bool): choose if the image should be resized to fit the whole
+                rotated image (default), or simply cropped
+            center (list[[float, float]]):  If ``sample_style=="range"``,
+                a [[minx, miny], [maxx, maxy]] relative interval from which to sample the center,
+                [0, 0] being the top left of the image and [1, 1] the bottom right.
+                If ``sample_style=="choice"``, a list of centers to sample from
+                Default: None, which means that the center of rotation is the center of the image
+                center has no effect if expand=True because it only affects shifting
+        """
+        super().__init__()
+        assert sample_style in ["range", "choice"], sample_style
+        self.is_range = sample_style == "range"
+        if isinstance(angle, (float, int)):
+            angle = (angle, angle)
+        if center is not None and isinstance(center[0], (float, int)):
+            center = (center, center)
+        self._init(locals())
 
     def get_transform(self, image):
         h, w = image.shape[:2]
-        scale = np.random.uniform(self.scale[0], self.scale[1])
+        center = None
+        if self.is_range:
+            angle = np.random.uniform(self.angle[0], self.angle[1])
+            if self.center is not None:
+                center = (
+                    np.random.uniform(self.center[0][0], self.center[1][0]),
+                    np.random.uniform(self.center[0][1], self.center[1][1]),
+                )
+        else:
+            angle = np.random.choice(self.angle)
+            if self.center is not None:
+                center = np.random.choice(self.center)
 
-        if scale == 1.:
+        if center is not None:
+            center = (w * center[0], h * center[1])  # Convert to absolute coordinates
+
+        if angle % 360 == 0:
             return NoOpTransform()
 
-        newh, neww = scale * h, scale * w
+        return RotationTransform(h, w, angle, expand=self.expand, center=center, interp=self.interp)
 
-        if max(newh, neww) > self.max_size:
-            scale = self.max_size * 1.0 / max(newh, neww)
-            newh = newh * scale
-            neww = neww * scale
-        neww = int(neww + 0.5)
-        newh = int(newh + 0.5)
-        return ResizeTransform(h, w, newh, neww, self.interp)
 
-    # def __call__(self, inputs):
-    #     for ipt in inputs:
-    #         # get new h and w
-    #         hw = ipt['image'].shape[-2:]
-    #         newhw = self.get_output_shape(hw)
-    #         # resize the image
-    #         ipt['image'] = self.apply_image(ipt['image'], newhw).squeeze(0)
-    #         # transform the boxes
-    #         boxes = self.apply_box(ipt['instances'].gt_boxes, newhw, hw)
-    #         ipt['instances'].gt_boxes = boxes
-    #         ipt['instances'].gt_densepose.boxes_xyxy_abs = boxes
-    #         ipt['instances']._image_size = newhw
-    #         # Resize dont neet to transform densepose annotataions
-    #     return inputs
+class RotationTransform(Transform):
+    """
+    This method returns a copy of this image, rotated the given
+    number of degrees counter clockwise around its center.
+    """
 
-    # def apply_image(self, image, newhw):
-    #     newh, neww = newhw
-    #     align_corners = None if self.interp == 'nearest' else False
-    #     image = image.unsqueeze(0)
-    #     return F.interpolate(image, (newh, neww), mode=self.interp, align_corners=align_corners)
+    def __init__(self, h, w, angle, expand=True, center=None, interp=None):
+        """
+        Args:
+            h, w (int): original image size
+            angle (float): degrees for rotation
+            expand (bool): choose if the image should be resized to fit the whole
+                rotated image (default), or simply cropped
+            center (tuple (width, height)): coordinates of the rotation center
+                if left to None, the center will be fit to the center of each image
+                center has no effect if expand=True because it only affects shifting
+            interp: cv2 interpolation method, default cv2.INTER_LINEAR
+        """
+        super().__init__()
+        image_center = np.array((w / 2, h / 2))
+        if center is None:
+            center = image_center
+        if interp is None:
+            interp = cv2.INTER_LINEAR
+        abs_cos, abs_sin = (abs(np.cos(np.deg2rad(angle))), abs(np.sin(np.deg2rad(angle))))
+        if expand:
+            # find the new width and height bounds
+            bound_w, bound_h = np.rint(
+                [h * abs_sin + w * abs_cos, h * abs_cos + w * abs_sin]
+            ).astype(int)
+        else:
+            bound_w, bound_h = w, h
 
-    # def apply_box(self, boxes, newhw, hw):
-    #     newh, neww = newhw
-    #     h, w = hw
-    #     boxes = boxes.tensor[:, [0, 2, 1, 3]]
-    #     boxes[:, :2] = boxes[:, :2] * (neww * 1.0 / w)
-    #     boxes[:, -2:] = boxes[:, -2:] * (newh * 1.0 / h)
-    #     return Boxes(boxes[:, [0, 2, 1, 3]])
+        self._set_attributes(locals())
+        self.rm_coords = self.create_rotation_matrix()
+        # Needed because of this problem https://github.com/opencv/opencv/issues/11784
+        self.rm_image = self.create_rotation_matrix(offset=-0.5)
 
-    def get_output_shape(self, h, w):
-        scale = np.random.uniform(self.scale[0], self.scale[1])
-        newh, neww = scale * h, scale * w
+    def apply_image(self, img, interp=None):
+        """
+        img should be a numpy array, formatted as Height * Width * Nchannels
+        """
+        if len(img) == 0 or self.angle % 360 == 0:
+            return img
+        assert img.shape[:2] == (self.h, self.w)
+        interp = interp if interp is not None else self.interp
+        return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp)
 
-        if max(newh, neww) > self.max_size:
-            scale = self.max_size * 1.0 / max(newh, neww)
-            newh = newh * scale
-            neww = neww * scale
-        neww = int(neww + 0.5)
-        newh = int(newh + 0.5)
-        return (newh, neww)
+    def apply_coords(self, coords):
+        """
+        coords should be a N * 2 array-like, containing N couples of (x, y) points
+        """
+        coords = np.asarray(coords, dtype=float)
+        if len(coords) == 0 or self.angle % 360 == 0:
+            return coords
+        return cv2.transform(coords[:, np.newaxis, :], self.rm_coords)[:, 0, :]
+
+    def apply_box(self, box: np.ndarray) -> np.ndarray:
+        w, h = box[0, 2] - box[0, 0], box[0, 3] - box[0, 1]
+        idxs = np.array([(0, 1), (2, 1), (0, 3), (2, 3)]).flatten()
+        coords = np.asarray(box).reshape(-1, 4)[:, idxs].reshape(-1, 2)
+        coords = self.apply_coords(coords).reshape((-1, 4, 2))
+        # minxy = coords.min(axis=1)
+        # maxxy = coords.max(axis=1)
+        wh = np.array([[w, h]]) / 2
+        lxy = coords.mean(axis=1) - wh
+        rxy = coords.mean(axis=1) + wh
+        trans_boxes = np.concatenate((lxy, rxy), axis=1)
+        return trans_boxes
+
+    def apply_segmentation(self, segmentation):
+        segmentation = self.apply_image(segmentation, interp=cv2.INTER_NEAREST)
+        return segmentation
+
+    def create_rotation_matrix(self, offset=0):
+        center = (self.center[0] + offset, self.center[1] + offset)
+        rm = cv2.getRotationMatrix2D(tuple(center), self.angle, 1)
+        if self.expand:
+            # Find the coordinates of the center of rotation in the new image
+            # The only point for which we know the future coordinates is the center of the image
+            rot_im_center = cv2.transform(self.image_center[None, None, :] + offset, rm)[0, 0, :]
+            new_center = np.array([self.bound_w / 2, self.bound_h / 2]) + offset - rot_im_center
+            # shift the rotation center to the new coordinates
+            rm[:, 2] += new_center
+        return rm
+
+    def inverse(self):
+        """
+        The inverse is to rotate it back with expand, and crop to get the original shape.
+        """
+        if not self.expand:  # Not possible to inverse if a part of the image is lost
+            raise NotImplementedError()
+        rotation = RotationTransform(
+            self.bound_h, self.bound_w, -self.angle, True, None, self.interp
+        )
+        crop = CropTransform(
+            (rotation.bound_w - self.w) // 2, (rotation.bound_h - self.h) // 2, self.w, self.h
+        )
+        return TransformList([rotation, crop])
