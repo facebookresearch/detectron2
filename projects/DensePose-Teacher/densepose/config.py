@@ -284,9 +284,7 @@ def add_semi_sup_config(cfg: CN) -> None:
     # config for strong augmentation
     _C.MODEL.SEMI.ERASE_SIZE = [0., 0.2]
     _C.MODEL.SEMI.ERASE_ITER = (1, 5)
-    _C.MODEL.SEMI.SCALE = (0.75, 1.25)
-    _C.MODEL.SEMI.FLOW = False
-    _C.MODEL.SEMI.GAMMA = 9
+    _C.MODEL.SEMI.UNLABELED_THRESHOLD = 10000
 
     # config for corrector
     _C.MODEL.SEMI.COR = CN()
@@ -294,8 +292,8 @@ def add_semi_sup_config(cfg: CN) -> None:
     _C.MODEL.SEMI.COR.DP_TIMES = 4
     _C.MODEL.SEMI.COR.CONV_HEAD_DIM = 512
     _C.MODEL.SEMI.COR.CONV_HEAD_KERNEL = 3
-    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 4
-    _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 1.  # 0.01
+    _C.MODEL.SEMI.COR.NUM_STACKED_CONVS = 2
+    _C.MODEL.SEMI.COR.SEGM_WEIGHTS = 0.1  # 0.01
     # _C.MODEL.SEMI.COR.POINTS_WEIGHTS = 0.01  # 0.0001
     _C.MODEL.SEMI.COR.SIGMA_WEIGHTS = 0.001  # 0.0005
     _C.MODEL.SEMI.COR.WARM_ITER = 120000

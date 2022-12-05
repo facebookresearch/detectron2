@@ -376,13 +376,6 @@ class PackedChartBasedAnnotations:
     point_bbox_indices: torch.Tensor
     bbox_indices: torch.Tensor
 
-    pseudo_fine_segm: Optional[torch.Tensor]
-    pseudo_coarse_segm: Optional[torch.Tensor]
-    pseudo_u: Optional[torch.Tensor]
-    pseudo_v: Optional[torch.Tensor]
-    pseudo_mask: Optional[torch.Tensor]
-    pseudo_sigma: Optional[torch.Tensor]
-
 
 class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
     """
@@ -404,13 +397,6 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         self.bbox_indices = []
         self.nxt_bbox_with_dp_index = 0
         self.nxt_bbox_index = 0
-
-        self.pseudo_fine_segm = []
-        self.pseudo_coarse_segm = []
-        self.pseudo_u = []
-        self.pseudo_v = []
-        self.pseudo_mask = []
-        self.pseudo_sigma = []
 
     def accumulate(self, instances_one_image: Instances):
         """
@@ -465,19 +451,6 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
         if hasattr(dp_gt, "segm"):
             self.s_gt.append(dp_gt.segm.unsqueeze(0))
 
-        if hasattr(dp_gt, "pseudo_coarse_segm"):
-            self.pseudo_coarse_segm.append(dp_gt.pseudo_coarse_segm.unsqueeze(0))
-        if hasattr(dp_gt, "pseudo_fine_segm"):
-            self.pseudo_fine_segm.append(dp_gt.pseudo_fine_segm.unsqueeze(0))
-        if hasattr(dp_gt, "pseudo_u"):
-            self.pseudo_u.append(dp_gt.pseudo_u.unsqueeze(0))
-        if hasattr(dp_gt, "pseudo_v"):
-            self.pseudo_v.append(dp_gt.pseudo_v.unsqueeze(0))
-        if hasattr(dp_gt, "pseudo_mask"):
-            self.pseudo_mask.append(dp_gt.pseudo_mask.unsqueeze(0))
-        if hasattr(dp_gt, "pseudo_sigma"):
-            self.pseudo_sigma.append(dp_gt.pseudo_sigma.unsqueeze(0))
-        
         self.bbox_xywh_gt.append(box_xywh_gt.view(-1, 4))
         self.bbox_xywh_est.append(box_xywh_est.view(-1, 4))
         self.point_bbox_with_dp_indices.append(
@@ -507,24 +480,6 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             # ignore segmentation annotations, if not all the instances contain those
             coarse_segm_gt=torch.cat(self.s_gt, 0)
             if len(self.s_gt) == len(self.bbox_xywh_gt)
-            else None,
-            pseudo_coarse_segm=torch.cat(self.pseudo_coarse_segm, 0)
-            if len(self.pseudo_coarse_segm) == len(self.bbox_xywh_gt)
-            else None,
-            pseudo_fine_segm=torch.cat(self.pseudo_fine_segm, 0)
-            if len(self.pseudo_fine_segm) == len(self.bbox_xywh_gt)
-            else None,
-            pseudo_u=torch.cat(self.pseudo_u, 0)
-            if len(self.pseudo_u) == len(self.bbox_xywh_gt)
-            else None,
-            pseudo_v=torch.cat(self.pseudo_v, 0)
-            if len(self.pseudo_v) == len(self.bbox_xywh_gt)
-            else None,
-            pseudo_mask=torch.cat(self.pseudo_mask, 0)
-            if len(self.pseudo_mask) == len(self.bbox_xywh_gt)
-            else None,
-            pseudo_sigma=torch.cat(self.pseudo_sigma, 0)
-            if len(self.pseudo_sigma) == len(self.bbox_xywh_gt)
             else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),

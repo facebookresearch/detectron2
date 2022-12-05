@@ -263,9 +263,10 @@ def transform_train_instance_annotations(
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
     # clip transformed bbox to image size
     bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
+    annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
+
     strong_bbox = strong_transforms.apply_box(np.array([bbox]))[0].clip(min=0)
-    annotation["weak_bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
-    annotation["bbox"] = np.minimum(strong_bbox, list(strong_size + strong_size)[::-1])
+    annotation["unlabeled_bbox"] = np.minimum(strong_bbox, list(strong_size + strong_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
     return annotation
@@ -334,7 +335,7 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
     return keypoints
 
 
-def annotations_to_instances(annos, image_size, bbox_name="bbox", is_pred=False, do_hflip=False):
+def annotations_to_instances(annos, image_size, unsup=False, threshold=10000):
     """
     Create an :class:`Instances` object used by the models,
     from instance annotations in the dataset dict.
@@ -350,23 +351,44 @@ def annotations_to_instances(annos, image_size, bbox_name="bbox", is_pred=False,
             "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
-    boxes = (
-        np.stack(
-            [BoxMode.convert(obj[bbox_name], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+    if not unsup:
+        boxes = (
+            np.stack(
+                [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+            )
+            if len(annos)
+            else np.zeros((0, 4))
         )
-        if len(annos)
-        else np.zeros((0, 4))
-    )
-    target = Instances(image_size)
+        target = Instances(image_size)
 
-    classes = [int(obj["category_id"]) for obj in annos]
-    classes = torch.tensor(classes, dtype=torch.int64)
+        classes = [int(obj["category_id"]) for obj in annos]
+        classes = torch.tensor(classes, dtype=torch.int64)
 
-    if is_pred:
-        target.pred_boxes = Boxes(boxes)
-        target.pred_classes = classes
-    else:
         target.gt_boxes = Boxes(boxes)
+        target.gt_classes = classes
+    else:
+        # labeled_boxes = (
+        #     np.stack(
+        #         [BoxMode.convert(obj["labeled_bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+        #     )
+        #     if len(annos)
+        #     else np.zeros((0, 4))
+        # )
+        unlabeled_boxes = (
+            np.stack(
+                [BoxMode.convert(obj["unlabeled_bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+            )
+            if len(annos)
+            else np.zeros((0, 4))
+        )
+        target = Instances(image_size)
+        classes = [int(obj["category_id"]) for obj in annos]
+        classes = torch.tensor(classes, dtype=torch.int64)
+
+        # labeled_boxes = Boxes(labeled_boxes)
+        unlabeled_boxes = Boxes(unlabeled_boxes)
+        # target.labeled_boxes = labeled_boxes
+        target.unlabeled_boxes = unlabeled_boxes
         target.gt_classes = classes
 
     return target

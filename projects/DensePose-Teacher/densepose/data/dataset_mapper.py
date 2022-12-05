@@ -38,8 +38,8 @@ def build_strong_augmentation(cfg, is_train):
         min_size = cfg.INPUT.MIN_SIZE_TRAIN
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
 
-        # random_resize = T.ResizeShortestEdge(min_size, max_size, 'choice')
-        # result.append(random_resize)
+        random_resize = T.ResizeShortestEdge(min_size, max_size, 'choice')
+        result.append(random_resize)
         # result.append(
         #     T.RandomFlip(
         #         horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
@@ -47,22 +47,20 @@ def build_strong_augmentation(cfg, is_train):
         #     )
         # )
 
-        result.append(
-            T.RandomRotation(
-                cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
-            )
-        )
-
         # result.append(
-        #     choice(
-        #         [
-        #             T.RandomContrast(1., 1.),  # Identity
-        #             T.RandomContrast(0.5, 1.5),
-        #             T.RandomBrightness(0.5, 1.5),
-        #             T.RandomSaturation(0.5, 1.5),
-        #         ]
+        #     T.RandomRotation(
+        #         cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
         #     )
         # )
+
+        result.append(
+            choice(
+                [
+                    T.RandomContrast(1., 1.),  # Identity
+                    T.RandomLighting(50)
+                ]
+            )
+        )
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
 
@@ -148,14 +146,13 @@ class DatasetMapper:
             strong_shape = strong_image.shape[:2]
             # dataset_dict["strong_image"] = torch.as_tensor(strong_image.transpose(2, 0, 1).astype("float32"))
 
-            transforms = weak_transforms + strong_transforms
             annos = [
                 self._transform_densepose(
                     utils.transform_train_instance_annotations(
                         obj, weak_transforms, strong_transforms, image_shape, strong_shape,
                         keypoint_hflip_indices=self.keypoint_hflip_indices
                     ),
-                    transforms,
+                    weak_transforms,
                 )
                 for obj in dataset_dict.pop("annotations")
                 if obj.get("iscrowd", 0) == 0
@@ -170,8 +167,8 @@ class DatasetMapper:
                 if isinstance(t, T.RotationTransform):
                     dataset_dict['rotate'] = t.angle
 
-            instances = utils.annotations_to_instances(annos, strong_shape, do_hflip=do_hflip)
-            weak_instances = utils.annotations_to_instances(annos, image_shape, bbox_name='weak_bbox', is_pred=True)
+            instances = utils.annotations_to_instances(annos, image_shape)
+            un_instances = utils.annotations_to_instances(annos, strong_image, unsup=True)
 
             densepose_annotations = [obj.get("densepose") for obj in annos]
             if densepose_annotations and not all(v is None for v in densepose_annotations):
@@ -181,11 +178,11 @@ class DatasetMapper:
 
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
             dataset_dict['do_hflip'] = do_hflip
-            dataset_dict["detected_instances"] = weak_instances[instances.gt_boxes.nonempty()]
+            dataset_dict["un_instances"] = un_instances[instances.gt_boxes.nonempty()]
 
             # erase image
             erase_transform = self.random_erase.get_transform(strong_image, dataset_dict['instances'])
-            dataset_dict['strong_image'] = torch.as_tensor(
+            dataset_dict['un_image'] = torch.as_tensor(
                 erase_transform.apply_image(strong_image).transpose(2, 0, 1).astype("float32")
             )
 

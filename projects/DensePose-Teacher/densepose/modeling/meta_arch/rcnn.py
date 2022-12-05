@@ -4,11 +4,12 @@ import numpy as np
 from typing import Dict, List, Optional, Tuple
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 from detectron2.config import configurable
 from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.layers import move_device_like
-from detectron2.structures import ImageList, Instances
+from detectron2.structures import Instances, Boxes
 from detectron2.utils.events import get_event_storage
 
 from detectron2.modeling.backbone import Backbone, build_backbone
@@ -16,6 +17,8 @@ from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.modeling.proposal_generator import build_proposal_generator
 from detectron2.modeling.roi_heads import build_roi_heads
 from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
+
+from densepose.structures.image_list import ImageList
 
 __all__ = ["GeneralizedRCNNDP"]
 
@@ -40,6 +43,8 @@ class GeneralizedRCNNDP(nn.Module):
         pixel_std: Tuple[float],
         input_format: Optional[str] = None,
         vis_period: int = 0,
+        unlabeled_threshold: int = 10000,
+        total_iteration:int = 260000
     ):
         """
         Args:
@@ -67,7 +72,9 @@ class GeneralizedRCNNDP(nn.Module):
             self.pixel_mean.shape == self.pixel_std.shape
         ), f"{self.pixel_mean} and {self.pixel_std} have different shapes!"
 
-        self.iteration = -1
+        self.unlabeled_threshold = unlabeled_threshold
+        self.iteration = 0
+        self.total_iteration = total_iteration
 
     @classmethod
     def from_config(cls, cfg):
@@ -80,7 +87,11 @@ class GeneralizedRCNNDP(nn.Module):
             "vis_period": cfg.VIS_PERIOD,
             "pixel_mean": cfg.MODEL.PIXEL_MEAN,
             "pixel_std": cfg.MODEL.PIXEL_STD,
+            "unlabeled_threshold": cfg.MODEL.SEMI.UNLABELED_THRESHOLD
         }
+
+    def update_iteration(self, iteration):
+        self.iteration = iteration
 
     @property
     def device(self):
@@ -155,19 +166,34 @@ class GeneralizedRCNNDP(nn.Module):
         images = self.preprocess_image(batched_inputs)
         if "instances" in batched_inputs[0]:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
+            un_instances = [x["un_instances"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
+            un_instances = None
 
         features = self.backbone(images.tensor)
+        batch_size = images.tensor.shape[0] // 2
+        label_features = {}
+        for k in features.keys():
+            label_features[k] = features[k][:batch_size]
+            features[k] = features[k][batch_size:]
 
         if self.proposal_generator is not None:
-            proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses = self.proposal_generator(images[:batch_size], label_features, gt_instances)
         else:
             assert "proposals" in batched_inputs[0]
             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
             proposal_losses = {}
 
-        _, detector_losses = self.roi_heads(images, features, proposals, gt_instances, iteration=self.iteration)
+        _, detector_losses = self.roi_heads(images[:batch_size], label_features, proposals, gt_instances)
+
+        labeled_boxes = [x.gt_boxes for x in gt_instances]
+        unlabeled_boxes = [x.unlabeled_boxes for x in un_instances]
+        with torch.no_grad():
+            pseudo_labels = self.roi_heads.forward_with_given_boxes_train(label_features, labeled_boxes)
+        prediction = self.roi_heads.forward_with_given_boxes_train(features, unlabeled_boxes)
+        unlabeled_loss = self.get_unlabeled_loss(pseudo_labels, prediction)
+
         if self.vis_period > 0:
             storage = get_event_storage()
             if storage.iter % self.vis_period == 0:
@@ -176,6 +202,7 @@ class GeneralizedRCNNDP(nn.Module):
         losses = {}
         losses.update(detector_losses)
         losses.update(proposal_losses)
+        losses.update(unlabeled_loss)
         return losses
 
     def inference(
@@ -227,10 +254,9 @@ class GeneralizedRCNNDP(nn.Module):
         """
         Normalize, pad and batch the input images.
         """
+        images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         if self.training:
-            images = [self._move_to_current_device(x["strong_image"]) for x in batched_inputs]
-        else:
-            images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
+            images += [self._move_to_current_device(x["un_image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(
             images,
@@ -255,5 +281,72 @@ class GeneralizedRCNNDP(nn.Module):
             processed_results.append({"instances": r})
         return processed_results
 
-    def update_iteration(self, iteration):
-        self.iteration = iteration
+    def get_unlabeled_loss(self, pseudo_labels, prediction):
+        n_channels = 25
+        # factor = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.1
+        factor = 0.05 # factor.clip(0., 0.05)
+
+        threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.29 + 0.7
+
+        est = prediction.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
+        coarse_est = prediction.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2)
+        with torch.no_grad():
+            pseudo_fine_segm = pseudo_labels.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
+
+            pseudo_coarse_segm = pseudo_labels.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2).argmax(dim=1)
+
+            pred_index = pseudo_fine_segm.argmax(dim=1)
+
+            pos_index = pseudo_labels.crt_segm.permute(0, 2, 3, 1).reshape(-1, n_channels + 1)
+            coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= threshold
+            pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
+            pos_index = torch.sigmoid(pos_index) >= threshold
+
+            pred_index = pred_index[pos_index]
+
+        if pos_index.sum() <= 0:
+            losses = {
+                "loss_unsup_fine_segm": est.sum() * 0,
+                "loss_unsup_u": prediction.u.sum() * 0,
+                "loss_unsup_v": prediction.v.sum() * 0,
+            }
+        else:
+            loss = F.cross_entropy(est[pos_index], pred_index.long(), reduction='mean')
+            losses = {
+                "loss_unsup_fine_segm": loss * factor,
+                "loss_unsup_coarse_segm": F.cross_entropy(
+                    coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
+                ) * factor,
+            }
+
+            u_est = prediction.u.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+            v_est = prediction.v.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+
+            pred_index = torch.zeros_like(u_est).scatter_(1, pred_index.unsqueeze(1), 1).bool()
+
+            u_est = u_est[pred_index]
+            v_est = v_est[pred_index]
+
+            with torch.no_grad():
+                pseudo_u = pseudo_labels.u.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+                pseudo_v = pseudo_labels.v.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+
+                pseudo_u = pseudo_u[pred_index]#.clamp(0., 1.)
+                pseudo_v = pseudo_v[pred_index]#.clamp(0., 1.)
+
+                pseudo_sigma = pseudo_labels.crt_sigma.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+                pseudo_sigma = pseudo_sigma[pred_index]
+                pseudo_sigma = torch.pow(1 - pseudo_sigma.clamp(0., 1.), 9)
+
+            loss_u = F.mse_loss(u_est, pseudo_u, reduction='none') * pseudo_sigma
+            loss_v = F.mse_loss(v_est, pseudo_v, reduction='none') * pseudo_sigma
+
+            losses.update({
+                "loss_unsup_u": (loss_u * pseudo_sigma).sum() * 0.01 * factor,
+                "loss_unsup_v": (loss_v * pseudo_sigma).sum() * 0.01 * factor
+            })
+
+        if coarse_pos_index.sum() <= 0:
+
+
+        return losses

@@ -31,7 +31,7 @@ class SimpleTrainer(TrainerBase):
     or write your own training loop.
     """
 
-    def __init__(self, models, data_loader, optimizer, strong_aug=None, warm_up_iter=None, crt_on=False):
+    def __init__(self, student_model, data_loader, optimizer):
         """
         Args:
             model: a Dict of torch Module. Takes a data from data_loader and returns a
@@ -47,15 +47,7 @@ class SimpleTrainer(TrainerBase):
         If you want your model (or a submodule of it) to behave
         like evaluation during training, you can overwrite its train() method.
         """
-        student_model = models["student"]
-        teacher_model = models["teacher"]
-        student_model.train()
-        teacher_model.eval()
-        for param in teacher_model.parameters():
-            param.requires_grad = False
-
         self.student_model = student_model
-        self.teacher_model = teacher_model
         self.data_loader = data_loader
         self._data_loader_iter = iter(data_loader)
         self.optimizer = optimizer
@@ -76,66 +68,6 @@ class SimpleTrainer(TrainerBase):
         """
         Firstly, Use teacher model to get pseudo labels
         """
-        teacher_bbox = [x.pop('detected_instances') for x in data]
-
-        teacher_output = self.teacher_model.inference(data, teacher_bbox, do_postprocess=False)
-
-        del teacher_bbox
-
-        # Construct input data for student model
-        for i, x in enumerate(data):
-            pseudo_label = teacher_output[i].pred_densepose
-            pseudo_coarse_segm = pseudo_label.coarse_segm
-            pseudo_segm = pseudo_label.fine_segm
-            # == baseline ==
-            pseudo_u = pseudo_label.u
-            pseudo_v = pseudo_label.v
-            pseudo_mask = pseudo_label.crt_segm
-            pseudo_sigma = pseudo_label.crt_sigma
-            if x['do_hflip']:
-                pseudo_coarse_segm = torch.flip(pseudo_coarse_segm, [3])
-                pseudo_segm = torch.flip(pseudo_segm, [3])[:, self.pt_label_symmetries]
-                pseudo_u = torch.flip(pseudo_u, [3])[:, self.pt_label_symmetries]
-                pseudo_v = torch.flip(pseudo_v, [3])[:, self.pt_label_symmetries]
-                pseudo_mask = torch.flip(pseudo_mask, [3])
-                pseudo_mask[:, :25] = pseudo_mask[:, self.pt_label_symmetries]
-                pseudo_sigma = torch.flip(pseudo_sigma, [3])[:, self.pt_label_symmetries]
-            if x['rotate'] is not None:
-                angle = x['rotate']
-                pseudo_coarse_segm = rotate(pseudo_coarse_segm, angle)
-                pseudo_segm = rotate(pseudo_segm, angle)
-                pseudo_u = rotate(pseudo_u, angle)
-                pseudo_v = rotate(pseudo_v, angle)
-                pseudo_mask = rotate(pseudo_mask, angle)
-                pseudo_sigma = rotate(pseudo_sigma, angle)
-
-            for j, densepose_data in enumerate(x["instances"].gt_densepose):
-                if densepose_data is not None:
-                    # == densepose rcnn ==
-                    densepose_data.set("pseudo_coarse_segm", pseudo_coarse_segm[j])
-                    densepose_data.set("pseudo_fine_segm", pseudo_segm[j])
-                    densepose_data.set("pseudo_u", pseudo_u[j])
-                    densepose_data.set("pseudo_v", pseudo_v[j])
-                    densepose_data.set("pseudo_mask", pseudo_mask[j])
-                    densepose_data.set("pseudo_sigma", pseudo_sigma[j])
-
-        # pseudo_labels = []
-        # bbox_num = 0
-        # for i, x in enumerate(data):
-        #     cur_bbox_num = len(x['instances'].gt_boxes)
-        #     pseudo_labels.append(
-        #         x["instances"].gt_densepose.set_pseudo(teacher_output[i].pred_densepose,
-        #                                                torch.arange(bbox_num, bbox_num + cur_bbox_num))
-        #     )
-        #     bbox_num += cur_bbox_num
-        # pseudo_labels = torch.cat(pseudo_labels, dim=0)
-        #
-        # data.append(
-        #     {"pseudo_labels": pseudo_labels, "iter": self.iter}
-        # )
-
-        del teacher_output
-
         self.student_model.module.update_iteration(self.iter)
 
         loss_dict = self.student_model(data)
