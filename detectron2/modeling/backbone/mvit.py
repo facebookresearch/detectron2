@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import torch
 import torch.nn as nn
-
 from timm.models.layers import DropPath, Mlp, trunc_normal_
 
 from .backbone import Backbone
