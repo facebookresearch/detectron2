@@ -165,6 +165,13 @@ class Boxes:
         """
         return Boxes(self.tensor.clone())
 
+    # add by giahao
+    def h_flip(self, w) -> "Boxes":
+        fliped_boxes = self.tensor.clone()
+        fliped_boxes[:, 0] = w - fliped_boxes[:, 0]
+        fliped_boxes[:, 2] = w - fliped_boxes[:, 2]
+        return Boxes(fliped_boxes[:, [2, 1, 0, 3]])
+
     def to(self, device: torch.device):
         # Boxes are assumed float32 and does not support to(dtype)
         return Boxes(self.tensor.to(device=device))

@@ -18,7 +18,6 @@ from densepose.structures import DensePoseDataRelative, DensePoseList, DensePose
 from densepose.data.transform import RandErase
 from densepose.data import detection_utils as utils
 
-
 def build_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = utils.build_augmentation(cfg, is_train)
@@ -165,12 +164,6 @@ class DatasetMapper:
             if self.mask_on:
                 self._add_densepose_masks_as_segmentation(annos, strong_shape)
 
-            do_hflip = sum(isinstance(t, T.HFlipTransform) for t in strong_transforms.transforms) % 2 == 1
-            dataset_dict['rotate'] = None
-            for t in strong_transforms.transforms:
-                if isinstance(t, T.RotationTransform):
-                    dataset_dict['rotate'] = t.angle
-
             instances = utils.annotations_to_instances(annos, image_shape)
             un_instances = utils.annotations_to_instances(annos, strong_image, unsup=True)
 
@@ -181,7 +174,6 @@ class DatasetMapper:
                 )
 
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
-            dataset_dict['do_hflip'] = do_hflip
             indices = [x is not None for x in instances.gt_densepose.densepose_datas]
             dataset_dict["un_instances"] = un_instances[indices]
 
