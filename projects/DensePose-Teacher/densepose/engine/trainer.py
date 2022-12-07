@@ -112,10 +112,6 @@ class Trainer(TrainerBase):
             trainer=weakref.proxy(self),
         )
 
-        if comm.is_main_process():
-            if not os.path.exists(cfg.MODEL.SEMI.TEACHER_OUTPUT):
-                os.mkdir(cfg.MODEL.SEMI.TEACHER_OUTPUT)
-
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
         self.cfg = cfg

@@ -127,10 +127,9 @@ class DensePoseChartLoss:
             "loss_densepose_U": densepose_predictor_outputs.u.sum() * 0,
             "loss_densepose_V": densepose_predictor_outputs.v.sum() * 0,
         }
-        if self.uv_confidence:
-            losses.update({
-                "loss_correction_UV": densepose_predictor_outputs.crt_sigma.sum() * 0
-            })
+        losses.update({
+            "loss_correction_UV": densepose_predictor_outputs.crt_sigma.sum() * 0
+        })
         return losses
 
     def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any) -> LossDict:
@@ -162,7 +161,7 @@ class DensePoseChartLoss:
 
         # sigma = interpolator.extract_at_points(densepose_predictor_outputs.crt_sigma)[j_valid_fg]
         sigma = interpolator.extract_at_points(densepose_predictor_outputs.crt_sigma)[interpolator.j_valid]
-        delta_t_delta = (u_est - u_gt.detach()) ** 2 + (v_est - v_gt.detach()) ** 2
+        delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
         # sigma = F.softplus(sigma) + 1e-9
         # uv_weights = torch.ones_like(loss_u, dtype=torch.float32)
         loss = {

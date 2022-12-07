@@ -335,22 +335,7 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
     return keypoints
 
 
-def annotations_to_instances(annos, image_size, unsup=False, threshold=10000):
-    """
-    Create an :class:`Instances` object used by the models,
-    from instance annotations in the dataset dict.
-
-    Args:
-        annos (list[dict]): a list of instance annotations in one image, each
-            element for one instance.
-        image_size (tuple): height, width
-
-    Returns:
-        Instances:
-            It will contain fields "gt_boxes", "gt_classes",
-            "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
-            This is the format that builtin models expect.
-    """
+def annotations_to_instances(annos, image_size, unsup=False, threshold=1000):
     if not unsup:
         boxes = (
             np.stack(
@@ -367,13 +352,13 @@ def annotations_to_instances(annos, image_size, unsup=False, threshold=10000):
         target.gt_boxes = Boxes(boxes)
         target.gt_classes = classes
     else:
-        # labeled_boxes = (
-        #     np.stack(
-        #         [BoxMode.convert(obj["labeled_bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
-        #     )
-        #     if len(annos)
-        #     else np.zeros((0, 4))
-        # )
+        labeled_boxes = (
+            np.stack(
+                [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
+            )
+            if len(annos)
+            else np.zeros((0, 4))
+        )
         unlabeled_boxes = (
             np.stack(
                 [BoxMode.convert(obj["unlabeled_bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
@@ -385,9 +370,13 @@ def annotations_to_instances(annos, image_size, unsup=False, threshold=10000):
         classes = [int(obj["category_id"]) for obj in annos]
         classes = torch.tensor(classes, dtype=torch.int64)
 
-        # labeled_boxes = Boxes(labeled_boxes)
+        labeled_boxes = Boxes(labeled_boxes)
         unlabeled_boxes = Boxes(unlabeled_boxes)
-        # target.labeled_boxes = labeled_boxes
+        # indices = (labeled_boxes.area() > threshold) * (unlabeled_boxes.area() > threshold)
+        # target.labeled_boxes = labeled_boxes[indices]
+        # target.unlabeled_boxes = unlabeled_boxes[indices]
+        # target.gt_classes = classes[indices]
+        target.labeled_boxes = labeled_boxes
         target.unlabeled_boxes = unlabeled_boxes
         target.gt_classes = classes
 

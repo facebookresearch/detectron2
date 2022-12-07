@@ -187,12 +187,16 @@ class GeneralizedRCNNDP(nn.Module):
 
         _, detector_losses = self.roi_heads(images[:batch_size], label_features, proposals, gt_instances)
 
-        labeled_boxes = [x.gt_boxes for x in gt_instances]
+        labeled_boxes = [x.labeled_boxes for x in un_instances]
         unlabeled_boxes = [x.unlabeled_boxes for x in un_instances]
-        with torch.no_grad():
-            pseudo_labels = self.roi_heads.forward_with_given_boxes_train(label_features, labeled_boxes)
-        prediction = self.roi_heads.forward_with_given_boxes_train(features, unlabeled_boxes)
-        unlabeled_loss = self.get_unlabeled_loss(pseudo_labels, prediction)
+
+        if len(labeled_boxes) <= 0 or len(unlabeled_boxes) <= 0:
+            unlabeled_loss = self.get_fake_unsup_loss()
+        else:
+            with torch.no_grad():
+                pseudo_labels = self.roi_heads.forward_with_given_boxes_train(label_features, labeled_boxes)
+            prediction = self.roi_heads.forward_with_given_boxes_train(features, unlabeled_boxes)
+            unlabeled_loss = self.get_unlabeled_loss(pseudo_labels, prediction)
 
         if self.vis_period > 0:
             storage = get_event_storage()
@@ -240,7 +244,7 @@ class GeneralizedRCNNDP(nn.Module):
                 assert "proposals" in batched_inputs[0]
                 proposals = [x["proposals"].to(self.device) for x in batched_inputs]
 
-            results, _ = self.roi_heads(images, features, proposals, None, iteration=self.iteration)
+            results, _ = self.roi_heads(images, features, proposals, None)
         else:
             detected_instances = [x.to(self.device) for x in detected_instances]
             results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
@@ -284,7 +288,7 @@ class GeneralizedRCNNDP(nn.Module):
     def get_unlabeled_loss(self, pseudo_labels, prediction):
         n_channels = 25
         # factor = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.1
-        factor = 0.05 # factor.clip(0., 0.05)
+        factor = 0.1 # factor.clip(0., 0.05)
 
         threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.29 + 0.7
 
@@ -302,22 +306,29 @@ class GeneralizedRCNNDP(nn.Module):
             pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
             pos_index = torch.sigmoid(pos_index) >= threshold
 
-            pred_index = pred_index[pos_index]
-
-        if pos_index.sum() <= 0:
+        if coarse_pos_index.sum() <= 0:
             losses = {
+                "loss_unsup_fine_segm": coarse_est.sum() * 0,
+            }
+        else:
+            losses = {
+                "loss_unsup_coarse_segm": F.cross_entropy(
+                    coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
+                ) * 5.0 * factor,
+            }
+        pos_index = pos_index * coarse_est.argmax(dim=1).bool() * coarse_pos_index
+        pred_index = pred_index[pos_index]
+        if pos_index.sum() <= 0:
+            losses.update({
                 "loss_unsup_fine_segm": est.sum() * 0,
                 "loss_unsup_u": prediction.u.sum() * 0,
                 "loss_unsup_v": prediction.v.sum() * 0,
-            }
+            })
         else:
             loss = F.cross_entropy(est[pos_index], pred_index.long(), reduction='mean')
-            losses = {
-                "loss_unsup_fine_segm": loss * factor,
-                "loss_unsup_coarse_segm": F.cross_entropy(
-                    coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
-                ) * factor,
-            }
+            losses.update({
+                "loss_unsup_fine_segm": loss * factor
+            })
 
             u_est = prediction.u.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
             v_est = prediction.v.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
@@ -346,7 +357,12 @@ class GeneralizedRCNNDP(nn.Module):
                 "loss_unsup_v": (loss_v * pseudo_sigma).sum() * 0.01 * factor
             })
 
-        if coarse_pos_index.sum() <= 0:
-
-
         return losses
+
+    def get_fake_unsup_loss(self):
+        return {
+            "loss_unsup_coarse_segm": 0,
+            "loss_unsup_fine_segm": 0,
+            "loss_unsup_u": 0,
+            "loss_unsup_v": 0,
+        }

@@ -35,10 +35,10 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        min_size = cfg.INPUT.MIN_SIZE_TRAIN
+        min_size = cfg.INPUT.MIN_SIZE_PSEUDO
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
 
-        random_resize = T.ResizeShortestEdge(min_size, max_size, 'choice')
+        random_resize = T.ResizeShortestEdge(min_size, max_size, 'range')
         result.append(random_resize)
         # result.append(
         #     T.RandomFlip(
@@ -57,7 +57,11 @@ def build_strong_augmentation(cfg, is_train):
             choice(
                 [
                     T.RandomContrast(1., 1.),  # Identity
-                    T.RandomLighting(50)
+                    T.RandomContrast(0.8, 1.2),
+                    T.RandomBrightness(0.8, 1.8),
+                    T.RandomSaturation(0.8, 1.8),
+                    T.RandomLighting(75),
+
                 ]
             )
         )
@@ -178,7 +182,8 @@ class DatasetMapper:
 
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
             dataset_dict['do_hflip'] = do_hflip
-            dataset_dict["un_instances"] = un_instances[instances.gt_boxes.nonempty()]
+            indices = [x is not None for x in instances.gt_densepose.densepose_datas]
+            dataset_dict["un_instances"] = un_instances[indices]
 
             # erase image
             erase_transform = self.random_erase.get_transform(strong_image, dataset_dict['instances'])
