@@ -52,18 +52,18 @@ def build_strong_augmentation(cfg, is_train):
         #     )
         # )
 
-        result.append(
-            choice(
-                [
-                    T.RandomContrast(1., 1.),  # Identity
-                    T.RandomContrast(0.8, 1.2),
-                    T.RandomBrightness(0.8, 1.8),
-                    T.RandomSaturation(0.8, 1.8),
-                    T.RandomLighting(75),
-
-                ]
-            )
-        )
+        # result.append(
+        #     choice(
+        #         [
+        #             T.RandomContrast(1., 1.),  # Identity
+        #             T.RandomContrast(0.8, 1.2),
+        #             T.RandomBrightness(0.8, 1.8),
+        #             T.RandomSaturation(0.8, 1.8),
+        #             T.RandomLighting(75),
+        #
+        #         ]
+        #     )
+        # )
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
 
@@ -165,7 +165,7 @@ class DatasetMapper:
                 self._add_densepose_masks_as_segmentation(annos, strong_shape)
 
             instances = utils.annotations_to_instances(annos, image_shape)
-            un_instances = utils.annotations_to_instances(annos, strong_image, unsup=True)
+            un_instances = utils.annotations_to_instances(annos, strong_shape, unsup=True)
 
             densepose_annotations = [obj.get("densepose") for obj in annos]
             if densepose_annotations and not all(v is None for v in densepose_annotations):
