@@ -10,10 +10,10 @@ jobs:
     if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.7
+      - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
       - name: Install dependencies
         # flake8-bugbear flake8-comprehensions are useful but not available internally
         run: |
