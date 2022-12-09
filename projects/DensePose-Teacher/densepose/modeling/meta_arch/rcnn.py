@@ -311,16 +311,16 @@ class GeneralizedRCNNDP(nn.Module):
     def get_unlabeled_loss(self, pseudo_labels, prediction, do_flip=False):
         n_channels = 25
         # factor = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.1
-        # if (self.iteration + 1) <= 70000:
-        #     factor = np.exp(-5 * (1 - self.iteration / 70000) ** 2) * 0.1
-        # elif (self.iteration + 1) >= 240000:
-        #     factor = np.exp(-12.5 * (1 - (self.iteration - 229999) / 20000) ** 2) * 0.1
-        # else:
-        #     factor = 0.1
-        factor = 0.1
+        if (self.iteration + 1) <= 80000:
+            factor = np.exp(-5 * (1 - self.iteration / 70000) ** 2) * 0.1
+        elif (self.iteration + 1) >= 240000:
+            factor = np.exp(-12.5 * (1 - (self.iteration - 179999) / 40000) ** 2) * 0.1
+        else:
+            factor = 0.1
+        # factor = 0.1
 
         # threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.25 + 0.7
-        threshold = 0.95
+        threshold = 0.85
 
         est = prediction.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
         coarse_est = prediction.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2)
@@ -346,7 +346,7 @@ class GeneralizedRCNNDP(nn.Module):
 
         if coarse_pos_index.sum() <= 0:
             losses = {
-                "loss_unsup_fine_segm": coarse_est.sum() * 0,
+                "loss_unsup_coarse_segm": coarse_est.sum() * 0,
             }
         else:
             losses = {
