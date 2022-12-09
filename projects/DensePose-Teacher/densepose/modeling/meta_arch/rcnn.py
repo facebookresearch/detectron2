@@ -86,8 +86,6 @@ class GeneralizedRCNNDP(nn.Module):
         self.uv_symmetries = DensePoseTransformData.load(
             densepose_transform_data_fpath
         ).uv_symmetries
-        for k in self.uv_symmetries.keys():
-            self.uv_symmetries[k] = self.uv_symmetries[k].to(self.device)
 
     @classmethod
     def from_config(cls, cfg):
@@ -176,7 +174,11 @@ class GeneralizedRCNNDP(nn.Module):
 
         # batched_inputs, pseudo_info = batched_inputs[:-1], batched_inputs[-1]
 
+        for k in self.uv_symmetries.keys():
+            self.uv_symmetries[k] = self.uv_symmetries[k].to(self.device)
+
         do_flip = choice([True, False])
+        # do_flip = False
 
         images = self.preprocess_image(batched_inputs, do_flip=do_flip)
         if "instances" in batched_inputs[0]:
@@ -279,9 +281,9 @@ class GeneralizedRCNNDP(nn.Module):
         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         if self.training:
             if do_flip:
-                images += [self._move_to_current_device(x["un_image"]) for x in batched_inputs]
-            else:
                 images += [self._move_to_current_device(torch.flip(x["un_image"], dims=[-1])) for x in batched_inputs]
+            else:
+                images += [self._move_to_current_device(x["un_image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(
             images,
@@ -309,34 +311,34 @@ class GeneralizedRCNNDP(nn.Module):
     def get_unlabeled_loss(self, pseudo_labels, prediction, do_flip=False):
         n_channels = 25
         # factor = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.1
-        if (self.iteration + 1) <= 70000:
-            factor = np.exp(-5 * (1 - self.iteration / 70000) ** 2) * 0.1
-        elif (self.iteration + 1) >= 240000:
-            factor = np.exp(-12.5 * (1 - (self.iteration - 199999) / 40000) ** 2) * 0.1
-        else:
-            factor = 0.1
+        # if (self.iteration + 1) <= 70000:
+        #     factor = np.exp(-5 * (1 - self.iteration / 70000) ** 2) * 0.1
+        # elif (self.iteration + 1) >= 240000:
+        #     factor = np.exp(-12.5 * (1 - (self.iteration - 229999) / 20000) ** 2) * 0.1
+        # else:
+        #     factor = 0.1
+        factor = 0.1
 
-        threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.29 + 0.7
+        # threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.25 + 0.7
+        threshold = 0.95
 
         est = prediction.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
         coarse_est = prediction.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2)
         with torch.no_grad():
-            pos_index = pseudo_labels.crt_segm.permute(0, 2, 3, 1).reshape(-1, n_channels + 1)
             if do_flip:
-                pseudo_fine_segm = torch.flip(pseudo_labels.fine_segm, dims=[2])
-                pseudo_fine_segm = pseudo_fine_segm[:, POINT_LABEL_SYMMETRIES].permute(0, 2, 3, 1).reshape(-1, n_channels)
-                pos_index = torch.flip(pseudo_labels.crt_segm, dims=[2])
-                pos_index = pos_index.permute(0, 2, 3, 1).reshape(-1, n_channels + 1)
+                pseudo_fine_segm = torch.flip(pseudo_labels.fine_segm, dims=[3])[:, POINT_LABEL_SYMMETRIES]
+                pos_index = torch.flip(pseudo_labels.crt_segm, dims=[3])
                 pos_index[:, :n_channels] = pos_index[:, POINT_LABEL_SYMMETRIES]
-
-                pseudo_coarse_segm = torch.flip(pseudo_labels.coarse_segm, dims=[2]).permute(0, 2, 3, 1).reshape(-1, 2).argmax(dim=1)
+                pseudo_coarse_segm = torch.flip(pseudo_labels.coarse_segm, dims=[3])
             else:
-                pseudo_fine_segm = pseudo_labels.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
-                pos_index = pseudo_labels.crt_segm.permute(0, 2, 3, 1).reshape(-1, n_channels + 1)
+                pseudo_fine_segm = pseudo_labels.fine_segm
+                pos_index = pseudo_labels.crt_segm
+                pseudo_coarse_segm = pseudo_labels.coarse_segm
+            pseudo_fine_segm = pseudo_fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
+            pos_index = pos_index.permute(0, 2, 3, 1).reshape(-1, n_channels + 1)
+            pseudo_coarse_segm = pseudo_coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2).argmax(dim=1)
 
-                pseudo_coarse_segm = pseudo_labels.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2).argmax(dim=1)
-
-            pred_index = pseudo_fine_segm.argmax(dim=1)
+            pred_index = pseudo_fine_segm.argmax(dim=1).long()
 
             coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= threshold
             pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
@@ -371,33 +373,36 @@ class GeneralizedRCNNDP(nn.Module):
 
             # pred_index = torch.zeros_like(u_est).scatter_(1, pred_index.unsqueeze(1), 1).bool()
 
-            batch_indices = torch.arange(pred_index.shape[0]).to(u_est.device)
+            batch_indices = torch.arange(pred_index.shape[0]).to(self.device)
             u_est = u_est[batch_indices, pred_index]
             v_est = v_est[batch_indices, pred_index]
 
             with torch.no_grad():
                 if do_flip:
-                    pseudo_u = torch.flip(pseudo_labels.u, dims=[2])
-                    pseudo_v = torch.flip(pseudo_labels.v, dims=[2])
-                    pseudo_sigma = torch.flip(pseudo_labels.crt_sigma, dims=[2])
-                    pseudo_u = pseudo_u[:, POINT_LABEL_SYMMETRIES].permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
-                    pseudo_v = pseudo_v[:, POINT_LABEL_SYMMETRIES].permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
-                    pseudo_sigma = pseudo_sigma[:, POINT_LABEL_SYMMETRIES].permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+                    pseudo_u = torch.flip(pseudo_labels.u, dims=[3])[:, POINT_LABEL_SYMMETRIES]
+                    pseudo_v = torch.flip(pseudo_labels.v, dims=[3])[:, POINT_LABEL_SYMMETRIES]
+                    pseudo_sigma = torch.flip(pseudo_labels.crt_sigma, dims=[3])[:, POINT_LABEL_SYMMETRIES]
                 else:
-                    pseudo_u = pseudo_labels.u.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
-                    pseudo_v = pseudo_labels.v.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
-                    pseudo_sigma = pseudo_labels.crt_sigma.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+                    pseudo_u = pseudo_labels.u
+                    pseudo_v = pseudo_labels.v
+                    pseudo_sigma = pseudo_labels.crt_sigma
+                pseudo_u = pseudo_u.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+                pseudo_v = pseudo_v.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
+                pseudo_sigma = pseudo_sigma.permute(0, 2, 3, 1).reshape(-1, n_channels)[pos_index]
 
                 pseudo_u = pseudo_u[batch_indices, pred_index]#.clamp(0., 1.)
                 pseudo_v = pseudo_v[batch_indices, pred_index]#.clamp(0., 1.)
 
                 if do_flip:
-                    for i in range(24):
-                        indice = batch_indices == (i + 1)
+                    for i in range(1, len(POINT_LABEL_SYMMETRIES)):
+                        indice = pred_index == POINT_LABEL_SYMMETRIES[i]
                         u_loc = (pseudo_u[indice] * 255).clip(0, 255).long()
                         v_loc = (pseudo_v[indice] * 255).clip(0, 255).long()
-                        pseudo_u[indice] = self.uv_symmetries["U_transforms"][i][v_loc, u_loc]
-                        pseudo_v[indice] = self.uv_symmetries["V_transforms"][i][v_loc, u_loc]
+                        pseudo_u[indice] = self.uv_symmetries["U_transforms"][i - 1][v_loc, u_loc]
+                        pseudo_v[indice] = self.uv_symmetries["V_transforms"][i - 1][v_loc, u_loc]
+                else:
+                    pseudo_u = (pseudo_u * 255).clip(0, 255).long() / 255.0
+                    pseudo_v = (pseudo_v * 255).clip(0, 255).long() / 255.0
 
                 pseudo_sigma = pseudo_sigma[batch_indices, pred_index]
                 pseudo_sigma = torch.pow(1 - pseudo_sigma.clamp(0., 1.), 9)

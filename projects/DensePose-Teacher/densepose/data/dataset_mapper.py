@@ -5,8 +5,6 @@ import copy
 import logging
 from typing import Any, Dict, List, Tuple
 import torch
-from random import choice
-import numpy as np
 
 from detectron2.data import MetadataCatalog
 from detectron2.data import transforms as T
@@ -43,12 +41,6 @@ def build_strong_augmentation(cfg, is_train):
         #     T.RandomFlip(
         #         horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
         #         vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
-        #     )
-        # )
-
-        # result.append(
-        #     T.RandomRotation(
-        #         cfg.INPUT.ST_ANGLES, expand=False, sample_style="range"
         #     )
         # )
 
@@ -153,7 +145,6 @@ class DatasetMapper:
                 self._transform_densepose(
                     utils.transform_train_instance_annotations(
                         obj, weak_transforms, strong_transforms, image_shape, strong_shape,
-                        keypoint_hflip_indices=self.keypoint_hflip_indices
                     ),
                     weak_transforms,
                 )

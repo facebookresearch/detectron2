@@ -255,7 +255,7 @@ def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk,
 
 
 def transform_train_instance_annotations(
-    annotation, transforms, strong_transforms, image_size, strong_size, *, keypoint_hflip_indices=None
+    annotation, transforms, strong_transforms, image_size, strong_size
 ):
     if isinstance(transforms, (tuple, list)):
         transforms = T.TransformList(transforms)
@@ -264,6 +264,8 @@ def transform_train_instance_annotations(
     # clip transformed bbox to image size
     bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
+
+
 
     strong_bbox = strong_transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     annotation["unlabeled_bbox"] = np.minimum(strong_bbox, list(strong_size + strong_size)[::-1])

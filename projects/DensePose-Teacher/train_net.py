@@ -23,7 +23,6 @@ import torch
 from densepose import add_densepose_config
 from densepose.engine import Trainer
 from densepose.modeling.densepose_checkpoint import DensePoseCheckpointer
-from densepose.modeling.correction import Corrector
 
 
 def setup(args):
