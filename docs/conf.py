@@ -343,6 +343,10 @@ _PAPER_DATA = {
         "2103.14030",
         "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows",
     ),
+    "omni3d": (
+        "2207.10660",
+        "Omni3D: A Large Benchmark and Model for 3D Object Detection in the Wild",
+    ),
 }
 
 
