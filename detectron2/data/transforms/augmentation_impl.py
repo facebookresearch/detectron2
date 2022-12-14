@@ -660,7 +660,9 @@ class MinIoURandomCrop(Augmentation):
         min_ious (tuple): minimum IoU threshold for all intersections with
         bounding boxes
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
-        where a >= min_crop_size).
+        where a >= min_crop_size)
+        mode_trials: number of trials for sampling min_ious threshold
+        crop_trials: number of trials for sampling crop_size after cropping
     """
 
     def __init__(
@@ -670,7 +672,6 @@ class MinIoURandomCrop(Augmentation):
         mode_trials=1000,
         crop_trials=50,
     ):
-        # 1: return ori img
         self.min_ious = min_ious
         self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
@@ -682,11 +683,7 @@ class MinIoURandomCrop(Augmentation):
         constraint.
 
         Args:
-            results (dict): Result dict from loading pipeline.
-
-        Returns:
-            dict: Result dict with images and bounding boxes cropped, \
-                'img_shape' key is updated.
+            boxes: ground truth boxes in (x1, y1, x2, y2) format
         """
         if boxes is None:
             return NoOpTransform()
