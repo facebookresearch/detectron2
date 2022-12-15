@@ -184,7 +184,6 @@ setup(
         "dataclasses; python_version<'3.7'",
         "omegaconf>=2.1",
         "hydra-core>=1.1",
-        "black",
         "timm",
         "packaging",
         # NOTE: When adding new dependencies, if it is required at import time (in addition
