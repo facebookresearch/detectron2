@@ -2,6 +2,7 @@
 import logging
 import os
 import pickle
+from urllib.parse import parse_qs, urlparse
 import torch
 from fvcore.common.checkpoint import Checkpointer
 from torch.nn.parallel import DistributedDataParallel
@@ -57,6 +58,8 @@ class DetectionCheckpointer(Checkpointer):
         return ret
 
     def _load_file(self, filename):
+        parsed_url = urlparse(filename)
+        filename = parsed_url._replace(query="").geturl()  # remove query from filename
         if filename.endswith(".pkl"):
             with PathManager.open(filename, "rb") as f:
                 data = pickle.load(f, encoding="latin1")
@@ -88,7 +91,13 @@ class DetectionCheckpointer(Checkpointer):
         loaded = super()._load_file(filename)  # load native pth checkpoint
         if "model" not in loaded:
             loaded = {"model": loaded}
-        loaded["matching_heuristics"] = True
+        queries = parse_qs(parsed_url.query)
+        if queries.pop("matching_heuristics", "False") == ["True"]:
+            loaded["matching_heuristics"] = True
+        if len(queries) > 0:
+            raise ValueError(
+                f"Unsupported query remaining: f{queries}, orginal filename: {parsed_url.geturl()}"
+            )
         return loaded
 
     def _load_model(self, checkpoint):
