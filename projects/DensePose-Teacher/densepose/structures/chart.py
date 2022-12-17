@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from typing import Union
 import torch
+from torchvision.transforms.functional import rotate, resize
+from torchvision.transforms import InterpolationMode
 from typing import Any
 
 
@@ -93,3 +95,29 @@ class DensePoseChartPredictorOutput:
 
         return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v, crt_segm=crt_segm,
                                              crt_sigma=crt_sigma)
+
+    def rotate(self, labeled_boxes, angle):
+        mark = 0
+        for i in range(len(angle)):
+            ag = angle[i]
+            boxes_length = len(labeled_boxes[i])
+            if ag == 0:
+                mark += boxes_length
+                continue
+            # do angle for pseudo labels
+            boxes = labeled_boxes[i].tensor
+            h, w = boxes[:, 3] - boxes[:, 1], boxes[:, 2] - boxes[:, 0]
+            for j in range(boxes_length):
+                self.coarse_segm[j + mark] = get_rotated_result(self.coarse_segm[j + mark], h[j], w[j], ag)
+                self.fine_segm[j + mark] = get_rotated_result(self.fine_segm[j + mark], h[j], w[j], ag)
+                self.u[j + mark] = get_rotated_result(self.u[j + mark], h[j], w[j], ag)
+                self.v[j + mark] = get_rotated_result(self.v[j + mark], h[j], w[j], ag)
+                self.crt_segm[j + mark] = get_rotated_result(self.crt_segm[j + mark], h[j], w[j], ag)
+                self.crt_sigma[j + mark] = get_rotated_result(self.crt_sigma[j + mark], h[j], w[j], ag)
+            mark += boxes_length
+
+
+def get_rotated_result(img, h, w, angle):
+    img = resize(img, (int(h), int(w)))
+    img = rotate(img, angle, expand=True, interpolation=InterpolationMode.BILINEAR)
+    return resize(img, (112, 112))

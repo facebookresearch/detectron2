@@ -89,10 +89,6 @@ class DensePoseChartPredictor(nn.Module):
         initialize_module_params(self)
         # self.non_local = NonLocalBlock(in_channels=n_channels)
 
-        self.dropout_on = cfg.MODEL.SEMI.COR.DROPOUT
-        self.dropout_T = cfg.MODEL.SEMI.COR.DP_TIMES
-        self.ts = cfg.MODEL.SEMI.COR.TS
-
     def interp2d(self, tensor_nchw: torch.Tensor):
         """
         Bilinear interpolation method to be used for upscaling

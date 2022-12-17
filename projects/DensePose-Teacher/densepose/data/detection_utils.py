@@ -261,12 +261,10 @@ def transform_train_instance_annotations(
         transforms = T.TransformList(transforms)
     # bbox is 1d (per-instance bounding box)
     bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
+    # annotation["area"] = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
     # clip transformed bbox to image size
     bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
-
-
-
     strong_bbox = strong_transforms.apply_box(np.array([bbox]))[0].clip(min=0)
     annotation["unlabeled_bbox"] = np.minimum(strong_bbox, list(strong_size + strong_size)[::-1])
     annotation["bbox_mode"] = BoxMode.XYXY_ABS
@@ -337,7 +335,7 @@ def transform_keypoint_annotations(keypoints, transforms, image_size, keypoint_h
     return keypoints
 
 
-def annotations_to_instances(annos, image_size, unsup=False, threshold=1000):
+def annotations_to_instances(annos, image_size, unsup=False, threshold=10000):
     if not unsup:
         boxes = (
             np.stack(
@@ -374,7 +372,13 @@ def annotations_to_instances(annos, image_size, unsup=False, threshold=1000):
 
         labeled_boxes = Boxes(labeled_boxes)
         unlabeled_boxes = Boxes(unlabeled_boxes)
-        # indices = (labeled_boxes.area() > threshold) * (unlabeled_boxes.area() > threshold)
+        # indices = (
+        #     np.stack(
+        #         [obj['area'] for obj in annos]
+        #     )
+        #     if len(annos)
+        #     else np.zeros((0, 1))
+        # ) > threshold
         # target.labeled_boxes = labeled_boxes[indices]
         # target.unlabeled_boxes = unlabeled_boxes[indices]
         # target.gt_classes = classes[indices]

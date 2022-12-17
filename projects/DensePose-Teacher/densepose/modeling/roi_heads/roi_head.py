@@ -20,8 +20,6 @@ from .. import (
     build_densepose_predictor,
     densepose_inference,
 )
-from ..correction import Corrector
-
 
 class Decoder(nn.Module):
     """

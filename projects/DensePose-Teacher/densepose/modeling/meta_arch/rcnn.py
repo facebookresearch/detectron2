@@ -215,6 +215,7 @@ class GeneralizedRCNNDP(nn.Module):
         else:
             with torch.no_grad():
                 pseudo_labels = self.roi_heads.forward_with_given_boxes_train(label_features, labeled_boxes)
+                pseudo_labels.rotate(labeled_boxes, [x['angle'] for x in batched_inputs])
             prediction = self.roi_heads.forward_with_given_boxes_train(features, unlabeled_boxes)
             unlabeled_loss = self.get_unlabeled_loss(pseudo_labels, prediction, do_flip=do_flip)
 
@@ -312,15 +313,14 @@ class GeneralizedRCNNDP(nn.Module):
         n_channels = 25
         # factor = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.1
         if (self.iteration + 1) <= 80000:
-            factor = np.exp(-5 * (1 - self.iteration / 70000) ** 2) * 0.1
-        elif (self.iteration + 1) >= 240000:
-            factor = np.exp(-12.5 * (1 - (self.iteration - 179999) / 40000) ** 2) * 0.1
+            factor = np.exp(-5 * (1 - self.iteration / 80000) ** 2) * 0.1
+        # elif (self.iteration + 1) >= 240000:
+        #     factor = np.exp(-12.5 * (1 - (self.iteration - 179999) / 40000) ** 2) * 1.
         else:
             factor = 0.1
-        # factor = 0.1
+        # factor = 0.5
 
         # threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.25 + 0.7
-        threshold = 0.85
 
         est = prediction.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
         coarse_est = prediction.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2)
@@ -340,9 +340,9 @@ class GeneralizedRCNNDP(nn.Module):
 
             pred_index = pseudo_fine_segm.argmax(dim=1).long()
 
-            coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= threshold
+            coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= 0.8
             pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
-            pos_index = torch.sigmoid(pos_index) >= threshold
+            pos_index = torch.sigmoid(pos_index) >= 0.9
 
         if coarse_pos_index.sum() <= 0:
             losses = {
@@ -393,26 +393,28 @@ class GeneralizedRCNNDP(nn.Module):
                 pseudo_u = pseudo_u[batch_indices, pred_index]#.clamp(0., 1.)
                 pseudo_v = pseudo_v[batch_indices, pred_index]#.clamp(0., 1.)
 
-                if do_flip:
-                    for i in range(1, len(POINT_LABEL_SYMMETRIES)):
-                        indice = pred_index == POINT_LABEL_SYMMETRIES[i]
-                        u_loc = (pseudo_u[indice] * 255).clip(0, 255).long()
-                        v_loc = (pseudo_v[indice] * 255).clip(0, 255).long()
-                        pseudo_u[indice] = self.uv_symmetries["U_transforms"][i - 1][v_loc, u_loc]
-                        pseudo_v[indice] = self.uv_symmetries["V_transforms"][i - 1][v_loc, u_loc]
-                else:
-                    pseudo_u = (pseudo_u * 255).clip(0, 255).long() / 255.0
-                    pseudo_v = (pseudo_v * 255).clip(0, 255).long() / 255.0
-
                 pseudo_sigma = pseudo_sigma[batch_indices, pred_index]
                 pseudo_sigma = torch.pow(1 - pseudo_sigma.clamp(0., 1.), 9)
+                # pseudo_sigma = (1 / (pseudo_sigma.clip(0., 1.) + 0.1))
 
-            loss_u = F.mse_loss(u_est, pseudo_u, reduction='none') * pseudo_sigma
-            loss_v = F.mse_loss(v_est, pseudo_v, reduction='none') * pseudo_sigma
+            if do_flip:
+                # good_indices = (pseudo_u >= 0.) * (pseudo_u <= 1.) * (pseudo_v >= 0.) * (pseudo_v <= 1.)
+                for i in range(1, len(POINT_LABEL_SYMMETRIES)):
+                    indice = pred_index == POINT_LABEL_SYMMETRIES[i]
+                    u_loc = (pseudo_u[indice] * 255).clip(0, 255).long()
+                    v_loc = (pseudo_v[indice] * 255).clip(0, 255).long()
+                    pseudo_u[indice] = self.uv_symmetries["U_transforms"][i - 1][v_loc, u_loc]
+                    pseudo_v[indice] = self.uv_symmetries["V_transforms"][i - 1][v_loc, u_loc]
+
+                loss_u = F.mse_loss(u_est, pseudo_u, reduction='none') * pseudo_sigma
+                loss_v = F.mse_loss(v_est, pseudo_v, reduction='none') * pseudo_sigma
+            else:
+                loss_u = F.mse_loss(u_est, pseudo_u, reduction='none') * pseudo_sigma
+                loss_v = F.mse_loss(v_est, pseudo_v, reduction='none') * pseudo_sigma
 
             losses.update({
-                "loss_unsup_u": (loss_u * pseudo_sigma).sum() * 0.01 * factor,
-                "loss_unsup_v": (loss_v * pseudo_sigma).sum() * 0.01 * factor
+                "loss_unsup_u": loss_u.sum() * 0.01 * factor,
+                "loss_unsup_v": loss_v.sum() * 0.01 * factor
             })
 
         return losses

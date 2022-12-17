@@ -38,7 +38,6 @@ from .samplers import (
     MaskFromDensePoseSampler,
     PredictionToGroundTruthSampler,
 )
-from .transform import ImageResizeTransform
 from .utils import get_category_to_class_mapping, get_class_to_mesh_name_mapping
 from .video import (
     FirstKFramesSelector,
@@ -508,13 +507,6 @@ def build_frame_selector(cfg: CfgNode):
         frame_selector = None
     # pyre-fixme[61]: `frame_selector` may not be initialized here.
     return frame_selector
-
-
-def build_transform(cfg: CfgNode, data_type: str):
-    if cfg.TYPE == "resize":
-        if data_type == "image":
-            return ImageResizeTransform(cfg.MIN_SIZE, cfg.MAX_SIZE)
-    raise ValueError(f"Unknown transform {cfg.TYPE} for data type {data_type}")
 
 
 def build_combined_loader(cfg: CfgNode, loaders: Collection[Loader], ratios: Sequence[float]):
