@@ -10,7 +10,9 @@ from .mask_rcnn_vitdet_b_100ep import (
     optimizer,
 )
 
-train.init_checkpoint = "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_large.pth"
+train.init_checkpoint = (
+    "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_large.pth?matching_heuristics=True"
+)
 
 model.backbone.net.embed_dim = 1024
 model.backbone.net.depth = 24

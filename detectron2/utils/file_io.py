@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import os
+from urllib.parse import urlparse
 from iopath.common.file_io import HTTPURLHandler, OneDrivePathHandler, PathHandler
 from iopath.common.file_io import PathManager as PathManagerBase
 
@@ -25,11 +27,16 @@ class Detectron2Handler(PathHandler):
         return [self.PREFIX]
 
     def _get_local_path(self, path, **kwargs):
+        parsed_url = urlparse(path)
+        path = parsed_url._replace(query="").geturl()  # remove query from path
         name = path[len(self.PREFIX) :]
         return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name, **kwargs)
 
     def _open(self, path, mode="r", **kwargs):
         return PathManager.open(self._get_local_path(path), mode, **kwargs)
+
+    def _isfile(self, path: str, **kwargs):
+        return os.path.isfile(self._get_local_path(path))
 
 
 PathManager.register_handler(HTTPURLHandler())

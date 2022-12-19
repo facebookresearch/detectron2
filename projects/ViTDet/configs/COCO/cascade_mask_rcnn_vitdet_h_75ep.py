@@ -9,7 +9,9 @@ from .cascade_mask_rcnn_vitdet_b_100ep import (
     get_vit_lr_decay_rate,
 )
 
-train.init_checkpoint = "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth"
+train.init_checkpoint = (
+    "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"
+)
 
 model.backbone.net.embed_dim = 1280
 model.backbone.net.depth = 32
