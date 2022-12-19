@@ -321,6 +321,7 @@ class GeneralizedRCNNDP(nn.Module):
         # factor = 0.5
 
         # threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.25 + 0.7
+        threshold = 0.85
 
         est = prediction.fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
         coarse_est = prediction.coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2)
@@ -340,9 +341,9 @@ class GeneralizedRCNNDP(nn.Module):
 
             pred_index = pseudo_fine_segm.argmax(dim=1).long()
 
-            coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= 0.8
+            coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= threshold
             pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
-            pos_index = torch.sigmoid(pos_index) >= 0.9
+            pos_index = torch.sigmoid(pos_index) >= threshold
 
         if coarse_pos_index.sum() <= 0:
             losses = {
