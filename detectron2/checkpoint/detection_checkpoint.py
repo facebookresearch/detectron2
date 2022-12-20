@@ -29,12 +29,15 @@ class DetectionCheckpointer(Checkpointer):
             **checkpointables,
         )
         self.path_manager = PathManager
+        self._parsed_url_during_load = None
 
     def load(self, path, *args, **kwargs):
+        assert self._parsed_url_during_load is None
         need_sync = False
+        logger = logging.getLogger(__name__)
+        logger.info("[DetectionCheckpointer] Loading from {} ...".format(path))
 
         if path and isinstance(self.model, DistributedDataParallel):
-            logger = logging.getLogger(__name__)
             path = self.path_manager.get_local_path(path)
             has_file = os.path.isfile(path)
             all_has_file = comm.all_gather(has_file)
@@ -50,16 +53,21 @@ class DetectionCheckpointer(Checkpointer):
                 need_sync = True
             if not has_file:
                 path = None  # don't load if not readable
+
+        if path:
+            parsed_url = urlparse(path)
+            self._parsed_url_during_load = parsed_url
+            path = parsed_url._replace(query="").geturl()  # remove query from filename
+            path = self.path_manager.get_local_path(path)
         ret = super().load(path, *args, **kwargs)
 
         if need_sync:
             logger.info("Broadcasting model states from main worker ...")
             self.model._sync_params_and_buffers()
+        self._parsed_url_during_load = None  # reset to None
         return ret
 
     def _load_file(self, filename):
-        parsed_url = urlparse(filename)
-        filename = parsed_url._replace(query="").geturl()  # remove query from filename
         if filename.endswith(".pkl"):
             with PathManager.open(filename, "rb") as f:
                 data = pickle.load(f, encoding="latin1")
@@ -91,6 +99,8 @@ class DetectionCheckpointer(Checkpointer):
         loaded = super()._load_file(filename)  # load native pth checkpoint
         if "model" not in loaded:
             loaded = {"model": loaded}
+        assert self._parsed_url_during_load is not None, "`_load_file` must be called inside `load`"
+        parsed_url = self._parsed_url_during_load
         queries = parse_qs(parsed_url.query)
         if queries.pop("matching_heuristics", "False") == ["True"]:
             loaded["matching_heuristics"] = True
