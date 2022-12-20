@@ -15,7 +15,9 @@ model = model_zoo.get_config("common/models/mask_rcnn_vitdet.py").model
 train = model_zoo.get_config("common/train.py").train
 train.amp.enabled = True
 train.ddp.fp16_compression = True
-train.init_checkpoint = "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_base.pth"
+train.init_checkpoint = (
+    "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_base.pth?matching_heuristics=True"
+)
 
 
 # Schedule
