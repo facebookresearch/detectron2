@@ -92,7 +92,7 @@ class RandErase(Augmentation):
                     if instances.gt_densepose[i] is not None:
                         n_iterations = self._get_erase_cycle()
                     else:
-                        n_iterations = 1
+                        n_iterations = torch.randint(1, 2, (1,))
                     for _ in range(n_iterations):
                         ph, pw = self._get_patch_size(y2 - y1, x2 - x1)
                         px, py = torch.randint(x1, x2, (1,)).clamp(0, w - pw), torch.randint(y1, y2, (1,)).clamp(0, h - ph)

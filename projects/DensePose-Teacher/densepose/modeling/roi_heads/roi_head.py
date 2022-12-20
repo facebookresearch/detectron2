@@ -15,13 +15,11 @@ from detectron2.structures import ImageList, Instances
 
 from .. import (
     build_densepose_data_filter,
-    build_densepose_embedder,
     build_densepose_head,
     build_densepose_losses,
     build_densepose_predictor,
     densepose_inference,
 )
-from ..correction import Corrector
 
 
 class Decoder(nn.Module):

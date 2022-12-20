@@ -83,8 +83,6 @@ class DensePoseChartLoss:
         # self.amp = 1 / math.sqrt(2 * math.pi)
         self.w_crt_sigma = cfg.MODEL.SEMI.COR.SIGMA_WEIGHTS
         self.w_p_segm_scale = cfg.MODEL.SEMI.SEGM_SCALE
-        self.ts = cfg.MODEL.SEMI.COR.TS
-        self.gamma = 1
 
     def __call__(
         self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, iteration, **kwargs
@@ -194,7 +192,7 @@ class DensePoseChartLoss:
         if self.uv_confidence:
             # sigma = interpolator.extract_at_points(densepose_predictor_outputs.crt_sigma)[j_valid_fg]
             sigma = interpolator.extract_at_points(densepose_predictor_outputs.crt_sigma)[interpolator.j_valid]
-            delta_t_delta = (u_est - u_gt.detach()) ** 2 + (v_est - v_gt.detach()) ** 2
+            delta_t_delta = (u_est.detach() - u_gt.detach()) ** 2 + (v_est.detach() - v_gt.detach()) ** 2
             # sigma = F.softplus(sigma) + 1e-9
             # uv_weights = torch.ones_like(loss_u, dtype=torch.float32)
             loss = {
@@ -271,8 +269,8 @@ class DensePoseChartLoss:
         fine_segm_crt_gt = fine_segm_gt.detach() == segm_est_index
 
         crt_fine_segm_loss = F.binary_cross_entropy_with_logits(fine_segm_crt_est, fine_segm_crt_gt.float(), reduction='none')
-        # fine_weights = fine_segm_crt_gt.sum() / (~fine_segm_crt_gt).sum()
-        # crt_fine_segm_loss[~fine_segm_crt_gt] *= fine_weights
+        fine_weights = fine_segm_crt_gt.sum() / (~fine_segm_crt_gt).sum()
+        crt_fine_segm_loss[~fine_segm_crt_gt] *= fine_weights
 
         segm_est_index = coarse_segm_est.argmax(dim=1).long()
         coarse_segm_crt_gt = (coarse_segm_gt.detach() > 0) == segm_est_index
@@ -280,8 +278,8 @@ class DensePoseChartLoss:
         # focal_weights = torch.sigmoid(coarse_segm_crt_est.detach())
         # focal_weights[coarse_segm_crt_gt] = 1 - focal_weights[coarse_segm_crt_gt]
         coarse_segm_loss = F.binary_cross_entropy_with_logits(coarse_segm_crt_est, coarse_segm_crt_gt.float(), reduction='none')
-        # coarse_weights = coarse_segm_crt_gt.sum() / (~coarse_segm_crt_gt).sum()
-        # coarse_segm_loss[~coarse_segm_crt_gt] *= coarse_weights
+        coarse_weights = coarse_segm_crt_gt.sum() / (~coarse_segm_crt_gt).sum()
+        coarse_segm_loss[~coarse_segm_crt_gt] *= coarse_weights
 
         loss.update({
             "loss_correction_I": crt_fine_segm_loss.mean() * self.w_crt_segm,
@@ -305,7 +303,7 @@ class DensePoseChartLoss:
         factor = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2) * 0.1
         factor = factor.clip(0., 0.05)
 
-        threshold = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2) * 0.29 + 0.7
+        threshold = np.exp(-5 * (1 - iteration / self.total_iteration) ** 2) * 0.25 + 0.7
 
         est = getattr(densepose_predictor_outputs, "fine_segm")[packed_annotations.bbox_indices]
         est = est.permute(0, 2, 3, 1).reshape(-1, self.n_channels)
@@ -352,17 +350,24 @@ class DensePoseChartLoss:
             pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
             pos_index = torch.sigmoid(pos_index) >= threshold
 
-            pred_index = pred_index[pos_index]
+            # pred_index = pred_index[pos_index]
 
-            if pos_index.sum() <= 0:
-                return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
+        if coarse_pos_index.sum() <= 0:
+            coarse_loss = coarse_est.sum() * 0
+        else:
+            coarse_loss = F.cross_entropy(
+                coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
+            ) * self.w_segm * factor
+
+        pos_index = pos_index * coarse_pos_index * coarse_est.argmax(dim=1).bool()
+        pred_index = pred_index[pos_index]
+        if pos_index.sum() <= 0:
+            return self.produce_fake_densepose_losses_unsup(densepose_predictor_outputs)
 
         loss = F.cross_entropy(est[pos_index], pred_index.long(), reduction='mean')
         losses = {
             "loss_unsup_fine_segm": loss * self.w_part * factor,
-            "loss_unsup_coarse_segm": F.cross_entropy(
-                coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
-            ) * self.w_segm * factor,
+            "loss_unsup_coarse_segm": coarse_loss
         }
 
         u_est = getattr(densepose_predictor_outputs, "u")[packed_annotations.bbox_indices]
