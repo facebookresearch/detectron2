@@ -48,11 +48,11 @@ def build_strong_augmentation(cfg, is_train):
             cfg.INPUT.ST_ANGLES, expand=True, sample_style="range"
         ))
 
-        min_size = cfg.INPUT.MIN_SIZE_PSEUDO
+        min_size = cfg.INPUT.MIN_SIZE_TRAIN
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
         ratio = cfg.MODEL.SEMI.RATIO
 
-        random_resize = ResizeShortestEdge(min_size, max_size, ratio, 'range')
+        random_resize = ResizeShortestEdge(min_size, max_size, ratio, 'choice')
         result.append(random_resize)
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result

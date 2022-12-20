@@ -317,7 +317,7 @@ class GeneralizedRCNNDP(nn.Module):
         # elif (self.iteration + 1) >= 240000:
         #     factor = np.exp(-12.5 * (1 - (self.iteration - 179999) / 40000) ** 2) * 1.
         else:
-            factor = 0.1
+            factor = 0.05
         # factor = 0.5
 
         # threshold = np.exp(-5 * (1 - self.iteration / self.total_iteration) ** 2) * 0.25 + 0.7
