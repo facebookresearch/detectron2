@@ -26,7 +26,7 @@ class TestVisualizer(unittest.TestCase):
 
         polygons = [[_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)]
 
-        mask = np.zeros_like(img[:, :, 0], dtype=np.bool)
+        mask = np.zeros_like(img[:, :, 0], dtype=bool)
         mask[:40, 10:20] = 1
 
         labels = [str(i) for i in range(N)]
