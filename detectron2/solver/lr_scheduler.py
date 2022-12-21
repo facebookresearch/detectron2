@@ -11,6 +11,11 @@ from fvcore.common.param_scheduler import (
     ParamScheduler,
 )
 
+try:
+    from torch.optim.lr_scheduler import LRScheduler
+except ImportError:
+    from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +57,7 @@ class WarmupParamScheduler(CompositeParamScheduler):
         )
 
 
-class LRMultiplier(torch.optim.lr_scheduler._LRScheduler):
+class LRMultiplier(LRScheduler):
     """
     A LRScheduler which uses fvcore :class:`ParamScheduler` to multiply the
     learning rate of each param in the optimizer.
@@ -95,7 +100,7 @@ class LRMultiplier(torch.optim.lr_scheduler._LRScheduler):
     ):
         """
         Args:
-            optimizer, last_iter: See ``torch.optim.lr_scheduler._LRScheduler``.
+            optimizer, last_iter: See ``torch.optim.lr_scheduler.LRScheduler``.
                 ``last_iter`` is the same as ``last_epoch``.
             multiplier: a fvcore ParamScheduler that defines the multiplier on
                 every LR of the optimizer
@@ -132,7 +137,7 @@ Content below is no longer needed!
 # MultiStepLR with WarmupLR but the current LRScheduler design doesn't allow it.
 
 
-class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
+class WarmupMultiStepLR(LRScheduler):
     def __init__(
         self,
         optimizer: torch.optim.Optimizer,
@@ -171,7 +176,7 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
         return self.get_lr()
 
 
-class WarmupCosineLR(torch.optim.lr_scheduler._LRScheduler):
+class WarmupCosineLR(LRScheduler):
     def __init__(
         self,
         optimizer: torch.optim.Optimizer,

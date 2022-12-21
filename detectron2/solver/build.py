@@ -15,7 +15,7 @@ from fvcore.common.param_scheduler import (
 from detectron2.config import CfgNode
 from detectron2.utils.env import TORCH_VERSION
 
-from .lr_scheduler import LRMultiplier, WarmupParamScheduler
+from .lr_scheduler import LRMultiplier, LRScheduler, WarmupParamScheduler
 
 _GradientClipperInput = Union[torch.Tensor, Iterable[torch.Tensor]]
 _GradientClipper = Callable[[_GradientClipperInput], None]
@@ -267,9 +267,7 @@ def reduce_param_groups(params: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return ret
 
 
-def build_lr_scheduler(
-    cfg: CfgNode, optimizer: torch.optim.Optimizer
-) -> torch.optim.lr_scheduler._LRScheduler:
+def build_lr_scheduler(cfg: CfgNode, optimizer: torch.optim.Optimizer) -> LRScheduler:
     """
     Build a LR scheduler from config.
     """

@@ -3,7 +3,7 @@ import math
 from typing import List
 import torch
 
-from detectron2.solver.lr_scheduler import _get_warmup_factor_at_iter
+from detectron2.solver.lr_scheduler import LRScheduler, _get_warmup_factor_at_iter
 
 # NOTE: PyTorch's LR scheduler interface uses names that assume the LR changes
 # only on epoch boundaries. We typically use iteration based schedules instead.
@@ -14,7 +14,7 @@ from detectron2.solver.lr_scheduler import _get_warmup_factor_at_iter
 # MultiStepLR with WarmupLR but the current LRScheduler design doesn't allow it.
 
 
-class WarmupPolyLR(torch.optim.lr_scheduler._LRScheduler):
+class WarmupPolyLR(LRScheduler):
     """
     Poly learning rate schedule used to train DeepLab.
     Paper: DeepLab: Semantic Image Segmentation with Deep Convolutional Nets,
