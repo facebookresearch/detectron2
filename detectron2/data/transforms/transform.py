@@ -206,6 +206,7 @@ class RotationTransform(Transform):
         assert img.shape[:2] == (self.h, self.w)
         interp = interp if interp is not None else self.interp
         return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp)
+        # return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp, borderValue=(125.0, 125.0, 125.0))
         # return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp,
         #                       borderMode=cv2.BORDER_REPLICATE)
 

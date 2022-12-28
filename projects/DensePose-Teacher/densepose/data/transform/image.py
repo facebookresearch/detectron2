@@ -58,7 +58,7 @@ class RandErase(Augmentation):
                     n_iterations = self._get_erase_cycle()
                     for _ in range(n_iterations):
                         ph, pw = self._get_patch_size(y2 - y1, x2 - x1)
-                        px, py = torch.randint(x1, x2, (1,)).clamp(0, w - pw), torch.randint(y1, y2, (1,)).clamp(0, h - ph)
+                        px, py = torch.randint(x1 - pw, x2 + pw, (1,)).clamp(0, w - pw), torch.randint(y1 - ph, y2 + ph, (1,)).clamp(0, h - ph)
                         patches.append([px, py, px + pw, py + ph])
         else:
             assert self.patches is not None
@@ -342,12 +342,12 @@ class ResizeShortestEdge(Augmentation):
         Compute the output size given input size and target short edge length.
         """
         h, w = oldh, oldw
-        rescale = np.random.uniform(ratio[0], ratio[1])
-        h_or_w = np.random.choice([True, False])
-        if h_or_w:
-            h *= rescale
-        else:
-            w *= rescale
+        # rescale = np.random.uniform(ratio[0], ratio[1])
+        # h_or_w = np.random.choice([True, False])
+        # if h_or_w:
+        #     h *= rescale
+        # else:
+        #     w *= rescale
 
         size = short_edge_length * 1.0
         scale = size / min(h, w)

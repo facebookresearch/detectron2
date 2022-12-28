@@ -33,26 +33,26 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        if choice([True, False]):
-            result.append(
-                choice(
-                    [
-                        T.RandomContrast(0.9, 1.1),
-                        T.RandomBrightness(0.8, 1.1),
-                        T.RandomSaturation(0.8, 1.2),
-                    ]
-                )
-            )
+        # if choice([True, False]):
+        #     result.append(
+        #         choice(
+        #             [
+        #                 T.RandomContrast(0.9, 1.1),
+        #                 T.RandomBrightness(0.8, 1.1),
+        #                 T.RandomSaturation(0.8, 1.2),
+        #             ]
+        #         )
+        #     )
 
         result.append(T.RandomRotation(
             cfg.INPUT.ST_ANGLES, expand=True, sample_style="range"
         ))
 
-        min_size = cfg.INPUT.MIN_SIZE_TRAIN
+        min_size = cfg.INPUT.MIN_SIZE_PSEUDO
         max_size = cfg.INPUT.MAX_SIZE_TRAIN
         ratio = cfg.MODEL.SEMI.RATIO
 
-        random_resize = ResizeShortestEdge(min_size, max_size, ratio, 'choice')
+        random_resize = ResizeShortestEdge(min_size, max_size, ratio, 'range')
         result.append(random_resize)
         logger.info("DensePose-specific strong augmentation used in training. ")
     return result
