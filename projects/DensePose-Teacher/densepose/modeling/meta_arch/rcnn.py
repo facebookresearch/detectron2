@@ -215,6 +215,8 @@ class GeneralizedRCNNDP(nn.Module):
         else:
             with torch.no_grad():
                 pseudo_labels = self.roi_heads.forward_with_given_boxes_train(label_features, labeled_boxes)
+                pseudo_coarse = torch.cat([x["pseudo_segm"] for x in batched_inputs], dim=0).long().to(self.device)
+                pseudo_labels.coarse_segm = pseudo_coarse
                 pseudo_labels.rotate(labeled_boxes, [x['angle'] for x in batched_inputs])
             prediction = self.roi_heads.forward_with_given_boxes_train(features, unlabeled_boxes)
             unlabeled_loss = self.get_unlabeled_loss(pseudo_labels, prediction, do_flip=do_flip)
@@ -337,25 +339,32 @@ class GeneralizedRCNNDP(nn.Module):
                 pseudo_coarse_segm = pseudo_labels.coarse_segm
             pseudo_fine_segm = pseudo_fine_segm.permute(0, 2, 3, 1).reshape(-1, n_channels)
             pos_index = pos_index.permute(0, 2, 3, 1).reshape(-1, n_channels + 1)
-            pseudo_coarse_segm = pseudo_coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2).argmax(dim=1)
+            # pseudo_coarse_segm = pseudo_coarse_segm.permute(0, 2, 3, 1).reshape(-1, 2).argmax(dim=1)
+            pseudo_coarse_segm = pseudo_coarse_segm.permute(0, 2, 3, 1).reshape(-1, 1)
 
             pred_index = pseudo_fine_segm.argmax(dim=1).long()
 
-            coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= threshold
+            # coarse_pos_index = torch.sigmoid(pos_index[:, -1]) >= threshold
             pos_index = pos_index[torch.arange(pos_index.shape[0]), pred_index]
             pos_index = torch.sigmoid(pos_index) >= threshold
 
-        if coarse_pos_index.sum() <= 0:
-            losses = {
-                "loss_unsup_coarse_segm": coarse_est.sum() * 0,
-            }
-        else:
-            losses = {
-                "loss_unsup_coarse_segm": F.cross_entropy(
-                    coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
-                ) * 5.0 * factor,
-            }
-        pos_index = pos_index * coarse_est.argmax(dim=1).bool() * coarse_pos_index
+        # if coarse_pos_index.sum() <= 0:
+        #     losses = {
+        #         "loss_unsup_coarse_segm": coarse_est.sum() * 0,
+        #     }
+        # else:
+        #     losses = {
+        #         "loss_unsup_coarse_segm": F.cross_entropy(
+        #             coarse_est[coarse_pos_index], pseudo_coarse_segm[coarse_pos_index]
+        #         ) * 5.0 * factor,
+        #     }
+        losses = {
+            "loss_unsup_coarse_segm": F.cross_entropy(
+                coarse_est, pseudo_coarse_segm
+            ) * 5.0 * factor,
+        }
+        # pos_index = pos_index * pseudo_coarse_segm * coarse_pos_index
+        pos_index = pos_index * pseudo_coarse_segm
         pred_index = pred_index[pos_index]
         if pos_index.sum() <= 0:
             losses.update({
