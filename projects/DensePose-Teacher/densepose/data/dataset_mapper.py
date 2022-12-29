@@ -33,16 +33,16 @@ def build_strong_augmentation(cfg, is_train):
     logger = logging.getLogger(__name__)
     result = []
     if is_train:
-        # if choice([True, False]):
-        #     result.append(
-        #         choice(
-        #             [
-        #                 T.RandomContrast(0.9, 1.1),
-        #                 T.RandomBrightness(0.8, 1.1),
-        #                 T.RandomSaturation(0.8, 1.2),
-        #             ]
-        #         )
-        #     )
+        if choice([True, False]):
+            result.append(
+                choice(
+                    [
+                        T.RandomContrast(0.9, 1.1),
+                        T.RandomBrightness(0.8, 1.1),
+                        T.RandomSaturation(0.8, 1.2),
+                    ]
+                )
+            )
 
         result.append(T.RandomRotation(
             cfg.INPUT.ST_ANGLES, expand=True, sample_style="range"
@@ -164,17 +164,10 @@ class DatasetMapper:
                 )
 
             dataset_dict["instances"] = instances[instances.gt_boxes.nonempty()]
-            indices = []
-            coarse_segm = []
-            for x in instances.gt_densepose.densepose_datas:
-                if x is not None:
-                    indices.append(True)
-                    coarse_segm.append(x.segm > 0)
-                else:
-                    indices.append(False)
+            indices = [x is not None for x in instances.gt_densepose.densepose_datas]
+
             un_instances = un_instances[indices]
             dataset_dict["un_instances"] = un_instances[un_instances.unlabeled_boxes.nonempty()]
-            dataset_dict["pseudo_segm"] = torch.stack(coarse_segm, dim=0)
 
             # erase image
             erase_transform = self.random_erase.get_transform(strong_image, dataset_dict['un_instances'])
