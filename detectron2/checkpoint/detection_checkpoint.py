@@ -96,7 +96,7 @@ class DetectionCheckpointer(Checkpointer):
             }
             return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
 
-        loaded = super()._load_file(filename)  # load native pth checkpoint
+        loaded = self._torch_load(filename)
         if "model" not in loaded:
             loaded = {"model": loaded}
         assert self._parsed_url_during_load is not None, "`_load_file` must be called inside `load`"
@@ -109,6 +109,9 @@ class DetectionCheckpointer(Checkpointer):
                 f"Unsupported query remaining: f{queries}, orginal filename: {parsed_url.geturl()}"
             )
         return loaded
+
+    def _torch_load(self, f):
+        return super()._load_file(f)
 
     def _load_model(self, checkpoint):
         if checkpoint.get("matching_heuristics", False):
