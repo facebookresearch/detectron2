@@ -268,7 +268,7 @@ class COCOEvaluator(DatasetEvaluator):
                     coco_results,
                     task,
                     kpt_oks_sigmas=self._kpt_oks_sigmas,
-                    use_fast_impl=self._use_fast_impl,
+                    cocoeval_fn=COCOeval_opt if self._use_fast_impl else COCOeval,
                     img_ids=img_ids,
                     max_dets_per_image=self._max_dets_per_image,
                 )
@@ -569,7 +569,7 @@ def _evaluate_predictions_on_coco(
     coco_results,
     iou_type,
     kpt_oks_sigmas=None,
-    use_fast_impl=True,
+    cocoeval_fn=COCOeval_opt,
     img_ids=None,
     max_dets_per_image=None,
 ):
@@ -588,7 +588,7 @@ def _evaluate_predictions_on_coco(
             c.pop("bbox", None)
 
     coco_dt = coco_gt.loadRes(coco_results)
-    coco_eval = (COCOeval_opt if use_fast_impl else COCOeval)(coco_gt, coco_dt, iou_type)
+    coco_eval = cocoeval_fn(coco_gt, coco_dt, iou_type)
     # For COCO, the default max_dets_per_image is [1, 10, 100].
     if max_dets_per_image is None:
         max_dets_per_image = [1, 10, 100]  # Default from COCOEval
