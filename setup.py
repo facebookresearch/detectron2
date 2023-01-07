@@ -185,7 +185,6 @@ setup(
         "omegaconf>=2.1",
         "hydra-core>=1.1",
         "black",
-        "timm",
         "packaging",
         # NOTE: When adding new dependencies, if it is required at import time (in addition
         # to runtime), it probably needs to appear in docs/requirements.txt, or as a mock
@@ -195,6 +194,7 @@ setup(
         # optional dependencies, required by some features
         "all": [
             "fairscale",
+            "timm",  # Used by a few ViT models.
             "scipy>1.5.1",
             "shapely",
             "pygments>=2.2",
