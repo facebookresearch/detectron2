@@ -3,7 +3,6 @@ import math
 import fvcore.nn.weight_init as weight_init
 import torch
 import torch.nn as nn
-from timm.models.layers import DropPath, Mlp, trunc_normal_
 
 from detectron2.layers import CNNBlockBase, Conv2d, get_norm
 from detectron2.modeling.backbone.fpn import _assert_strides_are_log2_contiguous
@@ -60,8 +59,8 @@ class Attention(nn.Module):
             self.rel_pos_w = nn.Parameter(torch.zeros(2 * input_size[1] - 1, head_dim))
 
             if not rel_pos_zero_init:
-                trunc_normal_(self.rel_pos_h, std=0.02)
-                trunc_normal_(self.rel_pos_w, std=0.02)
+                nn.init.trunc_normal_(self.rel_pos_h, std=0.02)
+                nn.init.trunc_normal_(self.rel_pos_w, std=0.02)
 
     def forward(self, x):
         B, H, W, _ = x.shape
@@ -188,6 +187,8 @@ class Block(nn.Module):
             rel_pos_zero_init=rel_pos_zero_init,
             input_size=input_size if window_size == 0 else (window_size, window_size),
         )
+
+        from timm.models.layers import DropPath, Mlp
 
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -332,13 +333,13 @@ class ViT(Backbone):
         self._out_features = [out_feature]
 
         if self.pos_embed is not None:
-            trunc_normal_(self.pos_embed, std=0.02)
+            nn.init.trunc_normal_(self.pos_embed, std=0.02)
 
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=0.02)
+            nn.init.trunc_normal_(m.weight, std=0.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):

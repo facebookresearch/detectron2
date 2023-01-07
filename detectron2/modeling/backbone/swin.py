@@ -17,9 +17,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 from detectron2.modeling.backbone.backbone import Backbone
+
+_to_2tuple = nn.modules.utils._ntuple(2)
 
 
 class Mlp(nn.Module):
@@ -130,7 +131,7 @@ class WindowAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-        trunc_normal_(self.relative_position_bias_table, std=0.02)
+        nn.init.trunc_normal_(self.relative_position_bias_table, std=0.02)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, mask=None):
@@ -219,7 +220,7 @@ class SwinTransformerBlock(nn.Module):
         self.norm1 = norm_layer(dim)
         self.attn = WindowAttention(
             dim,
-            window_size=to_2tuple(self.window_size),
+            window_size=_to_2tuple(self.window_size),
             num_heads=num_heads,
             qkv_bias=qkv_bias,
             qk_scale=qk_scale,
@@ -227,7 +228,12 @@ class SwinTransformerBlock(nn.Module):
             proj_drop=drop,
         )
 
-        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
+        if drop_path > 0.0:
+            from timm.models.layers import DropPath
+
+            self.drop_path = DropPath(drop_path)
+        else:
+            self.drop_path = nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(
@@ -470,7 +476,7 @@ class PatchEmbed(nn.Module):
 
     def __init__(self, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
         super().__init__()
-        patch_size = to_2tuple(patch_size)
+        patch_size = _to_2tuple(patch_size)
         self.patch_size = patch_size
 
         self.in_chans = in_chans
@@ -571,8 +577,8 @@ class SwinTransformer(Backbone):
 
         # absolute position embedding
         if self.ape:
-            pretrain_img_size = to_2tuple(pretrain_img_size)
-            patch_size = to_2tuple(patch_size)
+            pretrain_img_size = _to_2tuple(pretrain_img_size)
+            patch_size = _to_2tuple(patch_size)
             patches_resolution = [
                 pretrain_img_size[0] // patch_size[0],
                 pretrain_img_size[1] // patch_size[1],
@@ -581,7 +587,7 @@ class SwinTransformer(Backbone):
             self.absolute_pos_embed = nn.Parameter(
                 torch.zeros(1, embed_dim, patches_resolution[0], patches_resolution[1])
             )
-            trunc_normal_(self.absolute_pos_embed, std=0.02)
+            nn.init.trunc_normal_(self.absolute_pos_embed, std=0.02)
 
         self.pos_drop = nn.Dropout(p=drop_rate)
 
@@ -648,7 +654,7 @@ class SwinTransformer(Backbone):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=0.02)
+            nn.init.trunc_normal_(m.weight, std=0.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
