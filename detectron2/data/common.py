@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 import random
 from typing import Callable, Union
+import torch
 import torch.utils.data as data
 from torch.utils.data.sampler import Sampler
 
@@ -110,12 +111,19 @@ class MapDataset(data.Dataset):
                 )
 
 
-class NumpySerializedList(object):
+class _TorchSerializedList(object):
     """
-    A list-like object whose items are serialized and stored in a Numpy Array. When
-    forking a process that has NumpySerializedList, subprocesses can read the same list
-    without triggering copy-on-access, therefore they will share RAM for the list. This
-    avoids the issue in https://github.com/pytorch/pytorch/issues/13246
+    A list-like object whose items are serialized and stored in a torch tensor. When
+    launching a process that uses TorchSerializedList with "fork" start method,
+    the subprocess can read the same buffer without triggering copy-on-access. When
+    launching a process that uses TorchSerializedList with "spawn/forkserver" start
+    method, the list will be pickled by a special ForkingPickler registered by PyTorch
+    that moves data to shared memory. In both cases, this allows parent and child
+    processes to share RAM for the list data, hence avoids the issue in
+    https://github.com/pytorch/pytorch/issues/13246.
+
+    See also https://ppwwyyxx.com/blog/2022/Demystify-RAM-Usage-in-Multiprocess-DataLoader/
+    on how it works.
     """
 
     def __init__(self, lst: list):
@@ -132,8 +140,8 @@ class NumpySerializedList(object):
         )
         self._lst = [_serialize(x) for x in self._lst]
         self._addr = np.asarray([len(x) for x in self._lst], dtype=np.int64)
-        self._addr = np.cumsum(self._addr)
-        self._lst = np.concatenate(self._lst)
+        self._addr = torch.from_numpy(np.cumsum(self._addr))
+        self._lst = torch.from_numpy(np.concatenate(self._lst))
         logger.info("Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024**2))
 
     def __len__(self):
@@ -142,13 +150,13 @@ class NumpySerializedList(object):
     def __getitem__(self, idx):
         start_addr = 0 if idx == 0 else self._addr[idx - 1].item()
         end_addr = self._addr[idx].item()
-        bytes = memoryview(self._lst[start_addr:end_addr])
+        bytes = memoryview(self._lst[start_addr:end_addr].numpy())
 
         # @lint-ignore PYTHONPICKLEISBAD
         return pickle.loads(bytes)
 
 
-_DEFAULT_DATASET_FROM_LIST_SERIALIZE_METHOD = NumpySerializedList
+_DEFAULT_DATASET_FROM_LIST_SERIALIZE_METHOD = _TorchSerializedList
 
 
 @contextlib.contextmanager
