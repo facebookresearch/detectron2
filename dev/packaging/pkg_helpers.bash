@@ -18,6 +18,10 @@ setup_cuda() {
   # and https://github.com/pytorch/vision/blob/main/packaging/pkg_helpers.bash for reference.
   export FORCE_CUDA=1
   case "$CU_VERSION" in
+    cu117)
+      export CUDA_HOME=/usr/local/cuda-11.7/
+      export TORCH_CUDA_ARCH_LIST="7.0;7.5+PTX;8.0;8.6+PTX"
+      ;;
     cu113)
       export CUDA_HOME=/usr/local/cuda-11.3/
       export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX;8.0;8.6+PTX"
