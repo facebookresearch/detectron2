@@ -20,11 +20,11 @@ setup_cuda() {
   case "$CU_VERSION" in
     cu117)
       export CUDA_HOME=/usr/local/cuda-11.7/
-      export TORCH_CUDA_ARCH_LIST="7.0;7.5+PTX;8.0;8.6+PTX"
+      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
       ;;
     cu116)
       export CUDA_HOME=/usr/local/cuda-11.6/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX;8.0;8.6+PTX"
+      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
       ;;
     cu113)
       export CUDA_HOME=/usr/local/cuda-11.3/
