@@ -45,6 +45,7 @@ if __name__ == "__main__":
         + [("1.9", k) for k in ["11.1", "10.2", "cpu"]]
         + [("1.10", k) for k in ["11.3", "11.1", "10.2", "cpu"]]
         + [("1.13", k) for k in ["11.7", "11.6", "11.4", "cpu"]]
+        + [("2.0", k) for k in ["12.0", "cpu"]]
     )
 
     torch_versions = sorted(

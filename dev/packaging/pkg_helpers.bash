@@ -18,6 +18,15 @@ setup_cuda() {
   # and https://github.com/pytorch/vision/blob/main/packaging/pkg_helpers.bash for reference.
   export FORCE_CUDA=1
   case "$CU_VERSION" in
+
+    cu120)
+      export CUDA_HOME=/usr/local/cuda-12.0/
+      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
+      ;;
+    cu118)
+      export CUDA_HOME=/usr/local/cuda-11.8/
+      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
+      ;;
     cu117)
       export CUDA_HOME=/usr/local/cuda-11.7/
       export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
@@ -75,6 +84,7 @@ setup_wheel_python() {
     3.8) python_abi=cp38-cp38 ;;
     3.9) python_abi=cp39-cp39 ;;
     3.10) python_abi=cp310-cp310 ;;
+    3.11) python_abi=cp311-cp311 ;;
     *)
       echo "Unrecognized PYTHON_VERSION=$PYTHON_VERSION"
       exit 1
