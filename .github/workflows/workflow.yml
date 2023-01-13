@@ -13,7 +13,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.9.4
       - name: Install dependencies
         # flake8-bugbear flake8-comprehensions are useful but not available internally
         run: |
@@ -56,7 +56,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.9.4
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
