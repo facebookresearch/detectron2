@@ -254,21 +254,21 @@ workflows:
           torchvision_version: '0.9.1+cu111'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.9
-          pytorch_version: '1.9+cu111'
-          torchvision_version: '0.10+cu111'
+          pytorch_version: '1.9+cu114'
+          torchvision_version: '0.10+cu114'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.10
-          pytorch_version: '1.10+cu111'
-          torchvision_version: '0.11.1+cu111'
+          pytorch_version: '1.10+cu114'
+          torchvision_version: '0.11.1+cu114'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.10_python39
-          pytorch_version: '1.10+cu111'
-          torchvision_version: '0.11.1+cu111'
+          pytorch_version: '1.10+cu114'
+          torchvision_version: '0.11.1+cu114'
           python_version: '3.9.4'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.13_python39
-          pytorch_version: '1.13.1+cu117'
-          torchvision_version: '0.14.1+cu117'
+          pytorch_version: '1.13.1+cu114'
+          torchvision_version: '0.14.1+cu114'
           python_version: '3.9.4'
       - windows_cpu_build:
           pytorch_version: '1.10+cpu'
