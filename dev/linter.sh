@@ -12,8 +12,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 }
 
 ISORT_VERSION=$(isort --version-number)
-if [[ "$ISORT_VERSION" != 4.3* ]]; then
-  echo "Linter requires isort==4.3.21 !"
+if [[ "$ISORT_VERSION" != 5.11* ]]; then
+  echo "Linter requires isort==5.11.4 !"
   exit 1
 fi
 

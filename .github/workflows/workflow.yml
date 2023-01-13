@@ -9,11 +9,11 @@ jobs:
     # run on PRs, or commits to facebookresearch (not internal)
     if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.9.4
+          python-version: 3.9
       - name: Install dependencies
         # flake8-bugbear flake8-comprehensions are useful but not available internally
         run: |
@@ -45,18 +45,18 @@ jobs:
             torchvision: "0.10"
           - torch: "1.10"
             torchvision: "0.11.1"
-          - torch: "1.13"
+          - torch: "1.13.1"
             torchvision: "0.14.1"
     env:
       # point datasets to ~/.torch so it's cached by CI
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.9.4
+          python-version: 3.9
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
