@@ -38,7 +38,7 @@ version_parameters: &version_parameters
       default: "https://download.pytorch.org/whl/torch_stable.html"
     python_version:  # NOTE: only affect linux
       type: string
-      default: '3.10'
+      default: '3.9'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -266,10 +266,10 @@ workflows:
           torchvision_version: '0.11.1+cu111'
           python_version: '3.9.6'
       - linux_gpu_tests:
-          name: linux_gpu_tests_pytorch1.13_python310
-          pytorch_version: '1.13+cu117'
+          name: linux_gpu_tests_pytorch1.13_python39
+          pytorch_version: '1.13.1+cu117'
           torchvision_version: '0.14.1+cu117'
-          python_version: '3.10.9'
+          python_version: '3.9.6'
       - windows_cpu_build:
           pytorch_version: '1.10+cpu'
           torchvision_version: '0.11.1+cpu'
