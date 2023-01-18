@@ -31,7 +31,7 @@ class DetectionCheckpointer(Checkpointer):
         self.path_manager = PathManager
         self._parsed_url_during_load = None
 
-    def __load(self, path, *args, **kwargs):
+    def _load(self, path, *args, **kwargs):
         assert self._parsed_url_during_load is None
         need_sync = False
         logger = logging.getLogger(__name__)
