@@ -155,6 +155,8 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         record["file_name"] = os.path.join(image_root, img_dict["file_name"])
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
+        for key in extra_record_keys:
+            record[key] = img_dict[key]
         image_id = record["image_id"] = img_dict["id"]
 
         objs = []
@@ -496,8 +498,12 @@ def register_coco_instances(name, metadata, json_file, image_root):
     assert isinstance(name, str), name
     assert isinstance(json_file, (str, os.PathLike)), json_file
     assert isinstance(image_root, (str, os.PathLike)), image_root
+    extra_record_keys = metadata.get("extra_record_keys", None)
     # 1. register a function which returns dicts
-    DatasetCatalog.register(name, lambda: load_coco_json(json_file, image_root, name))
+    DatasetCatalog.register(
+        name,
+        lambda: load_coco_json(json_file, image_root, name, extra_record_keys=extra_record_keys),
+    )
 
     # 2. Optionally, add metadata about this dataset,
     # since they might be useful in evaluation, visualization or logging
