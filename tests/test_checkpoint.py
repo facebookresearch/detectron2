@@ -59,11 +59,11 @@ class TestCheckpointer(unittest.TestCase):
                 model.block1.layer1.weight.fill_(1)
 
             # load checkpoint without matching_heuristics
-            checkpointer.load(os.path.join(d, "checkpoint.pth"))
+            checkpointer._load(os.path.join(d, "checkpoint.pth"))
             self.assertTrue(model.block1.layer1.weight.equal(torch.ones(3, 2)))
 
             # load checkpoint with matching_heuristics
-            checkpointer.load(os.path.join(d, "checkpoint.pth?matching_heuristics=True"))
+            checkpointer._load(os.path.join(d, "checkpoint.pth?matching_heuristics=True"))
             self.assertFalse(model.block1.layer1.weight.equal(torch.ones(3, 2)))
 
     def test_custom_path_manager_handler(self):
@@ -89,8 +89,8 @@ class TestCheckpointer(unittest.TestCase):
             torch.save({"model": state_dict}, os.path.join(d, "checkpoint.pth"))
             checkpointer = DetectionCheckpointer(model, save_dir=d)
             checkpointer.path_manager = pathmgr
-            checkpointer.load("detectron2_test://checkpoint.pth")
-            checkpointer.load("detectron2_test://checkpoint.pth?matching_heuristics=True")
+            checkpointer._load("detectron2_test://checkpoint.pth")
+            checkpointer._load("detectron2_test://checkpoint.pth?matching_heuristics=True")
 
 
 if __name__ == "__main__":
