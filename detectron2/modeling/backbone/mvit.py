@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import torch
 import torch.nn as nn
-from timm.models.layers import DropPath, Mlp, trunc_normal_
 
 from .backbone import Backbone
 from .utils import (
@@ -123,8 +122,8 @@ class MultiScaleAttention(nn.Module):
             self.rel_pos_w = nn.Parameter(torch.zeros(rel_dim, head_dim))
 
             if not rel_pos_zero_init:
-                trunc_normal_(self.rel_pos_h, std=0.02)
-                trunc_normal_(self.rel_pos_w, std=0.02)
+                nn.init.trunc_normal_(self.rel_pos_h, std=0.02)
+                nn.init.trunc_normal_(self.rel_pos_w, std=0.02)
 
     def forward(self, x):
         B, H, W, _ = x.shape
@@ -234,6 +233,8 @@ class MultiScaleBlock(nn.Module):
             rel_pos_zero_init=rel_pos_zero_init,
             input_size=input_size,
         )
+
+        from timm.models.layers import DropPath, Mlp
 
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.norm2 = norm_layer(dim_out)
@@ -414,13 +415,13 @@ class MViT(Backbone):
         self._last_block_indexes = last_block_indexes
 
         if self.pos_embed is not None:
-            trunc_normal_(self.pos_embed, std=0.02)
+            nn.init.trunc_normal_(self.pos_embed, std=0.02)
 
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=0.02)
+            nn.init.trunc_normal_(m.weight, std=0.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):

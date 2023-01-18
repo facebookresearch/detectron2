@@ -218,7 +218,7 @@ class VideoVisualizer:
         """
 
         # Compute iou with either boxes or masks:
-        is_crowd = np.zeros((len(instances),), dtype=np.bool)
+        is_crowd = np.zeros((len(instances),), dtype=bool)
         if instances[0].bbox is None:
             assert instances[0].mask_rle is not None
             # use mask iou only when box iou is None
