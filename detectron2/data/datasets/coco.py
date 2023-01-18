@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["load_coco_json", "load_sem_seg", "convert_to_coco_json", "register_coco_instances"]
 
 
-def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None):
+def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None, extra_record_keys=None):
     """
     Load a json file with COCO's instances annotation format.
     Currently supports instance detection, instance segmentation,
@@ -50,6 +50,9 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
             loaded into the dataset dict (besides "iscrowd", "bbox", "keypoints",
             "category_id", "segmentation"). The values for these keys will be returned as-is.
             For example, the densepose annotations are loaded in this way.
+        extra_record_keys(list[str]): list of per-record keys that should also be loaded into
+            the dataset_dict (besides "height", "width", "filename", "id"). The values for
+            these keys will be returned as-is.
 
     Returns:
         list[dict]: a list of dicts in Detectron2 standard dataset dicts format (See
