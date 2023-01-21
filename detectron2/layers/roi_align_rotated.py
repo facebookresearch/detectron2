@@ -80,7 +80,8 @@ class ROIAlignRotated(nn.Module):
             rois = rois.float()
         output_size = _pair(self.output_size)
 
-        # Scripting for Autograd is currently unsupported. This is a quick fix without having to rewrite code on the C++ side
+        # Scripting for Autograd is currently unsupported.
+        # This is a quick fix without having to rewrite code on the C++ side
         if torch.jit.is_scripting() or torch.jit.is_tracing():
             return torch.ops.detectron2.roi_align_rotated_forward(
                 input, rois, self.spatial_scale, output_size[0], output_size[1], self.sampling_ratio
