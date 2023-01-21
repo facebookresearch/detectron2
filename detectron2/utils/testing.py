@@ -20,10 +20,15 @@ from detectron2.modeling import build_model
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.file_io import PathManager
 
-
 """
 Internal utilities for tests. Don't use except for writing tests.
 """
+
+
+skip_on_torch_nightly = unittest.skipIf(
+    ".dev" in torch.__version__ or "+git" in torch.__version__,
+    f"The test cannot run on pyTorch nightly releases ({torch.__version__}).",
+)
 
 
 def get_model_no_weights(config_path):

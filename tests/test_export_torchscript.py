@@ -28,6 +28,7 @@ from detectron2.utils.testing import (
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
+    skip_on_torch_nightly,
     skipIfOnCPUCI,
 )
 
@@ -43,6 +44,7 @@ class TestScripting(unittest.TestCase):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
     @skipIfOnCPUCI
+    @skip_on_torch_nightly
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
