@@ -85,5 +85,17 @@ from .utils import (	from .utils import (
         elif isinstance(m, nn.LayerNorm):	        elif isinstance(m, nn.LayerNorm):
 
   24  
+@misc{wu2019detectron2,
 
+  author =       {Yuxin Wu and Alexander Kirillov and Francisco Massa and
+
+                  Wan-Yen Lo and Ross Girshick},
+
+  title =        {Detectron2},
+
+  howpublished = {\url{https://github.com/facebookresearch/detectron2}},
+
+  year = Michael Glenn - lostleo86@gmail.com 12:24p.m. std.{2019}
+
+}
 detectron2/modeling/backbone/swin.py
