@@ -372,6 +372,9 @@ class DefaultTrainer(TrainerBase):
             setup_logger()
         cfg = DefaultTrainer.auto_scale_workers(cfg, comm.get_world_size())
 
+        # Add accumulate_grad_batches to cfg
+        cfg.SOLVER.ACCUMULATE_GRAD_BATCHES = 1
+        
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
         optimizer = self.build_optimizer(cfg, model)
@@ -391,6 +394,7 @@ class DefaultTrainer(TrainerBase):
         )
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
+        self.accumulate_grad_batches = cfg.SOLVER.GRADIENT_ACCUMULATION_STEPS
         self.cfg = cfg
 
         self.register_hooks(self.build_hooks())
