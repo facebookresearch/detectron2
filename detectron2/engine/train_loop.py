@@ -100,7 +100,7 @@ class TrainerBase:
             By convention the minimum possible value is 0.
 
         max_iter(int): The iteration to end training.
-        
+
         accumulate_grad_batches(int): Accumulates grads every k batches. default is 1: No gradient accumulation.
 
         storage(EventStorage): An EventStorage that's opened during the course of training.
@@ -133,7 +133,7 @@ class TrainerBase:
             h.trainer = weakref.proxy(self)
         self._hooks.extend(hooks)
 
-    def train(self, start_iter: int, max_iter: int, accumulate_grad_batches:int):
+    def train(self, start_iter: int, max_iter: int, accumulate_grad_batches: int):
         """
         Args:
             start_iter, max_iter, accumulate_grad_batches (int): See docs above
@@ -143,7 +143,9 @@ class TrainerBase:
 
         self.iter = self.start_iter = start_iter
         self.max_iter = max_iter
-        self.accumulate_grad_batches = accumulate_grad_batches if accumulate_grad_batches is not None else 1
+        self.accumulate_grad_batches = (
+            accumulate_grad_batches if accumulate_grad_batches is not None else 1
+        )
 
         with EventStorage(start_iter) as self.storage:
             try:
@@ -290,7 +292,7 @@ class SimpleTrainer(TrainerBase):
         """
         Every `accumulate_grad_batches` steps, call 'optimizer.step()'.
         """
-        if ((self.iter + 1) % self.accumulate_grad_batches == 0): 
+        if (self.iter + 1) % self.accumulate_grad_batches == 0:
             self.optimizer.step()
             self.optimizer.zero_grad()
 
@@ -301,7 +303,6 @@ class SimpleTrainer(TrainerBase):
         wrap the optimizer with your custom `step()` method. But it is
         suboptimal as explained in https://arxiv.org/abs/2006.15704 Sec 3.2.4
         """
-        
 
     @property
     def _data_loader_iter(self):
@@ -434,19 +435,19 @@ class AMPTrainer(SimpleTrainer):
                 loss_dict = {"total_loss": loss_dict}
             else:
                 losses = sum(loss_dict.values())
-        
+
         """
         Divide the loss by the number of gradient accumulation steps.
         """
-        self.grad_scaler.scale(losses/self.accumulate_grad_batches).backward()
+        self.grad_scaler.scale(losses / self.accumulate_grad_batches).backward()
         """
         Every `accumulate_grad_batches` steps, call 'grad_scaler.step(self.optimizer)'.
         """
-        if ((self.iter + 1) % self.accumulate_grad_batches == 0):
+        if (self.iter + 1) % self.accumulate_grad_batches == 0:
             self.grad_scaler.step(self.optimizer)
             self.grad_scaler.update()
             self.optimizer.zero_grad()
-        
+
             self._write_metrics(loss_dict, data_time)
 
     def state_dict(self):

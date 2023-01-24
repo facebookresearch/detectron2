@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from ..structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 from . import (
     HFlipConverter,
     ToChartResultConverter,
@@ -12,6 +11,7 @@ from . import (
     predictor_output_with_coarse_segm_to_mask,
     predictor_output_with_fine_and_coarse_segm_to_mask,
 )
+from ..structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 
 ToMaskConverter.register(
     DensePoseChartPredictorOutput, predictor_output_with_fine_and_coarse_segm_to_mask

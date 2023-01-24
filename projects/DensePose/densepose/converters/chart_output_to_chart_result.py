@@ -6,12 +6,12 @@ from torch.nn import functional as F
 
 from detectron2.structures.boxes import Boxes, BoxMode
 
+from . import resample_fine_and_coarse_segm_to_bbox
 from ..structures import (
     DensePoseChartPredictorOutput,
     DensePoseChartResult,
     DensePoseChartResultWithConfidences,
 )
-from . import resample_fine_and_coarse_segm_to_bbox
 from .base import IntTupleBox, make_int_box
 
 
