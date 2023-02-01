@@ -113,7 +113,8 @@ install_linux_dep: &install_linux_dep
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
-        pip install --progress-bar off ninja opencv-python-headless pytest tensorboard pycocotools onnx
+        # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
+        pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
         pip install --progress-bar off torch==$PYTORCH_VERSION -f $PYTORCH_INDEX
         if [[ "$TORCHVISION_VERSION" == "master" ]]; then
           pip install git+https://github.com/pytorch/vision.git
