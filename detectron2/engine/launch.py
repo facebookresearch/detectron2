@@ -111,15 +111,8 @@ def _distributed_worker(
         logger.error("Process group URL: {}".format(dist_url))
         raise e
 
-    # Setup the local process group (which contains ranks within the same machine)
-    assert comm._LOCAL_PROCESS_GROUP is None
-    num_machines = world_size // num_gpus_per_machine
-    for i in range(num_machines):
-        ranks_on_i = list(range(i * num_gpus_per_machine, (i + 1) * num_gpus_per_machine))
-        pg = dist.new_group(ranks_on_i)
-        if i == machine_rank:
-            comm._LOCAL_PROCESS_GROUP = pg
-
+    # Setup the local process group.
+    comm.create_local_process_group(num_gpus_per_machine)
     if has_gpu:
         torch.cuda.set_device(local_rank)
 
