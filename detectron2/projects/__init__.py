@@ -1,6 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from importlib import abc, util
+import importlib.abc
+import importlib.util
 from pathlib import Path
+
+__all__ = []
 
 _PROJECTS = {
     "point_rend": "PointRend",
@@ -13,7 +16,7 @@ if _PROJECT_ROOT.is_dir():
     # This is true only for in-place installation (pip install -e, setup.py develop),
     # where setup(package_dir=) does not work: https://github.com/pypa/setuptools/issues/230
 
-    class _D2ProjectsFinder(abc.MetaPathFinder):
+    class _D2ProjectsFinder(importlib.abc.MetaPathFinder):
         def find_spec(self, name, path, target=None):
             if not name.startswith("detectron2.projects."):
                 return
@@ -24,7 +27,7 @@ if _PROJECT_ROOT.is_dir():
             target_file = _PROJECT_ROOT / f"{project_dir}/{project_name}/__init__.py"
             if not target_file.is_file():
                 return
-            return util.spec_from_file_location(name, target_file)
+            return importlib.util.spec_from_file_location(name, target_file)
 
     import sys
 
