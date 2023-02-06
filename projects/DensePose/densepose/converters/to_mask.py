@@ -20,8 +20,6 @@ class ToMaskConverter(BaseConverter):
     dst_type = BitMasks
 
     @classmethod
-    # pyre-fixme[14]: `convert` overrides method defined in `BaseConverter`
-    #  inconsistently.
     def convert(
         cls,
         densepose_predictor_outputs: Any,

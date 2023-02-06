@@ -145,8 +145,6 @@ class Trainer(DefaultTrainer):
         return results
 
     @classmethod
-    # pyre-fixme[14]: `build_evaluator` overrides method defined in `DefaultTrainer`
-    #  inconsistently.
     def build_evaluator(
         cls,
         cfg: CfgNode,
