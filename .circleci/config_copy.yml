@@ -1,4 +1,3 @@
-
 version: 2.1
 
 # -------------------------------------------------------------------------------------
@@ -6,7 +5,7 @@ version: 2.1
 # -------------------------------------------------------------------------------------
 cpu: &cpu
   machine:
-    image: ubuntu-2004:202107-02
+    image: ubuntu-2204:2022.04.2
   resource_class: medium
 
 gpu: &gpu
@@ -17,14 +16,14 @@ gpu: &gpu
 
 windows-cpu: &windows_cpu
   machine:
+    resource_class: windows.medium
     image: windows-server-2019-vs2019:stable
-  resource_class: windows.medium
-  shell: powershell.exe
+    shell: powershell.exe
 
 # windows-gpu: &windows_gpu
 #     machine:
+#       resource_class: windows.gpu.nvidia.medium
 #       image: windows-server-2019-nvidia:stable
-#     resource_class: windows.gpu.nvidia.medium
 
 version_parameters: &version_parameters
   parameters:
@@ -37,9 +36,9 @@ version_parameters: &version_parameters
       # use test wheels index to have access to RC wheels
       # https://download.pytorch.org/whl/test/torch_test.html
       default: "https://download.pytorch.org/whl/torch_stable.html"
-    python_version:  # NOTE: only affects linux
+    python_version:  # NOTE: only affect linux
       type: string
-      default: '3.7.9'
+      default: '3.9.4'
     cuda_version:
       type: string
       default: '11.7'
@@ -53,6 +52,7 @@ version_parameters: &version_parameters
     # point datasets to ~/.torch so it's cached in CI
     DETECTRON2_DATASETS: ~/.torch/datasets
 
+
 # -------------------------------------------------------------------------------------
 # Re-usable commands
 # -------------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ version_parameters: &version_parameters
 #         sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
 #         nvidia-smi
 
-install_cuda: &install_cuda
+installcuda: &install_cuda
   run:
     name: Setup CUDA << parameters.cuda_version >>
     working_directory: ~/
@@ -105,8 +105,8 @@ install_python: &install_python
       name: Install Python
       working_directory: ~/
       command: |
-        cd /opt/circleci/.pyenv/plugins/python-build/../.. && git pull && cd
-        pyenv install -l
+        # upgrade pyenv
+        cd /opt/circleci/.pyenv/plugins/python-build/../.. && git pull && cd -
         pyenv install -s $PYTHON_VERSION
         pyenv global $PYTHON_VERSION
         python --version
@@ -149,29 +149,15 @@ install_linux_dep: &install_linux_dep
         # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
         # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
         pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
-        if [[ "$PYTORCH_VERSION" == "master" ]]; then
-          echo "Installing torch/torchvision from $PYTORCH_INDEX"
-          # Remove first, in case it's in the CI cache
-          pip uninstall -y torch torchvision
-          pip install -v --progress-bar off --pre torch torchvision --extra-index-url $PYTORCH_INDEX
-          pip install -v --progress-bar off omegaconf==2.1.2   # needed by FCOSE2ETest::test_empty_data
+        pip install --progress-bar off torch==$PYTORCH_VERSION -f $PYTORCH_INDEX
+        if [[ "$TORCHVISION_VERSION" == "master" ]]; then
+          pip install git+https://github.com/pytorch/vision.git
         else
-          echo "Installing torch==$PYTORCH_VERSION and torchvision==$TORCHVISION_VERSION from $PYTORCH_INDEX"
-          pip install -v --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
+          pip install --progress-bar off torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
         fi
 
-        python -c 'import torch; print("PyTorch Version:", torch.__version__)'
-        python -c 'import torchvision; print("TorchVision Version:", torchvision.__version__)'
         python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
-        echo "Python packages"
-        python -c "import sys; print(sys.executable)"
-        python --version
-        pip list
-        echo "GCC Compiler"
         gcc --version
-        echo "OS Environment Variables"
-        env
-
 
 install_detectron2: &install_detectron2
   - run:
@@ -218,7 +204,7 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -230,7 +216,8 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
+
 
   linux_gpu_tests:
     <<: *gpu
@@ -243,35 +230,10 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
-      - <<: *install_python
-      - <<: *install_linux_dep
-      - <<: *install_detectron2
-      - <<: *run_unittests
-      - <<: *uninstall_tests
-
-      - save_cache:
-          paths:
-            - /opt/circleci/.pyenv
-            - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
-
-  linux_cuda113_tests:
-    <<: *cuda113
-    <<: *version_parameters
-
-    working_directory: ~/detectron2
-
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
-
-      - <<: *install_cuda
       - <<: *removecuda114
+      - <<: *install_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
@@ -282,8 +244,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
-
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210827
 
   windows_cpu_build:
     <<: *windows_cpu
@@ -296,7 +257,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - run:
           name: Install Dependencies
@@ -306,28 +267,12 @@ jobs:
             pip install opencv-python-headless pytest-xdist pycocotools tensorboard onnx
             pip install -U git+https://github.com/facebookresearch/iopath
             pip install -U git+https://github.com/facebookresearch/fvcore
-            if($env:PYTORCH_VERSION -eq "master"){
-              Write-Output "Installing torch/torchvision from $env:PYTORCH_INDEX"
-              pip uninstall -y torch torchvision
-              pip install --progress-bar off --pre torch torchvision --extra-index-url $env:PYTORCH_INDEX
-            }else{
-              Write-Output "Installing torch==$env:PYTORCH_VERSION and torchvision==$env:TORCHVISION_VERSION from $env:PYTORCH_INDEX"
-              pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f $env:PYTORCH_INDEX
-            }
-            python -c 'import torch; print("PyTorch Version:", torch.__version__)'
-            python -c 'import torchvision; print("TorchVision Version:", torchvision.__version__)'
-            python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
-            Write-Output "Python packages"
-            python -c "import sys; print(sys.executable)"
-            python --version
-            pip list
-            echo "OS Environment Variables"
-            dir env:
+            pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f $env:PYTORCH_INDEX
 
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20210404
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
