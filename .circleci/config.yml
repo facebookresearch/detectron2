@@ -245,8 +245,9 @@ jobs:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
 
-      - <<: *install_cuda
+
       - <<: *removecuda114
+      - <<: *install_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
