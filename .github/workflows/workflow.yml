@@ -10,7 +10,7 @@ jobs:
     if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
