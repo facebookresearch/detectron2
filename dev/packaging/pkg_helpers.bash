@@ -35,42 +35,6 @@ setup_cuda() {
       export CUDA_HOME=/usr/local/cuda-11.6/
       export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
       ;;
-    cu113)
-      export CUDA_HOME=/usr/local/cuda-11.3/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX;8.0;8.6+PTX"
-      ;;
-    cu112)
-      export CUDA_HOME=/usr/local/cuda-11.2/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX;8.0;8.6+PTX"
-      ;;
-    cu111)
-      export CUDA_HOME=/usr/local/cuda-11.1/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX;8.0;8.6+PTX"
-      ;;
-    cu110)
-      export CUDA_HOME=/usr/local/cuda-11.0/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX;8.0+PTX"
-      ;;
-    cu102)
-      export CUDA_HOME=/usr/local/cuda-10.2/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX"
-      ;;
-    cu101)
-      export CUDA_HOME=/usr/local/cuda-10.1/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX"
-      ;;
-    cu100)
-      export CUDA_HOME=/usr/local/cuda-10.0/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0;7.5+PTX"
-      ;;
-    cu92)
-      export CUDA_HOME=/usr/local/cuda-9.2/
-      export TORCH_CUDA_ARCH_LIST="3.7;5.0;5.2;6.0;6.1+PTX;7.0+PTX"
-      ;;
-    cpu)
-      unset FORCE_CUDA
-      export CUDA_VISIBLE_DEVICES=
-      ;;
     *)
       echo "Unrecognized CU_VERSION=$CU_VERSION"
       exit 1
@@ -80,8 +44,6 @@ setup_cuda() {
 
 setup_wheel_python() {
   case "$PYTHON_VERSION" in
-    3.7) python_abi=cp37-cp37m ;;
-    3.8) python_abi=cp38-cp38 ;;
     3.9) python_abi=cp39-cp39 ;;
     3.10) python_abi=cp310-cp310 ;;
     3.11) python_abi=cp311-cp311 ;;
