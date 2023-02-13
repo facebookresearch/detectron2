@@ -176,6 +176,21 @@ def min_torch_version(min_version: str) -> bool:
     return installed_version >= min_version
 
 
+def has_dynamic_axes(onnx_model):
+    """
+    Return True when all ONNX input/output have only dynamic axes for all ranks
+    """
+    return all(
+        not dim.dim_param.isnumeric()
+        for inp in onnx_model.graph.input
+        for dim in inp.type.tensor_type.shape.dim
+    ) and all(
+        not dim.dim_param.isnumeric()
+        for out in onnx_model.graph.output
+        for dim in out.type.tensor_type.shape.dim
+    )
+
+
 def register_custom_op_onnx_export(
     opname: str, symbolic_fn: Callable, opset_version: int, min_version: str
 ) -> None:

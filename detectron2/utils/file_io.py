@@ -29,7 +29,9 @@ class Detectron2Handler(PathHandler):
         return PathManager.get_local_path(self.S3_DETECTRON2_PREFIX + name, **kwargs)
 
     def _open(self, path, mode="r", **kwargs):
-        return PathManager.open(self._get_local_path(path), mode, **kwargs)
+        return PathManager.open(
+            self.S3_DETECTRON2_PREFIX + path[len(self.PREFIX) :], mode, **kwargs
+        )
 
 
 PathManager.register_handler(HTTPURLHandler())
