@@ -11,7 +11,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: ubuntu-2004-cuda-11.4:202110-01
+    image: ubuntu-1604-cuda-11.1:202012-01
   resource_class: gpu.nvidia.small
 
 windows-cpu: &windows_cpu
@@ -38,7 +38,7 @@ version_parameters: &version_parameters
       default: "https://download.pytorch.org/whl/torch_stable.html"
     python_version:  # NOTE: only affect linux
       type: string
-      default: '3.9.4'
+      default: '3.9.16'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -269,12 +269,12 @@ workflows:
           name: linux_gpu_tests_pytorch1.10_python39
           pytorch_version: '1.10+cu113'
           torchvision_version: '0.11.1+cu113'
-          python_version: '3.9.4'
+          python_version: '3.9.16'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.13_python39
-          pytorch_version: '1.13.1+cu117'
-          torchvision_version: '0.14.1+cu117'
-          python_version: '3.9.4'
+          pytorch_version: '1.13.1+cu118'
+          torchvision_version: '0.14.1+cu118'
+          python_version: '3.10.10'
       - windows_cpu_build:
           pytorch_version: '1.10+cpu'
           torchvision_version: '0.11.1+cpu'
