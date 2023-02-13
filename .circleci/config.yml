@@ -39,7 +39,7 @@ version_parameters: &version_parameters
       default: "https://download.pytorch.org/whl/torch_stable.html"
     python_version:  # NOTE: only affect linux
       type: string
-      default: '3.10.3'
+      default: '3.9.6'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
