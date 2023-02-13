@@ -12,7 +12,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: ubuntu-1604-cuda-11.1:202012-01
+    image: ubuntu-2004-cuda-11.4:202110-01
   resource_class: gpu.nvidia.small
 
 windows-cpu: &windows_cpu
