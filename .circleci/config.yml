@@ -36,12 +36,12 @@ version_parameters: &version_parameters
       # use test wheels index to have access to RC wheels
       # https://download.pytorch.org/whl/test/torch_test.html
       default: "https://download.pytorch.org/whl/torch_stable.html"
-    python_version: # NOTE: only affect linux
+    python_version:  # NOTE: only affect linux
       type: string
       default: '3.9.4'
     cuda_version:
       type: string
-      default: 11.7
+      default: '11.7'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
