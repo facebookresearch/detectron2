@@ -78,6 +78,8 @@ install_cuda: &install_cuda
       echo "Done installing CUDA ${CUDA_VERSION}"
       sudo apt autoremove
       sudo apt-get clean
+      sudo rmmod nvidia
+      sudo modprobe nvidia
       nvidia-smi
       sudo update-alternatives --display cuda
 
