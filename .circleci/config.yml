@@ -92,6 +92,9 @@ removecuda114: &removecuda114
       sudo apt autoremove
       sudo apt-get clean
       echo "Done removing CUDA 11.4"
+      sudo apt purge '*nvidia*' -y
+      sudo apt autoremove -y
+      echo "Done removing nvidia packages"
 
 add_ssh_keys: &add_ssh_keys
   # https://circleci.com/docs/2.0/add-ssh-key/
