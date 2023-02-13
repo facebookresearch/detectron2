@@ -254,11 +254,11 @@ workflows:
           name: linux_cpu_tests_pytorch1.13
           pytorch_version: '1.13.1+cpu'
           torchvision_version: '0.14.1+cpu'
-      - linux_cpu_tests:
+      - linux_gpu_tests:
           name: linux_cpu_tests_pytorch1.12
           pytorch_version: '1.12.1+cu116'
           torchvision_version: '0.13.1+cu116'
-      - linux_cpu_tests:
+      - linux_gpu_tests:
           name: linux_cpu_tests_pytorch1.13
           pytorch_version: '1.13.1+cu117'
           torchvision_version: '0.14.1+cu117'
