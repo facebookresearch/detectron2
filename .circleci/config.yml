@@ -78,7 +78,7 @@ install_cuda: &install_cuda
       echo "Done installing CUDA ${CUDA_VERSION}"
       sudo apt autoremove
       sudo apt-get clean
-      sudo lsof | grep nvidia -> kill Xvfb
+      sudo lsof | grep nvidia
       sudo lsof /dev/nvidia*
       echo "Kill All process"
       sudo lsof | grep "nvidia" | awk '{print $2}' | sort -u | xargs -I {} sudo kill -9 {}
