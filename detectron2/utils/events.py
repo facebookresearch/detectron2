@@ -230,15 +230,19 @@ class CommonMetricPrinter(EventWriter):
             return
 
         try:
-            data_time = storage.history("data_time").avg(20)
+            avg_data_time = storage.history("data_time").avg(20)
+            last_data_time = storage.history("data_time").latest()
         except KeyError:
             # they may not exist in the first few iterations (due to warmup)
             # or when SimpleTrainer is not used
-            data_time = None
+            avg_data_time = None
+            last_data_time = None
         try:
-            iter_time = storage.history("time").global_avg()
+            avg_iter_time = storage.history("time").global_avg()
+            last_iter_time = storage.history("time").latest()
         except KeyError:
-            iter_time = None
+            avg_iter_time = None
+            last_iter_time = None
         try:
             lr = "{:.5g}".format(storage.history("lr").latest())
         except KeyError:
@@ -253,7 +257,7 @@ class CommonMetricPrinter(EventWriter):
 
         # NOTE: max_mem is parsed by grep in "dev/parse_results.sh"
         self.logger.info(
-            " {eta}iter: {iter}  {losses}  {time}{data_time}lr: {lr}  {memory}".format(
+            " {eta}iter: {iter}  {losses}  {avg_time}{last_time}{avg_data_time}{last_data_time} lr: {lr}  {memory}".format(
                 eta=f"eta: {eta_string}  " if eta_string else "",
                 iter=iteration,
                 losses="  ".join(
@@ -263,8 +267,18 @@ class CommonMetricPrinter(EventWriter):
                         if "loss" in k
                     ]
                 ),
-                time="time: {:.4f}  ".format(iter_time) if iter_time is not None else "",
-                data_time="data_time: {:.4f}  ".format(data_time) if data_time is not None else "",
+                avg_time="time: {:.4f}  ".format(avg_iter_time)
+                if avg_iter_time is not None
+                else "",
+                last_time="last_time: {:.4f}  ".format(last_iter_time)
+                if last_iter_time is not None
+                else "",
+                avg_data_time="data_time: {:.4f}  ".format(avg_data_time)
+                if avg_data_time is not None
+                else "",
+                last_data_time="last_data_time: {:.4f}  ".format(last_data_time)
+                if last_data_time is not None
+                else "",
                 lr=lr,
                 memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
             )
