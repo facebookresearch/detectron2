@@ -229,8 +229,9 @@ class CommonMetricPrinter(EventWriter):
             # is called.
             return
 
+        _window_sizes = storage.histories_window_sizes(self._window_size)
         try:
-            avg_data_time = storage.history("data_time").avg(20)
+            avg_data_time = storage.history("data_time").avg(_window_sizes["data_time"])
             last_data_time = storage.history("data_time").latest()
         except KeyError:
             # they may not exist in the first few iterations (due to warmup)
@@ -262,7 +263,7 @@ class CommonMetricPrinter(EventWriter):
                 iter=iteration,
                 losses="  ".join(
                     [
-                        "{}: {:.4g}".format(k, v.median(self._window_size))
+                        "{}: {:.4g}".format(k, v.median(_window_sizes[k]))
                         for k, v in storage.histories().items()
                         if "loss" in k
                     ]
@@ -421,14 +422,39 @@ class EventStorage:
         depend on whether the smoothing_hint is True.
 
         This provides a default behavior that other writers can use.
+
+        Note: All scalars saved in the past `window_size` iterations are used for smoothing.
+        This is different from the `window_size` definition in HistoryBuffer.
+        Use :meth:`get_history_window_size` to get the `window_size` used in HistoryBuffer.
         """
         result = {}
+        _window_sizes = self.histories_window_sizes(window_size)
         for k, (v, itr) in self._latest_scalars.items():
             result[k] = (
-                self._history[k].median(window_size) if self._smoothing_hints[k] else v,
+                self._history[k].median(_window_sizes[k]) if self._smoothing_hints[k] else v,
                 itr,
             )
         return result
+
+    def history_window_size(self, name, window_size=20):
+        """
+        Return the number of scalers logged in the past `window_size` iterations.
+        This will be used for HistoryBuffer methods like avg and median
+        """
+        _window_size = 0
+        last_iter = self._history[name]._data[-1][1]
+        for _, itr in self._history[name]._data[-window_size:]:
+            if itr > last_iter - window_size:
+                _window_size += 1
+        return _window_size
+
+    def histories_window_sizes(self, window_size=20):
+        """
+        Returns:
+            dict[str -> int]: mapping from name to the number of scalers
+                that were logged in the past `window_size` iterations
+        """
+        return {k: self.history_window_size(k, window_size) for k in self._history.keys()}
 
     def smoothing_hints(self):
         """
