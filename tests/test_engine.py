@@ -93,6 +93,45 @@ class TestTrainer(unittest.TestCase):
 
             self.assertIn("eta: 0:00:00", logs.output[-1], "Last ETA must be 0!")
 
+    def test_metric_gather_and_write(self):
+        gather_metric_period = 5
+        writer_period = 10
+
+        model = _SimpleModel(sleep_sec=0.1)
+        trainer = SimpleTrainer(
+            model,
+            self._data_loader("cpu"),
+            torch.optim.SGD(model.parameters(), 0.1),
+            gather_metric_period=gather_metric_period,
+        )
+
+        max_iter = 50
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            json_file = os.path.join(d, "metrics.json")
+            writers = [JSONWriter(json_file, window_size=writer_period)]
+
+            trainer.register_hooks(
+                [
+                    hooks.IterationTimer(),
+                    hooks.PeriodicWriter(writers, period=writer_period),
+                ]
+            )
+            trainer.train(0, max_iter)
+
+            with open(json_file, "r") as f:
+                data = [json.loads(line.strip()) for line in f]
+                self.assertEqual([x["iteration"] for x in data], [9, 19, 29, 39, 49])
+                self.assertEqual(len(trainer.storage.history("time").values()), 48)
+                for key in ["data_time", "total_loss"]:
+                    history = trainer.storage.history(key).values()
+                    history_iters = [h[1] for h in history]
+                    self.assertEqual(history_iters, [4, 9, 14, 19, 24, 29, 34, 39, 44, 49])
+                    for i in range(len(data)):
+                        # written metric should equal to the median of 2 most recent logged metrics
+                        logged1, logged2 = history[2 * i][0], history[2 * i + 1][0]
+                        gt = data[i][key]
+                        self.assertEqual(gt, (logged1 + logged2) / 2.0)
+
     def test_default_trainer(self):
         # TODO: this test requires manifold access, so changed device to CPU. see: T88318502
         cfg = get_cfg()
