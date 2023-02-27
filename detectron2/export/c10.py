@@ -469,13 +469,8 @@ def caffe2_fast_rcnn_outputs_inference(tensor_mode, box_predictor, predictions, 
     if not tensor_mode:
         roi_class_nms = roi_class_nms.to(torch.int64)
 
-    roi_batch_ids = cat(
-        [
-            torch.full((b, 1), i, dtype=dtype, device=device)
-            for i, b in enumerate(int(x.item()) for x in roi_batch_splits_nms)
-        ],
-        dim=0,
-    )
+    b = roi_batch_splits.size(0)
+    roi_batch_ids = cat([torch.full((b, 1), 0, dtype=dtype, device=device)], dim=0)
 
     roi_class_nms = alias(roi_class_nms, "class_nms")
     roi_score_nms = alias(roi_score_nms, "score_nms")
