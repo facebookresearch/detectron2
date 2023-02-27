@@ -314,7 +314,7 @@ jobs:
               pip install --progress-bar off --pre torch torchvision --extra-index-url $env:PYTORCH_INDEX
             }else{
               Write-Output "Installing torch==$env:PYTORCH_VERSION and torchvision==$env:TORCHVISION_VERSION from $env:PYTORCH_INDEX"
-              pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f $env:PYTORCH_INDEX
+              pip install --progress-bar off --pre torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f $env:PYTORCH_INDEX
             }
             python -c 'import torch; print("PyTorch Version:", torch.__version__)'
             python -c 'import torchvision; print("TorchVision Version:", torchvision.__version__)'
