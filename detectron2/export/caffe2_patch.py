@@ -16,6 +16,9 @@ from .c10 import (
     Caffe2MaskRCNNInference,
     Caffe2ROIPooler,
     Caffe2RPN,
+    caffe2_fast_rcnn_outputs_inference,
+    caffe2_keypoint_rcnn_inference,
+    caffe2_mask_rcnn_inference,
 )
 
 
@@ -150,3 +153,27 @@ class ROIHeadsPatcher:
             for mgr in mock_ctx_managers:
                 stack.enter_context(mgr)
             yield
+
+    def patch_roi_heads(self, tensor_mode=True):
+        def patched_fastrcnn_outputs_inference(predictions, proposal):
+            return caffe2_fast_rcnn_outputs_inference(
+                True, self.heads.box_predictor, predictions, proposal
+            )
+
+        self.heads.box_predictor.inference = patched_fastrcnn_outputs_inference
+
+        if getattr(self.heads, "keypoint_on", False):
+
+            def patched_keypoint_rcnn_inference(pred_keypoint_logits, pred_instances):
+                return caffe2_keypoint_rcnn_inference(
+                    self.use_heatmap_max_keypoint, pred_keypoint_logits, pred_instances
+                )
+
+            keypoint_head.keypoint_rcnn_inference = patched_keypoint_rcnn_inference
+
+        if getattr(self.heads, "mask_on", False):
+
+            def patched_mask_rcnn_inference(pred_mask_logits, pred_instances):
+                return caffe2_mask_rcnn_inference(pred_mask_logits, pred_instances)
+
+            mask_head.mask_rcnn_inference = patched_mask_rcnn_inference
