@@ -6,12 +6,8 @@ A few basic concepts about this process:
 __"Export method"__ is how a Python model is fully serialized to a deployable format.
 We support the following export methods:
 
-* `tracing`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) to learn about it\
-This method produces a standardized ONNX graph that can be used by any ONNX runtime, such as \
-[ONNX Runtime](https://onnxruntime.ai/)
-* `scripting`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) to learn about it\
-This method produces a standardized ONNX graph that can be used by any ONNX runtime, such as \
-[ONNX Runtime](https://onnxruntime.ai/)
+* `tracing`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) to learn about it
+* `scripting`: see [pytorch documentation](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html) to learn about it
 * `caffe2_tracing`: replace parts of the model by caffe2 operators, then use tracing.
 This method produces a Caffe2-specific ONNX graph that can be used only by the [Caffe2](https://caffe2.ai/).
 Caffe2 support has been ***DEPRECATED*** by PyTorch, therefore, we don't plan to support it, but contributions are welcome.
@@ -27,33 +23,33 @@ A runtime is often tied to a specific format
 We currently support the following combination and each has some limitations:
 
 ```eval_rst
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-|       Export Method        |   tracing   |  scripting  | tracing/scripting | caffe2_tracing (DEPRECATED) |
-+============================+=============+=============+===================+=============================+
-| **Formats**                | TorchScript | TorchScript |       ONNX        | Caffe2, TorchScript, ONNX   |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| **Runtime**                | PyTorch     | PyTorch     |    ONNX Runtime   | Caffe2, PyTorch             |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| C++/Python inference       | ✅           | ✅           | ✅                 | ✅                           |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| Dynamic resolution         | ✅           | ✅           | ✅                 | ✅                           |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| Batch size requirement     | Constant    | Dynamic     | Dynamic           | Batch inference unsupported |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| Extra runtime deps         | torchvision | torchvision | torchvision       | Caffe2 ops (usually already |
-|                            |             |             |                   |                             |
-|                            |             |             |                   | included in PyTorch)        |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| Faster/Mask/Keypoint R-CNN | ✅           | ✅           | ✅                 | ✅                           |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| RetinaNet                  | ✅           | ✅           | ✅                 | ✅                           |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| PointRend R-CNN            | ✅           | ❌           | ✅                 | ❌                           |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| Cascade R-CNN              | ✅           | ❌           | ✅                 | ❌                           |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
-| PanopticFPN                | ✅           | N/A         | ✅                 | N/A                         |
-+----------------------------+-------------+-------------+-------------------+-----------------------------+
++----------------------------+-----------------------+-----------------------+-----------------------------+
+|       Export Method        |   tracing             |  scripting            | caffe2_tracing (DEPRECATED) |
++============================+=======================+=======================+=============================+
+| **Formats**                | TorchScript, ONNX     | TorchScript, ONNX     | Caffe2, TorchScript, ONNX   |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| **Runtime**                | PyTorch, ONNX Runtime | PyTorch, ONNX Runtime | Caffe2, PyTorch             |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| C++/Python inference       | ✅                     | ✅                     | ✅                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| Dynamic resolution         | ✅                     | ✅                     | ✅                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| Batch size requirement     | Constant              | Dynamic               | Batch inference unsupported |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| Extra runtime deps         | torchvision           | torchvision           | Caffe2 ops (usually already |
+|                            |                       |                       |                             |
+|                            |                       |                       | included in PyTorch)        |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| Faster/Mask/Keypoint R-CNN | ✅                     | ✅                     | ✅                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| RetinaNet                  | ✅                     | ✅                     | ✅                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| PointRend R-CNN            | ✅                     | ❌                     | ❌                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| Cascade R-CNN              | ✅                     | ❌                     | ❌                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
+| PanopticFPN                | ✅                     | ❌                     | ❌                           |
++----------------------------+-----------------------+-----------------------+-----------------------------+
 
 ```
 
