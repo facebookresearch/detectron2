@@ -37,17 +37,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: ["1.8", "1.9", "1.10", "master"]
+        torch: ["1.8", "1.9", "1.10", "1.11.0", "1.12.1"]
         include:
           - torch: "1.8"
-            torchvision: 0.9
+            torchvision: "0.9"
           - torch: "1.9"
             torchvision: "0.10"
           - torch: "1.10"
             torchvision: "0.11.1"
-          - torch: "master"
-            torchvision: "master"
-            pytorch_index: "https://download.pytorch.org/whl/nightly/cpu"
+          - torch: "1.11.0"
+            torchvision: "0.12.0"
+          - torch: "1.12.1"
+            torchvision: "0.13.1"
     env:
       # point datasets to ~/.torch so it's cached by CI
       DETECTRON2_DATASETS: ~/.torch/datasets
@@ -64,7 +65,7 @@ jobs:
           path: |
             ${{ env.pythonLocation }}/lib/python3.8/site-packages
             ~/.torch
-          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20220503
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230227
 
       - name: Install dependencies
         run: |
