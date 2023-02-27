@@ -410,7 +410,8 @@ def caffe2_fast_rcnn_outputs_inference(tensor_mode, box_predictor, predictions, 
 
     input_tensor_mode = proposals[0].proposal_boxes.tensor.shape[1] == box_dim + 1
 
-    rois = type(proposals[0].proposal_boxes).cat([p.proposal_boxes for p in proposals])
+    assert isinstance(proposals[0].proposal_boxes, Caffe2Boxes)
+    rois = Caffe2Boxes.cat([p.proposal_boxes for p in proposals])
     device, dtype = rois.tensor.device, rois.tensor.dtype
     if input_tensor_mode:
         im_info = proposals[0].image_size
