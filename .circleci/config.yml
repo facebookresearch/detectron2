@@ -220,7 +220,7 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -232,7 +232,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
   linux_cuda111_tests:
     <<: *cuda111
@@ -245,7 +245,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -257,7 +257,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
   linux_cuda113_tests:
     <<: *cuda113
@@ -270,7 +270,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
       - <<: *setupcuda113
       - <<: *removecuda114
@@ -284,7 +284,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
 
   windows_cpu_build:
@@ -298,7 +298,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
       - run:
           name: Install Dependencies
@@ -329,7 +329,7 @@ jobs:
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990002
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990003
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
@@ -373,14 +373,14 @@ workflows:
           python_version: '3.9.6'
       - linux_cuda113_tests:
           name: linux_cuda113_tests_pytorch1.11_python39
-          pytorch_version: '1.11.0+cu113'
-          torchvision_version: '0.12.0+cu113'
+          pytorch_version: '1.11.0'
+          torchvision_version: '0.12.0'
           python_version: '3.9.4'
           pytorch_index: 'https://download.pytorch.org/whl/cu113'
       - linux_cuda113_tests:
           name: linux_cuda113_tests_pytorch1.12_python39
-          pytorch_version: '1.12.1+cu113'
-          torchvision_version: '0.13.1+cu113'
+          pytorch_version: '1.12.1'
+          torchvision_version: '0.13.1'
           python_version: '3.9.4'
           pytorch_index: 'https://download.pytorch.org/whl/cu113'
       - windows_cpu_build:
