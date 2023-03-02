@@ -41,7 +41,7 @@ version_parameters: &version_parameters
       default: '3.9.4'
     cuda_version:
       type: string
-      default: '11.7'
+      default: '11.6'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -299,9 +299,9 @@ workflows:
           cuda_version: '11.6'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.13
-          pytorch_version: '1.13.1+cu117'
+          pytorch_version: '1.13.1+cu116'
           torchvision_version: '0.14.1+cu116'
-          cuda_version: '11.7'
+          cuda_version: '11.6'
       - windows_cpu_build:
           pytorch_version: '1.13.1+cpu'
           torchvision_version: '0.14.1+cpu'
