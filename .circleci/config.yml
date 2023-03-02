@@ -300,7 +300,7 @@ workflows:
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.13
           pytorch_version: '1.13.1+cu117'
-          torchvision_version: '0.14.1+cu117'
+          torchvision_version: '0.14.1+cu116'
           cuda_version: '11.7'
       - windows_cpu_build:
           pytorch_version: '1.13.1+cpu'
