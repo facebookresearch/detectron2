@@ -175,6 +175,19 @@ def min_torch_version(min_version: str) -> bool:
     min_version = version.parse(min_version)
     return installed_version >= min_version
 
+def max_torch_version(max_version: str) -> bool:
+    """
+    Returns True when torch's  version is at most `max_version`.
+    """
+    try:
+        import torch
+    except ImportError:
+        return False
+
+    installed_version = version.parse(torch.__version__.split("+")[0])
+    max_version = version.parse(max_version)
+    return installed_version <= max_version
+
 
 def has_dynamic_axes(onnx_model):
     """
@@ -276,7 +289,7 @@ skipIfOnCPUCI = unittest.skipIf(
 
 # SKIP IF PYTORCH VERSION > 1.10
 skipIfOnPytorch1_10 = unittest.skipIf(
-    min_torch_version("1.11"), "The test is not supported on PyTorch 1.10+",
+    max_torch_version("1.10"), "The test is not supported on PyTorch 1.10+",
 )
 
 
