@@ -171,6 +171,12 @@ uninstall_tests: &uninstall_tests
         # Tests that code is importable without installation
         PYTHONPATH=. ./.circleci/import-tests.sh
 
+select_cuda: &select_cuda
+  - run:
+      name: Select CUDA
+      command: |
+        sudo update-alternatives --set cuda /usr/local/cuda-<< parameters.cuda_version >>
+
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
@@ -190,7 +196,7 @@ jobs:
       - restore_cache:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
-
+      - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
