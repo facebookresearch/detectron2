@@ -1,4 +1,3 @@
-
 version: 2.1
 
 # -------------------------------------------------------------------------------------
@@ -37,7 +36,7 @@ version_parameters: &version_parameters
       # use test wheels index to have access to RC wheels
       # https://download.pytorch.org/whl/test/torch_test.html
       default: "https://download.pytorch.org/whl/torch_stable.html"
-    python_version:  # NOTE: only affects linux
+    python_version: # NOTE: only affects linux
       type: string
       default: '3.9.4'
     cuda_version:
@@ -196,7 +195,6 @@ jobs:
       - restore_cache:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
-      - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
@@ -221,7 +219,7 @@ jobs:
       - restore_cache:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
-
+      - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
