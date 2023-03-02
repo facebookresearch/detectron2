@@ -5,14 +5,15 @@ version: 2.1
 # -------------------------------------------------------------------------------------
 cpu: &cpu
   machine:
-    image: ubuntu-2004:202107-02
+    image: ubuntu-2204:2022.10.1
   resource_class: medium
 
 gpu: &gpu
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: linux-cuda-11:2023.02.1
-  resource_class: gpu.nvidia.small
+    image: windows-server-2019-vs2019:stable
+  resource_class: windows.medium
+  shell: powershell.exe
 
 windows-cpu: &windows_cpu
   machine:
@@ -38,7 +39,7 @@ version_parameters: &version_parameters
       default: "https://download.pytorch.org/whl/torch_stable.html"
     python_version: # NOTE: only affects linux
       type: string
-      default: '3.9.4'
+      default: '3.10.6'
     cuda_version:
       type: string
       default: '11.6'
