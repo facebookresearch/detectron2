@@ -16,9 +16,9 @@ gpu: &gpu
 
 windows-cpu: &windows_cpu
   machine:
+    resource_class: windows.medium
     image: windows-server-2022-gui:2022.10.1
-  resource_class: windows.medium
-  shell: powershell.exe
+    shell: powershell.exe
 
 # windows-gpu: &windows_gpu
 #     machine:
