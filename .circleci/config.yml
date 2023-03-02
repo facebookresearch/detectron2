@@ -12,7 +12,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: ubuntu-2004-cuda-11.4:202110-01
+    image: linux-cuda-11:2023.02.1
   resource_class: gpu.nvidia.small
 
 windows-cpu: &windows_cpu
@@ -64,44 +64,6 @@ version_parameters: &version_parameters
 #         wget -q 'https://s3.amazonaws.com/ossci-linux/nvidia_driver/NVIDIA-Linux-x86_64-430.40.run'
 #         sudo /bin/bash ./NVIDIA-Linux-x86_64-430.40.run -s --no-drm
 #         nvidia-smi
-
-install_cuda: &install_cuda
-  run:
-    name: Setup CUDA << parameters.cuda_version >>
-    working_directory: ~/
-    command: |
-      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
-      sudo dpkg -i cuda-keyring_1.0-1_all.deb
-      sudo apt-get update
-      sudo apt-get -y install cuda-${CUDA_VERSION}
-      sudo update-alternatives --install /usr/local/cuda cuda /usr/local/cuda-${CUDA_VERSION} 50
-      echo "Done installing CUDA ${CUDA_VERSION}"
-      sudo apt autoremove
-      sudo apt-get clean
-      sudo lsof | grep nvidia
-      sudo lsof /dev/nvidia*
-      echo "Kill All process"
-      sudo lsof | grep "nvidia" | awk '{print $2}' | sort -u | xargs -I {} sudo kill -9 {}
-      # lsmod | grep nvidia
-      sudo rmmod nvidia_uvm && sudo rmmod nvidia_drm && sudo rmmod nvidia_modeset && sudo rmmod nvidia
-      sudo modprobe nvidia
-      nvidia-smi
-      sudo update-alternatives --display cuda
-
-removecuda114: &removecuda114
-  run:
-    name: Remove CUDA 11.4
-    working_directory: ~/
-    command: |
-      echo "Remove CUDA 11.4"
-      sudo update-alternatives --remove cuda /usr/local/cuda-11.4
-      sudo apt-get -y remove --purge cuda-11-4
-      sudo apt autoremove
-      sudo apt-get clean
-      echo "Done removing CUDA 11.4"
-      sudo apt purge '*nvidia*' -y
-      sudo apt autoremove -y
-      echo "Done removing nvidia packages"
 
 add_ssh_keys: &add_ssh_keys
   # https://circleci.com/docs/2.0/add-ssh-key/
@@ -254,9 +216,6 @@ jobs:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20220503
 
-
-      - <<: *removecuda114
-      - <<: *install_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
