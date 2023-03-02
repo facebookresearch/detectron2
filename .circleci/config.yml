@@ -11,7 +11,7 @@ cpu: &cpu
 gpu: &gpu
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: windows-server-2019-vs2019:stable
+    image: windows-server-2022-gui:2022.10.1
   resource_class: windows.medium
   shell: powershell.exe
 
