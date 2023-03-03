@@ -25,7 +25,7 @@ from detectron2.utils.testing import (
     skipIfOnCPUCI,
     skipIfUnsupportedMinOpsetVersion,
     skipIfUnsupportedMinTorchVersion,
-    unregister_custom_op_onnx_export,
+    unregister_custom_op_onnx_export, skipIfOnPytorch1_10,
 )
 
 
@@ -46,6 +46,7 @@ class TestONNXTracingExport(unittest.TestCase):
         )
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
