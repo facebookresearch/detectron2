@@ -112,6 +112,7 @@ class TestTracing(unittest.TestCase):
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
