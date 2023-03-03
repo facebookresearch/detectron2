@@ -319,15 +319,19 @@ class SimpleTrainer(TrainerBase):
         loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
         prefix: str = "",
+        raise_nan: bool = True,
     ) -> None:
         if (self.iter + 1) % self.gather_metric_period == 0:
-            SimpleTrainer.write_metrics(loss_dict, data_time, prefix)
+            SimpleTrainer.write_metrics(
+                loss_dict, data_time, prefix, raise_nan=raise_nan
+            )
 
     @staticmethod
     def write_metrics(
         loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
         prefix: str = "",
+        raise_nan: bool = True,
     ) -> None:
         """
         Args:
@@ -357,14 +361,21 @@ class SimpleTrainer(TrainerBase):
             }
             total_losses_reduced = sum(metrics_dict.values())
             if not np.isfinite(total_losses_reduced):
-                raise FloatingPointError(
+                log_str = (
                     f"Loss became infinite or NaN at iteration={storage.iter}!\n"
                     f"loss_dict = {metrics_dict}"
                 )
-
-            storage.put_scalar("{}total_loss".format(prefix), total_losses_reduced)
-            if len(metrics_dict) > 1:
-                storage.put_scalars(**metrics_dict)
+                if raise_nan:
+                    raise FloatingPointError(log_str)
+                else:
+                    logger = logging.getLogger(__name__)
+                    logger.warning(log_str)
+            else:
+                # the storage iter step is maintained in TrainerBase.before_step()
+                # we could safely skip some iterations
+                storage.put_scalar("{}total_loss".format(prefix), total_losses_reduced)
+                if len(metrics_dict) > 1:
+                    storage.put_scalars(**metrics_dict)
 
     def state_dict(self):
         ret = super().state_dict()
@@ -434,7 +445,9 @@ class AMPTrainer(SimpleTrainer):
         self.optimizer.zero_grad()
         self.grad_scaler.scale(losses).backward()
 
-        self._write_metrics(loss_dict, data_time)
+        # self.grad_scaler will handle Nan/Inf internally, so no need to raise
+        # the exception here.
+        self._write_metrics(loss_dict, data_time, raise_nan=False)
 
         self.grad_scaler.step(self.optimizer)
         self.grad_scaler.update()
