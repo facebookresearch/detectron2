@@ -54,7 +54,7 @@ jobs:
         with:
           python-version: 3.10
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ env.pythonLocation }}/lib/python3.10/site-packages
