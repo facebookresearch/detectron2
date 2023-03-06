@@ -1,5 +1,5 @@
 name: CI
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 # Run linter with github actions for quick feedbacks.
 # Run macos tests with github actions. Linux (CPU & GPU) tests currently runs on CircleCI
@@ -24,7 +24,7 @@ jobs:
       - name: Lint
         run: |
           echo "Running isort"
-          isort -c -sp .
+          isort -c --sp .
           echo "Running black"
           black -l 100 --check .
           echo "Running flake8"
@@ -37,12 +37,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: ["1.12", "1.13"]
+        torch: [ "1.12", "1.13" ]
         include:
-          - torch: "1.12.1"
-            torchvision: "0.13.1"
-          - torch: "1.13.1"
-            torchvision: "0.14.1"
+          - torch: "1.12"
+            torchvision: "0.13.0"
+          - torch: "1.13"
+            torchvision: "0.14.0"
     env:
       # point datasets to ~/.torch so it's cached by CI
       DETECTRON2_DATASETS: ~/.torch/datasets
@@ -59,7 +59,7 @@ jobs:
           path: |
             ${{ env.pythonLocation }}/lib/python3.10/site-packages
             ~/.torch
-          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230227
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230307
 
       - name: Install dependencies
         run: |
