@@ -13,7 +13,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
       - name: Install dependencies
         # flake8-bugbear flake8-comprehensions are useful but not available internally
         run: |
