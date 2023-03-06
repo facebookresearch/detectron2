@@ -5,7 +5,7 @@ version: 2.1
 # -------------------------------------------------------------------------------------
 cpu: &cpu
   machine:
-    image: ubuntu-2204:2022.10.1
+    image: ubuntu-2204:2023.02.1
   resource_class: medium
 
 gpu: &gpu
