@@ -9,6 +9,7 @@ python -m pip install detectron2{d2_version} -f \\
   https://dl.fbaipublicfiles.com/detectron2/wheels/{cuda}/torch{torch}/index.html
 </code></pre> </details>"""
 CUDA_SUFFIX = {
+    "12.1": "cu121",
     "12.0": "cu120",
     "11.8": "cu118",
     "11.7": "cu117",
