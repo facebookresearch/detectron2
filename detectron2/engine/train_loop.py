@@ -71,6 +71,12 @@ class HookBase:
         """
         pass
 
+    def after_backward(self):
+        """
+        Called after the backward pass of each iteration.
+        """
+        pass
+
     def after_step(self):
         """
         Called after each iteration.
@@ -174,6 +180,10 @@ class TrainerBase:
 
         for h in self._hooks:
             h.before_step()
+
+    def after_backward(self):
+        for h in self._hooks:
+            h.after_backward()
 
     def after_step(self):
         for h in self._hooks:
@@ -287,6 +297,8 @@ class SimpleTrainer(TrainerBase):
         """
         self.optimizer.zero_grad()
         losses.backward()
+
+        self.after_backward()
 
         self._write_metrics(loss_dict, data_time)
 
@@ -433,6 +445,8 @@ class AMPTrainer(SimpleTrainer):
 
         self.optimizer.zero_grad()
         self.grad_scaler.scale(losses).backward()
+
+        self.after_backward()
 
         self._write_metrics(loss_dict, data_time)
 
