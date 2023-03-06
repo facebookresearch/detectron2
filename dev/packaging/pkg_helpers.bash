@@ -18,22 +18,25 @@ setup_cuda() {
   # and https://github.com/pytorch/vision/blob/main/packaging/pkg_helpers.bash for reference.
   export FORCE_CUDA=1
   case "$CU_VERSION" in
-
+    cu121)
+      export CUDA_HOME=/usr/local/cuda-12.1/
+      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6;9.0"
+      ;;
     cu120)
       export CUDA_HOME=/usr/local/cuda-12.0/
-      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
+      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6;9.0"
       ;;
     cu118)
       export CUDA_HOME=/usr/local/cuda-11.8/
-      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
+      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6;9.0"
       ;;
     cu117)
       export CUDA_HOME=/usr/local/cuda-11.7/
-      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
+      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6"
       ;;
     cu116)
       export CUDA_HOME=/usr/local/cuda-11.6/
-      export TORCH_CUDA_ARCH_LIST="3.5;5.0+PTX;6.0;7.0;7.5;8.0;8.6"
+      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6"
       ;;
     *)
       echo "Unrecognized CU_VERSION=$CU_VERSION"
