@@ -89,12 +89,6 @@ class InstancesList(object):
             ), "Adding a field of length {} to a Instances of length {}".format(data_len, len(self))
         self.batch_extra_fields[name] = value
 
-    def __setattr__(self, name, val):
-        if name in ["im_info", "indices", "batch_extra_fields", "image_size"]:
-            super().__setattr__(name, val)
-        else:
-            self.set(name, val)
-
     def __getattr__(self, name):
         if name not in self.batch_extra_fields:
             raise AttributeError("Cannot find field '{}' in the given Instances!".format(name))
@@ -523,7 +517,7 @@ class Caffe2MaskRCNNInference:
             assert len(pred_instances) == 1
             mask_probs_pred = pred_mask_logits.sigmoid()
             mask_probs_pred = alias(mask_probs_pred, "mask_fcn_probs")
-            pred_instances[0].pred_masks = mask_probs_pred
+            pred_instances[0].set("pred_masks", mask_probs_pred)
         else:
             mask_rcnn_inference(pred_mask_logits, pred_instances)
 
@@ -547,5 +541,5 @@ class Caffe2KeypointRCNNInference:
                 )
                 output = to_device(output, device)
                 output = alias(output, "keypoints_out")
-            pred_instances[0].pred_keypoints = output
+            pred_instances[0].set("pred_keypoints", output)
         return pred_keypoint_logits
