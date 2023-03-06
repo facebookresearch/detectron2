@@ -196,7 +196,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
         for scores, bbox_deltas, cell_anchors_tensor, feat_stride in zip(
             objectness_logits_pred,
             anchor_deltas_pred,
-            iter(self.anchor_generator.cell_anchors),
+            [b for (n, b) in self.anchor_generator.cell_anchors.named_buffers()],
             self.anchor_generator.strides,
         ):
             scores = scores.detach()
