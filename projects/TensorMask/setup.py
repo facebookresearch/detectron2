@@ -63,7 +63,7 @@ setup(
     version="0.1",
     author="FAIR",
     packages=find_packages(exclude=("configs", "tests")),
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
 )

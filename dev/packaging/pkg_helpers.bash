@@ -47,6 +47,7 @@ setup_cuda() {
 
 setup_wheel_python() {
   case "$PYTHON_VERSION" in
+    3.8) python_abi=cp38-cp38 ;;
     3.9) python_abi=cp39-cp39 ;;
     3.10) python_abi=cp310-cp310 ;;
     3.11) python_abi=cp311-cp311 ;;
