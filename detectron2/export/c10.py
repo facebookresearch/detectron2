@@ -10,7 +10,7 @@ from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference
-from detectron2.structures import Boxes, ImageList, Instances, Keypoints
+from detectron2.structures import Boxes, ImageList, Instances, Keypoints, RotatedBoxes
 
 from .shared import alias, to_device
 
@@ -88,12 +88,6 @@ class InstancesList(object):
                 len(self) == data_len
             ), "Adding a field of length {} to a Instances of length {}".format(data_len, len(self))
         self.batch_extra_fields[name] = value
-
-    def __setattr__(self, name, val):
-        if name in ["im_info", "indices", "batch_extra_fields", "image_size"]:
-            super().__setattr__(name, val)
-        else:
-            self.set(name, val)
 
     def __getattr__(self, name):
         if name not in self.batch_extra_fields:
@@ -196,7 +190,7 @@ class Caffe2RPN(Caffe2Compatible, rpn.RPN):
         for scores, bbox_deltas, cell_anchors_tensor, feat_stride in zip(
             objectness_logits_pred,
             anchor_deltas_pred,
-            iter(self.anchor_generator.cell_anchors),
+            [b for (n, b) in self.anchor_generator.cell_anchors.named_buffers()],
             self.anchor_generator.strides,
         ):
             scores = scores.detach()
@@ -420,7 +414,19 @@ class Caffe2FastRCNNOutputsInference:
 
         input_tensor_mode = proposals[0].proposal_boxes.tensor.shape[1] == box_dim + 1
 
-        rois = type(proposals[0].proposal_boxes).cat([p.proposal_boxes for p in proposals])
+        proposal_boxes = proposals[0].proposal_boxes
+        if isinstance(proposal_boxes, Caffe2Boxes):
+            rois = Caffe2Boxes.cat([p.proposal_boxes for p in proposals])
+        elif isinstance(proposal_boxes, RotatedBoxes):
+            rois = RotatedBoxes.cat([p.proposal_boxes for p in proposals])
+        elif isinstance(proposal_boxes, Boxes):
+            rois = Boxes.cat([p.proposal_boxes for p in proposals])
+        else:
+            raise NotImplementedError(
+                'Expected proposals[0].proposal_boxes to be type "Boxes", '
+                f"instead got {type(proposal_boxes)}"
+            )
+
         device, dtype = rois.tensor.device, rois.tensor.dtype
         if input_tensor_mode:
             im_info = proposals[0].image_size
@@ -523,7 +529,7 @@ class Caffe2MaskRCNNInference:
             assert len(pred_instances) == 1
             mask_probs_pred = pred_mask_logits.sigmoid()
             mask_probs_pred = alias(mask_probs_pred, "mask_fcn_probs")
-            pred_instances[0].pred_masks = mask_probs_pred
+            pred_instances[0].set("pred_masks", mask_probs_pred)
         else:
             mask_rcnn_inference(pred_mask_logits, pred_instances)
 
@@ -547,5 +553,5 @@ class Caffe2KeypointRCNNInference:
                 )
                 output = to_device(output, device)
                 output = alias(output, "keypoints_out")
-            pred_instances[0].pred_keypoints = output
+            pred_instances[0].set("pred_keypoints", output)
         return pred_keypoint_logits
