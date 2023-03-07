@@ -10,7 +10,7 @@ from detectron2.layers.roi_align_rotated import ROIAlignRotated
 from detectron2.modeling import poolers
 from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference
-from detectron2.structures import Boxes, ImageList, Instances, Keypoints
+from detectron2.structures import Boxes, ImageList, Instances, Keypoints, RotatedBoxes
 
 from .shared import alias, to_device
 
@@ -414,7 +414,19 @@ class Caffe2FastRCNNOutputsInference:
 
         input_tensor_mode = proposals[0].proposal_boxes.tensor.shape[1] == box_dim + 1
 
-        rois = type(proposals[0].proposal_boxes).cat([p.proposal_boxes for p in proposals])
+        proposal_boxes = proposals[0].proposal_boxes
+        if isinstance(proposal_boxes, Caffe2Boxes):
+            rois = Caffe2Boxes.cat([p.proposal_boxes for p in proposals])
+        elif isinstance(proposal_boxes, RotatedBoxes):
+            rois = RotatedBoxes.cat([p.proposal_boxes for p in proposals])
+        elif isinstance(proposal_boxes, Boxes):
+            rois = Boxes.cat([p.proposal_boxes for p in proposals])
+        else:
+            raise NotImplementedError(
+                'Expected proposals[0].proposal_boxes to be type "Boxes", '
+                f"instead got {type(proposal_boxes)}"
+            )
+
         device, dtype = rois.tensor.device, rois.tensor.dtype
         if input_tensor_mode:
             im_info = proposals[0].image_size
