@@ -13,6 +13,8 @@ from typing import List, Optional
 import torch
 from torch.nn import functional as F
 
+from detectron2.utils.env import TORCH_VERSION
+
 
 def shapes_to_tensor(x: List[int], device: Optional[torch.device] = None) -> torch.Tensor:
     """
@@ -34,6 +36,15 @@ def shapes_to_tensor(x: List[int], device: Optional[torch.device] = None) -> tor
             ret = ret.to(device=device)
         return ret
     return torch.as_tensor(x, device=device)
+
+
+def check_if_dynamo_compiling():
+    if TORCH_VERSION >= (1, 14):
+        from torch._dynamo import is_compiling
+
+        return is_compiling()
+    else:
+        return False
 
 
 def cat(tensors: List[torch.Tensor], dim: int = 0):
@@ -103,12 +114,15 @@ class Conv2d(torch.nn.Conv2d):
         # 2. features needed by exporting module to torchscript are added in PyTorch 1.6 or
         # later version, `Conv2d` in these PyTorch versions has already supported empty inputs.
         if not torch.jit.is_scripting():
-            with warnings.catch_warnings(record=True):
-                if x.numel() == 0 and self.training:
-                    # https://github.com/pytorch/pytorch/issues/12013
-                    assert not isinstance(
-                        self.norm, torch.nn.SyncBatchNorm
-                    ), "SyncBatchNorm does not support empty inputs!"
+            # Dynamo doesn't support context managers yet
+            is_dynamo_compiling = check_if_dynamo_compiling()
+            if not is_dynamo_compiling:
+                with warnings.catch_warnings(record=True):
+                    if x.numel() == 0 and self.training:
+                        # https://github.com/pytorch/pytorch/issues/12013
+                        assert not isinstance(
+                            self.norm, torch.nn.SyncBatchNorm
+                        ), "SyncBatchNorm does not support empty inputs!"
 
         x = F.conv2d(
             x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups
