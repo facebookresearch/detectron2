@@ -7,7 +7,7 @@ jobs:
   linter:
     runs-on: ubuntu-latest
     # run on PRs, or commits to facebookresearch (not internal)
-    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    # if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -24,7 +24,7 @@ jobs:
       - name: Lint
         run: |
           echo "Running isort"
-          isort -c --sp .
+          isort -c --sp . .
           echo "Running black"
           black -l 100 --check .
           echo "Running flake8"
