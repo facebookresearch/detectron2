@@ -151,15 +151,15 @@ install_linux_dep: &install_linux_dep
         # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
         # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
         pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
+        pip install -v --progress-bar off omegaconf
         if [[ "${PYTORCH_VERSION}" == "master" ]]; then
           echo "Installing torch/torchvision from ${PYTORCH_INDEX}"
           # Remove first, in case it's in the CI cache
           pip uninstall -y torch torchvision
           pip install -v --progress-bar off --pre torch torchvision --extra-index-url ${PYTORCH_INDEX}
-          pip install -v --progress-bar off omegaconf
         else
           echo "Installing torch==${PYTORCH_VERSION} and torchvision==${TORCHVISION_VERSION} from ${PYTORCH_INDEX}"
-          pip install -v --progress-bar off torch==${PYTORCH_VERSION} torchvision==${TORCHVISION_VERSION} -f ${PYTORCH_INDEX}
+          pip install -v --progress-bar off torch==${PYTORCH_VERSION} torchvision==${TORCHVISION_VERSION} --extra-index-url ${PYTORCH_INDEX}
         fi
 
         python -c 'import torch; print("PyTorch Version:", torch.__version__)'
@@ -217,7 +217,7 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -229,7 +229,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
   linux_cuda111_tests:
     <<: *cuda111
@@ -242,7 +242,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
       - <<: *install_python
       - <<: *install_linux_dep
@@ -254,7 +254,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
   linux_cuda113_tests:
     <<: *cuda114
@@ -267,7 +267,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
       - <<: *setupcuda113
       - <<: *removecuda114
@@ -281,7 +281,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
 
   windows_cpu_build:
@@ -295,7 +295,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
       - run:
           name: Install Dependencies
@@ -326,7 +326,7 @@ jobs:
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990006
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20990007
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
