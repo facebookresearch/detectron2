@@ -10,12 +10,13 @@ cpu: &cpu
 
 cuda111: &cuda111
   machine:
-    # NOTE: use a cuda version that's supported by all our pytorch versions
+    # NOTE: use a cuda version that's supported by PyTorch <= 1.10
     image: ubuntu-1604-cuda-11.1:202012-01
   resource_class: gpu.nvidia.small
 
 cuda114: &cuda114
   machine:
+    # NOTE: use a cuda version that's supported by PyTorch 1.10+ and <= 1.12.1
     image: ubuntu-2004-cuda-11.4:202110-01
   resource_class: gpu.nvidia.small
 
@@ -76,8 +77,27 @@ setupcuda113: &setupcuda113
       sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
       sudo apt-get update
       sudo apt-get -y install cuda-11-3
-      sudo update-alternatives --install /usr/local/cuda cuda /usr/local/cuda-11.3 50
+      sudo update-alternatives --install /usr/local/cuda cuda /usr/local/cuda-11.3 130
       echo "Done installing CUDA 11.3"
+      sudo apt autoremove
+      sudo apt-get clean
+      nvidia-smi
+      sudo update-alternatives --display cuda
+
+setupcuda117: &setupcuda117
+  run:
+    name: Setup CUDA 11.7
+    working_directory: ~/
+    command: |
+      sudo curl https://cli-assets.heroku.com/apt/release.key | sudo apt-key add -
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+      sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
+      sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
+      sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+      sudo apt-get update
+      sudo apt-get -y install cuda-11-7
+      sudo update-alternatives --install /usr/local/cuda cuda /usr/local/cuda-11.7 170
+      echo "Done installing CUDA 11.7"
       sudo apt autoremove
       sudo apt-get clean
       nvidia-smi
@@ -288,6 +308,32 @@ jobs:
             - ~/.torch
           key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230309
 
+  linux_cuda117_tests:
+    <<: *cuda114
+    <<: *version_parameters
+
+    working_directory: ~/detectron2
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230227
+
+      - <<: *setupcuda117
+      - <<: *removecuda114
+      - <<: *install_python
+      - <<: *install_linux_dep
+      - <<: *install_detectron2
+      - <<: *run_unittests
+      - <<: *uninstall_tests
+
+      - save_cache:
+          paths:
+            - /opt/circleci/.pyenv
+            - ~/.torch
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230227
 
   windows_cpu_build:
     <<: *windows_cpu
@@ -385,6 +431,18 @@ workflows:
           torchvision_version: '0.13.1+cu113'
           python_version: '3.9.4'
           pytorch_index: 'https://download.pytorch.org/whl/cu113'
+      - linux_cuda117_tests:
+          name: linux_cuda117_tests_pytorch1.130_python39
+          pytorch_version: '1.13.0+cu117'
+          torchvision_version: '0.14.0+cu117'
+          python_version: '3.9.4'
+          pytorch_index: 'https://download.pytorch.org/whl/cu117'
+      - linux_cuda117_tests:
+          name: linux_cuda117_tests_pytorch_master_python39
+          pytorch_version: 'master'
+          torchvision_version: 'main'
+          python_version: '3.9.4'
+          pytorch_index: 'https://download.pytorch.org/whl/nightly/cu117'
       - windows_cpu_build:
           name: windows_cpu_build_pytorch1.10
           pytorch_version: '1.10+cpu'
@@ -399,5 +457,11 @@ workflows:
           name: windows_cpu_build_pytorch_1.12
           pytorch_version: '1.12.1+cpu'
           torchvision_version: '0.13.1+cpu'
+          python_version: '3.7.3'
+          pytorch_index: 'https://download.pytorch.org/whl/cpu'
+      - windows_cpu_build:
+          name: windows_cpu_build_pytorch_1.130
+          pytorch_version: '1.13.0+cpu'
+          torchvision_version: '0.14.0+cpu'
           python_version: '3.7.3'
           pytorch_index: 'https://download.pytorch.org/whl/cpu'
