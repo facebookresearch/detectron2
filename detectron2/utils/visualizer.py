@@ -1200,7 +1200,7 @@ class Visualizer:
         modified_lightness = 0.0 if modified_lightness < 0.0 else modified_lightness
         modified_lightness = 1.0 if modified_lightness > 1.0 else modified_lightness
         modified_color = colorsys.hls_to_rgb(polygon_color[0], modified_lightness, polygon_color[2])
-        return modified_color
+        return tuple(np.clip(modified_color, 0.0, 1.0))
 
     def _convert_boxes(self, boxes):
         """
