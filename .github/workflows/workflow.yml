@@ -65,7 +65,7 @@ jobs:
           path: |
             ${{ env.pythonLocation }}/lib/python3.8/site-packages
             ~/.torch
-          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20990007
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20990008
 
       - name: Install dependencies
         run: |
