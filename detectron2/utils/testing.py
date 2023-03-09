@@ -181,6 +181,20 @@ def min_torch_version(min_version: str) -> bool:
     return installed_version >= min_version
 
 
+def max_torch_version(max_version: str) -> bool:
+    """
+    Returns True when torch's  version is at most `max_version`.
+    """
+    try:
+        import torch
+    except ImportError:
+        return False
+
+    installed_version = version.parse(torch.__version__.split("+")[0])
+    max_version = version.parse(max_version)
+    return installed_version <= max_version
+
+
 def has_dynamic_axes(onnx_model):
     """
     Return True when all ONNX input/output have only dynamic axes for all ranks
@@ -309,6 +323,14 @@ def skipIfUnsupportedMinTorchVersion(min_version):
     """
     reason = f"module 'torch' has __version__ {torch.__version__}" f", required is: {min_version}"
     return unittest.skipIf(not min_torch_version(min_version), reason)
+
+
+def skipIfUnsupportedMaxTorchVersion(max_version):
+    """
+    Skips tests for PyTorch versions newer than max_version.
+    """
+    reason = f"module 'torch' has __version__ {torch.__version__}" f", required is: {max_version}"
+    return unittest.skipIf(not max_torch_version(max_version), reason)
 
 
 # TODO: Remove after PyTorch 1.11.1+ is used by detectron2's CI

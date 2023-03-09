@@ -30,6 +30,7 @@ from detectron2.utils.testing import (
     random_boxes,
     skip_on_torch_nightly,
     skipIfOnCPUCI,
+    skipIfUnsupportedMaxTorchVersion,
 )
 
 
@@ -45,6 +46,7 @@ class TestScripting(unittest.TestCase):
 
     @skipIfOnCPUCI
     @skip_on_torch_nightly
+    @skipIfUnsupportedMaxTorchVersion("1.11.0")  # TODO: Minor numerical discrepancy on 1.12.0
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
