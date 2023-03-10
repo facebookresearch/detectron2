@@ -63,6 +63,26 @@ class TestEventWriter(unittest.TestCase):
                 p2.write()
             self.assertNotIn("eta", logs.output[0])
 
+    def testPrintNonLosses(self):
+        with EventStorage() as s:
+            p1 = CommonMetricPrinter(10)
+            p2 = CommonMetricPrinter()
+
+            s.put_scalar("time", 1.0)
+            s.put_scalar("[metric]bn_stat", 1.0)
+            s.step()
+            s.put_scalar("time", 1.0)
+            s.put_scalar("[metric]bn_stat", 1.0)
+            s.step()
+
+            with self.assertLogs("detectron2.utils.events") as logs:
+                p1.write()
+            self.assertIn("[metric]bn_stat", logs.output[0])
+
+            with self.assertLogs("detectron2.utils.events") as logs:
+                p2.write()
+            self.assertIn("[metric]bn_stat", logs.output[0])
+
     def testSmoothingWithWindowSize(self):
         with tempfile.TemporaryDirectory(
             prefix="detectron2_tests"
