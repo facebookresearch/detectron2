@@ -221,9 +221,7 @@ class TrainerBase:
                     h.load_state_dict(value)
                     break
             else:
-                logger.warning(
-                    f"Cannot find the hook '{key}', its state_dict is ignored."
-                )
+                logger.warning(f"Cannot find the hook '{key}', its state_dict is ignored.")
 
 
 class SimpleTrainer(TrainerBase):
@@ -368,8 +366,7 @@ class SimpleTrainer(TrainerBase):
 
             # average the rest metrics
             metrics_dict = {
-                k: np.mean([x[k] for x in all_metrics_dict])
-                for k in all_metrics_dict[0].keys()
+                k: np.mean([x[k] for x in all_metrics_dict]) for k in all_metrics_dict[0].keys()
             }
             total_losses_reduced = sum(metrics_dict.values())
             if not np.isfinite(total_losses_reduced):
@@ -414,9 +411,7 @@ class AMPTrainer(SimpleTrainer):
             grad_scaler: torch GradScaler to automatically scale gradients.
             precision: torch.dtype as the target precision to cast to in computations
         """
-        unsupported = (
-            "AMPTrainer does not support single-process multi-device training!"
-        )
+        unsupported = "AMPTrainer does not support single-process multi-device training!"
         if isinstance(model, DistributedDataParallel):
             assert not (model.device_ids and len(model.device_ids) > 1), unsupported
         assert not isinstance(model, DataParallel), unsupported
@@ -436,9 +431,7 @@ class AMPTrainer(SimpleTrainer):
         Implement the AMP training logic.
         """
         assert self.model.training, "[AMPTrainer] model was changed to eval mode!"
-        assert (
-            torch.cuda.is_available()
-        ), "[AMPTrainer] CUDA is required for AMP training!"
+        assert torch.cuda.is_available(), "[AMPTrainer] CUDA is required for AMP training!"
         from torch.cuda.amp import autocast
 
         start = time.perf_counter()

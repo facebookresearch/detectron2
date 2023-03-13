@@ -27,9 +27,7 @@ def _process_panoptic_to_semantic(input_panoptic, output_semantic, segments, id_
     Image.fromarray(output).save(output_semantic)
 
 
-def separate_coco_semantic_from_panoptic(
-    panoptic_json, panoptic_root, sem_seg_root, categories
-):
+def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root, sem_seg_root, categories):
     """
     Create semantic segmentation annotations from panoptic segmentation
     annotations, to be used by PanopticFPN.

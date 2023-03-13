@@ -88,9 +88,7 @@ class TestTrainer(unittest.TestCase):
                 data = [json.loads(line.strip()) for line in f]
                 self.assertEqual([x["iteration"] for x in data], [19, 39, 49, 50])
                 # the eval metric is in the last line with iter 50
-                self.assertIn(
-                    "metric", data[-1], "Eval metric must be in last line of JSON!"
-                )
+                self.assertIn("metric", data[-1], "Eval metric must be in last line of JSON!")
 
             # test logged messages from CommonMetricPrinter
             self.assertEqual(len(logs.output), 3)
@@ -131,9 +129,7 @@ class TestTrainer(unittest.TestCase):
                 for key in ["data_time", "total_loss"]:
                     history = trainer.storage.history(key).values()
                     history_iters = [h[1] for h in history]
-                    self.assertEqual(
-                        history_iters, [4, 9, 14, 19, 24, 29, 34, 39, 44, 49]
-                    )
+                    self.assertEqual(history_iters, [4, 9, 14, 19, 24, 29, 34, 39, 44, 49])
                     for i in range(len(data)):
                         # written metric should equal to the median of 2 most recent logged metrics
                         logged1, logged2 = history[2 * i][0], history[2 * i + 1][0]
@@ -188,9 +184,7 @@ class TestTrainer(unittest.TestCase):
             )
             checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
             checkpointer.resume_or_load("non_exist.pth")
-            self.assertEqual(
-                trainer.iter, 11
-            )  # last finished iter number (0-based in Trainer)
+            self.assertEqual(trainer.iter, 11)  # last finished iter number (0-based in Trainer)
             # number of times `scheduler.step()` was called (1-based)
             self.assertEqual(scheduler.last_epoch, 12)
             self.assertAlmostEqual(opt.param_groups[0]["lr"], 1e-5)
@@ -225,12 +219,8 @@ class TestTrainer(unittest.TestCase):
                 checkpointer = Checkpointer(model, d, opt=opt, trainer=trainer)
                 trainer.register_hooks(
                     [
-                        hooks.EvalHook(
-                            test_period, lambda: {metric_name: next(metrics)}
-                        ),
-                        hooks.BestCheckpointer(
-                            test_period, checkpointer, metric_name, mode=mode
-                        ),
+                        hooks.EvalHook(test_period, lambda: {metric_name: next(metrics)}),
+                        hooks.BestCheckpointer(test_period, checkpointer, metric_name, mode=mode),
                     ]
                 )
                 with mock.patch.object(checkpointer, "save") as mock_save_method:
@@ -243,8 +233,6 @@ class TestTrainer(unittest.TestCase):
             cfg.OUTPUT_DIR = os.path.join(d, "yacs")
             default_setup(cfg, {})
 
-            cfg = model_zoo.get_config(
-                "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py"
-            )
+            cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py")
             cfg.train.output_dir = os.path.join(d, "omegaconf")
             default_setup(cfg, {})

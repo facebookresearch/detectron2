@@ -81,9 +81,7 @@ def fast_rcnn_inference_rotated(
             nms_thresh,
             topk_per_image,
         )
-        for scores_per_image, boxes_per_image, image_shape in zip(
-            scores, boxes, image_shapes
-        )
+        for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
     return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
 
@@ -189,9 +187,7 @@ class RROIHeads(StandardROIHeads):
         assert (
             not self.mask_on and not self.keypoint_on
         ), "Mask/Keypoints not supported in Rotated ROIHeads."
-        assert (
-            not self.train_on_pred_boxes
-        ), "train_on_pred_boxes not implemented for RROIHeads!"
+        assert not self.train_on_pred_boxes, "train_on_pred_boxes not implemented for RROIHeads!"
 
     @classmethod
     def _init_box_head(cls, cfg, input_shape):
@@ -214,9 +210,7 @@ class RROIHeads(StandardROIHeads):
         )
         box_head = build_box_head(
             cfg,
-            ShapeSpec(
-                channels=in_channels, height=pooler_resolution, width=pooler_resolution
-            ),
+            ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution),
         )
         # This line is the only difference v.s. StandardROIHeads
         box_predictor = RotatedFastRCNNOutputLayers(cfg, box_head.output_shape)
@@ -270,9 +264,7 @@ class RROIHeads(StandardROIHeads):
 
             if has_gt:
                 sampled_targets = matched_idxs[sampled_idxs]
-                proposals_per_image.gt_boxes = targets_per_image.gt_boxes[
-                    sampled_targets
-                ]
+                proposals_per_image.gt_boxes = targets_per_image.gt_boxes[sampled_targets]
 
             num_bg_samples.append((gt_classes == self.num_classes).sum().item())
             num_fg_samples.append(gt_classes.numel() - num_bg_samples[-1])

@@ -256,9 +256,7 @@ class FCOS(DenseDetector):
             "loss_fcos_ctr": ctrness_loss / normalizer,
         }
 
-    def compute_ctrness_targets(
-        self, anchors: List[Boxes], gt_boxes: List[torch.Tensor]
-    ):
+    def compute_ctrness_targets(self, anchors: List[Boxes], gt_boxes: List[torch.Tensor]):
         anchors = Boxes.cat(anchors).tensor  # Rx4
         reg_targets = [self.box2box_transform.get_deltas(anchors, m) for m in gt_boxes]
         reg_targets = torch.stack(reg_targets, dim=0)  # NxRx4
@@ -330,9 +328,7 @@ class FCOSHead(RetinaNetHead):
     """
 
     def __init__(self, *, input_shape: List[ShapeSpec], conv_dims: List[int], **kwargs):
-        super().__init__(
-            input_shape=input_shape, conv_dims=conv_dims, num_anchors=1, **kwargs
-        )
+        super().__init__(input_shape=input_shape, conv_dims=conv_dims, num_anchors=1, **kwargs)
         # Unlike original FCOS, we do not add an additional learnable scale layer
         # because it's found to have no benefits after normalizing regression targets by stride.
         self._num_features = len(input_shape)

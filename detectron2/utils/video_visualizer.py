@@ -75,23 +75,11 @@ class VideoVisualizer:
         if num_instances == 0:
             return frame_visualizer.output
 
-        boxes = (
-            predictions.pred_boxes.tensor.numpy()
-            if predictions.has("pred_boxes")
-            else None
-        )
+        boxes = predictions.pred_boxes.tensor.numpy() if predictions.has("pred_boxes") else None
         scores = predictions.scores if predictions.has("scores") else None
-        classes = (
-            predictions.pred_classes.numpy()
-            if predictions.has("pred_classes")
-            else None
-        )
-        keypoints = (
-            predictions.pred_keypoints if predictions.has("pred_keypoints") else None
-        )
-        colors = (
-            predictions.COLOR if predictions.has("COLOR") else [None] * len(predictions)
-        )
+        classes = predictions.pred_classes.numpy() if predictions.has("pred_classes") else None
+        keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
+        colors = predictions.COLOR if predictions.has("COLOR") else [None] * len(predictions)
         periods = predictions.ID_period if predictions.has("ID_period") else None
         period_threshold = self.metadata.get("period_threshold", 0)
         visibilities = (
@@ -114,16 +102,12 @@ class VideoVisualizer:
             else:
                 # ToDo: clean old assign color method and use a default tracker to assign id
                 detected = [
-                    _DetectedInstance(
-                        classes[i], boxes[i], mask_rle=None, color=colors[i], ttl=8
-                    )
+                    _DetectedInstance(classes[i], boxes[i], mask_rle=None, color=colors[i], ttl=8)
                     for i in range(num_instances)
                 ]
                 colors = self._assign_colors(detected)
 
-        labels = _create_text_labels(
-            classes, scores, self.metadata.get("thing_classes", None)
-        )
+        labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             # any() returns uint8 tensor
@@ -147,9 +131,7 @@ class VideoVisualizer:
             else [y[0] for y in filter(lambda x: x[1], zip(colors, visibilities))]
         )  # noqa
         frame_visualizer.overlay_instances(
-            boxes=None
-            if masks is not None
-            else boxes[visibilities],  # boxes are a bit distracting
+            boxes=None if masks is not None else boxes[visibilities],  # boxes are a bit distracting
             masks=None if masks is None else masks[visibilities],
             labels=labels,
             keypoints=None if keypoints is None else keypoints[visibilities],
@@ -211,9 +193,7 @@ class VideoVisualizer:
 
         category_ids = [x["category_id"] for x in sinfo]
         detected = [
-            _DetectedInstance(
-                category_ids[i], bbox=None, mask_rle=masks_rles[i], color=None, ttl=8
-            )
+            _DetectedInstance(category_ids[i], bbox=None, mask_rle=masks_rles[i], color=None, ttl=8)
             for i in range(num_instances)
         ]
         colors = self._assign_colors(detected)

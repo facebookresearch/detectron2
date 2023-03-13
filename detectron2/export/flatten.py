@@ -67,17 +67,14 @@ class Schema:
 
 @dataclass
 class ListSchema(Schema):
-    schemas: List[
-        Schema
-    ]  # the schemas that define how to flatten each element in the list
+    schemas: List[Schema]  # the schemas that define how to flatten each element in the list
     sizes: List[int]  # the flattened length of each element
 
     def __call__(self, values):
         values = self._split(values, self.sizes)
         if len(values) != len(self.schemas):
             raise ValueError(
-                f"Values has length {len(values)} but schemas "
-                f"has length {len(self.schemas)}!"
+                f"Values has length {len(values)} but schemas " f"has length {len(self.schemas)}!"
             )
         values = [m(v) for m, v in zip(self.schemas, values)]
         return list(values)
@@ -251,9 +248,7 @@ class TracingAdapter(nn.Module):
                 generalizing the traced graph to new inputs.
         """
         super().__init__()
-        if isinstance(
-            model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
-        ):
+        if isinstance(model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)):
             model = model.module
         self.model = model
         if not isinstance(inputs, tuple):

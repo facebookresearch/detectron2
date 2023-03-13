@@ -66,26 +66,17 @@ class Attention(nn.Module):
     def forward(self, x):
         B, H, W, _ = x.shape
         # qkv with shape (3, B, nHead, H * W, C)
-        qkv = (
-            self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
-        )
+        qkv = self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
         # q, k, v with shape (B * nHead, H * W, C)
         q, k, v = qkv.reshape(3, B * self.num_heads, H * W, -1).unbind(0)
 
         attn = (q * self.scale) @ k.transpose(-2, -1)
 
         if self.use_rel_pos:
-            attn = add_decomposed_rel_pos(
-                attn, q, self.rel_pos_h, self.rel_pos_w, (H, W), (H, W)
-            )
+            attn = add_decomposed_rel_pos(attn, q, self.rel_pos_h, self.rel_pos_w, (H, W), (H, W))
 
         attn = attn.softmax(dim=-1)
-        x = (
-            (attn @ v)
-            .view(B, self.num_heads, H, W, -1)
-            .permute(0, 2, 3, 1, 4)
-            .reshape(B, H, W, -1)
-        )
+        x = (attn @ v).view(B, self.num_heads, H, W, -1).permute(0, 2, 3, 1, 4).reshape(B, H, W, -1)
         x = self.proj(x)
 
         return x
@@ -202,9 +193,7 @@ class Block(nn.Module):
 
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.norm2 = norm_layer(dim)
-        self.mlp = Mlp(
-            in_features=dim, hidden_features=int(dim * mlp_ratio), act_layer=act_layer
-        )
+        self.mlp = Mlp(in_features=dim, hidden_features=int(dim * mlp_ratio), act_layer=act_layer)
 
         self.window_size = window_size
 
@@ -308,9 +297,7 @@ class ViT(Backbone):
 
         if use_abs_pos:
             # Initialize absolute positional embedding with pretrain image size.
-            num_patches = (pretrain_img_size // patch_size) * (
-                pretrain_img_size // patch_size
-            )
+            num_patches = (pretrain_img_size // patch_size) * (pretrain_img_size // patch_size)
             num_positions = (num_patches + 1) if pretrain_use_cls_token else num_patches
             self.pos_embed = nn.Parameter(torch.zeros(1, num_positions, embed_dim))
         else:
@@ -415,9 +402,7 @@ class SimpleFeaturePyramid(Backbone):
         self.scale_factors = scale_factors
 
         input_shapes = net.output_shape()
-        strides = [
-            int(input_shapes[in_feature].stride / scale) for scale in scale_factors
-        ]
+        strides = [int(input_shapes[in_feature].stride / scale) for scale in scale_factors]
         _assert_strides_are_log2_contiguous(strides)
 
         dim = input_shapes[in_feature].channels
@@ -472,9 +457,7 @@ class SimpleFeaturePyramid(Backbone):
         self.in_feature = in_feature
         self.top_block = top_block
         # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
-        self._out_feature_strides = {
-            "p{}".format(int(math.log2(s))): s for s in strides
-        }
+        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
         # top block output feature maps.
         if self.top_block is not None:
             for s in range(stage, stage + self.top_block.num_levels):
@@ -515,9 +498,7 @@ class SimpleFeaturePyramid(Backbone):
             if self.top_block.in_feature in bottom_up_features:
                 top_block_in_feature = bottom_up_features[self.top_block.in_feature]
             else:
-                top_block_in_feature = results[
-                    self._out_features.index(self.top_block.in_feature)
-                ]
+                top_block_in_feature = results[self._out_features.index(self.top_block.in_feature)]
             results.extend(self.top_block(top_block_in_feature))
         assert len(self._out_features) == len(results)
         return {f: res for f, res in zip(self._out_features, results)}

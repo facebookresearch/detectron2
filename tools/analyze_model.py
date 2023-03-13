@@ -59,17 +59,13 @@ def do_flop(cfg):
         counts += flops.by_operator()
         total_flops.append(flops.total())
 
-    logger.info(
-        "Flops table computed from only one input sample:\n" + flop_count_table(flops)
-    )
+    logger.info("Flops table computed from only one input sample:\n" + flop_count_table(flops))
     logger.info(
         "Average GFlops for each type of operators:\n"
         + str([(k, v / (idx + 1) / 1e9) for k, v in counts.items()])
     )
     logger.info(
-        "Total GFlops: {:.1f}±{:.1f}".format(
-            np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9
-        )
+        "Total GFlops: {:.1f}±{:.1f}".format(np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9)
     )
 
 

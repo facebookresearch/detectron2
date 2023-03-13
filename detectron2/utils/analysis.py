@@ -74,9 +74,7 @@ class FlopCountAnalysis(fvcore.nn.FlopCountAnalysis):
         self.set_op_handle(**{k: None for k in _IGNORED_OPS})
 
 
-def flop_count_operators(
-    model: nn.Module, inputs: list
-) -> typing.DefaultDict[str, float]:
+def flop_count_operators(model: nn.Module, inputs: list) -> typing.DefaultDict[str, float]:
     """
     Implement operator-level flops counting using jit.
     This is a wrapper of :func:`fvcore.nn.flop_count` and adds supports for standard
@@ -130,9 +128,7 @@ def activation_count_operators(
     Returns:
         Counter: activation count per operator
     """
-    return _wrapper_count_operators(
-        model=model, inputs=inputs, mode=ACTIVATIONS_MODE, **kwargs
-    )
+    return _wrapper_count_operators(model=model, inputs=inputs, mode=ACTIVATIONS_MODE, **kwargs)
 
 
 def _wrapper_count_operators(
@@ -148,9 +144,7 @@ def _wrapper_count_operators(
     inputs = [{"image": tensor_input}]  # remove other keys, in case there are any
 
     old_train = model.training
-    if isinstance(
-        model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
-    ):
+    if isinstance(model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)):
         model = model.module
     wrapper = TracingAdapter(model, inputs)
     wrapper.eval()
@@ -159,9 +153,7 @@ def _wrapper_count_operators(
     elif mode == ACTIVATIONS_MODE:
         ret = activation_count(wrapper, (tensor_input,), **kwargs)
     else:
-        raise NotImplementedError(
-            "Count for mode {} is not supported yet.".format(mode)
-        )
+        raise NotImplementedError("Count for mode {} is not supported yet.".format(mode))
     # compatible with change in fvcore
     if isinstance(ret, tuple):
         ret = ret[0]

@@ -55,9 +55,7 @@ class BaseHungarianTracker(BaseTracker):
     def from_config(cls, cfg: CfgNode_) -> Dict:
         raise NotImplementedError("Calling HungarianTracker::from_config")
 
-    def build_cost_matrix(
-        self, instances: Instances, prev_instances: Instances
-    ) -> np.ndarray:
+    def build_cost_matrix(self, instances: Instances, prev_instances: Instances) -> np.ndarray:
         raise NotImplementedError("Calling HungarianTracker::build_matrix")
 
     def update(self, instances: Instances) -> Instances:
@@ -68,9 +66,7 @@ class BaseHungarianTracker(BaseTracker):
             self._untracked_prev_idx = set(range(len(self._prev_instances)))
             cost_matrix = self.build_cost_matrix(instances, self._prev_instances)
             matched_idx, matched_prev_idx = linear_sum_assignment(cost_matrix)
-            instances = self._process_matched_idx(
-                instances, matched_idx, matched_prev_idx
-            )
+            instances = self._process_matched_idx(instances, matched_idx, matched_prev_idx)
             instances = self._process_unmatched_idx(instances, matched_idx)
             instances = self._process_unmatched_prev_idx(instances, matched_prev_idx)
         self._prev_instances = copy.deepcopy(instances)
@@ -114,9 +110,7 @@ class BaseHungarianTracker(BaseTracker):
             instances.lost_frame_count[matched_idx[i]] = 0
         return instances
 
-    def _process_unmatched_idx(
-        self, instances: Instances, matched_idx: np.ndarray
-    ) -> Instances:
+    def _process_unmatched_idx(self, instances: Instances, matched_idx: np.ndarray) -> Instances:
         untracked_idx = set(range(len(instances))).difference(set(matched_idx))
         for idx in untracked_idx:
             instances.ID[idx] = self._id_count
@@ -144,16 +138,13 @@ class BaseHungarianTracker(BaseTracker):
         prev_ID_period = self._prev_instances.ID_period
         if instances.has("pred_masks"):
             prev_masks = list(self._prev_instances.pred_masks)
-        untracked_prev_idx = set(range(len(self._prev_instances))).difference(
-            set(matched_prev_idx)
-        )
+        untracked_prev_idx = set(range(len(self._prev_instances))).difference(set(matched_prev_idx))
         for idx in untracked_prev_idx:
             x_left, y_top, x_right, y_bot = prev_bboxes[idx]
             if (
                 (1.0 * (x_right - x_left) / self._video_width < self._min_box_rel_dim)
                 or (1.0 * (y_bot - y_top) / self._video_height < self._min_box_rel_dim)
-                or self._prev_instances.lost_frame_count[idx]
-                >= self._max_lost_frame_count
+                or self._prev_instances.lost_frame_count[idx] >= self._max_lost_frame_count
                 or prev_ID_period[idx] <= self._min_instance_period
             ):
                 continue
@@ -166,21 +157,13 @@ class BaseHungarianTracker(BaseTracker):
                 self._prev_instances.lost_frame_count[idx] + 1
             )
             if instances.has("pred_masks"):
-                untracked_instances.pred_masks.append(
-                    prev_masks[idx].numpy().astype(np.uint8)
-                )
+                untracked_instances.pred_masks.append(prev_masks[idx].numpy().astype(np.uint8))
 
-        untracked_instances.pred_boxes = Boxes(
-            torch.FloatTensor(untracked_instances.pred_boxes)
-        )
-        untracked_instances.pred_classes = torch.IntTensor(
-            untracked_instances.pred_classes
-        )
+        untracked_instances.pred_boxes = Boxes(torch.FloatTensor(untracked_instances.pred_boxes))
+        untracked_instances.pred_classes = torch.IntTensor(untracked_instances.pred_classes)
         untracked_instances.scores = torch.FloatTensor(untracked_instances.scores)
         if instances.has("pred_masks"):
-            untracked_instances.pred_masks = torch.IntTensor(
-                untracked_instances.pred_masks
-            )
+            untracked_instances.pred_masks = torch.IntTensor(untracked_instances.pred_masks)
         else:
             untracked_instances.remove("pred_masks")
 

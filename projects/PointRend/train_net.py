@@ -102,9 +102,7 @@ class Trainer(DefaultTrainer):
     @classmethod
     def build_train_loader(cls, cfg):
         if "SemanticSegmentor" in cfg.MODEL.META_ARCHITECTURE:
-            mapper = DatasetMapper(
-                cfg, is_train=True, augmentations=build_sem_seg_train_aug(cfg)
-            )
+            mapper = DatasetMapper(cfg, is_train=True, augmentations=build_sem_seg_train_aug(cfg))
         else:
             mapper = None
         return build_detection_train_loader(cfg, mapper=mapper)

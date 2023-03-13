@@ -20,9 +20,7 @@ class CombinedDataLoader:
 
     BATCH_COUNT = 100
 
-    def __init__(
-        self, loaders: Collection[Loader], batch_size: int, ratios: Sequence[float]
-    ):
+    def __init__(self, loaders: Collection[Loader], batch_size: int, ratios: Sequence[float]):
         self.loaders = loaders
         self.batch_size = batch_size
         self.ratios = ratios
@@ -39,9 +37,7 @@ class CombinedDataLoader:
                 k = self.batch_size * self.BATCH_COUNT
                 indices = random.choices(range(len(self.loaders)), self.ratios, k=k)
             try:
-                batch = [
-                    _pooled_next(iters[i], pool[i]) for i in indices[: self.batch_size]
-                ]
+                batch = [_pooled_next(iters[i], pool[i]) for i in indices[: self.batch_size]]
             except StopIteration:
                 break
             indices = indices[self.batch_size :]

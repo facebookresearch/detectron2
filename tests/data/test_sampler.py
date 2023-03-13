@@ -45,9 +45,7 @@ class TestSamplerDeterministic(unittest.TestCase):
 
         dataset = DatasetFromList(list(range(100)))
         dataset = ToIterableDataset(dataset, sampler)
-        data_loader = data.DataLoader(
-            dataset, num_workers=0, collate_fn=operator.itemgetter(0)
-        )
+        data_loader = data.DataLoader(dataset, num_workers=0, collate_fn=operator.itemgetter(0))
 
         output = list(itertools.islice(data_loader, 100))
         self.assertEqual(output, gt_output)
@@ -85,10 +83,8 @@ class TestRepeatFactorTrainingSampler(unittest.TestCase):
             {"annotations": []},
         ]
 
-        rep_factors = (
-            RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                dataset_dicts, repeat_thresh
-            )
+        rep_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
+            dataset_dicts, repeat_thresh
         )
 
         expected_rep_factors = torch.tensor([math.sqrt(3 / 2), 1.0, 1.0])
@@ -107,9 +103,7 @@ class TestInferenceSampler(unittest.TestCase):
             [range(11), range(11, 22), range(22, 32), range(32, 42)],
         ]
 
-        for size, world_size, expected_result in zip(
-            sizes, world_sizes, expected_results
-        ):
+        for size, world_size, expected_result in zip(sizes, world_sizes, expected_results):
             with self.subTest(f"size={size}, world_size={world_size}"):
                 local_indices = [
                     InferenceSampler._get_local_indices(size, world_size, r)

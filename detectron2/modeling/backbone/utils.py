@@ -34,9 +34,7 @@ def window_partition(x, window_size):
     Hp, Wp = H + pad_h, W + pad_w
 
     x = x.view(B, Hp // window_size, window_size, Wp // window_size, window_size, C)
-    windows = (
-        x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
-    )
+    windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
     return windows, (Hp, Wp)
 
 
@@ -55,9 +53,7 @@ def window_unpartition(windows, window_size, pad_hw, hw):
     Hp, Wp = pad_hw
     H, W = hw
     B = windows.shape[0] // (Hp * Wp // window_size // window_size)
-    x = windows.view(
-        B, Hp // window_size, Wp // window_size, window_size, window_size, -1
-    )
+    x = windows.view(B, Hp // window_size, Wp // window_size, window_size, window_size, -1)
     x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, Hp, Wp, -1)
 
     if Hp > H or Wp > W:
@@ -124,9 +120,7 @@ def add_decomposed_rel_pos(attn, q, rel_pos_h, rel_pos_w, q_size, k_size):
     rel_w = torch.einsum("bhwc,wkc->bhwk", r_q, Rw)
 
     attn = (
-        attn.view(B, q_h, q_w, k_h, k_w)
-        + rel_h[:, :, :, :, None]
-        + rel_w[:, :, :, None, :]
+        attn.view(B, q_h, q_w, k_h, k_w) + rel_h[:, :, :, :, None] + rel_w[:, :, :, None, :]
     ).view(B, q_h * q_w, k_h * k_w)
 
     return attn

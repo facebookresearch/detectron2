@@ -92,9 +92,7 @@ if __name__ == "__main__":
     seed_all_rng(12345)
 
     assert len(sys.argv) >= 2, "Please provide number of points to sample per instance"
-    dataset_dir = os.path.join(
-        os.getenv("DETECTRON2_DATASETS", "datasets"), "coco/annotations"
-    )
+    dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "coco/annotations")
     num_points_per_instance = int(sys.argv[1])
     if len(sys.argv) == 3:
         repeat = int(sys.argv[2])
@@ -111,9 +109,7 @@ if __name__ == "__main__":
             os.path.join(dataset_dir, "{}.json".format(s)),
             os.path.join(
                 dataset_dir,
-                "{}_n{}_v{}_without_masks.json".format(
-                    s, num_points_per_instance, version + 1
-                ),
+                "{}_n{}_v{}_without_masks.json".format(s, num_points_per_instance, version + 1),
             ),
             num_points_per_instance,
         )

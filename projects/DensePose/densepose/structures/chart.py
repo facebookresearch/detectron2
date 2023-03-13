@@ -68,6 +68,4 @@ class DensePoseChartPredictorOutput:
         fine_segm = self.fine_segm.to(device)
         u = self.u.to(device)
         v = self.v.to(device)
-        return DensePoseChartPredictorOutput(
-            coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v
-        )
+        return DensePoseChartPredictorOutput(coarse_segm=coarse_segm, fine_segm=fine_segm, u=u, v=v)

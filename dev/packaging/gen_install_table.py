@@ -37,9 +37,7 @@ def gen_header(torch_versions):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--d2-version", help="detectron2 version number, default to empty"
-    )
+    parser.add_argument("--d2-version", help="detectron2 version number, default to empty")
     args = parser.parse_args()
     d2_version = f"=={args.d2_version}" if args.d2_version else ""
 
@@ -66,9 +64,7 @@ if __name__ == "__main__":
         cu_suffix = CUDA_SUFFIX[cu]
         for torch in torch_versions:
             if (torch, cu) in all_versions:
-                cell = template.format(
-                    d2_version=d2_version, cuda=cu_suffix, torch=torch
-                )
+                cell = template.format(d2_version=d2_version, cuda=cu_suffix, torch=torch)
             else:
                 cell = ""
             table += f"""<td align="left">{cell} </td> """

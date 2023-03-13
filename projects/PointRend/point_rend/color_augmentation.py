@@ -77,9 +77,7 @@ class ColorAugSSDTransform(Transform):
 
     def contrast(self, img):
         if random.randrange(2):
-            return self.convert(
-                img, alpha=random.uniform(self.contrast_low, self.contrast_high)
-            )
+            return self.convert(img, alpha=random.uniform(self.contrast_low, self.contrast_high))
         return img
 
     def saturation(self, img):
@@ -96,8 +94,7 @@ class ColorAugSSDTransform(Transform):
         if random.randrange(2):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
             img[:, :, 0] = (
-                img[:, :, 0].astype(int)
-                + random.randint(-self.hue_delta, self.hue_delta)
+                img[:, :, 0].astype(int) + random.randint(-self.hue_delta, self.hue_delta)
             ) % 180
             return cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
         return img

@@ -44,9 +44,7 @@ class TestCaffe2Export(unittest.TestCase):
                 # This requires onnx, which is not yet available on public CI
                 c2_model = tracer.export_caffe2()
                 c2_model.save_protobuf(d)
-                c2_model.save_graph(
-                    os.path.join(d, "test.svg"), inputs=copy.deepcopy(inputs)
-                )
+                c2_model.save_graph(os.path.join(d, "test.svg"), inputs=copy.deepcopy(inputs))
 
                 c2_model = Caffe2Model.load_protobuf(d)
                 c2_model(inputs)[0]["instances"]
@@ -59,9 +57,7 @@ class TestCaffe2Export(unittest.TestCase):
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def testMaskRCNNGPU(self):
-        self._test_model(
-            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", device="cuda"
-        )
+        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", device="cuda")
 
     def testRetinaNet(self):
         self._test_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml")

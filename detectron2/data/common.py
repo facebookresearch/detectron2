@@ -31,9 +31,7 @@ def _shard_iterator_dataloader_worker(iterable):
         # do nothing
         yield from iterable
     else:
-        yield from itertools.islice(
-            iterable, worker_info.id, None, worker_info.num_workers
-        )
+        yield from itertools.islice(iterable, worker_info.id, None, worker_info.num_workers)
 
 
 class _MapIterableDataset(data.IterableDataset):
@@ -150,9 +148,7 @@ class _TorchSerializedList(object):
         self._addr = np.asarray([len(x) for x in self._lst], dtype=np.int64)
         self._addr = torch.from_numpy(np.cumsum(self._addr))
         self._lst = torch.from_numpy(np.concatenate(self._lst))
-        logger.info(
-            "Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024**2)
-        )
+        logger.info("Serialized dataset takes {:.2f} MiB".format(len(self._lst) / 1024**2))
 
     def __len__(self):
         return len(self._addr)
@@ -234,9 +230,7 @@ class ToIterableDataset(data.IterableDataset):
     to an iterable-style dataset.
     """
 
-    def __init__(
-        self, dataset: data.Dataset, sampler: Sampler, shard_sampler: bool = True
-    ):
+    def __init__(self, dataset: data.Dataset, sampler: Sampler, shard_sampler: bool = True):
         """
         Args:
             dataset: an old-style dataset with ``__getitem__``

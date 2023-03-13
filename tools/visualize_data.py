@@ -80,9 +80,7 @@ if __name__ == "__main__":
 
                 visualizer = Visualizer(img, metadata=metadata, scale=scale)
                 target_fields = per_image["instances"].get_fields()
-                labels = [
-                    metadata.thing_classes[i] for i in target_fields["gt_classes"]
-                ]
+                labels = [metadata.thing_classes[i] for i in target_fields["gt_classes"]]
                 vis = visualizer.overlay_instances(
                     labels=labels,
                     boxes=target_fields.get("gt_boxes", None),
@@ -91,9 +89,7 @@ if __name__ == "__main__":
                 )
                 output(vis, str(per_image["image_id"]) + ".jpg")
     else:
-        dicts = list(
-            chain.from_iterable([DatasetCatalog.get(k) for k in cfg.DATASETS.TRAIN])
-        )
+        dicts = list(chain.from_iterable([DatasetCatalog.get(k) for k in cfg.DATASETS.TRAIN]))
         if cfg.MODEL.KEYPOINT_ON:
             dicts = filter_images_with_few_keypoints(dicts, 1)
         for dic in tqdm.tqdm(dicts):

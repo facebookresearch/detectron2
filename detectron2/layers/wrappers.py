@@ -17,9 +17,7 @@ import warnings
 from typing import List, Optional
 
 
-def shapes_to_tensor(
-    x: List[int], device: Optional[torch.device] = None
-) -> torch.Tensor:
+def shapes_to_tensor(x: List[int], device: Optional[torch.device] = None) -> torch.Tensor:
     """
     Turn a list of integer scalars or integer Tensor scalars into a vector,
     in a way that's both traceable and scriptable.

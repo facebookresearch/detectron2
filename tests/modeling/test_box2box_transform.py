@@ -36,9 +36,7 @@ class TestBox2BoxTransform(unittest.TestCase):
         b2b_tfm = Box2BoxTransform(weights=weights)
 
         with torch.no_grad():
-            func = torch.jit.trace(
-                b2b_tfm.apply_deltas, (torch.randn(10, 20), torch.randn(10, 4))
-            )
+            func = torch.jit.trace(b2b_tfm.apply_deltas, (torch.randn(10, 20), torch.randn(10, 4)))
 
             o = func(torch.randn(10, 20), torch.randn(10, 4))
             self.assertEqual(o.shape, (10, 20))
@@ -67,13 +65,10 @@ class TestBox2BoxTransformRotated(unittest.TestCase):
             dst_boxes = dst_boxes.to(device=device)
             deltas = b2b_transform.get_deltas(src_boxes, dst_boxes)
             dst_boxes_reconstructed = b2b_transform.apply_deltas(deltas, src_boxes)
-            assert torch.allclose(
-                dst_boxes[:, :4], dst_boxes_reconstructed[:, :4], atol=1e-5
-            )
+            assert torch.allclose(dst_boxes[:, :4], dst_boxes_reconstructed[:, :4], atol=1e-5)
             # angle difference has to be normalized
             assert torch.allclose(
-                (dst_boxes[:, 4] - dst_boxes_reconstructed[:, 4] + 180.0) % 360.0
-                - 180.0,
+                (dst_boxes[:, 4] - dst_boxes_reconstructed[:, 4] + 180.0) % 360.0 - 180.0,
                 torch.zeros_like(dst_boxes[:, 4]),
                 atol=1e-4,
             )
@@ -93,9 +88,7 @@ class TestBox2BoxTransformLinear(unittest.TestCase):
             dst_boxes = dst_boxes.to(device=device)
             deltas = b2b_tfm.get_deltas(src_boxes, dst_boxes)
             dst_boxes_reconstructed = b2b_tfm.apply_deltas(deltas, src_boxes)
-            self.assertTrue(
-                torch.allclose(dst_boxes, dst_boxes_reconstructed, atol=1e-3)
-            )
+            self.assertTrue(torch.allclose(dst_boxes, dst_boxes_reconstructed, atol=1e-3))
 
 
 if __name__ == "__main__":

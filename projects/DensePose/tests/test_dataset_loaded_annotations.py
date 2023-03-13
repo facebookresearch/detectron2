@@ -50,9 +50,7 @@ class TestDatasetLoadedAnnotations(unittest.TestCase):
 
     def generic_test(self, dataset_info, n_inst, loader_fun):
         datasets_root = DENSEPOSE_ANNOTATIONS_DIR
-        annotations_fpath = maybe_prepend_base_path(
-            datasets_root, dataset_info.annotations_fpath
-        )
+        annotations_fpath = maybe_prepend_base_path(datasets_root, dataset_info.annotations_fpath)
         images_root = maybe_prepend_base_path(datasets_root, dataset_info.images_root)
         image_annotation_dicts = loader_fun(
             annotations_json_file=annotations_fpath,

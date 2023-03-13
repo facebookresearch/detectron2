@@ -36,9 +36,7 @@ def setup(args):
     cfg.freeze()
     default_setup(cfg, args)
     # Setup logger for "densepose" module
-    setup_logger(
-        output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="densepose"
-    )
+    setup_logger(output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="densepose")
     return cfg
 
 
@@ -73,9 +71,7 @@ if __name__ == "__main__":
     args = default_argument_parser().parse_args()
     cfg = setup(args)
     timeout = (
-        DEFAULT_TIMEOUT
-        if cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE
-        else timedelta(hours=4)
+        DEFAULT_TIMEOUT if cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE else timedelta(hours=4)
     )
     print("Command Line Args:", args)
     launch(

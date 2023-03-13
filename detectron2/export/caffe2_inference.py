@@ -62,16 +62,13 @@ class ProtobufModel(torch.nn.Module):
 
         predict_net = self.net.Proto()
         input_device_types = {
-            (name, 0): _get_device_type(tensor)
-            for name, tensor in zip(self._input_blobs, inputs)
+            (name, 0): _get_device_type(tensor) for name, tensor in zip(self._input_blobs, inputs)
         }
         device_type_map = infer_device_type(
             predict_net, known_status=input_device_types, device_name_style="pytorch"
         )
         ssa, versions = core.get_ssa(predict_net)
-        versioned_outputs = [
-            (name, versions[name]) for name in predict_net.external_output
-        ]
+        versioned_outputs = [(name, versions[name]) for name in predict_net.external_output]
         output_devices = [device_type_map[outp] for outp in versioned_outputs]
         return output_devices
 
@@ -108,9 +105,7 @@ class ProtobufModel(torch.nn.Module):
                 # Needs to create uninitialized blob to make the net runable.
                 # This is "equivalent" to: ws.RemoveBlob(b) then ws.CreateBlob(b),
                 # but there'no such API.
-                ws.FeedBlob(
-                    b, f"{b}, a C++ native class of type nullptr (uninitialized)."
-                )
+                ws.FeedBlob(b, f"{b}, a C++ native class of type nullptr (uninitialized).")
 
         # Cast output to torch.Tensor on the desired device
         output_devices = (
@@ -151,13 +146,9 @@ class ProtobufDetectionModel(torch.nn.Module):
         self.device = get_pb_arg_vals(predict_net, "device", b"cpu").decode("ascii")
 
         if convert_outputs is None:
-            meta_arch = get_pb_arg_vals(
-                predict_net, "meta_architecture", b"GeneralizedRCNN"
-            )
+            meta_arch = get_pb_arg_vals(predict_net, "meta_architecture", b"GeneralizedRCNN")
             meta_arch = META_ARCH_CAFFE2_EXPORT_TYPE_MAP[meta_arch.decode("ascii")]
-            self._convert_outputs = meta_arch.get_outputs_converter(
-                predict_net, init_net
-            )
+            self._convert_outputs = meta_arch.get_outputs_converter(predict_net, init_net)
         else:
             self._convert_outputs = convert_outputs
 
@@ -170,7 +161,5 @@ class ProtobufDetectionModel(torch.nn.Module):
     def forward(self, batched_inputs):
         c2_inputs = self._convert_inputs(batched_inputs)
         c2_results = self.protobuf_model(c2_inputs)
-        c2_results = dict(
-            zip(self.protobuf_model.net.Proto().external_output, c2_results)
-        )
+        c2_results = dict(zip(self.protobuf_model.net.Proto().external_output, c2_results))
         return self._convert_outputs(batched_inputs, c2_inputs, c2_results)

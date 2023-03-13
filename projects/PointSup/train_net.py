@@ -77,9 +77,7 @@ def setup(args):
     cfg.freeze()
     default_setup(cfg, args)
     # Setup logger for "point_sup" module
-    setup_logger(
-        output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="point_sup"
-    )
+    setup_logger(output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="point_sup")
     return cfg
 
 

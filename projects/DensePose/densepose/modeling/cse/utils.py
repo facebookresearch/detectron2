@@ -4,9 +4,7 @@ import torch
 from torch.nn import functional as F
 
 
-def squared_euclidean_distance_matrix(
-    pts1: torch.Tensor, pts2: torch.Tensor
-) -> torch.Tensor:
+def squared_euclidean_distance_matrix(pts1: torch.Tensor, pts2: torch.Tensor) -> torch.Tensor:
     """
     Get squared Euclidean Distance Matrix
     Computes pairwise squared Euclidean distances between points
@@ -24,9 +22,7 @@ def squared_euclidean_distance_matrix(
     return edm.contiguous()
 
 
-def normalize_embeddings(
-    embeddings: torch.Tensor, epsilon: float = 1e-6
-) -> torch.Tensor:
+def normalize_embeddings(embeddings: torch.Tensor, epsilon: float = 1e-6) -> torch.Tensor:
     """
     Normalize N D-dimensional embedding vectors arranged in a tensor [N, D]
 
@@ -36,9 +32,7 @@ def normalize_embeddings(
     Return:
         Normalized embeddings (tensor [N, D]), such that L2 vector norms are all equal to 1.
     """
-    return embeddings / torch.clamp(
-        embeddings.norm(p=None, dim=1, keepdim=True), min=epsilon
-    )
+    return embeddings / torch.clamp(embeddings.norm(p=None, dim=1, keepdim=True), min=epsilon)
 
 
 def get_closest_vertices_mask_from_ES(
@@ -80,9 +74,7 @@ def get_closest_vertices_mask_from_ES(
         chunk_embeddings = all_embeddings[size_chunk * chunk : size_chunk * (chunk + 1)]
         edm.append(
             torch.argmin(
-                squared_euclidean_distance_matrix(
-                    chunk_embeddings, mesh_vertex_embeddings
-                ),
+                squared_euclidean_distance_matrix(chunk_embeddings, mesh_vertex_embeddings),
                 dim=1,
             )
         )

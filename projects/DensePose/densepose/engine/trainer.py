@@ -62,9 +62,7 @@ class SampleCountingLoader:
                     num_inst = len(data["instances"])
                     num_inst_per_dataset[dataset_name] += num_inst
                 for dataset_name in num_inst_per_dataset:
-                    storage.put_scalar(
-                        f"batch/{dataset_name}", num_inst_per_dataset[dataset_name]
-                    )
+                    storage.put_scalar(f"batch/{dataset_name}", num_inst_per_dataset[dataset_name])
                 yield batch
             except StopIteration:
                 break
@@ -130,9 +128,7 @@ class Trainer(DefaultTrainer):
             else:
                 try:
                     embedder = cls.extract_embedder_from_model(model)
-                    evaluator = cls.build_evaluator(
-                        cfg, dataset_name, embedder=embedder
-                    )
+                    evaluator = cls.build_evaluator(cfg, dataset_name, embedder=embedder)
                 except NotImplementedError:
                     logger.warn(
                         "No evaluator found. Use `DefaultTrainer.test(evaluators=)`, "
@@ -151,9 +147,7 @@ class Trainer(DefaultTrainer):
                 ), "Evaluator must return a dict on the main process. Got {} instead.".format(
                     results_i
                 )
-                logger.info(
-                    "Evaluation results for {} in csv format:".format(dataset_name)
-                )
+                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
                 print_csv_format(results_i)
 
         if len(results) == 1:
@@ -212,12 +206,10 @@ class Trainer(DefaultTrainer):
             weight_decay_bias=cfg.SOLVER.WEIGHT_DECAY_BIAS,
             overrides={
                 "features": {
-                    "lr": cfg.SOLVER.BASE_LR
-                    * cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.FEATURES_LR_FACTOR,
+                    "lr": cfg.SOLVER.BASE_LR * cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.FEATURES_LR_FACTOR,
                 },
                 "embeddings": {
-                    "lr": cfg.SOLVER.BASE_LR
-                    * cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR,
+                    "lr": cfg.SOLVER.BASE_LR * cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_LR_FACTOR,
                 },
             },
         )
@@ -233,9 +225,7 @@ class Trainer(DefaultTrainer):
 
     @classmethod
     def build_test_loader(cls, cfg: CfgNode, dataset_name):
-        return build_detection_test_loader(
-            cfg, dataset_name, mapper=DatasetMapper(cfg, False)
-        )
+        return build_detection_test_loader(cfg, dataset_name, mapper=DatasetMapper(cfg, False))
 
     @classmethod
     def build_train_loader(cls, cfg: CfgNode):
@@ -244,9 +234,7 @@ class Trainer(DefaultTrainer):
             return data_loader
         model = cls.build_model(cfg)
         model.to(cfg.BOOTSTRAP_MODEL.DEVICE)
-        DetectionCheckpointer(model).resume_or_load(
-            cfg.BOOTSTRAP_MODEL.WEIGHTS, resume=False
-        )
+        DetectionCheckpointer(model).resume_or_load(cfg.BOOTSTRAP_MODEL.WEIGHTS, resume=False)
         inference_based_loaders, ratios = build_inference_based_loaders(cfg, model)
         loaders = [data_loader] + inference_based_loaders
         ratios = [1.0] + ratios

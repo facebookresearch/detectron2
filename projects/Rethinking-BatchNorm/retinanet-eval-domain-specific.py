@@ -20,9 +20,7 @@ if __name__ == "__main__":
     checkpoint = sys.argv[1]
     cfg = LazyConfig.load_rel("./configs/retinanet_SyncBNhead.py")
     model = cfg.model
-    model.head.norm = lambda c: CycleBatchNormList(
-        len(model.head_in_features), num_features=c
-    )
+    model.head.norm = lambda c: CycleBatchNormList(len(model.head_in_features), num_features=c)
     model = instantiate(model)
     model.cuda()
     DetectionCheckpointer(model).load(checkpoint)

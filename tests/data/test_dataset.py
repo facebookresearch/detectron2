@@ -140,9 +140,7 @@ class TestDataLoader(unittest.TestCase):
 
         cfg.DATASETS.TRAIN = ["iter_data"]
         DatasetCatalog.register("iter_data", lambda: MyData())
-        dl = build_detection_train_loader(
-            cfg, mapper=lambda x: x, aspect_ratio_grouping=False
-        )
+        dl = build_detection_train_loader(cfg, mapper=lambda x: x, aspect_ratio_grouping=False)
         next(iter(dl))
 
         dl = build_detection_test_loader(cfg, "iter_data", mapper=lambda x: x)

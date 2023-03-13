@@ -136,9 +136,7 @@ Within a config file, relative import can only import other config files.
         if not PathManager.isfile(cur_file):
             cur_file_no_suffix = cur_file[: -len(".py")]
             if PathManager.isdir(cur_file_no_suffix):
-                raise ImportError(
-                    f"Cannot import from {cur_file_no_suffix}." + relative_import_err
-                )
+                raise ImportError(f"Cannot import from {cur_file_no_suffix}." + relative_import_err)
             else:
                 raise ImportError(
                     f"Cannot import name {relative_import_path} from "
@@ -291,9 +289,7 @@ class LazyConfig:
                 # Without this option, the type information of the dataclass will be erased.
                 structured_config_mode=SCMode.INSTANTIATE,
             )
-            dumped = yaml.dump(
-                dict, default_flow_style=None, allow_unicode=True, width=9999
-            )
+            dumped = yaml.dump(dict, default_flow_style=None, allow_unicode=True, width=9999)
             with PathManager.open(filename, "w") as f:
                 f.write(dumped)
 
@@ -363,9 +359,7 @@ class LazyConfig:
                 value = o.value()
                 if o.is_delete():
                     # TODO support this
-                    raise NotImplementedError(
-                        "deletion is not yet a supported override"
-                    )
+                    raise NotImplementedError("deletion is not yet a supported override")
                 safe_update(cfg, key, value)
         else:
             # Fallback. Does not support all the features and error checking like hydra.
@@ -432,11 +426,7 @@ class LazyConfig:
                     + "}"
                 )
             elif isinstance(obj, list):
-                return (
-                    "["
-                    + ",".join(_to_str(x, inside_call=inside_call) for x in obj)
-                    + "]"
-                )
+                return "[" + ",".join(_to_str(x, inside_call=inside_call) for x in obj) + "]"
             else:
                 return repr(obj)
 

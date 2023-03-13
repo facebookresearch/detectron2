@@ -46,9 +46,7 @@ def extract_data_for_mask_loss_from_matches(
         f"but the actual shape is {estimated_segm.shape[2:]}"
     )
     mask_size = estimated_segm.shape[2]
-    num_proposals = sum(
-        inst.proposal_boxes.tensor.size(0) for inst in proposals_targets
-    )
+    num_proposals = sum(inst.proposal_boxes.tensor.size(0) for inst in proposals_targets)
     num_estimated = estimated_segm.shape[0]
     assert (
         num_proposals == num_estimated

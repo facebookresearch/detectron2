@@ -276,9 +276,7 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
         features = self._wrapped_model.backbone(images.tensor)
         proposals, _ = self._wrapped_model.proposal_generator(images, features)
         with self.roi_heads_patcher.mock_roi_heads():
-            detector_results, _ = self._wrapped_model.roi_heads(
-                images, features, proposals
-            )
+            detector_results, _ = self._wrapped_model.roi_heads(images, features, proposals)
         return tuple(detector_results[0].flatten())
 
     @staticmethod
@@ -287,9 +285,7 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
             _, im_info = c2_inputs
             image_sizes = [[int(im[0]), int(im[1])] for im in im_info]
             results = assemble_rcnn_outputs_by_name(image_sizes, c2_results)
-            return meta_arch.GeneralizedRCNN._postprocess(
-                results, batched_inputs, image_sizes
-            )
+            return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
 
         return f
 
@@ -315,9 +311,7 @@ class Caffe2RetinaNet(Caffe2MetaArch):
             return_tensors.append(features[i])
 
         pred_logits, pred_anchor_deltas = self._wrapped_model.head(features)
-        for i, (box_cls_i, box_delta_i) in enumerate(
-            zip(pred_logits, pred_anchor_deltas)
-        ):
+        for i, (box_cls_i, box_delta_i) in enumerate(zip(pred_logits, pred_anchor_deltas)):
             return_tensors.append(alias(box_cls_i, "box_cls_{}".format(i)))
             return_tensors.append(alias(box_delta_i, "box_delta_{}".format(i)))
 
@@ -387,9 +381,7 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         bbox_reg_weights = get_pb_arg_floats(predict_net, "bbox_reg_weights", None)
         self.box2box_transform = Box2BoxTransform(weights=tuple(bbox_reg_weights))
         self.test_score_thresh = get_pb_arg_valf(predict_net, "score_threshold", None)
-        self.test_topk_candidates = get_pb_arg_vali(
-            predict_net, "topk_candidates", None
-        )
+        self.test_topk_candidates = get_pb_arg_vali(predict_net, "topk_candidates", None)
         self.test_nms_thresh = get_pb_arg_valf(predict_net, "nms_threshold", None)
         self.max_detections_per_image = get_pb_arg_vali(
             predict_net, "max_detections_per_image", None
@@ -403,9 +395,7 @@ class Caffe2RetinaNet(Caffe2MetaArch):
             "_decode_multi_level_predictions",
             "_decode_per_level_predictions",
         ]:
-            setattr(
-                self, meth, functools.partial(getattr(meta_arch.RetinaNet, meth), self)
-            )
+            setattr(self, meth, functools.partial(getattr(meta_arch.RetinaNet, meth), self))
 
         def f(batched_inputs, c2_inputs, c2_results):
             _, im_info = c2_inputs
@@ -421,30 +411,20 @@ class Caffe2RetinaNet(Caffe2MetaArch):
                 image_sizes,
             )
 
-            num_features = len(
-                [x for x in c2_results.keys() if x.startswith("box_cls_")]
-            )
-            pred_logits = [
-                c2_results["box_cls_{}".format(i)] for i in range(num_features)
-            ]
-            pred_anchor_deltas = [
-                c2_results["box_delta_{}".format(i)] for i in range(num_features)
-            ]
+            num_features = len([x for x in c2_results.keys() if x.startswith("box_cls_")])
+            pred_logits = [c2_results["box_cls_{}".format(i)] for i in range(num_features)]
+            pred_anchor_deltas = [c2_results["box_delta_{}".format(i)] for i in range(num_features)]
 
             # For each feature level, feature should have the same batch size and
             # spatial dimension as the box_cls and box_delta.
             dummy_features = [x.clone()[:, 0:0, :, :] for x in pred_logits]
             # self.num_classess can be inferred
-            self.num_classes = pred_logits[0].shape[1] // (
-                pred_anchor_deltas[0].shape[1] // 4
-            )
+            self.num_classes = pred_logits[0].shape[1] // (pred_anchor_deltas[0].shape[1] // 4)
 
             results = self.forward_inference(
                 dummy_images, dummy_features, [pred_logits, pred_anchor_deltas]
             )
-            return meta_arch.GeneralizedRCNN._postprocess(
-                results, batched_inputs, image_sizes
-            )
+            return meta_arch.GeneralizedRCNN._postprocess(results, batched_inputs, image_sizes)
 
         return f
 

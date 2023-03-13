@@ -56,9 +56,7 @@ def create_local_process_group(num_workers_per_machine: int) -> None:
     num_machines = get_world_size() // num_workers_per_machine
     machine_rank = get_rank() // num_workers_per_machine
     for i in range(num_machines):
-        ranks_on_i = list(
-            range(i * num_workers_per_machine, (i + 1) * num_workers_per_machine)
-        )
+        ranks_on_i = list(range(i * num_workers_per_machine, (i + 1) * num_workers_per_machine))
         pg = dist.new_group(ranks_on_i)
         if i == machine_rank:
             _LOCAL_PROCESS_GROUP = pg
@@ -153,9 +151,7 @@ def all_gather(data, group=None):
     if get_world_size() == 1:
         return [data]
     if group is None:
-        group = (
-            _get_global_gloo_group()
-        )  # use CPU group by default, to reduce GPU RAM usage.
+        group = _get_global_gloo_group()  # use CPU group by default, to reduce GPU RAM usage.
     world_size = dist.get_world_size(group)
     if world_size == 1:
         return [data]

@@ -76,7 +76,5 @@ class VertexFeatureEmbedder(nn.Module):
             for name in ["features", "embeddings"]:
                 if name in data:
                     getattr(self, name).copy_(
-                        torch.tensor(data[name])
-                        .float()
-                        .to(device=getattr(self, name).device)
+                        torch.tensor(data[name]).float().to(device=getattr(self, name).device)
                     )

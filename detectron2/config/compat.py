@@ -102,9 +102,7 @@ def guess_version(cfg: CN, filename: str) -> int:
         ret = 1
 
     if ret is not None:
-        logger.warning(
-            "Config '{}' has no VERSION. Assuming it to be v{}.".format(filename, ret)
-        )
+        logger.warning("Config '{}' has no VERSION. Assuming it to be v{}.".format(filename, ret))
     else:
         ret = _C.VERSION
         logger.warning(
@@ -247,6 +245,4 @@ class ConverterV2(_RenameConverter):
         _rename(cfg, "MODEL.ANCHOR_GENERATOR.SIZES", "MODEL.RPN.ANCHOR_SIZES")
         cfg.MODEL.RETINANET.ANCHOR_ASPECT_RATIOS = cfg.MODEL.RPN.ANCHOR_ASPECT_RATIOS
         cfg.MODEL.RETINANET.ANCHOR_SIZES = cfg.MODEL.RPN.ANCHOR_SIZES
-        cfg.MODEL.RETINANET.ANCHOR_STRIDES = (
-            []
-        )  # this is not used anywhere in any version
+        cfg.MODEL.RETINANET.ANCHOR_STRIDES = []  # this is not used anywhere in any version

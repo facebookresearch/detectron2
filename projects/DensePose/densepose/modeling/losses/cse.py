@@ -41,30 +41,20 @@ class DensePoseCseLoss:
         self.w_embed = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_WEIGHT
         self.segm_loss = MaskOrSegmentationLoss(cfg)
         self.embed_loss = DensePoseCseLoss.create_embed_loss(cfg)
-        self.do_shape2shape = (
-            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.ENABLED
-        )
+        self.do_shape2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.ENABLED
         if self.do_shape2shape:
-            self.w_shape2shape = (
-                cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.WEIGHT
-            )
+            self.w_shape2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.WEIGHT
             self.shape2shape_loss = ShapeToShapeCycleLoss(cfg)
-        self.do_pix2shape = (
-            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.ENABLED
-        )
+        self.do_pix2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.ENABLED
         if self.do_pix2shape:
-            self.w_pix2shape = (
-                cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.WEIGHT
-            )
+            self.w_pix2shape = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.PIX_TO_SHAPE_CYCLE_LOSS.WEIGHT
             self.pix2shape_loss = PixToShapeCycleLoss(cfg)
 
     @classmethod
     def create_embed_loss(cls, cfg: CfgNode):
         # registry not used here, since embedding losses are currently local
         # and are not used anywhere else
-        return cls._EMBED_LOSS_REGISTRY[
-            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_NAME
-        ](cfg)
+        return cls._EMBED_LOSS_REGISTRY[cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_LOSS_NAME](cfg)
 
     def __call__(
         self,
@@ -75,9 +65,7 @@ class DensePoseCseLoss:
         if not len(proposals_with_gt):
             return self.produce_fake_losses(densepose_predictor_outputs, embedder)
         accumulator = CseAnnotationsAccumulator()
-        packed_annotations = extract_packed_annotations_from_matches(
-            proposals_with_gt, accumulator
-        )
+        packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
         if packed_annotations is None:
             return self.produce_fake_losses(densepose_predictor_outputs, embedder)
         h, w = densepose_predictor_outputs.embedding.shape[2:]
@@ -98,15 +86,11 @@ class DensePoseCseLoss:
         }
         all_loss_dict = {
             "loss_densepose_S": self.w_segm
-            * self.segm_loss(
-                proposals_with_gt, densepose_predictor_outputs, packed_annotations
-            ),
+            * self.segm_loss(proposals_with_gt, densepose_predictor_outputs, packed_annotations),
             **embed_loss_dict,
         }
         if self.do_shape2shape:
-            all_loss_dict[
-                "loss_shape2shape"
-            ] = self.w_shape2shape * self.shape2shape_loss(embedder)
+            all_loss_dict["loss_shape2shape"] = self.w_shape2shape * self.shape2shape_loss(embedder)
         if self.do_pix2shape:
             all_loss_dict["loss_pix2shape"] = self.w_pix2shape * self.pix2shape_loss(
                 proposals_with_gt,
@@ -131,9 +115,7 @@ class DensePoseCseLoss:
             **embed_loss_dict,
         }
         if self.do_shape2shape:
-            all_loss_dict["loss_shape2shape"] = self.shape2shape_loss.fake_value(
-                embedder
-            )
+            all_loss_dict["loss_shape2shape"] = self.shape2shape_loss.fake_value(embedder)
         if self.do_pix2shape:
             all_loss_dict["loss_pix2shape"] = self.pix2shape_loss.fake_value(
                 densepose_predictor_outputs, embedder

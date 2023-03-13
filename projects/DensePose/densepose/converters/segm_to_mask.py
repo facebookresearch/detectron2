@@ -11,9 +11,7 @@ from .base import IntTupleBox, make_int_box
 from .to_mask import ImageSizeType
 
 
-def resample_coarse_segm_tensor_to_bbox(
-    coarse_segm: torch.Tensor, box_xywh_abs: IntTupleBox
-):
+def resample_coarse_segm_tensor_to_bbox(coarse_segm: torch.Tensor, box_xywh_abs: IntTupleBox):
     """
     Resample coarse segmentation tensor to the given
     bounding box and derive labels for each pixel of the bounding box
@@ -28,9 +26,7 @@ def resample_coarse_segm_tensor_to_bbox(
     x, y, w, h = box_xywh_abs
     w = max(int(w), 1)
     h = max(int(h), 1)
-    labels = F.interpolate(
-        coarse_segm, (h, w), mode="bilinear", align_corners=False
-    ).argmax(dim=1)
+    labels = F.interpolate(coarse_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
     return labels
 
 
@@ -61,17 +57,13 @@ def resample_fine_and_coarse_segm_tensors_to_bbox(
     ).argmax(dim=1)
     # combined coarse and fine segmentation
     labels = (
-        F.interpolate(fine_segm, (h, w), mode="bilinear", align_corners=False).argmax(
-            dim=1
-        )
+        F.interpolate(fine_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
         * (coarse_segm_bbox > 0).long()
     )
     return labels
 
 
-def resample_fine_and_coarse_segm_to_bbox(
-    predictor_output: Any, box_xywh_abs: IntTupleBox
-):
+def resample_fine_and_coarse_segm_to_bbox(predictor_output: Any, box_xywh_abs: IntTupleBox):
     """
     Resample fine and coarse segmentation outputs from a predictor to the given
     bounding box and derive labels for each pixel of the bounding box
@@ -117,9 +109,7 @@ def predictor_output_with_coarse_segm_to_mask(
     masks = torch.zeros((N, H, W), dtype=torch.bool, device=boxes.tensor.device)
     for i in range(len(boxes_xywh_abs)):
         box_xywh = make_int_box(boxes_xywh_abs[i])
-        box_mask = resample_coarse_segm_tensor_to_bbox(
-            predictor_output[i].coarse_segm, box_xywh
-        )
+        box_mask = resample_coarse_segm_tensor_to_bbox(predictor_output[i].coarse_segm, box_xywh)
         x, y, w, h = box_xywh
         masks[i, y : y + h, x : x + w] = box_mask
 

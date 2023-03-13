@@ -57,9 +57,7 @@ class MaskRCNNConvUpsamplePointSupHead(MaskRCNNConvUpsampleHead):
                 return {"loss_mask": x.sum() * 0}
 
             # Training with point supervision
-            point_coords, point_labels = get_point_coords_from_point_annotation(
-                instances
-            )
+            point_coords, point_labels = get_point_coords_from_point_annotation(instances)
 
             mask_logits = point_sample(
                 x,
@@ -67,9 +65,7 @@ class MaskRCNNConvUpsamplePointSupHead(MaskRCNNConvUpsampleHead):
                 align_corners=False,
             )
 
-            return {
-                "loss_mask": roi_mask_point_loss(mask_logits, instances, point_labels)
-            }
+            return {"loss_mask": roi_mask_point_loss(mask_logits, instances, point_labels)}
         else:
             mask_rcnn_inference(x, instances)
             return instances

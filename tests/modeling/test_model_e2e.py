@@ -152,9 +152,7 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
                 "p6": tensor(1, 256, 16, 16),
             }
             props = [Instances((510, 510))]
-            props[0].proposal_boxes = Boxes([[10, 10, 20, 20]]).to(
-                device=self.model.device
-            )
+            props[0].proposal_boxes = Boxes([[10, 10, 20, 20]]).to(device=self.model.device)
             props[0].objectness_logits = torch.tensor([1.0]).reshape(1, 1)
             det, _ = self.model.roi_heads(images, features, props)
             self.assertEqual(len(det[0]), 0)
@@ -175,9 +173,7 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
             out = self.model.inference(inputs, do_postprocess=False)[0]
             self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
             self.assertEqual(out.pred_masks.dtype, torch.float16)
-            self.assertEqual(
-                out.scores.dtype, torch.float32
-            )  # scores comes from softmax
+            self.assertEqual(out.scores.dtype, torch.float32)  # scores comes from softmax
 
 
 class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
@@ -198,9 +194,7 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
             pred_logits, pred_anchor_deltas = self.model.head(features)
             pred_logits = [tensor(*x.shape) for x in pred_logits]
             pred_anchor_deltas = [tensor(*x.shape) for x in pred_anchor_deltas]
-            det = self.model.forward_inference(
-                images, features, [pred_logits, pred_anchor_deltas]
-            )
+            det = self.model.forward_inference(images, features, [pred_logits, pred_anchor_deltas])
             # all predictions (if any) are infinite or nan
             if len(det[0]):
                 self.assertTrue(torch.isfinite(det[0].pred_boxes.tensor).sum() == 0)
@@ -213,9 +207,7 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
         self.model.eval()
         with autocast(), typecheck_hook(
             self.model.backbone, in_dtype=torch.float32, out_dtype=torch.float16
-        ), typecheck_hook(
-            self.model.head, in_dtype=torch.float16, out_dtype=torch.float16
-        ):
+        ), typecheck_hook(self.model.head, in_dtype=torch.float16, out_dtype=torch.float16):
             out = self.model(inputs)[0]["instances"]
             self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)
             self.assertEqual(out.scores.dtype, torch.float16)

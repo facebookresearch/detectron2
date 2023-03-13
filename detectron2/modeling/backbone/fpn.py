@@ -107,9 +107,7 @@ class FPN(Backbone):
         self.in_features = tuple(in_features)
         self.bottom_up = bottom_up
         # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
-        self._out_feature_strides = {
-            "p{}".format(int(math.log2(s))): s for s in strides
-        }
+        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
         # top block output feature maps.
         if self.top_block is not None:
             for s in range(stage, stage + self.top_block.num_levels):
@@ -157,9 +155,7 @@ class FPN(Backbone):
             if idx > 0:
                 features = self.in_features[-idx - 1]
                 features = bottom_up_features[features]
-                top_down_features = F.interpolate(
-                    prev_features, scale_factor=2.0, mode="nearest"
-                )
+                top_down_features = F.interpolate(prev_features, scale_factor=2.0, mode="nearest")
                 lateral_features = lateral_conv(features)
                 prev_features = lateral_features + top_down_features
                 if self._fuse_type == "avg":
@@ -170,9 +166,7 @@ class FPN(Backbone):
             if self.top_block.in_feature in bottom_up_features:
                 top_block_in_feature = bottom_up_features[self.top_block.in_feature]
             else:
-                top_block_in_feature = results[
-                    self._out_features.index(self.top_block.in_feature)
-                ]
+                top_block_in_feature = results[self._out_features.index(self.top_block.in_feature)]
             results.extend(self.top_block(top_block_in_feature))
         assert len(self._out_features) == len(results)
         return {f: res for f, res in zip(self._out_features, results)}
@@ -192,9 +186,9 @@ def _assert_strides_are_log2_contiguous(strides):
     Assert that each stride is 2x times its preceding stride, i.e. "contiguous in log2".
     """
     for i, stride in enumerate(strides[1:], 1):
-        assert (
-            stride == 2 * strides[i - 1]
-        ), "Strides {} {} are not log2 contiguous".format(stride, strides[i - 1])
+        assert stride == 2 * strides[i - 1], "Strides {} {} are not log2 contiguous".format(
+            stride, strides[i - 1]
+        )
 
 
 class LastLevelMaxPool(nn.Module):

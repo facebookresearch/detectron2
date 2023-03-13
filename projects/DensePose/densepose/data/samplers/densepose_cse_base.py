@@ -43,9 +43,7 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         self.class_to_mesh_name = get_class_to_mesh_name_mapping(cfg)
         self.use_gt_categories = use_gt_categories
 
-    def _sample(
-        self, instance: Instances, bbox_xywh: IntTupleBox
-    ) -> Dict[str, List[Any]]:
+    def _sample(self, instance: Instances, bbox_xywh: IntTupleBox) -> Dict[str, List[Any]]:
         """
         Sample DensPoseDataRelative from estimation results
         """
@@ -62,9 +60,7 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
             DensePoseDataRelative.MESH_NAME_KEY: mesh_name,
         }
 
-        mask, embeddings, other_values = self._produce_mask_and_results(
-            instance, bbox_xywh
-        )
+        mask, embeddings, other_values = self._produce_mask_and_results(instance, bbox_xywh)
         indices = torch.nonzero(mask, as_tuple=True)
         selected_embeddings = embeddings.permute(1, 2, 0)[indices].cpu()
         values = other_values[:, indices[0], indices[1]]
@@ -89,9 +85,7 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         # extend annotations
         annotation[DensePoseDataRelative.X_KEY].extend(x)
         annotation[DensePoseDataRelative.Y_KEY].extend(y)
-        annotation[DensePoseDataRelative.VERTEX_IDS_KEY].extend(
-            closest_vertices.cpu().tolist()
-        )
+        annotation[DensePoseDataRelative.VERTEX_IDS_KEY].extend(closest_vertices.cpu().tolist())
         return annotation
 
     def _produce_mask_and_results(
@@ -136,9 +130,7 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         """
         sz = DensePoseDataRelative.MASK_SIZE
         mask = (
-            F.interpolate(
-                output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False
-            )
+            F.interpolate(output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False)
             .argmax(dim=1)
             .long()
             .squeeze()

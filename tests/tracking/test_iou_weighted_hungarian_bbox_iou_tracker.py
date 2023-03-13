@@ -44,9 +44,7 @@ class TestIOUWeightedHungarianBBoxIOUTracker(unittest.TestCase):
             "pred_classes": self._prev_classes,
             "pred_masks": self._prev_masks,
         }
-        self._prev_instances = self._convertDictPredictionToInstance(
-            self._prev_instances
-        )
+        self._prev_instances = self._convertDictPredictionToInstance(self._prev_instances)
         self._curr_instances = {
             "image_size": self._img_size,
             "pred_boxes": self._curr_boxes,
@@ -54,9 +52,7 @@ class TestIOUWeightedHungarianBBoxIOUTracker(unittest.TestCase):
             "pred_classes": self._curr_classes,
             "pred_masks": self._curr_masks,
         }
-        self._curr_instances = self._convertDictPredictionToInstance(
-            self._curr_instances
-        )
+        self._curr_instances = self._convertDictPredictionToInstance(self._curr_instances)
 
         self._max_num_instances = 10
         self._max_lost_frame_count = 3
@@ -139,9 +135,7 @@ class TestIOUWeightedHungarianBBoxIOUTracker(unittest.TestCase):
         curr_instances = tracker._initialize_extra_fields(self._curr_instances)
         matched_idx = np.array([0])
         matched_prev_idx = np.array([1])
-        curr_instances = tracker._process_matched_idx(
-            curr_instances, matched_idx, matched_prev_idx
-        )
+        curr_instances = tracker._process_matched_idx(curr_instances, matched_idx, matched_prev_idx)
         self.assertTrue(curr_instances.ID[0] == 1)
 
     def test_process_unmatched_idx(self):
@@ -161,9 +155,7 @@ class TestIOUWeightedHungarianBBoxIOUTracker(unittest.TestCase):
         curr_instances = tracker._initialize_extra_fields(self._curr_instances)
         matched_idx = np.array([0])
         matched_prev_idx = np.array([1])
-        curr_instances = tracker._process_matched_idx(
-            curr_instances, matched_idx, matched_prev_idx
-        )
+        curr_instances = tracker._process_matched_idx(curr_instances, matched_idx, matched_prev_idx)
         curr_instances = tracker._process_unmatched_idx(curr_instances, matched_idx)
         self.assertTrue(curr_instances.ID[1] == 2)
 
@@ -185,13 +177,9 @@ class TestIOUWeightedHungarianBBoxIOUTracker(unittest.TestCase):
         curr_instances = tracker._initialize_extra_fields(self._curr_instances)
         matched_idx = np.array([0])
         matched_prev_idx = np.array([1])
-        curr_instances = tracker._process_matched_idx(
-            curr_instances, matched_idx, matched_prev_idx
-        )
+        curr_instances = tracker._process_matched_idx(curr_instances, matched_idx, matched_prev_idx)
         curr_instances = tracker._process_unmatched_idx(curr_instances, matched_idx)
-        curr_instances = tracker._process_unmatched_prev_idx(
-            curr_instances, matched_prev_idx
-        )
+        curr_instances = tracker._process_unmatched_prev_idx(curr_instances, matched_prev_idx)
         self.assertTrue(curr_instances.ID[2] == 0)
 
     def test_assign_cost_matrix_values(self):

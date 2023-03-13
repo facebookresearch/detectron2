@@ -130,9 +130,7 @@ class HRFPN(Backbone):
 
         for i in range(self.n_out_features):
             self._out_features.append("p%d" % (i + 1))
-            self._out_feature_channels.update(
-                {self._out_features[-1]: self.out_channels}
-            )
+            self._out_feature_channels.update({self._out_features[-1]: self.out_channels})
             self._out_feature_strides.update({self._out_features[-1]: 2 ** (i + 2)})
 
     # default init_weights for conv(msra) and norm in ConvModule

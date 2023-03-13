@@ -15,9 +15,7 @@ class DensePoseDataFilter(object):
         self.keep_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
 
     @torch.no_grad()
-    def __call__(
-        self, features: List[torch.Tensor], proposals_with_targets: List[Instances]
-    ):
+    def __call__(self, features: List[torch.Tensor], proposals_with_targets: List[Instances]):
         """
         Filters proposals with targets to keep only the ones relevant for
         DensePose training
@@ -82,21 +80,15 @@ class DensePoseDataFilter(object):
             assert len(gt_densepose) == N_gt_boxes
             selected_indices = [
                 i
-                for i, (dp_target, mask_target) in enumerate(
-                    zip(gt_densepose, gt_masks)
-                )
+                for i, (dp_target, mask_target) in enumerate(zip(gt_densepose, gt_masks))
                 if (dp_target is not None) or (mask_target is not None)
             ]
             # if not len(selected_indices):
             #     feature_mask[i] = 0
             #     continue
             if len(selected_indices) != N_gt_boxes:
-                proposals_per_image = proposals_per_image[
-                    selected_indices
-                ]  # pyre-ignore[6]
-            assert len(proposals_per_image.gt_boxes) == len(
-                proposals_per_image.proposal_boxes
-            )
+                proposals_per_image = proposals_per_image[selected_indices]  # pyre-ignore[6]
+            assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
             proposals_filtered.append(proposals_per_image)
         # features_filtered = [feature[feature_mask] for feature in features]
         # return features_filtered, proposals_filtered

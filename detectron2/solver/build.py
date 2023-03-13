@@ -229,9 +229,7 @@ def get_default_optimizer_params(
             if isinstance(module, norm_module_types) and weight_decay_norm is not None:
                 hyperparams["weight_decay"] = weight_decay_norm
             if lr_factor_func is not None:
-                hyperparams["lr"] *= lr_factor_func(
-                    f"{module_name}.{module_param_name}"
-                )
+                hyperparams["lr"] *= lr_factor_func(f"{module_name}.{module_param_name}")
 
             hyperparams.update(overrides.get(module_param_name, {}))
             params.append({"params": [value], **hyperparams})

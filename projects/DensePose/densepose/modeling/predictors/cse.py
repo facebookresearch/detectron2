@@ -70,6 +70,4 @@ class DensePoseEmbeddingPredictor(nn.Module):
         coarse_segm_lowres = self.coarse_segm_lowres(head_outputs)
         embed = self.interp2d(embed_lowres)
         coarse_segm = self.interp2d(coarse_segm_lowres)
-        return DensePoseEmbeddingPredictorOutput(
-            embedding=embed, coarse_segm=coarse_segm
-        )
+        return DensePoseEmbeddingPredictorOutput(embedding=embed, coarse_segm=coarse_segm)

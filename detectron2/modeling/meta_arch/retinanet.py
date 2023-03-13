@@ -124,9 +124,7 @@ class RetinaNet(DenseDetector):
             "backbone": backbone,
             "head": head,
             "anchor_generator": anchor_generator,
-            "box2box_transform": Box2BoxTransform(
-                weights=cfg.MODEL.RETINANET.BBOX_REG_WEIGHTS
-            ),
+            "box2box_transform": Box2BoxTransform(weights=cfg.MODEL.RETINANET.BBOX_REG_WEIGHTS),
             "anchor_matcher": Matcher(
                 cfg.MODEL.RETINANET.IOU_THRESHOLDS,
                 cfg.MODEL.RETINANET.IOU_LABELS,
@@ -158,9 +156,7 @@ class RetinaNet(DenseDetector):
         )
         anchors = self.anchor_generator(features)
         gt_labels, gt_boxes = self.label_anchors(anchors, gt_instances)
-        return self.losses(
-            anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes
-        )
+        return self.losses(anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes)
 
     def losses(self, anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes):
         """
@@ -188,9 +184,7 @@ class RetinaNet(DenseDetector):
         normalizer = self._ema_update("loss_normalizer", max(num_pos_anchors, 1), 100)
 
         # classification and regression loss
-        gt_labels_target = F.one_hot(
-            gt_labels[valid_mask], num_classes=self.num_classes + 1
-        )[
+        gt_labels_target = F.one_hot(gt_labels[valid_mask], num_classes=self.num_classes + 1)[
             :, :-1
         ]  # no loss for the last (background) class
         loss_cls = sigmoid_focal_loss_jit(

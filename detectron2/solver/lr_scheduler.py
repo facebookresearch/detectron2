@@ -169,9 +169,7 @@ class WarmupMultiStepLR(LRScheduler):
             self.warmup_method, self.last_epoch, self.warmup_iters, self.warmup_factor
         )
         return [
-            base_lr
-            * warmup_factor
-            * self.gamma ** bisect_right(self.milestones, self.last_epoch)
+            base_lr * warmup_factor * self.gamma ** bisect_right(self.milestones, self.last_epoch)
             for base_lr in self.base_lrs
         ]
 

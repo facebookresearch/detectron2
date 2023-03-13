@@ -11,9 +11,7 @@ import unittest
 
 class TestInstances(unittest.TestCase):
     def test_int_indexing(self):
-        attr1 = torch.tensor(
-            [[0.0, 0.0, 1.0], [0.0, 0.0, 0.5], [0.0, 0.0, 1.0], [0.0, 0.5, 0.5]]
-        )
+        attr1 = torch.tensor([[0.0, 0.0, 1.0], [0.0, 0.0, 0.5], [0.0, 0.0, 1.0], [0.0, 0.5, 0.5]])
         attr2 = torch.tensor([0.1, 0.2, 0.3, 0.4])
         instances = Instances((100, 100))
         instances.attr1 = attr1
@@ -72,9 +70,7 @@ class TestInstances(unittest.TestCase):
             x = NewInstances((3, 4))
             x.mask = torch.rand(3)
             x.proposal_boxes = Boxes(torch.rand(3, 4))
-            scripted_g2(
-                x
-            )  # it should accept the new Instances object and run successfully
+            scripted_g2(x)  # it should accept the new Instances object and run successfully
 
     def test_script_access_fields(self):
         class f(torch.nn.Module):
@@ -168,9 +164,7 @@ class TestInstances(unittest.TestCase):
             out = f()(inst, idx)
             out_scripted = script_module(new_instance.from_instances(inst), idx)
             self.assertTrue(
-                torch.equal(
-                    out.proposal_boxes.tensor, out_scripted.proposal_boxes.tensor
-                )
+                torch.equal(out.proposal_boxes.tensor, out_scripted.proposal_boxes.tensor)
             )
             self.assertTrue(torch.equal(out.a, out_scripted.a))
 
@@ -183,12 +177,8 @@ class TestInstances(unittest.TestCase):
             # convert to NewInstances and back
             new1 = NewInstances.from_instances(orig)
             new2 = convert_scripted_instances(new1)
-        self.assertTrue(
-            torch.equal(orig.proposal_boxes.tensor, new1.proposal_boxes.tensor)
-        )
-        self.assertTrue(
-            torch.equal(orig.proposal_boxes.tensor, new2.proposal_boxes.tensor)
-        )
+        self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new1.proposal_boxes.tensor))
+        self.assertTrue(torch.equal(orig.proposal_boxes.tensor, new2.proposal_boxes.tensor))
 
     def test_script_init_args(self):
         def f(x: Tensor):
@@ -223,9 +213,7 @@ class TestInstances(unittest.TestCase):
             output, output2 = script_f(x)
             self.assertTrue(torch.equal(output.a, torch.cat([x, x])))
             self.assertFalse(output.has("proposal_boxes"))
-            self.assertTrue(
-                torch.equal(output2.proposal_boxes.tensor, torch.cat([x, x]))
-            )
+            self.assertTrue(torch.equal(output2.proposal_boxes.tensor, torch.cat([x, x])))
 
 
 if __name__ == "__main__":

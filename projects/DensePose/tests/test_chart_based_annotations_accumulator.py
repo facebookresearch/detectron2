@@ -41,12 +41,8 @@ class TestChartBasedAnnotationsAccumulator(unittest.TestCase):
             DensePoseDataRelative.V_KEY,
             DensePoseDataRelative.S_KEY,
         ]
-        annotations = [
-            DensePoseDataRelative({k: [0] for k in data_relative_keys})
-        ] * n_instances
-        instances.gt_densepose = DensePoseList(
-            annotations, instances.gt_boxes, image_shape
-        )
+        annotations = [DensePoseDataRelative({k: [0] for k in data_relative_keys})] * n_instances
+        instances.gt_densepose = DensePoseList(annotations, instances.gt_boxes, image_shape)
         accumulator = ChartBasedAnnotationsAccumulator()
         accumulator.accumulate(instances)
         bbox_xywh_est = BoxMode.convert(
@@ -68,9 +64,7 @@ class TestChartBasedAnnotationsAccumulator(unittest.TestCase):
             * n_instances,
             "bbox_xywh_est": bbox_xywh_est.split(1),
             "bbox_xywh_gt": bbox_xywh_gt.split(1),
-            "point_bbox_with_dp_indices": [
-                torch.tensor([i]) for i in range(n_instances)
-            ],
+            "point_bbox_with_dp_indices": [torch.tensor([i]) for i in range(n_instances)],
             "point_bbox_indices": [torch.tensor([i]) for i in range(n_instances)],
             "bbox_indices": list(range(n_instances)),
             "nxt_bbox_with_dp_index": n_instances,
@@ -85,6 +79,4 @@ class TestChartBasedAnnotationsAccumulator(unittest.TestCase):
             elif key == "bbox_indices":
                 self.assertListEqual(to_test, gt_value)
             else:
-                self.assertTrue(
-                    torch.allclose(torch.stack(to_test), torch.stack(gt_value))
-                )
+                self.assertTrue(torch.allclose(torch.stack(to_test), torch.stack(gt_value)))

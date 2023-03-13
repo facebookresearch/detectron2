@@ -99,17 +99,13 @@ class DataLoaderBenchmark:
         self.max_time_seconds = max_time_seconds
 
     def _benchmark(self, iterator, num_iter, warmup, msg=None):
-        avg, all_times = iter_benchmark(
-            iterator, num_iter, warmup, self.max_time_seconds
-        )
+        avg, all_times = iter_benchmark(iterator, num_iter, warmup, self.max_time_seconds)
         if msg is not None:
             self._log_time(msg, avg, all_times)
         return avg, all_times
 
     def _log_time(self, msg, avg, all_times, distributed=False):
-        percentiles = [
-            np.percentile(all_times, k, interpolation="nearest") for k in [1, 5, 95, 99]
-        ]
+        percentiles = [np.percentile(all_times, k, interpolation="nearest") for k in [1, 5, 95, 99]]
         if not distributed:
             logger.info(
                 f"{msg}: avg={1.0/avg:.1f} it/s, "
@@ -151,9 +147,7 @@ class DataLoaderBenchmark:
                 for k in self.sampler:
                     yield self.mapper(self.dataset[k])
 
-        self._benchmark(
-            loader(), num_iter, warmup, "Single Process Mapper (sec/sample)"
-        )
+        self._benchmark(loader(), num_iter, warmup, "Single Process Mapper (sec/sample)")
 
     def benchmark_workers(self, num_iter, warmup=10):
         """
@@ -222,9 +216,7 @@ class DataLoaderBenchmark:
 
         comm.synchronize()
 
-        avg, all_times = self._benchmark(
-            loader, num_iter * max(n, 1), warmup * max(n, 1)
-        )
+        avg, all_times = self._benchmark(loader, num_iter * max(n, 1), warmup * max(n, 1))
         del loader
         self._log_time(
             f"DataLoader ({gpu} GPUs x {n} workers, total bs={self.total_batch_size})",

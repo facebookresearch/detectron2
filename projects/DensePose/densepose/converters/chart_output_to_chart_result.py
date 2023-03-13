@@ -94,9 +94,7 @@ def densepose_chart_predictor_output_to_result(
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
     box_xywh = make_int_box(boxes_xywh_abs[0])
 
-    labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(
-        0
-    )
+    labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)
     uv = resample_uv_to_bbox(predictor_output, labels, box_xywh)
     return DensePoseChartResult(labels=labels, uv=uv)
 
@@ -135,9 +133,7 @@ def resample_confidences_to_bbox(
     confidence_names = [
         key for key in confidence_names if getattr(predictor_output, key) is not None
     ]
-    confidence_base = torch.zeros(
-        [h, w], dtype=torch.float32, device=predictor_output.u.device
-    )
+    confidence_base = torch.zeros([h, w], dtype=torch.float32, device=predictor_output.u.device)
 
     # assign data from channels that correspond to the labels
     for key in confidence_names:
@@ -152,9 +148,7 @@ def resample_confidences_to_bbox(
             if resampled_confidence.size(1) != predictor_output.u.size(1):
                 # confidence is not part-based, don't try to fill it part by part
                 continue
-            result[labels == part_id] = resampled_confidence[0, part_id][
-                labels == part_id
-            ]
+            result[labels == part_id] = resampled_confidence[0, part_id][labels == part_id]
 
         if resampled_confidence.size(1) != predictor_output.u.size(1):
             # confidence is not part-based, fill the data with the first channel
@@ -189,9 +183,7 @@ def densepose_chart_predictor_output_to_result_with_confidences(
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
     box_xywh = make_int_box(boxes_xywh_abs[0])
 
-    labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(
-        0
-    )
+    labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)
     uv = resample_uv_to_bbox(predictor_output, labels, box_xywh)
     confidences = resample_confidences_to_bbox(predictor_output, labels, box_xywh)
     return DensePoseChartResultWithConfidences(labels=labels, uv=uv, **confidences)

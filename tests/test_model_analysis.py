@@ -57,9 +57,7 @@ class FasterRCNNTest(unittest.TestCase):
 
 class MaskRCNNTest(unittest.TestCase):
     def setUp(self):
-        self.model = get_model_no_weights(
-            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
-        )
+        self.model = get_model_no_weights("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
 
     def test_flop(self):
         inputs1 = [{"image": torch.rand(3, 800, 800)}]

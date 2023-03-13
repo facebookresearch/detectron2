@@ -26,9 +26,9 @@ __all__ = [
 
 
 def _check_img_dtype(img):
-    assert isinstance(
-        img, np.ndarray
-    ), "[Augmentation] Needs an numpy array, but got a {}!".format(type(img))
+    assert isinstance(img, np.ndarray), "[Augmentation] Needs an numpy array, but got a {}!".format(
+        type(img)
+    )
     assert not isinstance(img.dtype, np.integer) or (
         img.dtype == np.uint8
     ), "[Augmentation] Got image of type {}, use uint8 or floating points instead!".format(
@@ -195,14 +195,11 @@ class Augmentation:
             argstr = []
             for name, param in sig.parameters.items():
                 assert (
-                    param.kind != param.VAR_POSITIONAL
-                    and param.kind != param.VAR_KEYWORD
+                    param.kind != param.VAR_POSITIONAL and param.kind != param.VAR_KEYWORD
                 ), "The default __repr__ doesn't support *args or **kwargs"
                 assert hasattr(self, name), (
                     "Attribute {} not found! "
-                    "Default __repr__ only works if attributes match the constructor.".format(
-                        name
-                    )
+                    "Default __repr__ only works if attributes match the constructor.".format(name)
                 )
                 attr = getattr(self, name)
                 default = param.default

@@ -90,9 +90,7 @@ class DatasetMapperTTA:
         ret = []
         for aug in aug_candidates:
             new_image, tfms = apply_augmentations(aug, np.copy(numpy_image))
-            torch_image = torch.from_numpy(
-                np.ascontiguousarray(new_image.transpose(2, 0, 1))
-            )
+            torch_image = torch.from_numpy(np.ascontiguousarray(new_image.transpose(2, 0, 1)))
 
             dic = copy.deepcopy(dataset_dict)
             dic["transforms"] = pre_tfm + tfms
@@ -122,9 +120,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
             model = model.module
         assert isinstance(
             model, GeneralizedRCNN
-        ), "TTA is only supported on GeneralizedRCNN. Got a model of type {}".format(
-            type(model)
-        )
+        ), "TTA is only supported on GeneralizedRCNN. Got a model of type {}".format(type(model))
         self.cfg = cfg.clone()
         assert not self.cfg.MODEL.KEYPOINT_ON, "TTA for keypoint is not supported yet"
         assert (
@@ -199,9 +195,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
             ret = copy.copy(dataset_dict)
             if "image" not in ret:
                 image = read_image(ret.pop("file_name"), self.model.input_format)
-                image = torch.from_numpy(
-                    np.ascontiguousarray(image.transpose(2, 0, 1))
-                )  # CHW
+                image = torch.from_numpy(np.ascontiguousarray(image.transpose(2, 0, 1)))  # CHW
                 ret["image"] = image
             if "height" not in ret and "width" not in ret:
                 ret["height"] = image.shape[1]
@@ -223,13 +217,9 @@ class GeneralizedRCNNWithTTA(nn.Module):
         # Detect boxes from all augmented versions
         with self._turn_off_roi_heads(["mask_on", "keypoint_on"]):
             # temporarily disable roi heads
-            all_boxes, all_scores, all_classes = self._get_augmented_boxes(
-                augmented_inputs, tfms
-            )
+            all_boxes, all_scores, all_classes = self._get_augmented_boxes(augmented_inputs, tfms)
         # merge all detected boxes to obtain final predictions for boxes
-        merged_instances = self._merge_detections(
-            all_boxes, all_scores, all_classes, orig_shape
-        )
+        merged_instances = self._merge_detections(all_boxes, all_scores, all_classes, orig_shape)
 
         if self.cfg.MODEL.MASK_ON:
             # Use the detected boxes to obtain masks
@@ -263,9 +253,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
             # Need to inverse the transforms on boxes, to obtain results on original image
             pred_boxes = output.pred_boxes.tensor
             original_pred_boxes = tfm.inverse().apply_box(pred_boxes.cpu().numpy())
-            all_boxes.append(
-                torch.from_numpy(original_pred_boxes).to(pred_boxes.device)
-            )
+            all_boxes.append(torch.from_numpy(original_pred_boxes).to(pred_boxes.device))
 
             all_scores.extend(output.scores)
             all_classes.extend(output.pred_classes)

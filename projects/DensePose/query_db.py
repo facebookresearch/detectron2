@@ -109,9 +109,7 @@ class PrintAction(EntrywiseAction):
 
     @classmethod
     def add_parser(cls: type, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
-            cls.COMMAND, help="Output selected entries to stdout. "
-        )
+        parser = subparsers.add_parser(cls.COMMAND, help="Output selected entries to stdout. ")
         cls.add_arguments(parser)
         parser.set_defaults(func=cls.execute)
 
@@ -173,9 +171,7 @@ class ShowAction(EntrywiseAction):
         image_fpath = PathManager.get_local_path(entry["file_name"])
         image = cv2.imread(image_fpath, cv2.IMREAD_GRAYSCALE)
         image = np.tile(image[:, :, np.newaxis], [1, 1, 3])
-        datas = cls._extract_data_for_visualizers_from_entry(
-            context["vis_specs"], entry
-        )
+        datas = cls._extract_data_for_visualizers_from_entry(context["vis_specs"], entry)
         visualizer = context["visualizer"]
         image_vis = visualizer.visualize(image, datas)
         entry_idx = context["entry_idx"] + 1
@@ -236,9 +232,7 @@ def setup_dataset(dataset_name):
 def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=DOC,
-        formatter_class=lambda prog: argparse.HelpFormatter(
-            prog, max_help_position=120
-        ),
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=120),
     )
     parser.set_defaults(func=lambda _: parser.print_help(sys.stdout))
     subparsers = parser.add_subparsers(title="Actions")

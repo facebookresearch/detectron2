@@ -192,9 +192,7 @@ class ResBottleneckBlock(CNNBlockBase):
         if (w_in != w_out) or (stride != 1):
             self.proj = conv2d(w_in, w_out, 1, stride=stride)
             self.bn = get_norm(norm, w_out)
-        self.f = BottleneckTransform(
-            w_in, w_out, stride, norm, activation_class, params
-        )
+        self.f = BottleneckTransform(w_in, w_out, stride, norm, activation_class, params)
         self.af = activation_class()
 
     def forward(self, x):
@@ -205,9 +203,7 @@ class ResBottleneckBlock(CNNBlockBase):
 class AnyStage(nn.Module):
     """AnyNet stage (sequence of blocks w/ the same output shape)."""
 
-    def __init__(
-        self, w_in, w_out, stride, d, block_class, norm, activation_class, params
-    ):
+    def __init__(self, w_in, w_out, stride, d, block_class, norm, activation_class, params):
         super().__init__()
         for i in range(d):
             block = block_class(w_in, w_out, stride, norm, activation_class, params)
@@ -283,9 +279,7 @@ class AnyNet(Backbone):
             zip(depths, widths, strides, bottleneck_ratios, group_widths)
         ):
             params = {"bot_mul": b, "group_w": g, "se_r": se_ratio}
-            stage = AnyStage(
-                prev_w, w, s, d, block_class, norm, activation_class, params
-            )
+            stage = AnyStage(prev_w, w, s, d, block_class, norm, activation_class, params)
             name = "s{}".format(i + 1)
             self.add_module(name, stage)
             self.stages_and_names.append((stage, name))
@@ -303,9 +297,7 @@ class AnyNet(Backbone):
         assert len(self._out_features)
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
-            assert (
-                out_feature in children
-            ), "Available children: {} does not include {}".format(
+            assert out_feature in children, "Available children: {} does not include {}".format(
                 ", ".join(children), out_feature
             )
         self.freeze(freeze_at)
@@ -318,9 +310,7 @@ class AnyNet(Backbone):
         Returns:
             dict[str->Tensor]: names and the corresponding features
         """
-        assert (
-            x.dim() == 4
-        ), f"Model takes an input of shape (N, C, H, W). Got {x.shape} instead!"
+        assert x.dim() == 4, f"Model takes an input of shape (N, C, H, W). Got {x.shape} instead!"
         outputs = {}
         x = self.stem(x)
         if "stem" in self._out_features:

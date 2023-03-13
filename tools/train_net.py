@@ -78,9 +78,7 @@ def build_evaluator(cfg, dataset_name, output_folder=None):
         return LVISEvaluator(dataset_name, output_dir=output_folder)
     if len(evaluator_list) == 0:
         raise NotImplementedError(
-            "no Evaluator for the dataset {} with the type {}".format(
-                dataset_name, evaluator_type
-            )
+            "no Evaluator for the dataset {} with the type {}".format(dataset_name, evaluator_type)
         )
     elif len(evaluator_list) == 1:
         return evaluator_list[0]

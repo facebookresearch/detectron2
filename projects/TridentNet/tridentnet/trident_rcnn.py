@@ -30,9 +30,7 @@ def merge_branch_instances(instances, num_branch, nms_thresh, topk_per_image):
     batch_size = len(instances) // num_branch
     results = []
     for i in range(batch_size):
-        instance = Instances.cat(
-            [instances[i + batch_size * j] for j in range(num_branch)]
-        )
+        instance = Instances.cat([instances[i + batch_size * j] for j in range(num_branch)])
 
         # Apply per-class NMS
         keep = batched_nms(
@@ -68,9 +66,7 @@ class TridentRes5ROIHeads(Res5ROIHeads):
         """
         num_branch = self.num_branch if self.training or not self.trident_fast else 1
         all_targets = targets * num_branch if targets is not None else None
-        pred_instances, losses = super().forward(
-            images, features, proposals, all_targets
-        )
+        pred_instances, losses = super().forward(images, features, proposals, all_targets)
         del images, all_targets, targets
 
         if self.training:
@@ -107,9 +103,7 @@ class TridentStandardROIHeads(StandardROIHeads):
         num_branch = self.num_branch if self.training or not self.trident_fast else 1
         # Duplicate targets for all branches in TridentNet.
         all_targets = targets * num_branch if targets is not None else None
-        pred_instances, losses = super().forward(
-            images, features, proposals, all_targets
-        )
+        pred_instances, losses = super().forward(images, features, proposals, all_targets)
         del images, all_targets, targets
 
         if self.training:
