@@ -60,7 +60,11 @@ def generate_regular_grid_point_coords(R, side_size, device):
 
 
 def get_uncertain_point_coords_with_randomness(
-    coarse_logits, uncertainty_func, num_points, oversample_ratio, importance_sample_ratio
+    coarse_logits,
+    uncertainty_func,
+    num_points,
+    oversample_ratio,
+    importance_sample_ratio,
 ):
     """
     Sample points in [0, 1] x [0, 1] coordinate space based on their uncertainty. The unceratinties
@@ -233,7 +237,8 @@ def sample_point_labels(instances, point_coords):
     with torch.no_grad():
         gt_mask_logits = []
         point_coords_splits = torch.split(
-            point_coords, [len(instances_per_image) for instances_per_image in instances]
+            point_coords,
+            [len(instances_per_image) for instances_per_image in instances],
         )
         for i, instances_per_image in enumerate(instances):
             if len(instances_per_image) == 0:

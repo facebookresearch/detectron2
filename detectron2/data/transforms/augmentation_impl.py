@@ -142,7 +142,11 @@ class ResizeShortestEdge(Augmentation):
 
     @torch.jit.unused
     def __init__(
-        self, short_edge_length, max_size=sys.maxsize, sample_style="range", interp=Image.BILINEAR
+        self,
+        short_edge_length,
+        max_size=sys.maxsize,
+        sample_style="range",
+        interp=Image.BILINEAR,
     ):
         """
         Args:
@@ -341,7 +345,12 @@ class FixedSizeCrop(Augmentation):
         offset = np.multiply(max_offset, np.random.uniform(0.0, 1.0))
         offset = np.round(offset).astype(int)
         return CropTransform(
-            offset[1], offset[0], output_size[1], output_size[0], input_size[1], input_size[0]
+            offset[1],
+            offset[0],
+            output_size[1],
+            output_size[0],
+            input_size[1],
+            input_size[0],
         )
 
     def _get_pad(self, image: np.ndarray) -> Transform:
@@ -520,7 +529,10 @@ class RandomExtent(Augmentation):
 
         return ExtentTransform(
             src_rect=(src_rect[0], src_rect[1], src_rect[2], src_rect[3]),
-            output_size=(int(src_rect[3] - src_rect[1]), int(src_rect[2] - src_rect[0])),
+            output_size=(
+                int(src_rect[3] - src_rect[1]),
+                int(src_rect[2] - src_rect[0]),
+            ),
         )
 
 
@@ -622,7 +634,11 @@ class RandomLighting(Augmentation):
         super().__init__()
         self._init(locals())
         self.eigen_vecs = np.array(
-            [[-0.5675, 0.7192, 0.4009], [-0.5808, -0.0045, -0.8140], [-0.5836, -0.6948, 0.4203]]
+            [
+                [-0.5675, 0.7192, 0.4009],
+                [-0.5808, -0.0045, -0.8140],
+                [-0.5836, -0.6948, 0.4203],
+            ]
         )
         self.eigen_vals = np.array([0.2175, 0.0188, 0.0045])
 
@@ -630,7 +646,9 @@ class RandomLighting(Augmentation):
         assert image.shape[-1] == 3, "RandomLighting only works on RGB images"
         weights = np.random.normal(scale=self.scale, size=3)
         return BlendTransform(
-            src_image=self.eigen_vecs.dot(weights * self.eigen_vals), src_weight=1.0, dst_weight=1.0
+            src_image=self.eigen_vecs.dot(weights * self.eigen_vals),
+            src_weight=1.0,
+            dst_weight=1.0,
         )
 
 

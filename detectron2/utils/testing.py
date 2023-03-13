@@ -216,7 +216,9 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
     # TODO: _unregister_custom_op_symbolic is introduced PyTorch>=1.10
     #       Remove after PyTorch 1.10+ is used by ALL detectron2's CI
     try:
-        from torch.onnx import unregister_custom_op_symbolic as _unregister_custom_op_symbolic
+        from torch.onnx import (
+            unregister_custom_op_symbolic as _unregister_custom_op_symbolic,
+        )
     except ImportError:
 
         def _unregister_custom_op_symbolic(symbolic_name, opset_version):
@@ -230,7 +232,10 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
                     ns, op_name = get_ns_op_name_from_custom_op(symbolic_name)
                 except ImportError as import_error:
                     if not bool(
-                        re.match(r"^[a-zA-Z0-9-_]*::[a-zA-Z-_]+[a-zA-Z0-9-_]*$", symbolic_name)
+                        re.match(
+                            r"^[a-zA-Z0-9-_]*::[a-zA-Z-_]+[a-zA-Z0-9-_]*$",
+                            symbolic_name,
+                        )
                     ):
                         raise ValueError(
                             f"Invalid symbolic name {symbolic_name}. Must be `domain::name`"

@@ -170,7 +170,12 @@ class HighResolutionModule(nn.Module):
 
         layers = []
         layers.append(
-            block(self.num_inchannels[branch_index], num_channels[branch_index], stride, downsample)
+            block(
+                self.num_inchannels[branch_index],
+                num_channels[branch_index],
+                stride,
+                downsample,
+            )
         )
         self.num_inchannels[branch_index] = num_channels[branch_index] * block.expansion
         for _ in range(1, num_blocks[branch_index]):
@@ -199,7 +204,14 @@ class HighResolutionModule(nn.Module):
                 if j > i:
                     fuse_layer.append(
                         nn.Sequential(
-                            nn.Conv2d(num_inchannels[j], num_inchannels[i], 1, 1, 0, bias=False),
+                            nn.Conv2d(
+                                num_inchannels[j],
+                                num_inchannels[i],
+                                1,
+                                1,
+                                0,
+                                bias=False,
+                            ),
                             nn.BatchNorm2d(num_inchannels[i]),
                             nn.Upsample(scale_factor=2 ** (j - i), mode="nearest"),
                         )

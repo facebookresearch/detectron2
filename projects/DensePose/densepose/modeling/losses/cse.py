@@ -13,7 +13,11 @@ from .embed_utils import CseAnnotationsAccumulator
 from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
 from .soft_embed import SoftEmbeddingLoss
-from .utils import BilinearInterpolationHelper, LossDict, extract_packed_annotations_from_matches
+from .utils import (
+    BilinearInterpolationHelper,
+    LossDict,
+    extract_packed_annotations_from_matches,
+)
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()
@@ -88,7 +92,10 @@ class DensePoseCseLoss:
             all_loss_dict["loss_shape2shape"] = self.w_shape2shape * self.shape2shape_loss(embedder)
         if self.do_pix2shape:
             all_loss_dict["loss_pix2shape"] = self.w_pix2shape * self.pix2shape_loss(
-                proposals_with_gt, densepose_predictor_outputs, packed_annotations, embedder
+                proposals_with_gt,
+                densepose_predictor_outputs,
+                packed_annotations,
+                embedder,
             )
         return all_loss_dict
 

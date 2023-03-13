@@ -53,7 +53,9 @@ if __name__ == "__main__":
         {k[0] for k in all_versions}, key=lambda x: int(x.split(".")[1]), reverse=True
     )
     cuda_versions = sorted(
-        {k[1] for k in all_versions}, key=lambda x: float(x) if x != "cpu" else 0, reverse=True
+        {k[1] for k in all_versions},
+        key=lambda x: float(x) if x != "cpu" else 0,
+        reverse=True,
     )
 
     table = gen_header(torch_versions)

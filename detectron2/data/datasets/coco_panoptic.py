@@ -100,7 +100,13 @@ def register_coco_panoptic(
 
 
 def register_coco_panoptic_separated(
-    name, metadata, image_root, panoptic_root, panoptic_json, sem_seg_root, instances_json
+    name,
+    metadata,
+    image_root,
+    panoptic_root,
+    panoptic_json,
+    sem_seg_root,
+    instances_json,
 ):
     """
     Register a "separated" version of COCO panoptic segmentation dataset named `name`.

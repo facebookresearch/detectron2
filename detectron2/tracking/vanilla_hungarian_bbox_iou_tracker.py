@@ -108,7 +108,10 @@ class VanillaHungarianBBoxIOUTracker(BaseHungarianTracker):
             boxes2=self._prev_instances.pred_boxes,
         )
         bbox_pairs = create_prediction_pairs(
-            instances, self._prev_instances, iou_all, threshold=self._track_iou_threshold
+            instances,
+            self._prev_instances,
+            iou_all,
+            threshold=self._track_iou_threshold,
         )
         # assign large cost value to make sure pair below IoU threshold won't be matched
         cost_matrix = np.full((len(instances), len(prev_instances)), LARGE_COST_VALUE)

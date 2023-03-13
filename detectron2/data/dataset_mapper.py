@@ -124,7 +124,10 @@ class DatasetMapper:
         # USER: Implement additional transformations if you have other types of data
         annos = [
             utils.transform_instance_annotations(
-                obj, transforms, image_shape, keypoint_hflip_indices=self.keypoint_hflip_indices
+                obj,
+                transforms,
+                image_shape,
+                keypoint_hflip_indices=self.keypoint_hflip_indices,
             )
             for obj in dataset_dict.pop("annotations")
             if obj.get("iscrowd", 0) == 0

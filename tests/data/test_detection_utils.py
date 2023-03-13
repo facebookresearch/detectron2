@@ -20,7 +20,10 @@ class TestTransformAnnotations(unittest.TestCase):
             "bbox": np.asarray([10, 10, 200, 300]),
             "bbox_mode": BoxMode.XYXY_ABS,
             "category_id": 3,
-            "segmentation": [[10, 10, 100, 100, 100, 10], [150, 150, 200, 150, 200, 200]],
+            "segmentation": [
+                [10, 10, 100, 100, 100, 10],
+                [150, 150, 200, 150, 200, 200],
+            ],
         }
 
         output = detection_utils.transform_instance_annotations(anno, transforms, (400, 400))

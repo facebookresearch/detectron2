@@ -140,7 +140,13 @@ class TestTransforms(unittest.TestCase):
         self.assertEqual(str(t), f"AugmentationList[{t0}, {t1}]")
 
     def test_random_apply_prob_out_of_range_check(self):
-        test_probabilities = {0.0: True, 0.5: True, 1.0: True, -0.01: False, 1.01: False}
+        test_probabilities = {
+            0.0: True,
+            0.5: True,
+            1.0: True,
+            -0.01: False,
+            1.01: False,
+        }
 
         for given_probability, is_valid in test_probabilities.items():
             if not is_valid:

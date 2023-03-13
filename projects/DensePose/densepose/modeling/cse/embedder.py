@@ -84,7 +84,10 @@ class Embedder(nn.Module):
         self.mesh_names = set()
         embedder_dim = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE
         logger = logging.getLogger(__name__)
-        for mesh_name, embedder_spec in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
+        for (
+            mesh_name,
+            embedder_spec,
+        ) in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
             logger.info(f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}")
             self.add_module(f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim))
             self.mesh_names.add(mesh_name)

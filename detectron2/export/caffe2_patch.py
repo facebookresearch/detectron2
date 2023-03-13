@@ -93,7 +93,8 @@ def mock_fastrcnn_outputs_inference(
 @contextlib.contextmanager
 def mock_mask_rcnn_inference(tensor_mode, patched_module, check=True):
     with mock.patch(
-        "{}.mask_rcnn_inference".format(patched_module), side_effect=Caffe2MaskRCNNInference()
+        "{}.mask_rcnn_inference".format(patched_module),
+        side_effect=Caffe2MaskRCNNInference(),
     ) as mocked_func:
         yield
     if check:

@@ -7,7 +7,9 @@ from typing import Any, Optional
 
 
 @lru_cache(maxsize=None)
-def decorate_cse_predictor_output_class_with_confidences(BasePredictorOutput: type) -> type:
+def decorate_cse_predictor_output_class_with_confidences(
+    BasePredictorOutput: type,
+) -> type:
     """
     Create a new output class from an existing one by adding new attributes
     related to confidence estimation:

@@ -19,7 +19,12 @@ from termcolor import colored
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from .catalog import DatasetCatalog, MetadataCatalog
-from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIterableDataset
+from .common import (
+    AspectRatioGroupedDataset,
+    DatasetFromList,
+    MapDataset,
+    ToIterableDataset,
+)
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 from .samplers import (

@@ -60,7 +60,9 @@ class EntrywiseAction(Action):
     def add_arguments(cls: type, parser: argparse.ArgumentParser):
         super(EntrywiseAction, cls).add_arguments(parser)
         parser.add_argument(
-            "dataset", metavar="<dataset>", help="Dataset name (e.g. densepose_coco_2014_train)"
+            "dataset",
+            metavar="<dataset>",
+            help="Dataset name (e.g. densepose_coco_2014_train)",
         )
         parser.add_argument(
             "selector",
@@ -70,7 +72,10 @@ class EntrywiseAction(Action):
             "entries from the dataset that satisfy the constraints",
         )
         parser.add_argument(
-            "--max-entries", metavar="N", help="Maximum number of entries to process", type=int
+            "--max-entries",
+            metavar="N",
+            help="Maximum number of entries to process",
+            type=int,
         )
 
     @classmethod

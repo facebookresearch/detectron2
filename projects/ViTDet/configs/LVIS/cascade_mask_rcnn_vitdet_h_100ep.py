@@ -3,7 +3,11 @@ from detectron2.data.detection_utils import get_fed_loss_cls_weights
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.matcher import Matcher
-from detectron2.modeling.roi_heads import FastRCNNOutputLayers, FastRCNNConvFCHead, CascadeROIHeads
+from detectron2.modeling.roi_heads import (
+    FastRCNNOutputLayers,
+    FastRCNNConvFCHead,
+    CascadeROIHeads,
+)
 
 from .mask_rcnn_vitdet_h_100ep import (
     dataloader,

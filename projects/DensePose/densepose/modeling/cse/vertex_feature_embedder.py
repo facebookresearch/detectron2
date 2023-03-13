@@ -22,7 +22,11 @@ class VertexFeatureEmbedder(nn.Module):
     """
 
     def __init__(
-        self, num_vertices: int, feature_dim: int, embed_dim: int, train_features: bool = False
+        self,
+        num_vertices: int,
+        feature_dim: int,
+        embed_dim: int,
+        train_features: bool = False,
     ):
         """
         Initialize embedder, set random embeddings

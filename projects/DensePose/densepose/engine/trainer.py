@@ -9,7 +9,10 @@ from detectron2.evaluation import (
     inference_on_dataset,
     print_csv_format,
 )
-from detectron2.solver.build import get_default_optimizer_params, maybe_add_gradient_clipping
+from detectron2.solver.build import (
+    get_default_optimizer_params,
+    maybe_add_gradient_clipping,
+)
 from detectron2.utils import comm
 from detectron2.utils.events import EventWriter, get_event_storage
 
@@ -17,7 +20,11 @@ import logging
 import os
 import torch
 from collections import OrderedDict
-from densepose import DensePoseDatasetMapperTTA, DensePoseGeneralizedRCNNWithTTA, load_from_cfg
+from densepose import (
+    DensePoseDatasetMapperTTA,
+    DensePoseGeneralizedRCNNWithTTA,
+    load_from_cfg,
+)
 from densepose.data import (
     DatasetMapper,
     build_combined_loader,
@@ -27,7 +34,10 @@ from densepose.data import (
     has_inference_based_loaders,
 )
 from densepose.evaluation.d2_evaluator_adapter import Detectron2COCOEvaluatorAdapter
-from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, build_densepose_evaluator_storage
+from densepose.evaluation.evaluator import (
+    DensePoseCOCOEvaluator,
+    build_densepose_evaluator_storage,
+)
 from densepose.modeling.cse import Embedder
 from torch import nn
 from typing import List, Optional, Union

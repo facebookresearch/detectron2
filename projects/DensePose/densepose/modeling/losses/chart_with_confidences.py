@@ -102,7 +102,13 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                 return {
                     "loss_densepose_UV": (
                         self.uv_loss_with_confidences(
-                            u_est, v_est, sigma_2_est, kappa_u_est, kappa_v_est, u_gt, v_gt
+                            u_est,
+                            v_est,
+                            sigma_2_est,
+                            kappa_u_est,
+                            kappa_v_est,
+                            u_gt,
+                            v_gt,
                         )
                         * self.w_points
                     )

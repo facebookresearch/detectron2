@@ -57,20 +57,36 @@ class DensePoseChartConfidencePredictorMixin:
         if self.confidence_model_cfg.uv_confidence.enabled:
             if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
                 self.sigma_2_lowres = ConvTranspose2d(  # pyre-ignore[16]
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                    dim_in,
+                    dim_out_patches,
+                    kernel_size,
+                    stride=2,
+                    padding=int(kernel_size / 2 - 1),
                 )
             elif (
                 self.confidence_model_cfg.uv_confidence.type
                 == DensePoseUVConfidenceType.INDEP_ANISO
             ):
                 self.sigma_2_lowres = ConvTranspose2d(
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                    dim_in,
+                    dim_out_patches,
+                    kernel_size,
+                    stride=2,
+                    padding=int(kernel_size / 2 - 1),
                 )
                 self.kappa_u_lowres = ConvTranspose2d(  # pyre-ignore[16]
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                    dim_in,
+                    dim_out_patches,
+                    kernel_size,
+                    stride=2,
+                    padding=int(kernel_size / 2 - 1),
                 )
                 self.kappa_v_lowres = ConvTranspose2d(  # pyre-ignore[16]
-                    dim_in, dim_out_patches, kernel_size, stride=2, padding=int(kernel_size / 2 - 1)
+                    dim_in,
+                    dim_out_patches,
+                    kernel_size,
+                    stride=2,
+                    padding=int(kernel_size / 2 - 1),
                 )
             else:
                 raise ValueError(
@@ -130,7 +146,9 @@ class DensePoseChartConfidencePredictorMixin:
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
             output.fine_segm = base_predictor_outputs.fine_segm * torch.repeat_interleave(
-                output.fine_segm_confidence, base_predictor_outputs.fine_segm.shape[1], dim=1
+                output.fine_segm_confidence,
+                base_predictor_outputs.fine_segm.shape[1],
+                dim=1,
             )
             output.coarse_segm_confidence = (
                 F.softplus(
@@ -141,7 +159,9 @@ class DensePoseChartConfidencePredictorMixin:
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
             output.coarse_segm = base_predictor_outputs.coarse_segm * torch.repeat_interleave(
-                output.coarse_segm_confidence, base_predictor_outputs.coarse_segm.shape[1], dim=1
+                output.coarse_segm_confidence,
+                base_predictor_outputs.coarse_segm.shape[1],
+                dim=1,
             )
 
         return output

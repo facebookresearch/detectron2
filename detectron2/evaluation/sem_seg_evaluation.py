@@ -248,7 +248,11 @@ class SemSegEvaluator(DatasetEvaluator):
             mask_rle = mask_util.encode(np.array(mask[:, :, None], order="F"))[0]
             mask_rle["counts"] = mask_rle["counts"].decode("utf-8")
             json_list.append(
-                {"file_name": input_file_name, "category_id": dataset_id, "segmentation": mask_rle}
+                {
+                    "file_name": input_file_name,
+                    "category_id": dataset_id,
+                    "segmentation": mask_rle,
+                }
             )
         return json_list
 

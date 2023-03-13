@@ -117,7 +117,9 @@ class DensePoseChartResultCompressed:
     labels_uv_str: str
 
 
-def quantize_densepose_chart_result(result: DensePoseChartResult) -> DensePoseChartResultQuantized:
+def quantize_densepose_chart_result(
+    result: DensePoseChartResult,
+) -> DensePoseChartResultQuantized:
     """
     Applies quantization to DensePose chart-based result.
 

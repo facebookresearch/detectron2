@@ -1,9 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
 
-from detectron2.data.transforms import RandomRotation, RotationTransform, apply_transform_gens
+from detectron2.data.transforms import (
+    RandomRotation,
+    RotationTransform,
+    apply_transform_gens,
+)
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.modeling.test_time_augmentation import DatasetMapperTTA, GeneralizedRCNNWithTTA
+from detectron2.modeling.test_time_augmentation import (
+    DatasetMapperTTA,
+    GeneralizedRCNNWithTTA,
+)
 
 import copy
 import torch
@@ -123,7 +130,9 @@ class DensePoseGeneralizedRCNNWithTTA(GeneralizedRCNNWithTTA):
                         output.pred_densepose,
                         attr,
                         _inverse_rotation(
-                            getattr(output.pred_densepose, attr), output.pred_boxes.tensor, t
+                            getattr(output.pred_densepose, attr),
+                            output.pred_boxes.tensor,
+                            t,
                         ),
                     )
             if any(isinstance(t, HFlipTransform) for t in tfm.transforms):
@@ -136,7 +145,11 @@ class DensePoseGeneralizedRCNNWithTTA(GeneralizedRCNNWithTTA):
     # incrementally computed average: u_(n + 1) = u_n + (x_(n+1) - u_n) / (n + 1).
     def _incremental_avg_dp(self, avg, new_el, idx):
         for attr in ["coarse_segm", "fine_segm", "u", "v"]:
-            setattr(avg, attr, (getattr(avg, attr) * idx + getattr(new_el, attr)) / (idx + 1))
+            setattr(
+                avg,
+                attr,
+                (getattr(avg, attr) * idx + getattr(new_el, attr)) / (idx + 1),
+            )
             if idx:
                 # Deletion of the > 0 index intermediary values to prevent GPU OOM
                 setattr(new_el, attr, None)

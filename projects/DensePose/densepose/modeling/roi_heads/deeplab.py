@@ -82,7 +82,12 @@ class ASPPConv(nn.Sequential):
     def __init__(self, in_channels, out_channels, dilation):
         modules = [
             nn.Conv2d(
-                in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False
+                in_channels,
+                out_channels,
+                3,
+                padding=dilation,
+                dilation=dilation,
+                bias=False,
             ),
             nn.GroupNorm(32, out_channels),
             nn.ReLU(),
@@ -145,7 +150,12 @@ class ASPP(nn.Module):
 # See https://arxiv.org/abs/1711.07971 for details
 class _NonLocalBlockND(nn.Module):
     def __init__(
-        self, in_channels, inter_channels=None, dimension=3, sub_sample=True, bn_layer=True
+        self,
+        in_channels,
+        inter_channels=None,
+        dimension=3,
+        sub_sample=True,
+        bn_layer=True,
     ):
         super(_NonLocalBlockND, self).__init__()
 

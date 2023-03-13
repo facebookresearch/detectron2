@@ -66,7 +66,9 @@ class DensePoseOutputsVertexVisualizer(object):
         self,
         image_bgr: Image,
         outputs_boxes_xywh_classes: Tuple[
-            Optional[DensePoseEmbeddingPredictorOutput], Optional[Boxes], Optional[List[int]]
+            Optional[DensePoseEmbeddingPredictorOutput],
+            Optional[Boxes],
+            Optional[List[int]],
         ],
     ) -> Image:
         if outputs_boxes_xywh_classes[0] is None:
@@ -128,7 +130,9 @@ class DensePoseOutputsVertexVisualizer(object):
         return S, E, N, bboxes_xywh, pred_classes
 
 
-def get_texture_atlases(json_str: Optional[str]) -> Optional[Dict[str, Optional[np.ndarray]]]:
+def get_texture_atlases(
+    json_str: Optional[str],
+) -> Optional[Dict[str, Optional[np.ndarray]]]:
     """
     json_str is a JSON string representing a mesh_name -> texture_atlas_path dictionary
     """
@@ -174,7 +178,9 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         self,
         image_bgr: Image,
         outputs_boxes_xywh_classes: Tuple[
-            Optional[DensePoseEmbeddingPredictorOutput], Optional[Boxes], Optional[List[int]]
+            Optional[DensePoseEmbeddingPredictorOutput],
+            Optional[Boxes],
+            Optional[List[int]],
         ],
     ) -> Image:
         image_target_bgr = image_bgr.copy()

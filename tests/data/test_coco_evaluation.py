@@ -41,7 +41,11 @@ class TestCOCOeval(unittest.TestCase):
         experiments["no_rec_thrs"] = (detections, gt_annotations, {"recThrs": []})
         experiments["no_max_dets"] = (detections, gt_annotations, {"maxDets": []})
         experiments["one_max_det"] = (detections, gt_annotations, {"maxDets": [1]})
-        experiments["no_area"] = (detections, gt_annotations, {"areaRng": [], "areaRngLbl": []})
+        experiments["no_area"] = (
+            detections,
+            gt_annotations,
+            {"areaRng": [], "areaRngLbl": []},
+        )
 
         # Test what happens if one omits different fields from the annotation structure
         annotation_fields = [
@@ -114,14 +118,22 @@ class TestCOCOeval(unittest.TestCase):
                     # format is bad
                     api_error = "" if api_exception is None else type(api_exception).__name__
                     opt_error = "" if opt_exception is None else type(opt_exception).__name__
-                    msg = "%s: comparing COCO APIs, '%s' != '%s'" % (name, api_error, opt_error)
+                    msg = "%s: comparing COCO APIs, '%s' != '%s'" % (
+                        name,
+                        api_error,
+                        opt_error,
+                    )
                     self.assertTrue(api_error == opt_error, msg=msg)
                 else:
                     # Original API and optimized API should produce the same precision/recalls
                     for k in ["precision", "recall"]:
                         diff = np.abs(coco_eval.eval[k] - coco_eval_opt.eval[k])
                         abs_diff = np.max(diff) if diff.size > 0 else 0.0
-                        msg = "%s: comparing COCO APIs, %s differs by %f" % (name, k, abs_diff)
+                        msg = "%s: comparing COCO APIs, %s differs by %f" % (
+                            name,
+                            k,
+                            abs_diff,
+                        )
                         self.assertTrue(abs_diff < 1e-4, msg=msg)
 
     def test_unknown_category(self):

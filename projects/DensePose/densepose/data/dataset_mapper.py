@@ -11,7 +11,11 @@ from detectron2.utils.file_io import PathManager
 import copy
 import logging
 import torch
-from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
+from densepose.structures import (
+    DensePoseDataRelative,
+    DensePoseList,
+    DensePoseTransformData,
+)
 from typing import Any, Dict, List, Tuple
 
 
@@ -101,7 +105,10 @@ class DatasetMapper:
         annos = [
             self._transform_densepose(
                 utils.transform_instance_annotations(
-                    obj, transforms, image_shape, keypoint_hflip_indices=self.keypoint_hflip_indices
+                    obj,
+                    transforms,
+                    image_shape,
+                    keypoint_hflip_indices=self.keypoint_hflip_indices,
                 ),
                 transforms,
             )

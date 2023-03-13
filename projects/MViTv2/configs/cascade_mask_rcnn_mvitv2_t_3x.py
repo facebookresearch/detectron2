@@ -2,7 +2,11 @@ from detectron2.config import LazyCall as L
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.matcher import Matcher
-from detectron2.modeling.roi_heads import FastRCNNOutputLayers, FastRCNNConvFCHead, CascadeROIHeads
+from detectron2.modeling.roi_heads import (
+    FastRCNNOutputLayers,
+    FastRCNNConvFCHead,
+    CascadeROIHeads,
+)
 from detectron2.layers.batch_norm import NaiveSyncBatchNorm
 
 from .mask_rcnn_mvitv2_t_3x import model, dataloader, optimizer, lr_multiplier, train

@@ -47,7 +47,11 @@ class FastRCNNConvFCHead(nn.Sequential):
         super().__init__()
         assert len(conv_dims) + len(fc_dims) > 0
 
-        self._output_size = (input_shape.channels, input_shape.height, input_shape.width)
+        self._output_size = (
+            input_shape.channels,
+            input_shape.height,
+            input_shape.width,
+        )
 
         self.conv_norm_relus = []
         for k, conv_dim in enumerate(conv_dims):

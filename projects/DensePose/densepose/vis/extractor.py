@@ -9,7 +9,10 @@ from densepose.structures import (
     DensePoseChartResultWithConfidences,
     DensePoseEmbeddingPredictorOutput,
 )
-from densepose.vis.bounding_box import BoundingBoxVisualizer, ScoredBoundingBoxVisualizer
+from densepose.vis.bounding_box import (
+    BoundingBoxVisualizer,
+    ScoredBoundingBoxVisualizer,
+)
 from densepose.vis.densepose_outputs_vertex import DensePoseOutputsVertexVisualizer
 from densepose.vis.densepose_results import DensePoseResultsVisualizer
 from typing import List, Optional, Sequence, Tuple
@@ -114,7 +117,9 @@ class DensePoseOutputsExtractor(object):
         instances: Instances,
         select=None,
     ) -> Tuple[
-        Optional[DensePoseEmbeddingPredictorOutput], Optional[torch.Tensor], Optional[List[int]]
+        Optional[DensePoseEmbeddingPredictorOutput],
+        Optional[torch.Tensor],
+        Optional[List[int]],
     ]:
         if not (instances.has("pred_densepose") and instances.has("pred_boxes")):
             return None, None, None

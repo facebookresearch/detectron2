@@ -313,7 +313,12 @@ def _evaluate_predictions_on_coco(
             coco_gt, coco_dt, "densepose", multi_storage, embedder, dpEvalMode=eval_mode
         )
         result = _derive_results_from_coco_eval(
-            coco_eval, eval_mode_name, densepose_metrics, class_names, min_threshold, img_ids
+            coco_eval,
+            eval_mode_name,
+            densepose_metrics,
+            class_names,
+            min_threshold,
+            img_ids,
         )
         results.append(result)
     return results
@@ -337,7 +342,10 @@ def _derive_results_from_coco_eval(
     if img_ids is not None:
         coco_eval.params.imgIds = img_ids
     coco_eval.params.iouThrs = np.linspace(
-        min_threshold, 0.95, int(np.round((0.95 - min_threshold) / 0.05)) + 1, endpoint=True
+        min_threshold,
+        0.95,
+        int(np.round((0.95 - min_threshold) / 0.05)) + 1,
+        endpoint=True,
     )
     coco_eval.evaluate()
     coco_eval.accumulate()

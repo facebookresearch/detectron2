@@ -1,5 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
+from detectron2.layers import (
+    ROIAlign,
+    ROIAlignRotated,
+    cat,
+    nonzero_tuple,
+    shapes_to_tensor,
+)
 from detectron2.structures import Boxes
 from detectron2.utils.tracing import assert_fx_safe, is_fx_tracing
 
@@ -163,14 +169,20 @@ class ROIPooler(nn.Module):
         if pooler_type == "ROIAlign":
             self.level_poolers = nn.ModuleList(
                 ROIAlign(
-                    output_size, spatial_scale=scale, sampling_ratio=sampling_ratio, aligned=False
+                    output_size,
+                    spatial_scale=scale,
+                    sampling_ratio=sampling_ratio,
+                    aligned=False,
                 )
                 for scale in scales
             )
         elif pooler_type == "ROIAlignV2":
             self.level_poolers = nn.ModuleList(
                 ROIAlign(
-                    output_size, spatial_scale=scale, sampling_ratio=sampling_ratio, aligned=True
+                    output_size,
+                    spatial_scale=scale,
+                    sampling_ratio=sampling_ratio,
+                    aligned=True,
                 )
                 for scale in scales
             )
@@ -246,7 +258,11 @@ class ROIPooler(nn.Module):
             return self.level_poolers[0](x[0], pooler_fmt_boxes)
 
         level_assignments = assign_boxes_to_levels(
-            box_lists, self.min_level, self.max_level, self.canonical_box_size, self.canonical_level
+            box_lists,
+            self.min_level,
+            self.max_level,
+            self.canonical_box_size,
+            self.canonical_level,
         )
 
         num_channels = x[0].shape[1]

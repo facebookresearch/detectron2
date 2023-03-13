@@ -63,7 +63,11 @@ class TridentConv(nn.Module):
             output_shape = [
                 (i + 2 * p - (di * (k - 1) + 1)) // s + 1
                 for i, p, di, k, s in zip(
-                    inputs[0].shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
+                    inputs[0].shape[-2:],
+                    self.padding,
+                    self.dilation,
+                    self.kernel_size,
+                    self.stride,
                 )
             ]
             output_shape = [input[0].shape[0], self.weight.shape[0]] + output_shape
@@ -71,7 +75,15 @@ class TridentConv(nn.Module):
 
         if self.training or self.test_branch_idx == -1:
             outputs = [
-                F.conv2d(input, self.weight, self.bias, self.stride, padding, dilation, self.groups)
+                F.conv2d(
+                    input,
+                    self.weight,
+                    self.bias,
+                    self.stride,
+                    padding,
+                    dilation,
+                    self.groups,
+                )
                 for input, dilation, padding in zip(inputs, self.dilations, self.paddings)
             ]
         else:

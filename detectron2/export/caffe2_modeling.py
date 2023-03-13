@@ -260,7 +260,10 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
         check_set_pb_arg(
-            predict_net, "device", "s", str.encode(str(self._wrapped_model.device), "ascii")
+            predict_net,
+            "device",
+            "s",
+            str.encode(str(self._wrapped_model.device), "ascii"),
         )
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"GeneralizedRCNN")
 
@@ -317,19 +320,31 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
         check_set_pb_arg(predict_net, "size_divisibility", "i", size_divisibility)
         check_set_pb_arg(
-            predict_net, "device", "s", str.encode(str(self._wrapped_model.device), "ascii")
+            predict_net,
+            "device",
+            "s",
+            str.encode(str(self._wrapped_model.device), "ascii"),
         )
         check_set_pb_arg(predict_net, "meta_architecture", "s", b"RetinaNet")
 
         # Inference parameters:
         check_set_pb_arg(
-            predict_net, "score_threshold", "f", _cast_to_f32(self._wrapped_model.test_score_thresh)
+            predict_net,
+            "score_threshold",
+            "f",
+            _cast_to_f32(self._wrapped_model.test_score_thresh),
         )
         check_set_pb_arg(
-            predict_net, "topk_candidates", "i", self._wrapped_model.test_topk_candidates
+            predict_net,
+            "topk_candidates",
+            "i",
+            self._wrapped_model.test_topk_candidates,
         )
         check_set_pb_arg(
-            predict_net, "nms_threshold", "f", _cast_to_f32(self._wrapped_model.test_nms_thresh)
+            predict_net,
+            "nms_threshold",
+            "f",
+            _cast_to_f32(self._wrapped_model.test_nms_thresh),
         )
         check_set_pb_arg(
             predict_net,

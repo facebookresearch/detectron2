@@ -11,7 +11,13 @@ It is an example of how a user might use detectron2 for a new project.
 
 import detectron2.utils.comm as comm
 from detectron2.config import get_cfg
-from detectron2.engine import DEFAULT_TIMEOUT, default_argument_parser, default_setup, hooks, launch
+from detectron2.engine import (
+    DEFAULT_TIMEOUT,
+    default_argument_parser,
+    default_setup,
+    hooks,
+    launch,
+)
 from detectron2.evaluation import verify_results
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger

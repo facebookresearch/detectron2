@@ -101,7 +101,10 @@ class PointRendSemSegHead(nn.Module):
                 .to(torch.long)
             )
             losses["loss_sem_seg_point"] = F.cross_entropy(
-                point_logits, point_targets, reduction="mean", ignore_index=self.ignore_value
+                point_logits,
+                point_targets,
+                reduction="mean",
+                ignore_index=self.ignore_value,
             )
             return None, losses
         else:

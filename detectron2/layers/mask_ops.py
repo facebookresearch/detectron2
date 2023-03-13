@@ -73,7 +73,10 @@ def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True
 # Annotate boxes as Tensor (but not Boxes) in order to use scripting
 @torch.jit.script_if_tracing
 def paste_masks_in_image(
-    masks: torch.Tensor, boxes: torch.Tensor, image_shape: Tuple[int, int], threshold: float = 0.5
+    masks: torch.Tensor,
+    boxes: torch.Tensor,
+    image_shape: Tuple[int, int],
+    threshold: float = 0.5,
 ):
     """
     Paste a set of masks that are of a fixed resolution (e.g., 28 x 28) into an image.
@@ -128,11 +131,19 @@ def paste_masks_in_image(
     chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
 
     img_masks = torch.zeros(
-        N, img_h, img_w, device=device, dtype=torch.bool if threshold >= 0 else torch.uint8
+        N,
+        img_h,
+        img_w,
+        device=device,
+        dtype=torch.bool if threshold >= 0 else torch.uint8,
     )
     for inds in chunks:
         masks_chunk, spatial_inds = _do_paste_mask(
-            masks[inds, None, :, :], boxes[inds], img_h, img_w, skip_empty=device.type == "cpu"
+            masks[inds, None, :, :],
+            boxes[inds],
+            img_h,
+            img_w,
+            skip_empty=device.type == "cpu",
         )
 
         if threshold >= 0:

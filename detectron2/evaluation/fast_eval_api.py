@@ -87,7 +87,12 @@ class COCOeval_opt(COCOeval):
 
         # Call C++ implementation of self.evaluateImgs()
         self._evalImgs_cpp = _C.COCOevalEvaluateImages(
-            p.areaRng, maxDet, p.iouThrs, ious, ground_truth_instances, detected_instances
+            p.areaRng,
+            maxDet,
+            p.iouThrs,
+            ious,
+            ground_truth_instances,
+            detected_instances,
         )
         self._evalImgs = None
 

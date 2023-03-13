@@ -210,7 +210,8 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                 )
                 self.assertTrue(
                     torch.allclose(
-                        dp_data.vertex_ids, packed_anns.vertex_ids_gt[pt_offset : pt_offset + n_pts]
+                        dp_data.vertex_ids,
+                        packed_anns.vertex_ids_gt[pt_offset : pt_offset + n_pts],
                     )
                 )
                 self.assertTrue(

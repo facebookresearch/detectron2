@@ -5,7 +5,10 @@ from detectron2.structures import Instances
 
 import torch
 from densepose.data.meshes.catalog import MeshCatalog
-from densepose.modeling.cse.utils import normalize_embeddings, squared_euclidean_distance_matrix
+from densepose.modeling.cse.utils import (
+    normalize_embeddings,
+    squared_euclidean_distance_matrix,
+)
 from torch import nn
 from torch.nn import functional as F
 from typing import Any, List

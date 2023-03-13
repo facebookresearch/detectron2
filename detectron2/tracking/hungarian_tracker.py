@@ -96,7 +96,10 @@ class BaseHungarianTracker(BaseTracker):
         return instances
 
     def _process_matched_idx(
-        self, instances: Instances, matched_idx: np.ndarray, matched_prev_idx: np.ndarray
+        self,
+        instances: Instances,
+        matched_idx: np.ndarray,
+        matched_prev_idx: np.ndarray,
     ) -> Instances:
         assert matched_idx.size == matched_prev_idx.size
         for i in range(matched_idx.size):

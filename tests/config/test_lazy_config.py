@@ -63,7 +63,11 @@ class TestLazyPythonConfig(unittest.TestCase):
 
     def test_to_py(self):
         cfg = LazyConfig.load(self.root_filename)
-        cfg.lazyobj.x = {"a": 1, "b": 2, "c": L(count)(x={"r": "a", "s": 2.4, "t": [1, 2, 3, "z"]})}
+        cfg.lazyobj.x = {
+            "a": 1,
+            "b": 2,
+            "c": L(count)(x={"r": "a", "s": 2.4, "t": [1, 2, 3, "z"]}),
+        }
         cfg.list = ["a", 1, "b", 3.2]
         py_str = LazyConfig.to_py(cfg)
         expected = """cfg.dir1a_dict.a = "modified"

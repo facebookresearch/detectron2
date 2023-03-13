@@ -53,7 +53,10 @@ class DensePoseEmbeddingPredictor(nn.Module):
                 by applying the scale factor to H and W
         """
         return interpolate(
-            tensor_nchw, scale_factor=self.scale_factor, mode="bilinear", align_corners=False
+            tensor_nchw,
+            scale_factor=self.scale_factor,
+            mode="bilinear",
+            align_corners=False,
         )
 
     def forward(self, head_outputs):

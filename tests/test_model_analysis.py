@@ -1,7 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 
-from detectron2.utils.analysis import find_unused_parameters, flop_count_operators, parameter_count
+from detectron2.utils.analysis import (
+    find_unused_parameters,
+    flop_count_operators,
+    parameter_count,
+)
 from detectron2.utils.testing import get_model_no_weights
 
 import torch

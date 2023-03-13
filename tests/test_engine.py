@@ -75,7 +75,10 @@ class TestTrainer(unittest.TestCase):
             writers = [CommonMetricPrinter(max_iter), JSONWriter(json_file)]
 
             trainer.register_hooks(
-                [hooks.EvalHook(0, lambda: {"metric": 100}), hooks.PeriodicWriter(writers)]
+                [
+                    hooks.EvalHook(0, lambda: {"metric": 100}),
+                    hooks.PeriodicWriter(writers),
+                ]
             )
             with self.assertLogs(writers[0].logger) as logs:
                 trainer.train(0, max_iter)

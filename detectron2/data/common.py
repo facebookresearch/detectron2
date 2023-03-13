@@ -14,7 +14,12 @@ import torch.utils.data as data
 from torch.utils.data.sampler import Sampler
 from typing import Callable, Union
 
-__all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset", "ToIterableDataset"]
+__all__ = [
+    "MapDataset",
+    "DatasetFromList",
+    "AspectRatioGroupedDataset",
+    "ToIterableDataset",
+]
 
 logger = logging.getLogger(__name__)
 

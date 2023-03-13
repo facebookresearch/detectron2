@@ -160,7 +160,9 @@ class ROIAlignRotatedTest(unittest.TestCase):
 
         # roi format is (batch index, x1, y1, x2, y2)
         rois = torch.tensor(
-            [[0, 0, 0, 9, 9], [0, 0, 5, 4, 9], [0, 5, 5, 9, 9]], dtype=dtype, device=device
+            [[0, 0, 0, 9, 9], [0, 0, 5, 4, 9], [0, 5, 5, 9, 9]],
+            dtype=dtype,
+            device=device,
         )
 
         y = roi_align(x, rois)

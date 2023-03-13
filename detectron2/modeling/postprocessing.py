@@ -7,7 +7,10 @@ from torch.nn import functional as F
 
 # perhaps should rename to "resize_instance"
 def detector_postprocess(
-    results: Instances, output_height: int, output_width: int, mask_threshold: float = 0.5
+    results: Instances,
+    output_height: int,
+    output_width: int,
+    mask_threshold: float = 0.5,
 ):
     """
     Resize the output instances.

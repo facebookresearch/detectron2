@@ -226,7 +226,9 @@ class RPNTest(unittest.TestCase):
                 )
             )
         torch.jit.trace(
-            func, (proposal, pred_logit, torch.tensor([100, 100])), check_inputs=other_inputs
+            func,
+            (proposal, pred_logit, torch.tensor([100, 100])),
+            check_inputs=other_inputs,
         )
 
     def test_append_gt_to_proposal(self):

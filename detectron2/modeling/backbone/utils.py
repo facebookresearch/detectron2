@@ -163,7 +163,12 @@ class PatchEmbed(nn.Module):
     """
 
     def __init__(
-        self, kernel_size=(16, 16), stride=(16, 16), padding=(0, 0), in_chans=3, embed_dim=768
+        self,
+        kernel_size=(16, 16),
+        stride=(16, 16),
+        padding=(0, 0),
+        in_chans=3,
+        embed_dim=768,
     ):
         """
         Args:

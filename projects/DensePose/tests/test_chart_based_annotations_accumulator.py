@@ -52,7 +52,13 @@ class TestChartBasedAnnotationsAccumulator(unittest.TestCase):
         )
         expected_values = {
             "s_gt": [
-                torch.zeros((3, DensePoseDataRelative.MASK_SIZE, DensePoseDataRelative.MASK_SIZE))
+                torch.zeros(
+                    (
+                        3,
+                        DensePoseDataRelative.MASK_SIZE,
+                        DensePoseDataRelative.MASK_SIZE,
+                    )
+                )
             ]
             * n_instances,
             "bbox_xywh_est": bbox_xywh_est.split(1),

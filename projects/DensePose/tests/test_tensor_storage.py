@@ -103,7 +103,10 @@ def launch(main_func, nprocs, args=()):
     dist_url = f"tcp://127.0.0.1:{port}"
     # dist_url = "env://"
     mp.spawn(
-        distributed_worker, nprocs=nprocs, args=(main_func, nprocs, dist_url, args), daemon=False
+        distributed_worker,
+        nprocs=nprocs,
+        args=(main_func, nprocs, dist_url, args),
+        daemon=False,
     )
 
 

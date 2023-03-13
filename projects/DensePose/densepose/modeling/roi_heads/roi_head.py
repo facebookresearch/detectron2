@@ -48,7 +48,8 @@ class Decoder(nn.Module):
         for in_feature in self.in_features:
             head_ops = []
             head_length = max(
-                1, int(np.log2(feature_strides[in_feature]) - np.log2(self.common_stride))
+                1,
+                int(np.log2(feature_strides[in_feature]) - np.log2(self.common_stride)),
             )
             for k in range(head_length):
                 conv = Conv2d(

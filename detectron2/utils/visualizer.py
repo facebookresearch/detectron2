@@ -2,7 +2,14 @@
 import numpy as np
 
 from detectron2.data import MetadataCatalog
-from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
+from detectron2.structures import (
+    BitMasks,
+    Boxes,
+    BoxMode,
+    Keypoints,
+    PolygonMasks,
+    RotatedBoxes,
+)
 from detectron2.utils.file_io import PathManager
 
 import colorsys
@@ -521,7 +528,10 @@ class Visualizer:
         except KeyError:
             scores = None
         labels = _create_text_labels(
-            category_ids, scores, self.metadata.thing_classes, [x.get("iscrowd", 0) for x in sinfo]
+            category_ids,
+            scores,
+            self.metadata.thing_classes,
+            [x.get("iscrowd", 0) for x in sinfo],
         )
 
         try:
@@ -580,7 +590,11 @@ class Visualizer:
                 is_crowd=[x.get("iscrowd", 0) for x in annos],
             )
             self.overlay_instances(
-                labels=labels, boxes=boxes, masks=masks, keypoints=keypts, assigned_colors=colors
+                labels=labels,
+                boxes=boxes,
+                masks=masks,
+                keypoints=keypts,
+                assigned_colors=colors,
             )
 
         sem_seg = dic.get("sem_seg", None)
@@ -780,7 +794,9 @@ class Visualizer:
 
         for i in range(num_instances):
             self.draw_rotated_box_with_label(
-                boxes[i], edge_color=colors[i], label=labels[i] if labels is not None else None
+                boxes[i],
+                edge_color=colors[i],
+                label=labels[i] if labels is not None else None,
             )
 
         return self.output
@@ -1034,7 +1050,14 @@ class Visualizer:
         return self.output
 
     def draw_binary_mask(
-        self, binary_mask, color=None, *, edge_color=None, text=None, alpha=0.5, area_threshold=10
+        self,
+        binary_mask,
+        color=None,
+        *,
+        edge_color=None,
+        text=None,
+        alpha=0.5,
+        area_threshold=10,
     ):
         """
         Args:

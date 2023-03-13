@@ -173,7 +173,8 @@ def register_all_cityscapes_panoptic(root):
         gt_json = os.path.join(root, gt_json)
 
         DatasetCatalog.register(
-            key, lambda x=image_dir, y=gt_dir, z=gt_json: load_cityscapes_panoptic(x, y, z, meta)
+            key,
+            lambda x=image_dir, y=gt_dir, z=gt_json: load_cityscapes_panoptic(x, y, z, meta),
         )
         MetadataCatalog.get(key).set(
             panoptic_root=gt_dir,

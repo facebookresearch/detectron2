@@ -230,7 +230,10 @@ class DenseDetector(nn.Module):
             pred_deltas[anchor_idxs], anchors.tensor[anchor_idxs]
         )
         return Instances(
-            image_size, pred_boxes=Boxes(pred_boxes), scores=pred_scores, pred_classes=classes_idxs
+            image_size,
+            pred_boxes=Boxes(pred_boxes),
+            scores=pred_scores,
+            pred_classes=classes_idxs,
         )
 
     def _decode_multi_level_predictions(

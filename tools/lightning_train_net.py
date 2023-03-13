@@ -93,7 +93,9 @@ class TrainingModule(LightningModule):
 
         opt = self.optimizers()
         self.storage.put_scalar(
-            "lr", opt.param_groups[self._best_param_group_id]["lr"], smoothing_hint=False
+            "lr",
+            opt.param_groups[self._best_param_group_id]["lr"],
+            smoothing_hint=False,
         )
         self.iteration_timer.after_step()
         self.storage.step()

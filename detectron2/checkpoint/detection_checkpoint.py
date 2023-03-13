@@ -81,7 +81,11 @@ class DetectionCheckpointer(Checkpointer):
                     # Detection models have "blobs", but ImageNet models don't
                     data = data["blobs"]
                 data = {k: v for k, v in data.items() if not k.endswith("_momentum")}
-                return {"model": data, "__author__": "Caffe2", "matching_heuristics": True}
+                return {
+                    "model": data,
+                    "__author__": "Caffe2",
+                    "matching_heuristics": True,
+                }
         elif filename.endswith(".pyth"):
             # assume file is from pycls; no one else seems to use the ".pyth" extension
             with PathManager.open(filename, "rb") as f:
@@ -94,7 +98,11 @@ class DetectionCheckpointer(Checkpointer):
                 for k, v in data["model_state"].items()
                 if not k.endswith("num_batches_tracked")
             }
-            return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
+            return {
+                "model": model_state,
+                "__author__": "pycls",
+                "matching_heuristics": True,
+            }
 
         loaded = self._torch_load(filename)
         if "model" not in loaded:

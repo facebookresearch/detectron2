@@ -57,7 +57,8 @@ def assert_fx_safe(condition: bool, message: str) -> torch.Tensor:
             if isinstance(condition, str):
                 caller_frame = inspect.currentframe().f_back
                 torch._assert(
-                    eval(condition, caller_frame.f_globals, caller_frame.f_locals), message
+                    eval(condition, caller_frame.f_globals, caller_frame.f_locals),
+                    message,
                 )
                 return torch.ones(1)
             else:
