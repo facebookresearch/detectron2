@@ -2,9 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import torch
+from torch.autograd import gradcheck
+
 import unittest
 from tensormask.layers.swap_align2nat import SwapAlign2Nat
-from torch.autograd import gradcheck
 
 
 class SwapAlign2NatTest(unittest.TestCase):

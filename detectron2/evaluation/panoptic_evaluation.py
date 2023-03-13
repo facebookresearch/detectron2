@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+from PIL import Image
+from tabulate import tabulate
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
@@ -13,8 +15,6 @@ import logging
 import os
 import tempfile
 from collections import OrderedDict
-from PIL import Image
-from tabulate import tabulate
 from typing import Optional
 
 from .evaluator import DatasetEvaluator

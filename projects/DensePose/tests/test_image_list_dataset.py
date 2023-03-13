@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+from torchvision.utils import save_image
+
 import contextlib
 import os
 import tempfile
-import torch
 import unittest
 from densepose.data.image_list_dataset import ImageListDataset
 from densepose.data.transform import ImageResizeTransform
-from torchvision.utils import save_image
 
 
 @contextlib.contextmanager

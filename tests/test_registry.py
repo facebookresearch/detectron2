@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 from detectron2.modeling.meta_arch import GeneralizedRCNN
 from detectron2.utils.registry import _convert_target_to_string, locate
 
-import torch
 import unittest
 
 

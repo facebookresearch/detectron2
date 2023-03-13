@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
 
 from detectron2.config import CfgNode as CfgNode_
 from detectron2.config import instantiate
@@ -10,7 +11,6 @@ from detectron2.tracking.iou_weighted_hungarian_bbox_iou_tracker import (  # noq
 )
 
 import copy
-import torch
 import unittest
 from typing import Dict
 

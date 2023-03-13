@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import torch
+
 from typing import BinaryIO, Dict, Union
 
 

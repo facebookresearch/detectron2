@@ -1,5 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+from torch import Tensor, nn
+
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.config.instantiate import dump_dataclass, instantiate
@@ -27,10 +30,8 @@ import json
 import os
 import random
 import tempfile
-import torch
 import unittest
 import zipfile
-from torch import Tensor, nn
 
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html

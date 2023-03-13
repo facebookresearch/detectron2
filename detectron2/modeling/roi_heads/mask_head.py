@@ -1,4 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import fvcore.nn.weight_init as weight_init
+import torch
+from torch import nn
+from torch.nn import functional as F
+
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ConvTranspose2d, ShapeSpec, cat, get_norm
 from detectron2.layers.wrappers import move_device_like
@@ -6,10 +11,6 @@ from detectron2.structures import Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
 
-import fvcore.nn.weight_init as weight_init
-import torch
-from torch import nn
-from torch.nn import functional as F
 from typing import List
 
 __all__ = [

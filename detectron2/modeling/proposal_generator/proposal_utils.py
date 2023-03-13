@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 from detectron2.layers import batched_nms, cat, move_device_like
 from detectron2.structures import Boxes, Instances
 
 import logging
 import math
-import torch
 from typing import List, Tuple, Union
 
 logger = logging.getLogger(__name__)

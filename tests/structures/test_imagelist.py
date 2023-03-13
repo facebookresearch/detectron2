@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+
 from detectron2.structures import ImageList
 
-import torch
 import unittest
 from typing import List, Sequence, Tuple
 

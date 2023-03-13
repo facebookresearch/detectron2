@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+from torch import Tensor, nn
 
 from detectron2.data.detection_utils import convert_image_to_rgb
 from detectron2.layers import move_device_like
@@ -6,8 +8,6 @@ from detectron2.modeling import Backbone
 from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
 
-import torch
-from torch import Tensor, nn
 from typing import Dict, List, Optional, Tuple
 
 from ..postprocessing import detector_postprocess

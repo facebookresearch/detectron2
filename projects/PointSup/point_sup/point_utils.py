@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from detectron2.layers import cat
-
 import torch
+
+from detectron2.layers import cat
 
 
 def get_point_coords_from_point_annotation(instances):

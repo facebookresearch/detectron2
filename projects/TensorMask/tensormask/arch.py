@@ -1,4 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+import torch.nn.functional as F
+from fvcore.nn import sigmoid_focal_loss_star_jit, smooth_l1_loss
+from torch import nn
+
 from detectron2.layers import ShapeSpec, batched_nms, cat, paste_masks_in_image
 from detectron2.modeling.anchor_generator import DefaultAnchorGenerator
 from detectron2.modeling.backbone import build_backbone
@@ -9,11 +14,7 @@ from detectron2.structures import Boxes, ImageList, Instances
 
 import copy
 import math
-import torch
-import torch.nn.functional as F
-from fvcore.nn import sigmoid_focal_loss_star_jit, smooth_l1_loss
 from tensormask.layers import SwapAlign2Nat
-from torch import nn
 from typing import List
 
 __all__ = ["TensorMask"]

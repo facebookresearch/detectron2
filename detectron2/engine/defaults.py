@@ -9,6 +9,11 @@ The behavior of functions/classes in this file is subject to change,
 since they are meant to represent the "common default behavior" people need in their projects.
 """
 
+import torch
+from fvcore.nn.precise_bn import get_bn_modules
+from omegaconf import OmegaConf
+from torch.nn.parallel import DistributedDataParallel
+
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode, LazyConfig
@@ -36,12 +41,8 @@ import argparse
 import logging
 import os
 import sys
-import torch
 import weakref
 from collections import OrderedDict
-from fvcore.nn.precise_bn import get_bn_modules
-from omegaconf import OmegaConf
-from torch.nn.parallel import DistributedDataParallel
 from typing import Optional
 
 from . import hooks

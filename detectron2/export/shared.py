@@ -1,18 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-
 import caffe2.python.utils as putils
-import collections
-import copy
-import functools
-import logging
-import os
 import torch
 import torch.nn.functional as F
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core, net_drawer, workspace
 from torch.nn.functional import interpolate as interp
+
+import collections
+import copy
+import functools
+import logging
+import os
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from unittest import mock
 

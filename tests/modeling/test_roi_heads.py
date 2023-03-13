@@ -1,4 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from torch import nn
+
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export.torchscript_patch import (
@@ -21,10 +24,8 @@ from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import assert_instances_allclose, random_boxes
 
 import logging
-import torch
 import unittest
 from copy import deepcopy
-from torch import nn
 
 logger = logging.getLogger(__name__)
 

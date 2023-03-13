@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import torch
+
 from detectron2.structures import Boxes, BoxMode, Instances
 
-import torch
 import unittest
 from densepose.modeling.losses.embed_utils import CseAnnotationsAccumulator
 from densepose.structures import DensePoseDataRelative, DensePoseList

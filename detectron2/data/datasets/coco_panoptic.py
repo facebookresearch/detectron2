@@ -208,13 +208,13 @@ if __name__ == "__main__":
         pre-registered ones
     """
     import numpy as np
+    from PIL import Image
 
     import detectron2.data.datasets  # noqa # add pre-defined metadata
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
 
     import sys
-    from PIL import Image
 
     logger = setup_logger(name=__name__)
     assert sys.argv[4] in DatasetCatalog.list()

@@ -1,18 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import cv2
+import tqdm
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
 
 import argparse
-import cv2
 import glob
 import multiprocessing as mp
 import os
 import tempfile
 import time
-import tqdm
 import warnings
 from predictor import VisualizationDemo
 

@@ -1,6 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 # need some explicit imports due to https://github.com/pytorch/pytorch/issues/38964
+import torch
+from torch import nn
+
 import detectron2  # noqa F401
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.env import _import_file
@@ -8,10 +11,8 @@ from detectron2.utils.env import _import_file
 import os
 import sys
 import tempfile
-import torch
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
-from torch import nn
 from unittest import mock
 
 _counter = 0

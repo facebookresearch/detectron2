@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 
+import torch
+
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import get_model_no_weights
 
 import itertools
-import torch
 import unittest
 from contextlib import contextmanager
 from copy import deepcopy

@@ -1,4 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from torch import nn
+
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, move_device_like
 from detectron2.structures import Boxes, RotatedBoxes
@@ -6,8 +9,6 @@ from detectron2.utils.registry import Registry
 
 import collections
 import math
-import torch
-from torch import nn
 from typing import List
 
 ANCHOR_GENERATOR_REGISTRY = Registry("ANCHOR_GENERATOR")

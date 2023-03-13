@@ -2,6 +2,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import tqdm
+from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
@@ -16,9 +18,7 @@ from detectron2.utils.analysis import (
 from detectron2.utils.logger import setup_logger
 
 import logging
-import tqdm
 from collections import Counter
-from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 logger = logging.getLogger("detectron2")
 

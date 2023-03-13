@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import absolute_import, division, print_function, unicode_literals
+import torch
+from fvcore.common.benchmark import benchmark
 
 from detectron2.layers.rotated_boxes import pairwise_iou_rotated
 from detectron2.structures.boxes import Boxes
@@ -9,9 +11,7 @@ from detectron2.utils.testing import reload_script_model
 import logging
 import math
 import random
-import torch
 import unittest
-from fvcore.common.benchmark import benchmark
 
 logger = logging.getLogger(__name__)
 

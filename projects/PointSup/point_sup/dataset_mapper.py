@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import numpy as np
+import torch
 
 import detectron2.data.detection_utils as utils
 import detectron2.data.transforms as T
@@ -7,7 +8,6 @@ from detectron2.config import configurable
 
 import copy
 import logging
-import torch
 from typing import List, Union
 
 from .detection_utils import annotations_to_instances, transform_instance_annotations

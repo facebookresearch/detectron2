@@ -13,13 +13,12 @@ LICENSE: https://github.com/SwinTransformer/Swin-Transformer-Object-Detection/bl
 """
 
 import numpy as np
-
-from detectron2.modeling.backbone.backbone import Backbone
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
+
+from detectron2.modeling.backbone.backbone import Backbone
 
 _to_2tuple = nn.modules.utils._ntuple(2)
 

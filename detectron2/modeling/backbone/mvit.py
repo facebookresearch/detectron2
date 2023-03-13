@@ -1,8 +1,8 @@
 import numpy as np
-
-import logging
 import torch
 import torch.nn as nn
+
+import logging
 
 from .backbone import Backbone
 from .utils import (

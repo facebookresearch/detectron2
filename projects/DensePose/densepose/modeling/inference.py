@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 from detectron2.structures import Instances
 
-import torch
 from dataclasses import fields
 from typing import Any, List
 

@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
 
 from detectron2.data.detection_utils import read_image
 
-import torch
 from typing import List, Optional, Tuple
 
 from ..structures import DensePoseChartResult

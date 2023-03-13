@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-
 import cv2
-import random
 from fvcore.transforms.transform import Transform
+
+import random
 
 
 class ColorAugSSDTransform(Transform):

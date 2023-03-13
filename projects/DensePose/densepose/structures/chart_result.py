@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import torch
+
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
@@ -147,10 +148,10 @@ def compress_quantized_densepose_chart_result(
         Compressed DensePose chart-based result (DensePoseChartResultCompressed)
     """
     import numpy as np
+    from PIL import Image
 
     import base64
     from io import BytesIO
-    from PIL import Image
 
     labels_uv_uint8_np_chw = result.labels_uv_uint8.cpu().numpy()
     labels_uv_uint8_np_hwc = np.moveaxis(labels_uv_uint8_np_chw, 0, -1)
@@ -174,10 +175,10 @@ def decompress_compressed_densepose_chart_result(
         Quantized DensePose chart-based result (DensePoseChartResultQuantized)
     """
     import numpy as np
+    from PIL import Image
 
     import base64
     from io import BytesIO
-    from PIL import Image
 
     fstream = BytesIO(base64.decodebytes(result.labels_uv_str.encode()))
     im = Image.open(fstream)

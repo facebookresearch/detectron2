@@ -8,6 +8,12 @@
 __author__ = "tsungyi"
 
 import numpy as np
+import scipy.spatial.distance as ssd
+import torch
+import torch.nn.functional as F
+from pycocotools import mask as maskUtils
+from scipy.io import loadmat
+from scipy.ndimage import zoom as spzoom
 
 from detectron2.utils.file_io import PathManager
 
@@ -15,14 +21,9 @@ import copy
 import datetime
 import logging
 import pickle
-import scipy.spatial.distance as ssd
 import time
-import torch
-import torch.nn.functional as F
 from collections import defaultdict
-from densepose.converters.chart_output_to_chart_result import (
-    resample_uv_tensors_to_bbox,
-)
+from densepose.converters.chart_output_to_chart_result import resample_uv_tensors_to_bbox
 from densepose.converters.segm_to_mask import (
     resample_coarse_segm_tensor_to_bbox,
     resample_fine_and_coarse_segm_tensors_to_bbox,
@@ -31,9 +32,6 @@ from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures import DensePoseDataRelative
 from densepose.structures.mesh import create_mesh
 from enum import Enum
-from pycocotools import mask as maskUtils
-from scipy.io import loadmat
-from scipy.ndimage import zoom as spzoom
 from typing import Any, Dict, Tuple
 
 logger = logging.getLogger(__name__)

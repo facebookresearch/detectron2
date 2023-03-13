@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 from detectron2.structures.masks import BitMasks, PolygonMasks, polygons_to_bitmask
 
-import torch
 import unittest
 
 

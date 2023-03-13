@@ -2,6 +2,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import cv2
+import tqdm
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import Boxes, BoxMode, Instances
@@ -10,10 +12,8 @@ from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
 
 import argparse
-import cv2
 import json
 import os
-import tqdm
 from collections import defaultdict
 
 

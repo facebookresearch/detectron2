@@ -1,17 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # -*- coding: utf-8 -*-
 
+import fvcore
+from fvcore.nn import activation_count, flop_count, parameter_count, parameter_count_table
+from torch import nn
+
 from detectron2.export import TracingAdapter
 
-import fvcore
 import typing
-from fvcore.nn import (
-    activation_count,
-    flop_count,
-    parameter_count,
-    parameter_count_table,
-)
-from torch import nn
 from typing import Any, List
 
 __all__ = [

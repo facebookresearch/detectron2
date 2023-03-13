@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+from torch.nn import functional as F
+
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
 import random
-import torch
 from densepose.converters.base import IntTupleBox
-from torch.nn import functional as F
 from typing import Optional, Tuple
 
 from .densepose_cse_base import DensePoseCSEBaseSampler

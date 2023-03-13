@@ -2,12 +2,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import torch
+from torch.utils.data.dataset import Dataset
 
 from detectron2.data.detection_utils import read_image
 
 import logging
-import torch
-from torch.utils.data.dataset import Dataset
 from typing import Any, Callable, Dict, List, Optional, Union
 
 ImageTransform = Callable[[torch.Tensor], torch.Tensor]

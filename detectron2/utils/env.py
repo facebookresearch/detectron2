@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
 
 import importlib
 import importlib.util
@@ -7,7 +8,6 @@ import logging
 import os
 import random
 import sys
-import torch
 from datetime import datetime
 
 __all__ = ["seed_all_rng"]

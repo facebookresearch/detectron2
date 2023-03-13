@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import torch
+
 from dataclasses import dataclass
 from typing import Union
 

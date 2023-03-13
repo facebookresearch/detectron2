@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from torch import nn
+
 from detectron2.config import CfgNode
 
-from torch import nn
 from typing import Optional
 
 from .cse.embedder import Embedder

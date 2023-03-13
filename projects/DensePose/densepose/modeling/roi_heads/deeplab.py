@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from detectron2.config import CfgNode
-from detectron2.layers import Conv2d
-
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
 from torch.nn import functional as F
+
+from detectron2.config import CfgNode
+from detectron2.layers import Conv2d
 
 from .registry import ROI_DENSEPOSE_HEAD_REGISTRY
 

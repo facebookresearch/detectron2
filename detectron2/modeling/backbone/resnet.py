@@ -1,5 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import fvcore.nn.weight_init as weight_init
+import torch
+import torch.nn.functional as F
+from torch import nn
 
 from detectron2.layers import (
     CNNBlockBase,
@@ -9,11 +13,6 @@ from detectron2.layers import (
     ShapeSpec,
     get_norm,
 )
-
-import fvcore.nn.weight_init as weight_init
-import torch
-import torch.nn.functional as F
-from torch import nn
 
 from .backbone import Backbone
 from .build import BACKBONE_REGISTRY

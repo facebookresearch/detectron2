@@ -2,13 +2,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 from setuptools import find_packages, setup
+import torch
+from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
 import glob
 import os
 import shutil
-import torch
 from os import path
-from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 from typing import List
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]

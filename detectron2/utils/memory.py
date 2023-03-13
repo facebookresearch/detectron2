@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
 import torch
+
+import logging
 from contextlib import contextmanager
 from functools import wraps
 

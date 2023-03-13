@@ -1,5 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+import torch.onnx.symbolic_helper as sym_help
+from packaging import version
+from torch._C import ListType
+from torch.onnx import register_custom_op_symbolic
 
 from detectron2 import model_zoo
 from detectron2.config import CfgNode, LazyConfig, instantiate
@@ -13,12 +18,7 @@ import io
 import os
 import re
 import tempfile
-import torch
-import torch.onnx.symbolic_helper as sym_help
 import unittest
-from packaging import version
-from torch._C import ListType
-from torch.onnx import register_custom_op_symbolic
 from typing import Callable
 
 """
@@ -216,9 +216,7 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
     # TODO: _unregister_custom_op_symbolic is introduced PyTorch>=1.10
     #       Remove after PyTorch 1.10+ is used by ALL detectron2's CI
     try:
-        from torch.onnx import (
-            unregister_custom_op_symbolic as _unregister_custom_op_symbolic,
-        )
+        from torch.onnx import unregister_custom_op_symbolic as _unregister_custom_op_symbolic
     except ImportError:
 
         def _unregister_custom_op_symbolic(symbolic_name, opset_version):

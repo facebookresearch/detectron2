@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from detectron2.layers import cat, shapes_to_tensor
-from detectron2.structures import BitMasks, Boxes
-
 import torch
 from torch.nn import functional as F
+
+from detectron2.layers import cat, shapes_to_tensor
+from detectron2.structures import BitMasks, Boxes
 
 """
 Shape shorthand in this module:

@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+from torch import device
 
 import math
-import torch
 from enum import IntEnum, unique
-from torch import device
 from typing import List, Tuple, Union
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]

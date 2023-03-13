@@ -2,6 +2,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import torch
+from PIL import Image, ImageOps
+from torch.nn import functional as F
 
 from detectron2.config import get_cfg
 from detectron2.data import detection_utils
@@ -9,10 +12,7 @@ from detectron2.data import transforms as T
 from detectron2.utils.logger import setup_logger
 
 import logging
-import torch
 import unittest
-from PIL import Image, ImageOps
-from torch.nn import functional as F
 from unittest import mock
 
 logger = logging.getLogger(__name__)

@@ -2,6 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import pycocotools.mask as mask_utils
+import torch
+from pycocotools.coco import COCO
+from tabulate import tabulate
 
 from detectron2.config import CfgNode
 from detectron2.data import MetadataCatalog
@@ -17,8 +21,6 @@ import io
 import itertools
 import logging
 import os
-import pycocotools.mask as mask_utils
-import torch
 from collections import OrderedDict
 from densepose.converters import ToChartResultConverter, ToMaskConverter
 from densepose.data.datasets.coco import maybe_filter_and_map_categories_cocoapi
@@ -27,8 +29,6 @@ from densepose.structures import (
     DensePoseEmbeddingPredictorOutput,
     quantize_densepose_chart_result,
 )
-from pycocotools.coco import COCO
-from tabulate import tabulate
 from typing import Dict, Iterable, List, Optional
 
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode

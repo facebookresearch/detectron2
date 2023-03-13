@@ -1,13 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 from detectron2.config import get_cfg
 from detectron2.layers import ShapeSpec
-from detectron2.modeling.anchor_generator import (
-    DefaultAnchorGenerator,
-    RotatedAnchorGenerator,
-)
+from detectron2.modeling.anchor_generator import DefaultAnchorGenerator, RotatedAnchorGenerator
 
 import logging
-import torch
 import unittest
 
 logger = logging.getLogger(__name__)

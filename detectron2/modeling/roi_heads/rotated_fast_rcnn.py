@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, batched_nms_rotated
@@ -7,7 +8,6 @@ from detectron2.structures import Instances, RotatedBoxes, pairwise_iou_rotated
 from detectron2.utils.events import get_event_storage
 
 import logging
-import torch
 
 from ..box_regression import Box2BoxTransformRotated
 from ..poolers import ROIPooler

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
 import numpy as np
+import torch
+from scipy.optimize import linear_sum_assignment
 
 from detectron2.config import configurable
 from detectron2.structures import Boxes, Instances
 
 import copy
-import torch
-from scipy.optimize import linear_sum_assignment
 from typing import Dict
 
 from ..config.config import CfgNode as CfgNode_

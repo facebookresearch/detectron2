@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import torch
+
 from densepose.structures.data_relative import DensePoseDataRelative
 
 

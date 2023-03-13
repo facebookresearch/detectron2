@@ -1,16 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import PIL
+import torch
+import torchvision
+from tabulate import tabulate
 
 import importlib
 import os
-import PIL
 import re
 import subprocess
 import sys
-import torch
-import torchvision
 from collections import defaultdict
-from tabulate import tabulate
 
 __all__ = ["collect_env_info"]
 

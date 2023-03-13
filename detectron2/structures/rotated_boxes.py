@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 from detectron2.layers.rotated_boxes import pairwise_iou_rotated
 
 import math
-import torch
 from typing import List, Tuple
 
 from .boxes import Boxes

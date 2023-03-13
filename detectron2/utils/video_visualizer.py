@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import pycocotools.mask as mask_util
 
 from detectron2.structures import Instances
 from detectron2.utils.visualizer import (
@@ -9,7 +10,6 @@ from detectron2.utils.visualizer import (
     _PanopticPrediction,
 )
 
-import pycocotools.mask as mask_util
 from typing import List
 
 from .colormap import random_color, random_colors

@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import random
 import torch
+
+import random
 from densepose.converters import ToChartResultConverterWithConfidences
 from typing import Optional, Tuple
 

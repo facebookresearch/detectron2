@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from detectron2.structures import BitMasks, Boxes, BoxMode
-
 import torch
 from torch.nn import functional as F
+
+from detectron2.structures import BitMasks, Boxes, BoxMode
+
 from typing import Any
 
 from .base import IntTupleBox, make_int_box

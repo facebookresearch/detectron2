@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import torch
+
 from detectron2.structures import BoxMode, Instances
 
-import torch
 from dataclasses import dataclass
 from typing import Any, Optional
 

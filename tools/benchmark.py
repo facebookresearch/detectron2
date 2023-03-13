@@ -6,6 +6,12 @@ A script to benchmark builtin models.
 Note: this script has an extra dependency of psutil.
 """
 
+import psutil
+import torch
+import tqdm
+from fvcore.common.timer import Timer
+from torch.nn.parallel import DistributedDataParallel
+
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import LazyConfig, get_cfg, instantiate
 from detectron2.data import (
@@ -14,13 +20,7 @@ from detectron2.data import (
     build_detection_train_loader,
 )
 from detectron2.data.benchmark import DataLoaderBenchmark
-from detectron2.engine import (
-    AMPTrainer,
-    SimpleTrainer,
-    default_argument_parser,
-    hooks,
-    launch,
-)
+from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser, hooks, launch
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
 from detectron2.utils import comm
@@ -30,11 +30,6 @@ from detectron2.utils.logger import setup_logger
 
 import itertools
 import logging
-import psutil
-import torch
-import tqdm
-from fvcore.common.timer import Timer
-from torch.nn.parallel import DistributedDataParallel
 
 logger = logging.getLogger("detectron2")
 

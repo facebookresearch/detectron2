@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+from torch import nn
+from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, cat
 from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
 
-import torch
-from torch import nn
-from torch.nn import functional as F
 from typing import Dict
 
 from .point_features import (

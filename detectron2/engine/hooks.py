@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+from fvcore.common.checkpoint import Checkpointer
+from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
+from fvcore.common.param_scheduler import ParamScheduler
+from fvcore.common.timer import Timer
+from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
+
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.solver import LRMultiplier
@@ -16,14 +23,8 @@ import operator
 import os
 import tempfile
 import time
-import torch
 import warnings
 from collections import Counter
-from fvcore.common.checkpoint import Checkpointer
-from fvcore.common.checkpoint import PeriodicCheckpointer as _PeriodicCheckpointer
-from fvcore.common.param_scheduler import ParamScheduler
-from fvcore.common.timer import Timer
-from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
 from .train_loop import HookBase
 

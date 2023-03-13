@@ -1,5 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+from omegaconf import DictConfig, OmegaConf
+from torch import Tensor, nn
 
 from detectron2.layers import ShapeSpec
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
@@ -7,11 +10,8 @@ from detectron2.utils.events import get_event_storage
 
 import itertools
 import logging
-import torch
 from collections import OrderedDict
 from collections.abc import Mapping
-from omegaconf import DictConfig, OmegaConf
-from torch import Tensor, nn
 from typing import Dict, List, Optional, Tuple, Union
 
 from .backbone import Backbone

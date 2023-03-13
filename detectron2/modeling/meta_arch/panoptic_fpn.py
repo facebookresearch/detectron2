@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+from torch import nn
+
 from detectron2.config import configurable
 from detectron2.structures import ImageList
 
 import logging
-import torch
-from torch import nn
 from typing import Dict, List
 
 from ..postprocessing import detector_postprocess, sem_seg_postprocess

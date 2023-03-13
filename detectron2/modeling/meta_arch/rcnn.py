@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+from torch import nn
 
 from detectron2.config import configurable
 from detectron2.data.detection_utils import convert_image_to_rgb
@@ -9,8 +11,6 @@ from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
 
 import logging
-import torch
-from torch import nn
 from typing import Dict, List, Optional, Tuple
 
 from ..backbone import Backbone, build_backbone

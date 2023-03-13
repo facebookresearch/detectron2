@@ -1,5 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import pycocotools.mask as mask_util
+import torch
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
+from tabulate import tabulate
 
 import detectron2.utils.comm as comm
 from detectron2.config import CfgNode
@@ -17,12 +22,7 @@ import json
 import logging
 import os
 import pickle
-import pycocotools.mask as mask_util
-import torch
 from collections import OrderedDict
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
-from tabulate import tabulate
 
 from .evaluator import DatasetEvaluator
 

@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+from torch import nn
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, nonzero_tuple
@@ -9,8 +11,6 @@ from detectron2.utils.registry import Registry
 
 import inspect
 import logging
-import torch
-from torch import nn
 from typing import Dict, List, Optional, Tuple
 
 from ..backbone.resnet import BottleneckBlock, ResNet

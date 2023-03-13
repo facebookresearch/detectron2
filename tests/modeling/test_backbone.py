@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import torch
+
 import detectron2.export.torchscript  # apply patch # noqa
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
@@ -7,7 +9,6 @@ from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import build_resnet_backbone
 from detectron2.modeling.backbone.fpn import build_resnet_fpn_backbone
 
-import torch
 import unittest
 
 

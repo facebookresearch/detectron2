@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import pycocotools.mask as mask_util
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets.coco import convert_to_coco_dict, load_coco_json
@@ -7,7 +8,6 @@ from detectron2.structures import BoxMode
 
 import json
 import os
-import pycocotools.mask as mask_util
 import tempfile
 import unittest
 

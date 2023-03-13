@@ -19,6 +19,9 @@ Compared to "train_net.py", this script supports fewer default features.
 It also includes fewer abstraction, therefore is easier to add custom logic.
 """
 
+import torch
+from torch.nn.parallel import DistributedDataParallel
+
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer, PeriodicCheckpointer
 from detectron2.config import get_cfg
@@ -27,12 +30,7 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.engine import (
-    default_argument_parser,
-    default_setup,
-    default_writers,
-    launch,
-)
+from detectron2.engine import default_argument_parser, default_setup, default_writers, launch
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
@@ -51,9 +49,7 @@ from detectron2.utils.events import EventStorage
 
 import logging
 import os
-import torch
 from collections import OrderedDict
-from torch.nn.parallel import DistributedDataParallel
 
 logger = logging.getLogger("detectron2")
 

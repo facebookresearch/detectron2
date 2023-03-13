@@ -1,14 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+import torch
+from torch.utils.data.dataset import Dataset
 
 from detectron2.config import CfgNode
-from detectron2.data.build import (
-    build_detection_test_loader as d2_build_detection_test_loader,
-)
-from detectron2.data.build import (
-    build_detection_train_loader as d2_build_detection_train_loader,
-)
+from detectron2.data.build import build_detection_test_loader as d2_build_detection_test_loader
+from detectron2.data.build import build_detection_train_loader as d2_build_detection_train_loader
 from detectron2.data.build import (
     load_proposals_into_dataset,
     print_instances_class_histogram,
@@ -21,30 +19,15 @@ from detectron2.utils.comm import get_world_size
 
 import itertools
 import logging
-import torch
 from collections import UserDict, defaultdict
 from dataclasses import dataclass
 from densepose.config import get_bootstrap_dataset_config
 from densepose.modeling import build_densepose_embedder
-from torch.utils.data.dataset import Dataset
-from typing import (
-    Any,
-    Callable,
-    Collection,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper
-from .datasets.coco import (
-    DENSEPOSE_CSE_KEYS_WITHOUT_MASK,
-    DENSEPOSE_IUV_KEYS_WITHOUT_MASK,
-)
+from .datasets.coco import DENSEPOSE_CSE_KEYS_WITHOUT_MASK, DENSEPOSE_IUV_KEYS_WITHOUT_MASK
 from .datasets.dataset_type import DatasetType
 from .inference_based_loader import InferenceBasedLoader, ScoreBasedFilter
 from .samplers import (

@@ -1,11 +1,12 @@
+import fvcore.nn.weight_init as weight_init
+import torch
+import torch.nn as nn
+
 from detectron2.layers import CNNBlockBase, Conv2d, get_norm
 from detectron2.modeling.backbone.fpn import _assert_strides_are_log2_contiguous
 
-import fvcore.nn.weight_init as weight_init
 import logging
 import math
-import torch
-import torch.nn as nn
 
 from .backbone import Backbone
 from .utils import (

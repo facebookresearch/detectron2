@@ -2,11 +2,7 @@
 
 import random
 import unittest
-from densepose.data.video import (
-    FirstKFramesSelector,
-    LastKFramesSelector,
-    RandomKFramesSelector,
-)
+from densepose.data.video import FirstKFramesSelector, LastKFramesSelector, RandomKFramesSelector
 
 
 class TestFrameSelector(unittest.TestCase):

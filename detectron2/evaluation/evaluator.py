@@ -1,14 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from torch import nn
+
 from detectron2.utils.comm import get_world_size, is_main_process
 from detectron2.utils.logger import log_every_n_seconds
 
 import datetime
 import logging
 import time
-import torch
 from collections import OrderedDict, abc
 from contextlib import ExitStack, contextmanager
-from torch import nn
 from typing import List, Union
 
 

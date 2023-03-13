@@ -1,4 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import fvcore.nn.weight_init as weight_init
+import torch.nn.functional as F
+
 from detectron2.layers import CNNBlockBase, Conv2d, get_norm
 from detectron2.modeling import BACKBONE_REGISTRY
 from detectron2.modeling.backbone.resnet import (
@@ -7,9 +10,6 @@ from detectron2.modeling.backbone.resnet import (
     DeformBottleneckBlock,
     ResNet,
 )
-
-import fvcore.nn.weight_init as weight_init
-import torch.nn.functional as F
 
 
 class DeepLabStem(CNNBlockBase):

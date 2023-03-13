@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from tabulate import tabulate
+
 import copy
 import logging
 import re
-import torch
-from tabulate import tabulate
 from typing import Dict, List
 
 

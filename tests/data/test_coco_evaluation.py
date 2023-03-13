@@ -1,5 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+import torch
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 
 from detectron2.data import DatasetCatalog
 from detectron2.evaluation import COCOEvaluator
@@ -12,10 +15,7 @@ import io
 import json
 import os
 import tempfile
-import torch
 import unittest
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
 
 
 class TestCOCOeval(unittest.TestCase):

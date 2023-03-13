@@ -3,6 +3,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import numpy as np
+import pycocotools.mask as mask_utils
 
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.file_io import PathManager
@@ -10,7 +11,6 @@ from detectron2.utils.file_io import PathManager
 import copy
 import json
 import os
-import pycocotools.mask as mask_utils
 import sys
 
 
