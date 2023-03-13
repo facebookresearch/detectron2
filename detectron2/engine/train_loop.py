@@ -402,6 +402,7 @@ class AMPTrainer(SimpleTrainer):
         gather_metric_period=1,
         grad_scaler=None,
         precision: torch.dtype = torch.float16,
+        log_grad_scaler: bool = False,
     ):
         """
         Args:
@@ -422,6 +423,7 @@ class AMPTrainer(SimpleTrainer):
             grad_scaler = GradScaler()
         self.grad_scaler = grad_scaler
         self.precision = precision
+        self.log_grad_scaler = log_grad_scaler
 
     def run_step(self):
         """
@@ -445,6 +447,10 @@ class AMPTrainer(SimpleTrainer):
 
         self.optimizer.zero_grad()
         self.grad_scaler.scale(losses).backward()
+
+        if self.log_grad_scaler:
+            storage = get_event_storage()
+            storage.put_scalar("[metric]grad_scaler", self.grad_scaler.get_scale())
 
         self.after_backward()
 
