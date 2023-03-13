@@ -12,7 +12,11 @@ from detectron2.utils.file_io import PathManager
 
 import copy
 import logging
-from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
+from densepose.structures import (
+    DensePoseDataRelative,
+    DensePoseList,
+    DensePoseTransformData,
+)
 from typing import Any, Dict, List, Tuple
 
 
@@ -24,7 +28,9 @@ def build_augmentation(cfg, is_train):
             cfg.INPUT.ROTATION_ANGLES, expand=False, sample_style="choice"
         )
         result.append(random_rotation)
-        logger.info("DensePose-specific augmentation used in training: " + str(random_rotation))
+        logger.info(
+            "DensePose-specific augmentation used in training: " + str(random_rotation)
+        )
     return result
 
 
@@ -49,7 +55,9 @@ class DatasetMapper:
         # fmt: on
         if self.keypoint_on and is_train:
             # Flip only makes sense in training
-            self.keypoint_hflip_indices = utils.create_keypoint_hflip_indices(cfg.DATASETS.TRAIN)
+            self.keypoint_hflip_indices = utils.create_keypoint_hflip_indices(
+                cfg.DATASETS.TRAIN
+            )
         else:
             self.keypoint_hflip_indices = None
 
@@ -64,7 +72,9 @@ class DatasetMapper:
             # each entry to select proper transformation data. For now, since
             # all DensePose annotated data uses the same data semantics, we
             # omit this check.
-            densepose_transform_data_fpath = PathManager.get_local_path(densepose_transform_srcs[0])
+            densepose_transform_data_fpath = PathManager.get_local_path(
+                densepose_transform_srcs[0]
+            )
             self.densepose_transform_data = DensePoseTransformData.load(
                 densepose_transform_data_fpath
             )
@@ -85,7 +95,9 @@ class DatasetMapper:
 
         image, transforms = T.apply_transform_gens(self.augmentation, image)
         image_shape = image.shape[:2]  # h, w
-        dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
+        dataset_dict["image"] = torch.as_tensor(
+            image.transpose(2, 0, 1).astype("float32")
+        )
 
         if not self.is_train:
             dataset_dict.pop("annotations", None)
@@ -116,7 +128,9 @@ class DatasetMapper:
         if self.mask_on:
             self._add_densepose_masks_as_segmentation(annos, image_shape)
 
-        instances = utils.annotations_to_instances(annos, image_shape, mask_format="bitmask")
+        instances = utils.annotations_to_instances(
+            annos, image_shape, mask_format="bitmask"
+        )
         densepose_annotations = [obj.get("densepose") for obj in annos]
         if densepose_annotations and not all(v is None for v in densepose_annotations):
             instances.gt_densepose = DensePoseList(
@@ -131,7 +145,9 @@ class DatasetMapper:
             return annotation
 
         # Handle densepose annotations
-        is_valid, reason_not_valid = DensePoseDataRelative.validate_annotation(annotation)
+        is_valid, reason_not_valid = DensePoseDataRelative.validate_annotation(
+            annotation
+        )
         if is_valid:
             densepose_data = DensePoseDataRelative(annotation, cleanup=True)
             densepose_data.apply_transform(transforms, self.densepose_transform_data)
@@ -155,10 +171,15 @@ class DatasetMapper:
             segm_dp = torch.zeros_like(obj["densepose"].segm)
             segm_dp[obj["densepose"].segm > 0] = 1
             segm_h, segm_w = segm_dp.shape
-            bbox_segm_dp = torch.tensor((0, 0, segm_h - 1, segm_w - 1), dtype=torch.float32)
+            bbox_segm_dp = torch.tensor(
+                (0, 0, segm_h - 1, segm_w - 1), dtype=torch.float32
+            )
             # image bbox
             x0, y0, x1, y1 = (
-                v.item() for v in BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS)
+                v.item()
+                for v in BoxMode.convert(
+                    obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS
+                )
             )
             segm_aligned = (
                 ROIAlign((y1 - y0, x1 - x0), 1.0, 0, aligned=True)

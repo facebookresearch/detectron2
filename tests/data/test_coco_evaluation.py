@@ -116,8 +116,12 @@ class TestCOCOeval(unittest.TestCase):
                 if api_exception is not None and opt_exception is not None:
                     # Original API and optimized API should throw the same exception if annotation
                     # format is bad
-                    api_error = "" if api_exception is None else type(api_exception).__name__
-                    opt_error = "" if opt_exception is None else type(opt_exception).__name__
+                    api_error = (
+                        "" if api_exception is None else type(api_exception).__name__
+                    )
+                    opt_error = (
+                        "" if opt_exception is None else type(opt_exception).__name__
+                    )
                     msg = "%s: comparing COCO APIs, '%s' != '%s'" % (
                         name,
                         api_error,

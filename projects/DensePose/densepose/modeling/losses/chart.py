@@ -59,11 +59,16 @@ class DensePoseChartLoss:
         self.w_segm       = cfg.MODEL.ROI_DENSEPOSE_HEAD.INDEX_WEIGHTS
         self.n_segm_chan  = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_COARSE_SEGM_CHANNELS
         # fmt: on
-        self.segm_trained_by_masks = cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
+        self.segm_trained_by_masks = (
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.COARSE_SEGM_TRAINED_BY_MASKS
+        )
         self.segm_loss = MaskOrSegmentationLoss(cfg)
 
     def __call__(
-        self, proposals_with_gt: List[Instances], densepose_predictor_outputs: Any, **kwargs
+        self,
+        proposals_with_gt: List[Instances],
+        densepose_predictor_outputs: Any,
+        **kwargs
     ) -> LossDict:
         """
         Produce chart-based DensePose losses
@@ -97,7 +102,9 @@ class DensePoseChartLoss:
             return self.produce_fake_densepose_losses(densepose_predictor_outputs)
 
         accumulator = ChartBasedAnnotationsAccumulator()
-        packed_annotations = extract_packed_annotations_from_matches(proposals_with_gt, accumulator)
+        packed_annotations = extract_packed_annotations_from_matches(
+            proposals_with_gt, accumulator
+        )
 
         # NOTE: we need to keep the same computation graph on all the GPUs to
         # perform reduction properly. Hence even if we have no data on one
@@ -137,7 +144,9 @@ class DensePoseChartLoss:
 
         return {**losses_uv, **losses_segm}
 
-    def produce_fake_densepose_losses(self, densepose_predictor_outputs: Any) -> LossDict:
+    def produce_fake_densepose_losses(
+        self, densepose_predictor_outputs: Any
+    ) -> LossDict:
         """
         Fake losses for fine segmentation and U/V coordinates. These are used when
         no suitable ground truth data was found in a batch. The loss has a value 0
@@ -159,10 +168,14 @@ class DensePoseChartLoss:
              * `loss_densepose_S`: has value 0
         """
         losses_uv = self.produce_fake_densepose_losses_uv(densepose_predictor_outputs)
-        losses_segm = self.produce_fake_densepose_losses_segm(densepose_predictor_outputs)
+        losses_segm = self.produce_fake_densepose_losses_segm(
+            densepose_predictor_outputs
+        )
         return {**losses_uv, **losses_segm}
 
-    def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any) -> LossDict:
+    def produce_fake_densepose_losses_uv(
+        self, densepose_predictor_outputs: Any
+    ) -> LossDict:
         """
         Fake losses for U/V coordinates. These are used when no suitable ground
         truth data was found in a batch. The loss has a value 0
@@ -185,7 +198,9 @@ class DensePoseChartLoss:
             "loss_densepose_V": densepose_predictor_outputs.v.sum() * 0,
         }
 
-    def produce_fake_densepose_losses_segm(self, densepose_predictor_outputs: Any) -> LossDict:
+    def produce_fake_densepose_losses_segm(
+        self, densepose_predictor_outputs: Any
+    ) -> LossDict:
         """
         Fake losses for fine / coarse segmentation. These are used when
         no suitable ground truth data was found in a batch. The loss has a value 0
@@ -233,12 +248,18 @@ class DensePoseChartLoss:
              * `loss_densepose_V`: smooth L1 loss for V coordinate estimates
         """
         u_gt = packed_annotations.u_gt[j_valid_fg]
-        u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
+        u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[
+            j_valid_fg
+        ]
         v_gt = packed_annotations.v_gt[j_valid_fg]
-        v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
+        v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[
+            j_valid_fg
+        ]
         return {
-            "loss_densepose_U": F.smooth_l1_loss(u_est, u_gt, reduction="sum") * self.w_points,
-            "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum") * self.w_points,
+            "loss_densepose_U": F.smooth_l1_loss(u_est, u_gt, reduction="sum")
+            * self.w_points,
+            "loss_densepose_V": F.smooth_l1_loss(v_est, v_gt, reduction="sum")
+            * self.w_points,
         }
 
     def produce_densepose_losses_segm(
@@ -284,7 +305,8 @@ class DensePoseChartLoss:
             w_yhi_xhi=interpolator.w_yhi_xhi[:, None],  # pyre-ignore[16]
         )[interpolator.j_valid, :]
         return {
-            "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long()) * self.w_part,
+            "loss_densepose_I": F.cross_entropy(fine_segm_est, fine_segm_gt.long())
+            * self.w_part,
             "loss_densepose_S": self.segm_loss(
                 proposals_with_gt, densepose_predictor_outputs, packed_annotations
             )

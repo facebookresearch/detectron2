@@ -28,8 +28,6 @@ model.backbone.bottom_up = L(RegNet)(
 model.pixel_std = [57.375, 57.120, 58.395]
 
 optimizer.weight_decay = 5e-5
-train.init_checkpoint = (
-    "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906838/RegNetY-4.0GF_dds_8gpu.pyth"
-)
+train.init_checkpoint = "https://dl.fbaipublicfiles.com/pycls/dds_baselines/160906838/RegNetY-4.0GF_dds_8gpu.pyth"
 # RegNets benefit from enabling cudnn benchmark mode
 train.cudnn_benchmark = True

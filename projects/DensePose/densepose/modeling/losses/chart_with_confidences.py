@@ -22,16 +22,24 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
     def __init__(self, cfg: CfgNode):
         super().__init__(cfg)
         self.confidence_model_cfg = DensePoseConfidenceModelConfig.from_cfg(cfg)
-        if self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.IID_ISO:
+        if (
+            self.confidence_model_cfg.uv_confidence.type
+            == DensePoseUVConfidenceType.IID_ISO
+        ):
             self.uv_loss_with_confidences = IIDIsotropicGaussianUVLoss(
                 self.confidence_model_cfg.uv_confidence.epsilon
             )
-        elif self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
+        elif (
+            self.confidence_model_cfg.uv_confidence.type
+            == DensePoseUVConfidenceType.INDEP_ANISO
+        ):
             self.uv_loss_with_confidences = IndepAnisotropicGaussianUVLoss(
                 self.confidence_model_cfg.uv_confidence.epsilon
             )
 
-    def produce_fake_densepose_losses_uv(self, densepose_predictor_outputs: Any) -> LossDict:
+    def produce_fake_densepose_losses_uv(
+        self, densepose_predictor_outputs: Any
+    ) -> LossDict:
         """
         Overrides fake losses for fine segmentation and U/V coordinates to
         include computation graphs for additional confidence parameters.
@@ -55,7 +63,8 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
         conf_type = self.confidence_model_cfg.uv_confidence.type
         if self.confidence_model_cfg.uv_confidence.enabled:
             loss_uv = (
-                densepose_predictor_outputs.u.sum() + densepose_predictor_outputs.v.sum()
+                densepose_predictor_outputs.u.sum()
+                + densepose_predictor_outputs.v.sum()
             ) * 0
             if conf_type == DensePoseUVConfidenceType.IID_ISO:
                 loss_uv += densepose_predictor_outputs.sigma_2.sum() * 0
@@ -80,26 +89,32 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
         conf_type = self.confidence_model_cfg.uv_confidence.type
         if self.confidence_model_cfg.uv_confidence.enabled:
             u_gt = packed_annotations.u_gt[j_valid_fg]
-            u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
-            v_gt = packed_annotations.v_gt[j_valid_fg]
-            v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[j_valid_fg]
-            sigma_2_est = interpolator.extract_at_points(densepose_predictor_outputs.sigma_2)[
+            u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[
                 j_valid_fg
             ]
+            v_gt = packed_annotations.v_gt[j_valid_fg]
+            v_est = interpolator.extract_at_points(densepose_predictor_outputs.v)[
+                j_valid_fg
+            ]
+            sigma_2_est = interpolator.extract_at_points(
+                densepose_predictor_outputs.sigma_2
+            )[j_valid_fg]
             if conf_type == DensePoseUVConfidenceType.IID_ISO:
                 return {
                     "loss_densepose_UV": (
-                        self.uv_loss_with_confidences(u_est, v_est, sigma_2_est, u_gt, v_gt)
+                        self.uv_loss_with_confidences(
+                            u_est, v_est, sigma_2_est, u_gt, v_gt
+                        )
                         * self.w_points
                     )
                 }
             elif conf_type in [DensePoseUVConfidenceType.INDEP_ANISO]:
-                kappa_u_est = interpolator.extract_at_points(densepose_predictor_outputs.kappa_u)[
-                    j_valid_fg
-                ]
-                kappa_v_est = interpolator.extract_at_points(densepose_predictor_outputs.kappa_v)[
-                    j_valid_fg
-                ]
+                kappa_u_est = interpolator.extract_at_points(
+                    densepose_predictor_outputs.kappa_u
+                )[j_valid_fg]
+                kappa_v_est = interpolator.extract_at_points(
+                    densepose_predictor_outputs.kappa_v
+                )[j_valid_fg]
                 return {
                     "loss_densepose_UV": (
                         self.uv_loss_with_confidences(
@@ -211,6 +226,9 @@ class IndepAnisotropicGaussianUVLoss(nn.Module):
         delta_r_sqnorm = delta_r**2
         denom2 = sigma2 * (sigma2 + r_sqnorm2)
         loss = 0.5 * (
-            self.log2pi + torch.log(denom2) + delta_sqnorm / sigma2 - delta_r_sqnorm / denom2
+            self.log2pi
+            + torch.log(denom2)
+            + delta_sqnorm / sigma2
+            - delta_r_sqnorm / denom2
         )
         return loss.sum()

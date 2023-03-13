@@ -10,9 +10,7 @@ from .mask_rcnn_vitdet_b_100ep import (
     optimizer,
 )
 
-train.init_checkpoint = (
-    "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"
-)
+train.init_checkpoint = "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"
 
 model.backbone.net.embed_dim = 1280
 model.backbone.net.depth = 32
@@ -25,6 +23,8 @@ model.backbone.net.window_block_indexes = (
 
 
 optimizer.lr = 1e-4
-optimizer.params.lr_factor_func = partial(get_vit_lr_decay_rate, lr_decay_rate=0.9, num_layers=32)
+optimizer.params.lr_factor_func = partial(
+    get_vit_lr_decay_rate, lr_decay_rate=0.9, num_layers=32
+)
 optimizer.params.overrides = {}
 optimizer.params.weight_decay_norm = None

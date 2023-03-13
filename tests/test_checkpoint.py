@@ -67,7 +67,9 @@ class TestCheckpointer(unittest.TestCase):
             self.assertTrue(model.block1.layer1.weight.equal(torch.ones(3, 2)))
 
             # load checkpoint with matching_heuristics
-            checkpointer.load(os.path.join(d, "checkpoint.pth?matching_heuristics=True"))
+            checkpointer.load(
+                os.path.join(d, "checkpoint.pth?matching_heuristics=True")
+            )
             self.assertFalse(model.block1.layer1.weight.equal(torch.ones(3, 2)))
 
     def test_custom_path_manager_handler(self):
@@ -94,12 +96,16 @@ class TestCheckpointer(unittest.TestCase):
             checkpointer = DetectionCheckpointer(model, save_dir=d)
             checkpointer.path_manager = pathmgr
             checkpointer.load("detectron2_test://checkpoint.pth")
-            checkpointer.load("detectron2_test://checkpoint.pth?matching_heuristics=True")
+            checkpointer.load(
+                "detectron2_test://checkpoint.pth?matching_heuristics=True"
+            )
 
     def test_lcp(self):
         self.assertEqual(_longest_common_prefix_str(["class", "dlaps_model"]), "")
         self.assertEqual(_longest_common_prefix_str(["classA", "classB"]), "class")
-        self.assertEqual(_longest_common_prefix_str(["classA", "classB", "clab"]), "cla")
+        self.assertEqual(
+            _longest_common_prefix_str(["classA", "classB", "clab"]), "cla"
+        )
 
 
 if __name__ == "__main__":

@@ -8,7 +8,10 @@ from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
 from densepose.data.meshes.catalog import MeshCatalog
-from densepose.modeling.cse.utils import normalize_embeddings, squared_euclidean_distance_matrix
+from densepose.modeling.cse.utils import (
+    normalize_embeddings,
+    squared_euclidean_distance_matrix,
+)
 from densepose.structures.mesh import create_mesh
 from typing import Any, Dict, List
 
@@ -32,8 +35,12 @@ class SoftEmbeddingLoss:
         """
         Initialize embedding loss from config
         """
-        self.embdist_gauss_sigma = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_DIST_GAUSS_SIGMA
-        self.geodist_gauss_sigma = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.GEODESIC_DIST_GAUSS_SIGMA
+        self.embdist_gauss_sigma = (
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_DIST_GAUSS_SIGMA
+        )
+        self.geodist_gauss_sigma = (
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.GEODESIC_DIST_GAUSS_SIGMA
+        )
 
     def __call__(
         self,
@@ -110,11 +117,15 @@ class SoftEmbeddingLoss:
             # logsoftmax values for valid points
             # -> tensor [J, K]
             embdist_logsoftmax_values = F.log_softmax(
-                squared_euclidean_distance_matrix(vertex_embeddings_i, mesh_vertex_embeddings)
+                squared_euclidean_distance_matrix(
+                    vertex_embeddings_i, mesh_vertex_embeddings
+                )
                 / (-self.embdist_gauss_sigma),
                 dim=1,
             )
-            losses[mesh_name] = (-geodist_softmax_values * embdist_logsoftmax_values).sum(1).mean()
+            losses[mesh_name] = (
+                (-geodist_softmax_values * embdist_logsoftmax_values).sum(1).mean()
+            )
 
         # pyre-fixme[29]:
         #  `Union[BoundMethod[typing.Callable(torch.Tensor.__iter__)[[Named(self,
@@ -134,8 +145,15 @@ class SoftEmbeddingLoss:
         #  torch.Tensor)], typing.Iterator[typing.Any]], torch.Tensor], nn.Module,
         #  torch.Tensor]` is not a function.
         for mesh_name in embedder.mesh_names:
-            losses[mesh_name] = self.fake_value(densepose_predictor_outputs, embedder, mesh_name)
+            losses[mesh_name] = self.fake_value(
+                densepose_predictor_outputs, embedder, mesh_name
+            )
         return losses
 
-    def fake_value(self, densepose_predictor_outputs: Any, embedder: nn.Module, mesh_name: str):
-        return densepose_predictor_outputs.embedding.sum() * 0 + embedder(mesh_name).sum() * 0
+    def fake_value(
+        self, densepose_predictor_outputs: Any, embedder: nn.Module, mesh_name: str
+    ):
+        return (
+            densepose_predictor_outputs.embedding.sum() * 0
+            + embedder(mesh_name).sum() * 0
+        )

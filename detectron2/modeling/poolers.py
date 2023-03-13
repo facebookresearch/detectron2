@@ -3,7 +3,13 @@ import torch
 from torch import nn
 from torchvision.ops import RoIPool
 
-from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
+from detectron2.layers import (
+    ROIAlign,
+    ROIAlignRotated,
+    cat,
+    nonzero_tuple,
+    shapes_to_tensor,
+)
 from detectron2.structures import Boxes
 from detectron2.utils.tracing import assert_fx_safe, is_fx_tracing
 
@@ -62,7 +68,9 @@ def assign_boxes_to_levels(
 
 # script the module to avoid hardcoded device type
 @torch.jit.script_if_tracing
-def _convert_boxes_to_pooler_format(boxes: torch.Tensor, sizes: torch.Tensor) -> torch.Tensor:
+def _convert_boxes_to_pooler_format(
+    boxes: torch.Tensor, sizes: torch.Tensor
+) -> torch.Tensor:
     sizes = sizes.to(device=boxes.device)
     indices = torch.repeat_interleave(
         torch.arange(len(sizes), dtype=boxes.dtype, device=boxes.device), sizes
@@ -187,7 +195,9 @@ class ROIPooler(nn.Module):
             )
         elif pooler_type == "ROIAlignRotated":
             self.level_poolers = nn.ModuleList(
-                ROIAlignRotated(output_size, spatial_scale=scale, sampling_ratio=sampling_ratio)
+                ROIAlignRotated(
+                    output_size, spatial_scale=scale, sampling_ratio=sampling_ratio
+                )
                 for scale in scales
             )
         else:
@@ -263,7 +273,9 @@ class ROIPooler(nn.Module):
         num_channels = x[0].shape[1]
         output_size = self.output_size[0]
 
-        output = _create_zeros(pooler_fmt_boxes, num_channels, output_size, output_size, x[0])
+        output = _create_zeros(
+            pooler_fmt_boxes, num_channels, output_size, output_size, x[0]
+        )
 
         for level, pooler in enumerate(self.level_poolers):
             inds = nonzero_tuple(level_assignments == level)[0]

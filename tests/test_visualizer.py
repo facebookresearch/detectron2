@@ -25,7 +25,9 @@ class TestVisualizer(unittest.TestCase):
         def _rand_poly():
             return np.random.rand(3, 2).flatten() * H
 
-        polygons = [[_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)]
+        polygons = [
+            [_rand_poly() for _ in range(np.random.randint(1, 5))] for _ in range(N)
+        ]
 
         mask = np.zeros_like(img[:, :, 0], dtype=bool)
         mask[:40, 10:20] = 1
@@ -95,17 +97,23 @@ class TestVisualizer(unittest.TestCase):
         img, boxes, labels, polygons, masks = self._random_data()
 
         v = Visualizer(img, self.metadata)
-        output = v.overlay_instances(masks=polygons, boxes=boxes, labels=labels).get_image()
+        output = v.overlay_instances(
+            masks=polygons, boxes=boxes, labels=labels
+        ).get_image()
         self.assertEqual(output.shape, img.shape)
 
         # Test 2x scaling
         v = Visualizer(img, self.metadata, scale=2.0)
-        output = v.overlay_instances(masks=polygons, boxes=boxes, labels=labels).get_image()
+        output = v.overlay_instances(
+            masks=polygons, boxes=boxes, labels=labels
+        ).get_image()
         self.assertEqual(output.shape[0], img.shape[0] * 2)
 
         # Test overlay masks
         v = Visualizer(img, self.metadata)
-        output = v.overlay_instances(masks=masks, boxes=boxes, labels=labels).get_image()
+        output = v.overlay_instances(
+            masks=masks, boxes=boxes, labels=labels
+        ).get_image()
         self.assertEqual(output.shape, img.shape)
 
     def test_overlay_instances_no_boxes(self):
@@ -229,7 +237,9 @@ class TestVisualizer(unittest.TestCase):
 
         # test draw empty mask
         v = Visualizer(img)
-        o = v.draw_soft_mask(np.zeros((100, 100), dtype=np.float32), color="red", text="test")
+        o = v.draw_soft_mask(
+            np.zeros((100, 100), dtype=np.float32), color="red", text="test"
+        )
         o = o.get_image().astype("float32")
 
     def test_border_mask_with_holes(self):

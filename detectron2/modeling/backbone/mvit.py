@@ -129,7 +129,11 @@ class MultiScaleAttention(nn.Module):
     def forward(self, x):
         B, H, W, _ = x.shape
         # qkv with shape (3, B, nHead, H, W, C)
-        qkv = self.qkv(x).reshape(B, H, W, 3, self.num_heads, -1).permute(3, 0, 4, 1, 2, 5)
+        qkv = (
+            self.qkv(x)
+            .reshape(B, H, W, 3, self.num_heads, -1)
+            .permute(3, 0, 4, 1, 2, 5)
+        )
         # q, k, v with shape (B * nHead, H, W, C)
         q, k, v = qkv.reshape(3, B * self.num_heads, H, W, -1).unbind(0)
 
@@ -155,7 +159,9 @@ class MultiScaleAttention(nn.Module):
         attn = (q * self.scale) @ k.transpose(-2, -1)
 
         if self.use_rel_pos:
-            attn = add_decomposed_rel_pos(attn, q, self.rel_pos_h, self.rel_pos_w, q_hw, kv_hw)
+            attn = add_decomposed_rel_pos(
+                attn, q, self.rel_pos_h, self.rel_pos_w, q_hw, kv_hw
+            )
 
         attn = attn.softmax(dim=-1)
         x = attn @ v
@@ -169,7 +175,11 @@ class MultiScaleAttention(nn.Module):
             x += ori_q
 
         H, W = x.shape[1], x.shape[2]
-        x = x.view(B, self.num_heads, H, W, -1).permute(0, 2, 3, 1, 4).reshape(B, H, W, -1)
+        x = (
+            x.view(B, self.num_heads, H, W, -1)
+            .permute(0, 2, 3, 1, 4)
+            .reshape(B, H, W, -1)
+        )
         x = self.proj(x)
 
         return x
@@ -252,7 +262,9 @@ class MultiScaleBlock(nn.Module):
         if stride_q > 1:
             kernel_skip = stride_q + 1
             padding_skip = int(kernel_skip // 2)
-            self.pool_skip = nn.MaxPool2d(kernel_skip, stride_q, padding_skip, ceil_mode=False)
+            self.pool_skip = nn.MaxPool2d(
+                kernel_skip, stride_q, padding_skip, ceil_mode=False
+            )
 
     def forward(self, x):
         x_norm = self.norm1(x)
@@ -433,7 +445,9 @@ class MViT(Backbone):
         x = self.patch_embed(x)
 
         if self.pos_embed is not None:
-            x = x + get_abs_pos(self.pos_embed, self.pretrain_use_cls_token, x.shape[1:3])
+            x = x + get_abs_pos(
+                self.pos_embed, self.pretrain_use_cls_token, x.shape[1:3]
+            )
 
         outputs = {}
         stage = 2

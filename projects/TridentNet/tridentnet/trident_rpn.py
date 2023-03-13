@@ -27,6 +27,8 @@ class TridentRPN(RPN):
         all_images = ImageList(
             torch.cat([images.tensor] * num_branch), images.image_sizes * num_branch
         )
-        all_gt_instances = gt_instances * num_branch if gt_instances is not None else None
+        all_gt_instances = (
+            gt_instances * num_branch if gt_instances is not None else None
+        )
 
         return super(TridentRPN, self).forward(all_images, features, all_gt_instances)

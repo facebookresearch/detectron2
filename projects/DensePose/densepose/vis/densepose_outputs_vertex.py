@@ -92,7 +92,9 @@ class DensePoseOutputsVertexVisualizer(object):
             embed_map = get_xyz_vertex_embedding(mesh_name, self.device)
             vis = (embed_map[closest_vertices].clip(0, 1) * 255.0).cpu().numpy()
             mask_numpy = mask.cpu().numpy().astype(dtype=np.uint8)
-            image_bgr = self.mask_visualizer.visualize(image_bgr, mask_numpy, vis, [x, y, w, h])
+            image_bgr = self.mask_visualizer.visualize(
+                image_bgr, mask_numpy, vis, [x, y, w, h]
+            )
 
         return image_bgr
 
@@ -112,19 +114,21 @@ class DensePoseOutputsVertexVisualizer(object):
         S = densepose_output.coarse_segm
         E = densepose_output.embedding
         N = S.size(0)
-        assert N == E.size(
-            0
-        ), "CSE coarse_segm {} and embeddings {}" " should have equal first dim size".format(
-            S.size(), E.size()
+        assert N == E.size(0), (
+            "CSE coarse_segm {} and embeddings {}"
+            " should have equal first dim size".format(S.size(), E.size())
         )
-        assert N == len(
-            bboxes_xywh
-        ), "number of bounding boxes {}" " should be equal to first dim size of outputs {}".format(
-            len(bboxes_xywh), N
+        assert N == len(bboxes_xywh), (
+            "number of bounding boxes {}"
+            " should be equal to first dim size of outputs {}".format(
+                len(bboxes_xywh), N
+            )
         )
         assert N == len(pred_classes), (
             "number of predicted classes {}"
-            " should be equal to first dim size of outputs {}".format(len(bboxes_xywh), N)
+            " should be equal to first dim size of outputs {}".format(
+                len(bboxes_xywh), N
+            )
         )
 
         return S, E, N, bboxes_xywh, pred_classes
@@ -158,11 +162,19 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         self.alpha_dict = {}
 
         for mesh_name in texture_atlases_dict.keys():
-            if texture_atlases_dict[mesh_name].shape[-1] == 4:  # Image with alpha channel
-                self.alpha_dict[mesh_name] = texture_atlases_dict[mesh_name][:, :, -1] / 255.0
-                self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name][:, :, :3]
+            if (
+                texture_atlases_dict[mesh_name].shape[-1] == 4
+            ):  # Image with alpha channel
+                self.alpha_dict[mesh_name] = (
+                    texture_atlases_dict[mesh_name][:, :, -1] / 255.0
+                )
+                self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name][
+                    :, :, :3
+                ]
             else:
-                self.alpha_dict[mesh_name] = texture_atlases_dict[mesh_name].sum(axis=-1) > 0
+                self.alpha_dict[mesh_name] = (
+                    texture_atlases_dict[mesh_name].sum(axis=-1) > 0
+                )
                 self.texture_image_dict[mesh_name] = texture_atlases_dict[mesh_name]
 
         self.device = torch.device(device)
@@ -192,7 +204,8 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         )
 
         meshes = {
-            p: create_mesh(self.class_to_mesh_name[p], self.device) for p in np.unique(pred_classes)
+            p: create_mesh(self.class_to_mesh_name[p], self.device)
+            for p in np.unique(pred_classes)
         }
 
         for n in range(N):
@@ -206,7 +219,9 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
                 self.mesh_vertex_embeddings[mesh_name],
                 self.device,
             )
-            uv_array = meshes[pred_classes[n]].texcoords[closest_vertices].permute((2, 0, 1))
+            uv_array = (
+                meshes[pred_classes[n]].texcoords[closest_vertices].permute((2, 0, 1))
+            )
             uv_array = uv_array.cpu().numpy().clip(0, 1)
             textured_image = self.generate_image_with_texture(
                 image_target_bgr[y : y + h, x : x + w],
@@ -231,5 +246,7 @@ class DensePoseOutputsTextureVisualizer(DensePoseOutputsVertexVisualizer):
         local_texture = texture_image[y_index, x_index][mask]
         local_alpha = np.expand_dims(alpha[y_index, x_index][mask], -1)
         output_image = bbox_image_bgr.copy()
-        output_image[mask] = output_image[mask] * (1 - local_alpha) + local_texture * local_alpha
+        output_image[mask] = (
+            output_image[mask] * (1 - local_alpha) + local_texture * local_alpha
+        )
         return output_image.astype(np.uint8)

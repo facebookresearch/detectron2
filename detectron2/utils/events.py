@@ -107,7 +107,9 @@ class JSONWriter(EventWriter):
         storage = get_event_storage()
         to_save = defaultdict(dict)
 
-        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+        for k, (v, iter) in storage.latest_with_smoothing_hint(
+            self._window_size
+        ).items():
             # keep scalars that have not been written
             if iter <= self._last_write:
                 continue
@@ -151,7 +153,9 @@ class TensorboardXWriter(EventWriter):
     def write(self):
         storage = get_event_storage()
         new_last_write = self._last_write
-        for k, (v, iter) in storage.latest_with_smoothing_hint(self._window_size).items():
+        for k, (v, iter) in storage.latest_with_smoothing_hint(
+            self._window_size
+        ).items():
             if iter > self._last_write:
                 self._writer.add_scalar(k, v, iter)
                 new_last_write = max(new_last_write, iter)
@@ -199,14 +203,18 @@ class CommonMetricPrinter(EventWriter):
         self.logger = logging.getLogger(__name__)
         self._max_iter = max_iter
         self._window_size = window_size
-        self._last_write = None  # (step, time) of last call to write(). Used to compute ETA
+        self._last_write = (
+            None  # (step, time) of last call to write(). Used to compute ETA
+        )
 
     def _get_eta(self, storage) -> Optional[str]:
         if self._max_iter is None:
             return ""
         iteration = storage.iter
         try:
-            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration - 1)
+            eta_seconds = storage.history("time").median(1000) * (
+                self._max_iter - iteration - 1
+            )
             storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
             return str(datetime.timedelta(seconds=int(eta_seconds)))
         except KeyError:
@@ -296,7 +304,9 @@ class CommonMetricPrinter(EventWriter):
                 if last_data_time is not None
                 else "",
                 lr=lr,
-                memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
+                memory="max_mem: {:.0f}M".format(max_mem_mb)
+                if max_mem_mb is not None
+                else "",
             )
         )
 
@@ -388,7 +398,9 @@ class EventStorage:
 
         # Create a histogram with PyTorch
         hist_counts = torch.histc(hist_tensor, bins=bins)
-        hist_edges = torch.linspace(start=ht_min, end=ht_max, steps=bins + 1, dtype=torch.float32)
+        hist_edges = torch.linspace(
+            start=ht_min, end=ht_max, steps=bins + 1, dtype=torch.float32
+        )
 
         # Parameter for the add_histogram_raw function of SummaryWriter
         hist_params = dict(

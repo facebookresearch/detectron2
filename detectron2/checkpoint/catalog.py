@@ -35,7 +35,9 @@ class ModelCatalog(object):
     )
 
     C2_DATASET_COCO = "coco_2014_train%3Acoco_2014_valminusminival"
-    C2_DATASET_COCO_KEYPOINTS = "keypoints_coco_2014_train%3Akeypoints_coco_2014_valminusminival"
+    C2_DATASET_COCO_KEYPOINTS = (
+        "keypoints_coco_2014_train%3Akeypoints_coco_2014_valminusminival"
+    )
 
     # format: {model_name} -> part of the url
     C2_DETECTRON_MODELS = {

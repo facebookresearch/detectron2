@@ -208,7 +208,9 @@ class RotationTransform(Transform):
             return img
         assert img.shape[:2] == (self.h, self.w)
         interp = interp if interp is not None else self.interp
-        return cv2.warpAffine(img, self.rm_image, (self.bound_w, self.bound_h), flags=interp)
+        return cv2.warpAffine(
+            img, self.rm_image, (self.bound_w, self.bound_h), flags=interp
+        )
 
     def apply_coords(self, coords):
         """
@@ -229,8 +231,12 @@ class RotationTransform(Transform):
         if self.expand:
             # Find the coordinates of the center of rotation in the new image
             # The only point for which we know the future coordinates is the center of the image
-            rot_im_center = cv2.transform(self.image_center[None, None, :] + offset, rm)[0, 0, :]
-            new_center = np.array([self.bound_w / 2, self.bound_h / 2]) + offset - rot_im_center
+            rot_im_center = cv2.transform(
+                self.image_center[None, None, :] + offset, rm
+            )[0, 0, :]
+            new_center = (
+                np.array([self.bound_w / 2, self.bound_h / 2]) + offset - rot_im_center
+            )
             # shift the rotation center to the new coordinates
             rm[:, 2] += new_center
         return rm
@@ -343,9 +349,15 @@ def Resize_rotated_box(transform, rotated_boxes):
     theta = rotated_boxes[:, 4] * np.pi / 180.0
     c = np.cos(theta)
     s = np.sin(theta)
-    rotated_boxes[:, 2] *= np.sqrt(np.square(scale_factor_x * c) + np.square(scale_factor_y * s))
-    rotated_boxes[:, 3] *= np.sqrt(np.square(scale_factor_x * s) + np.square(scale_factor_y * c))
-    rotated_boxes[:, 4] = np.arctan2(scale_factor_x * s, scale_factor_y * c) * 180 / np.pi
+    rotated_boxes[:, 2] *= np.sqrt(
+        np.square(scale_factor_x * c) + np.square(scale_factor_y * s)
+    )
+    rotated_boxes[:, 3] *= np.sqrt(
+        np.square(scale_factor_x * s) + np.square(scale_factor_y * c)
+    )
+    rotated_boxes[:, 4] = (
+        np.arctan2(scale_factor_x * s, scale_factor_y * c) * 180 / np.pi
+    )
 
     return rotated_boxes
 

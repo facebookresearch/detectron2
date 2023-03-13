@@ -13,9 +13,9 @@ from ..COCO.mask_rcnn_vitdet_b_100ep import (
 
 dataloader.train.dataset.names = "lvis_v1_train"
 dataloader.train.sampler = L(RepeatFactorTrainingSampler)(
-    repeat_factors=L(RepeatFactorTrainingSampler.repeat_factors_from_category_frequency)(
-        dataset_dicts="${dataloader.train.dataset}", repeat_thresh=0.001
-    )
+    repeat_factors=L(
+        RepeatFactorTrainingSampler.repeat_factors_from_category_frequency
+    )(dataset_dicts="${dataloader.train.dataset}", repeat_thresh=0.001)
 )
 dataloader.test.dataset.names = "lvis_v1_val"
 dataloader.evaluator = L(LVISEvaluator)(
@@ -28,8 +28,8 @@ model.roi_heads.box_predictor.test_score_thresh = 0.02
 model.roi_heads.box_predictor.test_topk_per_image = 300
 model.roi_heads.box_predictor.use_sigmoid_ce = True
 model.roi_heads.box_predictor.use_fed_loss = True
-model.roi_heads.box_predictor.get_fed_loss_cls_weights = lambda: get_fed_loss_cls_weights(
-    dataloader.train.dataset.names, 0.5
+model.roi_heads.box_predictor.get_fed_loss_cls_weights = (
+    lambda: get_fed_loss_cls_weights(dataloader.train.dataset.names, 0.5)
 )
 
 # Schedule

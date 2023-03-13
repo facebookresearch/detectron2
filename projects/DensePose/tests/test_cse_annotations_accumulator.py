@@ -197,12 +197,18 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                     continue
                 n_pts = len(dp_data.x)
                 self.assertTrue(
-                    torch.allclose(dp_data.x, packed_anns.x_gt[pt_offset : pt_offset + n_pts])
+                    torch.allclose(
+                        dp_data.x, packed_anns.x_gt[pt_offset : pt_offset + n_pts]
+                    )
                 )
                 self.assertTrue(
-                    torch.allclose(dp_data.y, packed_anns.y_gt[pt_offset : pt_offset + n_pts])
+                    torch.allclose(
+                        dp_data.y, packed_anns.y_gt[pt_offset : pt_offset + n_pts]
+                    )
                 )
-                self.assertTrue(torch.allclose(dp_data.segm, packed_anns.coarse_segm_gt[data_idx]))
+                self.assertTrue(
+                    torch.allclose(dp_data.segm, packed_anns.coarse_segm_gt[data_idx])
+                )
                 self.assertTrue(
                     torch.allclose(
                         torch.ones(n_pts, dtype=torch.long) * dp_data.mesh_id,
@@ -219,12 +225,16 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                     torch.allclose(instances.gt_boxes.tensor[i], bbox_xyxy_gt[data_idx])
                 )
                 self.assertTrue(
-                    torch.allclose(instances.proposal_boxes.tensor[i], bbox_xyxy_est[data_idx])
+                    torch.allclose(
+                        instances.proposal_boxes.tensor[i], bbox_xyxy_est[data_idx]
+                    )
                 )
                 self.assertTrue(
                     torch.allclose(
                         torch.ones(n_pts, dtype=torch.long) * data_idx,
-                        packed_anns.point_bbox_with_dp_indices[pt_offset : pt_offset + n_pts],
+                        packed_anns.point_bbox_with_dp_indices[
+                            pt_offset : pt_offset + n_pts
+                        ],
                     )
                 )
                 self.assertTrue(

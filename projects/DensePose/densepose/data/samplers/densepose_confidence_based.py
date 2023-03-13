@@ -86,7 +86,9 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
             index_sample = sorted_confidence_indices[:search_count][sample_from_top]
         return index_sample
 
-    def _produce_labels_and_results(self, instance) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _produce_labels_and_results(
+        self, instance
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Method to get labels and DensePose results from an instance, with confidences
 

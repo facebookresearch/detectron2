@@ -50,7 +50,9 @@ class TestTransforms(unittest.TestCase):
         transformed_bbox = transforms.apply_rotated_box(boxes)[0]
 
         expected_bbox = np.array([484, 388, 248, 160, 56], dtype=np.float64)
-        err_msg = "transformed_bbox = {}, expected {}".format(transformed_bbox, expected_bbox)
+        err_msg = "transformed_bbox = {}, expected {}".format(
+            transformed_bbox, expected_bbox
+        )
         assert np.allclose(transformed_bbox, expected_bbox), err_msg
 
     def test_resize_and_crop(self):
@@ -80,17 +82,23 @@ class TestTransforms(unittest.TestCase):
             ],
             dtype=np.float64,
         )
-        err_msg = "transformed_bbox = {}, expected {}".format(transformed_bboxs, expected_bboxs)
+        err_msg = "transformed_bbox = {}, expected {}".format(
+            transformed_bboxs, expected_bboxs
+        )
         self.assertTrue(np.allclose(transformed_bboxs, expected_bboxs), err_msg)
 
         polygon = np.array([[91, 46], [144, 46], [144, 111], [91, 111]])
         transformed_polygons = transforms.apply_polygons([polygon])
-        expected_polygon = np.array([[934.0, 33.0], [934.0, 80.0], [896.0, 80.0], [896.0, 33.0]])
+        expected_polygon = np.array(
+            [[934.0, 33.0], [934.0, 80.0], [896.0, 80.0], [896.0, 33.0]]
+        )
         self.assertEqual(1, len(transformed_polygons))
         err_msg = "transformed_polygon = {}, expected {}".format(
             transformed_polygons[0], expected_polygon
         )
-        self.assertTrue(polygon_allclose(transformed_polygons[0], expected_polygon), err_msg)
+        self.assertTrue(
+            polygon_allclose(transformed_polygons[0], expected_polygon), err_msg
+        )
 
     def test_apply_rotated_boxes_unequal_scaling_factor(self):
         np.random.seed(125)
@@ -123,12 +131,16 @@ class TestTransforms(unittest.TestCase):
             ],
             dtype=np.float64,
         )
-        err_msg = "transformed_boxes = {}, expected {}".format(transformed_boxes, expected_bboxes)
+        err_msg = "transformed_boxes = {}, expected {}".format(
+            transformed_boxes, expected_bboxes
+        )
         assert np.allclose(transformed_boxes, expected_bboxes), err_msg
 
     def test_print_augmentation(self):
         t = T.RandomCrop("relative", (100, 100))
-        self.assertEqual(str(t), "RandomCrop(crop_type='relative', crop_size=(100, 100))")
+        self.assertEqual(
+            str(t), "RandomCrop(crop_type='relative', crop_size=(100, 100))"
+        )
 
         t0 = T.RandomFlip(prob=0.5)
         self.assertEqual(str(t0), "RandomFlip(prob=0.5)")
@@ -150,7 +162,9 @@ class TestTransforms(unittest.TestCase):
 
         for given_probability, is_valid in test_probabilities.items():
             if not is_valid:
-                self.assertRaises(AssertionError, T.RandomApply, None, prob=given_probability)
+                self.assertRaises(
+                    AssertionError, T.RandomApply, None, prob=given_probability
+                )
             else:
                 T.RandomApply(T.NoOpTransform(), prob=given_probability)
 
@@ -236,16 +250,22 @@ class TestTransforms(unittest.TestCase):
 
         # Test a ImageOps operation
         magnitude = np.random.randint(0, 256)
-        solarize_transform = T.PILColorTransform(lambda img: ImageOps.solarize(img, magnitude))
+        solarize_transform = T.PILColorTransform(
+            lambda img: ImageOps.solarize(img, magnitude)
+        )
         expected_img = ImageOps.solarize(Image.fromarray(rand_img), magnitude)
-        self.assertTrue(np.array_equal(expected_img, solarize_transform.apply_image(rand_img)))
+        self.assertTrue(
+            np.array_equal(expected_img, solarize_transform.apply_image(rand_img))
+        )
 
     def test_resize_transform(self):
         input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]
         output_shapes = [(200, 200), (200, 200, 1), (200, 200, 3)]
         for in_shape, out_shape in zip(input_shapes, output_shapes):
             in_img = np.random.randint(0, 255, size=in_shape, dtype=np.uint8)
-            tfm = T.ResizeTransform(in_shape[0], in_shape[1], out_shape[0], out_shape[1])
+            tfm = T.ResizeTransform(
+                in_shape[0], in_shape[1], out_shape[0], out_shape[1]
+            )
             out_img = tfm.apply_image(in_img)
             self.assertEqual(out_img.shape, out_shape)
 

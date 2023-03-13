@@ -82,7 +82,9 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
                 self._do_accumulate(box_xywh_gt, box_xywh_est, dp_gt)
             self.nxt_bbox_index += 1
 
-    def _do_accumulate(self, box_xywh_gt: torch.Tensor, box_xywh_est: torch.Tensor, dp_gt: Any):
+    def _do_accumulate(
+        self, box_xywh_gt: torch.Tensor, box_xywh_est: torch.Tensor, dp_gt: Any
+    ):
         """
         Accumulate instances data for one image, given that the data is not empty
 
@@ -106,7 +108,9 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
         self.point_bbox_with_dp_indices.append(
             torch.full_like(dp_gt.vertex_ids, self.nxt_bbox_with_dp_index)
         )
-        self.point_bbox_indices.append(torch.full_like(dp_gt.vertex_ids, self.nxt_bbox_index))
+        self.point_bbox_indices.append(
+            torch.full_like(dp_gt.vertex_ids, self.nxt_bbox_index)
+        )
         self.bbox_indices.append(self.nxt_bbox_index)
         self.nxt_bbox_with_dp_index += 1
 

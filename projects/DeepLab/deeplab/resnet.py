@@ -109,18 +109,24 @@ def build_resnet_deeplab_backbone(cfg, input_shape):
     res5_multi_grid     = cfg.MODEL.RESNETS.RES5_MULTI_GRID
     # fmt: on
     assert res4_dilation in {1, 2}, "res4_dilation cannot be {}.".format(res4_dilation)
-    assert res5_dilation in {1, 2, 4}, "res5_dilation cannot be {}.".format(res5_dilation)
+    assert res5_dilation in {1, 2, 4}, "res5_dilation cannot be {}.".format(
+        res5_dilation
+    )
     if res4_dilation == 2:
         # Always dilate res5 if res4 is dilated.
         assert res5_dilation == 4
 
-    num_blocks_per_stage = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}[depth]
+    num_blocks_per_stage = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}[
+        depth
+    ]
 
     stages = []
 
     # Avoid creating variables without gradients
     # It consumes extra memory and may cause allreduce to fail
-    out_stage_idx = [{"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features]
+    out_stage_idx = [
+        {"res2": 2, "res3": 3, "res4": 4, "res5": 5}[f] for f in out_features
+    ]
     max_stage_idx = max(out_stage_idx)
     for idx, stage_idx in enumerate(range(2, max_stage_idx + 1)):
         if stage_idx == 4:
@@ -149,7 +155,9 @@ def build_resnet_deeplab_backbone(cfg, input_shape):
             stage_kargs["block_class"] = BottleneckBlock
         if stage_idx == 5:
             stage_kargs.pop("dilation")
-            stage_kargs["dilation_per_block"] = [dilation * mg for mg in res5_multi_grid]
+            stage_kargs["dilation_per_block"] = [
+                dilation * mg for mg in res5_multi_grid
+            ]
         blocks = ResNet.make_stage(**stage_kargs)
         in_channels = out_channels
         out_channels *= 2

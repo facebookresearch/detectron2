@@ -58,7 +58,9 @@ def instantiate(cfg):
 
     # If input is a DictConfig backed by dataclasses (i.e. omegaconf's structured config),
     # instantiate it to the actual dataclass.
-    if isinstance(cfg, DictConfig) and dataclasses.is_dataclass(cfg._metadata.object_type):
+    if isinstance(cfg, DictConfig) and dataclasses.is_dataclass(
+        cfg._metadata.object_type
+    ):
         return OmegaConf.to_object(cfg)
 
     if isinstance(cfg, abc.Mapping) and "_target_" in cfg:

@@ -126,10 +126,14 @@ def setup_custom_environment(custom_module):
         module = _import_file("detectron2.utils.env.custom_module", custom_module)
     else:
         module = importlib.import_module(custom_module)
-    assert hasattr(module, "setup_environment") and callable(module.setup_environment), (
+    assert hasattr(module, "setup_environment") and callable(
+        module.setup_environment
+    ), (
         "Custom environment module defined in {} does not have the "
         "required callable attribute 'setup_environment'."
-    ).format(custom_module)
+    ).format(
+        custom_module
+    )
     module.setup_environment()
 
 
@@ -151,7 +155,9 @@ def fixup_module_metadata(module_name, namespace, keys=None):
         seen_ids.add(id(obj))
 
         mod = getattr(obj, "__module__", None)
-        if mod is not None and (mod.startswith(module_name) or mod.startswith("fvcore.")):
+        if mod is not None and (
+            mod.startswith(module_name) or mod.startswith("fvcore.")
+        ):
             obj.__module__ = module_name
             # Modules, unlike everything else in Python, put fully-qualitied
             # names into their __name__ attribute. We check for "." to avoid

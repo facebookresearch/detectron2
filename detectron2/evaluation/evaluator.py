@@ -96,7 +96,9 @@ class DatasetEvaluators(DatasetEvaluator):
                 for k, v in result.items():
                     assert (
                         k not in results
-                    ), "Different evaluators produce results with the same key {}".format(k)
+                    ), "Different evaluators produce results with the same key {}".format(
+                        k
+                    )
                     results[k] = v
         return results
 
@@ -169,9 +171,13 @@ def inference_on_dataset(
             data_seconds_per_iter = total_data_time / iters_after_start
             compute_seconds_per_iter = total_compute_time / iters_after_start
             eval_seconds_per_iter = total_eval_time / iters_after_start
-            total_seconds_per_iter = (time.perf_counter() - start_time) / iters_after_start
+            total_seconds_per_iter = (
+                time.perf_counter() - start_time
+            ) / iters_after_start
             if idx >= num_warmup * 2 or compute_seconds_per_iter > 5:
-                eta = datetime.timedelta(seconds=int(total_seconds_per_iter * (total - idx - 1)))
+                eta = datetime.timedelta(
+                    seconds=int(total_seconds_per_iter * (total - idx - 1))
+                )
                 log_every_n_seconds(
                     logging.INFO,
                     (

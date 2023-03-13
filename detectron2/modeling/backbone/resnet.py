@@ -392,7 +392,10 @@ class ResNet(Backbone):
             # Avoid keeping unused layers in this module. They consume extra memory
             # and may cause allreduce to fail
             num_stages = max(
-                [{"res2": 1, "res3": 2, "res4": 3, "res5": 4}.get(f, 0) for f in out_features]
+                [
+                    {"res2": 1, "res3": 2, "res4": 3, "res5": 4}.get(f, 0)
+                    for f in out_features
+                ]
             )
             stages = stages[:num_stages]
         for i, blocks in enumerate(stages):
@@ -429,7 +432,9 @@ class ResNet(Backbone):
         assert len(self._out_features)
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
-            assert out_feature in children, "Available children: {}".format(", ".join(children))
+            assert out_feature in children, "Available children: {}".format(
+                ", ".join(children)
+            )
         self.freeze(freeze_at)
 
     def forward(self, x):
@@ -440,7 +445,9 @@ class ResNet(Backbone):
         Returns:
             dict[str->Tensor]: names and the corresponding features
         """
-        assert x.dim() == 4, f"ResNet takes an input of shape (N, C, H, W). Got {x.shape} instead!"
+        assert (
+            x.dim() == 4
+        ), f"ResNet takes an input of shape (N, C, H, W). Got {x.shape} instead!"
         outputs = {}
         x = self.stem(x)
         if "stem" in self._out_features:
@@ -534,13 +541,17 @@ class ResNet(Backbone):
                         f"same length as num_blocks={num_blocks}."
                     )
                     newk = k[: -len("_per_block")]
-                    assert newk not in kwargs, f"Cannot call make_stage with both {k} and {newk}!"
+                    assert (
+                        newk not in kwargs
+                    ), f"Cannot call make_stage with both {k} and {newk}!"
                     curr_kwargs[newk] = v[i]
                 else:
                     curr_kwargs[k] = v
 
             blocks.append(
-                block_class(in_channels=in_channels, out_channels=out_channels, **curr_kwargs)
+                block_class(
+                    in_channels=in_channels, out_channels=out_channels, **curr_kwargs
+                )
             )
             in_channels = out_channels
         return blocks
@@ -582,7 +593,9 @@ class ResNet(Backbone):
             in_channels = [64, 256, 512, 1024]
             out_channels = [256, 512, 1024, 2048]
         ret = []
-        for (n, s, i, o) in zip(num_blocks_per_stage, [1, 2, 2, 2], in_channels, out_channels):
+        for (n, s, i, o) in zip(
+            num_blocks_per_stage, [1, 2, 2, 2], in_channels, out_channels
+        ):
             if depth >= 50:
                 kwargs["bottleneck_channels"] = o // 4
             ret.append(
@@ -653,11 +666,15 @@ def build_resnet_backbone(cfg, input_shape):
     }[depth]
 
     if depth in [18, 34]:
-        assert out_channels == 64, "Must set MODEL.RESNETS.RES2_OUT_CHANNELS = 64 for R18/R34"
+        assert (
+            out_channels == 64
+        ), "Must set MODEL.RESNETS.RES2_OUT_CHANNELS = 64 for R18/R34"
         assert not any(
             deform_on_per_stage
         ), "MODEL.RESNETS.DEFORM_ON_PER_STAGE unsupported for R18/R34"
-        assert res5_dilation == 1, "Must set MODEL.RESNETS.RES5_DILATION = 1 for R18/R34"
+        assert (
+            res5_dilation == 1
+        ), "Must set MODEL.RESNETS.RES5_DILATION = 1 for R18/R34"
         assert num_groups == 1, "Must set MODEL.RESNETS.NUM_GROUPS = 1 for R18/R34"
 
     stages = []

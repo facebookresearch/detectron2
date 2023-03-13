@@ -26,7 +26,9 @@ class TestNMS(unittest.TestCase):
             keep_ref = batched_nms(boxes, scores, idxs, iou)
             backup = boxes.clone()
             scripted_keep = scripted_batched_nms(boxes, scores, idxs, iou)
-            assert torch.allclose(boxes, backup), "boxes modified by jit-scripted batched_nms"
+            assert torch.allclose(
+                boxes, backup
+            ), "boxes modified by jit-scripted batched_nms"
             self.assertTrue(torch.equal(keep_ref, scripted_keep), err_msg.format(iou))
 
 

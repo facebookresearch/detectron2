@@ -418,7 +418,9 @@ _C.MODEL.PANOPTIC_FPN = CN()
 _C.MODEL.PANOPTIC_FPN.INSTANCE_LOSS_WEIGHT = 1.0
 
 # options when combining instance & semantic segmentation outputs
-_C.MODEL.PANOPTIC_FPN.COMBINE = CN({"ENABLED": True})  # "COMBINE.ENABLED" is deprecated & not used
+_C.MODEL.PANOPTIC_FPN.COMBINE = CN(
+    {"ENABLED": True}
+)  # "COMBINE.ENABLED" is deprecated & not used
 _C.MODEL.PANOPTIC_FPN.COMBINE.OVERLAP_THRESH = 0.5
 _C.MODEL.PANOPTIC_FPN.COMBINE.STUFF_AREA_LIMIT = 4096
 _C.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
@@ -480,7 +482,9 @@ _C.MODEL.RETINANET.NORM = ""
 _C.MODEL.RESNETS = CN()
 
 _C.MODEL.RESNETS.DEPTH = 50
-_C.MODEL.RESNETS.OUT_FEATURES = ["res4"]  # res4 for C4 backbone, res2..5 for FPN backbone
+_C.MODEL.RESNETS.OUT_FEATURES = [
+    "res4"
+]  # res4 for C4 backbone, res2..5 for FPN backbone
 
 # Number of groups to use; 1 ==> ResNet; > 1 ==> ResNeXt
 _C.MODEL.RESNETS.NUM_GROUPS = 1

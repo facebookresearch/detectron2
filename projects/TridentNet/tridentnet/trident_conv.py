@@ -56,7 +56,9 @@ class TridentConv(nn.Module):
             nn.init.constant_(self.bias, 0)
 
     def forward(self, inputs):
-        num_branch = self.num_branch if self.training or self.test_branch_idx == -1 else 1
+        num_branch = (
+            self.num_branch if self.training or self.test_branch_idx == -1 else 1
+        )
         assert len(inputs) == num_branch
 
         if inputs[0].numel() == 0:
@@ -84,7 +86,9 @@ class TridentConv(nn.Module):
                     dilation,
                     self.groups,
                 )
-                for input, dilation, padding in zip(inputs, self.dilations, self.paddings)
+                for input, dilation, padding in zip(
+                    inputs, self.dilations, self.paddings
+                )
             ]
         else:
             outputs = [

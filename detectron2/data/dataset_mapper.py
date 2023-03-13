@@ -103,7 +103,9 @@ class DatasetMapper:
         }
 
         if cfg.MODEL.KEYPOINT_ON:
-            ret["keypoint_hflip_indices"] = utils.create_keypoint_hflip_indices(cfg.DATASETS.TRAIN)
+            ret["keypoint_hflip_indices"] = utils.create_keypoint_hflip_indices(
+                cfg.DATASETS.TRAIN
+            )
 
         if cfg.MODEL.LOAD_PROPOSALS:
             ret["precomputed_proposal_topk"] = (
@@ -160,7 +162,9 @@ class DatasetMapper:
 
         # USER: Remove if you don't do semantic/panoptic segmentation.
         if "sem_seg_file_name" in dataset_dict:
-            sem_seg_gt = utils.read_image(dataset_dict.pop("sem_seg_file_name"), "L").squeeze(2)
+            sem_seg_gt = utils.read_image(
+                dataset_dict.pop("sem_seg_file_name"), "L"
+            ).squeeze(2)
         else:
             sem_seg_gt = None
 
@@ -172,7 +176,9 @@ class DatasetMapper:
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        dataset_dict["image"] = torch.as_tensor(
+            np.ascontiguousarray(image.transpose(2, 0, 1))
+        )
         if sem_seg_gt is not None:
             dataset_dict["sem_seg"] = torch.as_tensor(sem_seg_gt.astype("long"))
 

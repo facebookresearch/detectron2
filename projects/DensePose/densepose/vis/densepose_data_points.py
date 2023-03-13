@@ -24,7 +24,9 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
     def visualize(
         self,
         image_bgr: Image,
-        bbox_densepose_datas: Optional[Tuple[Iterable[Boxes], Iterable[DensePoseDataRelative]]],
+        bbox_densepose_datas: Optional[
+            Tuple[Iterable[Boxes], Iterable[DensePoseDataRelative]]
+        ],
     ) -> Image:
         if bbox_densepose_datas is None:
             return image_bgr
@@ -32,12 +34,16 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
             matrix = densepose_data.segm.numpy()
             mask = np.zeros(matrix.shape, dtype=np.uint8)
             mask[matrix > 0] = 1
-            image_bgr = self.mask_visualizer.visualize(image_bgr, mask, matrix, bbox_xywh.numpy())
+            image_bgr = self.mask_visualizer.visualize(
+                image_bgr, mask, matrix, bbox_xywh.numpy()
+            )
         return image_bgr
 
 
 class DensePoseDataPointsVisualizer(object):
-    def __init__(self, densepose_data_to_value_fn=None, cmap=cv2.COLORMAP_PARULA, **kwargs):
+    def __init__(
+        self, densepose_data_to_value_fn=None, cmap=cv2.COLORMAP_PARULA, **kwargs
+    ):
         self.points_visualizer = PointsVisualizer()
         self.densepose_data_to_value_fn = densepose_data_to_value_fn
         self.cmap = cmap
@@ -45,7 +51,9 @@ class DensePoseDataPointsVisualizer(object):
     def visualize(
         self,
         image_bgr: Image,
-        bbox_densepose_datas: Optional[Tuple[Iterable[Boxes], Iterable[DensePoseDataRelative]]],
+        bbox_densepose_datas: Optional[
+            Tuple[Iterable[Boxes], Iterable[DensePoseDataRelative]]
+        ],
     ) -> Image:
         if bbox_densepose_datas is None:
             return image_bgr
@@ -60,9 +68,12 @@ class DensePoseDataPointsVisualizer(object):
                 v = self.densepose_data_to_value_fn(densepose_data)
                 img_colors_bgr = cv2.applyColorMap(v, self.cmap)
                 colors_bgr = [
-                    [int(v) for v in img_color_bgr.ravel()] for img_color_bgr in img_colors_bgr
+                    [int(v) for v in img_color_bgr.ravel()]
+                    for img_color_bgr in img_colors_bgr
                 ]
-                image_bgr = self.points_visualizer.visualize(image_bgr, pts_xy, colors_bgr)
+                image_bgr = self.points_visualizer.visualize(
+                    image_bgr, pts_xy, colors_bgr
+                )
         return image_bgr
 
 

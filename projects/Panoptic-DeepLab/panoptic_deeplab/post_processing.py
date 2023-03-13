@@ -31,7 +31,9 @@ def find_instance_center(center_heatmap, threshold=0.1, nms_kernel=3, top_k=None
 
     # Squeeze first two dimensions.
     center_heatmap = center_heatmap.squeeze()
-    assert len(center_heatmap.size()) == 2, "Something is wrong with center heatmap dimension."
+    assert (
+        len(center_heatmap.size()) == 2
+    ), "Something is wrong with center heatmap dimension."
 
     # Find non-zero elements.
     if top_k is None:
@@ -212,17 +214,25 @@ def get_panoptic_segmentation(
         A Tensor of shape [1, H, W], int64.
     """
     if sem_seg.dim() != 3 and sem_seg.size(0) != 1:
-        raise ValueError("Semantic prediction with un-supported shape: {}.".format(sem_seg.size()))
+        raise ValueError(
+            "Semantic prediction with un-supported shape: {}.".format(sem_seg.size())
+        )
     if center_heatmap.dim() != 3:
         raise ValueError(
-            "Center prediction with un-supported dimension: {}.".format(center_heatmap.dim())
+            "Center prediction with un-supported dimension: {}.".format(
+                center_heatmap.dim()
+            )
         )
     if offsets.dim() != 3:
-        raise ValueError("Offset prediction with un-supported dimension: {}.".format(offsets.dim()))
+        raise ValueError(
+            "Offset prediction with un-supported dimension: {}.".format(offsets.dim())
+        )
     if foreground_mask is not None:
         if foreground_mask.dim() != 3 and foreground_mask.size(0) != 1:
             raise ValueError(
-                "Foreground prediction with un-supported shape: {}.".format(sem_seg.size())
+                "Foreground prediction with un-supported shape: {}.".format(
+                    sem_seg.size()
+                )
             )
         thing_seg = foreground_mask
     else:

@@ -61,5 +61,7 @@ class VertexDirectEmbedder(nn.Module):
             for name in ["embeddings"]:
                 if name in data:
                     getattr(self, name).copy_(
-                        torch.tensor(data[name]).float().to(device=getattr(self, name).device)
+                        torch.tensor(data[name])
+                        .float()
+                        .to(device=getattr(self, name).device)
                     )

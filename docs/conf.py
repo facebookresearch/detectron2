@@ -309,7 +309,8 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     }
     try:
         if name in HIDDEN or (
-            hasattr(obj, "__doc__") and obj.__doc__.lower().strip().startswith("deprecated")
+            hasattr(obj, "__doc__")
+            and obj.__doc__.lower().strip().startswith("deprecated")
         ):
             print("Skipping deprecated object: {}".format(name))
             return True

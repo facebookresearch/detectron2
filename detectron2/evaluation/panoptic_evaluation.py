@@ -86,7 +86,8 @@ class COCOPanopticEvaluator(DatasetEvaluator):
                         continue
                     pred_class = panoptic_label // label_divisor
                     isthing = (
-                        pred_class in self._metadata.thing_dataset_id_to_contiguous_id.values()
+                        pred_class
+                        in self._metadata.thing_dataset_id_to_contiguous_id.values()
                     )
                     segments_info.append(
                         {
@@ -170,7 +171,11 @@ def _print_panoptic_results(pq_res):
     headers = ["", "PQ", "SQ", "RQ", "#categories"]
     data = []
     for name in ["All", "Things", "Stuff"]:
-        row = [name] + [pq_res[name][k] * 100 for k in ["pq", "sq", "rq"]] + [pq_res[name]["n"]]
+        row = (
+            [name]
+            + [pq_res[name][k] * 100 for k in ["pq", "sq", "rq"]]
+            + [pq_res[name]["n"]]
+        )
         data.append(row)
     table = tabulate(
         data,

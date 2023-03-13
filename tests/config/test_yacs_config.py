@@ -143,7 +143,9 @@ class _TestClassD(_TestClassA):
     # Test whether input_shape will be forwarded to __init__
 
 
-@configurable(from_config=lambda cfg, arg2: {"arg1": cfg.ARG1, "arg2": arg2, "arg3": cfg.ARG3})
+@configurable(
+    from_config=lambda cfg, arg2: {"arg1": cfg.ARG1, "arg2": arg2, "arg3": cfg.ARG3}
+)
 def _test_func(arg1, arg2=2, arg3=3, arg4=4):
     return arg1, arg2, arg3, arg4
 
@@ -262,7 +264,9 @@ class TestConfigurable(unittest.TestCase):
         self.assertTrue(callable(_test_func.from_config))
 
     def testOmegaConf(self):
-        cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml")
+        cfg = model_zoo.get_config(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
+        )
         cfg = OmegaConf.create(cfg.dump())
         if not torch.cuda.is_available():
             cfg.MODEL.DEVICE = "cpu"

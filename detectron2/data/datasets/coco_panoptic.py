@@ -46,7 +46,9 @@ def load_coco_panoptic_json(json_file, image_dir, gt_dir, meta):
         # different extension, and images have extension ".jpg" for COCO. Need
         # to make image extension a user-provided argument if we extend this
         # function to support other COCO-like datasets.
-        image_file = os.path.join(image_dir, os.path.splitext(ann["file_name"])[0] + ".jpg")
+        image_file = os.path.join(
+            image_dir, os.path.splitext(ann["file_name"])[0] + ".jpg"
+        )
         label_file = os.path.join(gt_dir, ann["file_name"])
         segments_info = [_convert_category_id(x, meta) for x in ann["segments_info"]]
         ret.append(
@@ -85,7 +87,9 @@ def register_coco_panoptic(
     panoptic_name = name
     DatasetCatalog.register(
         panoptic_name,
-        lambda: load_coco_panoptic_json(panoptic_json, image_root, panoptic_root, metadata),
+        lambda: load_coco_panoptic_json(
+            panoptic_json, image_root, panoptic_root, metadata
+        ),
     )
     MetadataCatalog.get(panoptic_name).set(
         panoptic_root=panoptic_root,
@@ -161,7 +165,9 @@ def register_coco_panoptic_separated(
     )
 
     semantic_name = name + "_stuffonly"
-    DatasetCatalog.register(semantic_name, lambda: load_sem_seg(sem_seg_root, image_root))
+    DatasetCatalog.register(
+        semantic_name, lambda: load_sem_seg(sem_seg_root, image_root)
+    )
     MetadataCatalog.get(semantic_name).set(
         sem_seg_root=sem_seg_root,
         image_root=image_root,
@@ -220,7 +226,9 @@ if __name__ == "__main__":
     assert sys.argv[4] in DatasetCatalog.list()
     meta = MetadataCatalog.get(sys.argv[4])
 
-    dicts = load_coco_panoptic_json(sys.argv[3], sys.argv[1], sys.argv[2], meta.as_dict())
+    dicts = load_coco_panoptic_json(
+        sys.argv[3], sys.argv[1], sys.argv[2], meta.as_dict()
+    )
     logger.info("Done loading {} samples.".format(len(dicts)))
 
     dirname = "coco-data-vis"

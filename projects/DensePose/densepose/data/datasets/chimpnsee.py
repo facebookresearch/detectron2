@@ -18,7 +18,9 @@ def register_dataset(datasets_root: Optional[str] = None) -> None:
         datasets_root,
         "chimpnsee/cdna.eva.mpg.de/video_list.txt",
     )
-    video_base_path = maybe_prepend_base_path(datasets_root, "chimpnsee/cdna.eva.mpg.de")
+    video_base_path = maybe_prepend_base_path(
+        datasets_root, "chimpnsee/cdna.eva.mpg.de"
+    )
 
     DatasetCatalog.register(CHIMPNSEE_DATASET_NAME, empty_load_callback)
     MetadataCatalog.get(CHIMPNSEE_DATASET_NAME).set(

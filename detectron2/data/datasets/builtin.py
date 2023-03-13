@@ -266,7 +266,9 @@ def register_all_ade20k(root):
         name = f"ade20k_sem_seg_{name}"
         DatasetCatalog.register(
             name,
-            lambda x=image_dir, y=gt_dir: load_sem_seg(y, x, gt_ext="png", image_ext="jpg"),
+            lambda x=image_dir, y=gt_dir: load_sem_seg(
+                y, x, gt_ext="png", image_ext="jpg"
+            ),
         )
         MetadataCatalog.get(name).set(
             stuff_classes=ADE20K_SEM_SEG_CATEGORIES[:],

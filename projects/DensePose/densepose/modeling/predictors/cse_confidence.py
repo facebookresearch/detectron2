@@ -81,15 +81,20 @@ class DensePoseEmbeddingConfidencePredictorMixin:
             output.coarse_segm_confidence = (
                 F.softplus(
                     self.interp2d(  # pyre-ignore[16]
-                        self.coarse_segm_confidence_lowres(head_outputs)  # pyre-ignore[16]
+                        self.coarse_segm_confidence_lowres(
+                            head_outputs
+                        )  # pyre-ignore[16]
                     )
                 )
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
-            output.coarse_segm = base_predictor_outputs.coarse_segm * torch.repeat_interleave(
-                output.coarse_segm_confidence,
-                base_predictor_outputs.coarse_segm.shape[1],
-                dim=1,
+            output.coarse_segm = (
+                base_predictor_outputs.coarse_segm
+                * torch.repeat_interleave(
+                    output.coarse_segm_confidence,
+                    base_predictor_outputs.coarse_segm.shape[1],
+                    dim=1,
+                )
             )
 
         return output

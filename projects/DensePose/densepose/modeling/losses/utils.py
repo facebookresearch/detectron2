@@ -237,7 +237,9 @@ def resample_data(
     grid_y = grid_h_expanded * dy_expanded + y0_expanded
     grid = torch.stack((grid_x, grid_y), dim=3)
     # resample Z from (N, C, H, W) into (N, C, Hout, Wout)
-    zresampled = F.grid_sample(z, grid, mode=mode, padding_mode=padding_mode, align_corners=True)
+    zresampled = F.grid_sample(
+        z, grid, mode=mode, padding_mode=padding_mode, align_corners=True
+    )
     return zresampled
 
 
@@ -418,7 +420,9 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             else None,
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),
-            point_bbox_with_dp_indices=torch.cat(self.point_bbox_with_dp_indices, 0).long(),
+            point_bbox_with_dp_indices=torch.cat(
+                self.point_bbox_with_dp_indices, 0
+            ).long(),
             point_bbox_indices=torch.cat(self.point_bbox_indices, 0).long(),
             bbox_indices=torch.as_tensor(
                 self.bbox_indices, dtype=torch.long, device=self.x_gt[0].device

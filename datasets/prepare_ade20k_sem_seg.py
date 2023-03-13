@@ -17,7 +17,9 @@ def convert(input, output):
 
 
 if __name__ == "__main__":
-    dataset_dir = Path(os.getenv("DETECTRON2_DATASETS", "datasets")) / "ADEChallengeData2016"
+    dataset_dir = (
+        Path(os.getenv("DETECTRON2_DATASETS", "datasets")) / "ADEChallengeData2016"
+    )
     for name in ["training", "validation"]:
         annotation_dir = dataset_dir / "annotations" / name
         output_dir = dataset_dir / "annotations_detectron2" / name

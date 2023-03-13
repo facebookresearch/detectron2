@@ -21,7 +21,9 @@ def _get_base_config_dir():
     """
     Return the base directory for configurations
     """
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", _BASE_CONFIG_DIR)
+    return os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "..", _BASE_CONFIG_DIR
+    )
 
 
 def _get_evolution_config_dir():

@@ -16,7 +16,9 @@ assert torch_ver >= [1, 12], "Requires PyTorch >= 1.12"
 
 
 def get_version():
-    init_py_path = path.join(path.abspath(path.dirname(__file__)), "detectron2", "__init__.py")
+    init_py_path = path.join(
+        path.abspath(path.dirname(__file__)), "detectron2", "__init__.py"
+    )
     init_py = open(init_py_path, "r").readlines()
     version_line = [l.strip() for l in init_py if l.startswith("__version__")][0]
     version = version_line.split("=")[-1].strip().strip("'\"")
@@ -64,9 +66,9 @@ def get_extensions():
     extra_compile_args = {"cxx": []}
     define_macros = []
 
-    if (torch.cuda.is_available() and ((CUDA_HOME is not None) or is_rocm_pytorch)) or os.getenv(
-        "FORCE_CUDA", "0"
-    ) == "1":
+    if (
+        torch.cuda.is_available() and ((CUDA_HOME is not None) or is_rocm_pytorch)
+    ) or os.getenv("FORCE_CUDA", "0") == "1":
         extension = CUDAExtension
         sources += source_cuda
 

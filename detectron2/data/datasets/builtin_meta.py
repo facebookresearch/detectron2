@@ -288,7 +288,9 @@ def _get_coco_panoptic_separated_meta():
     ]
 
     # NOTE: I randomly picked a color for things
-    stuff_colors = [[82, 18, 128]] + [k["color"] for k in COCO_CATEGORIES if k["isthing"] == 0]
+    stuff_colors = [[82, 18, 128]] + [
+        k["color"] for k in COCO_CATEGORIES if k["isthing"] == 0
+    ]
     ret = {
         "stuff_dataset_id_to_contiguous_id": stuff_dataset_id_to_contiguous_id,
         "stuff_classes": stuff_classes,

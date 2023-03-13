@@ -58,7 +58,9 @@ def launch(
         # TODO prctl in spawned processes
 
         if dist_url == "auto":
-            assert num_machines == 1, "dist_url=auto not supported in multi-machine jobs."
+            assert (
+                num_machines == 1
+            ), "dist_url=auto not supported in multi-machine jobs."
             port = _find_free_port()
             dist_url = f"tcp://127.0.0.1:{port}"
         if num_machines > 1 and dist_url.startswith("file://"):

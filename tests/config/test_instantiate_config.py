@@ -67,7 +67,9 @@ class TestConstruction(unittest.TestCase):
 
     def test_instantiate_list(self):
         lst = [1, 2, L(TestClass)(int_arg=1)]
-        x = L(TestClass)(int_arg=lst)  # list as an argument should be recursively instantiated
+        x = L(TestClass)(
+            int_arg=lst
+        )  # list as an argument should be recursively instantiated
         x = instantiate(x).int_arg
         self.assertEqual(x[:2], [1, 2])
         self.assertIsInstance(x[2], TestClass)

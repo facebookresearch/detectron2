@@ -43,7 +43,9 @@ def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
             tolerance_backward_seeks = 2
             while True:
                 try:
-                    container.seek(pts + 1, backward=False, any_frame=False, stream=stream)
+                    container.seek(
+                        pts + 1, backward=False, any_frame=False, stream=stream
+                    )
                 except av.AVError as e:
                     # the exception occurs when the video length is exceeded,
                     # we then return whatever data we've already collected
@@ -83,7 +85,8 @@ def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
     except OSError as e:
         logger = logging.getLogger(__name__)
         logger.warning(
-            f"List keyframes: Error opening video file container {video_fpath}, " f"OS error: {e}"
+            f"List keyframes: Error opening video file container {video_fpath}, "
+            f"OS error: {e}"
         )
     except RuntimeError as e:
         logger = logging.getLogger(__name__)

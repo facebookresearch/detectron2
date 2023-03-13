@@ -8,7 +8,10 @@ from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
 from densepose.data.meshes.catalog import MeshCatalog
-from densepose.modeling.cse.utils import normalize_embeddings, squared_euclidean_distance_matrix
+from densepose.modeling.cse.utils import (
+    normalize_embeddings,
+    squared_euclidean_distance_matrix,
+)
 from typing import Any, Dict, List
 
 from .embed_utils import PackedCseAnnotations
@@ -29,7 +32,9 @@ class EmbeddingLoss:
         """
         Initialize embedding loss from config
         """
-        self.embdist_gauss_sigma = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_DIST_GAUSS_SIGMA
+        self.embdist_gauss_sigma = (
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDING_DIST_GAUSS_SIGMA
+        )
 
     def __call__(
         self,
@@ -100,7 +105,9 @@ class EmbeddingLoss:
             scores = squared_euclidean_distance_matrix(
                 vertex_embeddings_i, mesh_vertex_embeddings
             ) / (-self.embdist_gauss_sigma)
-            losses[mesh_name] = F.cross_entropy(scores, vertex_indices_i, ignore_index=-1)
+            losses[mesh_name] = F.cross_entropy(
+                scores, vertex_indices_i, ignore_index=-1
+            )
 
         # pyre-fixme[29]:
         #  `Union[BoundMethod[typing.Callable(torch.Tensor.__iter__)[[Named(self,
@@ -120,8 +127,15 @@ class EmbeddingLoss:
         #  torch.Tensor)], typing.Iterator[typing.Any]], torch.Tensor], nn.Module,
         #  torch.Tensor]` is not a function.
         for mesh_name in embedder.mesh_names:
-            losses[mesh_name] = self.fake_value(densepose_predictor_outputs, embedder, mesh_name)
+            losses[mesh_name] = self.fake_value(
+                densepose_predictor_outputs, embedder, mesh_name
+            )
         return losses
 
-    def fake_value(self, densepose_predictor_outputs: Any, embedder: nn.Module, mesh_name: str):
-        return densepose_predictor_outputs.embedding.sum() * 0 + embedder(mesh_name).sum() * 0
+    def fake_value(
+        self, densepose_predictor_outputs: Any, embedder: nn.Module, mesh_name: str
+    ):
+        return (
+            densepose_predictor_outputs.embedding.sum() * 0
+            + embedder(mesh_name).sum() * 0
+        )

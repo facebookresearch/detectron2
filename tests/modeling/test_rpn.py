@@ -52,7 +52,9 @@ class RPNTest(unittest.TestCase):
             err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
                 name, proposal_losses[name], expected_losses[name]
             )
-            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
+            self.assertTrue(
+                torch.allclose(proposal_losses[name], expected_losses[name]), err_msg
+            )
 
         self.assertEqual(len(proposals), len(image_sizes))
         for proposal, im_size in zip(proposals, image_sizes):
@@ -61,10 +63,14 @@ class RPNTest(unittest.TestCase):
         expected_proposal_box = torch.tensor([[0, 0, 10, 10], [7.2702, 0, 10, 10]])
         expected_objectness_logit = torch.tensor([0.1596, -0.0007])
         self.assertTrue(
-            torch.allclose(proposals[0].proposal_boxes.tensor, expected_proposal_box, atol=1e-4)
+            torch.allclose(
+                proposals[0].proposal_boxes.tensor, expected_proposal_box, atol=1e-4
+            )
         )
         self.assertTrue(
-            torch.allclose(proposals[0].objectness_logits, expected_objectness_logit, atol=1e-4)
+            torch.allclose(
+                proposals[0].objectness_logits, expected_objectness_logit, atol=1e-4
+            )
         )
 
     def verify_rpn(self, conv_dims, expected_conv_dims):
@@ -93,7 +99,9 @@ class RPNTest(unittest.TestCase):
             err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
                 name, proposal_losses[name], expected_losses[name]
             )
-            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
+            self.assertTrue(
+                torch.allclose(proposal_losses[name], expected_losses[name]), err_msg
+            )
 
     def test_rpn_conv_dims_not_set(self):
         conv_dims = [-1, -1, -1]
@@ -102,7 +110,9 @@ class RPNTest(unittest.TestCase):
 
     def test_rpn_scriptability(self):
         cfg = get_cfg()
-        proposal_generator = RPN(cfg, {"res4": ShapeSpec(channels=1024, stride=16)}).eval()
+        proposal_generator = RPN(
+            cfg, {"res4": ShapeSpec(channels=1024, stride=16)}
+        ).eval()
         num_images = 2
         images_tensor = torch.rand(num_images, 30, 40)
         image_sizes = [(32, 32), (30, 40)]
@@ -118,9 +128,13 @@ class RPNTest(unittest.TestCase):
         for proposal, proposal_ts in zip(proposals, proposals_ts):
             self.assertEqual(proposal.image_size, proposal_ts.image_size)
             self.assertTrue(
-                torch.equal(proposal.proposal_boxes.tensor, proposal_ts.proposal_boxes.tensor)
+                torch.equal(
+                    proposal.proposal_boxes.tensor, proposal_ts.proposal_boxes.tensor
+                )
             )
-            self.assertTrue(torch.equal(proposal.objectness_logits, proposal_ts.objectness_logits))
+            self.assertTrue(
+                torch.equal(proposal.objectness_logits, proposal_ts.objectness_logits)
+            )
 
     def test_rrpn(self):
         torch.manual_seed(121)
@@ -157,7 +171,9 @@ class RPNTest(unittest.TestCase):
             err_msg = "proposal_losses[{}] = {}, expected losses = {}".format(
                 name, proposal_losses[name], expected_losses[name]
             )
-            self.assertTrue(torch.allclose(proposal_losses[name], expected_losses[name]), err_msg)
+            self.assertTrue(
+                torch.allclose(proposal_losses[name], expected_losses[name]), err_msg
+            )
 
         expected_proposal_box = torch.tensor(
             [
@@ -168,7 +184,9 @@ class RPNTest(unittest.TestCase):
             ]
         )
 
-        expected_objectness_logit = torch.tensor([0.10924313, 0.09881870, 0.07649877, 0.05858029])
+        expected_objectness_logit = torch.tensor(
+            [0.10924313, 0.09881870, 0.07649877, 0.05858029]
+        )
 
         torch.set_printoptions(precision=8, sci_mode=False)
 
@@ -183,7 +201,9 @@ class RPNTest(unittest.TestCase):
             proposal.proposal_boxes.tensor, expected_proposal_box
         )
         self.assertTrue(
-            torch.allclose(proposal.proposal_boxes.tensor[:4], expected_proposal_box, atol=1e-5),
+            torch.allclose(
+                proposal.proposal_boxes.tensor[:4], expected_proposal_box, atol=1e-5
+            ),
             err_msg,
         )
 
@@ -191,7 +211,9 @@ class RPNTest(unittest.TestCase):
             proposal.objectness_logits, expected_objectness_logit
         )
         self.assertTrue(
-            torch.allclose(proposal.objectness_logits[:4], expected_objectness_logit, atol=1e-5),
+            torch.allclose(
+                proposal.objectness_logits[:4], expected_objectness_logit, atol=1e-5
+            ),
             err_msg,
         )
 
@@ -200,7 +222,9 @@ class RPNTest(unittest.TestCase):
         proposals = [torch.rand(N, Hi * Wi * A, 4)]
         pred_logits = [torch.rand(N, Hi * Wi * A)]
         pred_logits[0][1][3:5].fill_(float("inf"))
-        find_top_rpn_proposals(proposals, pred_logits, [(10, 10)], 0.5, 1000, 1000, 0, False)
+        find_top_rpn_proposals(
+            proposals, pred_logits, [(10, 10)], 0.5, 1000, 1000, 0, False
+        )
 
     def test_find_rpn_proposals_tracing(self):
         N, Hi, Wi, A = 3, 50, 50, 9
@@ -243,7 +267,9 @@ class RPNTest(unittest.TestCase):
         )
         gt_boxes = Boxes(torch.tensor([[0, 0, 1, 1]]))
 
-        self.assertRaises(AssertionError, add_ground_truth_to_proposals, [gt_boxes], [proposals])
+        self.assertRaises(
+            AssertionError, add_ground_truth_to_proposals, [gt_boxes], [proposals]
+        )
 
         gt_instances = Instances((10, 10))
         gt_instances.gt_boxes = gt_boxes

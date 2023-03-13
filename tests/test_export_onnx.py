@@ -92,7 +92,9 @@ class TestONNXTracingExport(unittest.TestCase):
     @skipIfUnsupportedMinTorchVersion("1.11.1")
     def testMaskRCNNFPN_with_postproc(self):
         def inference_func(model, image):
-            inputs = [{"image": image, "height": image.shape[1], "width": image.shape[2]}]
+            inputs = [
+                {"image": image, "height": image.shape[1], "width": image.shape[2]}
+            ]
             return model.inference(inputs, do_postprocess=True)[0]["instances"]
 
         self._test_model_zoo_from_config_path(
@@ -154,7 +156,9 @@ class TestONNXTracingExport(unittest.TestCase):
     ################################################################################
 
     def setUp(self):
-        register_custom_op_onnx_export("::to", _pytorch1111_symbolic_opset9_to, 9, "1.11.1")
+        register_custom_op_onnx_export(
+            "::to", _pytorch1111_symbolic_opset9_to, 9, "1.11.1"
+        )
         register_custom_op_onnx_export(
             "::repeat_interleave",
             _pytorch1111_symbolic_opset9_repeat_interleave,

@@ -69,7 +69,9 @@ model = L(GeneralizedRCNN)(
             stride_in_1x1=True,
         ),
         box_predictor=L(FastRCNNOutputLayers)(
-            input_shape=L(ShapeSpec)(channels="${...res5.out_channels}", height=1, width=1),
+            input_shape=L(ShapeSpec)(
+                channels="${...res5.out_channels}", height=1, width=1
+            ),
             test_score_thresh=0.05,
             box2box_transform=L(Box2BoxTransform)(weights=(10, 10, 5, 5)),
             num_classes="${..num_classes}",

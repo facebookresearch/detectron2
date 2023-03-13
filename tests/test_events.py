@@ -41,9 +41,15 @@ class TestEventWriter(unittest.TestCase):
             writer.close()
             with open(json_file) as f:
                 data = [json.loads(l) for l in f]
-                self.assertTrue([int(k.get("key2", 0)) for k in data] == [17, 0, 34, 0, 51, 0])
-                self.assertTrue([int(k.get("key", 0)) for k in data] == [0, 19, 0, 39, 0, 59])
-                self.assertTrue([int(k["iteration"]) for k in data] == [17, 19, 34, 39, 51, 59])
+                self.assertTrue(
+                    [int(k.get("key2", 0)) for k in data] == [17, 0, 34, 0, 51, 0]
+                )
+                self.assertTrue(
+                    [int(k.get("key", 0)) for k in data] == [0, 19, 0, 39, 0, 59]
+                )
+                self.assertTrue(
+                    [int(k["iteration"]) for k in data] == [17, 19, 34, 39, 51, 59]
+                )
 
     def testPrintETA(self):
         with EventStorage() as s:
@@ -99,7 +105,9 @@ class TestEventWriter(unittest.TestCase):
                     writer.write()
                 storage.step()
 
-            num_samples = {k: storage.count_samples(k, 10) for k in ["key1", "key2", "key3"]}
+            num_samples = {
+                k: storage.count_samples(k, 10) for k in ["key1", "key2", "key3"]
+            }
             self.assertEqual(num_samples, {"key1": 10, "key2": 5, "key3": 2})
             writer.close()
             with open(json_file) as f:

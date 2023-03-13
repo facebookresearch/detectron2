@@ -34,11 +34,15 @@ class DensePoseBaseSampler:
         into DensePose annotations data (an instance of `DensePoseList`)
         """
         boxes_xyxy_abs = instances.pred_boxes.tensor.clone().cpu()
-        boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+        boxes_xywh_abs = BoxMode.convert(
+            boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
+        )
         dp_datas = []
         for i in range(len(boxes_xywh_abs)):
             annotation_i = self._sample(instances[i], make_int_box(boxes_xywh_abs[i]))
-            annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(  # pyre-ignore[6]
+            annotation_i[
+                DensePoseDataRelative.S_KEY
+            ] = self._resample_mask(  # pyre-ignore[6]
                 instances[i].pred_densepose
             )
             dp_datas.append(DensePoseDataRelative(annotation_i))
@@ -46,7 +50,9 @@ class DensePoseBaseSampler:
         dp_list = DensePoseList(dp_datas, boxes_xyxy_abs, instances.image_size)
         return dp_list
 
-    def _sample(self, instance: Instances, bbox_xywh: IntTupleBox) -> Dict[str, List[Any]]:
+    def _sample(
+        self, instance: Instances, bbox_xywh: IntTupleBox
+    ) -> Dict[str, List[Any]]:
         """
         Sample DensPoseDataRelative from estimation results
         """
@@ -108,7 +114,9 @@ class DensePoseBaseSampler:
         """
         raise NotImplementedError
 
-    def _produce_labels_and_results(self, instance: Instances) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _produce_labels_and_results(
+        self, instance: Instances
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Method to get labels and DensePose results from an instance
 
@@ -141,7 +149,9 @@ class DensePoseBaseSampler:
         """
         sz = DensePoseDataRelative.MASK_SIZE
         S = (
-            F.interpolate(output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False)
+            F.interpolate(
+                output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False
+            )
             .argmax(dim=1)
             .long()
         )

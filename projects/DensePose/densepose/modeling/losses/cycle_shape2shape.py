@@ -24,12 +24,16 @@ class ShapeToShapeCycleLoss(nn.Module):
         super().__init__()
         self.shape_names = list(cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.keys())
         self.all_shape_pairs = [
-            (x, y) for i, x in enumerate(self.shape_names) for y in self.shape_names[i + 1 :]
+            (x, y)
+            for i, x in enumerate(self.shape_names)
+            for y in self.shape_names[i + 1 :]
         ]
         random.shuffle(self.all_shape_pairs)
         self.cur_pos = 0
         self.norm_p = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.NORM_P
-        self.temperature = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.TEMPERATURE
+        self.temperature = (
+            cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.TEMPERATURE
+        )
         self.max_num_vertices = (
             cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.SHAPE_TO_SHAPE_CYCLE_LOSS.MAX_NUM_VERTICES
         )
@@ -102,8 +106,12 @@ class ShapeToShapeCycleLoss(nn.Module):
         Return:
             Tensor containing the loss value
         """
-        embeddings_1, geodists_1 = self._get_embeddings_and_geodists_for_mesh(embedder, mesh_name_1)
-        embeddings_2, geodists_2 = self._get_embeddings_and_geodists_for_mesh(embedder, mesh_name_2)
+        embeddings_1, geodists_1 = self._get_embeddings_and_geodists_for_mesh(
+            embedder, mesh_name_1
+        )
+        embeddings_2, geodists_2 = self._get_embeddings_and_geodists_for_mesh(
+            embedder, mesh_name_2
+        )
         sim_matrix_12 = embeddings_1.mm(embeddings_2.T)
 
         c_12 = F.softmax(sim_matrix_12 / self.temperature, dim=1)

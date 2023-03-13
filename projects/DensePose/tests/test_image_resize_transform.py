@@ -13,4 +13,6 @@ class TestImageResizeTransform(unittest.TestCase):
         images_transformed = transform(images_batch)
         IMAGES_GT = torch.ones((3, 3, 800, 800), dtype=torch.float) * 100
         self.assertEqual(images_transformed.size(), IMAGES_GT.size())
-        self.assertAlmostEqual(torch.abs(IMAGES_GT - images_transformed).max().item(), 0.0)
+        self.assertAlmostEqual(
+            torch.abs(IMAGES_GT - images_transformed).max().item(), 0.0
+        )

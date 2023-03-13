@@ -88,8 +88,12 @@ class Embedder(nn.Module):
             mesh_name,
             embedder_spec,
         ) in cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS.items():
-            logger.info(f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}")
-            self.add_module(f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim))
+            logger.info(
+                f"Adding embedder embedder_{mesh_name} with spec {embedder_spec}"
+            )
+            self.add_module(
+                f"embedder_{mesh_name}", create_embedder(embedder_spec, embedder_dim)
+            )
             self.mesh_names.add(mesh_name)
         if cfg.MODEL.WEIGHTS != "":
             self.load_from_model_checkpoint(cfg.MODEL.WEIGHTS)

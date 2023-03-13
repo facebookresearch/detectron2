@@ -15,7 +15,9 @@ class DensePoseResultsVisualizer(object):
     def visualize(
         self,
         image_bgr: Image,
-        results_and_boxes_xywh: Tuple[Optional[List[DensePoseChartResult]], Optional[Boxes]],
+        results_and_boxes_xywh: Tuple[
+            Optional[List[DensePoseChartResult]], Optional[Boxes]
+        ],
     ) -> Image:
         densepose_result, boxes_xywh = results_and_boxes_xywh
         if densepose_result is None or boxes_xywh is None:
@@ -184,9 +186,13 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
                 if (level < arr_min) or (level > arr_max):
                     continue
                 vp = arr[i0:i1, j0:j1] >= level
-                bin_codes = vp[:-1, :-1] + vp[1:, :-1] * 2 + vp[1:, 1:] * 4 + vp[:-1, 1:] * 8
+                bin_codes = (
+                    vp[:-1, :-1] + vp[1:, :-1] * 2 + vp[1:, 1:] * 4 + vp[:-1, 1:] * 8
+                )
                 mp = mask[i0:i1, j0:j1]
-                bin_mask_codes = mp[:-1, :-1] + mp[1:, :-1] * 2 + mp[1:, 1:] * 4 + mp[:-1, 1:] * 8
+                bin_mask_codes = (
+                    mp[:-1, :-1] + mp[1:, :-1] * 2 + mp[1:, 1:] * 4 + mp[:-1, 1:] * 8
+                )
                 it = np.nditer(bin_codes, flags=["multi_index"])
                 color_bgr = self.level_colors_bgr[level_idx]
                 linewidth = self.linewidths[level_idx]
@@ -316,7 +322,9 @@ except ModuleNotFoundError:
     DensePoseResultsContourVisualizer = DensePoseResultsCustomContourVisualizer
 
 
-class DensePoseResultsFineSegmentationVisualizer(DensePoseMaskedColormapResultsVisualizer):
+class DensePoseResultsFineSegmentationVisualizer(
+    DensePoseMaskedColormapResultsVisualizer
+):
     def __init__(self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, **kwargs):
         super(DensePoseResultsFineSegmentationVisualizer, self).__init__(
             _extract_i_from_iuvarr,

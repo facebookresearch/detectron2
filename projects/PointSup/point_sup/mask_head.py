@@ -2,7 +2,10 @@
 import numpy as np
 
 from detectron2.modeling import ROI_MASK_HEAD_REGISTRY
-from detectron2.modeling.roi_heads.mask_head import MaskRCNNConvUpsampleHead, mask_rcnn_inference
+from detectron2.modeling.roi_heads.mask_head import (
+    MaskRCNNConvUpsampleHead,
+    mask_rcnn_inference,
+)
 from detectron2.projects.point_rend import ImplicitPointRendMaskHead
 from detectron2.projects.point_rend.point_features import point_sample
 from detectron2.projects.point_rend.point_head import roi_mask_point_loss
@@ -54,7 +57,9 @@ class MaskRCNNConvUpsamplePointSupHead(MaskRCNNConvUpsampleHead):
                 return {"loss_mask": x.sum() * 0}
 
             # Training with point supervision
-            point_coords, point_labels = get_point_coords_from_point_annotation(instances)
+            point_coords, point_labels = get_point_coords_from_point_annotation(
+                instances
+            )
 
             mask_logits = point_sample(
                 x,
@@ -62,7 +67,9 @@ class MaskRCNNConvUpsamplePointSupHead(MaskRCNNConvUpsampleHead):
                 align_corners=False,
             )
 
-            return {"loss_mask": roi_mask_point_loss(mask_logits, instances, point_labels)}
+            return {
+                "loss_mask": roi_mask_point_loss(mask_logits, instances, point_labels)
+            }
         else:
             mask_rcnn_inference(x, instances)
             return instances

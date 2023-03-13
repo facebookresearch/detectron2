@@ -33,13 +33,19 @@ def iou_between_full_image_bit_masks(a, b):
     return intersect / union
 
 
-def rasterize_polygons_with_grid_sample(full_image_bit_mask, box, mask_size, threshold=0.5):
+def rasterize_polygons_with_grid_sample(
+    full_image_bit_mask, box, mask_size, threshold=0.5
+):
     x0, y0, x1, y1 = box[0], box[1], box[2], box[3]
 
     img_h, img_w = full_image_bit_mask.shape
 
-    mask_y = np.arange(0.0, mask_size) + 0.5  # mask y sample coords in [0.5, mask_size - 0.5]
-    mask_x = np.arange(0.0, mask_size) + 0.5  # mask x sample coords in [0.5, mask_size - 0.5]
+    mask_y = (
+        np.arange(0.0, mask_size) + 0.5
+    )  # mask y sample coords in [0.5, mask_size - 0.5]
+    mask_x = (
+        np.arange(0.0, mask_size) + 0.5
+    )  # mask x sample coords in [0.5, mask_size - 0.5]
     mask_y = mask_y / mask_size * (y1 - y0) + y0
     mask_x = mask_x / mask_size * (x1 - x0) + x0
 
@@ -78,7 +84,9 @@ class TestMaskCropPaste(unittest.TestCase):
         the reconstruction error.
         """
 
-        anns = self.coco.loadAnns(self.coco.getAnnIds(iscrowd=False))  # avoid crowd annotations
+        anns = self.coco.loadAnns(
+            self.coco.getAnnIds(iscrowd=False)
+        )  # avoid crowd annotations
 
         selected_anns = anns[:100]
 
@@ -110,11 +118,15 @@ class TestMaskCropPaste(unittest.TestCase):
         # Run rasterize ..
         torch_gt_bbox = torch.tensor(gt_bbox).to(dtype=torch.float32).reshape(-1, 4)
         box_bitmasks = {
-            "polygon": PolygonMasks([gt_polygons]).crop_and_resize(torch_gt_bbox, mask_side_len)[0],
-            "gridsample": rasterize_polygons_with_grid_sample(gt_bit_mask, gt_bbox, mask_side_len),
-            "roialign": BitMasks(torch.from_numpy(gt_bit_mask[None, :, :])).crop_and_resize(
+            "polygon": PolygonMasks([gt_polygons]).crop_and_resize(
                 torch_gt_bbox, mask_side_len
             )[0],
+            "gridsample": rasterize_polygons_with_grid_sample(
+                gt_bit_mask, gt_bbox, mask_side_len
+            ),
+            "roialign": BitMasks(
+                torch.from_numpy(gt_bit_mask[None, :, :])
+            ).crop_and_resize(torch_gt_bbox, mask_side_len)[0],
         }
 
         # Run paste ..
@@ -135,7 +147,9 @@ class TestMaskCropPaste(unittest.TestCase):
         for rasterize_method, r in results.items():
             for paste_method, mask in r.items():
                 mask = np.asarray(mask)
-                iou = iou_between_full_image_bit_masks(gt_bit_mask.astype("uint8"), mask)
+                iou = iou_between_full_image_bit_masks(
+                    gt_bit_mask.astype("uint8"), mask
+                )
                 table.append((rasterize_method, paste_method, iou))
         return table
 

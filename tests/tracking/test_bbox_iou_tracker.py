@@ -42,7 +42,9 @@ class TestBBoxIOUTracker(unittest.TestCase):
             "pred_classes": self._prev_classes,
             "pred_masks": self._prev_masks,
         }
-        self._prev_instances = self._convertDictPredictionToInstance(self._prev_instances)
+        self._prev_instances = self._convertDictPredictionToInstance(
+            self._prev_instances
+        )
         self._curr_instances = {
             "image_size": self._img_size,
             "pred_boxes": self._curr_boxes,
@@ -50,7 +52,9 @@ class TestBBoxIOUTracker(unittest.TestCase):
             "pred_classes": self._curr_classes,
             "pred_masks": self._curr_masks,
         }
-        self._curr_instances = self._convertDictPredictionToInstance(self._curr_instances)
+        self._curr_instances = self._convertDictPredictionToInstance(
+            self._curr_instances
+        )
 
         self._max_num_instances = 200
         self._max_lost_frame_count = 0

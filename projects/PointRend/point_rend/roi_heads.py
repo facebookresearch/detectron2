@@ -33,9 +33,13 @@ class PointRendROIHeads(StandardROIHeads):
             for k in list(state_dict.keys()):
                 newk = k
                 if k.startswith(prefix + "mask_point_head"):
-                    newk = k.replace(prefix + "mask_point_head", prefix + "mask_head.point_head")
+                    newk = k.replace(
+                        prefix + "mask_point_head", prefix + "mask_head.point_head"
+                    )
                 if k.startswith(prefix + "mask_coarse_head"):
-                    newk = k.replace(prefix + "mask_coarse_head", prefix + "mask_head.coarse_head")
+                    newk = k.replace(
+                        prefix + "mask_coarse_head", prefix + "mask_head.coarse_head"
+                    )
                 if newk != k:
                     state_dict[newk] = state_dict[k]
                     del state_dict[k]

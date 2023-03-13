@@ -87,7 +87,9 @@ class IOUWeightedHungarianBBoxIOUTracker(VanillaHungarianBBoxIOUTracker):
             "track_iou_threshold": track_iou_threshold,
         }
 
-    def assign_cost_matrix_values(self, cost_matrix: np.ndarray, bbox_pairs: List) -> np.ndarray:
+    def assign_cost_matrix_values(
+        self, cost_matrix: np.ndarray, bbox_pairs: List
+    ) -> np.ndarray:
         """
         Based on IoU for each pair of bbox, assign the associated value in cost matrix
 

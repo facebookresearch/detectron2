@@ -40,12 +40,16 @@ class TestBlocks(unittest.TestCase):
         self.assertEqual(output.dtype, torch.float16)
 
     def test_resnet_unused_stages(self):
-        resnet = ResNet(BasicStem(), ResNet.make_default_stages(18), out_features=["res2"])
+        resnet = ResNet(
+            BasicStem(), ResNet.make_default_stages(18), out_features=["res2"]
+        )
         self.assertTrue(hasattr(resnet, "res2"))
         self.assertFalse(hasattr(resnet, "res3"))
         self.assertFalse(hasattr(resnet, "res5"))
 
-        resnet = ResNet(BasicStem(), ResNet.make_default_stages(18), out_features=["res2", "res5"])
+        resnet = ResNet(
+            BasicStem(), ResNet.make_default_stages(18), out_features=["res2", "res5"]
+        )
         self.assertTrue(hasattr(resnet, "res2"))
         self.assertTrue(hasattr(resnet, "res4"))
         self.assertTrue(hasattr(resnet, "res5"))

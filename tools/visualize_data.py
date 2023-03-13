@@ -4,7 +4,11 @@ import cv2
 import tqdm
 
 from detectron2.config import get_cfg
-from detectron2.data import DatasetCatalog, MetadataCatalog, build_detection_train_loader
+from detectron2.data import (
+    DatasetCatalog,
+    MetadataCatalog,
+    build_detection_train_loader,
+)
 from detectron2.data import detection_utils as utils
 from detectron2.data.build import filter_images_with_few_keypoints
 from detectron2.utils.logger import setup_logger
@@ -76,7 +80,9 @@ if __name__ == "__main__":
 
                 visualizer = Visualizer(img, metadata=metadata, scale=scale)
                 target_fields = per_image["instances"].get_fields()
-                labels = [metadata.thing_classes[i] for i in target_fields["gt_classes"]]
+                labels = [
+                    metadata.thing_classes[i] for i in target_fields["gt_classes"]
+                ]
                 vis = visualizer.overlay_instances(
                     labels=labels,
                     boxes=target_fields.get("gt_boxes", None),
@@ -85,7 +91,9 @@ if __name__ == "__main__":
                 )
                 output(vis, str(per_image["image_id"]) + ".jpg")
     else:
-        dicts = list(chain.from_iterable([DatasetCatalog.get(k) for k in cfg.DATASETS.TRAIN]))
+        dicts = list(
+            chain.from_iterable([DatasetCatalog.get(k) for k in cfg.DATASETS.TRAIN])
+        )
         if cfg.MODEL.KEYPOINT_ON:
             dicts = filter_images_with_few_keypoints(dicts, 1)
         for dic in tqdm.tqdm(dicts):

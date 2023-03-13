@@ -1,6 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from ..structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
+from ..structures import (
+    DensePoseChartPredictorOutput,
+    DensePoseEmbeddingPredictorOutput,
+)
 from . import (
     HFlipConverter,
     ToChartResultConverter,
@@ -29,4 +32,6 @@ ToChartResultConverterWithConfidences.register(
     densepose_chart_predictor_output_to_result_with_confidences,
 )
 
-HFlipConverter.register(DensePoseChartPredictorOutput, densepose_chart_predictor_output_hflip)
+HFlipConverter.register(
+    DensePoseChartPredictorOutput, densepose_chart_predictor_output_hflip
+)

@@ -15,7 +15,10 @@ import logging
 import os
 import sys
 from densepose import add_densepose_config
-from densepose.structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
+from densepose.structures import (
+    DensePoseChartPredictorOutput,
+    DensePoseEmbeddingPredictorOutput,
+)
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer
@@ -102,7 +105,9 @@ class InferenceAction(Action):
             img = read_image(file_name, format="BGR")  # predictor expects BGR image.
             with torch.no_grad():
                 outputs = predictor(img)["instances"]
-                cls.execute_on_outputs(context, {"file_name": file_name, "image": img}, outputs)
+                cls.execute_on_outputs(
+                    context, {"file_name": file_name, "image": img}, outputs
+                )
         cls.postexecute(context)
 
     @classmethod
@@ -148,7 +153,9 @@ class DumpAction(InferenceAction):
 
     @classmethod
     def add_parser(cls: type, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(cls.COMMAND, help="Dump model outputs to a file.")
+        parser = subparsers.add_parser(
+            cls.COMMAND, help="Dump model outputs to a file."
+        )
         cls.add_arguments(parser)
         parser.set_defaults(func=cls.execute)
 
@@ -176,7 +183,9 @@ class DumpAction(InferenceAction):
             if outputs.has("pred_densepose"):
                 if isinstance(outputs.pred_densepose, DensePoseChartPredictorOutput):
                     extractor = DensePoseResultExtractor()
-                elif isinstance(outputs.pred_densepose, DensePoseEmbeddingPredictorOutput):
+                elif isinstance(
+                    outputs.pred_densepose, DensePoseEmbeddingPredictorOutput
+                ):
                     extractor = DensePoseOutputsExtractor()
                 result["pred_densepose"] = extractor(outputs)[0]
         context["results"].append(result)
@@ -313,7 +322,9 @@ class ShowAction(InferenceAction):
         return base + ".{0:04d}".format(entry_idx) + ext
 
     @classmethod
-    def create_context(cls: type, args: argparse.Namespace, cfg: CfgNode) -> Dict[str, Any]:
+    def create_context(
+        cls: type, args: argparse.Namespace, cfg: CfgNode
+    ) -> Dict[str, Any]:
         vis_specs = args.visualizations.split(",")
         visualizers = []
         extractors = []
@@ -342,7 +353,9 @@ class ShowAction(InferenceAction):
 def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=DOC,
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=120),
+        formatter_class=lambda prog: argparse.HelpFormatter(
+            prog, max_help_position=120
+        ),
     )
     parser.set_defaults(func=lambda _: parser.print_help(sys.stdout))
     subparsers = parser.add_subparsers(title="Actions")

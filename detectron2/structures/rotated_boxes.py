@@ -211,7 +211,9 @@ class RotatedBoxes(Boxes):
         but its angle (and thus orientation) is somewhere between
         (5, 3, 4, 2, 0) and (5, 3, 4, 2, 90).
         """
-        device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
+        device = (
+            tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
+        )
         tensor = torch.as_tensor(tensor, dtype=torch.float32, device=device)
         if tensor.numel() == 0:
             # Use reshape, so we don't end up creating a new tensor that does not depend on
@@ -253,7 +255,9 @@ class RotatedBoxes(Boxes):
         angle_tensor = (self.tensor[:, 4] + 180.0) % 360.0 - 180.0
         self.tensor = torch.cat((self.tensor[:, :4], angle_tensor[:, None]), dim=1)
 
-    def clip(self, box_size: Tuple[int, int], clip_angle_threshold: float = 1.0) -> None:
+    def clip(
+        self, box_size: Tuple[int, int], clip_angle_threshold: float = 1.0
+    ) -> None:
         """
         Clip (in place) the boxes by limiting x coordinates to the range [0, width]
         and y coordinates to the range [0, height].
@@ -336,9 +340,9 @@ class RotatedBoxes(Boxes):
         if isinstance(item, int):
             return RotatedBoxes(self.tensor[item].view(1, -1))
         b = self.tensor[item]
-        assert b.dim() == 2, "Indexing on RotatedBoxes with {} failed to return a matrix!".format(
-            item
-        )
+        assert (
+            b.dim() == 2
+        ), "Indexing on RotatedBoxes with {} failed to return a matrix!".format(item)
         return RotatedBoxes(b)
 
     def __len__(self) -> int:
@@ -347,7 +351,9 @@ class RotatedBoxes(Boxes):
     def __repr__(self) -> str:
         return "RotatedBoxes(" + str(self.tensor) + ")"
 
-    def inside_box(self, box_size: Tuple[int, int], boundary_threshold: int = 0) -> torch.Tensor:
+    def inside_box(
+        self, box_size: Tuple[int, int], boundary_threshold: int = 0
+    ) -> torch.Tensor:
         """
         Args:
             box_size (height, width): Size of the reference box covering

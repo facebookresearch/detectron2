@@ -17,7 +17,9 @@ def create_dummy_class(klass, dependency, message=""):
     Returns:
         class: a class object
     """
-    err = "Cannot import '{}', therefore '{}' is not available.".format(dependency, klass)
+    err = "Cannot import '{}', therefore '{}' is not available.".format(
+        dependency, klass
+    )
     if message:
         err = err + " " + message
 
@@ -46,7 +48,9 @@ def create_dummy_func(func, dependency, message=""):
     Returns:
         function: a function object
     """
-    err = "Cannot import '{}', therefore '{}' is not available.".format(dependency, func)
+    err = "Cannot import '{}', therefore '{}' is not available.".format(
+        dependency, func
+    )
     if message:
         err = err + " " + message
 

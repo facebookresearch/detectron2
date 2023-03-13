@@ -81,7 +81,9 @@ class TestNMSRotated(unittest.TestCase):
         rotated_boxes[:, 1] = (boxes[:, 1] + boxes[:, 3]) / 2.0
         rotated_boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
         rotated_boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
-        err_msg = "Rotated NMS with 0 degree is incompatible with horizontal NMS for IoU={}"
+        err_msg = (
+            "Rotated NMS with 0 degree is incompatible with horizontal NMS for IoU={}"
+        )
         for iou in [0.2, 0.5, 0.8]:
             backup = boxes.clone()
             keep_ref = batched_nms(boxes, scores, idxs, iou)
@@ -92,7 +94,9 @@ class TestNMSRotated(unittest.TestCase):
                 rotated_boxes, backup
             ), "rotated_boxes modified by batched_nms_rotated"
             # Occasionally the gap can be large if there are many IOU on the threshold boundary
-            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 5, err_msg.format(iou))
+            self.assertLessEqual(
+                nms_edit_distance(keep, keep_ref), 5, err_msg.format(iou)
+            )
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_batched_nms_rotated_0_degree_cuda(self):
@@ -110,7 +114,9 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
-            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
+            self.assertLessEqual(
+                nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou)
+            )
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_nms_rotated_0_degree_cuda(self):
@@ -133,7 +139,9 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
-            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
+            self.assertLessEqual(
+                nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou)
+            )
 
     def test_nms_rotated_180_degrees_cpu(self):
         N = 1000
@@ -148,7 +156,9 @@ class TestNMSRotated(unittest.TestCase):
         for iou in [0.2, 0.5, 0.8]:
             keep_ref = self.reference_horizontal_nms(boxes, scores, iou)
             keep = nms_rotated(rotated_boxes, scores, iou)
-            self.assertLessEqual(nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou))
+            self.assertLessEqual(
+                nms_edit_distance(keep, keep_ref), 1, err_msg.format(iou)
+            )
 
 
 class TestScriptable(unittest.TestCase):

@@ -12,7 +12,9 @@ class TestRotationTransform(unittest.TestCase):
 
     def randomData(self, h=5, w=5):
         image = np.random.rand(h, w)
-        coords = np.array([[i, j] for j in range(h + 1) for i in range(w + 1)], dtype=float)
+        coords = np.array(
+            [[i, j] for j in range(h + 1) for i in range(w + 1)], dtype=float
+        )
         return image, coords, h, w
 
     def test180(self):
@@ -59,7 +61,9 @@ class TestRotationTransform(unittest.TestCase):
         for r1 in [rot1, rot2, rot3, rot4]:
             for r2 in [rot1, rot2, rot3, rot4]:
                 self.assertEqualsArrays(r1.apply_image(image), r2.apply_image(image))
-                self.assertEqualsArrays(r1.apply_coords(coords), r2.apply_coords(coords))
+                self.assertEqualsArrays(
+                    r1.apply_coords(coords), r2.apply_coords(coords)
+                )
 
     def test_inverse_transform(self):
         image, coords, h, w = self.randomData(h=5, w=8)

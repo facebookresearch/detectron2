@@ -23,7 +23,9 @@ class ROIAlignTest(unittest.TestCase):
         """
 
         output = self._simple_roialign(input, [1, 1, 3, 3], (4, 4), aligned=False)
-        output_correct = self._simple_roialign(input, [1, 1, 3, 3], (4, 4), aligned=True)
+        output_correct = self._simple_roialign(
+            input, [1, 1, 3, 3], (4, 4), aligned=True
+        )
 
         # without correction:
         old_results = [
@@ -42,7 +44,9 @@ class ROIAlignTest(unittest.TestCase):
         ]
         # This is an upsampled version of [[6, 7], [11, 12]]
 
-        self.assertTrue(np.allclose(output.flatten(), np.asarray(old_results).flatten()))
+        self.assertTrue(
+            np.allclose(output.flatten(), np.asarray(old_results).flatten())
+        )
         self.assertTrue(
             np.allclose(output_correct.flatten(), np.asarray(correct_results).flatten())
         )
@@ -117,7 +121,9 @@ class ROIAlignTest(unittest.TestCase):
         self.assertTrue((o == 0).all())
 
         for dev in ["cpu"] + ["cuda"] if torch.cuda.is_available() else []:
-            input, output = self._simple_roialign_with_grad(img, box, 7, torch.device(dev))
+            input, output = self._simple_roialign_with_grad(
+                img, box, 7, torch.device(dev)
+            )
             output.sum().backward()
             self.assertTrue(torch.allclose(input.grad, torch.zeros_like(input)))
 
@@ -141,7 +147,9 @@ def grid_sample_roi_align(input, boxes, output_size, scale, sampling_ratio):
     R = len(boxes)
     assert N == 1
     boxes = boxes * scale
-    grid = generate_regular_grid_point_coords(R, output_size * sampling_ratio, device=boxes.device)
+    grid = generate_regular_grid_point_coords(
+        R, output_size * sampling_ratio, device=boxes.device
+    )
     coords = get_point_coords_wrt_image(boxes, grid)
     coords = coords / torch.as_tensor([W, H], device=coords.device)  # R, s^2, 2
     res = point_sample(input, coords.unsqueeze(0), align_corners=False)  # 1,C, R,s^2
