@@ -32,7 +32,7 @@ import warnings
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
-@skipIfUnsupportedMinTorchVersion("1.10")
+@skipIfOnPytorch1_10
 class TestONNXTracingExport(unittest.TestCase):
     opset_version = STABLE_ONNX_OPSET_VERSION
 
