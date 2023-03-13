@@ -33,7 +33,7 @@ jobs:
   macos_tests:
     runs-on: macos-latest
     # run on PRs, or commits to facebookresearch (not internal)
-    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    # if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
