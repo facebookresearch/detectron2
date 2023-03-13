@@ -2,11 +2,11 @@ from functools import partial
 
 from .cascade_mask_rcnn_vitdet_b_100ep import (
     dataloader,
+    get_vit_lr_decay_rate,
     lr_multiplier,
     model,
-    train,
     optimizer,
-    get_vit_lr_decay_rate,
+    train,
 )
 
 train.init_checkpoint = (

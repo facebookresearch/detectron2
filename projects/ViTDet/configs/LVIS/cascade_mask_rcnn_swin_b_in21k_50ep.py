@@ -5,10 +5,10 @@ from detectron2.evaluation.lvis_evaluation import LVISEvaluator
 
 from ..COCO.cascade_mask_rcnn_swin_b_in21k_50ep import (
     dataloader,
-    model,
-    train,
     lr_multiplier,
+    model,
     optimizer,
+    train,
 )
 
 dataloader.train.dataset.names = "lvis_v1_train"

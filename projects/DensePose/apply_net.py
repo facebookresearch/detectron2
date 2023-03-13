@@ -15,10 +15,7 @@ import logging
 import os
 import sys
 from densepose import add_densepose_config
-from densepose.structures import (
-    DensePoseChartPredictorOutput,
-    DensePoseEmbeddingPredictorOutput,
-)
+from densepose.structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 from densepose.utils.logger import verbosity_to_level
 from densepose.vis.base import CompoundVisualizer
 from densepose.vis.bounding_box import ScoredBoundingBoxVisualizer

@@ -30,12 +30,7 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.engine import (
-    default_argument_parser,
-    default_setup,
-    default_writers,
-    launch,
-)
+from detectron2.engine import default_argument_parser, default_setup, default_writers, launch
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,

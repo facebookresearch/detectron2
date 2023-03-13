@@ -1,11 +1,4 @@
-from .cascade_mask_rcnn_mvitv2_t_3x import (
-    model,
-    dataloader,
-    optimizer,
-    lr_multiplier,
-    train,
-)
-
+from .cascade_mask_rcnn_mvitv2_t_3x import dataloader, lr_multiplier, model, optimizer, train
 
 model.backbone.bottom_up.depth = 24
 model.backbone.bottom_up.last_block_indexes = (1, 4, 20, 23)

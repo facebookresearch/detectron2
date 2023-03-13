@@ -1,9 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from ..structures import (
-    DensePoseChartPredictorOutput,
-    DensePoseEmbeddingPredictorOutput,
-)
+from ..structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 from . import (
     HFlipConverter,
     ToChartResultConverter,

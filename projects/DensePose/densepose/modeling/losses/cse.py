@@ -14,11 +14,7 @@ from .embed_utils import CseAnnotationsAccumulator
 from .mask_or_segm import MaskOrSegmentationLoss
 from .registry import DENSEPOSE_LOSS_REGISTRY
 from .soft_embed import SoftEmbeddingLoss
-from .utils import (
-    BilinearInterpolationHelper,
-    LossDict,
-    extract_packed_annotations_from_matches,
-)
+from .utils import BilinearInterpolationHelper, LossDict, extract_packed_annotations_from_matches
 
 
 @DENSEPOSE_LOSS_REGISTRY.register()

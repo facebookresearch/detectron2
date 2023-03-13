@@ -10,10 +10,7 @@ from densepose.structures import (
     DensePoseChartResultWithConfidences,
     DensePoseEmbeddingPredictorOutput,
 )
-from densepose.vis.bounding_box import (
-    BoundingBoxVisualizer,
-    ScoredBoundingBoxVisualizer,
-)
+from densepose.vis.bounding_box import BoundingBoxVisualizer, ScoredBoundingBoxVisualizer
 from densepose.vis.densepose_outputs_vertex import DensePoseOutputsVertexVisualizer
 from densepose.vis.densepose_results import DensePoseResultsVisualizer
 from typing import List, Optional, Sequence, Tuple

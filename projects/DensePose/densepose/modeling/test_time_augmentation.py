@@ -4,16 +4,9 @@ import torch
 from fvcore.transforms import HFlipTransform, TransformList
 from torch.nn import functional as F
 
-from detectron2.data.transforms import (
-    RandomRotation,
-    RotationTransform,
-    apply_transform_gens,
-)
+from detectron2.data.transforms import RandomRotation, RotationTransform, apply_transform_gens
 from detectron2.modeling.postprocessing import detector_postprocess
-from detectron2.modeling.test_time_augmentation import (
-    DatasetMapperTTA,
-    GeneralizedRCNNWithTTA,
-)
+from detectron2.modeling.test_time_augmentation import DatasetMapperTTA, GeneralizedRCNNWithTTA
 
 import copy
 

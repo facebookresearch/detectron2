@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
+import os
+from pathlib import Path
+
 import numpy as np
 import tqdm
 from PIL import Image
-
-import os
-from pathlib import Path
 
 
 def convert(input, output):

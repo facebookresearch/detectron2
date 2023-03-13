@@ -1,11 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import os
-import unittest
 import tempfile
+import unittest
 from itertools import count
 
-from detectron2.config import LazyConfig, LazyCall as L
 from omegaconf import DictConfig
+
+from detectron2.config import LazyCall as L
+from detectron2.config import LazyConfig
 
 
 class TestLazyPythonConfig(unittest.TestCase):

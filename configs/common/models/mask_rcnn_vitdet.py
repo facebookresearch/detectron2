@@ -1,11 +1,13 @@
 from functools import partial
+
 import torch.nn as nn
+
 from detectron2.config import LazyCall as L
-from detectron2.modeling import ViT, SimpleFeaturePyramid
+from detectron2.modeling import SimpleFeaturePyramid, ViT
 from detectron2.modeling.backbone.fpn import LastLevelMaxPool
 
-from .mask_rcnn_fpn import model
 from ..data.constants import constants
+from .mask_rcnn_fpn import model
 
 model.pixel_mean = constants.imagenet_rgb256_mean
 model.pixel_std = constants.imagenet_rgb256_std

@@ -20,13 +20,7 @@ from detectron2.data import (
     build_detection_train_loader,
 )
 from detectron2.data.benchmark import DataLoaderBenchmark
-from detectron2.engine import (
-    AMPTrainer,
-    SimpleTrainer,
-    default_argument_parser,
-    hooks,
-    launch,
-)
+from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser, hooks, launch
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
 from detectron2.utils import comm

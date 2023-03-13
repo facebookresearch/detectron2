@@ -524,10 +524,7 @@ class ROIMasks:
         """
         Args: see documentation of :func:`paste_masks_in_image`.
         """
-        from detectron2.layers.mask_ops import (
-            _paste_masks_tensor_shape,
-            paste_masks_in_image,
-        )
+        from detectron2.layers.mask_ops import _paste_masks_tensor_shape, paste_masks_in_image
 
         if torch.jit.is_tracing():
             if isinstance(height, torch.Tensor):

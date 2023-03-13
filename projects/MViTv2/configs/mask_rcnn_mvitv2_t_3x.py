@@ -1,11 +1,12 @@
 from functools import partial
+
 import torch.nn as nn
 from fvcore.common.param_scheduler import MultiStepParamScheduler
 
 from detectron2 import model_zoo
 from detectron2.config import LazyCall as L
-from detectron2.solver import WarmupParamScheduler
 from detectron2.modeling import MViT
+from detectron2.solver import WarmupParamScheduler
 
 from .common.coco_loader import dataloader
 

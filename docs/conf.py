@@ -17,14 +17,14 @@
 #
 import os
 import sys
-from unittest import mock
-from sphinx.domains import Domain
 from typing import Dict, List, Tuple
+from unittest import mock
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
 import sphinx_rtd_theme
+from sphinx.domains import Domain
 
 
 class GithubURLDomain(Domain):

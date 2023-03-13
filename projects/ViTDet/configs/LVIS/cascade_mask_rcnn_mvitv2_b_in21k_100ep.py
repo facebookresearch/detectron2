@@ -1,4 +1,5 @@
 from functools import partial
+
 import torch.nn as nn
 
 from detectron2.config import LazyCall as L
@@ -8,10 +9,10 @@ from detectron2.evaluation.lvis_evaluation import LVISEvaluator
 
 from ..COCO.cascade_mask_rcnn_mvitv2_b_in21k_100ep import (
     dataloader,
-    model,
-    train,
     lr_multiplier,
+    model,
     optimizer,
+    train,
 )
 
 dataloader.train.dataset.names = "lvis_v1_train"

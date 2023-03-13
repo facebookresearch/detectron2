@@ -216,9 +216,7 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
     # TODO: _unregister_custom_op_symbolic is introduced PyTorch>=1.10
     #       Remove after PyTorch 1.10+ is used by ALL detectron2's CI
     try:
-        from torch.onnx import (
-            unregister_custom_op_symbolic as _unregister_custom_op_symbolic,
-        )
+        from torch.onnx import unregister_custom_op_symbolic as _unregister_custom_op_symbolic
     except ImportError:
 
         def _unregister_custom_op_symbolic(symbolic_name, opset_version):

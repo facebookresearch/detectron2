@@ -6,10 +6,7 @@ from torch.nn import functional as F
 from detectron2.config import configurable
 from detectron2.data.detection_utils import get_fed_loss_cls_weights
 from detectron2.layers import ShapeSpec, batched_nms, cat, cross_entropy, nonzero_tuple
-from detectron2.modeling.box_regression import (
-    Box2BoxTransform,
-    _dense_box_regression_loss,
-)
+from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regression_loss
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 

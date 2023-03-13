@@ -23,9 +23,7 @@ import logging
 import pickle
 import time
 from collections import defaultdict
-from densepose.converters.chart_output_to_chart_result import (
-    resample_uv_tensors_to_bbox,
-)
+from densepose.converters.chart_output_to_chart_result import resample_uv_tensors_to_bbox
 from densepose.converters.segm_to_mask import (
     resample_coarse_segm_tensor_to_bbox,
     resample_fine_and_coarse_segm_tensors_to_bbox,

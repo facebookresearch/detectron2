@@ -12,11 +12,7 @@ from detectron2.utils.file_io import PathManager
 
 import copy
 import logging
-from densepose.structures import (
-    DensePoseDataRelative,
-    DensePoseList,
-    DensePoseTransformData,
-)
+from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
 from typing import Any, Dict, List, Tuple
 
 
