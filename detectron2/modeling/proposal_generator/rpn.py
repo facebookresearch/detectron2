@@ -1,8 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-import torch.nn.functional as F
-from torch import nn
-
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
@@ -10,6 +6,9 @@ from detectron2.utils.events import get_event_storage
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
 
+import torch
+import torch.nn.functional as F
+from torch import nn
 from typing import Dict, List, Optional, Tuple, Union
 
 from ..anchor_generator import build_anchor_generator

@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
+
 import torch
 from torch.nn import functional as F
-
 from typing import Any, List, Tuple, Union
 
 

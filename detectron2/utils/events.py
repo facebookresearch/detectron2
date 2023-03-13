@@ -1,7 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from fvcore.common.history_buffer import HistoryBuffer
-
 from detectron2.utils.file_io import PathManager
 
 import datetime
@@ -9,8 +6,10 @@ import json
 import logging
 import os
 import time
+import torch
 from collections import defaultdict
 from contextlib import contextmanager
+from fvcore.common.history_buffer import HistoryBuffer
 from typing import Optional
 
 __all__ = [

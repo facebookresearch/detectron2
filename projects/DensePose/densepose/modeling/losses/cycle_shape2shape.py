@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import torch
-from torch import nn
-from torch.nn import functional as F
-
 from detectron2.config import CfgNode
 
 import random
+import torch
 from densepose.structures.mesh import create_mesh
+from torch import nn
+from torch.nn import functional as F
 from typing import Tuple
 
 from .utils import sample_random_indices

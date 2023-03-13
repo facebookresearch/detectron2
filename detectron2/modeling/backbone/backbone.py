@@ -1,8 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch.nn as nn
-
 from detectron2.layers import ShapeSpec
 
+import torch.nn as nn
 from abc import ABCMeta, abstractmethod
 from typing import Dict
 

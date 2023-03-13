@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import division
-import torch
-from torch import device
-from torch.nn import functional as F
 
 from detectron2.layers.wrappers import move_device_like, shapes_to_tensor
 
+import torch
+from torch import device
+from torch.nn import functional as F
 from typing import Any, Dict, List, Optional, Tuple
 
 

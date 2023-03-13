@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from iopath.common.file_io import LazyPath
-
 from detectron2 import model_zoo
 from detectron2.config import get_cfg, instantiate
 from detectron2.data import (
@@ -23,8 +20,10 @@ from detectron2.data.samplers import InferenceSampler, TrainingSampler
 import os
 import pickle
 import sys
+import torch
 import unittest
 from functools import partial
+from iopath.common.file_io import LazyPath
 
 
 def _a_slow_func(x):

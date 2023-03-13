@@ -1,12 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.config import get_cfg
 from detectron2.engine import default_setup
 from detectron2.modeling import build_model
 
 import os
+import torch
 from densepose import add_densepose_config
 
 _BASE_CONFIG_DIR = "configs"

@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import torch
-from torch import nn
-
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode
 from detectron2.engine import DefaultTrainer
@@ -18,6 +15,7 @@ from detectron2.utils.events import EventWriter, get_event_storage
 
 import logging
 import os
+import torch
 from collections import OrderedDict
 from densepose import DensePoseDatasetMapperTTA, DensePoseGeneralizedRCNNWithTTA, load_from_cfg
 from densepose.data import (
@@ -31,6 +29,7 @@ from densepose.data import (
 from densepose.evaluation.d2_evaluator_adapter import Detectron2COCOEvaluatorAdapter
 from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, build_densepose_evaluator_storage
 from densepose.modeling.cse import Embedder
+from torch import nn
 from typing import List, Optional, Union
 
 

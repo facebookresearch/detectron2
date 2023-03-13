@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-import torch.utils.data as data
-from torch.utils.data.sampler import Sampler
 
 from detectron2.utils.serialize import PicklableWrapper
 
@@ -12,6 +9,9 @@ import itertools
 import logging
 import pickle
 import random
+import torch
+import torch.utils.data as data
+from torch.utils.data.sampler import Sampler
 from typing import Callable, Union
 
 __all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset", "ToIterableDataset"]

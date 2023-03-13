@@ -19,13 +19,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.backbone import BACKBONE_REGISTRY
 from detectron2.modeling.backbone.backbone import Backbone
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 from .hrnet import build_pose_hrnet_backbone
 

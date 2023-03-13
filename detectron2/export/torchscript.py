@@ -1,10 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.utils.file_io import PathManager
 
 import os
+import torch
 
 from .torchscript_patch import freeze_training_mode, patch_instances
 

@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import numpy as np
-import cv2
-import torch
 
 from detectron2.utils.file_io import PathManager
 
+import cv2
 import json
+import torch
 from densepose.modeling import build_densepose_embedder
 from densepose.modeling.cse.utils import get_closest_vertices_mask_from_ES
 from functools import lru_cache

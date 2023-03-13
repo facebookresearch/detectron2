@@ -1,11 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 from detectron2.structures.boxes import matched_pairwise_iou
 
+import torch
 from typing import List
 
 

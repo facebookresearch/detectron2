@@ -1,10 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-
 from detectron2.layers.nms import batched_nms
 from detectron2.structures.instances import Instances
 
 import logging
+import torch
 from densepose.converters import ToChartResultConverterWithConfidences
 from densepose.structures import (
     DensePoseChartResultWithConfidences,

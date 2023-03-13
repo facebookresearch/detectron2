@@ -5,9 +5,6 @@
 # Depending on how you launch the trainer, there are issues with processes terminating correctly
 # This module is still dependent on D2 logging, but could be transferred to use Lightning logging
 
-import pytorch_lightning as pl  # type: ignore
-from pytorch_lightning import LightningDataModule, LightningModule
-
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -29,9 +26,11 @@ from detectron2.utils.logger import setup_logger
 
 import logging
 import os
+import pytorch_lightning as pl  # type: ignore
 import time
 import weakref
 from collections import OrderedDict
+from pytorch_lightning import LightningDataModule, LightningModule
 from train_net import build_evaluator
 from typing import Any, Dict, List
 

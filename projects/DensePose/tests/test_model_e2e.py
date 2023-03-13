@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.structures import BitMasks, Boxes, Instances
 
+import torch
 import unittest
 
 from .common import get_model

@@ -1,14 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import pycocotools.mask as mask_util
-import torch
-from torch import device
 
 from detectron2.layers.roi_align import ROIAlign
 from detectron2.utils.memory import retry_if_cuda_oom
 
 import copy
 import itertools
+import pycocotools.mask as mask_util
+import torch
+from torch import device
 from typing import Any, Iterator, List, Union
 
 from .boxes import Boxes

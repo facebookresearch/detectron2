@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import random
 import torch
 from torch import nn
-
-import random
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 SampledData = Any

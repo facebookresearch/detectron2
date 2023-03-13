@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
-import cv2
-import tqdm
-
 from detectron2.config import get_cfg
 from detectron2.data import DatasetCatalog, MetadataCatalog, build_detection_train_loader
 from detectron2.data import detection_utils as utils
@@ -11,7 +8,9 @@ from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
 
 import argparse
+import cv2
 import os
+import tqdm
 from itertools import chain
 
 

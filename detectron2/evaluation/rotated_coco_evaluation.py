@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-from pycocotools.cocoeval import COCOeval, maskUtils
 
 from detectron2.structures import BoxMode, RotatedBoxes, pairwise_iou_rotated
 from detectron2.utils.file_io import PathManager
@@ -9,6 +7,8 @@ from detectron2.utils.file_io import PathManager
 import itertools
 import json
 import os
+import torch
+from pycocotools.cocoeval import COCOeval, maskUtils
 
 from .coco_evaluation import COCOEvaluator
 

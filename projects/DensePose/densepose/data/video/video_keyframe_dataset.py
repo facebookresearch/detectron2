@@ -2,14 +2,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-import av
-import torch
-from torch.utils.data.dataset import Dataset
 
 from detectron2.utils.file_io import PathManager
 
+import av
 import csv
 import logging
+import torch
+from torch.utils.data.dataset import Dataset
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from ..utils import maybe_prepend_base_path

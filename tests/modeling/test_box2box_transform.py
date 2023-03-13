@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-
 from detectron2.modeling.box_regression import (
     Box2BoxTransform,
     Box2BoxTransformLinear,
@@ -9,6 +7,7 @@ from detectron2.modeling.box_regression import (
 from detectron2.utils.testing import random_boxes
 
 import logging
+import torch
 import unittest
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-
 from detectron2.structures.keypoints import Keypoints
 
+import torch
 import unittest
 
 

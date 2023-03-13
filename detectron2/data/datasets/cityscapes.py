@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import pycocotools.mask as mask_util
-from PIL import Image
 
 from detectron2.structures import BoxMode
 from detectron2.utils.comm import get_world_size
@@ -13,7 +11,9 @@ import json
 import logging
 import multiprocessing as mp
 import os
+import pycocotools.mask as mask_util
 from itertools import chain
+from PIL import Image
 
 try:
     import cv2  # noqa
@@ -294,10 +294,10 @@ if __name__ == "__main__":
     parser.add_argument("gt_dir")
     parser.add_argument("--type", choices=["instance", "semantic"], default="instance")
     args = parser.parse_args()
-    from cityscapesscripts.helpers.labels import labels
-
     from detectron2.data.catalog import Metadata
     from detectron2.utils.visualizer import Visualizer
+
+    from cityscapesscripts.helpers.labels import labels
 
     logger = setup_logger(name=__name__)
 

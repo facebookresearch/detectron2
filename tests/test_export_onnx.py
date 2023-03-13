@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from torch.hub import _check_module_exists
-
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.export import STABLE_ONNX_OPSET_VERSION
@@ -27,8 +24,10 @@ from detectron2.utils.testing import (
 )
 
 import io
+import torch
 import unittest
 import warnings
+from torch.hub import _check_module_exists
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")

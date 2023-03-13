@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import cv2
-import torch
 
+import cv2
 import logging
+import torch
 
 Image = np.ndarray
 Boxes = torch.Tensor

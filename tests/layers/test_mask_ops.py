@@ -2,12 +2,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-import torch
-import tqdm
-from fvcore.common.benchmark import benchmark
-from pycocotools.coco import COCO
-from tabulate import tabulate
-from torch.nn import functional as F
 
 from detectron2.data import MetadataCatalog
 from detectron2.layers.mask_ops import (
@@ -23,8 +17,14 @@ from detectron2.utils.testing import random_boxes
 
 import contextlib
 import io
+import torch
+import tqdm
 import unittest
 from collections import defaultdict
+from fvcore.common.benchmark import benchmark
+from pycocotools.coco import COCO
+from tabulate import tabulate
+from torch.nn import functional as F
 
 
 def iou_between_full_image_bit_masks(a, b):

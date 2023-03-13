@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
 
 from detectron2.config import instantiate
 from detectron2.structures import Boxes, Instances
 
+import torch
 import unittest
 from typing import Dict
 

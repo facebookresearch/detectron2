@@ -1,19 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from fvcore.common.param_scheduler import (
-    CosineParamScheduler,
-    MultiStepParamScheduler,
-    StepWithFixedGammaParamScheduler,
-)
-
 from detectron2.config import CfgNode
 from detectron2.utils.env import TORCH_VERSION
 
 import copy
 import itertools
 import logging
+import torch
 from collections import defaultdict
 from enum import Enum
+from fvcore.common.param_scheduler import (
+    CosineParamScheduler,
+    MultiStepParamScheduler,
+    StepWithFixedGammaParamScheduler,
+)
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 
 from .lr_scheduler import LRMultiplier, LRScheduler, WarmupParamScheduler

@@ -5,10 +5,10 @@ This is useful when doing distributed training.
 """
 
 import numpy as np
-import torch
-import torch.distributed as dist
 
 import functools
+import torch
+import torch.distributed as dist
 
 _LOCAL_PROCESS_GROUP = None
 _MISSING_LOCAL_PG_ERROR = (

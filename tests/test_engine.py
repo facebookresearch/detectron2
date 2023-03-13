@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from fvcore.common.checkpoint import Checkpointer
-from torch import nn
-
 from detectron2 import model_zoo
 from detectron2.config import configurable, get_cfg
 from detectron2.engine import DefaultTrainer, SimpleTrainer, default_setup, hooks
@@ -15,7 +11,10 @@ import math
 import os
 import tempfile
 import time
+import torch
 import unittest
+from fvcore.common.checkpoint import Checkpointer
+from torch import nn
 from unittest import mock
 
 

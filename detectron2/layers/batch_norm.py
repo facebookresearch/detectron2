@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from detectron2.utils import comm, env
+
 import torch
 import torch.distributed as dist
 from fvcore.nn.distributed import differentiable_all_reduce
 from torch import nn
 from torch.nn import functional as F
-
-from detectron2.utils import comm, env
 
 from .wrappers import BatchNorm2d
 

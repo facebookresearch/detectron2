@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.data import MetadataCatalog
 from detectron2.data import detection_utils as utils
 from detectron2.data import transforms as T
@@ -12,6 +10,7 @@ from detectron2.utils.file_io import PathManager
 
 import copy
 import logging
+import torch
 from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
 from typing import Any, Dict, List, Tuple
 

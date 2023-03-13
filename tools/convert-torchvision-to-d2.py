@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 import pickle as pkl
 import sys
+import torch
 
 """
 Usage:

@@ -1,12 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from fvcore.nn import giou_loss, smooth_l1_loss
-from torch.nn import functional as F
-
 from detectron2.layers import cat, ciou_loss, diou_loss
 from detectron2.structures import Boxes
 
 import math
+import torch
+from fvcore.nn import giou_loss, smooth_l1_loss
+from torch.nn import functional as F
 from typing import List, Tuple, Union
 
 # Value for clamping large dw and dh predictions. The heuristic is that we clamp

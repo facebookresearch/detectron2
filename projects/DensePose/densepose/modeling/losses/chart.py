@@ -1,11 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from torch.nn import functional as F
-
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
+import torch
+from torch.nn import functional as F
 from typing import Any, List
 
 from .mask_or_segm import MaskOrSegmentationLoss

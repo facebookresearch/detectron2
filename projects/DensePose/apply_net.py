@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.config import CfgNode, get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.engine.defaults import DefaultPredictor
@@ -14,6 +12,7 @@ import glob
 import logging
 import os
 import sys
+import torch
 from densepose import add_densepose_config
 from densepose.structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 from densepose.utils.logger import verbosity_to_level
@@ -272,6 +271,7 @@ class ShowAction(InferenceAction):
         cls: type, context: Dict[str, Any], entry: Dict[str, Any], outputs: Instances
     ):
         import numpy as np
+
         import cv2
 
         visualizer = context["visualizer"]

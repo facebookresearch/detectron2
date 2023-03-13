@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-from torch.nn import functional as F
 
+import torch
 from densepose.data.meshes.catalog import MeshCatalog
 from densepose.structures.mesh import load_mesh_symmetry
 from densepose.structures.transform_data import DensePoseTransformData
+from torch.nn import functional as F
 
 
 class DensePoseDataRelative(object):

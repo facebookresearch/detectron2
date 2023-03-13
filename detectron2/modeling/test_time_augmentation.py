@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-from fvcore.transforms import HFlipTransform, NoOpTransform
-from torch import nn
-from torch.nn.parallel import DistributedDataParallel
 
 from detectron2.config import configurable
 from detectron2.data.detection_utils import read_image
@@ -16,8 +12,12 @@ from detectron2.data.transforms import (
 from detectron2.structures import Boxes, Instances
 
 import copy
+import torch
 from contextlib import contextmanager
+from fvcore.transforms import HFlipTransform, NoOpTransform
 from itertools import count
+from torch import nn
+from torch.nn.parallel import DistributedDataParallel
 from typing import List
 
 from .meta_arch import GeneralizedRCNN

@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-import tqdm
-from fvcore.common.timer import Timer
 
 from detectron2.utils import comm
 
 import logging
+import torch
+import tqdm
+from fvcore.common.timer import Timer
 from itertools import count
 from typing import List, Tuple
 

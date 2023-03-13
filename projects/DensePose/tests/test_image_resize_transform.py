@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import torch
-
 import unittest
 from densepose.data.transform import ImageResizeTransform
 

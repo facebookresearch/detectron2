@@ -1,15 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import logging
+import math
 import torch
+from bisect import bisect_right
 from fvcore.common.param_scheduler import (
     CompositeParamScheduler,
     ConstantParamScheduler,
     LinearParamScheduler,
     ParamScheduler,
 )
-
-import logging
-import math
-from bisect import bisect_right
 from typing import List
 
 try:

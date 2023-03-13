@@ -1,10 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from torch.nn import functional as F
-
 from detectron2.structures.boxes import Boxes, BoxMode
 
+import torch
+from torch.nn import functional as F
 from typing import Dict
 
 from ..structures import (

@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-
 from detectron2.config import get_cfg
 from detectron2.modeling.matcher import Matcher
 
+import torch
 import unittest
 from typing import List
 

@@ -1,15 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from torch.nn import functional as F
-
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
+import torch
 from densepose.converters.base import IntTupleBox
 from densepose.data.utils import get_class_to_mesh_name_mapping
 from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures import DensePoseDataRelative
+from torch.nn import functional as F
 from typing import Any, Dict, List, Tuple
 
 from .densepose_base import DensePoseBaseSampler

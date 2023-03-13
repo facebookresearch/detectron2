@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from torch.nn import functional as F
-
 from detectron2.structures import BoxMode, Instances
 
+import torch
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from densepose import DensePoseDataRelative
+from torch.nn import functional as F
 from typing import Any, Dict, List, Optional, Tuple
 
 LossDict = Dict[str, torch.Tensor]

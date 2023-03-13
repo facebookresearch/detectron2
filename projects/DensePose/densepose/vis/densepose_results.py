@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import cv2
-import torch
 
+import cv2
 import logging
+import torch
 from densepose.structures import DensePoseDataRelative
 from typing import List, Optional, Tuple
 

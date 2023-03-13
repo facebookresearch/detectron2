@@ -8,12 +8,11 @@ These can be removed once https://github.com/pytorch/pytorch/issues/12013
 is implemented
 """
 
-import torch
-from torch.nn import functional as F
-
 from detectron2.utils.env import TORCH_VERSION
 
+import torch
 import warnings
+from torch.nn import functional as F
 from typing import List, Optional
 
 

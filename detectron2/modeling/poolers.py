@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from torch import nn
-from torchvision.ops import RoIPool
-
 from detectron2.layers import ROIAlign, ROIAlignRotated, cat, nonzero_tuple, shapes_to_tensor
 from detectron2.structures import Boxes
 from detectron2.utils.tracing import assert_fx_safe, is_fx_tracing
 
 import math
+import torch
+from torch import nn
+from torchvision.ops import RoIPool
 from typing import List, Optional
 
 """

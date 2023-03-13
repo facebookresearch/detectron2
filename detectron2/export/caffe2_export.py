@@ -1,6 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
+
+import copy
+import io
+import logging
 import onnx
 import onnx.optimizer
 import torch
@@ -10,10 +14,6 @@ from caffe2.python.onnx.backend import Caffe2Backend
 from tabulate import tabulate
 from termcolor import colored
 from torch.onnx import OperatorExportTypes
-
-import copy
-import io
-import logging
 from typing import List
 
 from .shared import (

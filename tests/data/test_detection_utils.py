@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-import pycocotools.mask as mask_util
 
 from detectron2.data import MetadataCatalog, detection_utils
 from detectron2.data import transforms as T
@@ -10,6 +9,7 @@ from detectron2.utils.file_io import PathManager
 
 import copy
 import os
+import pycocotools.mask as mask_util
 import unittest
 
 

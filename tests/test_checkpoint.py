@@ -1,8 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from iopath.common.file_io import PathHandler, PathManager
-from torch import nn
-
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.checkpoint.c2_model_loading import (
     _longest_common_prefix_str,
@@ -12,8 +8,11 @@ from detectron2.utils.logger import setup_logger
 
 import os
 import tempfile
+import torch
 import unittest
 from collections import OrderedDict
+from iopath.common.file_io import PathHandler, PathManager
+from torch import nn
 
 
 class TestCheckpointer(unittest.TestCase):

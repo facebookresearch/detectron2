@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-
 from detectron2.config import get_cfg
 from detectron2.export import scripting_with_instances
 from detectron2.layers import ShapeSpec
@@ -14,6 +12,7 @@ from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
 
 import logging
+import torch
 import unittest
 
 logger = logging.getLogger(__name__)

@@ -1,12 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-from torch import nn
-
 from detectron2.layers import ASPP, DepthwiseSeparableConv2d, FrozenBatchNorm2d
 from detectron2.modeling.backbone.resnet import BasicStem, ResNet
 
+import torch
 import unittest
+from torch import nn
 
 """
 Test for misc layers.

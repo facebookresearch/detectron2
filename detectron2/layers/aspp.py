@@ -2,10 +2,9 @@
 
 import fvcore.nn.weight_init as weight_init
 import torch
+from copy import deepcopy
 from torch import nn
 from torch.nn import functional as F
-
-from copy import deepcopy
 
 from .batch_norm import get_norm
 from .blocks import DepthwiseSeparableConv2d

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from torch import Tensor, nn
-
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -24,6 +21,8 @@ from detectron2.utils.logger import setup_logger
 
 import argparse
 import os
+import torch
+from torch import Tensor, nn
 from typing import Dict, List, Tuple
 
 

@@ -1,10 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-import torch.onnx.symbolic_helper as sym_help
-from packaging import version
-from torch._C import ListType
-from torch.onnx import register_custom_op_symbolic
 
 from detectron2 import model_zoo
 from detectron2.config import CfgNode, LazyConfig, instantiate
@@ -18,7 +13,12 @@ import io
 import os
 import re
 import tempfile
+import torch
+import torch.onnx.symbolic_helper as sym_help
 import unittest
+from packaging import version
+from torch._C import ListType
+from torch.onnx import register_custom_op_symbolic
 from typing import Callable
 
 """

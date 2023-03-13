@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-from panopticapi.utils import rgb2id
 
 from detectron2.config import configurable
 from detectron2.data import MetadataCatalog
@@ -10,6 +8,8 @@ from detectron2.data import transforms as T
 
 import copy
 import logging
+import torch
+from panopticapi.utils import rgb2id
 from typing import Callable, List, Union
 
 from .target_generator import PanopticDeepLabTargetGenerator

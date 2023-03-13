@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-import torch.distributed as dist
-import torch.multiprocessing as mp
-
 from detectron2.utils import comm
 
 import io
 import tempfile
+import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
 import unittest
 from contextlib import ExitStack
 from densepose.evaluation.tensor_storage import (

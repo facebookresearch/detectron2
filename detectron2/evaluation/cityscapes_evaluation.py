@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-from PIL import Image
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
@@ -11,7 +9,9 @@ import glob
 import logging
 import os
 import tempfile
+import torch
 from collections import OrderedDict
+from PIL import Image
 
 from .evaluator import DatasetEvaluator
 

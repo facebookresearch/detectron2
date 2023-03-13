@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import torch
-from torch import nn
-
 from detectron2.utils.file_io import PathManager
 
 import json
 import logging
+import torch
 from densepose.structures.mesh import create_mesh
+from torch import nn
 from typing import List, Optional
 
 

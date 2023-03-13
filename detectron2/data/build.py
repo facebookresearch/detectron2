@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import torch
-import torch.utils.data as torchdata
-from tabulate import tabulate
-from termcolor import colored
 
 from detectron2.config import configurable
 from detectron2.structures import BoxMode
@@ -16,6 +12,10 @@ import itertools
 import logging
 import operator
 import pickle
+import torch
+import torch.utils.data as torchdata
+from tabulate import tabulate
+from termcolor import colored
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from .catalog import DatasetCatalog, MetadataCatalog

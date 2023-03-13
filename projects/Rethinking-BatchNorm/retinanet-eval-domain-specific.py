@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-from fvcore.nn.precise_bn import update_bn_stats
-
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import LazyConfig, instantiate
 from detectron2.evaluation import inference_on_dataset
@@ -11,6 +8,8 @@ from detectron2.utils.events import EventStorage
 from detectron2.utils.logger import setup_logger
 
 import sys
+import torch
+from fvcore.nn.precise_bn import update_bn_stats
 
 logger = setup_logger()
 setup_logger(name="fvcore")

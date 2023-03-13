@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import torch
-
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
@@ -11,6 +9,7 @@ import argparse
 import logging
 import os
 import sys
+import torch
 from densepose.structures import DensePoseDataRelative
 from densepose.utils.dbhelper import EntrySelector
 from densepose.utils.logger import verbosity_to_level
@@ -161,6 +160,7 @@ class ShowAction(EntrywiseAction):
     @classmethod
     def execute_on_entry(cls: type, entry: Dict[str, Any], context: Dict[str, Any]):
         import numpy as np
+
         import cv2
 
         image_fpath = PathManager.get_local_path(entry["file_name"])

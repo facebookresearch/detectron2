@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import torch
-
 from detectron2.solver.lr_scheduler import LRScheduler, _get_warmup_factor_at_iter
 
 import math
+import torch
 from typing import List
 
 # NOTE: PyTorch's LR scheduler interface uses names that assume the LR changes

@@ -6,9 +6,6 @@ Common data processing utilities that are used in a
 typical object detection data pipeline.
 """
 import numpy as np
-import pycocotools.mask as mask_util
-import torch
-from PIL import Image
 
 from detectron2.structures import (
     BitMasks,
@@ -23,6 +20,9 @@ from detectron2.structures import (
 from detectron2.utils.file_io import PathManager
 
 import logging
+import pycocotools.mask as mask_util
+import torch
+from PIL import Image
 from typing import List, Union
 
 from . import transforms as T

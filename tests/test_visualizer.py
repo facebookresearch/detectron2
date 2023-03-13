@@ -2,15 +2,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-import cv2
-import torch
 
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BoxMode, Instances, RotatedBoxes
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
+import cv2
 import os
 import tempfile
+import torch
 import unittest
 
 

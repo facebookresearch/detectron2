@@ -1,15 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import numpy as np
-import torch
-from torch import nn
 
 from detectron2.config import CfgNode
 from detectron2.utils.file_io import PathManager
 
 import logging
 import pickle
+import torch
 from enum import Enum
+from torch import nn
 from typing import Optional
 
 from .vertex_direct_embedder import VertexDirectEmbedder

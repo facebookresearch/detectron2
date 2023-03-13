@@ -5,6 +5,10 @@ Implement many useful :class:`Augmentation`.
 """
 import numpy as np
 from numpy import random
+
+from detectron2.structures import Boxes, pairwise_iou
+
+import sys
 import torch
 from fvcore.transforms.transform import (
     BlendTransform,
@@ -17,10 +21,6 @@ from fvcore.transforms.transform import (
     VFlipTransform,
 )
 from PIL import Image
-
-from detectron2.structures import Boxes, pairwise_iou
-
-import sys
 from typing import Tuple
 
 from .augmentation import Augmentation, _transform_to_aug
