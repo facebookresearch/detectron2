@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Callable, Dict, Optional, Tuple, Union
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -10,6 +9,8 @@ from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.structures import ImageList
 from detectron2.utils.registry import Registry
+
+from typing import Callable, Dict, Optional, Tuple, Union
 
 from ..backbone import Backbone, build_backbone
 from ..postprocessing import sem_seg_postprocess

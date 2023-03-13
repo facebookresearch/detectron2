@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import functools
-import io
-import struct
-import types
 import torch
 
 from detectron2.modeling import meta_arch
 from detectron2.modeling.box_regression import Box2BoxTransform
 from detectron2.modeling.roi_heads import keypoint_head
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
+
+import functools
+import io
+import struct
+import types
 
 from .c10 import Caffe2Compatible
 from .caffe2_patch import ROIHeadsPatcher, patch_generalized_rcnn

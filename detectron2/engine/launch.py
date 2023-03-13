@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-from datetime import timedelta
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from detectron2.utils import comm
+
+import logging
+from datetime import timedelta
 
 __all__ = ["DEFAULT_TIMEOUT", "launch"]
 

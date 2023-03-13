@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import unittest
-from typing import List
 import torch
 
 from detectron2.config import get_cfg
 from detectron2.modeling.matcher import Matcher
+
+import unittest
+from typing import List
 
 
 class TestMatcher(unittest.TestCase):

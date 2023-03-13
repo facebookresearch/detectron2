@@ -2,7 +2,6 @@
 
 import random
 import unittest
-
 from densepose.data.video import FirstKFramesSelector, LastKFramesSelector, RandomKFramesSelector
 
 

@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import argparse
-import json
 import numpy as np
-import os
-from collections import defaultdict
 import cv2
 import tqdm
 
@@ -14,6 +10,11 @@ from detectron2.structures import Boxes, BoxMode, Instances
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
+
+import argparse
+import json
+import os
+from collections import defaultdict
 
 
 def create_instances(predictions, image_size):

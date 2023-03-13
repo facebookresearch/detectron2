@@ -1,7 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import math
-from typing import List
 import torch
 import torch.nn.functional as F
 from fvcore.nn import sigmoid_focal_loss_star_jit, smooth_l1_loss
@@ -15,7 +12,10 @@ from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
 from detectron2.modeling.meta_arch.retinanet import permute_to_N_HWA_K
 from detectron2.structures import Boxes, ImageList, Instances
 
+import copy
+import math
 from tensormask.layers import SwapAlign2Nat
+from typing import List
 
 __all__ = ["TensorMask"]
 

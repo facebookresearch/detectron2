@@ -1,12 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import contextlib
-import datetime
-import io
-import json
-import logging
 import numpy as np
-import os
-import shutil
 import pycocotools.mask as mask_util
 from fvcore.common.timer import Timer
 from iopath.common.file_io import file_lock
@@ -14,6 +7,14 @@ from PIL import Image
 
 from detectron2.structures import Boxes, BoxMode, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
+
+import contextlib
+import datetime
+import io
+import json
+import logging
+import os
+import shutil
 
 from .. import DatasetCatalog, MetadataCatalog
 
@@ -517,9 +518,10 @@ if __name__ == "__main__":
         "dataset_name" can be "coco_2014_minival_100", or other
         pre-registered ones
     """
+    import detectron2.data.datasets  # noqa # add pre-defined metadata
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
-    import detectron2.data.datasets  # noqa # add pre-defined metadata
+
     import sys
 
     logger = setup_logger(name=__name__)

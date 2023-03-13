@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from torch.utils.data.sampler import Sampler
+
+from detectron2.utils import comm
+
 import itertools
 import logging
 import math
 from collections import defaultdict
 from typing import Optional
-import torch
-from torch.utils.data.sampler import Sampler
-
-from detectron2.utils import comm
 
 logger = logging.getLogger(__name__)
 

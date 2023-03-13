@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from detectron2.structures import Instances
+
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
-
-from detectron2.structures import Instances
 
 ModelOutput = Dict[str, Any]
 SampledData = Dict[str, Any]

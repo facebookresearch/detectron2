@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import importlib
 import numpy as np
+import PIL
+import torch
+import torchvision
+from tabulate import tabulate
+
+import importlib
 import os
 import re
 import subprocess
 import sys
 from collections import defaultdict
-import PIL
-import torch
-import torchvision
-from tabulate import tabulate
 
 __all__ = ["collect_env_info"]
 
@@ -149,7 +150,8 @@ def collect_env_info():
             data.append(("ROCM_HOME", str(ROCM_HOME) + msg))
         else:
             try:
-                from torch.utils.collect_env import get_nvidia_driver_version, run as _run
+                from torch.utils.collect_env import get_nvidia_driver_version
+                from torch.utils.collect_env import run as _run
 
                 data.append(("Driver version", get_nvidia_driver_version(_run)))
             except Exception:

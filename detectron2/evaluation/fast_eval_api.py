@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import logging
 import numpy as np
-import time
 from pycocotools.cocoeval import COCOeval
 
 from detectron2 import _C
+
+import copy
+import logging
+import time
 
 logger = logging.getLogger(__name__)
 

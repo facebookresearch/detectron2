@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from typing import List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -11,6 +10,8 @@ from detectron2.layers.wrappers import move_device_like
 from detectron2.structures import Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
+
+from typing import List
 
 __all__ = [
     "BaseMaskRCNNHead",

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import numpy as np
-from typing import List
 
 from detectron2.structures import Instances
+
+from typing import List
 
 
 def create_prediction_pairs(

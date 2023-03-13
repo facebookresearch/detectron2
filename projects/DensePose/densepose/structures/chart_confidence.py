@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+
 from dataclasses import make_dataclass
 from functools import lru_cache
 from typing import Any, Optional
-import torch
 
 
 @lru_cache(maxsize=None)

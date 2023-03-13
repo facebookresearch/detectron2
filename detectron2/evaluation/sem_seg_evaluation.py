@@ -1,11 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import itertools
-import json
-import logging
 import numpy as np
-import os
-from collections import OrderedDict
-from typing import Optional, Union
 import pycocotools.mask as mask_util
 import torch
 from PIL import Image
@@ -13,6 +7,13 @@ from PIL import Image
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
+
+import itertools
+import json
+import logging
+import os
+from collections import OrderedDict
+from typing import Optional, Union
 
 from .evaluator import DatasetEvaluator
 

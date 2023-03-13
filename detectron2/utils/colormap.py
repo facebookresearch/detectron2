@@ -6,6 +6,7 @@ Copied from Detectron, and removed gray colors.
 """
 
 import numpy as np
+
 import random
 
 __all__ = ["colormap", "random_color", "random_colors"]

@@ -1,11 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import io
 import numpy as np
-import os
-import re
-import tempfile
-import unittest
-from typing import Callable
 import torch
 import torch.onnx.symbolic_helper as sym_help
 from packaging import version
@@ -20,6 +14,12 @@ from detectron2.modeling import build_model
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.file_io import PathManager
 
+import io
+import os
+import re
+import tempfile
+import unittest
+from typing import Callable
 
 """
 Internal utilities for tests. Don't use except for writing tests.
@@ -276,7 +276,8 @@ skipIfOnCPUCI = unittest.skipIf(
 
 # SKIP IF PYTORCH VERSION > 1.10
 skipIfOnPytorch1_10 = unittest.skipIf(
-    min_torch_version("1.10"), "The test is not supported on PyTorch 1.10+",
+    min_torch_version("1.10"),
+    "The test is not supported on PyTorch 1.10+",
 )
 
 

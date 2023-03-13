@@ -6,7 +6,6 @@ Panoptic-DeepLab Training Script.
 This script is a simplified version of the training script in detectron2/tools.
 """
 
-import os
 import torch
 
 import detectron2.data.transforms as T
@@ -28,6 +27,8 @@ from detectron2.projects.panoptic_deeplab import (
 )
 from detectron2.solver import get_default_optimizer_params
 from detectron2.solver.build import maybe_add_gradient_clipping
+
+import os
 
 
 def build_sem_seg_train_aug(cfg):

@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import math
-from typing import Any, List
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
+
+import math
+from typing import Any, List
 
 from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from .chart import DensePoseChartLoss

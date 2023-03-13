@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import unittest
 import torch
 
 from detectron2.structures import Boxes, BoxMode, Instances
 
+import unittest
 from densepose.modeling.losses.utils import ChartBasedAnnotationsAccumulator
 from densepose.structures import DensePoseDataRelative, DensePoseList
 

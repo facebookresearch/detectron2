@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from dataclasses import fields
 import torch
 
+from dataclasses import fields
 from densepose.structures import DensePoseChartPredictorOutput, DensePoseTransformData
 
 

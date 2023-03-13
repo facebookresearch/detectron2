@@ -1,10 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import os
-import pickle
-import sys
-import unittest
-from functools import partial
 import torch
 from iopath.common.file_io import LazyPath
 
@@ -24,6 +19,12 @@ from detectron2.data.common import (
     set_default_dataset_from_list_serialize_method,
 )
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
+
+import os
+import pickle
+import sys
+import unittest
+from functools import partial
 
 
 def _a_slow_func(x):

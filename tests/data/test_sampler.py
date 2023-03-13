@@ -1,8 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import itertools
-import math
-import operator
-import unittest
 import torch
 from torch.utils import data
 from torch.utils.data.sampler import SequentialSampler
@@ -16,6 +12,11 @@ from detectron2.data.samplers import (
     TrainingSampler,
 )
 from detectron2.utils.env import seed_all_rng
+
+import itertools
+import math
+import operator
+import unittest
 
 
 class TestGroupedBatchSampler(unittest.TestCase):

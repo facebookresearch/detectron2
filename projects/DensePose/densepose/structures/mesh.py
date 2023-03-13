@@ -1,13 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import pickle
-from functools import lru_cache
-from typing import Dict, Optional, Tuple
 import torch
 
 from detectron2.utils.file_io import PathManager
 
+import pickle
 from densepose.data.meshes.catalog import MeshCatalog, MeshInfo
+from functools import lru_cache
+from typing import Dict, Optional, Tuple
 
 
 def _maybe_copy_to_device(

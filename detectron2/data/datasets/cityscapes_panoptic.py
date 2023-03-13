@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import json
-import logging
-import os
-
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets.builtin_meta import CITYSCAPES_CATEGORIES
 from detectron2.utils.file_io import PathManager
+
+import json
+import logging
+import os
 
 """
 This file contains functions to register the Cityscapes panoptic dataset to the DatasetCatalog.

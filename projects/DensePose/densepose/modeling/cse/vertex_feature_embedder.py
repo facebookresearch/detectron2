@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import pickle
 import torch
 from torch import nn
 
 from detectron2.utils.file_io import PathManager
+
+import pickle
 
 from .utils import normalize_embeddings
 

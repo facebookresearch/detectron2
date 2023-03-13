@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import unittest
-
 from detectron2.utils.collect_env import collect_env_info
+
+import unittest
 
 
 class TestProjects(unittest.TestCase):

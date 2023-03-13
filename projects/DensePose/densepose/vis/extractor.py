@@ -1,11 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-from typing import List, Optional, Sequence, Tuple
 import torch
 
 from detectron2.layers.nms import batched_nms
 from detectron2.structures.instances import Instances
 
+import logging
 from densepose.converters import ToChartResultConverterWithConfidences
 from densepose.structures import (
     DensePoseChartResultWithConfidences,
@@ -14,6 +13,7 @@ from densepose.structures import (
 from densepose.vis.bounding_box import BoundingBoxVisualizer, ScoredBoundingBoxVisualizer
 from densepose.vis.densepose_outputs_vertex import DensePoseOutputsVertexVisualizer
 from densepose.vis.densepose_results import DensePoseResultsVisualizer
+from typing import List, Optional, Sequence, Tuple
 
 from .base import CompoundVisualizer
 

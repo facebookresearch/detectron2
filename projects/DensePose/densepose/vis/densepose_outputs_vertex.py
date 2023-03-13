@@ -1,15 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import json
 import numpy as np
-from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
 import cv2
 import torch
 
 from detectron2.utils.file_io import PathManager
 
+import json
 from densepose.modeling import build_densepose_embedder
 from densepose.modeling.cse.utils import get_closest_vertices_mask_from_ES
+from functools import lru_cache
+from typing import Dict, List, Optional, Tuple
 
 from ..data.utils import get_class_to_mesh_name_mapping
 from ..structures import DensePoseEmbeddingPredictorOutput

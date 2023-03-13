@@ -2,15 +2,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import copy
-import json
 import numpy as np
-import os
-import sys
 import pycocotools.mask as mask_utils
 
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.file_io import PathManager
+
+import copy
+import json
+import os
+import sys
 
 
 def get_point_annotations(input_filename, output_filename, num_points_per_instance):

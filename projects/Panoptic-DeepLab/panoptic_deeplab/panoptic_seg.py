@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Callable, Dict, List, Union
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -20,6 +19,8 @@ from detectron2.projects.deeplab import DeepLabV3PlusHead
 from detectron2.projects.deeplab.loss import DeepLabCE
 from detectron2.structures import BitMasks, ImageList, Instances
 from detectron2.utils.registry import Registry
+
+from typing import Callable, Dict, List, Union
 
 from .post_processing import get_panoptic_segmentation
 

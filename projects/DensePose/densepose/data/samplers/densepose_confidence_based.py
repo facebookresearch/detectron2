@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import random
-from typing import Optional, Tuple
 import torch
 
+import random
 from densepose.converters import ToChartResultConverterWithConfidences
+from typing import Optional, Tuple
 
 from .densepose_base import DensePoseBaseSampler
 

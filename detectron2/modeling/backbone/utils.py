@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+import math
 
 __all__ = [
     "window_partition",

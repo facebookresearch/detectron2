@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import io
-import unittest
-import warnings
 import torch
 from torch.hub import _check_module_exists
 
@@ -23,10 +20,15 @@ from detectron2.utils.testing import (
     random_boxes,
     register_custom_op_onnx_export,
     skipIfOnCPUCI,
+    skipIfOnPytorch1_10,
     skipIfUnsupportedMinOpsetVersion,
     skipIfUnsupportedMinTorchVersion,
-    unregister_custom_op_onnx_export, skipIfOnPytorch1_10,
+    unregister_custom_op_onnx_export,
 )
+
+import io
+import unittest
+import warnings
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")

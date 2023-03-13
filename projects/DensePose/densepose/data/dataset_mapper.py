@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import copy
-import logging
-from typing import Any, Dict, List, Tuple
 import torch
 
 from detectron2.data import MetadataCatalog
@@ -13,7 +10,10 @@ from detectron2.layers import ROIAlign
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
 
+import copy
+import logging
 from densepose.structures import DensePoseDataRelative, DensePoseList, DensePoseTransformData
+from typing import Any, Dict, List, Tuple
 
 
 def build_augmentation(cfg, is_train):

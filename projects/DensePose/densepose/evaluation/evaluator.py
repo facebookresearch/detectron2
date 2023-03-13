@@ -1,15 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import contextlib
-import copy
-import io
-import itertools
-import logging
 import numpy as np
-import os
-from collections import OrderedDict
-from typing import Dict, Iterable, List, Optional
 import pycocotools.mask as mask_utils
 import torch
 from pycocotools.coco import COCO
@@ -23,6 +15,13 @@ from detectron2.utils.comm import gather, get_rank, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
 
+import contextlib
+import copy
+import io
+import itertools
+import logging
+import os
+from collections import OrderedDict
 from densepose.converters import ToChartResultConverter, ToMaskConverter
 from densepose.data.datasets.coco import maybe_filter_and_map_categories_cocoapi
 from densepose.structures import (
@@ -30,6 +29,7 @@ from densepose.structures import (
     DensePoseEmbeddingPredictorOutput,
     quantize_densepose_chart_result,
 )
+from typing import Dict, Iterable, List, Optional
 
 from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
 from .mesh_alignment_evaluator import MeshAlignmentEvaluator

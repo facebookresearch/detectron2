@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from dataclasses import dataclass
-from typing import Any, Optional
 import torch
 
 from detectron2.structures import BoxMode, Instances
+
+from dataclasses import dataclass
+from typing import Any, Optional
 
 from .utils import AnnotationsAccumulator
 

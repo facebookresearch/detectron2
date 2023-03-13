@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import collections
-from dataclasses import dataclass
-from typing import Callable, List, Optional, Tuple
 import torch
 from torch import nn
 
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.registry import _convert_target_to_string, locate
+
+import collections
+from dataclasses import dataclass
+from typing import Callable, List, Optional, Tuple
 
 from .torchscript_patch import patch_builtin_len
 

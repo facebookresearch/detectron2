@@ -1,4 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from fvcore.common.timer import Timer
+
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.structures import BoxMode
+from detectron2.utils.file_io import PathManager
+
 import contextlib
 import io
 import logging
@@ -6,11 +12,6 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional
-from fvcore.common.timer import Timer
-
-from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.structures import BoxMode
-from detectron2.utils.file_io import PathManager
 
 from ..utils import maybe_prepend_base_path
 

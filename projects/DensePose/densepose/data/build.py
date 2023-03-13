@@ -1,11 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import itertools
-import logging
 import numpy as np
-from collections import UserDict, defaultdict
-from dataclasses import dataclass
-from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
 import torch
 from torch.utils.data.dataset import Dataset
 
@@ -22,8 +17,13 @@ from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
 from detectron2.data.samplers import TrainingSampler
 from detectron2.utils.comm import get_world_size
 
+import itertools
+import logging
+from collections import UserDict, defaultdict
+from dataclasses import dataclass
 from densepose.config import get_bootstrap_dataset_config
 from densepose.modeling import build_densepose_embedder
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper

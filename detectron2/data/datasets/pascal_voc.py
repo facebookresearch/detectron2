@@ -2,13 +2,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-import os
-import xml.etree.ElementTree as ET
-from typing import List, Tuple, Union
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
+
+import os
+import xml.etree.ElementTree as ET
+from typing import List, Tuple, Union
 
 __all__ = ["load_voc_instances", "register_pascal_voc"]
 

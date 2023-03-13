@@ -6,8 +6,6 @@ A script to benchmark builtin models.
 Note: this script has an extra dependency of psutil.
 """
 
-import itertools
-import logging
 import psutil
 import torch
 import tqdm
@@ -29,6 +27,9 @@ from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.events import CommonMetricPrinter
 from detectron2.utils.logger import setup_logger
+
+import itertools
+import logging
 
 logger = logging.getLogger("detectron2")
 

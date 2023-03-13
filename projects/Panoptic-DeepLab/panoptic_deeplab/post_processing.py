@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Reference: https://github.com/bowenc0221/panoptic-deeplab/blob/master/segmentation/model/post_processing/instance_post_processing.py  # noqa
 
-from collections import Counter
 import torch
 import torch.nn.functional as F
+
+from collections import Counter
 
 
 def find_instance_center(center_heatmap, threshold=0.1, nms_kernel=3, top_k=None):

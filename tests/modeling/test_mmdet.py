@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import unittest
-
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.mmdet_wrapper import MMDetBackbone, MMDetDetector
+
+import unittest
 
 try:
     import mmdet.models  # noqa

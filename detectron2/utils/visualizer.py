@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import colorsys
-import logging
-import math
 import numpy as np
-from enum import Enum, unique
 import cv2
 import matplotlib as mpl
 import matplotlib.colors as mplc
@@ -16,6 +12,11 @@ from PIL import Image
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BitMasks, Boxes, BoxMode, Keypoints, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
+
+import colorsys
+import logging
+import math
+from enum import Enum, unique
 
 from .colormap import random_color
 

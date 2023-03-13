@@ -1,13 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import copy
-import glob
-import json
-import os
-import random
-import tempfile
-import unittest
-import zipfile
 import torch
 from torch import Tensor, nn
 
@@ -28,9 +20,18 @@ from detectron2.utils.testing import (
     convert_scripted_instances,
     get_sample_coco_image,
     random_boxes,
-    skipIfOnCPUCI, skipIfOnPytorch1_10,
+    skipIfOnCPUCI,
+    skipIfOnPytorch1_10,
 )
 
+import copy
+import glob
+import json
+import os
+import random
+import tempfile
+import unittest
+import zipfile
 
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html

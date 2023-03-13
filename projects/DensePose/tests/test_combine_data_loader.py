@@ -2,9 +2,8 @@
 
 import random
 import unittest
-from typing import Any, Iterable, Iterator, Tuple
-
 from densepose.data import CombinedDataLoader
+from typing import Any, Iterable, Iterator, Tuple
 
 
 def _grouper(iterable: Iterable[Any], n: int, fillvalue=None) -> Iterator[Tuple[Any]]:

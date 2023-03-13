@@ -16,10 +16,6 @@ this file as an example of how to use the library.
 You may want to write your own script with your datasets and other customizations.
 """
 
-import logging
-import os
-from collections import OrderedDict
-
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -37,6 +33,10 @@ from detectron2.evaluation import (
     verify_results,
 )
 from detectron2.modeling import GeneralizedRCNNWithTTA
+
+import logging
+import os
+from collections import OrderedDict
 
 
 def build_evaluator(cfg, dataset_name, output_folder=None):

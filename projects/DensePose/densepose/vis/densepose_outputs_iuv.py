@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Optional, Tuple
 import cv2
 
 from densepose.structures import DensePoseDataRelative
+from typing import Optional, Tuple
 
 from ..structures import DensePoseChartPredictorOutput
 from .base import Boxes, Image, MatrixVisualizer

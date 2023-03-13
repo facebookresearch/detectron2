@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import math
-from functools import lru_cache
 import torch
 from torch import nn
 from torch.autograd import Function
@@ -9,6 +7,9 @@ from torch.nn.modules.utils import _pair
 from torchvision.ops import deform_conv2d
 
 from detectron2.utils.develop import create_dummy_class, create_dummy_func
+
+import math
+from functools import lru_cache
 
 from .wrappers import _NewEmptyTensorOp
 

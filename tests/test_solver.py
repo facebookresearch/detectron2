@@ -1,6 +1,6 @@
-import unittest
-
 from detectron2.solver.build import _expand_param_groups, reduce_param_groups
+
+import unittest
 
 
 class TestOptimizer(unittest.TestCase):

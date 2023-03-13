@@ -4,10 +4,11 @@ This file contains primitives for multi-gpu communication.
 This is useful when doing distributed training.
 """
 
-import functools
 import numpy as np
 import torch
 import torch.distributed as dist
+
+import functools
 
 _LOCAL_PROCESS_GROUP = None
 _MISSING_LOCAL_PG_ERROR = (

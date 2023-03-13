@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import logging
 import numpy as np
-from typing import List, Optional, Union
 import torch
 
 from detectron2.config import configurable
+
+import copy
+import logging
+from typing import List, Optional, Union
 
 from . import detection_utils as utils
 from . import transforms as T

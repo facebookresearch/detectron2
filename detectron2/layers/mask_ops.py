@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Tuple
 import torch
 from PIL import Image
 from torch.nn import functional as F
+
+from typing import Tuple
 
 __all__ = ["paste_masks_in_image"]
 

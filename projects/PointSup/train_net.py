@@ -6,8 +6,6 @@ Point supervision Training Script.
 This script is a simplified version of the training script in detectron2/tools.
 """
 
-import os
-
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -17,6 +15,7 @@ from detectron2.evaluation import COCOEvaluator, DatasetEvaluators, verify_resul
 from detectron2.projects.point_rend import add_pointrend_config
 from detectron2.utils.logger import setup_logger
 
+import os
 from point_sup import PointSupDatasetMapper, add_point_sup_config
 
 

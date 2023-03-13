@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import unittest
 import cv2
 import torch
 from torch.autograd import Variable, gradcheck
 
 from detectron2.layers.roi_align import ROIAlign
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
+
+import logging
+import unittest
 
 logger = logging.getLogger(__name__)
 

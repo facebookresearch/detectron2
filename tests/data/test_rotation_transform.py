@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import unittest
 
 from detectron2.data.transforms.transform import RotationTransform
+
+import unittest
 
 
 class TestRotationTransform(unittest.TestCase):

@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import copy
 import numpy as np
-import os
-import unittest
 import pycocotools.mask as mask_util
 
 from detectron2.data import MetadataCatalog, detection_utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, BoxMode
 from detectron2.utils.file_io import PathManager
+
+import copy
+import os
+import unittest
 
 
 class TestTransformAnnotations(unittest.TestCase):

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
-import sys
 import torch
 from fvcore.nn.precise_bn import update_bn_stats
 
@@ -10,6 +9,8 @@ from detectron2.evaluation import inference_on_dataset
 from detectron2.layers import CycleBatchNormList
 from detectron2.utils.events import EventStorage
 from detectron2.utils.logger import setup_logger
+
+import sys
 
 logger = setup_logger()
 setup_logger(name="fvcore")

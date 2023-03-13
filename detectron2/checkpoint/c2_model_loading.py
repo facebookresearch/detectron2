@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from tabulate import tabulate
+
 import copy
 import logging
 import re
 from typing import Dict, List
-import torch
-from tabulate import tabulate
 
 
 def convert_basic_c2_names(original_keys):

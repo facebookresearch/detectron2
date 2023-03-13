@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import unittest
-
 from detectron2 import model_zoo
 from detectron2.config import instantiate
 from detectron2.modeling import FPN, GeneralizedRCNN
+
+import logging
+import unittest
 
 logger = logging.getLogger(__name__)
 

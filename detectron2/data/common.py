@@ -1,17 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import contextlib
-import copy
-import itertools
-import logging
 import numpy as np
-import pickle
-import random
-from typing import Callable, Union
 import torch
 import torch.utils.data as data
 from torch.utils.data.sampler import Sampler
 
 from detectron2.utils.serialize import PicklableWrapper
+
+import contextlib
+import copy
+import itertools
+import logging
+import pickle
+import random
+from typing import Callable, Union
 
 __all__ = ["MapDataset", "DatasetFromList", "AspectRatioGroupedDataset", "ToIterableDataset"]
 

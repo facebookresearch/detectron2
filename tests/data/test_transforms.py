@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
 import numpy as np
-import unittest
-from unittest import mock
 import torch
 from PIL import Image, ImageOps
 from torch.nn import functional as F
@@ -13,6 +10,10 @@ from detectron2.config import get_cfg
 from detectron2.data import detection_utils
 from detectron2.data import transforms as T
 from detectron2.utils.logger import setup_logger
+
+import logging
+import unittest
+from unittest import mock
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import itertools
-import logging
-from collections import defaultdict
-from enum import Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 import torch
 from fvcore.common.param_scheduler import (
     CosineParamScheduler,
@@ -14,6 +8,13 @@ from fvcore.common.param_scheduler import (
 
 from detectron2.config import CfgNode
 from detectron2.utils.env import TORCH_VERSION
+
+import copy
+import itertools
+import logging
+from collections import defaultdict
+from enum import Enum
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, Union
 
 from .lr_scheduler import LRMultiplier, LRScheduler, WarmupParamScheduler
 

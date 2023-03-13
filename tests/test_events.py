@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from detectron2.utils.events import CommonMetricPrinter, EventStorage, JSONWriter
+
 import json
 import os
 import tempfile
 import unittest
-
-from detectron2.utils.events import CommonMetricPrinter, EventStorage, JSONWriter
 
 
 class TestEventWriter(unittest.TestCase):

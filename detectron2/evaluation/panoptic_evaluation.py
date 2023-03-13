@@ -1,20 +1,21 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import contextlib
-import io
-import itertools
-import json
-import logging
 import numpy as np
-import os
-import tempfile
-from collections import OrderedDict
-from typing import Optional
 from PIL import Image
 from tabulate import tabulate
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
 from detectron2.utils.file_io import PathManager
+
+import contextlib
+import io
+import itertools
+import json
+import logging
+import os
+import tempfile
+from collections import OrderedDict
+from typing import Optional
 
 from .evaluator import DatasetEvaluator
 

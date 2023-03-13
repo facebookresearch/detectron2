@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.utils.file_io import PathManager
+
 import copy
 import json
 import os
-
-from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.utils.file_io import PathManager
 
 from .coco import load_coco_json, load_sem_seg
 
@@ -201,12 +201,14 @@ if __name__ == "__main__":
         "dataset_name" can be "coco_2017_train_panoptic", or other
         pre-registered ones
     """
+    import numpy as np
+    from PIL import Image
+
+    import detectron2.data.datasets  # noqa # add pre-defined metadata
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
-    import detectron2.data.datasets  # noqa # add pre-defined metadata
+
     import sys
-    from PIL import Image
-    import numpy as np
 
     logger = setup_logger(name=__name__)
     assert sys.argv[4] in DatasetCatalog.list()

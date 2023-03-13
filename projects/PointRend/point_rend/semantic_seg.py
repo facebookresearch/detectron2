@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Dict
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import ShapeSpec, cat
 from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
+
+from typing import Dict
 
 from .point_features import (
     get_uncertain_point_coords_on_grid,

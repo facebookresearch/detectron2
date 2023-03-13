@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-
 from densepose.data.datasets.builtin import COCO_DATASETS, DENSEPOSE_ANNOTATIONS_DIR, LVIS_DATASETS
 from densepose.data.datasets.coco import load_coco_json
 from densepose.data.datasets.lvis import load_lvis_json

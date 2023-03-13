@@ -1,12 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import contextlib
-import copy
-import io
-import json
 import numpy as np
-import os
-import tempfile
-import unittest
 import torch
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -15,6 +8,14 @@ from detectron2.data import DatasetCatalog
 from detectron2.evaluation import COCOEvaluator
 from detectron2.evaluation.fast_eval_api import COCOeval_opt
 from detectron2.structures import Boxes, Instances
+
+import contextlib
+import copy
+import io
+import json
+import os
+import tempfile
+import unittest
 
 
 class TestCOCOeval(unittest.TestCase):

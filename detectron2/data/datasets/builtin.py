@@ -17,9 +17,9 @@ Users SHOULD NOT use this file to create new dataset / metadata for new dataset.
 To add new dataset, refer to the tutorial "docs/DATASETS.md".
 """
 
-import os
-
 from detectron2.data import DatasetCatalog, MetadataCatalog
+
+import os
 
 from .builtin_meta import ADE20K_SEM_SEG_CATEGORIES, _get_builtin_metadata
 from .cityscapes import load_cityscapes_instances, load_cityscapes_semantic

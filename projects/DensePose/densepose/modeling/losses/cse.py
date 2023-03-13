@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import Any, List
 from torch import nn
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
+
+from typing import Any, List
 
 from .cycle_pix2shape import PixToShapeCycleLoss
 from .cycle_shape2shape import ShapeToShapeCycleLoss

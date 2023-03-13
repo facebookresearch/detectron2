@@ -4,9 +4,7 @@
 Implement many useful :class:`Augmentation`.
 """
 import numpy as np
-import sys
 from numpy import random
-from typing import Tuple
 import torch
 from fvcore.transforms.transform import (
     BlendTransform,
@@ -21,6 +19,9 @@ from fvcore.transforms.transform import (
 from PIL import Image
 
 from detectron2.structures import Boxes, pairwise_iou
+
+import sys
+from typing import Tuple
 
 from .augmentation import Augmentation, _transform_to_aug
 from .transform import ExtentTransform, ResizeTransform, RotationTransform

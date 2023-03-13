@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import math
 import numpy as np
-from typing import Dict, List, Tuple
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import Tensor, nn
@@ -13,6 +10,10 @@ from detectron2.layers import Conv2d, ShapeSpec, cat, interpolate
 from detectron2.modeling import ROI_MASK_HEAD_REGISTRY
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference, mask_rcnn_loss
 from detectron2.structures import Boxes
+
+import logging
+import math
+from typing import Dict, List, Tuple
 
 from .point_features import (
     generate_regular_grid_point_coords,
