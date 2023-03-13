@@ -12,7 +12,7 @@ from os import path
 from typing import List
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 12], "Requires PyTorch >= 1.8"
+assert torch_ver >= [1, 12], "Requires PyTorch >= 1.12"
 
 
 def get_version():
