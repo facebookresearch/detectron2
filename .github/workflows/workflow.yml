@@ -128,7 +128,7 @@ jobs:
           python -m pip install wheel
           python setup.py bdist_wheel
       - name: Upload wheel
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
             name: detectron2-${{ matrix.python }}-${{ matrix.torch }}-wheel
             path: dist/*.whl
