@@ -12,11 +12,11 @@ jobs:
         torch: [ "1.12", "1.13", "2.0" ]
         include:
           - torch: "1.12"
-            torchvision: "0.13.0"
+            torchvision: "0.13.1"
           - torch: "1.13"
-            torchvision: "0.14.0"
+            torchvision: "0.14.1"
           - torch: "2.0"
-            torchvision: "0.15.0"
+            torchvision: "0.15.1"
         exclude:
           - python: "3.11"
             torch: "1.12"
