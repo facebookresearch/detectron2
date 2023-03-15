@@ -48,7 +48,7 @@ jobs:
       
 
       - name: Build and install macos
-        if: matrix.os == 'macOS' }}
+        if: matrix.os == 'macOS'
         run: |
           CC=clang CXX=clang++ python -m pip install -e .[all]
           python -m detectron2.utils.collect_env
@@ -62,7 +62,7 @@ jobs:
           name: detectron2-${{ matrix.python }}-${{ matrix.torch }}--${{matrix.os}}-wheel
           path: dist/*.whl
       - name: Build and install linux
-        if: matrix.os == 'ubuntu-latest' }}
+        if: matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install -e .[all]
           python -m detectron2.utils.collect_env
