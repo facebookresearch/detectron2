@@ -295,7 +295,7 @@ workflows:
       - linux_cpu_tests:
           name: linux_cpu_tests_pytorch2.0
           pytorch_version: '2.0.0+cpu'
-          torchvision_version: '0.15.0+cpu'
+          torchvision_version: '0.15.1+cpu'
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch1.12
           pytorch_version: '1.12.1+cu116'
@@ -309,7 +309,7 @@ workflows:
       - linux_gpu_tests:
           name: linux_gpu_tests_pytorch2.0
           pytorch_version: '2.0.0+cu118'
-          torchvision_version: '0.15.0+cu118'
+          torchvision_version: '0.15.1+cu118'
           cuda_version: '11.8'
       - windows_cpu_build:
           pytorch_version: '1.12.1+cpu'
