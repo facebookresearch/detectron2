@@ -12,11 +12,11 @@ jobs:
         torch: [ "1.12", "1.13", "2.0" ]
         include:
           - torch: "1.12"
-            torchvision: "0.13.0"
+            torchvision: "0.13.1"
           - torch: "1.13"
-            torchvision: "0.14.0"
+            torchvision: "0.14.1"
           - torch: "2.0"
-            torchvision: "0.15.0"
+            torchvision: "0.15.1"
         exclude:
           - python: "3.11"
             torch: "1.12"
@@ -45,8 +45,10 @@ jobs:
           # install from github to get latest; install iopath first since fvcore depends on it
           python -m pip install -U 'git+https://github.com/facebookresearch/iopath'
           python -m pip install -U 'git+https://github.com/facebookresearch/fvcore'
+      
 
-      - name: Build and install
+      - name: Build and install macos
+        if: matrix.os == 'macOS' }}
         run: |
           CC=clang CXX=clang++ python -m pip install -e .[all]
           python -m detectron2.utils.collect_env
