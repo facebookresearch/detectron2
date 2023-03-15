@@ -12,11 +12,11 @@ jobs:
         torch: [ "1.12", "1.13", "2.0" ]
         include:
           - torch: "1.12"
-            torchvision: "0.13.1"
+            torchvision: "0.13.0"
           - torch: "1.13"
-            torchvision: "0.14.1"
+            torchvision: "0.14.0"
           - torch: "2.0"
-            torchvision: "0.15.1"
+            torchvision: "0.15.0"
         exclude:
           - python: "3.11"
             torch: "1.12"
@@ -59,5 +59,15 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: detectron2-${{ matrix.python }}-${{ matrix.torch }}-wheel
+          name: detectron2-${{ matrix.python }}-${{ matrix.torch }}--${{matrix.os}}-wheel
+          path: dist/*.whl
+      - name: Build and install linux
+        if: matrix.os == 'ubuntu-latest' }}
+        run: |
+          python -m pip install -e .[all]
+          python -m detectron2.utils.collect_env
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: detectron2-${{ matrix.python }}-${{ matrix.torch }}--${{matrix.os}}-wheel
           path: dist/*.whl
