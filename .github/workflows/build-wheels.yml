@@ -19,6 +19,9 @@ jobs:
             torchvision: "0.14.0"
           - torch: "2.0"
             torchvision: "0.15.0"
+        exclude:
+          - python: "3.11"
+            torch: "1.12"
     env:
       # point datasets to ~/.torch so it's cached by CI
       DETECTRON2_DATASETS: ~/.torch/datasets
