@@ -293,8 +293,6 @@ jobs:
           key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230317
 
       - <<: *install_detectron2
-      - <<: *build_wheel
-      - <<: *save_artifact
       # TODO: unittest fails for now
 
 workflows:
