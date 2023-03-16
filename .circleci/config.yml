@@ -176,6 +176,10 @@ select_cuda: &select_cuda
       command: |
         sudo update-alternatives --set cuda /usr/local/cuda-<< parameters.cuda_version >>
 
+save_artifact: &save_artifact
+  - store_artifacts:
+      path: ~/detectron2/build
+      destination: build
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
@@ -198,6 +202,7 @@ jobs:
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
+      - <<: *save_artifact
       - <<: *run_unittests
       - <<: *uninstall_tests
 
@@ -223,6 +228,7 @@ jobs:
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
+      - <<: *save_artifact
       - <<: *run_unittests
       - <<: *uninstall_tests
 
