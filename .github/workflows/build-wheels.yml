@@ -3,7 +3,7 @@ on: [ push, pull_request ]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    # if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
