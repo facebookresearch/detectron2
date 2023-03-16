@@ -89,12 +89,10 @@ def nms_rotated(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float)
 # Note: this function (batched_nms_rotated) might be moved into
 # torchvision/ops/boxes.py in the future
 
+
 @torch.jit.script_if_tracing
 def batched_nms_rotated(
-    boxes: torch.Tensor,
-    scores: torch.Tensor,
-    idxs: torch.Tensor,
-    iou_threshold: float
+    boxes: torch.Tensor, scores: torch.Tensor, idxs: torch.Tensor, iou_threshold: float
 ):
     """
     Performs non-maximum suppression in a batched fashion.
