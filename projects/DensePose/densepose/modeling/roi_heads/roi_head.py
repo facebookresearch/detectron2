@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-from typing import Dict, List, Optional
 import fvcore.nn.weight_init as weight_init
 import torch
 import torch.nn as nn
@@ -12,6 +11,8 @@ from detectron2.modeling import ROI_HEADS_REGISTRY, StandardROIHeads
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.roi_heads import select_foreground_proposals
 from detectron2.structures import ImageList, Instances
+
+from typing import Dict, List, Optional
 
 from .. import (
     build_densepose_data_filter,
@@ -47,7 +48,8 @@ class Decoder(nn.Module):
         for in_feature in self.in_features:
             head_ops = []
             head_length = max(
-                1, int(np.log2(feature_strides[in_feature]) - np.log2(self.common_stride))
+                1,
+                int(np.log2(feature_strides[in_feature]) - np.log2(self.common_stride)),
             )
             for k in range(head_length):
                 conv = Conv2d(

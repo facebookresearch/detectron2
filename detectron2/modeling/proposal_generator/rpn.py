@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -10,6 +9,8 @@ from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
+
+from typing import Dict, List, Optional, Tuple, Union
 
 from ..anchor_generator import build_anchor_generator
 from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
@@ -74,7 +75,12 @@ class StandardRPNHead(nn.Module):
 
     @configurable
     def __init__(
-        self, *, in_channels: int, num_anchors: int, box_dim: int = 4, conv_dims: List[int] = (-1,)
+        self,
+        *,
+        in_channels: int,
+        num_anchors: int,
+        box_dim: int = 4,
+        conv_dims: List[int] = (-1,),
     ):
         """
         NOTE: this interface is experimental.
@@ -274,12 +280,20 @@ class RPN(nn.Module):
             "smooth_l1_beta": cfg.MODEL.RPN.SMOOTH_L1_BETA,
         }
 
-        ret["pre_nms_topk"] = (cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN, cfg.MODEL.RPN.PRE_NMS_TOPK_TEST)
-        ret["post_nms_topk"] = (cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN, cfg.MODEL.RPN.POST_NMS_TOPK_TEST)
+        ret["pre_nms_topk"] = (
+            cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN,
+            cfg.MODEL.RPN.PRE_NMS_TOPK_TEST,
+        )
+        ret["post_nms_topk"] = (
+            cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN,
+            cfg.MODEL.RPN.POST_NMS_TOPK_TEST,
+        )
 
         ret["anchor_generator"] = build_anchor_generator(cfg, [input_shape[f] for f in in_features])
         ret["anchor_matcher"] = Matcher(
-            cfg.MODEL.RPN.IOU_THRESHOLDS, cfg.MODEL.RPN.IOU_LABELS, allow_low_quality_matches=True
+            cfg.MODEL.RPN.IOU_THRESHOLDS,
+            cfg.MODEL.RPN.IOU_LABELS,
+            allow_low_quality_matches=True,
         )
         ret["head"] = build_rpn_head(cfg, [input_shape[f] for f in in_features])
         return ret

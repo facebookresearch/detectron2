@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import unittest
-
 from densepose.structures import normalized_coords_transform
 
 

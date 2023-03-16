@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import csv
-import logging
 import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Union
 import av
 import torch
 from torch.utils.data.dataset import Dataset
 
 from detectron2.utils.file_io import PathManager
+
+import csv
+import logging
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from ..utils import maybe_prepend_base_path
 from .frame_selector import FrameSelector, FrameTsList

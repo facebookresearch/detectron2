@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Callable, Dict, List, Union
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -20,6 +19,8 @@ from detectron2.projects.deeplab import DeepLabV3PlusHead
 from detectron2.projects.deeplab.loss import DeepLabCE
 from detectron2.structures import BitMasks, ImageList, Instances
 from detectron2.utils.registry import Registry
+
+from typing import Callable, Dict, List, Union
 
 from .post_processing import get_panoptic_segmentation
 
@@ -136,7 +137,7 @@ class PanopticDeepLab(nn.Module):
             offset_targets = None
             offset_weights = None
 
-        center_results, offset_results, center_losses, offset_losses = self.ins_embed_head(
+        (center_results, offset_results, center_losses, offset_losses,) = self.ins_embed_head(
             features, center_targets, center_weights, offset_targets, offset_weights
         )
         losses.update(center_losses)
@@ -149,8 +150,12 @@ class PanopticDeepLab(nn.Module):
             return []
 
         processed_results = []
-        for sem_seg_result, center_result, offset_result, input_per_image, image_size in zip(
-            sem_seg_results, center_results, offset_results, batched_inputs, images.image_sizes
+        for (sem_seg_result, center_result, offset_result, input_per_image, image_size,) in zip(
+            sem_seg_results,
+            center_results,
+            offset_results,
+            batched_inputs,
+            images.image_sizes,
         ):
             height = input_per_image.get("height")
             width = input_per_image.get("width")
@@ -346,7 +351,10 @@ class PanopticDeepLabSemSegHead(DeepLabV3PlusHead):
 
     def losses(self, predictions, targets, weights=None):
         predictions = F.interpolate(
-            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            predictions,
+            scale_factor=self.common_stride,
+            mode="bilinear",
+            align_corners=False,
         )
         loss = self.loss(predictions, targets, weights)
         losses = {"loss_sem_seg": loss * self.loss_weight}
@@ -523,11 +531,17 @@ class PanopticDeepLabInsEmbedHead(DeepLabV3PlusHead):
             )
         else:
             center = F.interpolate(
-                center, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+                center,
+                scale_factor=self.common_stride,
+                mode="bilinear",
+                align_corners=False,
             )
             offset = (
                 F.interpolate(
-                    offset, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+                    offset,
+                    scale_factor=self.common_stride,
+                    mode="bilinear",
+                    align_corners=False,
                 )
                 * self.common_stride
             )
@@ -546,7 +560,10 @@ class PanopticDeepLabInsEmbedHead(DeepLabV3PlusHead):
 
     def center_losses(self, predictions, targets, weights):
         predictions = F.interpolate(
-            predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+            predictions,
+            scale_factor=self.common_stride,
+            mode="bilinear",
+            align_corners=False,
         )
         loss = self.center_loss(predictions, targets) * weights
         if weights.sum() > 0:
@@ -559,7 +576,10 @@ class PanopticDeepLabInsEmbedHead(DeepLabV3PlusHead):
     def offset_losses(self, predictions, targets, weights):
         predictions = (
             F.interpolate(
-                predictions, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+                predictions,
+                scale_factor=self.common_stride,
+                mode="bilinear",
+                align_corners=False,
             )
             * self.common_stride
         )

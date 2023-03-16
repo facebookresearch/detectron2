@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import unittest
 import torch
 
 from detectron2.modeling.box_regression import (
@@ -9,6 +7,9 @@ from detectron2.modeling.box_regression import (
     Box2BoxTransformRotated,
 )
 from detectron2.utils.testing import random_boxes
+
+import logging
+import unittest
 
 logger = logging.getLogger(__name__)
 

@@ -5,6 +5,6 @@ listed in `MODEL_ZOO.md <https://github.com/facebookresearch/detectron2/blob/mai
 and optionally load their pre-trained weights.
 """
 
-from .model_zoo import get, get_config_file, get_checkpoint_url, get_config
+from .model_zoo import get, get_checkpoint_url, get_config, get_config_file
 
 __all__ = ["get_checkpoint_url", "get", "get_config_file", "get_config"]

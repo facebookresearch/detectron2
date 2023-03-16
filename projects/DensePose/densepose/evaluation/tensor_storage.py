@@ -1,16 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import io
 import numpy as np
+import torch
+
+from detectron2.utils.comm import gather, get_rank
+from detectron2.utils.file_io import PathManager
+
+import io
 import os
 from dataclasses import dataclass
 from functools import reduce
 from operator import mul
 from typing import BinaryIO, Dict, Optional, Tuple
-import torch
-
-from detectron2.utils.comm import gather, get_rank
-from detectron2.utils.file_io import PathManager
 
 
 @dataclass

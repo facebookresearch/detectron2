@@ -2,10 +2,11 @@
 # Copyright 2004-present Facebook. All Rights Reserved.
 
 import numpy as np
-from typing import List
 
 from detectron2.config import CfgNode as CfgNode_
 from detectron2.config import configurable
+
+from typing import List
 
 from .base_tracker import TRACKER_HEADS_REGISTRY
 from .vanilla_hungarian_bbox_iou_tracker import VanillaHungarianBBoxIOUTracker

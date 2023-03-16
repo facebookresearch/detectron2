@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any
 import torch
 from torch.nn import functional as F
 
@@ -10,6 +9,7 @@ from detectron2.layers import ConvTranspose2d
 from densepose.modeling.confidence import DensePoseConfidenceModelConfig
 from densepose.modeling.utils import initialize_module_params
 from densepose.structures import decorate_cse_predictor_output_class_with_confidences
+from typing import Any
 
 
 class DensePoseEmbeddingConfidencePredictorMixin:
@@ -87,7 +87,9 @@ class DensePoseEmbeddingConfidencePredictorMixin:
                 + self.confidence_model_cfg.segm_confidence.epsilon
             )
             output.coarse_segm = base_predictor_outputs.coarse_segm * torch.repeat_interleave(
-                output.coarse_segm_confidence, base_predictor_outputs.coarse_segm.shape[1], dim=1
+                output.coarse_segm_confidence,
+                base_predictor_outputs.coarse_segm.shape[1],
+                dim=1,
             )
 
         return output

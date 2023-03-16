@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-
 from detectron2.modeling import ROI_HEADS_REGISTRY, StandardROIHeads
+
+import logging
 
 
 @ROI_HEADS_REGISTRY.register()
@@ -14,7 +14,14 @@ class PointRendROIHeads(StandardROIHeads):
     _version = 2
 
     def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
         if version is None or version < 2:

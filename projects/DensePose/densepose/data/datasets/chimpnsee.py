@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Optional
-
 from detectron2.data import DatasetCatalog, MetadataCatalog
+
+from typing import Optional
 
 from ..utils import maybe_prepend_base_path
 from .dataset_type import DatasetType

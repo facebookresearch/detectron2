@@ -71,7 +71,10 @@ def roi_mask_point_loss(mask_logits, instances, point_labels):
     get_event_storage().put_scalar("point/accuracy", mask_accuracy)
 
     point_loss = F.binary_cross_entropy_with_logits(
-        mask_logits, gt_mask_logits.to(dtype=torch.float32), weight=~point_ignores, reduction="mean"
+        mask_logits,
+        gt_mask_logits.to(dtype=torch.float32),
+        weight=~point_ignores,
+        reduction="mean",
     )
     return point_loss
 

@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
-from typing import List, Optional, Tuple
 import torch
 from fvcore.nn import sigmoid_focal_loss_jit
 from torch import nn
@@ -10,6 +8,9 @@ from torch.nn import functional as F
 from detectron2.layers import ShapeSpec, batched_nms
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_point_box_distance
 from detectron2.utils.events import get_event_storage
+
+import logging
+from typing import List, Optional, Tuple
 
 from ..anchor_generator import DefaultAnchorGenerator
 from ..backbone import Backbone
@@ -85,13 +86,20 @@ class FCOS(DenseDetector):
 
     def forward_training(self, images, features, predictions, gt_instances):
         # Transpose the Hi*Wi*A dimension to the middle:
-        pred_logits, pred_anchor_deltas, pred_centerness = self._transpose_dense_predictions(
-            predictions, [self.num_classes, 4, 1]
-        )
+        (
+            pred_logits,
+            pred_anchor_deltas,
+            pred_centerness,
+        ) = self._transpose_dense_predictions(predictions, [self.num_classes, 4, 1])
         anchors = self.anchor_generator(features)
         gt_labels, gt_boxes = self.label_anchors(anchors, gt_instances)
         return self.losses(
-            anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes, pred_centerness
+            anchors,
+            pred_logits,
+            gt_labels,
+            pred_anchor_deltas,
+            gt_boxes,
+            pred_centerness,
         )
 
     @torch.no_grad()
@@ -191,7 +199,13 @@ class FCOS(DenseDetector):
         return gt_labels, matched_gt_boxes
 
     def losses(
-        self, anchors, pred_logits, gt_labels, pred_anchor_deltas, gt_boxes, pred_centerness
+        self,
+        anchors,
+        pred_logits,
+        gt_labels,
+        pred_anchor_deltas,
+        gt_boxes,
+        pred_centerness,
     ):
         """
         This method is almost identical to :meth:`RetinaNet.losses`, with an extra
@@ -256,9 +270,11 @@ class FCOS(DenseDetector):
         features: List[torch.Tensor],
         predictions: List[List[torch.Tensor]],
     ):
-        pred_logits, pred_anchor_deltas, pred_centerness = self._transpose_dense_predictions(
-            predictions, [self.num_classes, 4, 1]
-        )
+        (
+            pred_logits,
+            pred_anchor_deltas,
+            pred_centerness,
+        ) = self._transpose_dense_predictions(predictions, [self.num_classes, 4, 1])
         anchors = self.anchor_generator(features)
 
         results: List[Instances] = []

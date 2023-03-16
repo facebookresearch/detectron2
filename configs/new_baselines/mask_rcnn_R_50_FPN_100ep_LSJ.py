@@ -1,8 +1,9 @@
+from fvcore.common.param_scheduler import MultiStepParamScheduler
+
 import detectron2.data.transforms as T
 from detectron2.config.lazy import LazyCall as L
 from detectron2.layers.batch_norm import NaiveSyncBatchNorm
 from detectron2.solver import WarmupParamScheduler
-from fvcore.common.param_scheduler import MultiStepParamScheduler
 
 from ..common.data.coco import dataloader
 from ..common.models.mask_rcnn_fpn import model

@@ -1,14 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import json
-import logging
-from typing import List, Optional
 import torch
 from torch import nn
 
 from detectron2.utils.file_io import PathManager
 
+import json
+import logging
 from densepose.structures.mesh import create_mesh
+from typing import List, Optional
 
 
 class MeshAlignmentEvaluator:
@@ -22,7 +22,8 @@ class MeshAlignmentEvaluator:
         self.mesh_names = mesh_names if mesh_names else embedder.mesh_names
         self.logger = logging.getLogger(__name__)
         with PathManager.open(
-            "https://dl.fbaipublicfiles.com/densepose/data/cse/mesh_keyvertices_v0.json", "r"
+            "https://dl.fbaipublicfiles.com/densepose/data/cse/mesh_keyvertices_v0.json",
+            "r",
         ) as f:
             self.mesh_keyvertices = json.load(f)
 

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
-import argparse
-import os
-from typing import Dict, List, Tuple
 import torch
 from torch import Tensor, nn
 
@@ -24,6 +21,10 @@ from detectron2.structures import Boxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
+
+import argparse
+import os
+from typing import Dict, List, Tuple
 
 
 def setup_cfg(args):

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import math
 import numpy as np
-from unittest import TestCase
 import torch
 from fvcore.common.param_scheduler import (
     CosineParamScheduler,
@@ -12,6 +10,9 @@ from fvcore.common.param_scheduler import (
 from torch import nn
 
 from detectron2.solver import LRMultiplier, WarmupParamScheduler, build_lr_scheduler
+
+import math
+from unittest import TestCase
 
 
 class TestScheduler(TestCase):

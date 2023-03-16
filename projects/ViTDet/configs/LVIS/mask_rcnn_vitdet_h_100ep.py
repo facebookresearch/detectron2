@@ -2,13 +2,7 @@ from functools import partial
 
 from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
 
-from .mask_rcnn_vitdet_b_100ep import (
-    dataloader,
-    lr_multiplier,
-    model,
-    train,
-    optimizer,
-)
+from .mask_rcnn_vitdet_b_100ep import dataloader, lr_multiplier, model, optimizer, train
 
 train.init_checkpoint = (
     "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"

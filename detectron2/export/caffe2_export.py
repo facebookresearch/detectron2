@@ -1,10 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import copy
-import io
-import logging
 import numpy as np
-from typing import List
 import onnx
 import onnx.optimizer
 import torch
@@ -14,6 +10,11 @@ from caffe2.python.onnx.backend import Caffe2Backend
 from tabulate import tabulate
 from termcolor import colored
 from torch.onnx import OperatorExportTypes
+
+import copy
+import io
+import logging
+from typing import List
 
 from .shared import (
     ScopedWS,
@@ -77,7 +78,9 @@ def _op_stats(net_def):
 
 
 def _assign_device_option(
-    predict_net: caffe2_pb2.NetDef, init_net: caffe2_pb2.NetDef, tensor_inputs: List[torch.Tensor]
+    predict_net: caffe2_pb2.NetDef,
+    init_net: caffe2_pb2.NetDef,
+    tensor_inputs: List[torch.Tensor],
 ):
     """
     ONNX exported network doesn't have concept of device, assign necessary
@@ -105,7 +108,9 @@ def _assign_device_option(
         for name, tensor in zip(predict_net.external_input, tensor_inputs)
     }
     predict_net_device_types = infer_device_type(
-        predict_net, known_status=predict_net_input_device_types, device_name_style="pytorch"
+        predict_net,
+        known_status=predict_net_input_device_types,
+        device_name_style="pytorch",
     )
     predict_net_ssa, _ = core.get_ssa(predict_net)
     _assign_op_device_option(predict_net, predict_net_ssa, predict_net_device_types)

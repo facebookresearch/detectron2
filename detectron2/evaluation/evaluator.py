@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from torch import nn
+
+from detectron2.utils.comm import get_world_size, is_main_process
+from detectron2.utils.logger import log_every_n_seconds
+
 import datetime
 import logging
 import time
 from collections import OrderedDict, abc
 from contextlib import ExitStack, contextmanager
 from typing import List, Union
-import torch
-from torch import nn
-
-from detectron2.utils.comm import get_world_size, is_main_process
-from detectron2.utils.logger import log_every_n_seconds
 
 
 class DatasetEvaluator:
@@ -197,7 +198,9 @@ def inference_on_dataset(
     total_compute_time_str = str(datetime.timedelta(seconds=int(total_compute_time)))
     logger.info(
         "Total inference pure compute time: {} ({:.6f} s / iter per device, on {} devices)".format(
-            total_compute_time_str, total_compute_time / (total - num_warmup), num_devices
+            total_compute_time_str,
+            total_compute_time / (total - num_warmup),
+            num_devices,
         )
     )
 

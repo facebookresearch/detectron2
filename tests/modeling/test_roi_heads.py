@@ -1,7 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import unittest
-from copy import deepcopy
 import torch
 from torch import nn
 
@@ -25,6 +22,10 @@ from detectron2.projects import point_rend
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import assert_instances_allclose, random_boxes
+
+import logging
+import unittest
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 

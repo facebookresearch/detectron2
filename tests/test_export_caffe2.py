@@ -1,16 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # -*- coding: utf-8 -*-
 
-import copy
-import os
-import tempfile
-import unittest
 import torch
 from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.testing import get_sample_coco_image
+
+import copy
+import os
+import tempfile
+import unittest
 
 try:
     # Caffe2 used to be included in PyTorch, but since PyTorch 1.10+,

@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from collections import OrderedDict
-
 from detectron2.checkpoint import DetectionCheckpointer
+
+from collections import OrderedDict
 
 
 def _rename_HRNet_weights(weights):

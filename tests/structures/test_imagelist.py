@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import unittest
-from typing import List, Sequence, Tuple
 import torch
 
 from detectron2.structures import ImageList
+
+import unittest
+from typing import List, Sequence, Tuple
 
 
 class TestImageList(unittest.TestCase):

@@ -1,10 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import itertools
-import logging
 import numpy as np
-from collections import OrderedDict
-from collections.abc import Mapping
-from typing import Dict, List, Optional, Tuple, Union
 import torch
 from omegaconf import DictConfig, OmegaConf
 from torch import Tensor, nn
@@ -12,6 +7,12 @@ from torch import Tensor, nn
 from detectron2.layers import ShapeSpec
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
+
+import itertools
+import logging
+from collections import OrderedDict
+from collections.abc import Mapping
+from typing import Dict, List, Optional, Tuple, Union
 
 from .backbone import Backbone
 
@@ -187,7 +188,8 @@ class MMDetDetector(nn.Module):
         if self.training:
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
             if gt_instances[0].has("gt_masks"):
-                from mmdet.core import PolygonMasks as mm_PolygonMasks, BitmapMasks as mm_BitMasks
+                from mmdet.core import BitmapMasks as mm_BitMasks
+                from mmdet.core import PolygonMasks as mm_PolygonMasks
 
                 def convert_mask(m, shape):
                     # mmdet mask format

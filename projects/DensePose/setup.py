@@ -1,6 +1,7 @@
+from setuptools import find_packages, setup
+
 import re
 from pathlib import Path
-from setuptools import find_packages, setup
 
 try:
     import torch  # noqa: F401
@@ -32,7 +33,7 @@ setup(
     version=get_detectron2_current_version(),
     url="https://github.com/facebookresearch/detectron2/tree/main/projects/DensePose",
     packages=find_packages(),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         "av>=8.0.3",
         "detectron2@git+https://github.com/facebookresearch/detectron2.git",

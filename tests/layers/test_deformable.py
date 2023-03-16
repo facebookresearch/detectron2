@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import unittest
 import torch
 
 from detectron2.layers import DeformConv, ModulatedDeformConv
 from detectron2.utils.env import TORCH_VERSION
+
+import unittest
 
 
 @unittest.skipIf(

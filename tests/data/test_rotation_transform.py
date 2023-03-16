@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import unittest
 
 from detectron2.data.transforms.transform import RotationTransform
+
+import unittest
 
 
 class TestRotationTransform(unittest.TestCase):
@@ -25,7 +26,10 @@ class TestRotationTransform(unittest.TestCase):
         _, coords, h, w = self.randomData(4, 6)
         rot = RotationTransform(h, w, 45, expand=False, center=None)
         rotated_coords = [
-            [(x + y - (h + w) / 2) / np.sqrt(2) + w / 2, h / 2 + (y + (w - h) / 2 - x) / np.sqrt(2)]
+            [
+                (x + y - (h + w) / 2) / np.sqrt(2) + w / 2,
+                h / 2 + (y + (w - h) / 2 - x) / np.sqrt(2),
+            ]
             for (x, y) in coords
         ]
         self.assertEqualsArrays(rot.apply_coords(coords), rotated_coords)

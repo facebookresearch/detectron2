@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import logging
-import os
-from collections import OrderedDict
-from typing import List, Optional, Union
 import torch
 from torch import nn
 
@@ -20,6 +16,9 @@ from detectron2.solver.build import get_default_optimizer_params, maybe_add_grad
 from detectron2.utils import comm
 from detectron2.utils.events import EventWriter, get_event_storage
 
+import logging
+import os
+from collections import OrderedDict
 from densepose import DensePoseDatasetMapperTTA, DensePoseGeneralizedRCNNWithTTA, load_from_cfg
 from densepose.data import (
     DatasetMapper,
@@ -32,6 +31,7 @@ from densepose.data import (
 from densepose.evaluation.d2_evaluator_adapter import Detectron2COCOEvaluatorAdapter
 from densepose.evaluation.evaluator import DensePoseCOCOEvaluator, build_densepose_evaluator_storage
 from densepose.modeling.cse import Embedder
+from typing import List, Optional, Union
 
 
 class SampleCountingLoader:

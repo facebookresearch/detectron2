@@ -2,13 +2,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import numpy as np
-import os
-import xml.etree.ElementTree as ET
-from typing import List, Tuple, Union
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
 from detectron2.utils.file_io import PathManager
+
+import os
+import xml.etree.ElementTree as ET
+from typing import List, Tuple, Union
 
 __all__ = ["load_voc_instances", "register_pascal_voc"]
 
@@ -68,7 +69,11 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
             bbox[0] -= 1.0
             bbox[1] -= 1.0
             instances.append(
-                {"category_id": class_names.index(cls), "bbox": bbox, "bbox_mode": BoxMode.XYXY_ABS}
+                {
+                    "category_id": class_names.index(cls),
+                    "bbox": bbox,
+                    "bbox_mode": BoxMode.XYXY_ABS,
+                }
             )
         r["annotations"] = instances
         dicts.append(r)

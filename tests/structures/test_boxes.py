@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import json
-import math
 import numpy as np
-import unittest
 import torch
 
 from detectron2.structures import Boxes, BoxMode, pairwise_ioa, pairwise_iou
 from detectron2.utils.testing import reload_script_model
+
+import json
+import math
+import unittest
 
 
 class TestBoxMode(unittest.TestCase):

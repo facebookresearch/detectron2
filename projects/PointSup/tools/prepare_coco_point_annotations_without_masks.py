@@ -2,15 +2,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import copy
-import json
 import numpy as np
-import os
-import sys
 import pycocotools.mask as mask_utils
 
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.file_io import PathManager
+
+import copy
+import json
+import os
+import sys
 
 
 def get_point_annotations(input_filename, output_filename, num_points_per_instance):
@@ -54,8 +55,14 @@ def get_point_annotations(input_filename, output_filename, num_points_per_instan
         point_coords_wrt_image = np.floor(point_coords_wrt_image).astype(int)
         # get labels
         assert (point_coords_wrt_image >= 0).all(), (point_coords_wrt_image, mask.shape)
-        assert (point_coords_wrt_image[:, 0] < w).all(), (point_coords_wrt_image, mask.shape)
-        assert (point_coords_wrt_image[:, 1] < h).all(), (point_coords_wrt_image, mask.shape)
+        assert (point_coords_wrt_image[:, 0] < w).all(), (
+            point_coords_wrt_image,
+            mask.shape,
+        )
+        assert (point_coords_wrt_image[:, 1] < h).all(), (
+            point_coords_wrt_image,
+            mask.shape,
+        )
         point_labels = mask[point_coords_wrt_image[:, 1], point_coords_wrt_image[:, 0]]
         # store new annotations
         new_ann["point_coords"] = point_coords_wrt_image.tolist()

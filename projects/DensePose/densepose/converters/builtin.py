@@ -25,7 +25,8 @@ ToChartResultConverter.register(
 )
 
 ToChartResultConverterWithConfidences.register(
-    DensePoseChartPredictorOutput, densepose_chart_predictor_output_to_result_with_confidences
+    DensePoseChartPredictorOutput,
+    densepose_chart_predictor_output_to_result_with_confidences,
 )
 
 HFlipConverter.register(DensePoseChartPredictorOutput, densepose_chart_predictor_output_hflip)

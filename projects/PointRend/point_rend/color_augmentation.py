@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import random
 import cv2
 from fvcore.transforms.transform import Transform
+
+import random
 
 
 class ColorAugSSDTransform(Transform):
@@ -83,7 +84,8 @@ class ColorAugSSDTransform(Transform):
         if random.randrange(2):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
             img[:, :, 1] = self.convert(
-                img[:, :, 1], alpha=random.uniform(self.saturation_low, self.saturation_high)
+                img[:, :, 1],
+                alpha=random.uniform(self.saturation_low, self.saturation_high),
             )
             return cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
         return img

@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
 import numpy as np
-from itertools import count
-from typing import List, Tuple
 import torch
 import tqdm
 from fvcore.common.timer import Timer
 
 from detectron2.utils import comm
+
+import logging
+from itertools import count
+from typing import List, Tuple
 
 from .build import build_batch_data_loader
 from .common import DatasetFromList, MapDataset

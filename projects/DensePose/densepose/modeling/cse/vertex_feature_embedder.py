@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import pickle
 import torch
 from torch import nn
 
 from detectron2.utils.file_io import PathManager
+
+import pickle
 
 from .utils import normalize_embeddings
 
@@ -22,7 +23,11 @@ class VertexFeatureEmbedder(nn.Module):
     """
 
     def __init__(
-        self, num_vertices: int, feature_dim: int, embed_dim: int, train_features: bool = False
+        self,
+        num_vertices: int,
+        feature_dim: int,
+        embed_dim: int,
+        train_features: bool = False,
     ):
         """
         Initialize embedder, set random embeddings

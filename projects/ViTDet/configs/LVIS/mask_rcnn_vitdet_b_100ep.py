@@ -1,15 +1,9 @@
 from detectron2.config import LazyCall as L
+from detectron2.data.detection_utils import get_fed_loss_cls_weights
 from detectron2.data.samplers import RepeatFactorTrainingSampler
 from detectron2.evaluation.lvis_evaluation import LVISEvaluator
-from detectron2.data.detection_utils import get_fed_loss_cls_weights
 
-from ..COCO.mask_rcnn_vitdet_b_100ep import (
-    dataloader,
-    model,
-    train,
-    lr_multiplier,
-    optimizer,
-)
+from ..COCO.mask_rcnn_vitdet_b_100ep import dataloader, lr_multiplier, model, optimizer, train
 
 dataloader.train.dataset.names = "lvis_v1_train"
 dataloader.train.sampler = L(RepeatFactorTrainingSampler)(

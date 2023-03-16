@@ -1,18 +1,19 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# need some explicit imports due to https://github.com/pytorch/pytorch/issues/38964
+import torch
+from torch import nn
+
+import detectron2  # noqa F401
+from detectron2.structures import Boxes, Instances
+from detectron2.utils.env import _import_file
+
 import os
 import sys
 import tempfile
 from contextlib import ExitStack, contextmanager
 from copy import deepcopy
 from unittest import mock
-import torch
-from torch import nn
-
-# need some explicit imports due to https://github.com/pytorch/pytorch/issues/38964
-import detectron2  # noqa F401
-from detectron2.structures import Boxes, Instances
-from detectron2.utils.env import _import_file
 
 _counter = 0
 
@@ -125,7 +126,10 @@ class {cls_name}:
 
     for f in fields:
         lines.append(
-            indent(2, f"self._{f.name} = torch.jit.annotate(Optional[{f.annotation}], {f.name})")
+            indent(
+                2,
+                f"self._{f.name} = torch.jit.annotate(Optional[{f.annotation}], {f.name})",
+            )
         )
 
     for f in fields:
@@ -308,7 +312,9 @@ from detectron2.structures import Boxes, Instances
 
 def _import(path):
     return _import_file(
-        "{}{}".format(sys.modules[__name__].__name__, _counter), path, make_importable=True
+        "{}{}".format(sys.modules[__name__].__name__, _counter),
+        path,
+        make_importable=True,
     )
 
 
@@ -347,7 +353,7 @@ def patch_nonscriptable_classes():
     # __prepare_scriptable__ can also be added to models for easier maintenance.
     # But it complicates the clean model code.
 
-    from detectron2.modeling.backbone import ResNet, FPN
+    from detectron2.modeling.backbone import FPN, ResNet
 
     # Due to https://github.com/pytorch/pytorch/issues/36061,
     # we change backbone to use ModuleList for scripting.

@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
 import numpy as np
-import unittest
-from unittest import mock
 import torch
 from PIL import Image, ImageOps
 from torch.nn import functional as F
@@ -13,6 +10,10 @@ from detectron2.config import get_cfg
 from detectron2.data import detection_utils
 from detectron2.data import transforms as T
 from detectron2.utils.logger import setup_logger
+
+import logging
+import unittest
+from unittest import mock
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,13 @@ class TestTransforms(unittest.TestCase):
         self.assertEqual(str(t), f"AugmentationList[{t0}, {t1}]")
 
     def test_random_apply_prob_out_of_range_check(self):
-        test_probabilities = {0.0: True, 0.5: True, 1.0: True, -0.01: False, 1.01: False}
+        test_probabilities = {
+            0.0: True,
+            0.5: True,
+            1.0: True,
+            -0.01: False,
+            1.01: False,
+        }
 
         for given_probability, is_valid in test_probabilities.items():
             if not is_valid:

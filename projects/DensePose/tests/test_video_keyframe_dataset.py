@@ -1,13 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+import torch
+import torchvision.io as io
+
 import contextlib
 import os
 import random
 import tempfile
 import unittest
-import torch
-import torchvision.io as io
-
 from densepose.data.transform import ImageResizeTransform
 from densepose.data.video import RandomKFramesSelector, VideoKeyframeDataset
 

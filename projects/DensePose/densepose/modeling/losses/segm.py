@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import Any, List
 import torch
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
+
+from typing import Any, List
 
 from .utils import resample_data
 

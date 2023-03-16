@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from detectron2.utils.registry import _convert_target_to_string, locate
+
 import collections.abc as abc
 import dataclasses
 import logging
 from typing import Any
-
-from detectron2.utils.registry import _convert_target_to_string, locate
 
 __all__ = ["dump_dataclass", "instantiate"]
 
@@ -46,7 +46,7 @@ def instantiate(cfg):
     Returns:
         object instantiated by cfg
     """
-    from omegaconf import ListConfig, DictConfig, OmegaConf
+    from omegaconf import DictConfig, ListConfig, OmegaConf
 
     if isinstance(cfg, ListConfig):
         lst = [instantiate(x) for x in cfg]

@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # Reference: https://github.com/bowenc0221/panoptic-deeplab/blob/master/segmentation/model/post_processing/instance_post_processing.py  # noqa
 
-from collections import Counter
 import torch
 import torch.nn.functional as F
+
+from collections import Counter
 
 
 def find_instance_center(center_heatmap, threshold=0.1, nms_kernel=3, top_k=None):
@@ -77,7 +78,14 @@ def group_pixels(center_points, offsets):
 
 
 def get_instance_segmentation(
-    sem_seg, center_heatmap, offsets, thing_seg, thing_ids, threshold=0.1, nms_kernel=3, top_k=None
+    sem_seg,
+    center_heatmap,
+    offsets,
+    thing_seg,
+    thing_ids,
+    threshold=0.1,
+    nms_kernel=3,
+    top_k=None,
 ):
     """
     Post-processing for instance segmentation, gets class agnostic instance id.
@@ -109,7 +117,13 @@ def get_instance_segmentation(
 
 
 def merge_semantic_and_instance(
-    sem_seg, ins_seg, semantic_thing_seg, label_divisor, thing_ids, stuff_area, void_label
+    sem_seg,
+    ins_seg,
+    semantic_thing_seg,
+    label_divisor,
+    thing_ids,
+    stuff_area,
+    void_label,
 ):
     """
     Post-processing for panoptic segmentation, by merging semantic segmentation

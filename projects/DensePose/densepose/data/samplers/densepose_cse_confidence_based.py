@@ -1,14 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import random
-from typing import Optional, Tuple
 import torch
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
 
+import random
 from densepose.converters.base import IntTupleBox
+from typing import Optional, Tuple
 
 from .densepose_cse_base import DensePoseCSEBaseSampler
 

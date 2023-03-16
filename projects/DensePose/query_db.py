@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import argparse
-import logging
-import os
-import sys
-from timeit import default_timer as timer
-from typing import Any, ClassVar, Dict, List
 import torch
 
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
+import argparse
+import logging
+import os
+import sys
 from densepose.structures import DensePoseDataRelative
 from densepose.utils.dbhelper import EntrySelector
 from densepose.utils.logger import verbosity_to_level
@@ -25,6 +23,8 @@ from densepose.vis.densepose_data_points import (
     DensePoseDataPointsVisualizer,
     DensePoseDataPointsVVisualizer,
 )
+from timeit import default_timer as timer
+from typing import Any, ClassVar, Dict, List
 
 DOC = """Query DB - a tool to print / visualize data from a database
 """
@@ -61,7 +61,9 @@ class EntrywiseAction(Action):
     def add_arguments(cls: type, parser: argparse.ArgumentParser):
         super(EntrywiseAction, cls).add_arguments(parser)
         parser.add_argument(
-            "dataset", metavar="<dataset>", help="Dataset name (e.g. densepose_coco_2014_train)"
+            "dataset",
+            metavar="<dataset>",
+            help="Dataset name (e.g. densepose_coco_2014_train)",
         )
         parser.add_argument(
             "selector",
@@ -71,7 +73,10 @@ class EntrywiseAction(Action):
             "entries from the dataset that satisfy the constraints",
         )
         parser.add_argument(
-            "--max-entries", metavar="N", help="Maximum number of entries to process", type=int
+            "--max-entries",
+            metavar="N",
+            help="Maximum number of entries to process",
+            type=int,
         )
 
     @classmethod
@@ -160,8 +165,8 @@ class ShowAction(EntrywiseAction):
 
     @classmethod
     def execute_on_entry(cls: type, entry: Dict[str, Any], context: Dict[str, Any]):
-        import cv2
         import numpy as np
+        import cv2
 
         image_fpath = PathManager.get_local_path(entry["file_name"])
         image = cv2.imread(image_fpath, cv2.IMREAD_GRAYSCALE)

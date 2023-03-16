@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from typing import List
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -9,6 +8,8 @@ from detectron2.layers import Conv2d, ConvTranspose2d, cat, interpolate
 from detectron2.structures import Instances, heatmaps_to_keypoints
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
+
+from typing import List
 
 _TOTAL_SKIPPED = 0
 
@@ -123,9 +124,11 @@ def keypoint_rcnn_inference(pred_keypoint_logits: torch.Tensor, pred_instances: 
     keypoint_results = keypoint_results[:, :, [0, 1, 3]].split(num_instances_per_image, dim=0)
     heatmap_results = pred_keypoint_logits.split(num_instances_per_image, dim=0)
 
-    for keypoint_results_per_image, heatmap_results_per_image, instances_per_image in zip(
-        keypoint_results, heatmap_results, pred_instances
-    ):
+    for (
+        keypoint_results_per_image,
+        heatmap_results_per_image,
+        instances_per_image,
+    ) in zip(keypoint_results, heatmap_results, pred_instances):
         # keypoint_results_per_image is (num instances)x(num keypoints)x(x, y, score)
         # heatmap_results_per_image is (num instances)x(num keypoints)x(side)x(side)
         instances_per_image.pred_keypoints = keypoint_results_per_image
@@ -246,7 +249,11 @@ class KRCNNConvDeconvUpsampleHead(BaseKeypointRCNNHead, nn.Sequential):
 
         deconv_kernel = 4
         self.score_lowres = ConvTranspose2d(
-            in_channels, num_keypoints, deconv_kernel, stride=2, padding=deconv_kernel // 2 - 1
+            in_channels,
+            num_keypoints,
+            deconv_kernel,
+            stride=2,
+            padding=deconv_kernel // 2 - 1,
         )
         self.up_scale = up_scale
 

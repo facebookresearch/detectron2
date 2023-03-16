@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, Dict, List, Tuple
 import torch
 from torch.nn import functional as F
 
@@ -9,6 +8,7 @@ from detectron2.structures import BoxMode, Instances
 from densepose.converters import ToChartResultConverter
 from densepose.converters.base import IntTupleBox, make_int_box
 from densepose.structures import DensePoseDataRelative, DensePoseList
+from typing import Any, Dict, List, Tuple
 
 
 class DensePoseBaseSampler:

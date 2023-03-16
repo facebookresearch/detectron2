@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+import math
 
 __all__ = [
     "window_partition",
@@ -163,7 +164,12 @@ class PatchEmbed(nn.Module):
     """
 
     def __init__(
-        self, kernel_size=(16, 16), stride=(16, 16), padding=(0, 0), in_chans=3, embed_dim=768
+        self,
+        kernel_size=(16, 16),
+        stride=(16, 16),
+        padding=(0, 0),
+        in_chans=3,
+        embed_dim=768,
     ):
         """
         Args:

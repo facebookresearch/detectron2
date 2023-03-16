@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import logging
 import numpy as np
-from typing import List, Optional, Union
 import torch
 
 from detectron2.config import configurable
+
+import copy
+import logging
+from typing import List, Optional, Union
 
 from . import detection_utils as utils
 from . import transforms as T
@@ -123,7 +124,10 @@ class DatasetMapper:
         # USER: Implement additional transformations if you have other types of data
         annos = [
             utils.transform_instance_annotations(
-                obj, transforms, image_shape, keypoint_hflip_indices=self.keypoint_hflip_indices
+                obj,
+                transforms,
+                image_shape,
+                keypoint_hflip_indices=self.keypoint_hflip_indices,
             )
             for obj in dataset_dict.pop("annotations")
             if obj.get("iscrowd", 0) == 0

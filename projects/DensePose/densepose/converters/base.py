@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, Tuple, Type
 import torch
+
+from typing import Any, Tuple, Type
 
 
 class BaseConverter:

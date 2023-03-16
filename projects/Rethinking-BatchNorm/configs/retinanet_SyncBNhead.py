@@ -1,5 +1,6 @@
-from detectron2.model_zoo import get_config
 from torch import nn
+
+from detectron2.model_zoo import get_config
 
 model = get_config("common/models/retinanet.py").model
 model.backbone.bottom_up.freeze_at = 2

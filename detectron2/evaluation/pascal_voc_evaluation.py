@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
 import numpy as np
-import os
-import tempfile
-import xml.etree.ElementTree as ET
-from collections import OrderedDict, defaultdict
-from functools import lru_cache
 import torch
 
 from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
 from detectron2.utils.file_io import PathManager
+
+import logging
+import os
+import tempfile
+import xml.etree.ElementTree as ET
+from collections import OrderedDict, defaultdict
+from functools import lru_cache
 
 from .evaluator import DatasetEvaluator
 
@@ -111,7 +112,11 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
-        ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
+        ret["bbox"] = {
+            "AP": np.mean(list(mAP.values())),
+            "AP50": mAP[50],
+            "AP75": mAP[75],
+        }
         return ret
 
 

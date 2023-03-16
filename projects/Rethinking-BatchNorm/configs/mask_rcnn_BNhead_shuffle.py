@@ -1,10 +1,11 @@
 import math
+
 import torch
 import torch.distributed as dist
+from fvcore.nn.distributed import differentiable_all_gather
 
 from detectron2.modeling.roi_heads import FastRCNNConvFCHead, MaskRCNNConvUpsampleHead
 from detectron2.utils import comm
-from fvcore.nn.distributed import differentiable_all_gather
 
 
 def concat_all_gather(input):
@@ -67,8 +68,7 @@ def wrap_shuffle(module_type, method):
     return type(module_type.__name__ + "WithShuffle", (module_type,), {method: new_method})
 
 
-from .mask_rcnn_BNhead import model, dataloader, lr_multiplier, optimizer, train
-
+from .mask_rcnn_BNhead import dataloader, lr_multiplier, model, optimizer, train
 
 model.roi_heads.box_head._target_ = wrap_shuffle(FastRCNNConvFCHead, "forward")
 model.roi_heads.mask_head._target_ = wrap_shuffle(MaskRCNNConvUpsampleHead, "layers")

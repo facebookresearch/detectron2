@@ -1,4 +1,5 @@
 from typing import List
+
 import torch
 from torch import Tensor, nn
 
@@ -27,6 +28,6 @@ class RetinaNetHead_SharedTrainingBN(RetinaNetHead):
         return logits, bbox_reg
 
 
-from .retinanet_SyncBNhead import model, dataloader, lr_multiplier, optimizer, train
+from .retinanet_SyncBNhead import dataloader, lr_multiplier, model, optimizer, train
 
 model.head._target_ = RetinaNetHead_SharedTrainingBN

@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import os
-from typing import Optional
 import pkg_resources
 import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
 from detectron2.modeling import build_model
+
+import os
+from typing import Optional
 
 
 class _ModelZooUrls(object):

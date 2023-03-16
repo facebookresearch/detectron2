@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, Tuple
-
 from detectron2.structures import BitMasks, Boxes
+
+from typing import Any, Tuple
 
 from .base import BaseConverter
 

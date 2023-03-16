@@ -1,11 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import io
 import numpy as np
-import os
-import re
-import tempfile
-import unittest
-from typing import Callable
 import torch
 import torch.onnx.symbolic_helper as sym_help
 from packaging import version
@@ -20,6 +14,12 @@ from detectron2.modeling import build_model
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.file_io import PathManager
 
+import io
+import os
+import re
+import tempfile
+import unittest
+from typing import Callable
 
 """
 Internal utilities for tests. Don't use except for writing tests.
@@ -230,7 +230,10 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
                     ns, op_name = get_ns_op_name_from_custom_op(symbolic_name)
                 except ImportError as import_error:
                     if not bool(
-                        re.match(r"^[a-zA-Z0-9-_]*::[a-zA-Z-_]+[a-zA-Z0-9-_]*$", symbolic_name)
+                        re.match(
+                            r"^[a-zA-Z0-9-_]*::[a-zA-Z-_]+[a-zA-Z0-9-_]*$",
+                            symbolic_name,
+                        )
                     ):
                         raise ValueError(
                             f"Invalid symbolic name {symbolic_name}. Must be `domain::name`"
@@ -272,6 +275,12 @@ def unregister_custom_op_onnx_export(opname: str, opset_version: int, min_versio
 skipIfOnCPUCI = unittest.skipIf(
     os.environ.get("CI") and not torch.cuda.is_available(),
     "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
+)
+
+# SKIP IF PYTORCH VERSION > 1.10
+skipIfOnPytorch1_10 = unittest.skipIf(
+    min_torch_version("1.10"),
+    "The test is not supported on PyTorch 1.10+",
 )
 
 

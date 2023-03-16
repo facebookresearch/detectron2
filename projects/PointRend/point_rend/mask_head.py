@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import math
 import numpy as np
-from typing import Dict, List, Tuple
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import Tensor, nn
@@ -13,6 +10,10 @@ from detectron2.layers import Conv2d, ShapeSpec, cat, interpolate
 from detectron2.modeling import ROI_MASK_HEAD_REGISTRY
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference, mask_rcnn_loss
 from detectron2.structures import Boxes
+
+import logging
+import math
+from typing import Dict, List, Tuple
 
 from .point_features import (
     generate_regular_grid_point_coords,
@@ -91,7 +92,13 @@ class ConvFCHead(nn.Module):
             self.conv_layers.append(self.reduce_channel_dim_conv)
 
         self.reduce_spatial_dim_conv = Conv2d(
-            conv_dim, conv_dim, kernel_size=2, stride=2, padding=0, bias=True, activation=F.relu
+            conv_dim,
+            conv_dim,
+            kernel_size=2,
+            stride=2,
+            padding=0,
+            bias=True,
+            activation=F.relu,
         )
         self.conv_layers.append(self.reduce_spatial_dim_conv)
 
@@ -145,7 +152,14 @@ class ConvFCHead(nn.Module):
         return self.prediction(x).view(*output_shape)
 
     def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
 
@@ -424,7 +438,10 @@ class ImplicitPointRendMaskHead(PointRendMaskHead):
         cat_boxes = Boxes.cat(proposal_boxes)
         # uniform sample
         point_coords = torch.rand(
-            len(cat_boxes), self.mask_point_train_num_points, 2, device=cat_boxes.tensor.device
+            len(cat_boxes),
+            self.mask_point_train_num_points,
+            2,
+            device=cat_boxes.tensor.device,
         )
         # sample point_labels
         point_coords_wrt_image = get_point_coords_wrt_image(cat_boxes.tensor, point_coords)

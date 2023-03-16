@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # Copyright 2004-present Facebook. All Rights Reserved.
-import copy
 import numpy as np
-from typing import Dict
 import torch
 from scipy.optimize import linear_sum_assignment
 
 from detectron2.config import configurable
 from detectron2.structures import Boxes, Instances
+
+import copy
+from typing import Dict
 
 from ..config.config import CfgNode as CfgNode_
 from .base_tracker import BaseTracker
@@ -95,7 +96,10 @@ class BaseHungarianTracker(BaseTracker):
         return instances
 
     def _process_matched_idx(
-        self, instances: Instances, matched_idx: np.ndarray, matched_prev_idx: np.ndarray
+        self,
+        instances: Instances,
+        matched_idx: np.ndarray,
+        matched_prev_idx: np.ndarray,
     ) -> Instances:
         assert matched_idx.size == matched_prev_idx.size
         for i in range(matched_idx.size):

@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+from tabulate import tabulate
+
 import copy
 import logging
 import re
 from typing import Dict, List
-import torch
-from tabulate import tabulate
 
 
 def convert_basic_c2_names(original_keys):
@@ -188,7 +189,9 @@ def convert_c2_detectron_names(weights):
             logger.info(
                 "Remove prediction weight for background class in {}. The shape changes from "
                 "{} to {}.".format(
-                    renamed, tuple(weights[orig].shape), tuple(new_weights[renamed].shape)
+                    renamed,
+                    tuple(weights[orig].shape),
+                    tuple(new_weights[renamed].shape),
                 )
             )
         elif renamed.startswith("cls_score."):
@@ -319,7 +322,9 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
             shape = str(tuple(model_state_dict[key_model].shape))
             table.append((key_model[len(common_prefix) :], key_checkpoint, shape))
     table_str = tabulate(
-        table, tablefmt="pipe", headers=["Names in Model", "Names in Checkpoint", "Shapes"]
+        table,
+        tablefmt="pipe",
+        headers=["Names in Model", "Names in Checkpoint", "Shapes"],
     )
     logger.info(
         "Following weights matched with "

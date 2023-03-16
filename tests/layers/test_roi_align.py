@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import unittest
-from copy import copy
 import cv2
 import torch
 from fvcore.common.benchmark import benchmark
 from torch.nn import functional as F
 
 from detectron2.layers.roi_align import ROIAlign, roi_align
+
+import unittest
+from copy import copy
 
 
 class ROIAlignTest(unittest.TestCase):

@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
 import numpy as np
-from collections import Counter
 import tqdm
 from fvcore.nn import flop_count_table  # can also try flop_count_str
 
@@ -18,6 +16,9 @@ from detectron2.utils.analysis import (
     parameter_count_table,
 )
 from detectron2.utils.logger import setup_logger
+
+import logging
+from collections import Counter
 
 logger = logging.getLogger("detectron2")
 

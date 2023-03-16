@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import random
 import torch
+
+import random
 
 from .densepose_base import DensePoseBaseSampler
 

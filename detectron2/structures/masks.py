@@ -1,14 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import itertools
 import numpy as np
-from typing import Any, Iterator, List, Union
 import pycocotools.mask as mask_util
 import torch
 from torch import device
 
 from detectron2.layers.roi_align import ROIAlign
 from detectron2.utils.memory import retry_if_cuda_oom
+
+import copy
+import itertools
+from typing import Any, Iterator, List, Union
 
 from .boxes import Boxes
 
@@ -164,7 +165,9 @@ class BitMasks:
 
     @staticmethod
     def from_polygon_masks(
-        polygon_masks: Union["PolygonMasks", List[List[np.ndarray]]], height: int, width: int
+        polygon_masks: Union["PolygonMasks", List[List[np.ndarray]]],
+        height: int,
+        width: int,
     ) -> "BitMasks":
         """
         Args:
@@ -521,7 +524,7 @@ class ROIMasks:
         """
         Args: see documentation of :func:`paste_masks_in_image`.
         """
-        from detectron2.layers.mask_ops import paste_masks_in_image, _paste_masks_tensor_shape
+        from detectron2.layers.mask_ops import _paste_masks_tensor_shape, paste_masks_in_image
 
         if torch.jit.is_tracing():
             if isinstance(height, torch.Tensor):

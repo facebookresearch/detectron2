@@ -10,8 +10,8 @@ jobs:
     # comment this out when testing with https://github.com/nektos/act
     if: ${{ github.repository_owner == 'facebookresearch' }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/github-script@v3
+      - uses: actions/checkout@v3
+      - uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |

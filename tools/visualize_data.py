@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
-import argparse
-import os
-from itertools import chain
 import cv2
 import tqdm
 
@@ -12,6 +9,10 @@ from detectron2.data import detection_utils as utils
 from detectron2.data.build import filter_images_with_few_keypoints
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
+
+import argparse
+import os
+from itertools import chain
 
 
 def setup(args):

@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from typing import List
 import torch
 
 from detectron2.layers import nonzero_tuple
+
+from typing import List
 
 
 # TODO: the name is too general
@@ -23,7 +24,10 @@ class Matcher(object):
     """
 
     def __init__(
-        self, thresholds: List[float], labels: List[int], allow_low_quality_matches: bool = False
+        self,
+        thresholds: List[float],
+        labels: List[int],
+        allow_low_quality_matches: bool = False,
     ):
         """
         Args:

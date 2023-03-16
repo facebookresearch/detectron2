@@ -1,14 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures import BoxMode, Instances
 
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from densepose import DensePoseDataRelative
+from typing import Any, Dict, List, Optional, Tuple
 
 LossDict = Dict[str, torch.Tensor]
 
@@ -193,7 +193,13 @@ class BilinearInterpolationHelper:
 
 
 def resample_data(
-    z, bbox_xywh_src, bbox_xywh_dst, wout, hout, mode: str = "nearest", padding_mode: str = "zeros"
+    z,
+    bbox_xywh_src,
+    bbox_xywh_dst,
+    wout,
+    hout,
+    mode: str = "nearest",
+    padding_mode: str = "zeros",
 ):
     """
     Args:
@@ -329,10 +335,14 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             instances_one_image (Instances): instances data to accumulate
         """
         boxes_xywh_est = BoxMode.convert(
-            instances_one_image.proposal_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
+            instances_one_image.proposal_boxes.tensor.clone(),
+            BoxMode.XYXY_ABS,
+            BoxMode.XYWH_ABS,
         )
         boxes_xywh_gt = BoxMode.convert(
-            instances_one_image.gt_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
+            instances_one_image.gt_boxes.tensor.clone(),
+            BoxMode.XYXY_ABS,
+            BoxMode.XYWH_ABS,
         )
         n_matches = len(boxes_xywh_gt)
         assert n_matches == len(
@@ -356,7 +366,10 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             self.nxt_bbox_index += 1
 
     def _do_accumulate(
-        self, box_xywh_gt: torch.Tensor, box_xywh_est: torch.Tensor, dp_gt: DensePoseDataRelative
+        self,
+        box_xywh_gt: torch.Tensor,
+        box_xywh_est: torch.Tensor,
+        dp_gt: DensePoseDataRelative,
     ):
         """
         Accumulate instances data for one image, given that the data is not empty

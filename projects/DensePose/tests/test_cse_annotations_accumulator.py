@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import unittest
 import torch
 
 from detectron2.structures import Boxes, BoxMode, Instances
 
+import unittest
 from densepose.modeling.losses.embed_utils import CseAnnotationsAccumulator
 from densepose.structures import DensePoseDataRelative, DensePoseList
 
@@ -211,7 +211,8 @@ class TestCseAnnotationsAccumulator(unittest.TestCase):
                 )
                 self.assertTrue(
                     torch.allclose(
-                        dp_data.vertex_ids, packed_anns.vertex_ids_gt[pt_offset : pt_offset + n_pts]
+                        dp_data.vertex_ids,
+                        packed_anns.vertex_ids_gt[pt_offset : pt_offset + n_pts],
                     )
                 )
                 self.assertTrue(

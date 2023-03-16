@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from dataclasses import fields
-from typing import Any, List
 import torch
 
 from detectron2.structures import Instances
+
+from dataclasses import fields
+from typing import Any, List
 
 
 def densepose_inference(densepose_predictor_output: Any, detections: List[Instances]) -> None:
