@@ -69,7 +69,7 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: detectron2-${{ matrix.python }}-${{ matrix.torch }}-${{matrix.os}}-wheel
+          name: detectron2-${{ matrix.python }}-pytorch${{ matrix.torch }}-${{matrix.os}}-wheel
           path: dist/*.whl
       - name: Build and install linux
         if: matrix.os == 'ubuntu-latest'
@@ -79,5 +79,5 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: detectron2-${{ matrix.python }}-${{ matrix.torch }}-${{matrix.os}}-wheel
+          name: detectron2-${{ matrix.python }}-pytorch${{ matrix.torch }}-${{matrix.os}}-wheel
           path: dist/*.whl
