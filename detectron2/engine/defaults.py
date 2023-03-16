@@ -40,7 +40,7 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorBoardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
@@ -231,7 +231,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
     """
     Build a list of :class:`EventWriter` to be used.
     It now consists of a :class:`CommonMetricPrinter`,
-    :class:`TensorboardXWriter` and :class:`JSONWriter`.
+    :class:`TensorBoardXWriter` and :class:`JSONWriter`.
 
     Args:
         output_dir: directory to store JSON metrics and tensorboard events
@@ -245,7 +245,7 @@ def default_writers(output_dir: str, max_iter: Optional[int] = None):
         # It may not always print what you want to see, since it prints "common" metrics only.
         CommonMetricPrinter(max_iter),
         JSONWriter(os.path.join(output_dir, "metrics.json")),
-        TensorboardXWriter(output_dir),
+        TensorBoardXWriter(output_dir),
     ]
 
 

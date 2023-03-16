@@ -16,7 +16,7 @@ from detectron2.utils.file_io import PathManager
 __all__ = [
     "get_event_storage",
     "JSONWriter",
-    "TensorboardXWriter",
+    "TensorBoardXWriter",
     "CommonMetricPrinter",
     "EventStorage",
 ]
@@ -129,7 +129,7 @@ class JSONWriter(EventWriter):
         self._file_handle.close()
 
 
-class TensorboardXWriter(EventWriter):
+class TensorBoardXWriter(EventWriter):
     """
     Write all scalars to a tensorboard file.
     """
