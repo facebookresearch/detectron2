@@ -1,10 +1,4 @@
-from .cascade_mask_rcnn_swin_b_in21k_50ep import (
-    dataloader,
-    lr_multiplier,
-    model,
-    train,
-    optimizer,
-)
+from .cascade_mask_rcnn_swin_b_in21k_50ep import dataloader, lr_multiplier, model, optimizer, train
 
 model.backbone.bottom_up.depths = [2, 2, 18, 2]
 model.backbone.bottom_up.drop_path_rate = 0.4

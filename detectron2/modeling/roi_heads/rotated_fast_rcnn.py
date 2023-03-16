@@ -1,5 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
 import numpy as np
 import torch
 
@@ -7,6 +6,8 @@ from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, batched_nms_rotated
 from detectron2.structures import Instances, RotatedBoxes, pairwise_iou_rotated
 from detectron2.utils.events import get_event_storage
+
+import logging
 
 from ..box_regression import Box2BoxTransformRotated
 from ..poolers import ROIPooler
@@ -73,7 +74,12 @@ def fast_rcnn_inference_rotated(
     """
     result_per_image = [
         fast_rcnn_inference_single_image_rotated(
-            boxes_per_image, scores_per_image, image_shape, score_thresh, nms_thresh, topk_per_image
+            boxes_per_image,
+            scores_per_image,
+            image_shape,
+            score_thresh,
+            nms_thresh,
+            topk_per_image,
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
@@ -203,7 +209,8 @@ class RROIHeads(StandardROIHeads):
             pooler_type=pooler_type,
         )
         box_head = build_box_head(
-            cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
+            cfg,
+            ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution),
         )
         # This line is the only difference v.s. StandardROIHeads
         box_predictor = RotatedFastRCNNOutputLayers(cfg, box_head.output_shape)

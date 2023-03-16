@@ -8,12 +8,13 @@ These can be removed once https://github.com/pytorch/pytorch/issues/12013
 is implemented
 """
 
-import warnings
-from typing import List, Optional
 import torch
 from torch.nn import functional as F
 
 from detectron2.utils.env import TORCH_VERSION
+
+import warnings
+from typing import List, Optional
 
 
 def shapes_to_tensor(x: List[int], device: Optional[torch.device] = None) -> torch.Tensor:
@@ -125,7 +126,13 @@ class Conv2d(torch.nn.Conv2d):
                         ), "SyncBatchNorm does not support empty inputs!"
 
         x = F.conv2d(
-            x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups
+            x,
+            self.weight,
+            self.bias,
+            self.stride,
+            self.padding,
+            self.dilation,
+            self.groups,
         )
         if self.norm is not None:
             x = self.norm(x)

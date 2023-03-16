@@ -5,7 +5,6 @@ from .distributed_sampler import (
     RepeatFactorTrainingSampler,
     TrainingSampler,
 )
-
 from .grouped_batch_sampler import GroupedBatchSampler
 
 __all__ = [

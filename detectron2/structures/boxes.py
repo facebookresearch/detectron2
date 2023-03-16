@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import math
 import numpy as np
-from enum import IntEnum, unique
-from typing import List, Tuple, Union
 import torch
 from torch import device
+
+import math
+from enum import IntEnum, unique
+from typing import List, Tuple, Union
 
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
@@ -69,7 +70,7 @@ class BoxMode(IntEnum):
             else:
                 arr = box.clone()
 
-        assert to_mode not in [BoxMode.XYXY_REL, BoxMode.XYWH_REL] and from_mode not in [
+        assert to_mode not in [BoxMode.XYXY_REL, BoxMode.XYWH_REL,] and from_mode not in [
             BoxMode.XYXY_REL,
             BoxMode.XYWH_REL,
         ], "Relative mode not yet supported!"

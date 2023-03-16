@@ -3,12 +3,14 @@
 import os
 import tempfile
 import unittest
+from dataclasses import dataclass
+
 import yaml
 from omegaconf import OmegaConf
 from omegaconf import __version__ as oc_version
-from dataclasses import dataclass
 
-from detectron2.config import LazyConfig, instantiate, LazyCall as L
+from detectron2.config import LazyCall as L
+from detectron2.config import LazyConfig, instantiate
 from detectron2.layers import ShapeSpec
 from detectron2.utils.testing import reload_lazy_config
 

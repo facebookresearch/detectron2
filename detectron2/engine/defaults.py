@@ -9,13 +9,6 @@ The behavior of functions/classes in this file is subject to change,
 since they are meant to represent the "common default behavior" people need in their projects.
 """
 
-import argparse
-import logging
-import os
-import sys
-import weakref
-from collections import OrderedDict
-from typing import Optional
 import torch
 from fvcore.nn.precise_bn import get_bn_modules
 from omegaconf import OmegaConf
@@ -43,6 +36,14 @@ from detectron2.utils.env import seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
+
+import argparse
+import logging
+import os
+import sys
+import weakref
+from collections import OrderedDict
+from typing import Optional
 
 from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
@@ -117,7 +118,10 @@ Run on multiple machines:
     parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
     parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
     parser.add_argument(
-        "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
+        "--machine-rank",
+        type=int,
+        default=0,
+        help="the rank of this machine (unique per machine)",
     )
 
     # PyTorch still may leave orphan processes in multi-gpu training.
@@ -163,8 +167,8 @@ def _highlight(code, filename):
     except ImportError:
         return code
 
-    from pygments.lexers import Python3Lexer, YamlLexer
     from pygments.formatters import Terminal256Formatter
+    from pygments.lexers import Python3Lexer, YamlLexer
 
     lexer = Python3Lexer() if filename.endswith(".py") else YamlLexer()
     code = pygments.highlight(code, lexer, Terminal256Formatter(style="monokai"))

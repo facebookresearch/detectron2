@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import unittest
-from copy import deepcopy
-from typing import Dict
 import torch
 
 from detectron2.config import CfgNode as CfgNode_
@@ -10,6 +7,10 @@ from detectron2.config import instantiate
 from detectron2.structures import Boxes, Instances
 from detectron2.tracking.base_tracker import build_tracker_head
 from detectron2.tracking.bbox_iou_tracker import BBoxIOUTracker  # noqa
+
+import unittest
+from copy import deepcopy
+from typing import Dict
 
 
 class TestBBoxIOUTracker(unittest.TestCase):

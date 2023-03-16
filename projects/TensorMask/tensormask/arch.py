@@ -1,7 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import math
-from typing import List
 import torch
 import torch.nn.functional as F
 from fvcore.nn import sigmoid_focal_loss_star_jit, smooth_l1_loss
@@ -15,7 +12,10 @@ from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
 from detectron2.modeling.meta_arch.retinanet import permute_to_N_HWA_K
 from detectron2.structures import Boxes, ImageList, Instances
 
+import copy
+import math
 from tensormask.layers import SwapAlign2Nat
+from typing import List
 
 __all__ = ["TensorMask"]
 
@@ -202,7 +202,10 @@ def _postprocess(results, result_mask_info, output_height, output_width, mask_th
     Returns:
         Instances: the postprocessed output from the model, based on the output resolution
     """
-    scale_x, scale_y = (output_width / results.image_size[1], output_height / results.image_size[0])
+    scale_x, scale_y = (
+        output_width / results.image_size[1],
+        output_height / results.image_size[0],
+    )
     results = Instances((output_height, output_width), **results.get_fields())
 
     output_boxes = results.pred_boxes
@@ -281,9 +284,11 @@ class TensorMaskAnchorGenerator(DefaultAnchorGenerator):
         """
         num_images = len(features[0])
         grid_sizes = [feature_map.shape[-2:] for feature_map in features]
-        anchors_list, lengths_list, indexes_list = self.grid_anchors_with_unit_lengths_and_indexes(
-            grid_sizes
-        )
+        (
+            anchors_list,
+            lengths_list,
+            indexes_list,
+        ) = self.grid_anchors_with_unit_lengths_and_indexes(grid_sizes)
 
         # Convert anchors from Tensor to Boxes
         anchors_per_im = [Boxes(x) for x in anchors_list]
@@ -562,7 +567,10 @@ class TensorMask(nn.Module):
             if has_gt:
                 # Compute the pairwise matrix
                 gt_matched_inds, anchor_labels = _assignment_rule(
-                    targets_im.gt_boxes, anchors_im, unit_lengths_im, self.min_anchor_size
+                    targets_im.gt_boxes,
+                    anchors_im,
+                    unit_lengths_im,
+                    self.min_anchor_size,
                 )
                 # Find the foreground instances
                 fg_inds = anchor_labels == 1
@@ -615,7 +623,9 @@ class TensorMask(nn.Module):
         gt_valid_inds = gt_classes >= 0
         gt_fg_inds = gt_valid_inds & (gt_classes < self.num_classes)
         gt_classes_target = torch.zeros(
-            (gt_classes.shape[0], self.num_classes), dtype=torch.float32, device=self.device
+            (gt_classes.shape[0], self.num_classes),
+            dtype=torch.float32,
+            device=self.device,
         )
         gt_classes_target[gt_fg_inds, gt_classes[gt_fg_inds]] = 1
         gt_deltas = cat(gt_deltas) if gt_deltas else None
@@ -823,7 +833,11 @@ class TensorMaskHead(nn.Module):
                 self.add_module(
                     cur_mask_module,
                     nn.Conv2d(
-                        cur_channels, mask_size * mask_size, kernel_size=1, stride=1, padding=0
+                        cur_channels,
+                        mask_size * mask_size,
+                        kernel_size=1,
+                        stride=1,
+                        padding=0,
                     ),
                 )
                 modules_list.append(getattr(self, cur_mask_module))
@@ -835,7 +849,13 @@ class TensorMaskHead(nn.Module):
                         setattr(self, cur_mask_module, SwapAlign2Nat(lambda_val))
                     # Also the fusing layer, stay at the same channel size
                     mask_fuse = [
-                        nn.Conv2d(cur_channels, cur_channels, kernel_size=3, stride=1, padding=1),
+                        nn.Conv2d(
+                            cur_channels,
+                            cur_channels,
+                            kernel_size=3,
+                            stride=1,
+                            padding=1,
+                        ),
                         nn.ReLU(),
                     ]
                     self.mask_fuse = nn.Sequential(*mask_fuse)
@@ -889,7 +909,10 @@ class TensorMaskHead(nn.Module):
                     mask_feat_up = mask_feat
                     if lvl > 0:
                         mask_feat_up = F.interpolate(
-                            mask_feat, scale_factor=lambda_val, mode="bilinear", align_corners=False
+                            mask_feat,
+                            scale_factor=lambda_val,
+                            mode="bilinear",
+                            align_corners=False,
                         )
                     mask_feats_up.append(
                         self.mask_fuse(mask_feat_up[:, :, :H, :W] + mask_feat_high_res)

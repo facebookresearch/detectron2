@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from dataclasses import dataclass
-from typing import Any, Optional
 import torch
 
 from detectron2.structures import BoxMode, Instances
+
+from dataclasses import dataclass
+from typing import Any, Optional
 
 from .utils import AnnotationsAccumulator
 
@@ -51,10 +52,14 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
             instances_one_image (Instances): instances data to accumulate
         """
         boxes_xywh_est = BoxMode.convert(
-            instances_one_image.proposal_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
+            instances_one_image.proposal_boxes.tensor.clone(),
+            BoxMode.XYXY_ABS,
+            BoxMode.XYWH_ABS,
         )
         boxes_xywh_gt = BoxMode.convert(
-            instances_one_image.gt_boxes.tensor.clone(), BoxMode.XYXY_ABS, BoxMode.XYWH_ABS
+            instances_one_image.gt_boxes.tensor.clone(),
+            BoxMode.XYXY_ABS,
+            BoxMode.XYWH_ABS,
         )
         n_matches = len(boxes_xywh_gt)
         assert n_matches == len(

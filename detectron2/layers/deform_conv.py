@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import math
-from functools import lru_cache
 import torch
 from torch import nn
 from torch.autograd import Function
@@ -9,6 +7,9 @@ from torch.nn.modules.utils import _pair
 from torchvision.ops import deform_conv2d
 
 from detectron2.utils.develop import create_dummy_class, create_dummy_func
+
+import math
+from functools import lru_cache
 
 from .wrappers import _NewEmptyTensorOp
 
@@ -375,7 +376,11 @@ class DeformConv(nn.Module):
             output_shape = [
                 (i + 2 * p - (di * (k - 1) + 1)) // s + 1
                 for i, p, di, k, s in zip(
-                    x.shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
+                    x.shape[-2:],
+                    self.padding,
+                    self.dilation,
+                    self.kernel_size,
+                    self.stride,
                 )
             ]
             output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
@@ -465,7 +470,11 @@ class ModulatedDeformConv(nn.Module):
             output_shape = [
                 (i + 2 * p - (di * (k - 1) + 1)) // s + 1
                 for i, p, di, k, s in zip(
-                    x.shape[-2:], self.padding, self.dilation, self.kernel_size, self.stride
+                    x.shape[-2:],
+                    self.padding,
+                    self.dilation,
+                    self.kernel_size,
+                    self.stride,
                 )
             ]
             output_shape = [x.shape[0], self.weight.shape[0]] + output_shape

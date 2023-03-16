@@ -7,15 +7,7 @@
 
 __author__ = "tsungyi"
 
-import copy
-import datetime
-import logging
 import numpy as np
-import pickle
-import time
-from collections import defaultdict
-from enum import Enum
-from typing import Any, Dict, Tuple
 import scipy.spatial.distance as ssd
 import torch
 import torch.nn.functional as F
@@ -25,6 +17,12 @@ from scipy.ndimage import zoom as spzoom
 
 from detectron2.utils.file_io import PathManager
 
+import copy
+import datetime
+import logging
+import pickle
+import time
+from collections import defaultdict
 from densepose.converters.chart_output_to_chart_result import resample_uv_tensors_to_bbox
 from densepose.converters.segm_to_mask import (
     resample_coarse_segm_tensor_to_bbox,
@@ -33,6 +31,8 @@ from densepose.converters.segm_to_mask import (
 from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures import DensePoseDataRelative
 from densepose.structures.mesh import create_mesh
+from enum import Enum
+from typing import Any, Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,8 @@ class DensePoseCocoEval(object):
             "https://dl.fbaipublicfiles.com/densepose/data/SMPL_SUBDIV_TRANSFORM.mat"
         )
         pdist_matrix_fpath = PathManager.get_local_path(
-            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl", timeout_sec=120
+            "https://dl.fbaipublicfiles.com/densepose/data/Pdist_matrix.pkl",
+            timeout_sec=120,
         )
         SMPL_subdiv = loadmat(smpl_subdiv_fpath)
         self.PDIST_transform = loadmat(pdist_transform_fpath)
@@ -579,7 +580,11 @@ class DensePoseCocoEval(object):
         raise ValueError('The prediction dict needs to contain either "densepose" or "cse_mask"')
 
     def _extract_iuv(
-        self, densepose_data: np.ndarray, py: np.ndarray, px: np.ndarray, gt: Dict[str, Any]
+        self,
+        densepose_data: np.ndarray,
+        py: np.ndarray,
+        px: np.ndarray,
+        gt: Dict[str, Any],
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Extract arrays of I, U and V values at given points as numpy arrays
@@ -696,7 +701,10 @@ class DensePoseCocoEval(object):
         x, y, w, h = bbox_xywh_abs
         # embedding for each pixel of the bbox, [D, H, W] tensor of float32
         embedding = F.interpolate(
-            embedding.unsqueeze(0), (int(h), int(w)), mode="bilinear", align_corners=False
+            embedding.unsqueeze(0),
+            (int(h), int(w)),
+            mode="bilinear",
+            align_corners=False,
         ).squeeze(0)
         # valid locations py, px
         py_pt = torch.from_numpy(py[pt_mask > -1])
@@ -757,9 +765,10 @@ class DensePoseCocoEval(object):
                     else:
                         px[pts == -1] = 0
                         py[pts == -1] = 0
-                        dists_between_matches, dist_norm_coeffs = self.computeOgps_single_pair(
-                            dt, gt, py, px, pts
-                        )
+                        (
+                            dists_between_matches,
+                            dist_norm_coeffs,
+                        ) = self.computeOgps_single_pair(dt, gt, py, px, pts)
                         # Compute gps
                         ogps_values = np.exp(
                             -(dists_between_matches**2) / (2 * (dist_norm_coeffs**2))
@@ -1167,7 +1176,10 @@ class DensePoseCocoEval(object):
             #
             if (i + 1) in Index_points:
                 UVs = np.array(
-                    [U_points[Index_points == (i + 1)], V_points[Index_points == (i + 1)]]
+                    [
+                        U_points[Index_points == (i + 1)],
+                        V_points[Index_points == (i + 1)],
+                    ]
                 )
                 Current_Part_UVs = self.Part_UVs[i]
                 Current_Part_ClosestVertInds = self.Part_ClosestVertInds[i]

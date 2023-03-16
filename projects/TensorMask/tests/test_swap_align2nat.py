@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import unittest
 import torch
 from torch.autograd import gradcheck
 
+import unittest
 from tensormask.layers.swap_align2nat import SwapAlign2Nat
 
 

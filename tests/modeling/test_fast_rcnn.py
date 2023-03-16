@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import unittest
 import torch
 
 from detectron2.layers import ShapeSpec
@@ -9,6 +7,9 @@ from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers
 from detectron2.modeling.roi_heads.rotated_fast_rcnn import RotatedFastRCNNOutputLayers
 from detectron2.structures import Boxes, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
+
+import logging
+import unittest
 
 logger = logging.getLogger(__name__)
 

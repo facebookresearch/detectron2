@@ -65,7 +65,14 @@ class FrozenBatchNorm2d(nn.Module):
             )
 
     def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
 
@@ -78,7 +85,13 @@ class FrozenBatchNorm2d(nn.Module):
                 state_dict[prefix + "running_var"] = torch.ones_like(self.running_var)
 
         super()._load_from_state_dict(
-            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
         )
 
     def __repr__(self):
@@ -207,7 +220,12 @@ class NaiveSyncBatchNorm(BatchNorm2d):
                 vec = vec + input.sum()  # make sure there is gradient w.r.t input
             else:
                 vec = torch.cat(
-                    [mean, meansqr, torch.ones([1], device=mean.device, dtype=mean.dtype)], dim=0
+                    [
+                        mean,
+                        meansqr,
+                        torch.ones([1], device=mean.device, dtype=mean.dtype),
+                    ],
+                    dim=0,
                 )
             vec = differentiable_all_reduce(vec * B)
 

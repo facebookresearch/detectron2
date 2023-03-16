@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
-import unittest
-from copy import deepcopy
 import torch
 from torchvision import ops
 
 from detectron2.layers import batched_nms, batched_nms_rotated, nms_rotated
 from detectron2.utils.testing import random_boxes
+
+import unittest
+from copy import deepcopy
 
 
 def nms_edit_distance(keep1, keep2):

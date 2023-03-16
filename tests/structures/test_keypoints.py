@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import unittest
 import torch
 
 from detectron2.structures.keypoints import Keypoints
+
+import unittest
 
 
 class TestKeypoints(unittest.TestCase):

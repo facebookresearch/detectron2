@@ -1,13 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import copy
-import glob
-import json
-import os
-import random
-import tempfile
-import unittest
-import zipfile
 import torch
 from torch import Tensor, nn
 
@@ -29,8 +21,17 @@ from detectron2.utils.testing import (
     get_sample_coco_image,
     random_boxes,
     skipIfOnCPUCI,
+    skipIfOnPytorch1_10,
 )
 
+import copy
+import glob
+import json
+import os
+import random
+import tempfile
+import unittest
+import zipfile
 
 """
 https://detectron2.readthedocs.io/tutorials/deployment.html
@@ -43,6 +44,7 @@ class TestScripting(unittest.TestCase):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -111,6 +113,7 @@ class TestTracing(unittest.TestCase):
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -204,7 +207,9 @@ class TestTracing(unittest.TestCase):
             return model.inference(inputs, do_postprocess=False)
 
         self._test_model(
-            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func, batch=2
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml",
+            inference_func,
+            batch=2,
         )
 
     def testKeypointHead(self):
@@ -212,7 +217,9 @@ class TestTracing(unittest.TestCase):
             def __init__(self):
                 super().__init__()
                 self.model = KRCNNConvDeconvUpsampleHead(
-                    ShapeSpec(channels=4, height=14, width=14), num_keypoints=17, conv_dims=(4,)
+                    ShapeSpec(channels=4, height=14, width=14),
+                    num_keypoints=17,
+                    conv_dims=(4,),
                 )
 
             def forward(self, x, predbox1, predbox2):
@@ -263,7 +270,12 @@ class TestTorchscriptUtils(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
             dump_torchscript_IR(ts_model, d)
             # check that the files are created
-            for name in ["model_ts_code", "model_ts_IR", "model_ts_IR_inlined", "model"]:
+            for name in [
+                "model_ts_code",
+                "model_ts_IR",
+                "model_ts_IR_inlined",
+                "model",
+            ]:
                 fname = os.path.join(d, name + ".txt")
                 self.assertTrue(os.stat(fname).st_size > 0, fname)
 
@@ -305,7 +317,9 @@ class TestTorchscriptUtils(unittest.TestCase):
 
     def test_flatten_instances_boxes(self):
         inst = Instances(
-            torch.tensor([5, 8]), pred_masks=torch.tensor([3]), pred_boxes=Boxes(torch.ones((1, 4)))
+            torch.tensor([5, 8]),
+            pred_masks=torch.tensor([3]),
+            pred_boxes=Boxes(torch.ones((1, 4))),
         )
         obj = [3, ([5, 6], inst)]
         res, schema = flatten_to_tuple(obj)

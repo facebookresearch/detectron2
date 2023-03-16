@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-from typing import BinaryIO, Dict, Union
 import torch
+
+from typing import BinaryIO, Dict, Union
 
 
 def normalized_coords_transform(x0, y0, w, h):

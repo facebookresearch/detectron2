@@ -1,6 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import unittest
 import torch
 
 from detectron2.config import get_cfg
@@ -14,6 +12,9 @@ from detectron2.modeling.proposal_generator.proposal_utils import (
 )
 from detectron2.structures import Boxes, ImageList, Instances, RotatedBoxes
 from detectron2.utils.events import EventStorage
+
+import logging
+import unittest
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +227,9 @@ class RPNTest(unittest.TestCase):
                 )
             )
         torch.jit.trace(
-            func, (proposal, pred_logit, torch.tensor([100, 100])), check_inputs=other_inputs
+            func,
+            (proposal, pred_logit, torch.tensor([100, 100])),
+            check_inputs=other_inputs,
         )
 
     def test_append_gt_to_proposal(self):

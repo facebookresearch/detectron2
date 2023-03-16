@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
 import numpy as np
-from contextlib import contextmanager
-from itertools import count
-from typing import List
 import torch
 from fvcore.transforms import HFlipTransform, NoOpTransform
 from torch import nn
@@ -18,6 +14,11 @@ from detectron2.data.transforms import (
     apply_augmentations,
 )
 from detectron2.structures import Boxes, Instances
+
+import copy
+from contextlib import contextmanager
+from itertools import count
+from typing import List
 
 from .meta_arch import GeneralizedRCNN
 from .postprocessing import detector_postprocess

@@ -1,8 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import os
-import tempfile
-import unittest
-from collections import OrderedDict
 import torch
 from iopath.common.file_io import PathHandler, PathManager
 from torch import nn
@@ -13,6 +9,11 @@ from detectron2.checkpoint.c2_model_loading import (
     align_and_update_state_dicts,
 )
 from detectron2.utils.logger import setup_logger
+
+import os
+import tempfile
+import unittest
+from collections import OrderedDict
 
 
 class TestCheckpointer(unittest.TestCase):

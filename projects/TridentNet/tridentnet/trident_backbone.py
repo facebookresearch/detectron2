@@ -9,7 +9,11 @@ from detectron2.modeling.backbone.resnet import BasicStem, BottleneckBlock, Defo
 
 from .trident_conv import TridentConv
 
-__all__ = ["TridentBottleneckBlock", "make_trident_stage", "build_trident_resnet_backbone"]
+__all__ = [
+    "TridentBottleneckBlock",
+    "make_trident_stage",
+    "build_trident_resnet_backbone",
+]
 
 
 class TridentBottleneckBlock(ResNetBlockBase):

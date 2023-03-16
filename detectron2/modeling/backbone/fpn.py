@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import math
 import fvcore.nn.weight_init as weight_init
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
+
+import math
 
 from .backbone import Backbone
 from .build import BACKBONE_REGISTRY
@@ -75,7 +76,11 @@ class FPN(Backbone):
             output_norm = get_norm(norm, out_channels)
 
             lateral_conv = Conv2d(
-                in_channels, out_channels, kernel_size=1, bias=use_bias, norm=lateral_norm
+                in_channels,
+                out_channels,
+                kernel_size=1,
+                bias=use_bias,
+                norm=lateral_norm,
             )
             output_conv = Conv2d(
                 out_channels,
@@ -169,7 +174,8 @@ class FPN(Backbone):
     def output_shape(self):
         return {
             name: ShapeSpec(
-                channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
+                channels=self._out_feature_channels[name],
+                stride=self._out_feature_strides[name],
             )
             for name in self._out_features
         }

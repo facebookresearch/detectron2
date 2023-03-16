@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import inspect
-import logging
 import numpy as np
-from typing import Dict, List, Optional, Tuple
 import torch
 from torch import nn
 
@@ -11,6 +8,10 @@ from detectron2.layers import ShapeSpec, nonzero_tuple
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.registry import Registry
+
+import inspect
+import logging
+from typing import Dict, List, Optional, Tuple
 
 from ..backbone.resnet import BottleneckBlock, ResNet
 from ..matcher import Matcher
@@ -75,7 +76,9 @@ def select_foreground_proposals(
     return fg_proposals, fg_selection_masks
 
 
-def select_proposals_with_visible_keypoints(proposals: List[Instances]) -> List[Instances]:
+def select_proposals_with_visible_keypoints(
+    proposals: List[Instances],
+) -> List[Instances]:
     """
     Args:
         proposals (list[Instances]): a list of N Instances, where N is the
@@ -179,7 +182,10 @@ class ROIHeads(torch.nn.Module):
         }
 
     def _sample_proposals(
-        self, matched_idxs: torch.Tensor, matched_labels: torch.Tensor, gt_classes: torch.Tensor
+        self,
+        matched_idxs: torch.Tensor,
+        matched_labels: torch.Tensor,
+        gt_classes: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Based on the matching between N proposals and M groundtruth,
@@ -210,7 +216,10 @@ class ROIHeads(torch.nn.Module):
             gt_classes = torch.zeros_like(matched_idxs) + self.num_classes
 
         sampled_fg_idxs, sampled_bg_idxs = subsample_labels(
-            gt_classes, self.batch_size_per_image, self.positive_fraction, self.num_classes
+            gt_classes,
+            self.batch_size_per_image,
+            self.positive_fraction,
+            self.num_classes,
         )
 
         sampled_idxs = torch.cat([sampled_fg_idxs, sampled_bg_idxs], dim=0)
@@ -421,7 +430,11 @@ class Res5ROIHeads(ROIHeads):
         if mask_on:
             ret["mask_head"] = build_mask_head(
                 cfg,
-                ShapeSpec(channels=out_channels, width=pooler_resolution, height=pooler_resolution),
+                ShapeSpec(
+                    channels=out_channels,
+                    width=pooler_resolution,
+                    height=pooler_resolution,
+                ),
             )
         return ret
 
@@ -641,7 +654,8 @@ class StandardROIHeads(ROIHeads):
         # They are used together so the "box predictor" layers should be part of the "box head".
         # New subclasses of ROIHeads do not need "box predictor"s.
         box_head = build_box_head(
-            cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
+            cfg,
+            ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution),
         )
         box_predictor = FastRCNNOutputLayers(cfg, box_head.output_shape)
         return {

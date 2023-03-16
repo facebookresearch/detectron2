@@ -1,19 +1,20 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import collections
-import copy
-import functools
-import logging
 import numpy as np
-import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from unittest import mock
 import caffe2.python.utils as putils
 import torch
 import torch.nn.functional as F
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core, net_drawer, workspace
 from torch.nn.functional import interpolate as interp
+
+import collections
+import copy
+import functools
+import logging
+import os
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from unittest import mock
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,10 @@ def onnx_compatibale_interpolate(
             assert not align_corners, "No matching C2 op for align_corners == True"
             if mode == "nearest":
                 return torch.ops._caffe2.ResizeNearest(
-                    input, order="NCHW", width_scale=width_scale, height_scale=height_scale
+                    input,
+                    order="NCHW",
+                    width_scale=width_scale,
+                    height_scale=height_scale,
                 )
             elif mode == "bilinear":
                 logger.warning(
@@ -117,7 +121,8 @@ def mock_torch_nn_functional_interpolate():
         def _mock_torch_nn_functional_interpolate(*args, **kwargs):
             if torch.onnx.is_in_onnx_export():
                 with mock.patch(
-                    "torch.nn.functional.interpolate", side_effect=onnx_compatibale_interpolate
+                    "torch.nn.functional.interpolate",
+                    side_effect=onnx_compatibale_interpolate,
                 ):
                     return func(*args, **kwargs)
             else:
@@ -293,7 +298,8 @@ def create_const_fill_op(
 
 
 def construct_init_net_from_params(
-    params: Dict[str, Any], device_options: Optional[Dict[str, caffe2_pb2.DeviceOption]] = None
+    params: Dict[str, Any],
+    device_options: Optional[Dict[str, caffe2_pb2.DeviceOption]] = None,
 ) -> caffe2_pb2.NetDef:
     """
     Construct the init_net from params dictionary

@@ -1,23 +1,24 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from detectron2.layers import ShapeSpec
 
-from .anchor_generator import build_anchor_generator, ANCHOR_GENERATOR_REGISTRY
+from .anchor_generator import ANCHOR_GENERATOR_REGISTRY, build_anchor_generator
 from .backbone import (
     BACKBONE_REGISTRY,
     FPN,
     Backbone,
+    MViT,
     ResNet,
     ResNetBlockBase,
+    SimpleFeaturePyramid,
+    SwinTransformer,
+    ViT,
     build_backbone,
     build_resnet_backbone,
-    make_stage,
-    ViT,
-    SimpleFeaturePyramid,
     get_vit_lr_decay_rate,
-    MViT,
-    SwinTransformer,
+    make_stage,
 )
 from .meta_arch import (
+    FCOS,
     META_ARCH_REGISTRY,
     SEM_SEG_HEADS_REGISTRY,
     GeneralizedRCNN,
@@ -27,13 +28,13 @@ from .meta_arch import (
     SemanticSegmentor,
     build_model,
     build_sem_seg_head,
-    FCOS,
 )
+from .mmdet_wrapper import MMDetBackbone, MMDetDetector
 from .postprocessing import detector_postprocess
 from .proposal_generator import (
     PROPOSAL_GENERATOR_REGISTRY,
-    build_proposal_generator,
     RPN_HEAD_REGISTRY,
+    build_proposal_generator,
     build_rpn_head,
 )
 from .roi_heads import (
@@ -41,18 +42,17 @@ from .roi_heads import (
     ROI_HEADS_REGISTRY,
     ROI_KEYPOINT_HEAD_REGISTRY,
     ROI_MASK_HEAD_REGISTRY,
+    BaseKeypointRCNNHead,
+    BaseMaskRCNNHead,
+    FastRCNNOutputLayers,
     ROIHeads,
     StandardROIHeads,
-    BaseMaskRCNNHead,
-    BaseKeypointRCNNHead,
-    FastRCNNOutputLayers,
     build_box_head,
     build_keypoint_head,
     build_mask_head,
     build_roi_heads,
 )
 from .test_time_augmentation import DatasetMapperTTA, GeneralizedRCNNWithTTA
-from .mmdet_wrapper import MMDetBackbone, MMDetDetector
 
 _EXCLUDE = {"ShapeSpec"}
 __all__ = [k for k in globals().keys() if k not in _EXCLUDE and not k.startswith("_")]

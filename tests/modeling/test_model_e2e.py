@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 
-import itertools
-import unittest
-from contextlib import contextmanager
-from copy import deepcopy
 import torch
 
 from detectron2.structures import BitMasks, Boxes, ImageList, Instances
 from detectron2.utils.events import EventStorage
 from detectron2.utils.testing import get_model_no_weights
+
+import itertools
+import unittest
+from contextlib import contextmanager
+from copy import deepcopy
 
 
 @contextmanager
@@ -118,7 +119,10 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
     CONFIG_PATH = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml"
 
     def test_half_empty_data(self):
-        instances = [get_empty_instance(200, 250), get_regular_bitmask_instances(200, 249)]
+        instances = [
+            get_empty_instance(200, 250),
+            get_regular_bitmask_instances(200, 249),
+        ]
         self._test_train([(200, 250), (200, 249)], instances)
 
     # This test is flaky because in some environment the output features are zero due to relu
@@ -162,7 +166,9 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
         with autocast(), typecheck_hook(
             self.model.backbone, in_dtype=torch.float32, out_dtype=torch.float16
         ), typecheck_hook(
-            self.model.roi_heads.box_predictor, in_dtype=torch.float16, out_dtype=torch.float16
+            self.model.roi_heads.box_predictor,
+            in_dtype=torch.float16,
+            out_dtype=torch.float16,
         ):
             out = self.model.inference(inputs, do_postprocess=False)[0]
             self.assertEqual(out.pred_boxes.tensor.dtype, torch.float32)

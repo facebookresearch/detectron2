@@ -74,7 +74,8 @@ def get_closest_vertices_mask_from_ES(
         chunk_embeddings = all_embeddings[size_chunk * chunk : size_chunk * (chunk + 1)]
         edm.append(
             torch.argmin(
-                squared_euclidean_distance_matrix(chunk_embeddings, mesh_vertex_embeddings), dim=1
+                squared_euclidean_distance_matrix(chunk_embeddings, mesh_vertex_embeddings),
+                dim=1,
             )
         )
     closest_vertices[mask] = torch.cat(edm)

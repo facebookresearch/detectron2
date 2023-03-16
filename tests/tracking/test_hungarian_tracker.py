@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-import unittest
-from typing import Dict
 import torch
 
 from detectron2.config import instantiate
 from detectron2.structures import Boxes, Instances
+
+import unittest
+from typing import Dict
 
 
 class TestBaseHungarianTracker(unittest.TestCase):

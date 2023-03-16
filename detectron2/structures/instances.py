@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+import torch
+
 import itertools
 import warnings
 from typing import Any, Dict, List, Tuple, Union
-import torch
 
 
 class Instances:

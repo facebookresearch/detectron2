@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import List
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn
@@ -8,6 +7,8 @@ from torch import nn
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, get_norm
 from detectron2.utils.registry import Registry
+
+from typing import List
 
 __all__ = ["FastRCNNConvFCHead", "build_box_head", "ROI_BOX_HEAD_REGISTRY"]
 
@@ -46,7 +47,11 @@ class FastRCNNConvFCHead(nn.Sequential):
         super().__init__()
         assert len(conv_dims) + len(fc_dims) > 0
 
-        self._output_size = (input_shape.channels, input_shape.height, input_shape.width)
+        self._output_size = (
+            input_shape.channels,
+            input_shape.height,
+            input_shape.width,
+        )
 
         self.conv_norm_relus = []
         for k, conv_dim in enumerate(conv_dims):

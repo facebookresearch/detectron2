@@ -1,11 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import itertools
-import logging
 import numpy as np
-from collections import UserDict, defaultdict
-from dataclasses import dataclass
-from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
 import torch
 from torch.utils.data.dataset import Dataset
 
@@ -22,8 +17,13 @@ from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
 from detectron2.data.samplers import TrainingSampler
 from detectron2.utils.comm import get_world_size
 
+import itertools
+import logging
+from collections import UserDict, defaultdict
+from dataclasses import dataclass
 from densepose.config import get_bootstrap_dataset_config
 from densepose.modeling import build_densepose_embedder
+from typing import Any, Callable, Collection, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .combined_loader import CombinedDataLoader, Loader
 from .dataset_mapper import DatasetMapper
@@ -147,7 +147,9 @@ def _add_category_id_to_contiguous_id_maps_to_metadata(
                 logger.info(f"{cat.id} ({cat.name}) -> {contiguous_cat_id}")
 
 
-def _maybe_create_general_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_general_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     def has_annotations(instance: Instance) -> bool:
         return "annotations" in instance
 
@@ -165,7 +167,9 @@ def _maybe_create_general_keep_instance_predicate(cfg: CfgNode) -> Optional[Inst
     return general_keep_instance_predicate
 
 
-def _maybe_create_keypoints_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_keypoints_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
 
     min_num_keypoints = cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
 
@@ -182,7 +186,9 @@ def _maybe_create_keypoints_keep_instance_predicate(cfg: CfgNode) -> Optional[In
     return None
 
 
-def _maybe_create_mask_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_mask_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     if not cfg.MODEL.MASK_ON:
         return None
 
@@ -192,7 +198,9 @@ def _maybe_create_mask_keep_instance_predicate(cfg: CfgNode) -> Optional[Instanc
     return has_mask_annotations
 
 
-def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_densepose_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     if not cfg.MODEL.DENSEPOSE_ON:
         return None
 
@@ -211,7 +219,9 @@ def _maybe_create_densepose_keep_instance_predicate(cfg: CfgNode) -> Optional[In
     return has_densepose_annotations
 
 
-def _maybe_create_specific_keep_instance_predicate(cfg: CfgNode) -> Optional[InstancePredicate]:
+def _maybe_create_specific_keep_instance_predicate(
+    cfg: CfgNode,
+) -> Optional[InstancePredicate]:
     specific_predicate_creators = [
         _maybe_create_keypoints_keep_instance_predicate,
         _maybe_create_mask_keep_instance_predicate,
@@ -269,7 +279,10 @@ def _maybe_filter_and_map_categories(
 
 
 def _add_category_whitelists_to_metadata(cfg: CfgNode) -> None:
-    for dataset_name, whitelisted_cat_ids in cfg.DATASETS.WHITELISTED_CATEGORIES.items():
+    for (
+        dataset_name,
+        whitelisted_cat_ids,
+    ) in cfg.DATASETS.WHITELISTED_CATEGORIES.items():
         meta = MetadataCatalog.get(dataset_name)
         meta.whitelisted_categories = whitelisted_cat_ids
         logger = logging.getLogger(__name__)
@@ -494,7 +507,10 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
     return d2_build_detection_test_loader(
-        dataset_dicts, mapper=mapper, num_workers=cfg.DATALOADER.NUM_WORKERS, sampler=sampler
+        dataset_dicts,
+        mapper=mapper,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+        sampler=sampler,
     )
 
 

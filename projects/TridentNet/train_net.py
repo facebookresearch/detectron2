@@ -7,13 +7,12 @@ TridentNet Training Script.
 This script is a simplified version of the training script in detectron2/tools.
 """
 
-import os
-
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 from detectron2.evaluation import COCOEvaluator
 
+import os
 from tridentnet import add_tridentnet_config
 
 

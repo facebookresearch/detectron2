@@ -1,13 +1,8 @@
-from .mask_rcnn_R_50_FPN_100ep_LSJ import (
-    dataloader,
-    lr_multiplier,
-    model,
-    optimizer,
-    train,
-)
 from detectron2.config import LazyCall as L
 from detectron2.modeling.backbone import RegNet
-from detectron2.modeling.backbone.regnet import SimpleStem, ResBottleneckBlock
+from detectron2.modeling.backbone.regnet import ResBottleneckBlock, SimpleStem
+
+from .mask_rcnn_R_50_FPN_100ep_LSJ import dataloader, lr_multiplier, model, optimizer, train
 
 # Config source:
 # https://github.com/facebookresearch/detectron2/blob/main/configs/COCO-InstanceSegmentation/mask_rcnn_regnetx_4gf_dds_fpn_1x.py  # noqa

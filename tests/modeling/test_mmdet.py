@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import unittest
-
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.mmdet_wrapper import MMDetBackbone, MMDetDetector
+
+import unittest
 
 try:
     import mmdet.models  # noqa
@@ -59,7 +59,10 @@ class TestMMDetWrapper(unittest.TestCase):
                     # init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'))
                 ),
                 neck=dict(
-                    type="FPN", in_channels=[256, 512, 1024, 2048], out_channels=256, num_outs=5
+                    type="FPN",
+                    in_channels=[256, 512, 1024, 2048],
+                    out_channels=256,
+                    num_outs=5,
                 ),
                 rpn_head=dict(
                     type="RPNHead",

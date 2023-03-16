@@ -6,8 +6,6 @@ A script to benchmark builtin models.
 Note: this script has an extra dependency of psutil.
 """
 
-import itertools
-import logging
 import psutil
 import torch
 import tqdm
@@ -29,6 +27,9 @@ from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.events import CommonMetricPrinter
 from detectron2.utils.logger import setup_logger
+
+import itertools
+import logging
 
 logger = logging.getLogger("detectron2")
 
@@ -123,7 +124,9 @@ def benchmark_train(args):
             hooks.IterationTimer(),
             hooks.PeriodicWriter([CommonMetricPrinter(max_iter)]),
             hooks.TorchProfiler(
-                lambda trainer: trainer.iter == max_iter - 1, cfg.OUTPUT_DIR, save_tensorboard=True
+                lambda trainer: trainer.iter == max_iter - 1,
+                cfg.OUTPUT_DIR,
+                save_tensorboard=True,
             ),
         ]
     )
@@ -194,4 +197,11 @@ if __name__ == "__main__":
         f = benchmark_eval
         # only benchmark single-GPU inference.
         assert args.num_gpus == 1 and args.num_machines == 1
-    launch(f, args.num_gpus, args.num_machines, args.machine_rank, args.dist_url, args=(args,))
+    launch(
+        f,
+        args.num_gpus,
+        args.num_machines,
+        args.machine_rank,
+        args.dist_url,
+        args=(args,),
+    )

@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
 import numpy as np
-from typing import List, Optional, Tuple
 import cv2
 import torch
 
+import logging
 from densepose.structures import DensePoseDataRelative
+from typing import List, Optional, Tuple
 
 from ..structures import DensePoseChartResult
 from .base import Boxes, Image, MatrixVisualizer

@@ -1,12 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import contextlib
-import datetime
-import io
-import json
-import logging
 import numpy as np
-import os
-import shutil
 import pycocotools.mask as mask_util
 from fvcore.common.timer import Timer
 from iopath.common.file_io import file_lock
@@ -14,6 +7,14 @@ from PIL import Image
 
 from detectron2.structures import Boxes, BoxMode, PolygonMasks, RotatedBoxes
 from detectron2.utils.file_io import PathManager
+
+import contextlib
+import datetime
+import io
+import json
+import logging
+import os
+import shutil
 
 from .. import DatasetCatalog, MetadataCatalog
 
@@ -24,7 +25,12 @@ This file contains functions to parse COCO-format annotations into dicts in "Det
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["load_coco_json", "load_sem_seg", "convert_to_coco_json", "register_coco_instances"]
+__all__ = [
+    "load_coco_json",
+    "load_sem_seg",
+    "convert_to_coco_json",
+    "register_coco_instances",
+]
 
 
 def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None):
@@ -436,7 +442,12 @@ def convert_to_coco_dict(dataset_name):
         "date_created": str(datetime.datetime.now()),
         "description": "Automatically generated COCO json file for Detectron2.",
     }
-    coco_dict = {"info": info, "images": coco_images, "categories": categories, "licenses": None}
+    coco_dict = {
+        "info": info,
+        "images": coco_images,
+        "categories": categories,
+        "licenses": None,
+    }
     if len(coco_annotations) > 0:
         coco_dict["annotations"] = coco_annotations
     return coco_dict
@@ -517,9 +528,10 @@ if __name__ == "__main__":
         "dataset_name" can be "coco_2014_minival_100", or other
         pre-registered ones
     """
+    import detectron2.data.datasets  # noqa # add pre-defined metadata
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
-    import detectron2.data.datasets  # noqa # add pre-defined metadata
+
     import sys
 
     logger = setup_logger(name=__name__)

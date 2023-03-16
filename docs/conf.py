@@ -17,14 +17,14 @@
 #
 import os
 import sys
-from unittest import mock
-from sphinx.domains import Domain
 from typing import Dict, List, Tuple
+from unittest import mock
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
 import sphinx_rtd_theme
+from sphinx.domains import Domain
 
 
 class GithubURLDomain(Domain):
@@ -151,7 +151,7 @@ else:
     # skip this when building locally
     intersphinx_timeout = 0.5
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.7", None),
+    "python": ("https://docs.python.org/3.8", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "torch": ("https://pytorch.org/docs/master/", None),
 }
@@ -176,7 +176,14 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "build", "README.md", "tutorials/README.md"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "build",
+    "README.md",
+    "tutorials/README.md",
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
@@ -237,7 +244,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "detectron2.tex", "detectron2 Documentation", "detectron2 contributors", "manual")
+    (
+        master_doc,
+        "detectron2.tex",
+        "detectron2 Documentation",
+        "detectron2 contributors",
+        "manual",
+    )
 ]
 
 
@@ -314,14 +327,32 @@ _PAPER_DATA = {
         "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks",
     ),
     "deformconv": ("1703.06211", "Deformable Convolutional Networks"),
-    "deformconv2": ("1811.11168", "Deformable ConvNets v2: More Deformable, Better Results"),
+    "deformconv2": (
+        "1811.11168",
+        "Deformable ConvNets v2: More Deformable, Better Results",
+    ),
     "panopticfpn": ("1901.02446", "Panoptic Feature Pyramid Networks"),
     "retinanet": ("1708.02002", "Focal Loss for Dense Object Detection"),
-    "cascade r-cnn": ("1712.00726", "Cascade R-CNN: Delving into High Quality Object Detection"),
-    "lvis": ("1908.03195", "LVIS: A Dataset for Large Vocabulary Instance Segmentation"),
-    "rrpn": ("1703.01086", "Arbitrary-Oriented Scene Text Detection via Rotation Proposals"),
-    "imagenet in 1h": ("1706.02677", "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour"),
-    "xception": ("1610.02357", "Xception: Deep Learning with Depthwise Separable Convolutions"),
+    "cascade r-cnn": (
+        "1712.00726",
+        "Cascade R-CNN: Delving into High Quality Object Detection",
+    ),
+    "lvis": (
+        "1908.03195",
+        "LVIS: A Dataset for Large Vocabulary Instance Segmentation",
+    ),
+    "rrpn": (
+        "1703.01086",
+        "Arbitrary-Oriented Scene Text Detection via Rotation Proposals",
+    ),
+    "imagenet in 1h": (
+        "1706.02677",
+        "Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour",
+    ),
+    "xception": (
+        "1610.02357",
+        "Xception: Deep Learning with Depthwise Separable Convolutions",
+    ),
     "mobilenet": (
         "1704.04861",
         "MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications",
@@ -334,7 +365,10 @@ _PAPER_DATA = {
     "scaling": ("2103.06877", "Fast and Accurate Model Scaling"),
     "fcos": ("2006.09214", "FCOS: A Simple and Strong Anchor-free Object Detector"),
     "rethinking-batchnorm": ("2105.07576", 'Rethinking "Batch" in BatchNorm'),
-    "vitdet": ("2203.16527", "Exploring Plain Vision Transformer Backbones for Object Detection"),
+    "vitdet": (
+        "2203.16527",
+        "Exploring Plain Vision Transformer Backbones for Object Detection",
+    ),
     "mvitv2": (
         "2112.01526",
         "MViTv2: Improved Multiscale Vision Transformers for Classification and Detection",

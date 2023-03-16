@@ -1,13 +1,12 @@
-from ..common.optim import SGD as optimizer
+from detectron2.config import LazyCall as L
+from detectron2.modeling.backbone import RegNet
+from detectron2.modeling.backbone.regnet import ResBottleneckBlock, SimpleStem
+
 from ..common.coco_schedule import lr_multiplier_1x as lr_multiplier
 from ..common.data.coco import dataloader
 from ..common.models.mask_rcnn_fpn import model
+from ..common.optim import SGD as optimizer
 from ..common.train import train
-
-from detectron2.config import LazyCall as L
-from detectron2.modeling.backbone import RegNet
-from detectron2.modeling.backbone.regnet import SimpleStem, ResBottleneckBlock
-
 
 # Replace default ResNet with RegNetX-4GF from the DDS paper. Config source:
 # https://github.com/facebookresearch/pycls/blob/2c152a6e5d913e898cca4f0a758f41e6b976714d/configs/dds_baselines/regnetx/RegNetX-4.0GF_dds_8gpu.yaml#L4-L9  # noqa

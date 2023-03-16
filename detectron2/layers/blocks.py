@@ -7,7 +7,6 @@ from torch import nn
 from .batch_norm import FrozenBatchNorm2d, get_norm
 from .wrappers import Conv2d
 
-
 """
 CNN building blocks.
 """

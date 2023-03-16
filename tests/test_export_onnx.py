@@ -1,8 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import io
-import unittest
-import warnings
 import torch
 from torch.hub import _check_module_exists
 
@@ -23,14 +20,19 @@ from detectron2.utils.testing import (
     random_boxes,
     register_custom_op_onnx_export,
     skipIfOnCPUCI,
+    skipIfOnPytorch1_10,
     skipIfUnsupportedMinOpsetVersion,
     skipIfUnsupportedMinTorchVersion,
     unregister_custom_op_onnx_export,
 )
 
+import io
+import unittest
+import warnings
+
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
-@skipIfUnsupportedMinTorchVersion("1.10")
+@skipIfOnPytorch1_10
 class TestONNXTracingExport(unittest.TestCase):
     opset_version = STABLE_ONNX_OPSET_VERSION
 
@@ -46,6 +48,7 @@ class TestONNXTracingExport(unittest.TestCase):
         )
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
@@ -80,7 +83,9 @@ class TestONNXTracingExport(unittest.TestCase):
             return model.inference(inputs, do_postprocess=False)
 
         self._test_model_zoo_from_config_path(
-            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func, batch=2
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml",
+            inference_func,
+            batch=2,
         )
 
     @skipIfUnsupportedMinOpsetVersion(16, STABLE_ONNX_OPSET_VERSION)
@@ -100,7 +105,9 @@ class TestONNXTracingExport(unittest.TestCase):
             def __init__(self):
                 super().__init__()
                 self.model = KRCNNConvDeconvUpsampleHead(
-                    ShapeSpec(channels=4, height=14, width=14), num_keypoints=17, conv_dims=(4,)
+                    ShapeSpec(channels=4, height=14, width=14),
+                    num_keypoints=17,
+                    conv_dims=(4,),
                 )
 
             def forward(self, x, predbox1, predbox2):
@@ -210,7 +217,12 @@ class TestONNXTracingExport(unittest.TestCase):
         image = get_sample_coco_image()
         inputs = tuple(image.clone() for _ in range(batch))
         return self._test_model(
-            model, inputs, inference_func, opset_version, save_onnx_graph_path, **export_kwargs
+            model,
+            inputs,
+            inference_func,
+            opset_version,
+            save_onnx_graph_path,
+            **export_kwargs,
         )
 
     def _test_model_from_config_path(
@@ -233,5 +245,10 @@ class TestONNXTracingExport(unittest.TestCase):
         image = get_sample_coco_image()
         inputs = tuple(image.clone() for _ in range(batch))
         return self._test_model(
-            model, inputs, inference_func, opset_version, save_onnx_graph_path, **export_kwargs
+            model,
+            inputs,
+            inference_func,
+            opset_version,
+            save_onnx_graph_path,
+            **export_kwargs,
         )

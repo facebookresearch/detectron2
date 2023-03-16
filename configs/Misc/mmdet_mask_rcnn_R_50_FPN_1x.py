@@ -1,13 +1,13 @@
 # An example config to train a mmdetection model using detectron2.
 
-from ..common.data.coco import dataloader
+from detectron2.config import LazyCall as L
+from detectron2.modeling.mmdet_wrapper import MMDetDetector
+
 from ..common.coco_schedule import lr_multiplier_1x as lr_multiplier
+from ..common.data.coco import dataloader
+from ..common.data.constants import constants
 from ..common.optim import SGD as optimizer
 from ..common.train import train
-from ..common.data.constants import constants
-
-from detectron2.modeling.mmdet_wrapper import MMDetDetector
-from detectron2.config import LazyCall as L
 
 model = L(MMDetDetector)(
     detector=dict(

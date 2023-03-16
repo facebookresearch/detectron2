@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import logging
 import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Union
 import torch
 from torch.utils.data.dataset import Dataset
 
 from detectron2.data.detection_utils import read_image
+
+import logging
+from typing import Any, Callable, Dict, List, Optional, Union
 
 ImageTransform = Callable[[torch.Tensor], torch.Tensor]
 

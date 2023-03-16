@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import glob
-import os
 from setuptools import find_packages, setup
 import torch
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
+
+import glob
+import os
 
 
 def get_extensions():
@@ -63,7 +64,7 @@ setup(
     version="0.1",
     author="FAIR",
     packages=find_packages(exclude=("configs", "tests")),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
 )

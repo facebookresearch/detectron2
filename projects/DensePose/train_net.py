@@ -9,8 +9,6 @@ This script is similar to the training script in detectron2/tools.
 It is an example of how a user might use detectron2 for a new project.
 """
 
-from datetime import timedelta
-
 import detectron2.utils.comm as comm
 from detectron2.config import get_cfg
 from detectron2.engine import DEFAULT_TIMEOUT, default_argument_parser, default_setup, hooks, launch
@@ -18,6 +16,7 @@ from detectron2.evaluation import verify_results
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
 
+from datetime import timedelta
 from densepose import add_densepose_config
 from densepose.engine import Trainer
 from densepose.modeling.densepose_checkpoint import DensePoseCheckpointer

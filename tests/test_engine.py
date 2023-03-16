@@ -1,12 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import json
-import math
-import os
-import tempfile
-import time
-import unittest
-from unittest import mock
 import torch
 from fvcore.common.checkpoint import Checkpointer
 from torch import nn
@@ -16,6 +9,14 @@ from detectron2.config import configurable, get_cfg
 from detectron2.engine import DefaultTrainer, SimpleTrainer, default_setup, hooks
 from detectron2.modeling.meta_arch import META_ARCH_REGISTRY
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter
+
+import json
+import math
+import os
+import tempfile
+import time
+import unittest
+from unittest import mock
 
 
 @META_ARCH_REGISTRY.register()
@@ -75,7 +76,10 @@ class TestTrainer(unittest.TestCase):
             writers = [CommonMetricPrinter(max_iter), JSONWriter(json_file)]
 
             trainer.register_hooks(
-                [hooks.EvalHook(0, lambda: {"metric": 100}), hooks.PeriodicWriter(writers)]
+                [
+                    hooks.EvalHook(0, lambda: {"metric": 100}),
+                    hooks.PeriodicWriter(writers),
+                ]
             )
             with self.assertLogs(writers[0].logger) as logs:
                 trainer.train(0, max_iter)

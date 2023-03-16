@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any, Dict, List, Tuple
 import torch
 from torch.nn import functional as F
 
@@ -11,6 +10,7 @@ from densepose.converters.base import IntTupleBox
 from densepose.data.utils import get_class_to_mesh_name_mapping
 from densepose.modeling.cse.utils import squared_euclidean_distance_matrix
 from densepose.structures import DensePoseDataRelative
+from typing import Any, Dict, List, Tuple
 
 from .densepose_base import DensePoseBaseSampler
 

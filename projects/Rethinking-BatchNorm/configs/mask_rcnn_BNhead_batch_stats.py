@@ -15,6 +15,6 @@ class BatchNormBatchStat(BatchNorm2d):
 
 # After training with the base config, it's sufficient to load its model with
 # this config only for inference -- because the training-time behavior is identical.
-from .mask_rcnn_BNhead import model, dataloader, lr_multiplier, optimizer, train
+from .mask_rcnn_BNhead import dataloader, lr_multiplier, model, optimizer, train
 
 model.roi_heads.box_head.conv_norm = model.roi_heads.mask_head.conv_norm = BatchNormBatchStat

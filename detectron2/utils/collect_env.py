@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import importlib
 import numpy as np
+import PIL
+import torch
+import torchvision
+from tabulate import tabulate
+
+import importlib
 import os
 import re
 import subprocess
 import sys
 from collections import defaultdict
-import PIL
-import torch
-import torchvision
-from tabulate import tabulate
 
 __all__ = ["collect_env_info"]
 
@@ -73,7 +74,10 @@ def collect_env_info():
         import detectron2  # noqa
 
         data.append(
-            ("detectron2", detectron2.__version__ + " @" + os.path.dirname(detectron2.__file__))
+            (
+                "detectron2",
+                detectron2.__version__ + " @" + os.path.dirname(detectron2.__file__),
+            )
         )
     except ImportError:
         data.append(("detectron2", "failed to import"))
@@ -111,7 +115,10 @@ def collect_env_info():
                 pass
             else:
                 data.append(
-                    ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, so_file))
+                    (
+                        "detectron2 arch flags",
+                        detect_compute_compatibility(CUDA_HOME, so_file),
+                    )
                 )
     else:
         # print compilers that are used to build extension
@@ -119,7 +126,10 @@ def collect_env_info():
         data.append(("CUDA compiler", _C.get_cuda_version()))  # cuda or hip
         if has_cuda and getattr(_C, "has_cuda", lambda: True)():
             data.append(
-                ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
+                (
+                    "detectron2 arch flags",
+                    detect_compute_compatibility(CUDA_HOME, _C.__file__),
+                )
             )
 
     data.append(get_env_module())
@@ -149,7 +159,8 @@ def collect_env_info():
             data.append(("ROCM_HOME", str(ROCM_HOME) + msg))
         else:
             try:
-                from torch.utils.collect_env import get_nvidia_driver_version, run as _run
+                from torch.utils.collect_env import get_nvidia_driver_version
+                from torch.utils.collect_env import run as _run
 
                 data.append(("Driver version", get_nvidia_driver_version(_run)))
             except Exception:

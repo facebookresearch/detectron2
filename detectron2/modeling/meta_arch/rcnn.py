@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
 import numpy as np
-from typing import Dict, List, Optional, Tuple
 import torch
 from torch import nn
 
@@ -11,6 +9,9 @@ from detectron2.layers import move_device_like
 from detectron2.structures import ImageList, Instances
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
+
+import logging
+from typing import Dict, List, Optional, Tuple
 
 from ..backbone import Backbone, build_backbone
 from ..postprocessing import detector_postprocess
@@ -319,7 +320,9 @@ class ProposalNetwork(nn.Module):
             gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
         elif "targets" in batched_inputs[0]:
             log_first_n(
-                logging.WARN, "'targets' in the model inputs is now renamed to 'instances'!", n=10
+                logging.WARN,
+                "'targets' in the model inputs is now renamed to 'instances'!",
+                n=10,
             )
             gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
         else:

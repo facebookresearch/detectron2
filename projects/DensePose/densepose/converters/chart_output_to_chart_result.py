@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Dict
 import torch
 from torch.nn import functional as F
 
 from detectron2.structures.boxes import Boxes, BoxMode
+
+from typing import Dict
 
 from ..structures import (
     DensePoseChartPredictorOutput,

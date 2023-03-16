@@ -1,15 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import io
-import tempfile
-import unittest
-from contextlib import ExitStack
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from detectron2.utils import comm
 
+import io
+import tempfile
+import unittest
+from contextlib import ExitStack
 from densepose.evaluation.tensor_storage import (
     SingleProcessFileTensorStorage,
     SingleProcessRamTensorStorage,
@@ -104,7 +104,10 @@ def launch(main_func, nprocs, args=()):
     dist_url = f"tcp://127.0.0.1:{port}"
     # dist_url = "env://"
     mp.spawn(
-        distributed_worker, nprocs=nprocs, args=(main_func, nprocs, dist_url, args), daemon=False
+        distributed_worker,
+        nprocs=nprocs,
+        args=(main_func, nprocs, dist_url, args),
+        daemon=False,
     )
 
 

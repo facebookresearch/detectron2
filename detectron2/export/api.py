@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import copy
-import logging
-import os
 import torch
 from caffe2.proto import caffe2_pb2
 from torch import nn
 
 from detectron2.config import CfgNode
 from detectron2.utils.file_io import PathManager
+
+import copy
+import logging
+import os
 
 from .caffe2_inference import ProtobufDetectionModel
 from .caffe2_modeling import META_ARCH_CAFFE2_EXPORT_TYPE_MAP, convert_batched_inputs_to_c2_format

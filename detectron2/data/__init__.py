@@ -9,7 +9,7 @@ from .build import (
     load_proposals_into_dataset,
     print_instances_class_histogram,
 )
-from .catalog import DatasetCatalog, MetadataCatalog, Metadata
+from .catalog import DatasetCatalog, Metadata, MetadataCatalog
 from .common import DatasetFromList, MapDataset, ToIterableDataset
 from .dataset_mapper import DatasetMapper
 

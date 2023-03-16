@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-from typing import Any
-
 from detectron2.structures import Boxes
+
+from typing import Any
 
 from ..structures import DensePoseChartResult, DensePoseChartResultWithConfidences
 from .base import BaseConverter

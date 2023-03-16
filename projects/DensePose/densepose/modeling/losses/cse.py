@@ -1,10 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from typing import Any, List
 from torch import nn
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
+
+from typing import Any, List
 
 from .cycle_pix2shape import PixToShapeCycleLoss
 from .cycle_shape2shape import ShapeToShapeCycleLoss
@@ -88,7 +89,10 @@ class DensePoseCseLoss:
             all_loss_dict["loss_shape2shape"] = self.w_shape2shape * self.shape2shape_loss(embedder)
         if self.do_pix2shape:
             all_loss_dict["loss_pix2shape"] = self.w_pix2shape * self.pix2shape_loss(
-                proposals_with_gt, densepose_predictor_outputs, packed_annotations, embedder
+                proposals_with_gt,
+                densepose_predictor_outputs,
+                packed_annotations,
+                embedder,
             )
         return all_loss_dict
 

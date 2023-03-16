@@ -1,10 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import unittest
 import torch
 
 from detectron2.structures import Boxes, BoxMode, Instances
 
+import unittest
 from densepose.modeling.losses.utils import ChartBasedAnnotationsAccumulator
 from densepose.structures import DensePoseDataRelative, DensePoseList
 
@@ -53,7 +53,13 @@ class TestChartBasedAnnotationsAccumulator(unittest.TestCase):
         )
         expected_values = {
             "s_gt": [
-                torch.zeros((3, DensePoseDataRelative.MASK_SIZE, DensePoseDataRelative.MASK_SIZE))
+                torch.zeros(
+                    (
+                        3,
+                        DensePoseDataRelative.MASK_SIZE,
+                        DensePoseDataRelative.MASK_SIZE,
+                    )
+                )
             ]
             * n_instances,
             "bbox_xywh_est": bbox_xywh_est.split(1),

@@ -1,15 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import copy
 import numpy as np
-import os
-import unittest
 import pycocotools.mask as mask_util
 
 from detectron2.data import MetadataCatalog, detection_utils
 from detectron2.data import transforms as T
 from detectron2.structures import BitMasks, BoxMode
 from detectron2.utils.file_io import PathManager
+
+import copy
+import os
+import unittest
 
 
 class TestTransformAnnotations(unittest.TestCase):
@@ -19,7 +20,10 @@ class TestTransformAnnotations(unittest.TestCase):
             "bbox": np.asarray([10, 10, 200, 300]),
             "bbox_mode": BoxMode.XYXY_ABS,
             "category_id": 3,
-            "segmentation": [[10, 10, 100, 100, 100, 10], [150, 150, 200, 150, 200, 200]],
+            "segmentation": [
+                [10, 10, 100, 100, 100, 10],
+                [150, 150, 200, 150, 200, 200],
+            ],
         }
 
         output = detection_utils.transform_instance_annotations(anno, transforms, (400, 400))

@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import math
-from typing import Any, List
 import torch
 from torch import nn
 from torch.nn import functional as F
 
 from detectron2.config import CfgNode
 from detectron2.structures import Instances
+
+import math
+from typing import Any, List
 
 from .. import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from .chart import DensePoseChartLoss
@@ -102,7 +103,13 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                 return {
                     "loss_densepose_UV": (
                         self.uv_loss_with_confidences(
-                            u_est, v_est, sigma_2_est, kappa_u_est, kappa_v_est, u_gt, v_gt
+                            u_est,
+                            v_est,
+                            sigma_2_est,
+                            kappa_u_est,
+                            kappa_v_est,
+                            u_gt,
+                            v_gt,
                         )
                         * self.w_points
                     )

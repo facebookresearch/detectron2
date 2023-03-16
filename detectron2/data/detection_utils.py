@@ -5,9 +5,7 @@
 Common data processing utilities that are used in a
 typical object detection data pipeline.
 """
-import logging
 import numpy as np
-from typing import List, Union
 import pycocotools.mask as mask_util
 import torch
 from PIL import Image
@@ -23,6 +21,9 @@ from detectron2.structures import (
     polygons_to_bitmask,
 )
 from detectron2.utils.file_io import PathManager
+
+import logging
+from typing import List, Union
 
 from . import transforms as T
 from .catalog import MetadataCatalog
@@ -50,7 +51,11 @@ class SizeMismatchError(ValueError):
 
 
 # https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
-_M_RGB2YUV = [[0.299, 0.587, 0.114], [-0.14713, -0.28886, 0.436], [0.615, -0.51499, -0.10001]]
+_M_RGB2YUV = [
+    [0.299, 0.587, 0.114],
+    [-0.14713, -0.28886, 0.436],
+    [0.615, -0.51499, -0.10001],
+]
 _M_YUV2RGB = [[1.0, 0.0, 1.13983], [1.0, -0.39465, -0.58060], [1.0, 2.03211, 0.0]]
 
 # https://www.exiv2.org/tags.html

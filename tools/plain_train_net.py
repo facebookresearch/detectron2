@@ -19,9 +19,6 @@ Compared to "train_net.py", this script supports fewer default features.
 It also includes fewer abstraction, therefore is easier to add custom logic.
 """
 
-import logging
-import os
-from collections import OrderedDict
 import torch
 from torch.nn.parallel import DistributedDataParallel
 
@@ -49,6 +46,10 @@ from detectron2.evaluation import (
 from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils.events import EventStorage
+
+import logging
+import os
+from collections import OrderedDict
 
 logger = logging.getLogger("detectron2")
 

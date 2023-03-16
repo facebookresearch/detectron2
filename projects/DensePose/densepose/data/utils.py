@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from detectron2.config import CfgNode
+
 import os
 from typing import Dict, Optional
-
-from detectron2.config import CfgNode
 
 
 def is_relative_local_path(path: str) -> bool:

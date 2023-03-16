@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple
 import torch
 from torch import Tensor, nn
 
@@ -8,6 +7,8 @@ from detectron2.layers import move_device_like
 from detectron2.modeling import Backbone
 from detectron2.structures import Boxes, ImageList, Instances
 from detectron2.utils.events import get_event_storage
+
+from typing import Dict, List, Optional, Tuple
 
 from ..postprocessing import detector_postprocess
 
@@ -229,7 +230,10 @@ class DenseDetector(nn.Module):
             pred_deltas[anchor_idxs], anchors.tensor[anchor_idxs]
         )
         return Instances(
-            image_size, pred_boxes=Boxes(pred_boxes), scores=pred_scores, pred_classes=classes_idxs
+            image_size,
+            pred_boxes=Boxes(pred_boxes),
+            scores=pred_scores,
+            pred_classes=classes_idxs,
         )
 
     def _decode_multi_level_predictions(

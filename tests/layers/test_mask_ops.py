@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import contextlib
-import io
 import numpy as np
-import unittest
-from collections import defaultdict
 import torch
 import tqdm
 from fvcore.common.benchmark import benchmark
@@ -24,6 +20,11 @@ from detectron2.structures import BitMasks, Boxes, BoxMode, PolygonMasks
 from detectron2.structures.masks import polygons_to_bitmask
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.testing import random_boxes
+
+import contextlib
+import io
+import unittest
+from collections import defaultdict
 
 
 def iou_between_full_image_bit_masks(a, b):

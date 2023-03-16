@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import unittest
 import torch
 from torch import Tensor
 
 from detectron2.export.torchscript import patch_instances
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.testing import convert_scripted_instances
+
+import unittest
 
 
 class TestInstances(unittest.TestCase):

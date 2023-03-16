@@ -1,10 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import os
-import pickle
-import sys
-import unittest
-from functools import partial
 import torch
 from iopath.common.file_io import LazyPath
 
@@ -24,6 +19,12 @@ from detectron2.data.common import (
     set_default_dataset_from_list_serialize_method,
 )
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
+
+import os
+import pickle
+import sys
+import unittest
+from functools import partial
 
 
 def _a_slow_func(x):
@@ -108,6 +109,12 @@ class TestAspectRatioGrouping(unittest.TestCase):
                 self.assertLess(len(bucket), batchsize)
 
 
+class MyData(torch.utils.data.IterableDataset):
+    def __iter__(self):
+        while True:
+            yield 1
+
+
 class TestDataLoader(unittest.TestCase):
     def _get_kwargs(self):
         # get kwargs of build_detection_train_loader
@@ -131,11 +138,6 @@ class TestDataLoader(unittest.TestCase):
 
     def test_build_iterable_dataloader_from_cfg(self):
         cfg = get_cfg()
-
-        class MyData(torch.utils.data.IterableDataset):
-            def __iter__(self):
-                while True:
-                    yield 1
 
         cfg.DATASETS.TRAIN = ["iter_data"]
         DatasetCatalog.register("iter_data", lambda: MyData())

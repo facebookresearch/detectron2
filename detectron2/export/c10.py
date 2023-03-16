@@ -1,7 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import math
-from typing import Dict
 import torch
 import torch.nn.functional as F
 
@@ -12,8 +10,10 @@ from detectron2.modeling.proposal_generator import rpn
 from detectron2.modeling.roi_heads.mask_head import mask_rcnn_inference
 from detectron2.structures import Boxes, ImageList, Instances, Keypoints, RotatedBoxes
 
-from .shared import alias, to_device
+import math
+from typing import Dict
 
+from .shared import alias, to_device
 
 """
 This file contains caffe2-compatible implementation of several detectron2 components.

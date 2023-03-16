@@ -5,5 +5,5 @@ from .trident_backbone import (
     build_trident_resnet_backbone,
     make_trident_stage,
 )
-from .trident_rpn import TridentRPN
 from .trident_rcnn import TridentRes5ROIHeads, TridentStandardROIHeads
+from .trident_rpn import TridentRPN

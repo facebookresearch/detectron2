@@ -183,7 +183,10 @@ class RotationTransform(Transform):
             center = image_center
         if interp is None:
             interp = cv2.INTER_LINEAR
-        abs_cos, abs_sin = (abs(np.cos(np.deg2rad(angle))), abs(np.sin(np.deg2rad(angle))))
+        abs_cos, abs_sin = (
+            abs(np.cos(np.deg2rad(angle))),
+            abs(np.sin(np.deg2rad(angle))),
+        )
         if expand:
             # find the new width and height bounds
             bound_w, bound_h = np.rint(
@@ -242,7 +245,10 @@ class RotationTransform(Transform):
             self.bound_h, self.bound_w, -self.angle, True, None, self.interp
         )
         crop = CropTransform(
-            (rotation.bound_w - self.w) // 2, (rotation.bound_h - self.h) // 2, self.w, self.h
+            (rotation.bound_w - self.w) // 2,
+            (rotation.bound_h - self.h) // 2,
+            self.w,
+            self.h,
         )
         return TransformList([rotation, crop])
 

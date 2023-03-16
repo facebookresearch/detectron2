@@ -1,8 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import logging
-import math
-from bisect import bisect_right
-from typing import List
 import torch
 from fvcore.common.param_scheduler import (
     CompositeParamScheduler,
@@ -10,6 +6,11 @@ from fvcore.common.param_scheduler import (
     LinearParamScheduler,
     ParamScheduler,
 )
+
+import logging
+import math
+from bisect import bisect_right
+from typing import List
 
 try:
     from torch.optim.lr_scheduler import LRScheduler
@@ -153,7 +154,8 @@ class WarmupMultiStepLR(LRScheduler):
         )
         if not list(milestones) == sorted(milestones):
             raise ValueError(
-                "Milestones should be a list of" " increasing integers. Got {}", milestones
+                "Milestones should be a list of" " increasing integers. Got {}",
+                milestones,
             )
         self.milestones = milestones
         self.gamma = gamma
