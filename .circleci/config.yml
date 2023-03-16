@@ -177,9 +177,14 @@ select_cuda: &select_cuda
         sudo update-alternatives --set cuda /usr/local/cuda-<< parameters.cuda_version >>
 
 save_artifact: &save_artifact
+  - run:
+      name: Save artifacts
+      command: |
+        python -m pip install wheel
+        python setup.py bdist_wheel
   - store_artifacts:
-      path: ~/detectron2/build
-      destination: build
+      path: ~/detectron2/dist
+      destination: dist
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
