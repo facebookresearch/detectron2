@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from setuptools import find_packages, setup
+import torch
+from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
+
 import glob
 import os
 import shutil
 from os import path
-from setuptools import find_packages, setup
 from typing import List
-import torch
-from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 8], "Requires PyTorch >= 1.8"
+assert torch_ver >= [1, 12], "Requires PyTorch >= 1.12"
 
 
 def get_version():
@@ -154,7 +155,7 @@ setup(
     packages=find_packages(exclude=("configs", "tests*")) + list(PROJECTS.keys()),
     package_dir=PROJECTS,
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         # These dependencies are not pure-python.
         # In general, avoid adding dependencies that are not pure-python because they are not
@@ -203,11 +204,11 @@ setup(
         ],
         # dev dependencies. Install them by `pip install 'detectron2[dev]'`
         "dev": [
-            "flake8==3.8.1",
-            "isort==4.3.21",
+            "flake8==6.0.0",
+            "isort==5.12.0",
             "flake8-bugbear",
             "flake8-comprehensions",
-            "black==22.3.0",
+            "black==23.1.0",
         ],
     },
     ext_modules=get_extensions(),

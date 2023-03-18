@@ -274,6 +274,11 @@ skipIfOnCPUCI = unittest.skipIf(
     "The test is too slow on CPUs and will be executed on CircleCI's GPU jobs.",
 )
 
+# SKIP IF PYTORCH VERSION > 1.10
+skipIfOnPytorch1_10 = unittest.skipIf(
+    min_torch_version("1.10"),
+    "The test is not supported on PyTorch 1.10+",
+)
 
 def skipIfUnsupportedMinOpsetVersion(min_opset_version, current_opset_version=None):
     """
