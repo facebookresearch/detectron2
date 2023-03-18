@@ -326,9 +326,14 @@ workflows:
           pytorch_version: '2.0.0+cu118'
           torchvision_version: '0.15.1+cu118'
           cuda_version: '11.8'
+          python_version: '3.11'
       - windows_cpu_build:
           pytorch_version: '1.12.1+cpu'
           torchvision_version: '0.13.1+cpu'
       - windows_cpu_build:
           pytorch_version: '1.13.1+cpu'
           torchvision_version: '0.14.1+cpu'
+      - windows_cpu_build:
+          pytorch_version: '2.0.0+cpu'
+          torchvision_version: '0.15.1+cpu'
+          python_version: '3.11'
