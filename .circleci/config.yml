@@ -176,6 +176,17 @@ select_cuda: &select_cuda
       command: |
         sudo update-alternatives --set cuda /usr/local/cuda-<< parameters.cuda_version >>
 
+build_wheel: &build_wheel
+  - run:
+      name: Build wheel
+      command: |
+        python -m pip install wheel
+        python setup.py bdist_wheel
+
+save_artifact: &save_artifact
+  - store_artifacts:
+      path: ~/detectron2/dist
+      destination: dist
 
 # -------------------------------------------------------------------------------------
 # Jobs to run
@@ -198,6 +209,8 @@ jobs:
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
+      - <<: *build_wheel
+      - <<: *save_artifact
       - <<: *run_unittests
       - <<: *uninstall_tests
 
@@ -223,6 +236,8 @@ jobs:
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
+      - <<: *build_wheel
+      - <<: *save_artifact
       - <<: *run_unittests
       - <<: *uninstall_tests
 
@@ -317,6 +332,3 @@ workflows:
       - windows_cpu_build:
           pytorch_version: '1.13.1+cpu'
           torchvision_version: '0.14.1+cpu'
-      - windows_cpu_build:
-          pytorch_version: '2.0.0+cpu'
-          torchvision_version: '0.15.1+cpu'

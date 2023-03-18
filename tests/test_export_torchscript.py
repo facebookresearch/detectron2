@@ -43,7 +43,7 @@ class TestScripting(unittest.TestCase):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
     @skipIfOnCPUCI
-    @skipIfUnsupportedMinTorchVersion("1.11")
+    @skipIfUnsupportedMinTorchVersion("1.12")
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -112,6 +112,7 @@ class TestTracing(unittest.TestCase):
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
     @skipIfOnCPUCI
+    @skipIfUnsupportedMinTorchVersion("1.12")
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]

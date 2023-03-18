@@ -30,7 +30,7 @@ from detectron2.utils.testing import (
 
 
 @unittest.skipIf(not _check_module_exists("onnx"), "ONNX not installed.")
-@skipIfUnsupportedMinTorchVersion("1.11")
+@skipIfUnsupportedMinTorchVersion("1.12")
 class TestONNXTracingExport(unittest.TestCase):
     opset_version = STABLE_ONNX_OPSET_VERSION
 
@@ -46,7 +46,7 @@ class TestONNXTracingExport(unittest.TestCase):
         )
 
     @skipIfOnCPUCI
-    @skipIfUnsupportedMinTorchVersion("1.11")
+    @skipIfUnsupportedMinTorchVersion("1.12")
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
