@@ -37,12 +37,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: [ "1.12", "1.13" ]
+        torch: [ "1.12.1", "1.13.1", "2.0" ]
         include:
-          - torch: "1.12"
-            torchvision: "0.13.0"
-          - torch: "1.13"
-            torchvision: "0.14.0"
+          - torch: "1.12.1"
+            torchvision: "0.13.1"
+          - torch: "1.13.1"
+            torchvision: "0.14.1"
+          - torch: "2.0"
+            torchvision: "0.15.1"
+        exclude:
+          - python: "3.11"
+            torch: "1.12.1"
+          - python: "3.11"
+            torch: "1.13.1"
     env:
       # point datasets to ~/.torch so it's cached by CI
       DETECTRON2_DATASETS: ~/.torch/datasets
