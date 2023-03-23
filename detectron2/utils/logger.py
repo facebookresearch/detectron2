@@ -14,6 +14,10 @@ from detectron2.utils.file_io import PathManager
 
 __all__ = ["setup_logger", "log_first_n", "log_every_n", "log_every_n_seconds"]
 
+D2_LOG_BUFFER_SIZE_KEY: str = "D2_LOG_BUFFER_SIZE"
+
+DEFAULT_LOG_BUFFER_SIZE: int = 1024 * 1024  # 1MB
+
 
 class _ColorfulFormatter(logging.Formatter):
     def __init__(self, *args, **kwargs):
@@ -104,9 +108,19 @@ def setup_logger(
 @functools.lru_cache(maxsize=None)
 def _cached_log_stream(filename):
     # use 1K buffer if writing to cloud storage
-    io = PathManager.open(filename, "a", buffering=1024 if "://" in filename else -1)
+    io = PathManager.open(filename, "a", buffering=_get_log_stream_buffer_size(filename))
     atexit.register(io.close)
     return io
+
+
+def _get_log_stream_buffer_size(filename: str) -> int:
+    if "://" not in filename:
+        # Local file, no extra caching is necessary
+        return -1
+    # Remote file requires a larger cache to avoid many small writes.
+    if D2_LOG_BUFFER_SIZE_KEY in os.environ:
+        return int(os.environ[D2_LOG_BUFFER_SIZE_KEY])
+    return DEFAULT_LOG_BUFFER_SIZE
 
 
 """
