@@ -139,7 +139,7 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
     graph through ONNX.
     """
 
-    def __init__(self, cfg, torch_model):
+    def __init__(self, cfg, torch_model, enable_tensor_mode=True):
         """
         Args:
             cfg (CfgNode):
@@ -149,7 +149,7 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
         super().__init__()
         self._wrapped_model = torch_model
         self.eval()
-        set_caffe2_compatible_tensor_mode(self, True)
+        set_caffe2_compatible_tensor_mode(self, enable_tensor_mode)
 
     def get_caffe2_inputs(self, batched_inputs):
         """
@@ -243,10 +243,10 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
 
 
 class Caffe2GeneralizedRCNN(Caffe2MetaArch):
-    def __init__(self, cfg, torch_model):
+    def __init__(self, cfg, torch_model, enable_tensor_mode=True):
         assert isinstance(torch_model, meta_arch.GeneralizedRCNN)
         torch_model = patch_generalized_rcnn(torch_model)
-        super().__init__(cfg, torch_model)
+        super().__init__(cfg, torch_model, enable_tensor_mode)
 
         try:
             use_heatmap_max_keypoint = cfg.EXPORT_CAFFE2.USE_HEATMAP_MAX_KEYPOINT
@@ -255,6 +255,8 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
         self.roi_heads_patcher = ROIHeadsPatcher(
             self._wrapped_model.roi_heads, use_heatmap_max_keypoint
         )
+        if self.tensor_mode:
+            self.roi_heads_patcher.patch_roi_heads()
 
     def encode_additional_info(self, predict_net, init_net):
         size_divisibility = self._wrapped_model.backbone.size_divisibility
@@ -271,8 +273,7 @@ class Caffe2GeneralizedRCNN(Caffe2MetaArch):
         images = self._caffe2_preprocess_image(inputs)
         features = self._wrapped_model.backbone(images.tensor)
         proposals, _ = self._wrapped_model.proposal_generator(images, features)
-        with self.roi_heads_patcher.mock_roi_heads():
-            detector_results, _ = self._wrapped_model.roi_heads(images, features, proposals)
+        detector_results, _ = self._wrapped_model.roi_heads(images, features, proposals)
         return tuple(detector_results[0].flatten())
 
     @staticmethod
