@@ -3,7 +3,7 @@ on: [ push, pull_request ]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    # if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -38,7 +38,7 @@ jobs:
           path: |
             ${{ env.pythonLocation }}/lib/python${{ matrix.python }}/site-packages
             ~/.torch
-          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230317
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230327
       - name: Install dependencies macOS
         if: matrix.os == 'macos-latest'
         run: |
