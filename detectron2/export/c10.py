@@ -4,6 +4,7 @@ import math
 from typing import Dict
 import torch
 import torch.nn.functional as F
+from torch.library import Library, impl
 
 from detectron2.layers import ShapeSpec, cat
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
@@ -14,10 +15,31 @@ from detectron2.structures import Boxes, ImageList, Instances, Keypoints, Rotate
 
 from .shared import alias, to_device
 
-
 """
 This file contains caffe2-compatible implementation of several detectron2 components.
 """
+
+user_lib = Library("my_new_lib", "DEF")
+
+user_lib.define("foo(Tensor self, ScalarType dtype, SymInt size) -> Tensor")
+
+
+@impl(user_lib, "foo", "CPU")
+def foo_cpu(roi_batch_splits_nms, dtype, size):
+    roi_batch_ids = cat(
+        [
+            torch.full((b, 1), i, dtype=dtype, device=roi_batch_splits_nms.device)
+            for i, b in enumerate(int(x.item()) for x in roi_batch_splits_nms)
+        ],
+        dim=0,
+    )
+    assert roi_batch_ids.size(0) == size
+    return roi_batch_ids
+
+
+@impl(user_lib, "foo", "Meta")
+def foo_meta(roi_batch_splits_nms, dtype, size):
+    return torch.empty((size, 1), dtype=dtype, device="meta")
 
 
 class Caffe2Boxes(Boxes):
@@ -480,13 +502,8 @@ def caffe2_fast_rcnn_outputs_inference(tensor_mode, box_predictor, predictions, 
     if not tensor_mode:
         roi_class_nms = roi_class_nms.to(torch.int64)
 
-    roi_batch_ids = cat(
-        [
-            torch.full((b, 1), i, dtype=dtype, device=device)
-            for i, b in enumerate(int(x.item()) for x in roi_batch_splits_nms)
-        ],
-        dim=0,
-    )
+    assert len(roi_score_nms.size()) == 1
+    roi_batch_ids = torch.ops.my_new_lib.foo(roi_batch_splits_nms, dtype, roi_score_nms.size(0))
 
     roi_class_nms = alias(roi_class_nms, "class_nms")
     roi_score_nms = alias(roi_score_nms, "score_nms")
