@@ -41,7 +41,14 @@ class _ColorfulFormatter(logging.Formatter):
 
 @functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
 def setup_logger(
-    output=None, distributed_rank=0, *, color=True, name="detectron2", abbrev_name=None
+    output=None,
+    distributed_rank=0,
+    *,
+    color=True,
+    name="detectron2",
+    abbrev_name=None,
+    enable_propagation: bool = False,
+    configure_stdout: bool = True
 ):
     """
     Initialize the detectron2 logger and set its verbosity level to "DEBUG".
@@ -55,13 +62,16 @@ def setup_logger(
             Set to "" to not log the root module in logs.
             By default, will abbreviate "detectron2" to "d2" and leave other
             modules unchanged.
+        enable_propagation (bool): whether to propagate logs to the parent logger.
+        configure_stdout (bool): whether to configure logging to stdout.
+
 
     Returns:
         logging.Logger: a logger
     """
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    logger.propagate = False
+    logger.propagate = enable_propagation
 
     if abbrev_name is None:
         abbrev_name = "d2" if name == "detectron2" else name
@@ -70,7 +80,7 @@ def setup_logger(
         "[%(asctime)s] %(name)s %(levelname)s: %(message)s", datefmt="%m/%d %H:%M:%S"
     )
     # stdout logging: master only
-    if distributed_rank == 0:
+    if configure_stdout and distributed_rank == 0:
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(logging.DEBUG)
         if color:
