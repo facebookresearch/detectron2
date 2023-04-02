@@ -6,6 +6,7 @@ import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from functools import cached_property
 from typing import Optional
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
@@ -15,7 +16,7 @@ from detectron2.utils.file_io import PathManager
 __all__ = [
     "get_event_storage",
     "JSONWriter",
-    "TensorboardXWriter",
+    "TensorBoardXWriter",
     "CommonMetricPrinter",
     "EventStorage",
 ]
@@ -128,7 +129,7 @@ class JSONWriter(EventWriter):
         self._file_handle.close()
 
 
-class TensorboardXWriter(EventWriter):
+class TensorBoardXWriter(EventWriter):
     """
     Write all scalars to a tensorboard file.
     """
@@ -142,10 +143,14 @@ class TensorboardXWriter(EventWriter):
             kwargs: other arguments passed to `torch.utils.tensorboard.SummaryWriter(...)`
         """
         self._window_size = window_size
+        self._writer_args = {"log_dir": log_dir, **kwargs}
+        self._last_write = -1
+
+    @cached_property
+    def _writer(self):
         from torch.utils.tensorboard import SummaryWriter
 
-        self._writer = SummaryWriter(log_dir, **kwargs)
-        self._last_write = -1
+        return SummaryWriter(**self._writer_args)
 
     def write(self):
         storage = get_event_storage()
@@ -174,7 +179,7 @@ class TensorboardXWriter(EventWriter):
             storage.clear_histograms()
 
     def close(self):
-        if hasattr(self, "_writer"):  # doesn't exist when the code fails at import
+        if "_writer" in self.__dict__:
             self._writer.close()
 
 
