@@ -242,7 +242,9 @@ class SimpleTrainer(TrainerBase):
     or write your own training loop.
     """
 
-    def __init__(self, model, data_loader, optimizer, gather_metric_period=1):
+    def __init__(
+        self, model, data_loader, optimizer, gather_metric_period=1, zero_grad_before_forward=False
+    ):
         """
         Args:
             model: a torch Module. Takes a data from data_loader and returns a
@@ -251,6 +253,7 @@ class SimpleTrainer(TrainerBase):
             optimizer: a torch optimizer.
             gather_metric_period: an int. Every gather_metric_period iterations
                 the metrics are gathered from all the ranks to rank 0 and logged.
+            zero_grad_before_forward: whether to zero the gradients before the forward.
         """
         super().__init__()
 
@@ -268,6 +271,7 @@ class SimpleTrainer(TrainerBase):
         self._data_loader_iter_obj = None
         self.optimizer = optimizer
         self.gather_metric_period = gather_metric_period
+        self.zero_grad_before_forward = zero_grad_before_forward
 
     def run_step(self):
         """
@@ -281,6 +285,13 @@ class SimpleTrainer(TrainerBase):
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
+        if self.zero_grad_before_forward:
+            """
+            If you need to accumulate gradients or do something similar, you can
+            wrap the optimizer with your custom `zero_grad()` method.
+            """
+            self.optimizer.zero_grad()
+
         """
         If you want to do something with the losses, you can wrap the model.
         """
@@ -290,12 +301,12 @@ class SimpleTrainer(TrainerBase):
             loss_dict = {"total_loss": loss_dict}
         else:
             losses = sum(loss_dict.values())
-
-        """
-        If you need to accumulate gradients or do something similar, you can
-        wrap the optimizer with your custom `zero_grad()` method.
-        """
-        self.optimizer.zero_grad()
+        if not self.zero_grad_before_forward:
+            """
+            If you need to accumulate gradients or do something similar, you can
+            wrap the optimizer with your custom `zero_grad()` method.
+            """
+            self.optimizer.zero_grad()
         losses.backward()
 
         self.after_backward()
@@ -400,13 +411,15 @@ class AMPTrainer(SimpleTrainer):
         data_loader,
         optimizer,
         gather_metric_period=1,
+        zero_grad_before_forward=False,
         grad_scaler=None,
         precision: torch.dtype = torch.float16,
         log_grad_scaler: bool = False,
     ):
         """
         Args:
-            model, data_loader, optimizer, gather_metric_period: same as in :class:`SimpleTrainer`.
+            model, data_loader, optimizer, gather_metric_period, zero_grad_before_forward:
+                same as in :class:`SimpleTrainer`.
             grad_scaler: torch GradScaler to automatically scale gradients.
             precision: torch.dtype as the target precision to cast to in computations
         """
@@ -415,7 +428,9 @@ class AMPTrainer(SimpleTrainer):
             assert not (model.device_ids and len(model.device_ids) > 1), unsupported
         assert not isinstance(model, DataParallel), unsupported
 
-        super().__init__(model, data_loader, optimizer, gather_metric_period)
+        super().__init__(
+            model, data_loader, optimizer, gather_metric_period, zero_grad_before_forward
+        )
 
         if grad_scaler is None:
             from torch.cuda.amp import GradScaler
@@ -437,6 +452,8 @@ class AMPTrainer(SimpleTrainer):
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
+        if self.zero_grad_before_forward:
+            self.optimizer.zero_grad()
         with autocast(dtype=self.precision):
             loss_dict = self.model(data)
             if isinstance(loss_dict, torch.Tensor):
@@ -445,7 +462,9 @@ class AMPTrainer(SimpleTrainer):
             else:
                 losses = sum(loss_dict.values())
 
-        self.optimizer.zero_grad()
+        if not self.zero_grad_before_forward:
+            self.optimizer.zero_grad()
+
         self.grad_scaler.scale(losses).backward()
 
         if self.log_grad_scaler:
