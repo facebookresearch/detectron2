@@ -1,0 +1,18 @@
+names:
+- Alligator Cracks
+- Damaged crosswalk
+- Damaged paint
+- Longitudinal Cracks
+- Manhole cover
+- Potholes
+- Transverse Cracks
+nc: 7
+roboflow:
+  license: CC BY 4.0
+  project: road-damage-detection-iicdh
+  url: https://universe.roboflow.com/new-workspace-kj87b/road-damage-detection-iicdh/dataset/10
+  version: 10
+  workspace: new-workspace-kj87b
+test: ../test/images
+train: Road-damage-detection-10/train/images
+val: Road-damage-detection-10/valid/images
