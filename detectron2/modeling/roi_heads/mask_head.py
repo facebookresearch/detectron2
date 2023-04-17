@@ -88,7 +88,7 @@ def mask_rcnn_loss(pred_mask_logits: torch.Tensor, instances: List[Instances], v
     gt_masks = gt_masks.to(dtype=torch.float32)
 
     # Log the training accuracy (using gt classes and 0.5 threshold)
-    mask_incorrect = (pred_mask_logits > 0.0) != gt_masks_bool
+    mask_incorrect = (pred_mask_logits > 0.5) != gt_masks_bool
     mask_accuracy = 1 - (mask_incorrect.sum().item() / max(mask_incorrect.numel(), 1.0))
     num_positive = gt_masks_bool.sum().item()
     false_positive = (mask_incorrect & ~gt_masks_bool).sum().item() / max(
