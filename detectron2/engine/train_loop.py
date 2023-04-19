@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
-
+import concurrent.futures
 import logging
 import numpy as np
 import time
@@ -243,7 +243,13 @@ class SimpleTrainer(TrainerBase):
     """
 
     def __init__(
-        self, model, data_loader, optimizer, gather_metric_period=1, zero_grad_before_forward=False
+        self,
+        model,
+        data_loader,
+        optimizer,
+        gather_metric_period=1,
+        zero_grad_before_forward=False,
+        async_write_metrics=False,
     ):
         """
         Args:
@@ -254,6 +260,8 @@ class SimpleTrainer(TrainerBase):
             gather_metric_period: an int. Every gather_metric_period iterations
                 the metrics are gathered from all the ranks to rank 0 and logged.
             zero_grad_before_forward: whether to zero the gradients before the forward.
+            async_write_metrics: bool. If True, then write metrics asynchronously to improve
+                training speed
         """
         super().__init__()
 
@@ -272,6 +280,10 @@ class SimpleTrainer(TrainerBase):
         self.optimizer = optimizer
         self.gather_metric_period = gather_metric_period
         self.zero_grad_before_forward = zero_grad_before_forward
+        self.async_write_metrics = async_write_metrics
+        # create a thread pool that can execute non critical logic in run_step asynchronically
+        # use only 1 worker so tasks will be executred in order of submitting.
+        self.concurrent_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def run_step(self):
         """
@@ -311,7 +323,13 @@ class SimpleTrainer(TrainerBase):
 
         self.after_backward()
 
-        self._write_metrics(loss_dict, data_time)
+        if self.async_write_metrics:
+            # write metrics asynchronically
+            self.concurrent_executor.submit(
+                self._write_metrics, loss_dict, data_time, iter=self.iter
+            )
+        else:
+            self._write_metrics(loss_dict, data_time)
 
         """
         If you need gradient clipping/scaling or other processing, you can
@@ -342,14 +360,23 @@ class SimpleTrainer(TrainerBase):
         loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
         prefix: str = "",
+        iter: Optional[int] = None,
     ) -> None:
-        if (self.iter + 1) % self.gather_metric_period == 0:
-            SimpleTrainer.write_metrics(loss_dict, data_time, prefix)
+        logger = logging.getLogger(__name__)
+
+        iter = self.iter if iter is None else iter
+        if (iter + 1) % self.gather_metric_period == 0:
+            try:
+                SimpleTrainer.write_metrics(loss_dict, data_time, iter, prefix)
+            except Exception:
+                logger.exception("Exception in writing metrics: ")
+                raise
 
     @staticmethod
     def write_metrics(
         loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
+        cur_iter: int,
         prefix: str = "",
     ) -> None:
         """
@@ -372,7 +399,7 @@ class SimpleTrainer(TrainerBase):
             # data_time among workers can have high variance. The actual latency
             # caused by data_time is the maximum among workers.
             data_time = np.max([x.pop("data_time") for x in all_metrics_dict])
-            storage.put_scalar("data_time", data_time)
+            storage.put_scalar("data_time", data_time, cur_iter=cur_iter)
 
             # average the rest metrics
             metrics_dict = {
@@ -381,13 +408,15 @@ class SimpleTrainer(TrainerBase):
             total_losses_reduced = sum(metrics_dict.values())
             if not np.isfinite(total_losses_reduced):
                 raise FloatingPointError(
-                    f"Loss became infinite or NaN at iteration={storage.iter}!\n"
+                    f"Loss became infinite or NaN at iteration={cur_iter}!\n"
                     f"loss_dict = {metrics_dict}"
                 )
 
-            storage.put_scalar("{}total_loss".format(prefix), total_losses_reduced)
+            storage.put_scalar(
+                "{}total_loss".format(prefix), total_losses_reduced, cur_iter=cur_iter
+            )
             if len(metrics_dict) > 1:
-                storage.put_scalars(**metrics_dict)
+                storage.put_scalars(cur_iter=cur_iter, **metrics_dict)
 
     def state_dict(self):
         ret = super().state_dict()
@@ -397,6 +426,10 @@ class SimpleTrainer(TrainerBase):
     def load_state_dict(self, state_dict):
         super().load_state_dict(state_dict)
         self.optimizer.load_state_dict(state_dict["optimizer"])
+
+    def after_train(self):
+        super().after_train()
+        self.concurrent_executor.shutdown(wait=True)
 
 
 class AMPTrainer(SimpleTrainer):
@@ -415,11 +448,12 @@ class AMPTrainer(SimpleTrainer):
         grad_scaler=None,
         precision: torch.dtype = torch.float16,
         log_grad_scaler: bool = False,
+        async_write_metrics=False,
     ):
         """
         Args:
-            model, data_loader, optimizer, gather_metric_period, zero_grad_before_forward:
-                same as in :class:`SimpleTrainer`.
+            model, data_loader, optimizer, gather_metric_period, zero_grad_before_forward,
+                async_write_metrics: same as in :class:`SimpleTrainer`.
             grad_scaler: torch GradScaler to automatically scale gradients.
             precision: torch.dtype as the target precision to cast to in computations
         """
@@ -473,7 +507,13 @@ class AMPTrainer(SimpleTrainer):
 
         self.after_backward()
 
-        self._write_metrics(loss_dict, data_time)
+        if self.async_write_metrics:
+            # write metrics asynchronically
+            self.concurrent_executor.submit(
+                self._write_metrics, loss_dict, data_time, iter=self.iter
+            )
+        else:
+            self._write_metrics(loss_dict, data_time)
 
         self.grad_scaler.step(self.optimizer)
         self.grad_scaler.update()
