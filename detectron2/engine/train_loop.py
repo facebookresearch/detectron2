@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
-
+import concurrent.futures
 import logging
 import numpy as np
 import time
@@ -68,6 +68,12 @@ class HookBase:
     def before_step(self):
         """
         Called before each iteration.
+        """
+        pass
+
+    def after_backward(self):
+        """
+        Called after the backward pass of each iteration.
         """
         pass
 
@@ -175,6 +181,10 @@ class TrainerBase:
         for h in self._hooks:
             h.before_step()
 
+    def after_backward(self):
+        for h in self._hooks:
+            h.after_backward()
+
     def after_step(self):
         for h in self._hooks:
             h.after_step()
@@ -232,7 +242,15 @@ class SimpleTrainer(TrainerBase):
     or write your own training loop.
     """
 
-    def __init__(self, model, data_loader, optimizer, gather_metric_period=1):
+    def __init__(
+        self,
+        model,
+        data_loader,
+        optimizer,
+        gather_metric_period=1,
+        zero_grad_before_forward=False,
+        async_write_metrics=False,
+    ):
         """
         Args:
             model: a torch Module. Takes a data from data_loader and returns a
@@ -241,6 +259,9 @@ class SimpleTrainer(TrainerBase):
             optimizer: a torch optimizer.
             gather_metric_period: an int. Every gather_metric_period iterations
                 the metrics are gathered from all the ranks to rank 0 and logged.
+            zero_grad_before_forward: whether to zero the gradients before the forward.
+            async_write_metrics: bool. If True, then write metrics asynchronously to improve
+                training speed
         """
         super().__init__()
 
@@ -258,6 +279,11 @@ class SimpleTrainer(TrainerBase):
         self._data_loader_iter_obj = None
         self.optimizer = optimizer
         self.gather_metric_period = gather_metric_period
+        self.zero_grad_before_forward = zero_grad_before_forward
+        self.async_write_metrics = async_write_metrics
+        # create a thread pool that can execute non critical logic in run_step asynchronically
+        # use only 1 worker so tasks will be executred in order of submitting.
+        self.concurrent_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def run_step(self):
         """
@@ -271,6 +297,13 @@ class SimpleTrainer(TrainerBase):
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
+        if self.zero_grad_before_forward:
+            """
+            If you need to accumulate gradients or do something similar, you can
+            wrap the optimizer with your custom `zero_grad()` method.
+            """
+            self.optimizer.zero_grad()
+
         """
         If you want to do something with the losses, you can wrap the model.
         """
@@ -280,15 +313,23 @@ class SimpleTrainer(TrainerBase):
             loss_dict = {"total_loss": loss_dict}
         else:
             losses = sum(loss_dict.values())
-
-        """
-        If you need to accumulate gradients or do something similar, you can
-        wrap the optimizer with your custom `zero_grad()` method.
-        """
-        self.optimizer.zero_grad()
+        if not self.zero_grad_before_forward:
+            """
+            If you need to accumulate gradients or do something similar, you can
+            wrap the optimizer with your custom `zero_grad()` method.
+            """
+            self.optimizer.zero_grad()
         losses.backward()
 
-        self._write_metrics(loss_dict, data_time)
+        self.after_backward()
+
+        if self.async_write_metrics:
+            # write metrics asynchronically
+            self.concurrent_executor.submit(
+                self._write_metrics, loss_dict, data_time, iter=self.iter
+            )
+        else:
+            self._write_metrics(loss_dict, data_time)
 
         """
         If you need gradient clipping/scaling or other processing, you can
@@ -319,14 +360,23 @@ class SimpleTrainer(TrainerBase):
         loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
         prefix: str = "",
+        iter: Optional[int] = None,
     ) -> None:
-        if (self.iter + 1) % self.gather_metric_period == 0:
-            SimpleTrainer.write_metrics(loss_dict, data_time, prefix)
+        logger = logging.getLogger(__name__)
+
+        iter = self.iter if iter is None else iter
+        if (iter + 1) % self.gather_metric_period == 0:
+            try:
+                SimpleTrainer.write_metrics(loss_dict, data_time, iter, prefix)
+            except Exception:
+                logger.exception("Exception in writing metrics: ")
+                raise
 
     @staticmethod
     def write_metrics(
         loss_dict: Mapping[str, torch.Tensor],
         data_time: float,
+        cur_iter: int,
         prefix: str = "",
     ) -> None:
         """
@@ -349,7 +399,7 @@ class SimpleTrainer(TrainerBase):
             # data_time among workers can have high variance. The actual latency
             # caused by data_time is the maximum among workers.
             data_time = np.max([x.pop("data_time") for x in all_metrics_dict])
-            storage.put_scalar("data_time", data_time)
+            storage.put_scalar("data_time", data_time, cur_iter=cur_iter)
 
             # average the rest metrics
             metrics_dict = {
@@ -358,13 +408,15 @@ class SimpleTrainer(TrainerBase):
             total_losses_reduced = sum(metrics_dict.values())
             if not np.isfinite(total_losses_reduced):
                 raise FloatingPointError(
-                    f"Loss became infinite or NaN at iteration={storage.iter}!\n"
+                    f"Loss became infinite or NaN at iteration={cur_iter}!\n"
                     f"loss_dict = {metrics_dict}"
                 )
 
-            storage.put_scalar("{}total_loss".format(prefix), total_losses_reduced)
+            storage.put_scalar(
+                "{}total_loss".format(prefix), total_losses_reduced, cur_iter=cur_iter
+            )
             if len(metrics_dict) > 1:
-                storage.put_scalars(**metrics_dict)
+                storage.put_scalars(cur_iter=cur_iter, **metrics_dict)
 
     def state_dict(self):
         ret = super().state_dict()
@@ -374,6 +426,10 @@ class SimpleTrainer(TrainerBase):
     def load_state_dict(self, state_dict):
         super().load_state_dict(state_dict)
         self.optimizer.load_state_dict(state_dict["optimizer"])
+
+    def after_train(self):
+        super().after_train()
+        self.concurrent_executor.shutdown(wait=True)
 
 
 class AMPTrainer(SimpleTrainer):
@@ -388,12 +444,16 @@ class AMPTrainer(SimpleTrainer):
         data_loader,
         optimizer,
         gather_metric_period=1,
+        zero_grad_before_forward=False,
         grad_scaler=None,
         precision: torch.dtype = torch.float16,
+        log_grad_scaler: bool = False,
+        async_write_metrics=False,
     ):
         """
         Args:
-            model, data_loader, optimizer, gather_metric_period: same as in :class:`SimpleTrainer`.
+            model, data_loader, optimizer, gather_metric_period, zero_grad_before_forward,
+                async_write_metrics: same as in :class:`SimpleTrainer`.
             grad_scaler: torch GradScaler to automatically scale gradients.
             precision: torch.dtype as the target precision to cast to in computations
         """
@@ -402,7 +462,9 @@ class AMPTrainer(SimpleTrainer):
             assert not (model.device_ids and len(model.device_ids) > 1), unsupported
         assert not isinstance(model, DataParallel), unsupported
 
-        super().__init__(model, data_loader, optimizer, gather_metric_period)
+        super().__init__(
+            model, data_loader, optimizer, gather_metric_period, zero_grad_before_forward
+        )
 
         if grad_scaler is None:
             from torch.cuda.amp import GradScaler
@@ -410,6 +472,7 @@ class AMPTrainer(SimpleTrainer):
             grad_scaler = GradScaler()
         self.grad_scaler = grad_scaler
         self.precision = precision
+        self.log_grad_scaler = log_grad_scaler
 
     def run_step(self):
         """
@@ -423,6 +486,8 @@ class AMPTrainer(SimpleTrainer):
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
+        if self.zero_grad_before_forward:
+            self.optimizer.zero_grad()
         with autocast(dtype=self.precision):
             loss_dict = self.model(data)
             if isinstance(loss_dict, torch.Tensor):
@@ -431,10 +496,24 @@ class AMPTrainer(SimpleTrainer):
             else:
                 losses = sum(loss_dict.values())
 
-        self.optimizer.zero_grad()
+        if not self.zero_grad_before_forward:
+            self.optimizer.zero_grad()
+
         self.grad_scaler.scale(losses).backward()
 
-        self._write_metrics(loss_dict, data_time)
+        if self.log_grad_scaler:
+            storage = get_event_storage()
+            storage.put_scalar("[metric]grad_scaler", self.grad_scaler.get_scale())
+
+        self.after_backward()
+
+        if self.async_write_metrics:
+            # write metrics asynchronically
+            self.concurrent_executor.submit(
+                self._write_metrics, loss_dict, data_time, iter=self.iter
+            )
+        else:
+            self._write_metrics(loss_dict, data_time)
 
         self.grad_scaler.step(self.optimizer)
         self.grad_scaler.update()
