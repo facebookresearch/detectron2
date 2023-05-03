@@ -200,7 +200,7 @@ class CommonMetricPrinter(EventWriter):
                 Used to compute ETA. If not given, ETA will not be printed.
             window_size (int): the losses will be median-smoothed by this window size
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("detectron2.utils.events")
         self._max_iter = max_iter
         self._window_size = window_size
         self._last_write = None  # (step, time) of last call to write(). Used to compute ETA
@@ -340,7 +340,7 @@ class EventStorage:
         """
         self._vis_data.append((img_name, img_tensor, self._iter))
 
-    def put_scalar(self, name, value, smoothing_hint=True):
+    def put_scalar(self, name, value, smoothing_hint=True, cur_iter=None):
         """
         Add a scalar `value` to the `HistoryBuffer` associated with `name`.
 
@@ -352,14 +352,17 @@ class EventStorage:
 
                 It defaults to True because most scalars we save need to be smoothed to
                 provide any useful signal.
+            cur_iter (int): an iteration number to set explicitly instead of current iteration
         """
         name = self._current_prefix + name
+        cur_iter = self._iter if cur_iter is None else cur_iter
         history = self._history[name]
         value = float(value)
-        history.update(value, self._iter)
-        self._latest_scalars[name] = (value, self._iter)
+        history.update(value, cur_iter)
+        self._latest_scalars[name] = (value, cur_iter)
 
         existing_hint = self._smoothing_hints.get(name)
+
         if existing_hint is not None:
             assert (
                 existing_hint == smoothing_hint
@@ -367,7 +370,7 @@ class EventStorage:
         else:
             self._smoothing_hints[name] = smoothing_hint
 
-    def put_scalars(self, *, smoothing_hint=True, **kwargs):
+    def put_scalars(self, *, smoothing_hint=True, cur_iter=None, **kwargs):
         """
         Put multiple scalars from keyword arguments.
 
@@ -376,7 +379,7 @@ class EventStorage:
             storage.put_scalars(loss=my_loss, accuracy=my_accuracy, smoothing_hint=True)
         """
         for k, v in kwargs.items():
-            self.put_scalar(k, v, smoothing_hint=smoothing_hint)
+            self.put_scalar(k, v, smoothing_hint=smoothing_hint, cur_iter=cur_iter)
 
     def put_histogram(self, hist_name, hist_tensor, bins=1000):
         """
