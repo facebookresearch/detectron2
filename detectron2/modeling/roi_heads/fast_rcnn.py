@@ -194,7 +194,7 @@ def _merge_overlapping_bboxes(boxes, scores, filter_inds, iou_threshold):
         result['filter_ind'][0] = idx
         filter_inds.append(result['filter_ind'])
     print('len(boxes)', len(boxes))
-    return torch.tensor(boxes, dtype=torch.float32), torch.tensor(scores, dtype=torch.float32), torch.tensor(filter_inds, dtype=torch.float32)
+    return torch.tensor(boxes, dtype=torch.float32).cuda(), torch.tensor(scores, dtype=torch.float32).cuda(), torch.tensor(filter_inds, dtype=torch.float32).cuda()
 
 
 
