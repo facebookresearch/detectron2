@@ -114,6 +114,87 @@ def _log_classification_stats(pred_logits, gt_classes, prefix="fast_rcnn"):
         storage.put_scalar(f"{prefix}/fg_cls_accuracy", fg_num_accurate / num_fg)
         storage.put_scalar(f"{prefix}/false_negative", num_false_negative / num_fg)
 
+def _get_iou(bbox, other_bbox):
+    """Calculates the Intersection over Union (IoU) with the given bounding box.
+
+    Args:
+        other_bbox (ImageBbox): The ImageBbox object to calculate the IoU with.
+
+    Returns:
+        float: IoU value with the given bounding box.
+    """
+    x1 = max(bbox[0], other_bbox[0])
+    y1 = max(bbox[1], other_bbox[1])
+    x2 = min(bbox[2], other_bbox[2])
+    y2 = min(bbox[3], other_bbox[3])
+
+    inter_area = max(0, x2 - x1 + 1) * max(0, y2 - y1 + 1)
+    box1_area = (bbox[2] - bbox[0] + 1) * (bbox[3] - bbox[1] + 1)
+    box2_area = (other_bbox[2] - other_bbox[0] + 1) * (other_bbox[3] - other_bbox[1] + 1)
+    iou = inter_area / float(box1_area + box2_area - inter_area)
+
+    return iou
+
+
+def _merge_overlapping_bboxes(boxes, scores, filter_inds, iou_threshold):
+
+    results = []
+    # TODO: Implement Class based
+    for idx in range(len(boxes)):
+        results.append(
+            {
+                "bbox": boxes[idx].tolist(),
+                "score": float(scores[idx]),
+                "filter_ind": filter_inds[idx].tolist(),
+            }
+        )
+
+    print('iou_threshold', iou_threshold)
+    print('len(boxes)', len(boxes))
+
+    new_bbox_no_overlap = []
+
+    while True:
+        new_bbox_overlap = []
+
+        for result in results:
+            overlap_within_box = False
+            box = result['bbox']
+
+            for tmp_result in results:
+                tmp_box = tmp_result['bbox']
+                if box != tmp_box:
+                    iou = _get_iou(tmp_box, box)
+
+                    if iou > iou_threshold:
+                        overlap_within_box = True
+                        x1 = min(tmp_box[0], box[0])
+                        y1 = min(tmp_box[1], box[1])
+                        x2 = max(tmp_box[2], box[2])
+                        y2 = max(tmp_box[3], box[3])
+                        new_bbox = [x1, y1, x2, y2]
+                        tmp_result['bbox'] = new_bbox
+                        tmp_result['score'] = max(result['score'], tmp_result['score'])
+                        if not any(d.get('bbox') == new_bbox for d in new_bbox_overlap):
+                            new_bbox_overlap.append(tmp_result)
+            in_list = any(d.get('bbox') == tmp_result['bbox'] for d in new_bbox_no_overlap)
+            if not overlap_within_box and not in_list:
+                new_bbox_no_overlap.append(tmp_result)
+
+        results = new_bbox_overlap
+        if not results:
+            break
+    
+    boxes = []
+    scores = []
+    filter_inds = []
+    for result in new_bbox_no_overlap:
+        boxes.append(result['bbox'])
+        scores.append(result['score'])
+        filter_inds.append(result['filter_ind'])
+    print('len(boxes)', len(boxes))
+    return torch.tensor(boxes), torch.tensor(scores), torch.tensor(filter_inds)
+
 
 def fast_rcnn_inference_single_image(
     boxes,
@@ -159,10 +240,11 @@ def fast_rcnn_inference_single_image(
     scores = scores[filter_mask]
 
     # 2. Apply NMS for each class independently.
-    keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
-    if topk_per_image >= 0:
-        keep = keep[:topk_per_image]
-    boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
+    # keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
+    # if topk_per_image >= 0:
+    #     keep = keep[:topk_per_image]
+    # boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
+    boxes, scores, filter_inds = _merge_overlapping_bboxes(boxes, scores, filter_inds, nms_thresh)
 
     result = Instances(image_shape)
     result.pred_boxes = Boxes(boxes)
