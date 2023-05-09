@@ -188,12 +188,14 @@ def _merge_overlapping_bboxes(boxes, scores, filter_inds, iou_threshold):
     boxes = []
     scores = []
     filter_inds = []
-    for result in new_bbox_no_overlap:
+    for idx, result in enumerate(new_bbox_no_overlap):
         boxes.append(result['bbox'])
         scores.append(result['score'])
+        result['filter_ind'][0] = idx
         filter_inds.append(result['filter_ind'])
     print('len(boxes)', len(boxes))
-    return torch.tensor(boxes), torch.tensor(scores), torch.tensor(filter_inds)
+    return torch.tensor(boxes, dtype=torch.float32), torch.tensor(scores, dtype=torch.float32), torch.tensor(filter_inds, dtype=torch.float32)
+
 
 
 def fast_rcnn_inference_single_image(
@@ -240,12 +242,16 @@ def fast_rcnn_inference_single_image(
     scores = scores[filter_mask]
 
     # 2. Apply NMS for each class independently.
-    # keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
-    # if topk_per_image >= 0:
-    #     keep = keep[:topk_per_image]
-    # boxes, scores, filter_inds = boxes[keep], scores[keep], filter_inds[keep]
+    keep = batched_nms(boxes, scores, filter_inds[:, 1], nms_thresh)
+    if topk_per_image >= 0:
+        keep = keep[:topk_per_image]
+    boxes_original, scores_orginal, filter_inds_originals = boxes[keep], scores[keep], filter_inds[keep]
     boxes, scores, filter_inds = _merge_overlapping_bboxes(boxes, scores, filter_inds, nms_thresh)
 
+    print('boxes_original', boxes_original)
+    print('boxes_original.device', boxes_original.device)
+    print('boxes', boxes)
+    print('boxes.device', boxes.device)
     result = Instances(image_shape)
     result.pred_boxes = Boxes(boxes)
     result.scores = scores
