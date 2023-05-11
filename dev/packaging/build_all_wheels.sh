@@ -26,7 +26,7 @@ build_one() {
   echo "Launching container $container_name ..."
   container_id="$container_name"_"$cu"_"$pytorch_ver"
 
-  py_versions=(3.8 3.9 3.10 3.11)
+  py_versions=(3.9 3.10 3.11)
 
   for py in "${py_versions[@]}"; do
     docker run -itd \
@@ -52,9 +52,5 @@ else
   build_one cu121 2.0
   build_one cu120 2.0
   build_one cu118 2.0
-  build_one cu117 1.13
-  build_one cu116 1.12
   build_one cpu 2.0
-  build_one cpu 1.13
-  build_one cpu 1.12
 fi

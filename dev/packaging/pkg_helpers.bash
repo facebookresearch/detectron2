@@ -30,14 +30,6 @@ setup_cuda() {
       export CUDA_HOME=/usr/local/cuda-11.8/
       export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6;9.0"
       ;;
-    cu117)
-      export CUDA_HOME=/usr/local/cuda-11.7/
-      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6"
-      ;;
-    cu116)
-      export CUDA_HOME=/usr/local/cuda-11.6/
-      export TORCH_CUDA_ARCH_LIST="3.7+PTX;5.0;6.0;6.1;7.0;7.5;8.0;8.6"
-      ;;
     *)
       echo "Unrecognized CU_VERSION=$CU_VERSION"
       exit 1
@@ -47,7 +39,6 @@ setup_cuda() {
 
 setup_wheel_python() {
   case "$PYTHON_VERSION" in
-    3.8) python_abi=cp38-cp38 ;;
     3.9) python_abi=cp39-cp39 ;;
     3.10) python_abi=cp310-cp310 ;;
     3.11) python_abi=cp311-cp311 ;;
