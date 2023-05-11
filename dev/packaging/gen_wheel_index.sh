@@ -14,7 +14,8 @@ export LC_ALL=C  # reproducible sort
 index=$root/index.html
 
 cd "$root"
-for cu in cpu cu121 cu120 cu118; do
+# for cu in cpu cu120 cu118; do
+for cu in cu118; do
   mkdir -p "$root/$cu"
   cd "$root/$cu"
   echo "Creating $PWD/index.html ..."
