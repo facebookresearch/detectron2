@@ -35,7 +35,7 @@ class DetectionCheckpointer(Checkpointer):
         assert self._parsed_url_during_load is None
         need_sync = False
         logger = logging.getLogger(__name__)
-        logger.info("[DetectionCheckpointer] Loading from {} ...".format(path))
+        # logger.info("[DetectionCheckpointer] Loading from {} ...".format(path))
 
         if path and isinstance(self.model, DistributedDataParallel):
             path = self.path_manager.get_local_path(path)

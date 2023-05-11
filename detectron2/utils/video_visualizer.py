@@ -3,7 +3,7 @@ import numpy as np
 from typing import List
 import pycocotools.mask as mask_util
 
-from detectron2.structures import Instances
+
 from detectron2.utils.visualizer import (
     ColorMode,
     Visualizer,
@@ -12,6 +12,32 @@ from detectron2.utils.visualizer import (
 )
 
 from .colormap import random_color, random_colors
+
+import detectron2.structures.boxes as box_ops
+from detectron2.structures import Boxes, Instances
+import math
+import torch
+
+
+def get_persons_objects(instances_obj):
+    pred_classes = instances_obj.pred_classes
+    pred_boxes = instances_obj.pred_boxes
+    pred_scores = instances_obj.scores
+
+    new_boxes = Boxes(torch.tensor([]))
+    new_classes = torch.tensor([])
+    new_scores = torch.tensor([])
+
+    for i, t in enumerate(pred_classes):
+        if t.item() == 0:
+            new_classes = torch.cat((new_classes, t.unsqueeze(0).to('cpu:0')))
+            new_boxes = Boxes.cat((new_boxes, pred_boxes[i].to('cpu:0')))
+            new_scores = torch.cat((new_scores, pred_scores[i].unsqueeze(0).to('cpu:0')))
+
+    pred_classes = new_classes
+    pred_boxes = new_boxes
+    scores = new_scores
+    return pred_classes, pred_boxes, scores
 
 
 class _DetectedInstance:
@@ -56,6 +82,8 @@ class VideoVisualizer:
         self._color_pool = random_colors(self._max_num_instances, rgb=True, maximum=1)
         self._color_idx_set = set(range(len(self._color_pool)))
 
+
+
     def draw_instance_predictions(self, frame, predictions):
         """
         Draw instance-level prediction results on an image.
@@ -77,6 +105,11 @@ class VideoVisualizer:
         boxes = predictions.pred_boxes.tensor.numpy() if predictions.has("pred_boxes") else None
         scores = predictions.scores if predictions.has("scores") else None
         classes = predictions.pred_classes.numpy() if predictions.has("pred_classes") else None
+
+
+
+        classes, boxes, scores = get_persons_objects(predictions)
+
         keypoints = predictions.pred_keypoints if predictions.has("pred_keypoints") else None
         colors = predictions.COLOR if predictions.has("COLOR") else [None] * len(predictions)
         periods = predictions.ID_period if predictions.has("ID_period") else None

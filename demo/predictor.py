@@ -65,11 +65,13 @@ class VisualizationDemo(object):
 
         return predictions, vis_output
 
-    def _frame_from_video(self, video):
+    def _frame_from_video(self, video, count=0):
         while video.isOpened():
             success, frame = video.read()
             if success:
-                yield frame
+                if count % 25 == 0:
+                    yield frame
+                count += 1
             else:
                 break
 
@@ -104,8 +106,10 @@ class VisualizationDemo(object):
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
             return vis_frame
+        # This is to skip the middle frame and directly go to the 25th frame as our video FPS is 25
 
-        frame_gen = self._frame_from_video(video)
+        frame_gen = self._frame_from_video(video, 0)
+
         if self.parallel:
             buffer_size = self.predictor.default_buffer_size
 
@@ -119,6 +123,7 @@ class VisualizationDemo(object):
                     frame = frame_data.popleft()
                     predictions = self.predictor.get()
                     yield process_predictions(frame, predictions)
+
 
             while len(frame_data):
                 frame = frame_data.popleft()

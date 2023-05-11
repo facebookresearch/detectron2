@@ -89,12 +89,14 @@ def test_opencv_video_format(codec, file_ext):
             return True
         return False
 
+import random
+import string
 
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     args = get_parser().parse_args()
     setup_logger(name="fvcore")
-    logger = setup_logger()
+    logger = setup_logger(output="vogo_detectron_logs.txt")
     logger.info("Arguments: " + str(args))
 
     cfg = setup_cfg(args)
@@ -173,7 +175,10 @@ if __name__ == "__main__":
                 isColor=True,
             )
         assert os.path.isfile(args.video_input)
-        for vis_frame in tqdm.tqdm(demo.run_on_video(video), total=num_frames):
+        print(f"Total video frames: {num_frames}")
+
+        video_run = demo.run_on_video(video=video)
+        for vis_frame in tqdm.tqdm(video_run, total=num_frames):
             if args.output:
                 output_file.write(vis_frame)
             else:
