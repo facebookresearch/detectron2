@@ -50,5 +50,4 @@ if [[ -n "$1" ]] && [[ -n "$2" ]]; then
   build_one "$1" "$2"
 else
   build_one cu118 2.0
-  build_one cpu 2.0
 fi

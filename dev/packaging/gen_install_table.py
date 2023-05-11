@@ -30,7 +30,7 @@ if __name__ == "__main__":
     d2_version = f"=={args.d2_version}" if args.d2_version else ""
 
     all_versions = (
-        + [("2.0", k) for k in ["11.8", "cpu"]]
+        + [("2.0", k) for k in ["11.8"]]
     )
 
     torch_versions = sorted(
