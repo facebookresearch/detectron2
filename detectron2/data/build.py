@@ -7,7 +7,6 @@ import pickle
 from typing import Any, Callable, Dict, List, Optional, Union
 import torch
 import torch.utils.data as torchdata
-from torch.utils.data import SequentialSampler
 from tabulate import tabulate
 from termcolor import colored
 
@@ -451,7 +450,7 @@ def build_detection_train_loader(
     )
 
 
-def _test_loader_from_config(cfg, dataset_name, sampler=None, mapper=None):
+def _test_loader_from_config(cfg, dataset_name, mapper=None):
     """
     Uses the given `dataset_name` argument (instead of the names in cfg), because the
     standard practice is to evaluate each test set individually (not combining them).
@@ -474,7 +473,9 @@ def _test_loader_from_config(cfg, dataset_name, sampler=None, mapper=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": sampler
+        "sampler": InferenceSampler(len(dataset))
+        if not isinstance(dataset, torchdata.IterableDataset)
+        else None,
     }
 
 
@@ -532,7 +533,7 @@ def build_detection_test_loader(
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
     else:
         if sampler is None:
-            sampler = SequentialSampler(dataset)
+            sampler = InferenceSampler(len(dataset))
     return torchdata.DataLoader(
         dataset,
         batch_size=batch_size,
