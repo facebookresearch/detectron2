@@ -22,7 +22,7 @@ from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIt
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 from .samplers import (
-    InferenceSampler,
+    SequentialInferenceSampler,
     RandomSubsetTrainingSampler,
     RepeatFactorTrainingSampler,
     TrainingSampler,
@@ -450,7 +450,7 @@ def build_detection_train_loader(
     )
 
 
-def _test_loader_from_config(cfg, dataset_name, mapper=None):
+def _test_loader_from_config(cfg, dataset_name, mapper=None, sampler=None):
     """
     Uses the given `dataset_name` argument (instead of the names in cfg), because the
     standard practice is to evaluate each test set individually (not combining them).
@@ -473,9 +473,7 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": InferenceSampler(len(dataset))
-        if not isinstance(dataset, torchdata.IterableDataset)
-        else None,
+        "sampler": sampler
     }
 
 
@@ -533,7 +531,7 @@ def build_detection_test_loader(
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
     else:
         if sampler is None:
-            sampler = InferenceSampler(len(dataset))
+            sampler = SequentialInferenceSampler(len(dataset))
     return torchdata.DataLoader(
         dataset,
         batch_size=batch_size,
