@@ -451,7 +451,7 @@ def build_detection_train_loader(
     )
 
 
-def _test_loader_from_config(cfg, dataset_name, mapper=None):
+def _test_loader_from_config(cfg, dataset_name, sampler=None, mapper=None):
     """
     Uses the given `dataset_name` argument (instead of the names in cfg), because the
     standard practice is to evaluate each test set individually (not combining them).
@@ -474,9 +474,7 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": InferenceSampler(len(dataset))
-        if not isinstance(dataset, torchdata.IterableDataset)
-        else None,
+        "sampler": sampler
     }
 
 
