@@ -7,6 +7,7 @@ import pickle
 from typing import Any, Callable, Dict, List, Optional, Union
 import torch
 import torch.utils.data as torchdata
+from torch.utils.data import SequentialSampler
 from tabulate import tabulate
 from termcolor import colored
 
@@ -533,7 +534,7 @@ def build_detection_test_loader(
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
     else:
         if sampler is None:
-            sampler = InferenceSampler(len(dataset))
+            sampler = SequentialSampler(dataset)
     return torchdata.DataLoader(
         dataset,
         batch_size=batch_size,
