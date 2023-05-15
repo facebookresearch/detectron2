@@ -398,6 +398,7 @@ def build_detection_train_loader(
     aspect_ratio_grouping=True,
     num_workers=0,
     collate_fn=None,
+    shuffle=False
 ):
     """
     Build a dataloader for object detection with some default features.
@@ -451,6 +452,7 @@ def build_detection_train_loader(
         aspect_ratio_grouping=aspect_ratio_grouping,
         num_workers=num_workers,
         collate_fn=collate_fn,
+        shuffle=shuffle
     )
 
 
