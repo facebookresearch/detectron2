@@ -482,7 +482,7 @@ def build_detection_test_loader(
     dataset: Union[List[Any], torchdata.Dataset],
     *,
     mapper: Callable[[Dict[str, Any]], Any],
-    sampler: Optional[torchdata.Sampler, Type[torchdata.Sampler]] = None,
+    sampler: Optional[torchdata.Sampler | Type[torchdata.Sampler]] = None,
     batch_size: int = 1,
     num_workers: int = 0,
     collate_fn: Optional[Callable[[List[Any]], Any]] = None,
@@ -531,8 +531,8 @@ def build_detection_test_loader(
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
     elif sampler is None:
         sampler = InferenceSampler(len(dataset))
-    elif sampler is Type[torchdata.Sampler]:
-        sampler = sampler(len(dataset))
+    elif not isinstance(sampler, torchdata.Sampler):
+        sampler = sampler(dataset)
     
     return torchdata.DataLoader(
         dataset,
