@@ -436,10 +436,12 @@ def build_detection_train_loader(
 
     if isinstance(dataset, torchdata.IterableDataset):
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
-    else:
-        if sampler is None:
-            sampler = TrainingSampler(len(dataset))
-        assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
+    elif sampler is None:
+        sampler = TrainingSampler(len(dataset))
+    elif not isinstance(sampler, torchdata.Sampler):
+        sampler = sampler(dataset)
+    assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
+    
     return build_batch_data_loader(
         dataset,
         sampler,
