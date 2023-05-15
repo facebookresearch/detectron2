@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import operator
 import pickle
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, Type
 import torch
 import torch.utils.data as torchdata
 from tabulate import tabulate
@@ -22,7 +22,7 @@ from .common import AspectRatioGroupedDataset, DatasetFromList, MapDataset, ToIt
 from .dataset_mapper import DatasetMapper
 from .detection_utils import check_metadata_consistency
 from .samplers import (
-    SequentialInferenceSampler,
+    InferenceSampler,
     RandomSubsetTrainingSampler,
     RepeatFactorTrainingSampler,
     TrainingSampler,
@@ -482,7 +482,7 @@ def build_detection_test_loader(
     dataset: Union[List[Any], torchdata.Dataset],
     *,
     mapper: Callable[[Dict[str, Any]], Any],
-    sampler: Optional[torchdata.Sampler] = None,
+    sampler: Optional[torchdata.Sampler | Type[torchdata.Sampler]] = None,
     batch_size: int = 1,
     num_workers: int = 0,
     collate_fn: Optional[Callable[[List[Any]], Any]] = None,
@@ -529,9 +529,11 @@ def build_detection_test_loader(
         dataset = MapDataset(dataset, mapper)
     if isinstance(dataset, torchdata.IterableDataset):
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
-    else:
-        if sampler is None:
-            sampler = SequentialInferenceSampler(len(dataset))
+    elif sampler is None:
+        sampler = InferenceSampler(len(dataset))
+    elif sampler is Type[torchdata.Sampler]:
+        sampler = sampler(dataset)
+    
     return torchdata.DataLoader(
         dataset,
         batch_size=batch_size,
