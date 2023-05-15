@@ -287,6 +287,7 @@ def build_batch_data_loader(
     aspect_ratio_grouping=False,
     num_workers=0,
     collate_fn=None,
+    shuffle=False
 ):
     """
     Build a batched dataloader. The main differences from `torch.utils.data.DataLoader` are:
@@ -336,6 +337,7 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,
+            shuffle=shuffle
         )
 
 
@@ -441,7 +443,7 @@ def build_detection_train_loader(
     elif not isinstance(sampler, torchdata.Sampler):
         sampler = sampler(dataset)
     assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
-    
+
     return build_batch_data_loader(
         dataset,
         sampler,
