@@ -250,6 +250,7 @@ class SimpleTrainer(TrainerBase):
         gather_metric_period=1,
         zero_grad_before_forward=False,
         async_write_metrics=False,
+        deterministic=False,
     ):
         """
         Args:
@@ -262,6 +263,8 @@ class SimpleTrainer(TrainerBase):
             zero_grad_before_forward: whether to zero the gradients before the forward.
             async_write_metrics: bool. If True, then write metrics asynchronously to improve
                 training speed
+            deterministic: bool. If true, then training will try to avoid nondeterministic
+                pytorch and CUDA algorithms
         """
         super().__init__()
 
@@ -281,9 +284,15 @@ class SimpleTrainer(TrainerBase):
         self.gather_metric_period = gather_metric_period
         self.zero_grad_before_forward = zero_grad_before_forward
         self.async_write_metrics = async_write_metrics
+        self.deterministic = deterministic
         # create a thread pool that can execute non critical logic in run_step asynchronically
         # use only 1 worker so tasks will be executred in order of submitting.
         self.concurrent_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+        if self.deterministic:
+            logging.warning("Using deterministic training for the reproducibility")
+            torch.backends.cudnn.benchmark = False
+            torch.use_deterministic_algorithms(True)
 
     def run_step(self):
         """
