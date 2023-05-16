@@ -4,7 +4,13 @@ import os
 import tempfile
 import unittest
 
-from detectron2.utils.events import CommonMetricPrinter, EventStorage, JSONWriter
+from detectron2.utils.events import (
+    CommonMetricPrinter,
+    EventStorage,
+    JSONWriter,
+    get_event_storage,
+    has_event_storage,
+)
 
 
 class TestEventWriter(unittest.TestCase):
@@ -107,3 +113,10 @@ class TestEventWriter(unittest.TestCase):
                 self.assertEqual([k["key1"] for k in data], [4.5, 14.5])
                 self.assertEqual([k["key2"] for k in data], [5, 15])
                 self.assertEqual([k["key3"] for k in data], [6.5, 16.5])
+
+    def testEventStorage(self):
+        self.assertFalse(has_event_storage())
+        with EventStorage() as storage:
+            self.assertTrue(has_event_storage())
+            self.assertEqual(storage, get_event_storage())
+        self.assertFalse(has_event_storage())
