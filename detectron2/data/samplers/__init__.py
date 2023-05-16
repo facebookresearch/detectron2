@@ -4,7 +4,6 @@ from .distributed_sampler import (
     RandomSubsetTrainingSampler,
     RepeatFactorTrainingSampler,
     TrainingSampler,
-    SequentialInferenceSampler
 )
 
 from .grouped_batch_sampler import GroupedBatchSampler
@@ -15,5 +14,4 @@ __all__ = [
     "RandomSubsetTrainingSampler",
     "InferenceSampler",
     "RepeatFactorTrainingSampler",
-    "SequentialInferenceSampler"
 ]

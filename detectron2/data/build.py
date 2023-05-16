@@ -425,6 +425,8 @@ def build_detection_train_loader(
             data. No collation is OK for small batch size and simple data structures.
             If your batch size is large and each sample contains too many small tensors,
             it's more efficient to collate them in data loader.
+        shuffle (bool): whether the torch dataloader should shuffle the dataset at the
+            start of each epoch.
 
     Returns:
         torch.utils.data.DataLoader:
@@ -539,6 +541,7 @@ def build_detection_test_loader(
         sampler = InferenceSampler(len(dataset))
     elif not isinstance(sampler, torchdata.Sampler):
         sampler = sampler(dataset)
+    assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
     
     return torchdata.DataLoader(
         dataset,

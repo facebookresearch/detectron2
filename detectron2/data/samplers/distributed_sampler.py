@@ -276,25 +276,3 @@ class InferenceSampler(Sampler):
 
     def __len__(self):
         return len(self._local_indices)
-
-
-class SequentialInferenceSampler(Sampler):
-    """
-    Produce indices for inference over the entire dataset.
-    Sharding for workers is left to be applied downstream.
-    """
-
-    def __init__(self, size: int):
-        """
-        Args:
-            size (int): the total number of data of the underlying dataset to sample from
-        """
-        self._size = size
-        assert size > 0
-        self._local_indices = range(0, size)
-
-    def __iter__(self):
-        yield from self._local_indices
-
-    def __len__(self):
-        return len(self._local_indices)
