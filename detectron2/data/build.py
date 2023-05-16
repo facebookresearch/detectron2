@@ -490,7 +490,7 @@ def build_detection_test_loader(
     dataset: Union[List[Any], torchdata.Dataset],
     *,
     mapper: Callable[[Dict[str, Any]], Any],
-    sampler: Optional[torchdata.Sampler | Type[torchdata.Sampler]] = None,
+    sampler: Union[torchdata.Sampler, Type[torchdata.Sampler], None] = None,
     batch_size: int = 1,
     num_workers: int = 0,
     collate_fn: Optional[Callable[[List[Any]], Any]] = None,
