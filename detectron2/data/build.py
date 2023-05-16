@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import operator
 import pickle
-from typing import Any, Callable, Dict, List, Optional, Union, Type
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 import torch
 import torch.utils.data as torchdata
 from tabulate import tabulate
@@ -287,7 +287,7 @@ def build_batch_data_loader(
     aspect_ratio_grouping=False,
     num_workers=0,
     collate_fn=None,
-    shuffle=False
+    shuffle=False,
 ):
     """
     Build a batched dataloader. The main differences from `torch.utils.data.DataLoader` are:
@@ -337,7 +337,7 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,
-            shuffle=shuffle
+            shuffle=shuffle,
         )
 
 
@@ -398,7 +398,7 @@ def build_detection_train_loader(
     aspect_ratio_grouping=True,
     num_workers=0,
     collate_fn=None,
-    shuffle=False
+    shuffle=False,
 ):
     """
     Build a dataloader for object detection with some default features.
@@ -454,7 +454,7 @@ def build_detection_train_loader(
         aspect_ratio_grouping=aspect_ratio_grouping,
         num_workers=num_workers,
         collate_fn=collate_fn,
-        shuffle=shuffle
+        shuffle=shuffle,
     )
 
 
@@ -481,7 +481,7 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None, sampler=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": sampler
+        "sampler": sampler,
     }
 
 
@@ -542,7 +542,7 @@ def build_detection_test_loader(
     elif not isinstance(sampler, torchdata.Sampler):
         sampler = sampler(dataset)
     assert isinstance(sampler, torchdata.Sampler), f"Expect a Sampler but got {type(sampler)}"
-    
+
     return torchdata.DataLoader(
         dataset,
         batch_size=batch_size,
