@@ -42,7 +42,8 @@ class WarmupParamScheduler(CompositeParamScheduler):
             rescale_interval: whether we will rescale the interval of the scheduler after
                 warmup
         """
-        end_value = scheduler(warmup_length)  # the value to reach when warmup ends
+        # the value to reach when warmup ends
+        end_value = scheduler(0.0) if rescale_interval else scheduler(warmup_length)
         start_value = warmup_factor * scheduler(0.0)
         if warmup_method == "constant":
             warmup = ConstantParamScheduler(start_value)
