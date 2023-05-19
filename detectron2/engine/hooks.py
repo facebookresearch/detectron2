@@ -414,7 +414,7 @@ class TorchProfiler(HookBase):
                     os.path.join(
                         self._output_dir,
                         "log",
-                        "profiler-tensorboard-iter{}".format(self.trainer.iter),
+                        f"profiler-tensorboard-iter{self.trainer.iter}",
                     ),
                     f"worker{comm.get_rank()}",
                 )
@@ -439,7 +439,7 @@ class TorchProfiler(HookBase):
         if not self._save_tensorboard:
             PathManager.mkdirs(self._output_dir)
             out_file = os.path.join(
-                self._output_dir, "profiler-trace-iter{}.json".format(self.trainer.iter)
+                self._output_dir, f"profiler-trace-iter{self.trainer.iter}.json"
             )
             if "://" not in out_file:
                 self._profiler.export_chrome_trace(out_file)
@@ -526,12 +526,10 @@ class EvalHook(HookBase):
         self._eval_after_train = eval_after_train
 
     def _do_eval(self):
-        results = self._func()
-
-        if results:
+        if results := self._func():
             assert isinstance(
                 results, dict
-            ), "Eval function must return a dict. Got {} instead.".format(results)
+            ), f"Eval function must return a dict. Got {results} instead."
 
             flattened_results = flatten_results_dict(results)
             for k, v in flattened_results.items():
@@ -539,8 +537,7 @@ class EvalHook(HookBase):
                     v = float(v)
                 except Exception as e:
                     raise ValueError(
-                        "[EvalHook] eval_function should return a nested dict of float. "
-                        "Got '{}: {}' instead.".format(k, v)
+                        f"[EvalHook] eval_function should return a nested dict of float. Got '{k}: {v}' instead."
                     ) from e
             self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
 

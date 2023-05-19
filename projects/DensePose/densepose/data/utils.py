@@ -19,9 +19,7 @@ def maybe_prepend_base_path(base_path: Optional[str], path: str):
     """
     if base_path is None:
         return path
-    if is_relative_local_path(path):
-        return os.path.join(base_path, path)
-    return path
+    return os.path.join(base_path, path) if is_relative_local_path(path) else path
 
 
 def get_class_to_mesh_name_mapping(cfg: CfgNode) -> Dict[int, str]:

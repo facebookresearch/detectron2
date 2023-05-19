@@ -375,7 +375,7 @@ class EventStorage:
         if existing_hint is not None:
             assert (
                 existing_hint == smoothing_hint
-            ), "Scalar {} was put with a different smoothing_hint!".format(name)
+            ), f"Scalar {name} was put with a different smoothing_hint!"
         else:
             self._smoothing_hints[name] = smoothing_hint
 
@@ -427,7 +427,7 @@ class EventStorage:
         """
         ret = self._history.get(name, None)
         if ret is None:
-            raise KeyError("No history metric available for {}!".format(name))
+            raise KeyError(f"No history metric available for {name}!")
         return ret
 
     def histories(self):
@@ -458,15 +458,15 @@ class EventStorage:
         This is different from the `window_size` definition in HistoryBuffer.
         Use :meth:`get_history_window_size` to get the `window_size` used in HistoryBuffer.
         """
-        result = {}
-        for k, (v, itr) in self._latest_scalars.items():
-            result[k] = (
+        return {
+            k: (
                 self._history[k].median(self.count_samples(k, window_size))
                 if self._smoothing_hints[k]
                 else v,
                 itr,
             )
-        return result
+            for k, (v, itr) in self._latest_scalars.items()
+        }
 
     def count_samples(self, name, window_size=20):
         """

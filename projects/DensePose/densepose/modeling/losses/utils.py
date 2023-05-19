@@ -183,13 +183,12 @@ class BilinearInterpolationHelper:
         w_yhi_xhi = self.w_yhi_xhi if w_yhi_xhi is None else w_yhi_xhi
 
         index_bbox = self.packed_annotations.point_bbox_indices
-        z_est_sampled = (
+        return (
             z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_lo] * w_ylo_xlo
             + z_est[index_bbox, slice_fine_segm, self.y_lo, self.x_hi] * w_ylo_xhi
             + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_lo] * w_yhi_xlo
             + z_est[index_bbox, slice_fine_segm, self.y_hi, self.x_hi] * w_yhi_xhi
         )
-        return z_est_sampled
 
 
 def resample_data(
@@ -208,11 +207,9 @@ def resample_data(
             with resampled values of z, where D is the discretization size
     """
     n = bbox_xywh_src.size(0)
-    assert n == bbox_xywh_dst.size(0), (
-        "The number of "
-        "source ROIs for resampling ({}) should be equal to the number "
-        "of destination ROIs ({})".format(bbox_xywh_src.size(0), bbox_xywh_dst.size(0))
-    )
+    assert n == bbox_xywh_dst.size(
+        0
+    ), f"The number of source ROIs for resampling ({bbox_xywh_src.size(0)}) should be equal to the number of destination ROIs ({bbox_xywh_dst.size(0)})"
     x0src, y0src, wsrc, hsrc = bbox_xywh_src.unbind(dim=1)
     x0dst, y0dst, wdst, hdst = bbox_xywh_dst.unbind(dim=1)
     x0dst_norm = 2 * (x0dst - x0src) / wsrc - 1
@@ -230,9 +227,9 @@ def resample_data(
     grid_x = grid_w_expanded * dx_expanded + x0_expanded
     grid_y = grid_h_expanded * dy_expanded + y0_expanded
     grid = torch.stack((grid_x, grid_y), dim=3)
-    # resample Z from (N, C, H, W) into (N, C, Hout, Wout)
-    zresampled = F.grid_sample(z, grid, mode=mode, padding_mode=padding_mode, align_corners=True)
-    return zresampled
+    return F.grid_sample(
+        z, grid, mode=mode, padding_mode=padding_mode, align_corners=True
+    )
 
 
 class AnnotationsAccumulator(ABC):
@@ -437,5 +434,4 @@ def sample_random_indices(
     """
     if (n_samples <= 0) or (n_indices <= n_samples):
         return None
-    indices = torch.randperm(n_indices, device=device)[:n_samples]
-    return indices
+    return torch.randperm(n_indices, device=device)[:n_samples]

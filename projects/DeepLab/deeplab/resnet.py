@@ -89,7 +89,7 @@ def build_resnet_deeplab_backbone(cfg, input_shape):
             norm=norm,
         )
     else:
-        raise ValueError("Unknown stem type: {}".format(cfg.MODEL.RESNETS.STEM_TYPE))
+        raise ValueError(f"Unknown stem type: {cfg.MODEL.RESNETS.STEM_TYPE}")
 
     # fmt: off
     freeze_at           = cfg.MODEL.BACKBONE.FREEZE_AT
@@ -108,8 +108,8 @@ def build_resnet_deeplab_backbone(cfg, input_shape):
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
     res5_multi_grid     = cfg.MODEL.RESNETS.RES5_MULTI_GRID
     # fmt: on
-    assert res4_dilation in {1, 2}, "res4_dilation cannot be {}.".format(res4_dilation)
-    assert res5_dilation in {1, 2, 4}, "res5_dilation cannot be {}.".format(res5_dilation)
+    assert res4_dilation in {1, 2}, f"res4_dilation cannot be {res4_dilation}."
+    assert res5_dilation in {1, 2, 4}, f"res5_dilation cannot be {res5_dilation}."
     if res4_dilation == 2:
         # Always dilate res5 if res4 is dilated.
         assert res5_dilation == 4
@@ -132,15 +132,16 @@ def build_resnet_deeplab_backbone(cfg, input_shape):
         first_stride = 1 if idx == 0 or dilation > 1 else 2
         stage_kargs = {
             "num_blocks": num_blocks_per_stage[idx],
-            "stride_per_block": [first_stride] + [1] * (num_blocks_per_stage[idx] - 1),
+            "stride_per_block": [first_stride]
+            + [1] * (num_blocks_per_stage[idx] - 1),
             "in_channels": in_channels,
             "out_channels": out_channels,
             "norm": norm,
+            "bottleneck_channels": bottleneck_channels,
+            "stride_in_1x1": stride_in_1x1,
+            "dilation": dilation,
+            "num_groups": num_groups,
         }
-        stage_kargs["bottleneck_channels"] = bottleneck_channels
-        stage_kargs["stride_in_1x1"] = stride_in_1x1
-        stage_kargs["dilation"] = dilation
-        stage_kargs["num_groups"] = num_groups
         if deform_on_per_stage[idx]:
             stage_kargs["block_class"] = DeformBottleneckBlock
             stage_kargs["deform_modulated"] = deform_modulated

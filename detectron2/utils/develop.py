@@ -17,14 +17,17 @@ def create_dummy_class(klass, dependency, message=""):
     Returns:
         class: a class object
     """
-    err = "Cannot import '{}', therefore '{}' is not available.".format(dependency, klass)
+    err = f"Cannot import '{dependency}', therefore '{klass}' is not available."
     if message:
-        err = err + " " + message
+        err = f"{err} {message}"
+
+
 
     class _DummyMetaClass(type):
         # throw error on class attribute access
-        def __getattr__(_, __):  # noqa: B902
+        def __getattr__(self, __):  # noqa: B902
             raise ImportError(err)
+
 
     class _Dummy(object, metaclass=_DummyMetaClass):
         # throw error on constructor
@@ -48,7 +51,7 @@ def create_dummy_func(func, dependency, message=""):
     """
     err = "Cannot import '{}', therefore '{}' is not available.".format(dependency, func)
     if message:
-        err = err + " " + message
+        err = f"{err} {message}"
 
     if isinstance(dependency, (list, tuple)):
         dependency = ",".join(dependency)

@@ -22,7 +22,9 @@ def _create_pixel_dist_matrix(grid_size: int) -> torch.Tensor:
     # row = i // grid_size
     # col = i % grid_size
     pix_coords = (
-        torch.stack(torch.meshgrid(rows, cols), -1).reshape((grid_size * grid_size, 2)).float()
+        torch.stack(torch.meshgrid(rows, cols), -1)
+        .reshape((grid_size**2, 2))
+        .float()
     )
     return squared_euclidean_distance_matrix(pix_coords, pix_coords)
 
@@ -142,9 +144,7 @@ class PixToShapeCycleLoss(nn.Module):
                 loss_cycle = torch.norm(pixel_dists * c_cycle, p=self.norm_p)
                 losses.append(loss_cycle)
 
-        if len(losses) == 0:
-            return pix_embeds.sum() * 0
-        return torch.stack(losses, dim=0).mean()
+        return torch.stack(losses, dim=0).mean() if losses else pix_embeds.sum() * 0
 
     def fake_value(self, densepose_predictor_outputs: Any, embedder: nn.Module):
         losses = [

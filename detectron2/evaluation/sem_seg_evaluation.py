@@ -208,9 +208,7 @@ class SemSegEvaluator(DatasetEvaluator):
             b_iou_valid = b_union > 0
             b_iou[b_iou_valid] = b_tp[b_iou_valid] / b_union[b_iou_valid]
 
-        res = {}
-        res["mIoU"] = 100 * miou
-        res["fwIoU"] = 100 * fiou
+        res = {"mIoU": 100 * miou, "fwIoU": 100 * fiou}
         for i, name in enumerate(self._class_names):
             res[f"IoU-{name}"] = 100 * iou[i]
             if self._compute_boundary_iou:
@@ -239,7 +237,7 @@ class SemSegEvaluator(DatasetEvaluator):
             if self._contiguous_id_to_dataset_id is not None:
                 assert (
                     label in self._contiguous_id_to_dataset_id
-                ), "Label {} is not in the metadata info for {}".format(label, self._dataset_name)
+                ), f"Label {label} is not in the metadata info for {self._dataset_name}"
                 dataset_id = self._contiguous_id_to_dataset_id[label]
             else:
                 dataset_id = int(label)
@@ -261,5 +259,4 @@ class SemSegEvaluator(DatasetEvaluator):
         padded_mask = cv2.copyMakeBorder(mask, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
         eroded_mask_with_padding = cv2.erode(padded_mask, kernel, iterations=dilation)
         eroded_mask = eroded_mask_with_padding[1:-1, 1:-1]
-        boundary = mask - eroded_mask
-        return boundary
+        return mask - eroded_mask

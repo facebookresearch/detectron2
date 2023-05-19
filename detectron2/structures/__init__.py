@@ -8,7 +8,7 @@ from .masks import BitMasks, PolygonMasks, polygons_to_bitmask, ROIMasks
 from .rotated_boxes import RotatedBoxes
 from .rotated_boxes import pairwise_iou as pairwise_iou_rotated
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]
 
 
 from detectron2.utils.env import fixup_module_metadata

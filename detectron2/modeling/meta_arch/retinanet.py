@@ -341,7 +341,7 @@ class RetinaNetHead(nn.Module):
         super().__init__()
 
         self._num_features = len(input_shape)
-        if norm == "BN" or norm == "SyncBN":
+        if norm in ["BN", "SyncBN"]:
             logger.info(
                 f"Using domain-specific {norm} in RetinaNetHead with len={self._num_features}."
             )

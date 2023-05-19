@@ -135,7 +135,7 @@ def register_coco_panoptic_separated(
         sem_seg_root (str): directory which contains all the ground truth segmentation annotations.
         instances_json (str): path to the json instance annotation file
     """
-    panoptic_name = name + "_separated"
+    panoptic_name = f"{name}_separated"
     DatasetCatalog.register(
         panoptic_name,
         lambda: merge_to_panoptic(
@@ -154,7 +154,7 @@ def register_coco_panoptic_separated(
         **metadata,
     )
 
-    semantic_name = name + "_stuffonly"
+    semantic_name = f"{name}_stuffonly"
     DatasetCatalog.register(semantic_name, lambda: load_sem_seg(sem_seg_root, image_root))
     MetadataCatalog.get(semantic_name).set(
         sem_seg_root=sem_seg_root,
@@ -181,7 +181,7 @@ def merge_to_panoptic(detection_dicts, sem_seg_dicts):
     """
     results = []
     sem_seg_file_to_entry = {x["file_name"]: x for x in sem_seg_dicts}
-    assert len(sem_seg_file_to_entry) > 0
+    assert sem_seg_file_to_entry
 
     for det_dict in detection_dicts:
         dic = copy.copy(det_dict)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     meta = MetadataCatalog.get(sys.argv[4])
 
     dicts = load_coco_panoptic_json(sys.argv[3], sys.argv[1], sys.argv[2], meta.as_dict())
-    logger.info("Done loading {} samples.".format(len(dicts)))
+    logger.info(f"Done loading {len(dicts)} samples.")
 
     dirname = "coco-data-vis"
     os.makedirs(dirname, exist_ok=True)

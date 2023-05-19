@@ -14,10 +14,14 @@ class _ROIAlignRotated(Function):
         ctx.spatial_scale = spatial_scale
         ctx.sampling_ratio = sampling_ratio
         ctx.input_shape = input.size()
-        output = torch.ops.detectron2.roi_align_rotated_forward(
-            input, roi, spatial_scale, output_size[0], output_size[1], sampling_ratio
+        return torch.ops.detectron2.roi_align_rotated_forward(
+            input,
+            roi,
+            spatial_scale,
+            output_size[0],
+            output_size[1],
+            sampling_ratio,
         )
-        return output
 
     @staticmethod
     @once_differentiable
@@ -92,9 +96,9 @@ class ROIAlignRotated(nn.Module):
         ).to(dtype=orig_dtype)
 
     def __repr__(self):
-        tmpstr = self.__class__.__name__ + "("
-        tmpstr += "output_size=" + str(self.output_size)
-        tmpstr += ", spatial_scale=" + str(self.spatial_scale)
-        tmpstr += ", sampling_ratio=" + str(self.sampling_ratio)
+        tmpstr = f"{self.__class__.__name__}("
+        tmpstr += f"output_size={str(self.output_size)}"
+        tmpstr += f", spatial_scale={str(self.spatial_scale)}"
+        tmpstr += f", sampling_ratio={str(self.sampling_ratio)}"
         tmpstr += ")"
         return tmpstr

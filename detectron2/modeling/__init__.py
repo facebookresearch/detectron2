@@ -55,7 +55,7 @@ from .test_time_augmentation import DatasetMapperTTA, GeneralizedRCNNWithTTA
 from .mmdet_wrapper import MMDetBackbone, MMDetDetector
 
 _EXCLUDE = {"ShapeSpec"}
-__all__ = [k for k in globals().keys() if k not in _EXCLUDE and not k.startswith("_")]
+__all__ = [k for k in globals() if k not in _EXCLUDE and not k.startswith("_")]
 
 
 from detectron2.utils.env import fixup_module_metadata

@@ -126,10 +126,10 @@ class LVISEvaluator(DatasetEvaluator):
         return copy.deepcopy(self._results)
 
     def _tasks_from_predictions(self, predictions):
-        for pred in predictions:
-            if "segmentation" in pred:
-                return ("bbox", "segm")
-        return ("bbox",)
+        return next(
+            (("bbox", "segm") for pred in predictions if "segmentation" in pred),
+            ("bbox",),
+        )
 
     def _eval_predictions(self, predictions):
         """
@@ -157,7 +157,7 @@ class LVISEvaluator(DatasetEvaluator):
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "lvis_instances_results.json")
-            self._logger.info("Saving results to {}".format(file_path))
+            self._logger.info(f"Saving results to {file_path}")
             with PathManager.open(file_path, "w") as f:
                 f.write(json.dumps(lvis_results))
                 f.flush()
@@ -247,7 +247,7 @@ def _evaluate_box_proposals(dataset_predictions, lvis_api, thresholds=None, area
         [256**2, 512**2],  # 256-512
         [512**2, 1e5**2],
     ]  # 512-inf
-    assert area in areas, "Unknown area range: {}".format(area)
+    assert area in areas, f"Unknown area range: {area}"
     area_range = area_ranges[areas[area]]
     gt_overlaps = []
     num_pos = 0
@@ -376,5 +376,7 @@ def _evaluate_predictions_on_lvis(
     # Pull the standard metrics from the LVIS results
     results = lvis_eval.get_results()
     results = {metric: float(results[metric] * 100) for metric in metrics}
-    logger.info("Evaluation results for {}: \n".format(iou_type) + create_small_table(results))
+    logger.info(
+        f"Evaluation results for {iou_type}: \n{create_small_table(results)}"
+    )
     return results

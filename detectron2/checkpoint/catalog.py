@@ -60,15 +60,14 @@ class ModelCatalog(object):
             return ModelCatalog._get_c2_detectron_baseline(name)
         if name.startswith("ImageNetPretrained/"):
             return ModelCatalog._get_c2_imagenet_pretrained(name)
-        raise RuntimeError("model not present in the catalog: {}".format(name))
+        raise RuntimeError(f"model not present in the catalog: {name}")
 
     @staticmethod
     def _get_c2_imagenet_pretrained(name):
         prefix = ModelCatalog.S3_C2_DETECTRON_PREFIX
         name = name[len("ImageNetPretrained/") :]
         name = ModelCatalog.C2_IMAGENET_MODELS[name]
-        url = "/".join([prefix, name])
-        return url
+        return "/".join([prefix, name])
 
     @staticmethod
     def _get_c2_detectron_baseline(name):
@@ -79,17 +78,13 @@ class ModelCatalog(object):
         else:
             dataset = ModelCatalog.C2_DATASET_COCO
 
-        if "35998355/rpn_R-50-C4_1x" in name:
-            # this one model is somehow different from others ..
-            type = "rpn"
-        else:
-            type = "generalized_rcnn"
-
-        # Detectron C2 models are stored in the structure defined in `C2_DETECTRON_PATH_FORMAT`.
-        url = ModelCatalog.C2_DETECTRON_PATH_FORMAT.format(
-            prefix=ModelCatalog.S3_C2_DETECTRON_PREFIX, url=url, type=type, dataset=dataset
+        type = "rpn" if "35998355/rpn_R-50-C4_1x" in name else "generalized_rcnn"
+        return ModelCatalog.C2_DETECTRON_PATH_FORMAT.format(
+            prefix=ModelCatalog.S3_C2_DETECTRON_PREFIX,
+            url=url,
+            type=type,
+            dataset=dataset,
         )
-        return url
 
 
 class ModelCatalogHandler(PathHandler):
@@ -105,7 +100,7 @@ class ModelCatalogHandler(PathHandler):
     def _get_local_path(self, path, **kwargs):
         logger = logging.getLogger(__name__)
         catalog_path = ModelCatalog.get(path[len(self.PREFIX) :])
-        logger.info("Catalog entry {} points to {}".format(path, catalog_path))
+        logger.info(f"Catalog entry {path} points to {catalog_path}")
         return PathManager.get_local_path(catalog_path, **kwargs)
 
     def _open(self, path, mode="r", **kwargs):

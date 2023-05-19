@@ -90,8 +90,7 @@ class EntrywiseAction(Action):
 
     @classmethod
     def create_context(cls: type, args: argparse.Namespace) -> Dict[str, Any]:
-        context = {}
-        return context
+        return {}
 
 
 @register_action
@@ -148,8 +147,7 @@ class ShowAction(EntrywiseAction):
         parser.add_argument(
             "visualizations",
             metavar="<visualizations>",
-            help="Comma separated list of visualizations, possible values: "
-            "[{}]".format(",".join(sorted(cls.VISUALIZERS.keys()))),
+            help=f'Comma separated list of visualizations, possible values: [{",".join(sorted(cls.VISUALIZERS.keys()))}]',
         )
         parser.add_argument(
             "--output",
@@ -183,17 +181,13 @@ class ShowAction(EntrywiseAction):
     @classmethod
     def create_context(cls: type, args: argparse.Namespace) -> Dict[str, Any]:
         vis_specs = args.visualizations.split(",")
-        visualizers = []
-        for vis_spec in vis_specs:
-            vis = cls.VISUALIZERS[vis_spec]
-            visualizers.append(vis)
-        context = {
+        visualizers = [cls.VISUALIZERS[vis_spec] for vis_spec in vis_specs]
+        return {
             "vis_specs": vis_specs,
             "visualizer": CompoundVisualizer(visualizers),
             "out_fname": args.output,
             "entry_idx": 0,
         }
-        return context
 
     @classmethod
     def _extract_data_for_visualizers_from_entry(
@@ -209,14 +203,14 @@ class ShowAction(EntrywiseAction):
             bbox_list.append(bbox)
             dp_data = DensePoseDataRelative(annotation)
             dp_list.append(dp_data)
-        datas = []
-        for vis_spec in vis_specs:
-            datas.append(bbox_list if "bbox" == vis_spec else (bbox_list, dp_list))
-        return datas
+        return [
+            bbox_list if vis_spec == "bbox" else (bbox_list, dp_list)
+            for vis_spec in vis_specs
+        ]
 
 
 def setup_dataset(dataset_name):
-    logger.info("Loading dataset {}".format(dataset_name))
+    logger.info(f"Loading dataset {dataset_name}")
     start = timer()
     dataset = DatasetCatalog.get(dataset_name)
     stop = timer()

@@ -132,21 +132,17 @@ class HighResolutionModule(nn.Module):
 
     def _check_branches(self, num_branches, blocks, num_blocks, num_inchannels, num_channels):
         if num_branches != len(num_blocks):
-            error_msg = "NUM_BRANCHES({}) <> NUM_BLOCKS({})".format(num_branches, len(num_blocks))
+            error_msg = f"NUM_BRANCHES({num_branches}) <> NUM_BLOCKS({len(num_blocks)})"
             logger.error(error_msg)
             raise ValueError(error_msg)
 
         if num_branches != len(num_channels):
-            error_msg = "NUM_BRANCHES({}) <> NUM_CHANNELS({})".format(
-                num_branches, len(num_channels)
-            )
+            error_msg = f"NUM_BRANCHES({num_branches}) <> NUM_CHANNELS({len(num_channels)})"
             logger.error(error_msg)
             raise ValueError(error_msg)
 
         if num_branches != len(num_inchannels):
-            error_msg = "NUM_BRANCHES({}) <> NUM_INCHANNELS({})".format(
-                num_branches, len(num_inchannels)
-            )
+            error_msg = f"NUM_BRANCHES({num_branches}) <> NUM_INCHANNELS({len(num_inchannels)})"
             logger.error(error_msg)
             raise ValueError(error_msg)
 
@@ -167,22 +163,26 @@ class HighResolutionModule(nn.Module):
                 nn.BatchNorm2d(num_channels[branch_index] * block.expansion, momentum=BN_MOMENTUM),
             )
 
-        layers = []
-        layers.append(
-            block(self.num_inchannels[branch_index], num_channels[branch_index], stride, downsample)
-        )
+        layers = [
+            block(
+                self.num_inchannels[branch_index],
+                num_channels[branch_index],
+                stride,
+                downsample,
+            )
+        ]
         self.num_inchannels[branch_index] = num_channels[branch_index] * block.expansion
-        for _ in range(1, num_blocks[branch_index]):
-            layers.append(block(self.num_inchannels[branch_index], num_channels[branch_index]))
-
+        layers.extend(
+            block(self.num_inchannels[branch_index], num_channels[branch_index])
+            for _ in range(1, num_blocks[branch_index])
+        )
         return nn.Sequential(*layers)
 
     def _make_branches(self, num_branches, block, num_blocks, num_channels):
-        branches = []
-
-        for i in range(num_branches):
-            branches.append(self._make_one_branch(i, block, num_blocks, num_channels))
-
+        branches = [
+            self._make_one_branch(i, block, num_blocks, num_channels)
+            for i in range(num_branches)
+        ]
         return nn.ModuleList(branches)
 
     def _make_fuse_layers(self):
@@ -228,7 +228,7 @@ class HighResolutionModule(nn.Module):
                             conv3x3s.append(
                                 nn.Sequential(
                                     nn.Conv2d(
-                                        num_inchannels[j],
+                                        num_outchannels_conv3x3,
                                         num_outchannels_conv3x3,
                                         3,
                                         2,
@@ -394,12 +394,9 @@ class PoseHigherResolutionNet(Backbone):
                 nn.BatchNorm2d(planes * block.expansion, momentum=BN_MOMENTUM),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers = [block(self.inplanes, planes, stride, downsample)]
         self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
+        layers.extend(block(self.inplanes, planes) for _ in range(1, blocks))
         return nn.Sequential(*layers)
 
     def _make_stage(self, layer_config, num_inchannels, multi_scale_output=True):
@@ -412,11 +409,7 @@ class PoseHigherResolutionNet(Backbone):
         modules = []
         for i in range(num_modules):
             # multi_scale_output is only used last module
-            if not multi_scale_output and i == num_modules - 1:
-                reset_multi_scale_output = False
-            else:
-                reset_multi_scale_output = True
-
+            reset_multi_scale_output = bool(multi_scale_output or i != num_modules - 1)
             modules.append(
                 HighResolutionModule(
                     num_branches,
@@ -470,5 +463,4 @@ class PoseHigherResolutionNet(Backbone):
 
 @BACKBONE_REGISTRY.register()
 def build_pose_hrnet_backbone(cfg, input_shape: ShapeSpec):
-    model = PoseHigherResolutionNet(cfg)
-    return model
+    return PoseHigherResolutionNet(cfg)

@@ -25,8 +25,9 @@ def resample_coarse_segm_tensor_to_bbox(coarse_segm: torch.Tensor, box_xywh_abs:
     x, y, w, h = box_xywh_abs
     w = max(int(w), 1)
     h = max(int(h), 1)
-    labels = F.interpolate(coarse_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
-    return labels
+    return F.interpolate(
+        coarse_segm, (h, w), mode="bilinear", align_corners=False
+    ).argmax(dim=1)
 
 
 def resample_fine_and_coarse_segm_tensors_to_bbox(
@@ -54,12 +55,12 @@ def resample_fine_and_coarse_segm_tensors_to_bbox(
         mode="bilinear",
         align_corners=False,
     ).argmax(dim=1)
-    # combined coarse and fine segmentation
-    labels = (
-        F.interpolate(fine_segm, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
+    return (
+        F.interpolate(
+            fine_segm, (h, w), mode="bilinear", align_corners=False
+        ).argmax(dim=1)
         * (coarse_segm_bbox > 0).long()
     )
-    return labels
 
 
 def resample_fine_and_coarse_segm_to_bbox(predictor_output: Any, box_xywh_abs: IntTupleBox):

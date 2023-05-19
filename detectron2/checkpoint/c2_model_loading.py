@@ -239,7 +239,7 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
         # Matched ckpt_key should be a complete (starts with '.') suffix.
         # For example, roi_heads.mesh_head.whatever_conv1 does not match conv1,
         # but matches whatever_conv1 or mesh_head.whatever_conv1.
-        return a == b or a.endswith("." + b)
+        return a == b or a.endswith(f".{b}")
 
     # get a matrix of string matches, where each (i, j) entry correspond to the size of the
     # ckpt_key string, if it matches
@@ -309,7 +309,7 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
             shapes = [tuple(model_state_dict[k].shape) for k in group]
             table.append(
                 (
-                    _longest_common_prefix([k[len(common_prefix) :] for k in group]) + "*",
+                    f"{_longest_common_prefix([k[len(common_prefix):] for k in group])}*",
                     _group_str([original_keys[k] for k in group]),
                     " ".join([str(x).replace(" ", "") for x in shapes]),
                 )
@@ -393,8 +393,7 @@ def _longest_common_prefix_str(names: List[str]) -> str:
             lcp.append(a)
         else:
             break
-    lcp = "".join(lcp)
-    return lcp
+    return "".join(lcp)
 
 
 def _group_str(names: List[str]) -> str:

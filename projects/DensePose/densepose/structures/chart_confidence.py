@@ -36,7 +36,7 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
     """
 
     PredictorOutput = make_dataclass(
-        BasePredictorOutput.__name__ + "WithConfidences",
+        f"{BasePredictorOutput.__name__}WithConfidences",
         fields=[
             ("sigma_1", Optional[torch.Tensor], None),
             ("sigma_2", Optional[torch.Tensor], None),
@@ -53,9 +53,7 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
     def slice_if_not_none(data, item):
         if data is None:
             return None
-        if isinstance(item, int):
-            return data[item].unsqueeze(0)
-        return data[item]
+        return data[item].unsqueeze(0) if isinstance(item, int) else data[item]
 
     def PredictorOutput_getitem(self, item):
         PredictorOutput = type(self)
@@ -80,9 +78,7 @@ def decorate_predictor_output_class_with_confidences(BasePredictorOutput: type) 
         base_predictor_output_to = super(PredictorOutput, self).to(device)  # pyre-ignore[16]
 
         def to_device_if_tensor(var: Any):
-            if isinstance(var, torch.Tensor):
-                return var.to(device)
-            return var
+            return var.to(device) if isinstance(var, torch.Tensor) else var
 
         return PredictorOutput(
             **base_predictor_output_to.__dict__,

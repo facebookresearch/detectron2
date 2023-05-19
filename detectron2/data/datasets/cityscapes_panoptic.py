@@ -21,12 +21,12 @@ def get_cityscapes_panoptic_files(image_dir, gt_dir, json_info):
     cities = PathManager.ls(image_dir)
     logger.info(f"{len(cities)} cities found in '{image_dir}'.")
     image_dict = {}
+    suffix = "_leftImg8bit.png"
     for city in cities:
         city_img_dir = os.path.join(image_dir, city)
         for basename in PathManager.ls(city_img_dir):
             image_file = os.path.join(city_img_dir, basename)
 
-            suffix = "_leftImg8bit.png"
             assert basename.endswith(suffix), basename
             basename = os.path.basename(basename)[: -len(suffix)]
 
@@ -34,15 +34,15 @@ def get_cityscapes_panoptic_files(image_dir, gt_dir, json_info):
 
     for ann in json_info["annotations"]:
         image_file = image_dict.get(ann["image_id"], None)
-        assert image_file is not None, "No image {} found for annotation {}".format(
-            ann["image_id"], ann["file_name"]
-        )
+        assert (
+            image_file is not None
+        ), f'No image {ann["image_id"]} found for annotation {ann["file_name"]}'
         label_file = os.path.join(gt_dir, ann["file_name"])
         segments_info = ann["segments_info"]
 
         files.append((image_file, label_file, segments_info))
 
-    assert len(files), "No images found in {}".format(image_dir)
+    assert len(files), f"No images found in {image_dir}"
     assert PathManager.isfile(files[0][0]), files[0][0]
     assert PathManager.isfile(files[0][1]), files[0][1]
     return files
@@ -125,7 +125,6 @@ _RAW_CITYSCAPES_PANOPTIC_SPLITS = {
 
 
 def register_all_cityscapes_panoptic(root):
-    meta = {}
     # The following metadata maps contiguous id from [0, #thing categories +
     # #stuff categories) to their names and colors. We have to replica of the
     # same name and color under "thing_*" and "stuff_*" because the current
@@ -137,11 +136,12 @@ def register_all_cityscapes_panoptic(root):
     stuff_classes = [k["name"] for k in CITYSCAPES_CATEGORIES]
     stuff_colors = [k["color"] for k in CITYSCAPES_CATEGORIES]
 
-    meta["thing_classes"] = thing_classes
-    meta["thing_colors"] = thing_colors
-    meta["stuff_classes"] = stuff_classes
-    meta["stuff_colors"] = stuff_colors
-
+    meta = {
+        "thing_classes": thing_classes,
+        "thing_colors": thing_colors,
+        "stuff_classes": stuff_classes,
+        "stuff_colors": stuff_colors,
+    }
     # There are three types of ids in cityscapes panoptic segmentation:
     # (1) category id: like semantic segmentation, it is the class id for each
     #   pixel. Since there are some classes not used in evaluation, the category

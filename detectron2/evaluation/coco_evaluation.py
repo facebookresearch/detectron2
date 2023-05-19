@@ -246,7 +246,7 @@ class COCOEvaluator(DatasetEvaluator):
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_instances_results.json")
-            self._logger.info("Saving results to {}".format(file_path))
+            self._logger.info(f"Saving results to {file_path}")
             with PathManager.open(file_path, "w") as f:
                 f.write(json.dumps(coco_results))
                 f.flush()
@@ -256,9 +256,7 @@ class COCOEvaluator(DatasetEvaluator):
             return
 
         self._logger.info(
-            "Evaluating predictions with {} COCO API...".format(
-                "unofficial" if self._use_fast_impl else "official"
-            )
+            f'Evaluating predictions with {"unofficial" if self._use_fast_impl else "official"} COCO API...'
         )
         for task in sorted(tasks):
             assert task in {"bbox", "segm", "keypoints"}, f"Got unknown task: {task}!"
@@ -272,8 +270,8 @@ class COCOEvaluator(DatasetEvaluator):
                     img_ids=img_ids,
                     max_dets_per_image=self._max_dets_per_image,
                 )
-                if len(coco_results) > 0
-                else None  # cocoapi does not handle empty results very well
+                if coco_results
+                else None
             )
 
             res = self._derive_coco_results(
@@ -350,7 +348,7 @@ class COCOEvaluator(DatasetEvaluator):
             for idx, metric in enumerate(metrics)
         }
         self._logger.info(
-            "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
+            f"Evaluation results for {iou_type}: \n{create_small_table(results)}"
         )
         if not np.isfinite(sum(results.values())):
             self._logger.info("Some metrics cannot be computed and is shown as NaN.")
@@ -370,7 +368,7 @@ class COCOEvaluator(DatasetEvaluator):
             precision = precisions[:, :, idx, 0, -1]
             precision = precision[precision > -1]
             ap = np.mean(precision) if precision.size else float("nan")
-            results_per_category.append(("{}".format(name), float(ap * 100)))
+            results_per_category.append((f"{name}", float(ap * 100)))
 
         # tabulate it
         N_COLS = min(6, len(results_per_category) * 2)
@@ -383,9 +381,9 @@ class COCOEvaluator(DatasetEvaluator):
             headers=["category", "AP"] * (N_COLS // 2),
             numalign="left",
         )
-        self._logger.info("Per-category {} AP: \n".format(iou_type) + table)
+        self._logger.info(f"Per-category {iou_type} AP: \n{table}")
 
-        results.update({"AP-" + name: ap for name, ap in results_per_category})
+        results |= {f"AP-{name}": ap for name, ap in results_per_category}
         return results
 
 
@@ -481,7 +479,7 @@ def _evaluate_box_proposals(dataset_predictions, coco_api, thresholds=None, area
         [256**2, 512**2],  # 256-512
         [512**2, 1e5**2],
     ]  # 512-inf
-    assert area in areas, "Unknown area range: {}".format(area)
+    assert area in areas, f"Unknown area range: {area}"
     area_range = area_ranges[areas[area]]
     gt_overlaps = []
     num_pos = 0
@@ -671,10 +669,7 @@ class COCOevalMaxDets(COCOeval):
                     t = np.where(iouThr == p.iouThrs)[0]
                     s = s[t]
                 s = s[:, :, aind, mind]
-            if len(s[s > -1]) == 0:
-                mean_s = -1
-            else:
-                mean_s = np.mean(s[s > -1])
+            mean_s = -1 if len(s[s > -1]) == 0 else np.mean(s[s > -1])
             print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s))
             return mean_s
 
@@ -712,7 +707,7 @@ class COCOevalMaxDets(COCOeval):
         if not self.eval:
             raise Exception("Please run accumulate() first")
         iouType = self.params.iouType
-        if iouType == "segm" or iouType == "bbox":
+        if iouType in ["segm", "bbox"]:
             summarize = _summarizeDets
         elif iouType == "keypoints":
             summarize = _summarizeKps

@@ -61,9 +61,9 @@ class CfgNode(_CfgNode):
             from .compat import guess_version
 
             loaded_ver = guess_version(loaded_cfg, cfg_filename)
-        assert loaded_ver <= self.VERSION, "Cannot merge a v{} config into a v{} config.".format(
-            loaded_ver, self.VERSION
-        )
+        assert (
+            loaded_ver <= self.VERSION
+        ), f"Cannot merge a v{loaded_ver} config into a v{self.VERSION} config."
 
         if loaded_ver == self.VERSION:
             self.merge_from_other_cfg(loaded_cfg)
@@ -72,10 +72,7 @@ class CfgNode(_CfgNode):
             from .compat import upgrade_config, downgrade_config
 
             logger.warning(
-                "Loading an old v{} config file '{}' by automatically upgrading to v{}. "
-                "See docs/CHANGELOG.md for instructions to update your files.".format(
-                    loaded_ver, cfg_filename, self.VERSION
-                )
+                f"Loading an old v{loaded_ver} config file '{cfg_filename}' by automatically upgrading to v{self.VERSION}. See docs/CHANGELOG.md for instructions to update your files."
             )
             # To convert, first obtain a full config at an old version
             old_self = downgrade_config(self, to_version=loaded_ver)
@@ -238,10 +235,11 @@ def _get_args_from_config(from_config_func, *args, **kwargs):
     else:
         # forward supported arguments to from_config
         supported_arg_names = set(signature.parameters.keys())
-        extra_kwargs = {}
-        for name in list(kwargs.keys()):
-            if name not in supported_arg_names:
-                extra_kwargs[name] = kwargs.pop(name)
+        extra_kwargs = {
+            name: kwargs.pop(name)
+            for name in list(kwargs.keys())
+            if name not in supported_arg_names
+        }
         ret = from_config_func(*args, **kwargs)
         # forward the other arguments to __init__
         ret.update(extra_kwargs)
@@ -258,8 +256,4 @@ def _called_with_cfg(*args, **kwargs):
 
     if len(args) and isinstance(args[0], (_CfgNode, DictConfig)):
         return True
-    if isinstance(kwargs.pop("cfg", None), (_CfgNode, DictConfig)):
-        return True
-    # `from_config`'s first argument is forced to be "cfg".
-    # So the above check covers all cases.
-    return False
+    return isinstance(kwargs.pop("cfg", None), (_CfgNode, DictConfig))

@@ -136,8 +136,7 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
 
     # Export via ONNX
     logger.info(
-        "Exporting a {} model via ONNX ...".format(type(model).__name__)
-        + " Some warnings from ONNX are expected and are usually not to worry about."
+        f"Exporting a {type(model).__name__} model via ONNX ... Some warnings from ONNX are expected and are usually not to worry about."
     )
     onnx_model = export_onnx_model(model, (tensor_inputs,))
     # Convert ONNX model to Caffe2 protobuf
@@ -162,8 +161,8 @@ def export_caffe2_detection_model(model: torch.nn.Module, tensor_inputs: List[to
     # Record necessary information for running the pb model in Detectron2 system.
     model.encode_additional_info(predict_net, init_net)
 
-    logger.info("Operators used in predict_net: \n{}".format(_op_stats(predict_net)))
-    logger.info("Operators used in init_net: \n{}".format(_op_stats(init_net)))
+    logger.info(f"Operators used in predict_net: \n{_op_stats(predict_net)}")
+    logger.info(f"Operators used in init_net: \n{_op_stats(init_net)}")
 
     return predict_net, init_net
 
@@ -177,7 +176,7 @@ def run_and_save_graph(predict_net, init_net, tensor_inputs, graph_save_path):
     graph_save_path: path for saving graph of exported model.
     """
 
-    logger.info("Saving graph of ONNX exported model to {} ...".format(graph_save_path))
+    logger.info(f"Saving graph of ONNX exported model to {graph_save_path} ...")
     save_graph(predict_net, graph_save_path, op_only=False)
 
     # Run the exported Caffe2 net
@@ -192,12 +191,12 @@ def run_and_save_graph(predict_net, init_net, tensor_inputs, graph_save_path):
         try:
             ws.RunNetOnce(predict_net)
         except RuntimeError as e:
-            logger.warning("Encountered RuntimeError: \n{}".format(str(e)))
+            logger.warning(f"Encountered RuntimeError: \n{str(e)}")
 
         ws_blobs = {b: ws.FetchBlob(b) for b in ws.Blobs()}
         blob_sizes = {b: ws_blobs[b].shape for b in ws_blobs if isinstance(ws_blobs[b], np.ndarray)}
 
-        logger.info("Saving graph with blob shapes to {} ...".format(graph_save_path))
+        logger.info(f"Saving graph with blob shapes to {graph_save_path} ...")
         save_graph(predict_net, graph_save_path, op_only=False, blob_sizes=blob_sizes)
 
         return ws_blobs

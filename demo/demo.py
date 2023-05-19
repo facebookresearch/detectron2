@@ -75,7 +75,7 @@ def get_parser():
 
 def test_opencv_video_format(codec, file_ext):
     with tempfile.TemporaryDirectory(prefix="video_format_test") as dir:
-        filename = os.path.join(dir, "test_file" + file_ext)
+        filename = os.path.join(dir, f"test_file{file_ext}")
         writer = cv2.VideoWriter(
             filename=filename,
             fourcc=cv2.VideoWriter_fourcc(*codec),
@@ -85,9 +85,7 @@ def test_opencv_video_format(codec, file_ext):
         )
         [writer.write(np.zeros((10, 10, 3), np.uint8)) for _ in range(30)]
         writer.release()
-        if os.path.isfile(filename):
-            return True
-        return False
+        return bool(os.path.isfile(filename))
 
 
 if __name__ == "__main__":
@@ -95,7 +93,7 @@ if __name__ == "__main__":
     args = get_parser().parse_args()
     setup_logger(name="fvcore")
     logger = setup_logger()
-    logger.info("Arguments: " + str(args))
+    logger.info(f"Arguments: {str(args)}")
 
     cfg = setup_cfg(args)
 
@@ -113,7 +111,7 @@ if __name__ == "__main__":
             logger.info(
                 "{}: {} in {:.2f}s".format(
                     path,
-                    "detected {} instances".format(len(predictions["instances"]))
+                    f'detected {len(predictions["instances"])} instances'
                     if "instances" in predictions
                     else "finished",
                     time.time() - start_time,

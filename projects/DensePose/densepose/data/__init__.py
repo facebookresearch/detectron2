@@ -22,4 +22,4 @@ from . import datasets
 # ensure the bootstrap datasets builders are registered
 from . import build
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]

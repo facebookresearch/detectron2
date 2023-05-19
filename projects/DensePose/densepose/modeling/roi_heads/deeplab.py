@@ -71,8 +71,7 @@ class DensePoseDeepLabHead(nn.Module):
         return output
 
     def _get_layer_name(self, i: int):
-        layer_name = "body_conv_fcn{}".format(i + 1)
-        return layer_name
+        return f"body_conv_fcn{i + 1}"
 
 
 # Copied from
@@ -108,15 +107,13 @@ class ASPPPooling(nn.Sequential):
 class ASPP(nn.Module):
     def __init__(self, in_channels, atrous_rates, out_channels):
         super(ASPP, self).__init__()
-        modules = []
-        modules.append(
+        modules = [
             nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 nn.GroupNorm(32, out_channels),
                 nn.ReLU(),
             )
-        )
-
+        ]
         rate1, rate2, rate3 = tuple(atrous_rates)
         modules.append(ASPPConv(in_channels, out_channels, rate1))
         modules.append(ASPPConv(in_channels, out_channels, rate2))
@@ -133,9 +130,7 @@ class ASPP(nn.Module):
         )
 
     def forward(self, x):
-        res = []
-        for conv in self.convs:
-            res.append(conv(x))
+        res = [conv(x) for conv in self.convs]
         res = torch.cat(res, dim=1)
         return self.project(res)
 
@@ -165,16 +160,13 @@ class _NonLocalBlockND(nn.Module):
         if dimension == 3:
             conv_nd = nn.Conv3d
             max_pool_layer = nn.MaxPool3d(kernel_size=(1, 2, 2))
-            bn = nn.GroupNorm  # (32, hidden_dim) #nn.BatchNorm3d
         elif dimension == 2:
             conv_nd = nn.Conv2d
             max_pool_layer = nn.MaxPool2d(kernel_size=(2, 2))
-            bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm2d
         else:
             conv_nd = nn.Conv1d
             max_pool_layer = nn.MaxPool1d(kernel_size=2)
-            bn = nn.GroupNorm  # (32, hidden_dim)nn.BatchNorm1d
-
+        bn = nn.GroupNorm  # (32, hidden_dim) #nn.BatchNorm3d
         self.g = conv_nd(
             in_channels=self.in_channels,
             out_channels=self.inter_channels,
@@ -247,9 +239,7 @@ class _NonLocalBlockND(nn.Module):
         y = y.permute(0, 2, 1).contiguous()
         y = y.view(batch_size, self.inter_channels, *x.size()[2:])
         W_y = self.W(y)
-        z = W_y + x
-
-        return z
+        return W_y + x
 
 
 class NONLocalBlock2D(_NonLocalBlockND):

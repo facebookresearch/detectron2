@@ -109,10 +109,10 @@ class MMDetBackbone(Backbone):
                 "Length of output_shapes does not match outputs from the mmdet backbone: "
                 f"{len(outs)} != {len(self._output_shapes)}"
             )
-        return {k: v for k, v in zip(self._output_names, outs)}
+        return dict(zip(self._output_names, outs))
 
     def output_shape(self) -> Dict[str, ShapeSpec]:
-        return {k: v for k, v in zip(self._output_names, self._output_shapes)}
+        return dict(zip(self._output_names, self._output_shapes))
 
 
 class MMDetDetector(nn.Module):

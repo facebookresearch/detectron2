@@ -142,19 +142,18 @@ def get_abs_pos(abs_pos, has_cls_token, hw):
         abs_pos = abs_pos[:, 1:]
     xy_num = abs_pos.shape[1]
     size = int(math.sqrt(xy_num))
-    assert size * size == xy_num
+    assert size**2 == xy_num
 
-    if size != h or size != w:
-        new_abs_pos = F.interpolate(
-            abs_pos.reshape(1, size, size, -1).permute(0, 3, 1, 2),
-            size=(h, w),
-            mode="bicubic",
-            align_corners=False,
-        )
-
-        return new_abs_pos.permute(0, 2, 3, 1)
-    else:
+    if size == h and size == w:
         return abs_pos.reshape(1, h, w, -1)
+    new_abs_pos = F.interpolate(
+        abs_pos.reshape(1, size, size, -1).permute(0, 3, 1, 2),
+        size=(h, w),
+        mode="bicubic",
+        align_corners=False,
+    )
+
+    return new_abs_pos.permute(0, 2, 3, 1)
 
 
 class PatchEmbed(nn.Module):

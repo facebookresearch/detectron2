@@ -24,7 +24,7 @@ class _ColorfulFormatter(logging.Formatter):
         self._root_name = kwargs.pop("root_name") + "."
         self._abbrev_name = kwargs.pop("abbrev_name", "")
         if len(self._abbrev_name):
-            self._abbrev_name = self._abbrev_name + "."
+            self._abbrev_name = f"{self._abbrev_name}."
         super(_ColorfulFormatter, self).__init__(*args, **kwargs)
 
     def formatMessage(self, record):
@@ -32,11 +32,11 @@ class _ColorfulFormatter(logging.Formatter):
         log = super(_ColorfulFormatter, self).formatMessage(record)
         if record.levelno == logging.WARNING:
             prefix = colored("WARNING", "red", attrs=["blink"])
-        elif record.levelno == logging.ERROR or record.levelno == logging.CRITICAL:
+        elif record.levelno in [logging.ERROR, logging.CRITICAL]:
             prefix = colored("ERROR", "red", attrs=["blink", "underline"])
         else:
             return log
-        return prefix + " " + log
+        return f"{prefix} {log}"
 
 
 @functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
@@ -102,7 +102,7 @@ def setup_logger(
         else:
             filename = os.path.join(output, "log.txt")
         if distributed_rank > 0:
-            filename = filename + ".rank{}".format(distributed_rank)
+            filename = f"{filename}.rank{distributed_rank}"
         PathManager.mkdirs(os.path.dirname(filename))
 
         fh = logging.StreamHandler(_cached_log_stream(filename))
@@ -242,7 +242,7 @@ def create_small_table(small_dict):
         str: the table as a string.
     """
     keys, values = tuple(zip(*small_dict.items()))
-    table = tabulate(
+    return tabulate(
         [values],
         headers=keys,
         tablefmt="pipe",
@@ -250,7 +250,6 @@ def create_small_table(small_dict):
         stralign="center",
         numalign="center",
     )
-    return table
 
 
 def _log_api_usage(identifier: str):
@@ -258,4 +257,4 @@ def _log_api_usage(identifier: str):
     Internal function used to log the usage of different detectron2 components
     inside facebook's infra.
     """
-    torch._C._log_api_usage_once("detectron2." + identifier)
+    torch._C._log_api_usage_once(f"detectron2.{identifier}")

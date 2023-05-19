@@ -179,9 +179,9 @@ class CascadeROIHeads(StandardROIHeads):
             losses = {}
             storage = get_event_storage()
             for stage, (predictor, predictions, proposals) in enumerate(head_outputs):
-                with storage.name_scope("stage{}".format(stage)):
+                with storage.name_scope(f"stage{stage}"):
                     stage_losses = predictor.losses(predictions, proposals)
-                losses.update({k + "_stage{}".format(stage): v for k, v in stage_losses.items()})
+                losses |= {f"{k}_stage{stage}": v for k, v in stage_losses.items()}
             return losses
         else:
             # Each is a list[Tensor] of length #image. Each tensor is Ri x (K+1)
@@ -246,11 +246,11 @@ class CascadeROIHeads(StandardROIHeads):
         # Log the number of fg/bg samples in each stage
         storage = get_event_storage()
         storage.put_scalar(
-            "stage{}/roi_head/num_fg_samples".format(stage),
+            f"stage{stage}/roi_head/num_fg_samples",
             sum(num_fg_samples) / len(num_fg_samples),
         )
         storage.put_scalar(
-            "stage{}/roi_head/num_bg_samples".format(stage),
+            f"stage{stage}/roi_head/num_bg_samples",
             sum(num_bg_samples) / len(num_bg_samples),
         )
         return proposals

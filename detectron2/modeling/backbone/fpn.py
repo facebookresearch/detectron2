@@ -89,8 +89,8 @@ class FPN(Backbone):
             weight_init.c2_xavier_fill(lateral_conv)
             weight_init.c2_xavier_fill(output_conv)
             stage = int(math.log2(strides[idx]))
-            self.add_module("fpn_lateral{}".format(stage), lateral_conv)
-            self.add_module("fpn_output{}".format(stage), output_conv)
+            self.add_module(f"fpn_lateral{stage}", lateral_conv)
+            self.add_module(f"fpn_output{stage}", output_conv)
 
             lateral_convs.append(lateral_conv)
             output_convs.append(output_conv)
@@ -102,11 +102,11 @@ class FPN(Backbone):
         self.in_features = tuple(in_features)
         self.bottom_up = bottom_up
         # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
-        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
+        self._out_feature_strides = {f"p{int(math.log2(s))}": s for s in strides}
         # top block output feature maps.
         if self.top_block is not None:
             for s in range(stage, stage + self.top_block.num_levels):
-                self._out_feature_strides["p{}".format(s + 1)] = 2 ** (s + 1)
+                self._out_feature_strides[f"p{s + 1}"] = 2 ** (s + 1)
 
         self._out_features = list(self._out_feature_strides.keys())
         self._out_feature_channels = {k: out_channels for k in self._out_features}
@@ -137,10 +137,8 @@ class FPN(Backbone):
                 ["p2", "p3", ..., "p6"].
         """
         bottom_up_features = self.bottom_up(x)
-        results = []
         prev_features = self.lateral_convs[0](bottom_up_features[self.in_features[-1]])
-        results.append(self.output_convs[0](prev_features))
-
+        results = [self.output_convs[0](prev_features)]
         # Reverse feature maps into top-down order (from low to high resolution)
         for idx, (lateral_conv, output_conv) in enumerate(
             zip(self.lateral_convs, self.output_convs)
@@ -164,7 +162,7 @@ class FPN(Backbone):
                 top_block_in_feature = results[self._out_features.index(self.top_block.in_feature)]
             results.extend(self.top_block(top_block_in_feature))
         assert len(self._out_features) == len(results)
-        return {f: res for f, res in zip(self._out_features, results)}
+        return dict(zip(self._out_features, results))
 
     def output_shape(self):
         return {
@@ -180,9 +178,9 @@ def _assert_strides_are_log2_contiguous(strides):
     Assert that each stride is 2x times its preceding stride, i.e. "contiguous in log2".
     """
     for i, stride in enumerate(strides[1:], 1):
-        assert stride == 2 * strides[i - 1], "Strides {} {} are not log2 contiguous".format(
-            stride, strides[i - 1]
-        )
+        assert (
+            stride == 2 * strides[i - 1]
+        ), f"Strides {stride} {strides[i - 1]} are not log2 contiguous"
 
 
 class LastLevelMaxPool(nn.Module):
@@ -233,7 +231,7 @@ def build_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
     bottom_up = build_resnet_backbone(cfg, input_shape)
     in_features = cfg.MODEL.FPN.IN_FEATURES
     out_channels = cfg.MODEL.FPN.OUT_CHANNELS
-    backbone = FPN(
+    return FPN(
         bottom_up=bottom_up,
         in_features=in_features,
         out_channels=out_channels,
@@ -241,7 +239,6 @@ def build_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
         top_block=LastLevelMaxPool(),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
     )
-    return backbone
 
 
 @BACKBONE_REGISTRY.register()
@@ -257,7 +254,7 @@ def build_retinanet_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
     in_features = cfg.MODEL.FPN.IN_FEATURES
     out_channels = cfg.MODEL.FPN.OUT_CHANNELS
     in_channels_p6p7 = bottom_up.output_shape()["res5"].channels
-    backbone = FPN(
+    return FPN(
         bottom_up=bottom_up,
         in_features=in_features,
         out_channels=out_channels,
@@ -265,4 +262,3 @@ def build_retinanet_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
         top_block=LastLevelP6P7(in_channels_p6p7, out_channels),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
     )
-    return backbone

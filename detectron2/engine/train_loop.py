@@ -116,7 +116,7 @@ class TrainerBase:
         self.start_iter: int = 0
         self.max_iter: int
         self.storage: EventStorage
-        _log_api_usage("trainer." + self.__class__.__name__)
+        _log_api_usage(f"trainer.{self.__class__.__name__}")
 
     def register_hooks(self, hooks: List[Optional[HookBase]]) -> None:
         """
@@ -142,7 +142,7 @@ class TrainerBase:
             start_iter, max_iter (int): See docs above
         """
         logger = logging.getLogger(__name__)
-        logger.info("Starting training from iteration {}".format(start_iter))
+        logger.info(f"Starting training from iteration {start_iter}")
 
         self.iter = self.start_iter = start_iter
         self.max_iter = max_iter
@@ -196,8 +196,7 @@ class TrainerBase:
         ret = {"iteration": self.iter}
         hooks_state = {}
         for h in self._hooks:
-            sd = h.state_dict()
-            if sd:
+            if sd := h.state_dict():
                 name = type(h).__qualname__
                 if name in hooks_state:
                     # TODO handle repetitive stateful hooks
@@ -413,7 +412,7 @@ class SimpleTrainer(TrainerBase):
                 )
 
             storage.put_scalar(
-                "{}total_loss".format(prefix), total_losses_reduced, cur_iter=cur_iter
+                f"{prefix}total_loss", total_losses_reduced, cur_iter=cur_iter
             )
             if len(metrics_dict) > 1:
                 storage.put_scalars(cur_iter=cur_iter, **metrics_dict)

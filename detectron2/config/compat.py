@@ -42,11 +42,11 @@ def upgrade_config(cfg: CN, to_version: Optional[int] = None) -> CN:
     if to_version is None:
         to_version = _C.VERSION
 
-    assert cfg.VERSION <= to_version, "Cannot upgrade from v{} to v{}!".format(
-        cfg.VERSION, to_version
-    )
+    assert (
+        cfg.VERSION <= to_version
+    ), f"Cannot upgrade from v{cfg.VERSION} to v{to_version}!"
     for k in range(cfg.VERSION, to_version):
-        converter = globals()["ConverterV" + str(k + 1)]
+        converter = globals()[f"ConverterV{str(k + 1)}"]
         converter.upgrade(cfg)
         cfg.VERSION = k + 1
     return cfg
@@ -69,11 +69,11 @@ def downgrade_config(cfg: CN, to_version: int) -> CN:
         in the old version when a general downgrade is not possible.
     """
     cfg = cfg.clone()
-    assert cfg.VERSION >= to_version, "Cannot downgrade from v{} to v{}!".format(
-        cfg.VERSION, to_version
-    )
+    assert (
+        cfg.VERSION >= to_version
+    ), f"Cannot downgrade from v{cfg.VERSION} to v{to_version}!"
     for k in range(cfg.VERSION, to_version, -1):
-        converter = globals()["ConverterV" + str(k)]
+        converter = globals()[f"ConverterV{str(k)}"]
         converter.downgrade(cfg)
         cfg.VERSION = k - 1
     return cfg

@@ -107,9 +107,10 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
             )
             if self._storage is not None:
                 for prediction_dict in prediction_list:
-                    dict_to_store = {}
-                    for field_name in self._storage.data_schema:
-                        dict_to_store[field_name] = prediction_dict[field_name]
+                    dict_to_store = {
+                        field_name: prediction_dict[field_name]
+                        for field_name in self._storage.data_schema
+                    }
                     record_id = self._storage.put(dict_to_store)
                     prediction_dict["record_id"] = record_id
                     prediction_dict["rank"] = get_rank()
@@ -377,9 +378,9 @@ def _derive_results_from_coco_eval(
         headers=["category", "AP"] * (n_cols // 2),
         numalign="left",
     )
-    logger.info(f"Per-category {eval_mode_name} AP: \n" + table)
+    logger.info(f"Per-category {eval_mode_name} AP: \n{table}")
 
-    results.update({"AP-" + name: ap for name, ap in results_per_category})
+    results |= {f"AP-{name}": ap for name, ap in results_per_category}
     return results
 
 

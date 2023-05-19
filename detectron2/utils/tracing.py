@@ -59,10 +59,9 @@ def assert_fx_safe(condition: bool, message: str) -> torch.Tensor:
                 torch._assert(
                     eval(condition, caller_frame.f_globals, caller_frame.f_locals), message
                 )
-                return torch.ones(1)
             else:
                 torch._assert(condition, message)
-                return torch.ones(1)
+            return torch.ones(1)
         except torch.fx.proxy.TraceError as e:
             print(
                 "Found a non-FX compatible assertion. Skipping the check. Failure is shown below"

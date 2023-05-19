@@ -129,11 +129,12 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
             where S = DensePoseDataRelative.MASK_SIZE
         """
         sz = DensePoseDataRelative.MASK_SIZE
-        mask = (
-            F.interpolate(output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False)
+        return (
+            F.interpolate(
+                output.coarse_segm, (sz, sz), mode="bilinear", align_corners=False
+            )
             .argmax(dim=1)
             .long()
             .squeeze()
             .cpu()
         )
-        return mask

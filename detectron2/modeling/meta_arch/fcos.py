@@ -71,7 +71,7 @@ class FCOS(DenseDetector):
             box2box_transform = Box2BoxTransformLinear(normalize_by_size=True)
         self.box2box_transform = box2box_transform
 
-        self.center_sampling_radius = float(center_sampling_radius)
+        self.center_sampling_radius = center_sampling_radius
 
         # Loss parameters:
         self.focal_loss_alpha = focal_loss_alpha

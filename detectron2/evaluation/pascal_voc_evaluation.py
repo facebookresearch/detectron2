@@ -41,7 +41,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             os.path.join(meta.dirname, "Annotations/")
         )
         self._anno_file_template = os.path.join(annotation_dir_local, "{}.xml")
-        self._image_set_path = os.path.join(meta.dirname, "ImageSets", "Main", meta.split + ".txt")
+        self._image_set_path = os.path.join(
+            meta.dirname, "ImageSets", "Main", f"{meta.split}.txt"
+        )
         self._class_names = meta.thing_classes
         assert meta.year in [2007, 2012], meta.year
         self._is_2007 = meta.year == 2007
@@ -82,10 +84,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         del all_predictions
 
         self._logger.info(
-            "Evaluating {} using {} metric. "
-            "Note that results do not use the official Matlab API.".format(
-                self._dataset_name, 2007 if self._is_2007 else 2012
-            )
+            f"Evaluating {self._dataset_name} using {2007 if self._is_2007 else 2012} metric. Note that results do not use the official Matlab API."
         )
 
         with tempfile.TemporaryDirectory(prefix="pascal_voc_eval_") as dirname:
@@ -135,8 +134,7 @@ def parse_rec(filename):
         tree = ET.parse(f)
     objects = []
     for obj in tree.findall("object"):
-        obj_struct = {}
-        obj_struct["name"] = obj.find("name").text
+        obj_struct = {"name": obj.find("name").text}
         obj_struct["pose"] = obj.find("pose").text
         obj_struct["truncated"] = int(obj.find("truncated").text)
         obj_struct["difficult"] = int(obj.find("difficult").text)
@@ -160,10 +158,7 @@ def voc_ap(rec, prec, use_07_metric=False):
         # 11 point metric
         ap = 0.0
         for t in np.arange(0.0, 1.1, 0.1):
-            if np.sum(rec >= t) == 0:
-                p = 0
-            else:
-                p = np.max(prec[rec >= t])
+            p = 0 if np.sum(rec >= t) == 0 else np.max(prec[rec >= t])
             ap = ap + p / 11.0
     else:
         # correct AP calculation
@@ -214,11 +209,10 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
 
-    # load annots
-    recs = {}
-    for imagename in imagenames:
-        recs[imagename] = parse_rec(annopath.format(imagename))
-
+    recs = {
+        imagename: parse_rec(annopath.format(imagename))
+        for imagename in imagenames
+    }
     # extract gt objects for this class
     class_recs = {}
     npos = 0
@@ -278,16 +272,15 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
             ovmax = np.max(overlaps)
             jmax = np.argmax(overlaps)
 
-        if ovmax > ovthresh:
-            if not R["difficult"][jmax]:
-                if not R["det"][jmax]:
-                    tp[d] = 1.0
-                    R["det"][jmax] = 1
-                else:
-                    fp[d] = 1.0
-        else:
+        if (
+            ovmax > ovthresh
+            and not R["difficult"][jmax]
+            and not R["det"][jmax]
+        ):
+            tp[d] = 1.0
+            R["det"][jmax] = 1
+        elif ovmax > ovthresh and not R["difficult"][jmax] or ovmax <= ovthresh:
             fp[d] = 1.0
-
     # compute precision recall
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)

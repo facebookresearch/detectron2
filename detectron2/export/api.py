@@ -161,7 +161,7 @@ class Caffe2Model(nn.Module):
             output_dir (str): the output directory to save protobuf files.
         """
         logger = logging.getLogger(__name__)
-        logger.info("Saving model to {} ...".format(output_dir))
+        logger.info(f"Saving model to {output_dir} ...")
         if not PathManager.exists(output_dir):
             PathManager.mkdirs(output_dir)
 

@@ -24,7 +24,9 @@ def build_augmentation(cfg, is_train):
             cfg.INPUT.ROTATION_ANGLES, expand=False, sample_style="choice"
         )
         result.append(random_rotation)
-        logger.info("DensePose-specific augmentation used in training: " + str(random_rotation))
+        logger.info(
+            f"DensePose-specific augmentation used in training: {str(random_rotation)}"
+        )
     return result
 
 
@@ -58,7 +60,7 @@ class DatasetMapper:
                 MetadataCatalog.get(ds).densepose_transform_src
                 for ds in cfg.DATASETS.TRAIN + cfg.DATASETS.TEST
             ]
-            assert len(densepose_transform_srcs) > 0
+            assert densepose_transform_srcs
             # TODO: check that DensePose transformation data is the same for
             # all the datasets. Otherwise one would have to pass DB ID with
             # each entry to select proper transformation data. For now, since
@@ -115,7 +117,9 @@ class DatasetMapper:
 
         instances = utils.annotations_to_instances(annos, image_shape, mask_format="bitmask")
         densepose_annotations = [obj.get("densepose") for obj in annos]
-        if densepose_annotations and not all(v is None for v in densepose_annotations):
+        if densepose_annotations and any(
+            v is not None for v in densepose_annotations
+        ):
             instances.gt_densepose = DensePoseList(
                 densepose_annotations, instances.gt_boxes, image_shape
             )

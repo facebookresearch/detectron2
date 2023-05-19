@@ -60,5 +60,4 @@ class DensePoseV1ConvXHead(nn.Module):
         return output
 
     def _get_layer_name(self, i: int):
-        layer_name = "body_conv_fcn{}".format(i + 1)
-        return layer_name
+        return f"body_conv_fcn{i + 1}"

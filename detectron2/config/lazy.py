@@ -135,7 +135,9 @@ Within a config file, relative import can only import other config files.
         if not PathManager.isfile(cur_file):
             cur_file_no_suffix = cur_file[: -len(".py")]
             if PathManager.isdir(cur_file_no_suffix):
-                raise ImportError(f"Cannot import from {cur_file_no_suffix}." + relative_import_err)
+                raise ImportError(
+                    f"Cannot import from {cur_file_no_suffix}.{relative_import_err}"
+                )
             else:
                 raise ImportError(
                     f"Cannot import name {relative_import_path} from "
@@ -145,26 +147,28 @@ Within a config file, relative import can only import other config files.
 
     def new_import(name, globals=None, locals=None, fromlist=(), level=0):
         if (
-            # Only deal with relative imports inside config files
-            level != 0
-            and globals is not None
-            and (globals.get("__package__", "") or "").startswith(_CFG_PACKAGE_NAME)
-        ):
-            cur_file = find_relative_file(globals["__file__"], name, level)
-            _validate_py_syntax(cur_file)
-            spec = importlib.machinery.ModuleSpec(
-                _random_package_name(cur_file), None, origin=cur_file
+            level == 0
+            or globals is None
+            or not (globals.get("__package__", "") or "").startswith(
+                _CFG_PACKAGE_NAME
             )
-            module = importlib.util.module_from_spec(spec)
-            module.__file__ = cur_file
-            with PathManager.open(cur_file) as f:
-                content = f.read()
-            exec(compile(content, cur_file, "exec"), module.__dict__)
-            for name in fromlist:  # turn imported dict into DictConfig automatically
-                val = _cast_to_config(module.__dict__[name])
-                module.__dict__[name] = val
-            return module
-        return old_import(name, globals, locals, fromlist=fromlist, level=level)
+        ):
+            return old_import(name, globals, locals, fromlist=fromlist, level=level)
+
+        cur_file = find_relative_file(globals["__file__"], name, level)
+        _validate_py_syntax(cur_file)
+        spec = importlib.machinery.ModuleSpec(
+            _random_package_name(cur_file), None, origin=cur_file
+        )
+        module = importlib.util.module_from_spec(spec)
+        module.__file__ = cur_file
+        with PathManager.open(cur_file) as f:
+            content = f.read()
+        exec(compile(content, cur_file, "exec"), module.__dict__)
+        for name in fromlist:  # turn imported dict into DictConfig automatically
+            val = _cast_to_config(module.__dict__[name])
+            module.__dict__[name] = val
+        return module
 
     builtins.__import__ = new_import
     yield new_import
@@ -230,23 +234,23 @@ class LazyConfig:
             ret = OmegaConf.create(obj, flags={"allow_objects": True})
 
         if has_keys:
-            if isinstance(keys, str):
-                return _cast_to_config(ret[keys])
-            else:
-                return tuple(_cast_to_config(ret[a]) for a in keys)
-        else:
-            if filename.endswith(".py"):
-                # when not specified, only load those that are config objects
-                ret = DictConfig(
-                    {
-                        name: _cast_to_config(value)
-                        for name, value in ret.items()
-                        if isinstance(value, (DictConfig, ListConfig, dict))
-                        and not name.startswith("_")
-                    },
-                    flags={"allow_objects": True},
-                )
-            return ret
+            return (
+                _cast_to_config(ret[keys])
+                if isinstance(keys, str)
+                else tuple(_cast_to_config(ret[a]) for a in keys)
+            )
+        if filename.endswith(".py"):
+            # when not specified, only load those that are config objects
+            ret = DictConfig(
+                {
+                    name: _cast_to_config(value)
+                    for name, value in ret.items()
+                    if isinstance(value, (DictConfig, ListConfig, dict))
+                    and not name.startswith("_")
+                },
+                flags={"allow_objects": True},
+            )
+        return ret
 
     @staticmethod
     def save(cfg, filename: str):
@@ -305,7 +309,7 @@ class LazyConfig:
             save_pkl = True
 
         if save_pkl:
-            new_filename = filename + ".pkl"
+            new_filename = f"{filename}.pkl"
             try:
                 # retry by pickle
                 with PathManager.open(new_filename, "wb") as f:
@@ -409,7 +413,7 @@ class LazyConfig:
                 key_list = []
                 for k, v in sorted(obj.items()):
                     if isinstance(v, abc.Mapping) and "_target_" not in v:
-                        key_list.append(_to_str(v, prefix=prefix + [k + "."]))
+                        key_list.append(_to_str(v, prefix=prefix + [f"{k}."]))
                     else:
                         key = "".join(prefix) + k
                         key_list.append(f"{key}={_to_str(v)}")

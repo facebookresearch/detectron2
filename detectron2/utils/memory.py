@@ -17,9 +17,7 @@ def _ignore_torch_cuda_oom():
         yield
     except RuntimeError as e:
         # NOTE: the string may change?
-        if "CUDA out of memory. " in str(e):
-            pass
-        else:
+        if "CUDA out of memory. " not in str(e):
             raise
 
 
@@ -59,10 +57,7 @@ def retry_if_cuda_oom(func):
             like_gpu_tensor = x.device.type == "cuda" and hasattr(x, "to")
         except AttributeError:
             like_gpu_tensor = False
-        if like_gpu_tensor:
-            return x.to(device="cpu")
-        else:
-            return x
+        return x.to(device="cpu") if like_gpu_tensor else x
 
     @wraps(func)
     def wrapped(*args, **kwargs):

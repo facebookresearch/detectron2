@@ -364,7 +364,7 @@ class MViT(Backbone):
         self.blocks = nn.ModuleList()
         for i in range(depth):
             # Multiply stride_kv by 2 if it's the last block of stage2 and stage3.
-            if i == last_block_indexes[1] or i == last_block_indexes[2]:
+            if i in [last_block_indexes[1], last_block_indexes[2]]:
                 stride_kv_ = stride_kv * 2
             else:
                 stride_kv_ = stride_kv

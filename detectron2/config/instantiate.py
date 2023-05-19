@@ -74,7 +74,7 @@ def instantiate(cfg):
             assert cls is not None, cls_name
         else:
             try:
-                cls_name = cls.__module__ + "." + cls.__qualname__
+                cls_name = f"{cls.__module__}.{cls.__qualname__}"
             except Exception:
                 # target could be anything, so the above could fail
                 cls_name = str(cls)

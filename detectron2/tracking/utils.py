@@ -22,18 +22,17 @@ def create_prediction_pairs(
     """
     bbox_pairs = []
     for i in range(len(instances)):
-        for j in range(len(prev_instances)):
-            if iou_all[i, j] < threshold:
-                continue
-            bbox_pairs.append(
-                {
-                    "idx": i,
-                    "prev_idx": j,
-                    "prev_id": prev_instances.ID[j],
-                    "IoU": iou_all[i, j],
-                    "prev_period": prev_instances.ID_period[j],
-                }
-            )
+        bbox_pairs.extend(
+            {
+                "idx": i,
+                "prev_idx": j,
+                "prev_id": prev_instances.ID[j],
+                "IoU": iou_all[i, j],
+                "prev_period": prev_instances.ID_period[j],
+            }
+            for j in range(len(prev_instances))
+            if iou_all[i, j] >= threshold
+        )
     return bbox_pairs
 
 

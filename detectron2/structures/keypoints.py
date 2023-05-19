@@ -76,8 +76,8 @@ class Keypoints:
         return Keypoints(self.tensor[item])
 
     def __repr__(self) -> str:
-        s = self.__class__.__name__ + "("
-        s += "num_instances={})".format(len(self.tensor))
+        s = f"{self.__class__.__name__}("
+        s += f"num_instances={len(self.tensor)})"
         return s
 
     @staticmethod
@@ -92,13 +92,12 @@ class Keypoints:
             Keypoints: the concatenated Keypoints
         """
         assert isinstance(keypoints_list, (list, tuple))
-        assert len(keypoints_list) > 0
+        assert keypoints_list
         assert all(isinstance(keypoints, Keypoints) for keypoints in keypoints_list)
 
-        cat_kpts = type(keypoints_list[0])(
+        return type(keypoints_list[0])(
             torch.cat([kpts.tensor for kpts in keypoints_list], dim=0)
         )
-        return cat_kpts
 
 
 # TODO make this nicer, this is a direct translation from C2 (but removing the inner loop)

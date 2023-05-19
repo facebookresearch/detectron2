@@ -12,4 +12,4 @@ from .iou_weighted_hungarian_bbox_iou_tracker import (  # noqa
 from .utils import create_prediction_pairs  # noqa
 from .vanilla_hungarian_bbox_iou_tracker import VanillaHungarianBBoxIOUTracker  # noqa
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]

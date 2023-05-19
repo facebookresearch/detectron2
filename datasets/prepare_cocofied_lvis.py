@@ -163,14 +163,14 @@ def cocofy_lvis(input_filename, output_filename):
 
     with open(output_filename, "w") as f:
         json.dump(cocofied_lvis, f)
-    print("{} is COCOfied and stored in {}.".format(input_filename, output_filename))
+    print(f"{input_filename} is COCOfied and stored in {output_filename}.")
 
 
 if __name__ == "__main__":
     dataset_dir = os.path.join(os.getenv("DETECTRON2_DATASETS", "datasets"), "lvis")
     for s in ["lvis_v0.5_train", "lvis_v0.5_val"]:
-        print("Start COCOfing {}.".format(s))
+        print(f"Start COCOfing {s}.")
         cocofy_lvis(
-            os.path.join(dataset_dir, "{}.json".format(s)),
-            os.path.join(dataset_dir, "{}_cocofied.json".format(s)),
+            os.path.join(dataset_dir, f"{s}.json"),
+            os.path.join(dataset_dir, f"{s}_cocofied.json"),
         )

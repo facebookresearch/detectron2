@@ -70,21 +70,19 @@ class DensePoseConfidenceBasedSampler(DensePoseBaseSampler):
         """
         k = values.shape[1]
         if k == count:
-            index_sample = list(range(k))
+            return list(range(k))
+        # take the best count * search_count_multiplier pixels,
+        # sample from them uniformly
+        # (here best = smallest variance)
+        _, sorted_confidence_indices = torch.sort(values[2])
+        if self.search_count_multiplier is not None:
+            search_count = min(int(count * self.search_count_multiplier), k)
+        elif self.search_proportion is not None:
+            search_count = min(max(int(k * self.search_proportion), count), k)
         else:
-            # take the best count * search_count_multiplier pixels,
-            # sample from them uniformly
-            # (here best = smallest variance)
-            _, sorted_confidence_indices = torch.sort(values[2])
-            if self.search_count_multiplier is not None:
-                search_count = min(int(count * self.search_count_multiplier), k)
-            elif self.search_proportion is not None:
-                search_count = min(max(int(k * self.search_proportion), count), k)
-            else:
-                search_count = min(count, k)
-            sample_from_top = random.sample(range(search_count), count)
-            index_sample = sorted_confidence_indices[:search_count][sample_from_top]
-        return index_sample
+            search_count = min(count, k)
+        sample_from_top = random.sample(range(search_count), count)
+        return sorted_confidence_indices[:search_count][sample_from_top]
 
     def _produce_labels_and_results(self, instance) -> Tuple[torch.Tensor, torch.Tensor]:
         """

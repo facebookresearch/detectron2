@@ -28,10 +28,10 @@ def get_version():
         from datetime import datetime
 
         date_str = datetime.today().strftime("%y%m%d")
-        version = version + ".dev" + date_str
+        version = f"{version}.dev{date_str}"
 
         new_init_py = [l for l in init_py if not l.startswith("__version__")]
-        new_init_py.append('__version__ = "{}"\n'.format(version))
+        new_init_py.append(f'__version__ = "{version}"\n')
         with open(init_py_path, "w") as f:
             f.write("".join(new_init_py))
     return version
@@ -46,9 +46,7 @@ def get_extensions():
 
     from torch.utils.cpp_extension import ROCM_HOME
 
-    is_rocm_pytorch = (
-        True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
-    )
+    is_rocm_pytorch = torch.version.hip is not None and ROCM_HOME is not None
     if is_rocm_pytorch:
         assert torch_ver >= [1, 8], "ROCM support requires PyTorch >= 1.8!"
 
@@ -86,11 +84,11 @@ def get_extensions():
             # supported by https://github.com/pytorch/pytorch/pull/43931
             CC = os.environ.get("CC", None)
             if CC is not None:
-                extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
+                extra_compile_args["nvcc"].append(f"-ccbin={CC}")
 
     include_dirs = [extensions_dir]
 
-    ext_modules = [
+    return [
         extension(
             "detectron2._C",
             sources,
@@ -99,8 +97,6 @@ def get_extensions():
             extra_compile_args=extra_compile_args,
         )
     ]
-
-    return ext_modules
 
 
 def get_model_zoo_configs() -> List[str]:
@@ -130,10 +126,9 @@ def get_model_zoo_configs() -> List[str]:
             # Fall back to copying if symlink fails: ex. on Windows.
             shutil.copytree(source_configs_dir, destination)
 
-    config_paths = glob.glob("configs/**/*.yaml", recursive=True) + glob.glob(
+    return glob.glob("configs/**/*.yaml", recursive=True) + glob.glob(
         "configs/**/*.py", recursive=True
     )
-    return config_paths
 
 
 # For projects that are relative small and provide features that are very close

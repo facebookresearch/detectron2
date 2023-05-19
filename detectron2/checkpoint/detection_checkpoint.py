@@ -35,7 +35,7 @@ class DetectionCheckpointer(Checkpointer):
         assert self._parsed_url_during_load is None
         need_sync = False
         logger = logging.getLogger(__name__)
-        logger.info("[DetectionCheckpointer] Loading from {} ...".format(path))
+        logger.info(f"[DetectionCheckpointer] Loading from {path} ...")
 
         if path and isinstance(self.model, DistributedDataParallel):
             path = self.path_manager.get_local_path(path)
@@ -73,7 +73,7 @@ class DetectionCheckpointer(Checkpointer):
                 data = pickle.load(f, encoding="latin1")
             if "model" in data and "__author__" in data:
                 # file is in Detectron2 model zoo format
-                self.logger.info("Reading a file from '{}'".format(data["__author__"]))
+                self.logger.info(f"""Reading a file from '{data["__author__"]}'""")
                 return data
             else:
                 # assume file is from Caffe2 / Detectron1 model zoo

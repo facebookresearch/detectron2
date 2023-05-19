@@ -36,11 +36,12 @@ class Detectron2COCOEvaluatorAdapter(COCOEvaluator):
         if len(cont_id_2_cat_id) == len(cat_id_2_cont_id):
             return
 
-        cat_id_2_cont_id_injective = {}
-        for cat_id, cont_id in cat_id_2_cont_id.items():
-            if (cont_id in cont_id_2_cat_id) and (cont_id_2_cat_id[cont_id] == cat_id):
-                cat_id_2_cont_id_injective[cat_id] = cont_id
-
+        cat_id_2_cont_id_injective = {
+            cat_id: cont_id
+            for cat_id, cont_id in cat_id_2_cont_id.items()
+            if (cont_id in cont_id_2_cat_id)
+            and (cont_id_2_cat_id[cont_id] == cat_id)
+        }
         metadata_new = Metadata(name=self._metadata.name)
         for key, value in self._metadata.__dict__.items():
             if key == "thing_dataset_id_to_contiguous_id":

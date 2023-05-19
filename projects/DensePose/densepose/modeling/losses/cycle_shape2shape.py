@@ -58,9 +58,7 @@ class ShapeToShapeCycleLoss(nn.Module):
         return self._forward_one_pair(embedder, src_mesh_name, dst_mesh_name)
 
     def fake_value(self, embedder: nn.Module):
-        losses = []
-        for mesh_name in embedder.mesh_names:  # pyre-ignore[29]
-            losses.append(embedder(mesh_name).sum() * 0)
+        losses = [embedder(mesh_name).sum() * 0 for mesh_name in embedder.mesh_names]
         return torch.mean(torch.stack(losses))
 
     def _get_embeddings_and_geodists_for_mesh(

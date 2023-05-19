@@ -86,9 +86,7 @@ class DensePoseGeneralizedRCNNWithTTA(GeneralizedRCNNWithTTA):
                 merged_instances.pred_densepose = self._reduce_pred_densepose(outputs, tfms)
             # postprocess
             merged_instances = detector_postprocess(merged_instances, *orig_shape)
-            return {"instances": merged_instances}
-        else:
-            return {"instances": merged_instances}
+        return {"instances": merged_instances}
 
     def _get_augmented_boxes(self, augmented_inputs, tfms):
         # Heavily based on detectron2/modeling/test_time_augmentation.py

@@ -207,7 +207,7 @@ class AnyStage(nn.Module):
         super().__init__()
         for i in range(d):
             block = block_class(w_in, w_out, stride, norm, activation_class, params)
-            self.add_module("b{}".format(i + 1), block)
+            self.add_module(f"b{i + 1}", block)
             stride, w_in = 1, w_out
 
     def forward(self, x):
@@ -280,7 +280,7 @@ class AnyNet(Backbone):
         ):
             params = {"bot_mul": b, "group_w": g, "se_r": se_ratio}
             stage = AnyStage(prev_w, w, s, d, block_class, norm, activation_class, params)
-            name = "s{}".format(i + 1)
+            name = f"s{i + 1}"
             self.add_module(name, stage)
             self.stages_and_names.append((stage, name))
             self._out_feature_strides[name] = current_stride = int(
@@ -297,9 +297,9 @@ class AnyNet(Backbone):
         assert len(self._out_features)
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
-            assert out_feature in children, "Available children: {} does not include {}".format(
-                ", ".join(children), out_feature
-            )
+            assert (
+                out_feature in children
+            ), f'Available children: {", ".join(children)} does not include {out_feature}'
         self.freeze(freeze_at)
 
     def forward(self, x):
@@ -424,7 +424,7 @@ class RegNet(AnyNet):
                 bottleneck.
             stride (int): The stride that each network stage applies to its input.
         """
-        ws, ds = generate_regnet_parameters(w_a, w_0, w_m, depth)[0:2]
+        ws, ds = generate_regnet_parameters(w_a, w_0, w_m, depth)[:2]
         ss = [stride for _ in ws]
         bs = [bottleneck_ratio for _ in ws]
         gs = [group_width for _ in ws]

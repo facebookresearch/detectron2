@@ -140,15 +140,18 @@ def get_metadata(base_path: Optional[str]) -> Dict[str, Any]:
     Dict[str, Any]
         Metadata in the form of a dictionary
     """
-    meta = {
-        "densepose_transform_src": maybe_prepend_base_path(base_path, "UV_symmetry_transforms.mat"),
-        "densepose_smpl_subdiv": maybe_prepend_base_path(base_path, "SMPL_subdiv.mat"),
+    return {
+        "densepose_transform_src": maybe_prepend_base_path(
+            base_path, "UV_symmetry_transforms.mat"
+        ),
+        "densepose_smpl_subdiv": maybe_prepend_base_path(
+            base_path, "SMPL_subdiv.mat"
+        ),
         "densepose_smpl_subdiv_transform": maybe_prepend_base_path(
             base_path,
             "SMPL_SUBDIV_TRANSFORM.mat",
         ),
     }
-    return meta
 
 
 def _load_coco_annotations(json_file: str):
@@ -177,7 +180,7 @@ def _add_categories_metadata(dataset_name: str, categories: List[Dict[str, Any]]
     meta = MetadataCatalog.get(dataset_name)
     meta.categories = {c["id"]: c["name"] for c in categories}
     logger = logging.getLogger(__name__)
-    logger.info("Dataset {} categories: {}".format(dataset_name, meta.categories))
+    logger.info(f"Dataset {dataset_name} categories: {meta.categories}")
 
 
 def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str, Any]]]):
@@ -187,9 +190,9 @@ def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str
         # Therefore we explicitly white-list them
         return
     ann_ids = [ann["id"] for anns_per_image in anns for ann in anns_per_image]
-    assert len(set(ann_ids)) == len(ann_ids), "Annotation ids in '{}' are not unique!".format(
-        json_file
-    )
+    assert len(set(ann_ids)) == len(
+        ann_ids
+    ), f"Annotation ids in '{json_file}' are not unique!"
 
 
 def _maybe_add_bbox(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
@@ -206,7 +209,7 @@ def _maybe_add_segm(obj: Dict[str, Any], ann_dict: Dict[str, Any]):
     if not isinstance(segm, dict):
         # filter out invalid polygons (< 3 points)
         segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
-        if len(segm) == 0:
+        if not segm:
             return
     obj["segmentation"] = segm
 
@@ -243,8 +246,7 @@ def _combine_images_with_annotations(
     contains_video_frame_info = False
 
     for img_dict, ann_dicts in zip(img_datas, ann_datas):
-        record = {}
-        record["file_name"] = os.path.join(image_root, img_dict["file_name"])
+        record = {"file_name": os.path.join(image_root, img_dict["file_name"])}
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
         record["image_id"] = img_dict["id"]
@@ -378,14 +380,15 @@ def load_coco_json(annotations_json_file: str, image_root: str, dataset_name: st
     #  'id': 1268}
     imgs = coco_api.loadImgs(img_ids)
     logger = logging.getLogger(__name__)
-    logger.info("Loaded {} images in COCO format from {}".format(len(imgs), annotations_json_file))
+    logger.info(
+        f"Loaded {len(imgs)} images in COCO format from {annotations_json_file}"
+    )
     # anns is a list[list[dict]], where each dict is an annotation
     # record for an object. The inner list enumerates the objects in an image
     # and the outer list enumerates over images.
     anns = [coco_api.imgToAnns[img_id] for img_id in img_ids]
     _verify_annotations_have_unique_ids(annotations_json_file, anns)
-    dataset_records = _combine_images_with_annotations(dataset_name, image_root, imgs, anns)
-    return dataset_records
+    return _combine_images_with_annotations(dataset_name, image_root, imgs, anns)
 
 
 def register_dataset(dataset_data: CocoDatasetInfo, datasets_root: Optional[str] = None):
