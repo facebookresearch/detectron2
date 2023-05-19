@@ -44,7 +44,7 @@ def iter_benchmark(
         float: average time (seconds) per iteration
         list[float]: time spent on each iteration. Sometimes useful for further analysis.
     """
-    num_iter, warmup = int(num_iter), int(warmup)
+    num_iter, warmup = num_iter, warmup
 
     iterator = iter(iterator)
     for _ in range(warmup):

@@ -184,7 +184,7 @@ class ROIPooler(nn.Module):
                 for scale in scales
             )
         else:
-            raise ValueError("Unknown pooler type: {}".format(pooler_type))
+            raise ValueError(f"Unknown pooler type: {pooler_type}")
 
         # Map scale (defined as 1 / stride) to its feature map level under the
         # assumption that stride is a power of 2.
@@ -198,7 +198,7 @@ class ROIPooler(nn.Module):
         assert (
             len(scales) == self.max_level - self.min_level + 1
         ), "[ROIPooler] Sizes of input featuremaps do not form a pyramid!"
-        assert 0 <= self.min_level and self.min_level <= self.max_level
+        assert 0 <= self.min_level <= self.max_level
         self.canonical_level = canonical_level
         assert canonical_box_size > 0
         self.canonical_box_size = canonical_box_size
@@ -227,17 +227,13 @@ class ROIPooler(nn.Module):
             )
         assert_fx_safe(
             len(x) == num_level_assignments,
-            "unequal value, num_level_assignments={}, but x is list of {} Tensors".format(
-                num_level_assignments, len(x)
-            ),
+            f"unequal value, num_level_assignments={num_level_assignments}, but x is list of {len(x)} Tensors",
         )
         assert_fx_safe(
             len(box_lists) == x[0].size(0),
-            "unequal value, x[0] batch dim 0 is {}, but box_list has length {}".format(
-                x[0].size(0), len(box_lists)
-            ),
+            f"unequal value, x[0] batch dim 0 is {x[0].size(0)}, but box_list has length {len(box_lists)}",
         )
-        if len(box_lists) == 0:
+        if not box_lists:
             return _create_zeros(None, x[0].shape[1], *self.output_size, x[0])
 
         pooler_fmt_boxes = convert_boxes_to_pooler_format(box_lists)

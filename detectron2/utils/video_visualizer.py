@@ -87,14 +87,7 @@ class VideoVisualizer:
             else [x > period_threshold for x in periods]
         )
 
-        if predictions.has("pred_masks"):
-            masks = predictions.pred_masks
-            # mask IOU is not yet enabled
-            # masks_rles = mask_util.encode(np.asarray(masks.permute(1, 2, 0), order="F"))
-            # assert len(masks_rles) == num_instances
-        else:
-            masks = None
-
+        masks = predictions.pred_masks if predictions.has("pred_masks") else None
         if not predictions.has("COLOR"):
             if predictions.has("ID"):
                 colors = self._assign_colors_by_id(predictions)
@@ -180,7 +173,7 @@ class VideoVisualizer:
             )
 
         all_instances = list(pred.instance_masks())
-        if len(all_instances) == 0:
+        if not all_instances:
             return frame_visualizer.output
         # draw mask for all instances second
         masks, sinfo = list(zip(*all_instances))

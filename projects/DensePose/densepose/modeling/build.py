@@ -37,8 +37,7 @@ def build_densepose_data_filter(cfg: CfgNode):
         An instance of DensePose filter, which takes feature tensors and proposals
         as an input and returns filtered features and proposals
     """
-    dp_filter = DensePoseDataFilter(cfg)
-    return dp_filter
+    return DensePoseDataFilter(cfg)
 
 
 def build_densepose_head(cfg: CfgNode, input_channels: int):
@@ -82,6 +81,4 @@ def build_densepose_embedder(cfg: CfgNode) -> Optional[nn.Module]:
     Return:
         Embedding module
     """
-    if cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS:
-        return Embedder(cfg)
-    return None
+    return Embedder(cfg) if cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBEDDERS else None

@@ -126,7 +126,7 @@ Run on multiple machines:
     port = 2**15 + 2**14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2**14
     parser.add_argument(
         "--dist-url",
-        default="tcp://127.0.0.1:{}".format(port),
+        default=f"tcp://127.0.0.1:{port}",
         help="initialization URL for pytorch distributed backend. See "
         "https://pytorch.org/docs/stable/distributed.html for details.",
     )
@@ -191,16 +191,15 @@ def default_setup(cfg, args):
     setup_logger(output_dir, distributed_rank=rank, name="fvcore")
     logger = setup_logger(output_dir, distributed_rank=rank)
 
-    logger.info("Rank of current process: {}. World size: {}".format(rank, comm.get_world_size()))
+    logger.info(
+        f"Rank of current process: {rank}. World size: {comm.get_world_size()}"
+    )
     logger.info("Environment info:\n" + collect_env_info())
 
-    logger.info("Command line arguments: " + str(args))
+    logger.info(f"Command line arguments: {str(args)}")
     if hasattr(args, "config_file") and args.config_file != "":
         logger.info(
-            "Contents of args.config_file={}:\n{}".format(
-                args.config_file,
-                _highlight(PathManager.open(args.config_file, "r").read(), args.config_file),
-            )
+            f'Contents of args.config_file={args.config_file}:\n{_highlight(PathManager.open(args.config_file, "r").read(), args.config_file)}'
         )
 
     if comm.is_main_process() and output_dir:
@@ -208,12 +207,12 @@ def default_setup(cfg, args):
         # config.yaml in output directory
         path = os.path.join(output_dir, "config.yaml")
         if isinstance(cfg, CfgNode):
-            logger.info("Running with full config:\n{}".format(_highlight(cfg.dump(), ".yaml")))
+            logger.info(f'Running with full config:\n{_highlight(cfg.dump(), ".yaml")}')
             with PathManager.open(path, "w") as f:
                 f.write(cfg.dump())
         else:
             LazyConfig.save(cfg, path)
-        logger.info("Full config saved to {}".format(path))
+        logger.info(f"Full config saved to {path}")
 
     # make sure each worker has a different, yet deterministic seed if specified
     seed = _try_get_key(cfg, "SEED", "train.seed", default=-1)
@@ -314,8 +313,7 @@ class DefaultPredictor:
             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
 
             inputs = {"image": image, "height": height, "width": width}
-            predictions = self.model([inputs])[0]
-            return predictions
+            return self.model([inputs])[0]
 
 
 class DefaultTrainer(TrainerBase):
@@ -513,7 +511,7 @@ class DefaultTrainer(TrainerBase):
         """
         model = build_model(cfg)
         logger = logging.getLogger(__name__)
-        logger.info("Model:\n{}".format(model))
+        logger.info(f"Model:\n{model}")
         return model
 
     @classmethod
@@ -593,9 +591,9 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
         if isinstance(evaluators, DatasetEvaluator):
             evaluators = [evaluators]
         if evaluators is not None:
-            assert len(cfg.DATASETS.TEST) == len(evaluators), "{} != {}".format(
-                len(cfg.DATASETS.TEST), len(evaluators)
-            )
+            assert len(cfg.DATASETS.TEST) == len(
+                evaluators
+            ), f"{len(cfg.DATASETS.TEST)} != {len(evaluators)}"
 
         results = OrderedDict()
         for idx, dataset_name in enumerate(cfg.DATASETS.TEST):
@@ -619,10 +617,8 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
             if comm.is_main_process():
                 assert isinstance(
                     results_i, dict
-                ), "Evaluator must return a dict on the main process. Got {} instead.".format(
-                    results_i
-                )
-                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+                ), f"Evaluator must return a dict on the main process. Got {results_i} instead."
+                logger.info(f"Evaluation results for {dataset_name} in csv format:")
                 print_csv_format(results_i)
 
         if len(results) == 1:
@@ -672,7 +668,7 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
             CfgNode: a new config. Same as original if ``cfg.SOLVER.REFERENCE_WORLD_SIZE==0``.
         """
         old_world_size = cfg.SOLVER.REFERENCE_WORLD_SIZE
-        if old_world_size == 0 or old_world_size == num_workers:
+        if old_world_size in [0, num_workers]:
             return cfg
         cfg = cfg.clone()
         frozen = cfg.is_frozen()

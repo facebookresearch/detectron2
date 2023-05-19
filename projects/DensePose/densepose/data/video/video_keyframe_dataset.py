@@ -167,8 +167,10 @@ def video_list_from_file(video_list_fpath: str, base_path: Optional[str] = None)
     """
     video_list = []
     with PathManager.open(video_list_fpath, "r") as io:
-        for line in io:
-            video_list.append(maybe_prepend_base_path(base_path, str(line.strip())))
+        video_list.extend(
+            maybe_prepend_base_path(base_path, str(line.strip()))
+            for line in io
+        )
     return video_list
 
 

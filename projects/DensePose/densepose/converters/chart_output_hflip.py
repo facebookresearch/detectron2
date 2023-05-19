@@ -12,30 +12,27 @@ def densepose_chart_predictor_output_hflip(
     """
     Change  to take into account a Horizontal flip.
     """
-    if len(densepose_predictor_output) > 0:
-
-        PredictorOutput = type(densepose_predictor_output)
-        output_dict = {}
-
-        for field in fields(densepose_predictor_output):
-            field_value = getattr(densepose_predictor_output, field.name)
-            # flip tensors
-            if isinstance(field_value, torch.Tensor):
-                setattr(densepose_predictor_output, field.name, torch.flip(field_value, [3]))
-
-        densepose_predictor_output = _flip_iuv_semantics_tensor(
-            densepose_predictor_output, transform_data
-        )
-        densepose_predictor_output = _flip_segm_semantics_tensor(
-            densepose_predictor_output, transform_data
-        )
-
-        for field in fields(densepose_predictor_output):
-            output_dict[field.name] = getattr(densepose_predictor_output, field.name)
-
-        return PredictorOutput(**output_dict)
-    else:
+    if len(densepose_predictor_output) <= 0:
         return densepose_predictor_output
+    PredictorOutput = type(densepose_predictor_output)
+    for field in fields(densepose_predictor_output):
+        field_value = getattr(densepose_predictor_output, field.name)
+        # flip tensors
+        if isinstance(field_value, torch.Tensor):
+            setattr(densepose_predictor_output, field.name, torch.flip(field_value, [3]))
+
+    densepose_predictor_output = _flip_iuv_semantics_tensor(
+        densepose_predictor_output, transform_data
+    )
+    densepose_predictor_output = _flip_segm_semantics_tensor(
+        densepose_predictor_output, transform_data
+    )
+
+    output_dict = {
+        field.name: getattr(densepose_predictor_output, field.name)
+        for field in fields(densepose_predictor_output)
+    }
+    return PredictorOutput(**output_dict)
 
 
 def _flip_iuv_semantics_tensor(

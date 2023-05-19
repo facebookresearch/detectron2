@@ -126,12 +126,11 @@ class DenseDetector(nn.Module):
         """
         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(
+        return ImageList.from_tensors(
             images,
             self.backbone.size_divisibility,
             padding_constraints=self.backbone.padding_constraints,
         )
-        return images
 
     def _transpose_dense_predictions(
         self, predictions: List[List[Tensor]], dims_per_anchor: List[int]
@@ -175,10 +174,7 @@ class DenseDetector(nn.Module):
         Returns:
             float: the updated EMA value
         """
-        if hasattr(self, name):
-            old = getattr(self, name)
-        else:
-            old = initial_value
+        old = getattr(self, name) if hasattr(self, name) else initial_value
         new = old * momentum + value * (1 - momentum)
         setattr(self, name, new)
         return new
@@ -286,7 +282,7 @@ class DenseDetector(nn.Module):
         predicted_boxes = processed_results.pred_boxes.tensor.detach().cpu().numpy()
 
         v_pred = Visualizer(img, None)
-        v_pred = v_pred.overlay_instances(boxes=predicted_boxes[0:max_boxes])
+        v_pred = v_pred.overlay_instances(boxes=predicted_boxes[:max_boxes])
         prop_img = v_pred.get_image()
         vis_img = np.vstack((anno_img, prop_img))
         vis_img = vis_img.transpose(2, 0, 1)

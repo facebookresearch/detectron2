@@ -42,9 +42,7 @@ class DensePoseBaseSampler:
                 instances[i].pred_densepose
             )
             dp_datas.append(DensePoseDataRelative(annotation_i))
-        # create densepose annotations on CPU
-        dp_list = DensePoseList(dp_datas, boxes_xyxy_abs, instances.image_size)
-        return dp_list
+        return DensePoseList(dp_datas, boxes_xyxy_abs, instances.image_size)
 
     def _sample(self, instance: Instances, bbox_xywh: IntTupleBox) -> Dict[str, List[Any]]:
         """

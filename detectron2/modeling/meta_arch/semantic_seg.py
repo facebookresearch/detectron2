@@ -237,11 +237,10 @@ class SemSegFPNHead(nn.Module):
         x = self.layers(features)
         if self.training:
             return None, self.losses(x, targets)
-        else:
-            x = F.interpolate(
-                x, scale_factor=self.common_stride, mode="bilinear", align_corners=False
-            )
-            return x, {}
+        x = F.interpolate(
+            x, scale_factor=self.common_stride, mode="bilinear", align_corners=False
+        )
+        return x, {}
 
     def layers(self, features):
         for i, f in enumerate(self.in_features):
@@ -263,5 +262,4 @@ class SemSegFPNHead(nn.Module):
         loss = F.cross_entropy(
             predictions, targets, reduction="mean", ignore_index=self.ignore_value
         )
-        losses = {"loss_sem_seg": loss * self.loss_weight}
-        return losses
+        return {"loss_sem_seg": loss * self.loss_weight}

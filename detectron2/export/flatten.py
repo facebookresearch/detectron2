@@ -173,13 +173,10 @@ def flatten_to_tuple(obj):
         (Instances, InstancesSchema),
         ((Boxes, ROIMasks), TensorWrapSchema),
     ]
-    for klass, schema in schemas:
-        if isinstance(obj, klass):
-            F = schema
-            break
-    else:
-        F = IdentitySchema
-
+    F = next(
+        (schema for klass, schema in schemas if isinstance(obj, klass)),
+        IdentitySchema,
+    )
     return F.flatten(obj)
 
 
@@ -265,7 +262,7 @@ class TracingAdapter(nn.Module):
             return
         if self.allow_non_tensor:
             self.flattened_inputs = tuple(
-                [x for x in self.flattened_inputs if isinstance(x, torch.Tensor)]
+                x for x in self.flattened_inputs if isinstance(x, torch.Tensor)
             )
             self.inputs_schema = None
         else:
@@ -277,43 +274,41 @@ class TracingAdapter(nn.Module):
                     )
 
     def forward(self, *args: torch.Tensor):
-        with torch.no_grad(), patch_builtin_len():
+        with (torch.no_grad(), patch_builtin_len()):
             if self.inputs_schema is not None:
                 inputs_orig_format = self.inputs_schema(args)
-            else:
-                if len(args) != len(self.flattened_inputs) or any(
+            elif len(args) != len(self.flattened_inputs) or any(
                     x is not y for x, y in zip(args, self.flattened_inputs)
                 ):
-                    raise ValueError(
-                        "TracingAdapter does not contain valid inputs_schema."
-                        " So it cannot generalize to other inputs and must be"
-                        " traced with `.flattened_inputs`."
-                    )
+                raise ValueError(
+                    "TracingAdapter does not contain valid inputs_schema."
+                    " So it cannot generalize to other inputs and must be"
+                    " traced with `.flattened_inputs`."
+                )
+            else:
                 inputs_orig_format = self.inputs
 
             outputs = self.inference_func(self.model, *inputs_orig_format)
             flattened_outputs, schema = flatten_to_tuple(outputs)
 
             flattened_output_tensors = tuple(
-                [x for x in flattened_outputs if isinstance(x, torch.Tensor)]
+                x for x in flattened_outputs if isinstance(x, torch.Tensor)
             )
             if len(flattened_output_tensors) < len(flattened_outputs):
-                if self.allow_non_tensor:
-                    flattened_outputs = flattened_output_tensors
-                    self.outputs_schema = None
-                else:
+                if not self.allow_non_tensor:
                     raise ValueError(
                         "Model cannot be traced because some model outputs "
                         "cannot flatten to tensors."
                     )
-            else:  # schema is valid
-                if self.outputs_schema is None:
-                    self.outputs_schema = schema
-                else:
-                    assert self.outputs_schema == schema, (
-                        "Model should always return outputs with the same "
-                        "structure so it can be traced!"
-                    )
+                flattened_outputs = flattened_output_tensors
+                self.outputs_schema = None
+            elif self.outputs_schema is None:
+                self.outputs_schema = schema
+            else:
+                assert self.outputs_schema == schema, (
+                    "Model should always return outputs with the same "
+                    "structure so it can be traced!"
+                )
             return flattened_outputs
 
     def _create_wrapper(self, traced_model):

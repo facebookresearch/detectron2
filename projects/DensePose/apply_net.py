@@ -122,16 +122,15 @@ class InferenceAction(Action):
     @classmethod
     def _get_input_file_list(cls: type, input_spec: str):
         if os.path.isdir(input_spec):
-            file_list = [
+            return [
                 os.path.join(input_spec, fname)
                 for fname in os.listdir(input_spec)
                 if os.path.isfile(os.path.join(input_spec, fname))
             ]
         elif os.path.isfile(input_spec):
-            file_list = [input_spec]
+            return [input_spec]
         else:
-            file_list = glob.glob(input_spec)
-        return file_list
+            return glob.glob(input_spec)
 
 
 @register_action
@@ -179,8 +178,7 @@ class DumpAction(InferenceAction):
 
     @classmethod
     def create_context(cls: type, args: argparse.Namespace, cfg: CfgNode):
-        context = {"results": [], "out_fname": args.output}
-        return context
+        return {"results": [], "out_fname": args.output}
 
     @classmethod
     def postexecute(cls: type, context: Dict[str, Any]):
@@ -223,8 +221,7 @@ class ShowAction(InferenceAction):
         parser.add_argument(
             "visualizations",
             metavar="<visualizations>",
-            help="Comma separated list of visualizations, possible values: "
-            "[{}]".format(",".join(sorted(cls.VISUALIZERS.keys()))),
+            help=f'Comma separated list of visualizations, possible values: [{",".join(sorted(cls.VISUALIZERS.keys()))}]',
         )
         parser.add_argument(
             "--min_score",
@@ -259,13 +256,12 @@ class ShowAction(InferenceAction):
     def setup_config(
         cls: type, config_fpath: str, model_fpath: str, args: argparse.Namespace, opts: List[str]
     ):
-        opts.append("MODEL.ROI_HEADS.SCORE_THRESH_TEST")
-        opts.append(str(args.min_score))
+        opts.extend(("MODEL.ROI_HEADS.SCORE_THRESH_TEST", str(args.min_score)))
         if args.nms_thresh is not None:
-            opts.append("MODEL.ROI_HEADS.NMS_THRESH_TEST")
-            opts.append(str(args.nms_thresh))
-        cfg = super(ShowAction, cls).setup_config(config_fpath, model_fpath, args, opts)
-        return cfg
+            opts.extend(("MODEL.ROI_HEADS.NMS_THRESH_TEST", str(args.nms_thresh)))
+        return super(ShowAction, cls).setup_config(
+            config_fpath, model_fpath, args, opts
+        )
 
     @classmethod
     def execute_on_outputs(
@@ -318,13 +314,12 @@ class ShowAction(InferenceAction):
             extractors.append(extractor)
         visualizer = CompoundVisualizer(visualizers)
         extractor = CompoundExtractor(extractors)
-        context = {
+        return {
             "extractor": extractor,
             "visualizer": visualizer,
             "out_fname": args.output,
             "entry_idx": 0,
         }
-        return context
 
 
 def create_argument_parser() -> argparse.ArgumentParser:

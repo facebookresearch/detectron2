@@ -665,17 +665,17 @@ class StandardROIHeads(ROIHeads):
 
         in_channels = [input_shape[f].channels for f in in_features][0]
 
-        ret = {"mask_in_features": in_features}
-        ret["mask_pooler"] = (
-            ROIPooler(
+        ret = {
+            "mask_in_features": in_features,
+            "mask_pooler": ROIPooler(
                 output_size=pooler_resolution,
                 scales=pooler_scales,
                 sampling_ratio=sampling_ratio,
                 pooler_type=pooler_type,
             )
             if pooler_type
-            else None
-        )
+            else None,
+        }
         if pooler_type:
             shape = ShapeSpec(
                 channels=in_channels, width=pooler_resolution, height=pooler_resolution
@@ -699,17 +699,17 @@ class StandardROIHeads(ROIHeads):
 
         in_channels = [input_shape[f].channels for f in in_features][0]
 
-        ret = {"keypoint_in_features": in_features}
-        ret["keypoint_pooler"] = (
-            ROIPooler(
+        ret = {
+            "keypoint_in_features": in_features,
+            "keypoint_pooler": ROIPooler(
                 output_size=pooler_resolution,
                 scales=pooler_scales,
                 sampling_ratio=sampling_ratio,
                 pooler_type=pooler_type,
             )
             if pooler_type
-            else None
-        )
+            else None,
+        }
         if pooler_type:
             shape = ShapeSpec(
                 channels=in_channels, width=pooler_resolution, height=pooler_resolution

@@ -114,7 +114,7 @@ class GeneralizedRCNN(nn.Module):
             box_size = min(len(prop.proposal_boxes), max_vis_prop)
             v_pred = Visualizer(img, None)
             v_pred = v_pred.overlay_instances(
-                boxes=prop.proposal_boxes[0:box_size].tensor.cpu().numpy()
+                boxes=prop.proposal_boxes[:box_size].tensor.cpu().numpy()
             )
             prop_img = v_pred.get_image()
             vis_img = np.concatenate((anno_img, prop_img), axis=1)
@@ -171,7 +171,7 @@ class GeneralizedRCNN(nn.Module):
                 self.visualize_training(batched_inputs, proposals)
 
         losses = {}
-        losses.update(detector_losses)
+        losses |= detector_losses
         losses.update(proposal_losses)
         return losses
 
@@ -226,12 +226,11 @@ class GeneralizedRCNN(nn.Module):
         """
         images = [self._move_to_current_device(x["image"]) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
-        images = ImageList.from_tensors(
+        return ImageList.from_tensors(
             images,
             self.backbone.size_divisibility,
             padding_constraints=self.backbone.padding_constraints,
         )
-        return images
 
     @staticmethod
     def _postprocess(instances, batched_inputs: List[Dict[str, torch.Tensor]], image_sizes):

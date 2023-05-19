@@ -25,14 +25,12 @@ __all__ = [
 
 
 def _check_img_dtype(img):
-    assert isinstance(img, np.ndarray), "[Augmentation] Needs an numpy array, but got a {}!".format(
-        type(img)
-    )
+    assert isinstance(
+        img, np.ndarray
+    ), f"[Augmentation] Needs an numpy array, but got a {type(img)}!"
     assert not isinstance(img.dtype, np.integer) or (
         img.dtype == np.uint8
-    ), "[Augmentation] Got image of type {}, use uint8 or floating points instead!".format(
-        img.dtype
-    )
+    ), f"[Augmentation] Got image of type {img.dtype}, use uint8 or floating points instead!"
     assert img.ndim in [2, 3], img.ndim
 
 
@@ -193,13 +191,13 @@ class Augmentation:
             classname = type(self).__name__
             argstr = []
             for name, param in sig.parameters.items():
-                assert (
-                    param.kind != param.VAR_POSITIONAL and param.kind != param.VAR_KEYWORD
-                ), "The default __repr__ doesn't support *args or **kwargs"
-                assert hasattr(self, name), (
-                    "Attribute {} not found! "
-                    "Default __repr__ only works if attributes match the constructor.".format(name)
-                )
+                assert param.kind not in [
+                    param.VAR_POSITIONAL,
+                    param.VAR_KEYWORD,
+                ], "The default __repr__ doesn't support *args or **kwargs"
+                assert hasattr(
+                    self, name
+                ), f"Attribute {name} not found! Default __repr__ only works if attributes match the constructor."
                 attr = getattr(self, name)
                 default = param.default
                 if default is attr:
@@ -208,8 +206,8 @@ class Augmentation:
                 if "\n" in attr_str:
                     # don't show it if pformat decides to use >1 lines
                     attr_str = "..."
-                argstr.append("{}={}".format(name, attr_str))
-            return "{}({})".format(classname, ", ".join(argstr))
+                argstr.append(f"{name}={attr_str}")
+            return f'{classname}({", ".join(argstr)})'
         except AssertionError:
             return super().__repr__()
 
@@ -270,7 +268,7 @@ class AugmentationList(Augmentation):
 
     def __repr__(self):
         msgs = [str(x) for x in self.augs]
-        return "AugmentationList[{}]".format(", ".join(msgs))
+        return f'AugmentationList[{", ".join(msgs)}]'
 
     __str__ = __repr__
 

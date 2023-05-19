@@ -50,7 +50,7 @@ class GithubURLDomain(Domain):
                 # bug of recommonmark.
                 # https://github.com/readthedocs/recommonmark/blob/ddd56e7717e9745f11300059e4268e204138a6b1/recommonmark/parser.py#L152-L155
                 github_url += ".md"
-            print("Ref {} resolved to github:{}".format(target, github_url))
+            print(f"Ref {target} resolved to github:{github_url}")
             contnode["refuri"] = self.ROOT + github_url
             return [("githuburl:any", contnode)]
         else:
@@ -145,11 +145,7 @@ napoleon_use_rtype = False
 autodoc_inherit_docstrings = False
 autodoc_member_order = "bysource"
 
-if DEPLOY:
-    intersphinx_timeout = 10
-else:
-    # skip this when building locally
-    intersphinx_timeout = 0.5
+intersphinx_timeout = 10 if DEPLOY else 0.5
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.7", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
@@ -298,7 +294,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         if name in HIDDEN or (
             hasattr(obj, "__doc__") and obj.__doc__.lower().strip().startswith("deprecated")
         ):
-            print("Skipping deprecated object: {}".format(name))
+            print(f"Skipping deprecated object: {name}")
             return True
     except:
         pass
@@ -369,12 +365,12 @@ def paper_ref_role(
     has_explicit_title, title, link = split_explicit_title(text)
     link = link.lower()
     if link not in _PAPER_DATA:
-        inliner.reporter.warning("Cannot find paper " + link)
+        inliner.reporter.warning(f"Cannot find paper {link}")
         paper_url, paper_title = "#", link
     else:
         paper_url, paper_title = _PAPER_DATA[link]
         if "/" not in paper_url:
-            paper_url = "https://arxiv.org/abs/" + paper_url
+            paper_url = f"https://arxiv.org/abs/{paper_url}"
     if not has_explicit_title:
         title = paper_title
     pnode = nodes.reference(title, title, internal=False, refuri=paper_url)

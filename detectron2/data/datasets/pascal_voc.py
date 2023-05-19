@@ -31,15 +31,15 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
         split (str): one of "train", "test", "val", "trainval"
         class_names: list or tuple of class names
     """
-    with PathManager.open(os.path.join(dirname, "ImageSets", "Main", split + ".txt")) as f:
+    with PathManager.open(os.path.join(dirname, "ImageSets", "Main", f"{split}.txt")) as f:
         fileids = np.loadtxt(f, dtype=np.str)
 
     # Needs to read many small annotation files. Makes sense at local
     annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
     dicts = []
     for fileid in fileids:
-        anno_file = os.path.join(annotation_dirname, fileid + ".xml")
-        jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
+        anno_file = os.path.join(annotation_dirname, f"{fileid}.xml")
+        jpeg_file = os.path.join(dirname, "JPEGImages", f"{fileid}.jpg")
 
         with PathManager.open(anno_file) as f:
             tree = ET.parse(f)

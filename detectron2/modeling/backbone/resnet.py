@@ -87,11 +87,7 @@ class BasicBlock(CNNBlockBase):
         out = F.relu_(out)
         out = self.conv2(out)
 
-        if self.shortcut is not None:
-            shortcut = self.shortcut(x)
-        else:
-            shortcut = x
-
+        shortcut = self.shortcut(x) if self.shortcut is not None else x
         out += shortcut
         out = F.relu_(out)
         return out
@@ -200,11 +196,7 @@ class BottleneckBlock(CNNBlockBase):
 
         out = self.conv3(out)
 
-        if self.shortcut is not None:
-            shortcut = self.shortcut(x)
-        else:
-            shortcut = x
-
+        shortcut = self.shortcut(x) if self.shortcut is not None else x
         out += shortcut
         out = F.relu_(out)
         return out
@@ -317,11 +309,7 @@ class DeformBottleneckBlock(CNNBlockBase):
 
         out = self.conv3(out)
 
-        if self.shortcut is not None:
-            shortcut = self.shortcut(x)
-        else:
-            shortcut = x
-
+        shortcut = self.shortcut(x) if self.shortcut is not None else x
         out += shortcut
         out = F.relu_(out)
         return out
@@ -392,7 +380,8 @@ class ResNet(Backbone):
             # Avoid keeping unused layers in this module. They consume extra memory
             # and may cause allreduce to fail
             num_stages = max(
-                [{"res2": 1, "res3": 2, "res4": 3, "res5": 4}.get(f, 0) for f in out_features]
+                {"res2": 1, "res3": 2, "res4": 3, "res5": 4}.get(f, 0)
+                for f in out_features
             )
             stages = stages[:num_stages]
         for i, blocks in enumerate(stages):
@@ -400,7 +389,7 @@ class ResNet(Backbone):
             for block in blocks:
                 assert isinstance(block, CNNBlockBase), block
 
-            name = "res" + str(i + 2)
+            name = f"res{str(i + 2)}"
             stage = nn.Sequential(*blocks)
 
             self.add_module(name, stage)
@@ -429,7 +418,7 @@ class ResNet(Backbone):
         assert len(self._out_features)
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
-            assert out_feature in children, "Available children: {}".format(", ".join(children))
+            assert out_feature in children, f'Available children: {", ".join(children)}'
         self.freeze(freeze_at)
 
     def forward(self, x):
@@ -641,7 +630,7 @@ def build_resnet_backbone(cfg, input_shape):
     deform_modulated    = cfg.MODEL.RESNETS.DEFORM_MODULATED
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
     # fmt: on
-    assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
+    assert res5_dilation in {1, 2}, f"res5_dilation cannot be {res5_dilation}."
 
     num_blocks_per_stage = {
         18: [2, 2, 2, 2],

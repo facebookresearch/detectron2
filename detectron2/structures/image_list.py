@@ -78,7 +78,7 @@ class ImageList(object):
         Returns:
             an `ImageList`.
         """
-        assert len(tensors) > 0
+        assert tensors
         assert isinstance(tensors, (tuple, list))
         for t in tensors:
             assert isinstance(t, torch.Tensor), type(t)
@@ -103,9 +103,8 @@ class ImageList(object):
         # handle weirdness of scripting and tracing ...
         if torch.jit.is_scripting():
             max_size: List[int] = max_size.to(dtype=torch.long).tolist()
-        else:
-            if torch.jit.is_tracing():
-                image_sizes = image_sizes_tensor
+        elif torch.jit.is_tracing():
+            image_sizes = image_sizes_tensor
 
         if len(tensors) == 1:
             # This seems slightly (2%) faster.

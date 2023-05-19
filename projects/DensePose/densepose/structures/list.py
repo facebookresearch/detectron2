@@ -11,15 +11,13 @@ class DensePoseList(object):
     def __init__(self, densepose_datas, boxes_xyxy_abs, image_size_hw, device=_TORCH_DEVICE_CPU):
         assert len(densepose_datas) == len(
             boxes_xyxy_abs
-        ), "Attempt to initialize DensePoseList with {} DensePose datas " "and {} boxes".format(
-            len(densepose_datas), len(boxes_xyxy_abs)
-        )
+        ), f"Attempt to initialize DensePoseList with {len(densepose_datas)} DensePose datas and {len(boxes_xyxy_abs)} boxes"
         self.densepose_datas = []
         for densepose_data in densepose_datas:
-            assert isinstance(densepose_data, DensePoseDataRelative) or densepose_data is None, (
-                "Attempt to initialize DensePoseList with DensePose datas "
-                "of type {}, expected DensePoseDataRelative".format(type(densepose_data))
-            )
+            assert (
+                isinstance(densepose_data, DensePoseDataRelative)
+                or densepose_data is None
+            ), f"Attempt to initialize DensePoseList with DensePose datas of type {type(densepose_data)}, expected DensePoseDataRelative"
             densepose_data_ondevice = (
                 densepose_data.to(device) if densepose_data is not None else None
             )
@@ -40,16 +38,15 @@ class DensePoseList(object):
         return len(self.densepose_datas)
 
     def __repr__(self):
-        s = self.__class__.__name__ + "("
-        s += "num_instances={}, ".format(len(self.densepose_datas))
-        s += "image_width={}, ".format(self.image_size_hw[1])
-        s += "image_height={})".format(self.image_size_hw[0])
+        s = f"{self.__class__.__name__}("
+        s += f"num_instances={len(self.densepose_datas)}, "
+        s += f"image_width={self.image_size_hw[1]}, "
+        s += f"image_height={self.image_size_hw[0]})"
         return s
 
     def __getitem__(self, item):
         if isinstance(item, int):
-            densepose_data_rel = self.densepose_datas[item]
-            return densepose_data_rel
+            return self.densepose_datas[item]
         elif isinstance(item, slice):
             densepose_datas_rel = self.densepose_datas[item]
             boxes_xyxy_abs = self.boxes_xyxy_abs[item]

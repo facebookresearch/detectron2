@@ -95,7 +95,7 @@ class DatasetEvaluators(DatasetEvaluator):
                 for k, v in result.items():
                     assert (
                         k not in results
-                    ), "Different evaluators produce results with the same key {}".format(k)
+                    ), f"Different evaluators produce results with the same key {k}"
                     results[k] = v
         return results
 
@@ -125,7 +125,7 @@ def inference_on_dataset(
     """
     num_devices = get_world_size()
     logger = logging.getLogger(__name__)
-    logger.info("Start inference on {} batches".format(len(data_loader)))
+    logger.info(f"Start inference on {len(data_loader)} batches")
 
     total = len(data_loader)  # inference data loader must have a fixed length
     if evaluator is None:

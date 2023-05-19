@@ -21,7 +21,7 @@ def print_csv_format(results):
         if isinstance(res, Mapping):
             # Don't print "AP-category" metrics since they are usually not tracked.
             important_res = [(k, v) for k, v in res.items() if "-" not in k]
-            logger.info("copypaste: Task: {}".format(task))
+            logger.info(f"copypaste: Task: {task}")
             logger.info("copypaste: " + ",".join([k[0] for k in important_res]))
             logger.info("copypaste: " + ",".join(["{0:.4f}".format(k[1]) for k in important_res]))
         else:
@@ -56,8 +56,8 @@ def verify_results(cfg, results):
     logger = logging.getLogger(__name__)
     if not ok:
         logger.error("Result verification failed!")
-        logger.error("Expected Results: " + str(expected_results))
-        logger.error("Actual Results: " + pprint.pformat(results))
+        logger.error(f"Expected Results: {str(expected_results)}")
+        logger.error(f"Actual Results: {pprint.pformat(results)}")
 
         sys.exit(1)
     else:
@@ -79,7 +79,7 @@ def flatten_results_dict(results):
         if isinstance(v, Mapping):
             v = flatten_results_dict(v)
             for kk, vv in v.items():
-                r[k + "/" + kk] = vv
+                r[f"{k}/{kk}"] = vv
         else:
             r[k] = v
     return r

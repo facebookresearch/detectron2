@@ -58,9 +58,7 @@ class DensePoseChartResultWithConfidences:
         """
 
         def to_device_if_tensor(var: Any):
-            if isinstance(var, torch.Tensor):
-                return var.to(device)
-            return var
+            return var.to(device) if isinstance(var, torch.Tensor) else var
 
         return DensePoseChartResultWithConfidences(
             labels=self.labels.to(device),

@@ -77,10 +77,7 @@ class PanopticFPN(GeneralizedRCNN):
             )
 
             def update_weight(x):
-                if isinstance(x, dict):
-                    return {k: v * w for k, v in x.items()}
-                else:
-                    return x * w
+                return {k: v * w for k, v in x.items()} if isinstance(x, dict) else x * w
 
             roi_heads = ret["roi_heads"]
             roi_heads.box_predictor.loss_weight = update_weight(roi_heads.box_predictor.loss_weight)
@@ -156,29 +153,28 @@ class PanopticFPN(GeneralizedRCNN):
         proposals, _ = self.proposal_generator(images, features, None)
         detector_results, _ = self.roi_heads(images, features, proposals, None)
 
-        if do_postprocess:
-            processed_results = []
-            for sem_seg_result, detector_result, input_per_image, image_size in zip(
-                sem_seg_results, detector_results, batched_inputs, images.image_sizes
-            ):
-                height = input_per_image.get("height", image_size[0])
-                width = input_per_image.get("width", image_size[1])
-                sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
-                detector_r = detector_postprocess(detector_result, height, width)
-
-                processed_results.append({"sem_seg": sem_seg_r, "instances": detector_r})
-
-                panoptic_r = combine_semantic_and_instance_outputs(
-                    detector_r,
-                    sem_seg_r.argmax(dim=0),
-                    self.combine_overlap_thresh,
-                    self.combine_stuff_area_thresh,
-                    self.combine_instances_score_thresh,
-                )
-                processed_results[-1]["panoptic_seg"] = panoptic_r
-            return processed_results
-        else:
+        if not do_postprocess:
             return detector_results, sem_seg_results
+        processed_results = []
+        for sem_seg_result, detector_result, input_per_image, image_size in zip(
+            sem_seg_results, detector_results, batched_inputs, images.image_sizes
+        ):
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
+            sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
+            detector_r = detector_postprocess(detector_result, height, width)
+
+            processed_results.append({"sem_seg": sem_seg_r, "instances": detector_r})
+
+            panoptic_r = combine_semantic_and_instance_outputs(
+                detector_r,
+                sem_seg_r.argmax(dim=0),
+                self.combine_overlap_thresh,
+                self.combine_stuff_area_thresh,
+                self.combine_instances_score_thresh,
+            )
+            processed_results[-1]["panoptic_seg"] = panoptic_r
+        return processed_results
 
 
 def combine_semantic_and_instance_outputs(

@@ -6,4 +6,4 @@ from .pascal_voc import load_voc_instances, register_pascal_voc
 from . import builtin as _builtin  # ensure the builtin datasets are registered
 
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]

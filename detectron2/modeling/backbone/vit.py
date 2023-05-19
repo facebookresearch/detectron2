@@ -356,8 +356,7 @@ class ViT(Backbone):
         for blk in self.blocks:
             x = blk(x)
 
-        outputs = {self._out_features[0]: x.permute(0, 3, 1, 2)}
-        return outputs
+        return {self._out_features[0]: x.permute(0, 3, 1, 2)}
 
 
 class SimpleFeaturePyramid(Backbone):
@@ -456,11 +455,11 @@ class SimpleFeaturePyramid(Backbone):
         self.in_feature = in_feature
         self.top_block = top_block
         # Return feature names are "p<stage>", like ["p2", "p3", ..., "p6"]
-        self._out_feature_strides = {"p{}".format(int(math.log2(s))): s for s in strides}
+        self._out_feature_strides = {f"p{int(math.log2(s))}": s for s in strides}
         # top block output feature maps.
         if self.top_block is not None:
             for s in range(stage, stage + self.top_block.num_levels):
-                self._out_feature_strides["p{}".format(s + 1)] = 2 ** (s + 1)
+                self._out_feature_strides[f"p{s + 1}"] = 2 ** (s + 1)
 
         self._out_features = list(self._out_feature_strides.keys())
         self._out_feature_channels = {k: out_channels for k in self._out_features}
@@ -488,11 +487,7 @@ class SimpleFeaturePyramid(Backbone):
         """
         bottom_up_features = self.net(x)
         features = bottom_up_features[self.in_feature]
-        results = []
-
-        for stage in self.stages:
-            results.append(stage(features))
-
+        results = [stage(features) for stage in self.stages]
         if self.top_block is not None:
             if self.top_block.in_feature in bottom_up_features:
                 top_block_in_feature = bottom_up_features[self.top_block.in_feature]
@@ -500,7 +495,7 @@ class SimpleFeaturePyramid(Backbone):
                 top_block_in_feature = results[self._out_features.index(self.top_block.in_feature)]
             results.extend(self.top_block(top_block_in_feature))
         assert len(self._out_features) == len(results)
-        return {f: res for f, res in zip(self._out_features, results)}
+        return dict(zip(self._out_features, results))
 
 
 def get_vit_lr_decay_rate(name, lr_decay_rate=1.0, num_layers=12):

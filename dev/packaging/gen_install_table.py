@@ -21,11 +21,14 @@ CUDA_SUFFIX = {
 
 
 def gen_header(torch_versions):
-    return '<table class="docutils"><tbody><th width="80"> CUDA </th>' + "".join(
-        [
-            '<th valign="bottom" align="left" width="100">torch {}</th>'.format(t)
-            for t in torch_versions
-        ]
+    return (
+        '<table class="docutils"><tbody><th width="80"> CUDA </th>'
+        + "".join(
+            [
+                f'<th valign="bottom" align="left" width="100">torch {t}</th>'
+                for t in torch_versions
+            ]
+        )
     )
 
 

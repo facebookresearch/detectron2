@@ -13,9 +13,7 @@ from densepose.data.meshes.catalog import MeshCatalog, MeshInfo
 def _maybe_copy_to_device(
     attribute: Optional[torch.Tensor], device: torch.device
 ) -> Optional[torch.Tensor]:
-    if attribute is None:
-        return None
-    return attribute.to(device)
+    return None if attribute is None else attribute.to(device)
 
 
 class Mesh:
@@ -70,7 +68,7 @@ class Mesh:
                     break
             self.device = torch.device("cpu") if self.device is None else self.device
 
-        assert all([var.device == self.device for var in all_fields if var is not None])
+        assert all(var.device == self.device for var in all_fields if var is not None)
         if symmetry:
             assert all(symmetry[key].device == self.device for key in symmetry)
         if texcoords and vertices:
@@ -126,9 +124,7 @@ class Mesh:
         return self.geodists
 
     def _compute_geodists(self):
-        # TODO: compute using Laplace-Beltrami
-        geodists = None
-        return geodists
+        return None
 
 
 def load_mesh_data(
@@ -158,12 +154,11 @@ def load_mesh_symmetry(
 ) -> Optional[Dict[str, torch.Tensor]]:
     with PathManager.open(symmetry_fpath, "rb") as hFile:
         symmetry_loaded = pickle.load(hFile)  # pyre-ignore[6]
-        symmetry = {
+        return {
             "vertex_transforms": torch.as_tensor(
                 symmetry_loaded["vertex_transforms"], dtype=torch.long
             ).to(device),
         }
-        return symmetry
     return None
 
 

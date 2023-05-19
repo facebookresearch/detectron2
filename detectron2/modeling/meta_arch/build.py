@@ -21,5 +21,5 @@ def build_model(cfg):
     meta_arch = cfg.MODEL.META_ARCHITECTURE
     model = META_ARCH_REGISTRY.get(meta_arch)(cfg)
     model.to(torch.device(cfg.MODEL.DEVICE))
-    _log_api_usage("modeling.meta_arch." + meta_arch)
+    _log_api_usage(f"modeling.meta_arch.{meta_arch}")
     return model

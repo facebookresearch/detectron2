@@ -111,19 +111,15 @@ class HRFPN(Backbone):
                 )
             )
 
-        if pooling == "MAX":
-            self.pooling = F.max_pool2d
-        else:
-            self.pooling = F.avg_pool2d
-
+        self.pooling = F.max_pool2d if pooling == "MAX" else F.avg_pool2d
         self._out_features = []
         self._out_feature_channels = {}
         self._out_feature_strides = {}
 
         for i in range(self.n_out_features):
             self._out_features.append("p%d" % (i + 1))
-            self._out_feature_channels.update({self._out_features[-1]: self.out_channels})
-            self._out_feature_strides.update({self._out_features[-1]: 2 ** (i + 2)})
+            self._out_feature_channels[self._out_features[-1]] = self.out_channels
+            self._out_feature_strides[self._out_features[-1]] = 2 ** (i + 2)
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
@@ -137,15 +133,13 @@ class HRFPN(Backbone):
         assert len(bottom_up_features) == len(self.in_features)
         inputs = [bottom_up_features[f] for f in self.in_features]
 
-        outs = []
-        for i in range(len(inputs)):
-            outs.append(self.interp_conv[i](inputs[i]))
+        outs = [self.interp_conv[i](inputs[i]) for i in range(len(inputs))]
         shape_2 = min(o.shape[2] for o in outs)
         shape_3 = min(o.shape[3] for o in outs)
         out = torch.cat([o[:, :, :shape_2, :shape_3] for o in outs], dim=1)
-        outs = []
-        for i in range(self.n_out_features):
-            outs.append(self.reduction_pooling_conv[i](out))
+        outs = [
+            self.reduction_pooling_conv[i](out) for i in range(self.n_out_features)
+        ]
         for i in range(len(outs)):  # Make shapes consistent
             outs[-1 - i] = outs[-1 - i][
                 :, :, : outs[-1].shape[2] * 2**i, : outs[-1].shape[3] * 2**i
@@ -169,7 +163,7 @@ def build_hrfpn_backbone(cfg, input_shape: ShapeSpec) -> HRFPN:
     n_out_features = len(cfg.MODEL.ROI_HEADS.IN_FEATURES)
     out_channels = cfg.MODEL.HRNET.HRFPN.OUT_CHANNELS
     hrnet = build_pose_hrnet_backbone(cfg, input_shape)
-    hrfpn = HRFPN(
+    return HRFPN(
         hrnet,
         in_features,
         n_out_features,
@@ -178,5 +172,3 @@ def build_hrfpn_backbone(cfg, input_shape: ShapeSpec) -> HRFPN:
         pooling="AVG",
         share_conv=False,
     )
-
-    return hrfpn

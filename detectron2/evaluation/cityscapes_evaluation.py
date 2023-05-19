@@ -43,7 +43,7 @@ class CityscapesEvaluator(DatasetEvaluator):
         if self._temp_dir != self._working_dir.name:
             self._working_dir.cleanup()
         self._logger.info(
-            "Writing cityscapes results to temporary directory {} ...".format(self._temp_dir)
+            f"Writing cityscapes results to temporary directory {self._temp_dir} ..."
         )
 
 
@@ -63,7 +63,7 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
         for input, output in zip(inputs, outputs):
             file_name = input["file_name"]
             basename = os.path.splitext(os.path.basename(file_name))[0]
-            pred_txt = os.path.join(self._temp_dir, basename + "_pred.txt")
+            pred_txt = os.path.join(self._temp_dir, f"{basename}_pred.txt")
 
             if "instances" in output:
                 output = output["instances"].to(self._cpu_device)
@@ -75,14 +75,10 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
                         class_id = name2label[classes].id
                         score = output.scores[i]
                         mask = output.pred_masks[i].numpy().astype("uint8")
-                        png_filename = os.path.join(
-                            self._temp_dir, basename + "_{}_{}.png".format(i, classes)
-                        )
+                        png_filename = os.path.join(self._temp_dir, f"{basename}_{i}_{classes}.png")
 
                         Image.fromarray(mask * 255).save(png_filename)
-                        fout.write(
-                            "{} {} {}\n".format(os.path.basename(png_filename), class_id, score)
-                        )
+                        fout.write(f"{os.path.basename(png_filename)} {class_id} {score}\n")
             else:
                 # Cityscapes requires a prediction file for every ground truth image.
                 with open(pred_txt, "w") as fout:
@@ -98,7 +94,7 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
             return
         import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as cityscapes_eval
 
-        self._logger.info("Evaluating results under {} ...".format(self._temp_dir))
+        self._logger.info(f"Evaluating results under {self._temp_dir} ...")
 
         # set some global states in cityscapes evaluation API, before evaluating
         cityscapes_eval.args.predictionPath = os.path.abspath(self._temp_dir)
@@ -113,12 +109,11 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
         groundTruthImgList = glob.glob(os.path.join(gt_dir, "*", "*_gtFine_instanceIds.png"))
         assert len(
             groundTruthImgList
-        ), "Cannot find any ground truth images to use for evaluation. Searched for: {}".format(
-            cityscapes_eval.args.groundTruthSearch
-        )
-        predictionImgList = []
-        for gt in groundTruthImgList:
-            predictionImgList.append(cityscapes_eval.getPrediction(gt, cityscapes_eval.args))
+        ), f"Cannot find any ground truth images to use for evaluation. Searched for: {cityscapes_eval.args.groundTruthSearch}"
+        predictionImgList = [
+            cityscapes_eval.getPrediction(gt, cityscapes_eval.args)
+            for gt in groundTruthImgList
+        ]
         results = cityscapes_eval.evaluateImgLists(
             predictionImgList, groundTruthImgList, cityscapes_eval.args
         )["averages"]
@@ -145,7 +140,7 @@ class CityscapesSemSegEvaluator(CityscapesEvaluator):
         for input, output in zip(inputs, outputs):
             file_name = input["file_name"]
             basename = os.path.splitext(os.path.basename(file_name))[0]
-            pred_filename = os.path.join(self._temp_dir, basename + "_pred.png")
+            pred_filename = os.path.join(self._temp_dir, f"{basename}_pred.png")
 
             output = output["sem_seg"].argmax(dim=0).to(self._cpu_device).numpy()
             pred = 255 * np.ones(output.shape, dtype=np.uint8)
@@ -163,7 +158,7 @@ class CityscapesSemSegEvaluator(CityscapesEvaluator):
         # since the script reads CITYSCAPES_DATASET into global variables at load time.
         import cityscapesscripts.evaluation.evalPixelLevelSemanticLabeling as cityscapes_eval
 
-        self._logger.info("Evaluating results under {} ...".format(self._temp_dir))
+        self._logger.info(f"Evaluating results under {self._temp_dir} ...")
 
         # set some global states in cityscapes evaluation API, before evaluating
         cityscapes_eval.args.predictionPath = os.path.abspath(self._temp_dir)
@@ -177,12 +172,11 @@ class CityscapesSemSegEvaluator(CityscapesEvaluator):
         groundTruthImgList = glob.glob(os.path.join(gt_dir, "*", "*_gtFine_labelIds.png"))
         assert len(
             groundTruthImgList
-        ), "Cannot find any ground truth images to use for evaluation. Searched for: {}".format(
-            cityscapes_eval.args.groundTruthSearch
-        )
-        predictionImgList = []
-        for gt in groundTruthImgList:
-            predictionImgList.append(cityscapes_eval.getPrediction(cityscapes_eval.args, gt))
+        ), f"Cannot find any ground truth images to use for evaluation. Searched for: {cityscapes_eval.args.groundTruthSearch}"
+        predictionImgList = [
+            cityscapes_eval.getPrediction(cityscapes_eval.args, gt)
+            for gt in groundTruthImgList
+        ]
         results = cityscapes_eval.evaluateImgLists(
             predictionImgList, groundTruthImgList, cityscapes_eval.args
         )

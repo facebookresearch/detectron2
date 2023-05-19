@@ -114,14 +114,12 @@ class EmbeddingLoss:
         return losses
 
     def fake_values(self, densepose_predictor_outputs: Any, embedder: nn.Module):
-        losses = {}
-        # pyre-fixme[29]:
-        #  `Union[BoundMethod[typing.Callable(torch.Tensor.__iter__)[[Named(self,
-        #  torch.Tensor)], typing.Iterator[typing.Any]], torch.Tensor], nn.Module,
-        #  torch.Tensor]` is not a function.
-        for mesh_name in embedder.mesh_names:
-            losses[mesh_name] = self.fake_value(densepose_predictor_outputs, embedder, mesh_name)
-        return losses
+        return {
+            mesh_name: self.fake_value(
+                densepose_predictor_outputs, embedder, mesh_name
+            )
+            for mesh_name in embedder.mesh_names
+        }
 
     def fake_value(self, densepose_predictor_outputs: Any, embedder: nn.Module, mesh_name: str):
         return densepose_predictor_outputs.embedding.sum() * 0 + embedder(mesh_name).sum() * 0

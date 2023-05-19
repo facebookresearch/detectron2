@@ -96,12 +96,12 @@ if __name__ == "__main__":
         obj = json.load(f)
 
     def link_val100(dir_full, dir_100):
-        print("Creating " + dir_100 + " ...")
+        print(f"Creating {dir_100} ...")
         os.makedirs(dir_100, exist_ok=True)
         for img in obj["images"]:
             basename = os.path.splitext(img["file_name"])[0]
-            src = os.path.join(dir_full, basename + ".png")
-            dst = os.path.join(dir_100, basename + ".png")
+            src = os.path.join(dir_full, f"{basename}.png")
+            dst = os.path.join(dir_100, f"{basename}.png")
             src = os.path.relpath(src, start=dir_100)
             os.symlink(src, dst)
 

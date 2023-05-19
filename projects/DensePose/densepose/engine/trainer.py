@@ -64,10 +64,11 @@ class SampleCountMetricPrinter(EventWriter):
 
     def write(self):
         storage = get_event_storage()
-        batch_stats_strs = []
-        for key, buf in storage.histories().items():
-            if key.startswith("batch/"):
-                batch_stats_strs.append(f"{key} {buf.avg(20)}")
+        batch_stats_strs = [
+            f"{key} {buf.avg(20)}"
+            for key, buf in storage.histories().items()
+            if key.startswith("batch/")
+        ]
         self.logger.info(", ".join(batch_stats_strs))
 
 
@@ -104,9 +105,9 @@ class Trainer(DefaultTrainer):
         if isinstance(evaluators, DatasetEvaluator):
             evaluators = [evaluators]
         if evaluators is not None:
-            assert len(cfg.DATASETS.TEST) == len(evaluators), "{} != {}".format(
-                len(cfg.DATASETS.TEST), len(evaluators)
-            )
+            assert len(cfg.DATASETS.TEST) == len(
+                evaluators
+            ), f"{len(cfg.DATASETS.TEST)} != {len(evaluators)}"
 
         results = OrderedDict()
         for idx, dataset_name in enumerate(cfg.DATASETS.TEST):
@@ -134,10 +135,8 @@ class Trainer(DefaultTrainer):
             if comm.is_main_process():
                 assert isinstance(
                     results_i, dict
-                ), "Evaluator must return a dict on the main process. Got {} instead.".format(
-                    results_i
-                )
-                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+                ), f"Evaluator must return a dict on the main process. Got {results_i} instead."
+                logger.info(f"Evaluation results for {dataset_name} in csv format:")
                 print_csv_format(results_i)
 
         if len(results) == 1:
@@ -154,21 +153,12 @@ class Trainer(DefaultTrainer):
     ) -> DatasetEvaluators:
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        evaluators = []
         distributed = cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE
-        # Note: we currently use COCO evaluator for both COCO and LVIS datasets
-        # to have compatible metrics. LVIS bbox evaluator could also be used
-        # with an adapter to properly handle filtered / mapped categories
-        # evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
-        # if evaluator_type == "coco":
-        #     evaluators.append(COCOEvaluator(dataset_name, output_dir=output_folder))
-        # elif evaluator_type == "lvis":
-        #     evaluators.append(LVISEvaluator(dataset_name, output_dir=output_folder))
-        evaluators.append(
+        evaluators = [
             Detectron2COCOEvaluatorAdapter(
                 dataset_name, output_dir=output_folder, distributed=distributed
             )
-        )
+        ]
         if cfg.MODEL.DENSEPOSE_ON:
             storage = build_densepose_evaluator_storage(cfg, output_folder)
             evaluators.append(
@@ -229,8 +219,7 @@ class Trainer(DefaultTrainer):
         loaders = [data_loader] + inference_based_loaders
         ratios = [1.0] + ratios
         combined_data_loader = build_combined_loader(cfg, loaders, ratios)
-        sample_counting_loader = SampleCountingLoader(combined_data_loader)
-        return sample_counting_loader
+        return SampleCountingLoader(combined_data_loader)
 
     def build_writers(self):
         writers = super().build_writers()
@@ -254,5 +243,5 @@ class Trainer(DefaultTrainer):
             for name in cfg.DATASETS.TEST
         ]
         res = cls.test(cfg, model, evaluators)  # pyre-ignore[6]
-        res = OrderedDict({k + "_TTA": v for k, v in res.items()})
+        res = OrderedDict({f"{k}_TTA": v for k, v in res.items()})
         return res

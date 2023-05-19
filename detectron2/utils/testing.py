@@ -31,12 +31,11 @@ def get_model_no_weights(config_path):
     Like model_zoo.get, but do not load any weights (even pretrained)
     """
     cfg = model_zoo.get_config(config_path)
-    if isinstance(cfg, CfgNode):
-        if not torch.cuda.is_available():
-            cfg.MODEL.DEVICE = "cpu"
-        return build_model(cfg)
-    else:
+    if not isinstance(cfg, CfgNode):
         return instantiate(cfg.model)
+    if not torch.cuda.is_available():
+        cfg.MODEL.DEVICE = "cpu"
+    return build_model(cfg)
 
 
 def random_boxes(num_boxes, max_coord=100, device="cpu"):
@@ -86,7 +85,7 @@ def convert_scripted_instances(instances):
     ), f"Expect an Instances object, but got {type(instances)}!"
     ret = Instances(instances.image_size)
     for name in instances._field_names:
-        val = getattr(instances, "_" + name, None)
+        val = getattr(instances, f"_{name}", None)
         if val is not None:
             ret.set(name, val)
     return ret
@@ -104,12 +103,10 @@ def assert_instances_allclose(input, other, *, rtol=1e-5, msg="", size_as_tensor
     if not isinstance(other, Instances):
         other = convert_scripted_instances(other)
 
-    if not msg:
-        msg = "Two Instances are different! "
-    else:
-        msg = msg.rstrip() + " "
-
-    size_error_msg = msg + f"image_size is {input.image_size} vs. {other.image_size}!"
+    msg = "Two Instances are different! " if not msg else f"{msg.rstrip()} "
+    size_error_msg = (
+        f"{msg}image_size is {input.image_size} vs. {other.image_size}!"
+    )
     if size_as_tensor:
         assert torch.equal(
             torch.tensor(input.image_size), torch.tensor(other.image_size)
@@ -118,23 +115,23 @@ def assert_instances_allclose(input, other, *, rtol=1e-5, msg="", size_as_tensor
         assert input.image_size == other.image_size, size_error_msg
     fields = sorted(input.get_fields().keys())
     fields_other = sorted(other.get_fields().keys())
-    assert fields == fields_other, msg + f"Fields are {fields} vs {fields_other}!"
+    assert fields == fields_other, f"{msg}Fields are {fields} vs {fields_other}!"
 
     for f in fields:
         val1, val2 = input.get(f), other.get(f)
         if isinstance(val1, (Boxes, ROIMasks)):
             # boxes in the range of O(100) and can have a larger tolerance
-            assert torch.allclose(val1.tensor, val2.tensor, atol=100 * rtol), (
-                msg + f"Field {f} differs too much!"
-            )
+            assert torch.allclose(
+                val1.tensor, val2.tensor, atol=100 * rtol
+            ), f"{msg}Field {f} differs too much!"
         elif isinstance(val1, torch.Tensor):
             if val1.dtype.is_floating_point:
                 mag = torch.abs(val1).max().cpu().item()
-                assert torch.allclose(val1, val2, atol=mag * rtol), (
-                    msg + f"Field {f} differs too much!"
-                )
+                assert torch.allclose(
+                    val1, val2, atol=mag * rtol
+                ), f"{msg}Field {f} differs too much!"
             else:
-                assert torch.equal(val1, val2), msg + f"Field {f} is different!"
+                assert torch.equal(val1, val2), f"{msg}Field {f} is different!"
         else:
             raise ValueError(f"Don't know how to compare type {type(val1)}")
 
@@ -327,7 +324,7 @@ def _pytorch1111_symbolic_opset9_to(g, self, *args):
             # When dtype is None, this is a aten::to(device) call
             dtype = sym_help._get_const(args[1], "i", "dtype")
             return dtype is None
-        elif len(args) in (6, 7):
+        elif len(args) in {6, 7}:
             # aten::to(Tensor, ScalarType, Layout, Device, bool, bool, memory_format)
             # aten::to(Tensor, ScalarType, Layout, Device, bool, bool, bool, memory_format)
             # When dtype is None, this is a aten::to(device) call
@@ -427,11 +424,9 @@ def _pytorch1111_symbolic_opset9_repeat_interleave(g, self, repeats, dim=None, o
                 13,
                 "Unsupported along dimension with unknown input size",
             )
-        else:
-            reps = input_sizes[dim]
-            repeats = expand(g, repeats, g.op("Constant", value_t=torch.tensor([reps])), None)
+        reps = input_sizes[dim]
+        repeats = expand(g, repeats, g.op("Constant", value_t=torch.tensor([reps])), None)
 
-    # Cases where repeats is a 1 dim Tensor
     elif repeats_dim == 1:
         if input_sizes[dim] == 0:
             return sym_help._onnx_opset_unsupported_detailed(
@@ -451,7 +446,7 @@ def _pytorch1111_symbolic_opset9_repeat_interleave(g, self, repeats, dim=None, o
     else:
         raise RuntimeError("repeats must be 0-dim or 1-dim tensor")
 
-    final_splits = list()
+    final_splits = []
     r_splits = sym_help._repeat_interleave_split_helper(g, repeats, reps, 0)
     if isinstance(r_splits, torch._C.Value):
         r_splits = [r_splits]

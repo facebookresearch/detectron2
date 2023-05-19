@@ -160,9 +160,7 @@ class DensePoseChartConfidencePredictorMixin:
         PredictorOutput = decorate_predictor_output_class_with_confidences(
             type(base_predictor_outputs)  # pyre-ignore[6]
         )
-        # base_predictor_outputs is assumed to be a dataclass
-        # reassign all the fields from base_predictor_outputs (no deep copy!), add new fields
-        output = PredictorOutput(
+        return PredictorOutput(
             **base_predictor_outputs.__dict__,
             coarse_segm_confidence=None,
             fine_segm_confidence=None,
@@ -171,4 +169,3 @@ class DensePoseChartConfidencePredictorMixin:
             kappa_u=None,
             kappa_v=None,
         )
-        return output

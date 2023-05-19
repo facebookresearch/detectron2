@@ -136,16 +136,16 @@ class BBoxIOUTracker(BaseTracker):
         """
         bbox_pairs = []
         for i in range(len(instances)):
-            for j in range(len(self._prev_instances)):
-                bbox_pairs.append(
-                    {
-                        "idx": i,
-                        "prev_idx": j,
-                        "prev_id": self._prev_instances.ID[j],
-                        "IoU": iou_all[i, j],
-                        "prev_period": self._prev_instances.ID_period[j],
-                    }
-                )
+            bbox_pairs.extend(
+                {
+                    "idx": i,
+                    "prev_idx": j,
+                    "prev_id": self._prev_instances.ID[j],
+                    "IoU": iou_all[i, j],
+                    "prev_period": self._prev_instances.ID_period[j],
+                }
+                for j in range(len(self._prev_instances))
+            )
         return bbox_pairs
 
     def _initialize_extra_fields(self, instances: Instances) -> Instances:

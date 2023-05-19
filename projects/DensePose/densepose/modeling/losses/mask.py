@@ -49,9 +49,7 @@ def extract_data_for_mask_loss_from_matches(
     num_estimated = estimated_segm.shape[0]
     assert (
         num_proposals == num_estimated
-    ), "The number of proposals {} must be equal to the number of estimates {}".format(
-        num_proposals, num_estimated
-    )
+    ), f"The number of proposals {num_proposals} must be equal to the number of estimates {num_estimated}"
 
     for proposals_targets_per_image in proposals_targets:
         n_i = proposals_targets_per_image.proposal_boxes.tensor.size(0)

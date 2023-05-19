@@ -29,7 +29,7 @@ class ProtobufModel(torch.nn.Module):
         assert isinstance(predict_net, caffe2_pb2.NetDef)
         assert isinstance(init_net, caffe2_pb2.NetDef)
         # create unique temporary workspace for each instance
-        self.ws_name = "__tmp_ProtobufModel_{}__".format(next(self._ids))
+        self.ws_name = f"__tmp_ProtobufModel_{next(self._ids)}__"
         self.net = core.Net(predict_net)
 
         logger.info("Running init_net once to fill the parameters ...")
@@ -88,9 +88,9 @@ class ProtobufModel(torch.nn.Module):
             try:
                 ws.RunNet(self.net.Proto().name)
             except RuntimeError as e:
-                if not str(e) in self._error_msgs:
+                if str(e) not in self._error_msgs:
                     self._error_msgs.add(str(e))
-                    logger.warning("Encountered new RuntimeError: \n{}".format(str(e)))
+                    logger.warning(f"Encountered new RuntimeError: \n{str(e)}")
                 logger.warning("Catch the error and use partial results.")
 
             c2_outputs = [ws.FetchBlob(b) for b in self.net.Proto().external_output]
@@ -115,9 +115,7 @@ class ProtobufModel(torch.nn.Module):
             self.net.Proto().external_output, c2_outputs, output_devices
         ):
             if not isinstance(c2_output, np.ndarray):
-                raise RuntimeError(
-                    "Invalid output for blob {}, received: {}".format(name, c2_output)
-                )
+                raise RuntimeError(f"Invalid output for blob {name}, received: {c2_output}")
             outputs.append(torch.tensor(c2_output).to(device=device))
         return tuple(outputs)
 

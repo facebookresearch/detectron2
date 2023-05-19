@@ -73,7 +73,7 @@ def _generate_optimizer_class_with_gradient_clipping(
         super(type(self), self).step(closure)
 
     OptimizerWithGradientClip = type(
-        optimizer.__name__ + "WithGradientClip",
+        f"{optimizer.__name__}WithGradientClip",
         (optimizer,),
         {"step": optimizer_wgc_step},
     )
@@ -109,11 +109,10 @@ def maybe_add_gradient_clipping(
     OptimizerWithGradientClip = _generate_optimizer_class_with_gradient_clipping(
         optimizer_type, per_param_clipper=grad_clipper
     )
-    if isinstance(optimizer, torch.optim.Optimizer):
-        optimizer.__class__ = OptimizerWithGradientClip  # a bit hacky, not recommended
-        return optimizer
-    else:
+    if not isinstance(optimizer, torch.optim.Optimizer):
         return OptimizerWithGradientClip
+    optimizer.__class__ = OptimizerWithGradientClip  # a bit hacky, not recommended
+    return optimizer
 
 
 def build_optimizer(cfg: CfgNode, model: torch.nn.Module) -> torch.optim.Optimizer:
@@ -230,7 +229,7 @@ def get_default_optimizer_params(
             if lr_factor_func is not None:
                 hyperparams["lr"] *= lr_factor_func(f"{module_name}.{module_param_name}")
 
-            hyperparams.update(overrides.get(module_param_name, {}))
+            hyperparams |= overrides.get(module_param_name, {})
             params.append({"params": [value], **hyperparams})
     return reduce_param_groups(params)
 
@@ -298,7 +297,7 @@ def build_lr_scheduler(cfg: CfgNode, optimizer: torch.optim.Optimizer) -> LRSche
             num_updates=cfg.SOLVER.MAX_ITER,
         )
     else:
-        raise ValueError("Unknown LR scheduler: {}".format(name))
+        raise ValueError(f"Unknown LR scheduler: {name}")
 
     sched = WarmupParamScheduler(
         sched,

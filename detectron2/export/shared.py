@@ -37,7 +37,7 @@ def to_device(t, device_str):
     elif src.type == "cpu" and dst.type == "cuda":
         return torch.ops._caffe2.CopyCPUToGPU(t)
     else:
-        raise RuntimeError("Can't cast tensor from device {} to device {}".format(src, dst))
+        raise RuntimeError(f"Can't cast tensor from device {src} to device {dst}")
 
 
 # ==== torch/utils_toffee/interpolate.py =======================================
@@ -49,11 +49,7 @@ def BilinearInterpolation(tensor_in, up_scale):
 
     def upsample_filt(size):
         factor = (size + 1) // 2
-        if size % 2 == 1:
-            center = factor - 1
-        else:
-            center = factor - 0.5
-
+        center = factor - 1 if size % 2 == 1 else factor - 0.5
         og = np.ogrid[:size, :size]
         return (1 - abs(og[0] - center) / factor) * (1 - abs(og[1] - center) / factor)
 
@@ -161,7 +157,7 @@ def fetch_any_blob(name):
     except TypeError:
         bb = workspace.FetchInt8Blob(name)
     except Exception as e:
-        logger.error("Get blob {} error: {}".format(name, e))
+        logger.error(f"Get blob {name} error: {e}")
 
     return bb
 
@@ -170,10 +166,7 @@ def fetch_any_blob(name):
 
 
 def get_pb_arg(pb, arg_name):
-    for x in pb.arg:
-        if x.name == arg_name:
-            return x
-    return None
+    return next((x for x in pb.arg if x.name == arg_name), None)
 
 
 def get_pb_arg_valf(pb, arg_name, default_val):
@@ -214,14 +207,14 @@ def check_set_pb_arg(pb, arg_name, arg_attr, arg_value, allow_override=False):
         pb.arg.extend([arg])
     if allow_override and getattr(arg, arg_attr) != arg_value:
         logger.warning(
-            "Override argument {}: {} -> {}".format(arg_name, getattr(arg, arg_attr), arg_value)
+            f"Override argument {arg_name}: {getattr(arg, arg_attr)} -> {arg_value}"
         )
         setattr(arg, arg_attr, arg_value)
     else:
         assert arg is not None
-        assert getattr(arg, arg_attr) == arg_value, "Existing value {}, new value {}".format(
-            getattr(arg, arg_attr), arg_value
-        )
+        assert (
+            getattr(arg, arg_attr) == arg_value
+        ), f"Existing value {getattr(arg, arg_attr)}, new value {arg_value}"
 
 
 def _create_const_fill_op_from_numpy(name, tensor, device_option=None):
@@ -235,9 +228,9 @@ def _create_const_fill_op_from_numpy(name, tensor, device_option=None):
 
     args_dict = {}
     if tensor.dtype == np.dtype("uint8"):
-        args_dict.update({"values": [str(tensor.data)], "shape": [1]})
+        args_dict |= {"values": [str(tensor.data)], "shape": [1]}
     else:
-        args_dict.update({"values": tensor, "shape": tensor.shape})
+        args_dict |= {"values": tensor, "shape": tensor.shape}
 
     if device_option is not None:
         args_dict["device_option"] = device_option
@@ -281,9 +274,7 @@ def create_const_fill_op(
     assert tensor_type in [
         np.ndarray,
         workspace.Int8Tensor,
-    ], 'Error when creating const fill op for "{}", unsupported blob type: {}'.format(
-        name, type(blob)
-    )
+    ], f'Error when creating const fill op for "{name}", unsupported blob type: {type(blob)}'
 
     if tensor_type == np.ndarray:
         return _create_const_fill_op_from_numpy(name, blob, device_option)
@@ -303,10 +294,7 @@ def construct_init_net_from_params(
     for name, blob in params.items():
         if isinstance(blob, str):
             logger.warning(
-                (
-                    "Blob {} with type {} is not supported in generating init net,"
-                    " skipped.".format(name, type(blob))
-                )
+                f"Blob {name} with type {type(blob)} is not supported in generating init net, skipped."
             )
             continue
         init_net.op.extend(
@@ -373,8 +361,7 @@ def get_params_from_init_net(
 
 def _updater_raise(op, input_types, output_types):
     raise RuntimeError(
-        "Failed to apply updater for op {} given input_types {} and"
-        " output_types {}".format(op, input_types, output_types)
+        f"Failed to apply updater for op {op} given input_types {input_types} and output_types {output_types}"
     )
 
 
@@ -409,7 +396,7 @@ def _generic_status_identifier(
     def _check_and_update(key, value):
         assert value is not None
         if key in _known_status:
-            if not _known_status[key] == value:
+            if _known_status[key] != value:
                 raise RuntimeError(
                     "Confilict status for {}, existing status {}, new status {}".format(
                         key, _known_status[key], value
@@ -457,7 +444,7 @@ def infer_device_type(
 ) -> Dict[Tuple[str, int], str]:
     """Return the device type ("cpu" or "gpu"/"cuda") of each (versioned) blob"""
 
-    assert device_name_style in ["caffe2", "pytorch"]
+    assert device_name_style in {"caffe2", "pytorch"}
     _CPU_STR = "cpu"
     _GPU_STR = "gpu" if device_name_style == "caffe2" else "cuda"
 
@@ -473,9 +460,9 @@ def infer_device_type(
 
     def _other_ops_updater(op, input_types, output_types):
         non_none_types = [x for x in input_types + output_types if x is not None]
-        if len(non_none_types) > 0:
+        if non_none_types:
             the_type = non_none_types[0]
-            if not all(x == the_type for x in non_none_types):
+            if any(x != the_type for x in non_none_types):
                 _updater_raise(op, input_types, output_types)
         else:
             the_type = None
@@ -512,7 +499,7 @@ def _modify_blob_names(ops, blob_rename_f):
 def _rename_blob(name, blob_sizes, blob_ranges):
     def _list_to_str(bsize):
         ret = ", ".join([str(x) for x in bsize])
-        ret = "[" + ret + "]"
+        ret = f"[{ret}]"
         return ret
 
     ret = name
@@ -555,9 +542,9 @@ def save_graph_base(net, file_name, graph_name="net", op_only=True, blob_rename_
         elif format == ".svg":
             graph.write_svg(file_name)
         else:
-            print("Incorrect format {}".format(format))
+            print(f"Incorrect format {format}")
     except Exception as e:
-        print("Error when writing graph to image {}".format(e))
+        print(f"Error when writing graph to image {e}")
 
     return graph
 
@@ -588,7 +575,7 @@ def group_norm_replace_aten_with_caffe2(predict_net: caffe2_pb2.NetDef):
                 op.type = "GroupNorm"
                 count += 1
     if count > 1:
-        logger.info("Replaced {} ATen operator to GroupNormOp".format(count))
+        logger.info(f"Replaced {count} ATen operator to GroupNormOp")
 
 
 # ==== torch/utils_toffee/alias.py =============================================
@@ -694,7 +681,7 @@ def rename_op_input(
 
     if from_producer:
         producer_map = get_producer_map(predict_net_ssa)
-        if not (old_name, version) in producer_map:
+        if (old_name, version) not in producer_map:
             raise NotImplementedError(
                 "Can't find producer, the input {} is probably from"
                 " init_net, this is not supported yet.".format(old_name)
@@ -777,7 +764,7 @@ def get_sub_graph_external_input_output(
     # outside of this sub-graph (including predict_net.external_output)
     all_other_inputs = sum(
         (ssa[i][0] for i in range(len(ssa)) if i not in sub_graph_op_indices),
-        [(outp, versions[outp]) for outp in predict_net.external_output],
+        ((outp, versions[outp]) for outp in predict_net.external_output),
     )
     ext_outputs = [outp for outp in all_outputs if outp in set(all_other_inputs)]
 
@@ -845,10 +832,7 @@ def _get_dependency_chain(ssa, versioned_target, versioned_source):
     sub_graph_ssa = ssa[start_op : end_op + 1]
     if len(sub_graph_ssa) > 30:
         logger.warning(
-            "Subgraph bebetween {} and {} is large (from op#{} to op#{}), it"
-            " might take non-trival time to find all paths between them.".format(
-                versioned_source, versioned_target, start_op, end_op
-            )
+            f"Subgraph bebetween {versioned_source} and {versioned_target} is large (from op#{start_op} to op#{end_op}), it might take non-trival time to find all paths between them."
         )
 
     dag = DiGraph.from_ssa(sub_graph_ssa)
@@ -947,7 +931,9 @@ def remove_reshape_for_fc(predict_net, params):
     predict_net.op.extend(new_ops)
     for versioned_params in params_to_remove:
         name = versioned_params[0]
-        logger.info("Remove params: {} from init_net and predict_net.external_input".format(name))
+        logger.info(
+            f"Remove params: {name} from init_net and predict_net.external_input"
+        )
         del params[name]
         predict_net.external_input.remove(name)
 

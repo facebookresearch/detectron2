@@ -202,11 +202,12 @@ class DensePoseChartLoss:
              * `loss_densepose_I`: has value 0
              * `loss_densepose_S`: has value 0, added only if `segm_trained_by_masks` is False
         """
-        losses = {
+        return {
             "loss_densepose_I": densepose_predictor_outputs.fine_segm.sum() * 0,
-            "loss_densepose_S": self.segm_loss.fake_value(densepose_predictor_outputs),
+            "loss_densepose_S": self.segm_loss.fake_value(
+                densepose_predictor_outputs
+            ),
         }
-        return losses
 
     def produce_densepose_losses_uv(
         self,

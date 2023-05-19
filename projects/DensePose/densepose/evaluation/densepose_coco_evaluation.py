@@ -303,7 +303,7 @@ class DensePoseCocoEval(object):
         :return: None
         """
         tic = time.time()
-        logger.info("Running per image DensePose evaluation... {}".format(self.params.iouType))
+        logger.info(f"Running per image DensePose evaluation... {self.params.iouType}")
         p = self.params
         # add backward compatibility if useSegm is specified in params
         if p.useSegm is not None:
@@ -371,8 +371,7 @@ class DensePoseCocoEval(object):
             x = int(x)
             im_mask[y0:y1, x0:x1] = mask[y0 - y : y1 - y, x0 - x : x1 - x]
         im_mask = np.require(np.asarray(im_mask > 0), dtype=np.uint8, requirements=["F"])
-        rle_mask = maskUtils.encode(np.array(im_mask[:, :, np.newaxis], order="F"))[0]
-        return rle_mask
+        return maskUtils.encode(np.array(im_mask[:, :, np.newaxis], order="F"))[0]
 
     def computeDPIoU(self, imgId, catId):
         p = self.params
@@ -387,7 +386,7 @@ class DensePoseCocoEval(object):
         inds = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in inds]
         if len(dt) > p.maxDets[-1]:
-            dt = dt[0 : p.maxDets[-1]]
+            dt = dt[:p.maxDets[-1]]
 
         gtmasks = []
         for g in gt:
@@ -430,8 +429,7 @@ class DensePoseCocoEval(object):
 
         # compute iou between each dt and gt region
         iscrowd = [int(o.get("iscrowd", 0)) for o in gt]
-        iousDP = maskUtils.iou(dtmasks, gtmasks, iscrowd)
-        return iousDP
+        return maskUtils.iou(dtmasks, gtmasks, iscrowd)
 
     def computeIoU(self, imgId, catId):
         p = self.params
@@ -446,21 +444,20 @@ class DensePoseCocoEval(object):
         inds = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in inds]
         if len(dt) > p.maxDets[-1]:
-            dt = dt[0 : p.maxDets[-1]]
+            dt = dt[:p.maxDets[-1]]
 
-        if p.iouType == "segm":
-            g = [g["segmentation"] for g in gt if g["segmentation"] is not None]
-            d = [d["segmentation"] for d in dt if d["segmentation"] is not None]
-        elif p.iouType == "bbox":
+        if p.iouType == "bbox":
             g = [g["bbox"] for g in gt]
             d = [d["bbox"] for d in dt]
+        elif p.iouType == "segm":
+            g = [g["segmentation"] for g in gt if g["segmentation"] is not None]
+            d = [d["segmentation"] for d in dt if d["segmentation"] is not None]
         else:
             raise Exception("unknown iouType for iou computation")
 
         # compute iou between each dt and gt region
         iscrowd = [int(o.get("iscrowd", 0)) for o in gt]
-        ious = maskUtils.iou(d, g, iscrowd)
-        return ious
+        return maskUtils.iou(d, g, iscrowd)
 
     def computeOks(self, imgId, catId):
         p = self.params
@@ -470,7 +467,7 @@ class DensePoseCocoEval(object):
         inds = np.argsort([-d["score"] for d in dts], kind="mergesort")
         dts = [dts[i] for i in inds]
         if len(dts) > p.maxDets[-1]:
-            dts = dts[0 : p.maxDets[-1]]
+            dts = dts[:p.maxDets[-1]]
         # if len(gts) == 0 and len(dts) == 0:
         if len(gts) == 0 or len(dts) == 0:
             return []
@@ -505,7 +502,7 @@ class DensePoseCocoEval(object):
         for j, gt in enumerate(gts):
             # create bounds for ignore regions(double the gt bbox)
             g = np.array(gt["keypoints"])
-            xg = g[0::3]
+            xg = g[::3]
             yg = g[1::3]
             vg = g[2::3]
             k1 = np.count_nonzero(vg > 0)
@@ -516,7 +513,7 @@ class DensePoseCocoEval(object):
             y1 = bb[1] + bb[3] * 2
             for i, dt in enumerate(dts):
                 d = np.array(dt["keypoints"])
-                xd = d[0::3]
+                xd = d[::3]
                 yd = d[1::3]
                 if k1 > 0:
                     # measure the per-keypoint distance if keypoints visible
@@ -724,7 +721,7 @@ class DensePoseCocoEval(object):
         inds = np.argsort([-d_["score"] for d_ in d], kind="mergesort")
         d = [d[i] for i in inds]
         if len(d) > p.maxDets[-1]:
-            d = d[0 : p.maxDets[-1]]
+            d = d[:p.maxDets[-1]]
         # if len(gts) == 0 and len(dts) == 0:
         if len(g) == 0 or len(d) == 0:
             return []
@@ -750,9 +747,7 @@ class DensePoseCocoEval(object):
                     pts[py >= dy] = -1
                     pts[px < 0] = -1
                     pts[py < 0] = -1
-                    if len(pts) < 1:
-                        ogps = 0.0
-                    elif np.max(pts) == -1:
+                    if len(pts) < 1 or len(pts) >= 1 and np.max(pts) == -1:
                         ogps = 0.0
                     else:
                         px[pts == -1] = 0
@@ -794,16 +789,14 @@ class DensePoseCocoEval(object):
 
         for g in gt:
             # g['_ignore'] = g['ignore']
-            if g["ignore"] or (g["area"] < aRng[0] or g["area"] > aRng[1]):
-                g["_ignore"] = True
-            else:
-                g["_ignore"] = False
-
+            g["_ignore"] = bool(
+                g["ignore"] or (g["area"] < aRng[0] or g["area"] > aRng[1])
+            )
         # sort dt highest score first, sort gt ignore last
         gtind = np.argsort([g["_ignore"] for g in gt], kind="mergesort")
         gt = [gt[i] for i in gtind]
         dtind = np.argsort([-d["score"] for d in dt], kind="mergesort")
-        dt = [dt[i] for i in dtind[0:maxDet]]
+        dt = [dt[i] for i in dtind[:maxDet]]
         iscrowd = [int(o.get("iscrowd", 0)) for o in gt]
         # load computed ious
         if p.iouType == "densepose":
@@ -856,14 +849,21 @@ class DensePoseCocoEval(object):
                         # if dt matched to reg gt, and on ignore gt, stop
                         if m > -1 and gtIg[m] == 0 and gtIg[gind] == 1:
                             break
-                        if p.iouType == "densepose":
-                            if self._dpEvalMode == DensePoseEvalMode.GPSM:
-                                new_iou = np.sqrt(iousM[dind, gind] * ious[dind, gind])
-                            elif self._dpEvalMode == DensePoseEvalMode.IOU:
-                                new_iou = iousM[dind, gind]
-                            elif self._dpEvalMode == DensePoseEvalMode.GPS:
-                                new_iou = ious[dind, gind]
-                        else:
+                        if (
+                            p.iouType == "densepose"
+                            and self._dpEvalMode == DensePoseEvalMode.GPSM
+                        ):
+                            new_iou = np.sqrt(iousM[dind, gind] * ious[dind, gind])
+                        elif (
+                            p.iouType == "densepose"
+                            and self._dpEvalMode == DensePoseEvalMode.IOU
+                        ):
+                            new_iou = iousM[dind, gind]
+                        elif (
+                            p.iouType == "densepose"
+                            and self._dpEvalMode == DensePoseEvalMode.GPS
+                            or p.iouType != "densepose"
+                        ):
                             new_iou = ious[dind, gind]
                         if new_iou < iou:
                             continue
@@ -880,12 +880,12 @@ class DensePoseCocoEval(object):
                     gtm[tind, m] = d["id"]
 
         if p.iouType == "densepose":
-            if not len(ioubs) == 0:
+            if len(ioubs) != 0:
                 for dind, d in enumerate(dt):
                     # information about best match so far (m=-1 -> unmatched)
                     if dtm[tind, dind] == 0:
-                        ioub = 0.8
                         m = -1
+                        ioub = 0.8
                         for gind, _g in enumerate(gt):
                             # if this gt already matched, and not a crowd, continue
                             if gtm[tind, gind] > 0 and not iscrowd[gind]:

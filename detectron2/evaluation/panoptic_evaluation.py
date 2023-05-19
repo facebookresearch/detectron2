@@ -91,14 +91,14 @@ class COCOPanopticEvaluator(DatasetEvaluator):
                         {
                             "id": int(panoptic_label) + 1,
                             "category_id": int(pred_class),
-                            "isthing": bool(isthing),
+                            "isthing": isthing,
                         }
                     )
                 # Official evaluation script uses 0 for VOID label.
                 panoptic_img += 1
 
             file_name = os.path.basename(input["file_name"])
-            file_name_png = os.path.splitext(file_name)[0] + ".png"
+            file_name_png = f"{os.path.splitext(file_name)[0]}.png"
             with io.BytesIO() as out:
                 Image.fromarray(id2rgb(panoptic_img)).save(out, format="PNG")
                 segments_info = [self._convert_category_id(x) for x in segments_info]
@@ -124,7 +124,7 @@ class COCOPanopticEvaluator(DatasetEvaluator):
         gt_folder = PathManager.get_local_path(self._metadata.panoptic_root)
 
         with tempfile.TemporaryDirectory(prefix="panoptic_eval") as pred_dir:
-            logger.info("Writing all panoptic predictions to {} ...".format(pred_dir))
+            logger.info(f"Writing all panoptic predictions to {pred_dir} ...")
             for p in self._predictions:
                 with open(os.path.join(pred_dir, p["file_name"]), "wb") as f:
                     f.write(p.pop("png_string"))
@@ -148,17 +148,17 @@ class COCOPanopticEvaluator(DatasetEvaluator):
                     pred_folder=pred_dir,
                 )
 
-        res = {}
-        res["PQ"] = 100 * pq_res["All"]["pq"]
-        res["SQ"] = 100 * pq_res["All"]["sq"]
-        res["RQ"] = 100 * pq_res["All"]["rq"]
-        res["PQ_th"] = 100 * pq_res["Things"]["pq"]
-        res["SQ_th"] = 100 * pq_res["Things"]["sq"]
-        res["RQ_th"] = 100 * pq_res["Things"]["rq"]
-        res["PQ_st"] = 100 * pq_res["Stuff"]["pq"]
-        res["SQ_st"] = 100 * pq_res["Stuff"]["sq"]
-        res["RQ_st"] = 100 * pq_res["Stuff"]["rq"]
-
+        res = {
+            "PQ": 100 * pq_res["All"]["pq"],
+            "SQ": 100 * pq_res["All"]["sq"],
+            "RQ": 100 * pq_res["All"]["rq"],
+            "PQ_th": 100 * pq_res["Things"]["pq"],
+            "SQ_th": 100 * pq_res["Things"]["sq"],
+            "RQ_th": 100 * pq_res["Things"]["rq"],
+            "PQ_st": 100 * pq_res["Stuff"]["pq"],
+            "SQ_st": 100 * pq_res["Stuff"]["sq"],
+            "RQ_st": 100 * pq_res["Stuff"]["rq"],
+        }
         results = OrderedDict({"panoptic_seg": res})
         _print_panoptic_results(pq_res)
 

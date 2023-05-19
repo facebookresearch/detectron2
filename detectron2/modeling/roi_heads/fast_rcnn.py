@@ -376,10 +376,9 @@ class FastRCNNOutputLayers(nn.Module):
             sampled_negative_classes = torch.multinomial(
                 prob, num_fed_loss_classes - len(unique_gt_classes), replacement=False
             )
-            fed_loss_classes = torch.cat([unique_gt_classes, sampled_negative_classes])
+            return torch.cat([unique_gt_classes, sampled_negative_classes])
         else:
-            fed_loss_classes = unique_gt_classes
-        return fed_loss_classes
+            return unique_gt_classes
 
     # Implementation from https://github.com/xingyizhou/CenterNet2/blob/master/projects/CenterNet2/centernet/modeling/roi_heads/custom_fast_rcnn.py#L113  # noqa
     # with slight modifications
@@ -418,8 +417,7 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             weight = 1
 
-        loss = torch.sum(cls_loss * weight) / N
-        return loss
+        return torch.sum(cls_loss * weight) / N
 
     def box_reg_loss(self, proposal_boxes, gt_boxes, pred_deltas, gt_classes):
         """
@@ -562,8 +560,5 @@ class FastRCNNOutputLayers(nn.Module):
         """
         scores, _ = predictions
         num_inst_per_image = [len(p) for p in proposals]
-        if self.use_sigmoid_ce:
-            probs = scores.sigmoid()
-        else:
-            probs = F.softmax(scores, dim=-1)
+        probs = scores.sigmoid() if self.use_sigmoid_ce else F.softmax(scores, dim=-1)
         return probs.split(num_inst_per_image, dim=0)

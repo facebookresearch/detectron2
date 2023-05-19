@@ -40,8 +40,7 @@ def assemble_rcnn_outputs_by_name(image_sizes, tensor_outputs, force_mask_on=Fal
 
     results = [Instances(image_size) for image_size in image_sizes]
 
-    batch_splits = tensor_outputs.get("batch_splits", None)
-    if batch_splits:
+    if batch_splits := tensor_outputs.get("batch_splits", None):
         raise NotImplementedError()
     assert len(image_sizes) == 1
     result = results[0]
@@ -209,9 +208,7 @@ class Caffe2MetaArch(Caffe2Compatible, torch.nn.Module):
         normalized_data = (data - mean) / std
         normalized_data = alias(normalized_data, "normalized_data")
 
-        # Pack (data, im_info) into ImageList which is recognized by self.inference.
-        images = ImageList(tensor=normalized_data, image_sizes=im_info)
-        return images
+        return ImageList(tensor=normalized_data, image_sizes=im_info)
 
     @staticmethod
     def get_outputs_converter(predict_net, init_net):
@@ -304,14 +301,17 @@ class Caffe2RetinaNet(Caffe2MetaArch):
         features = self._wrapped_model.backbone(images.tensor)
         features = [features[f] for f in self._wrapped_model.head_in_features]
         for i, feature_i in enumerate(features):
-            features[i] = alias(feature_i, "feature_{}".format(i), is_backward=True)
+            features[i] = alias(feature_i, f"feature_{i}", is_backward=True)
             return_tensors.append(features[i])
 
         pred_logits, pred_anchor_deltas = self._wrapped_model.head(features)
         for i, (box_cls_i, box_delta_i) in enumerate(zip(pred_logits, pred_anchor_deltas)):
-            return_tensors.append(alias(box_cls_i, "box_cls_{}".format(i)))
-            return_tensors.append(alias(box_delta_i, "box_delta_{}".format(i)))
-
+            return_tensors.extend(
+                (
+                    alias(box_cls_i, f"box_cls_{i}"),
+                    alias(box_delta_i, f"box_delta_{i}"),
+                )
+            )
         return tuple(return_tensors)
 
     def encode_additional_info(self, predict_net, init_net):

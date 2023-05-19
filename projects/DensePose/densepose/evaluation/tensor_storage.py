@@ -22,8 +22,7 @@ class SizeData:
 def _calculate_record_field_size_b(data_schema: Dict[str, SizeData], field_name: str) -> int:
     schema = data_schema[field_name]
     element_size_b = np.dtype(schema.dtype).itemsize
-    record_field_size_b = reduce(mul, schema.shape) * element_size_b
-    return record_field_size_b
+    return reduce(mul, schema.shape) * element_size_b
 
 
 def _calculate_record_size_b(data_schema: Dict[str, SizeData]) -> int:
@@ -35,10 +34,10 @@ def _calculate_record_size_b(data_schema: Dict[str, SizeData]) -> int:
 
 
 def _calculate_record_field_sizes_b(data_schema: Dict[str, SizeData]) -> Dict[str, int]:
-    field_sizes_b = {}
-    for field_name in data_schema:
-        field_sizes_b[field_name] = _calculate_record_field_size_b(data_schema, field_name)
-    return field_sizes_b
+    return {
+        field_name: _calculate_record_field_size_b(data_schema, field_name)
+        for field_name in data_schema
+    }
 
 
 class SingleProcessTensorStorage:
@@ -211,8 +210,7 @@ def _ram_storage_gather(
     if get_rank() != dst_rank:
         return None
     rank_to_buffer = {i: io.BytesIO(data_list[i]) for i in range(len(data_list))}
-    multiprocess_storage = MultiProcessRamTensorStorage(storage.data_schema, rank_to_buffer)
-    return multiprocess_storage
+    return MultiProcessRamTensorStorage(storage.data_schema, rank_to_buffer)
 
 
 def _file_storage_gather(

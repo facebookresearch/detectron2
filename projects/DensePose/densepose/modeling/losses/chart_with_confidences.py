@@ -51,22 +51,21 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
              * `loss_densepose_V`: has value 0
              * `loss_densepose_I`: has value 0
         """
-        conf_type = self.confidence_model_cfg.uv_confidence.type
-        if self.confidence_model_cfg.uv_confidence.enabled:
-            loss_uv = (
-                densepose_predictor_outputs.u.sum() + densepose_predictor_outputs.v.sum()
-            ) * 0
-            if conf_type == DensePoseUVConfidenceType.IID_ISO:
-                loss_uv += densepose_predictor_outputs.sigma_2.sum() * 0
-            elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
-                loss_uv += (
-                    densepose_predictor_outputs.sigma_2.sum()
-                    + densepose_predictor_outputs.kappa_u.sum()
-                    + densepose_predictor_outputs.kappa_v.sum()
-                ) * 0
-            return {"loss_densepose_UV": loss_uv}
-        else:
+        if not self.confidence_model_cfg.uv_confidence.enabled:
             return super().produce_fake_densepose_losses_uv(densepose_predictor_outputs)
+        loss_uv = (
+            densepose_predictor_outputs.u.sum() + densepose_predictor_outputs.v.sum()
+        ) * 0
+        conf_type = self.confidence_model_cfg.uv_confidence.type
+        if conf_type == DensePoseUVConfidenceType.IID_ISO:
+            loss_uv += densepose_predictor_outputs.sigma_2.sum() * 0
+        elif conf_type == DensePoseUVConfidenceType.INDEP_ANISO:
+            loss_uv += (
+                densepose_predictor_outputs.sigma_2.sum()
+                + densepose_predictor_outputs.kappa_u.sum()
+                + densepose_predictor_outputs.kappa_v.sum()
+            ) * 0
+        return {"loss_densepose_UV": loss_uv}
 
     def produce_densepose_losses_uv(
         self,
@@ -76,7 +75,6 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
         interpolator: BilinearInterpolationHelper,
         j_valid_fg: torch.Tensor,
     ) -> LossDict:
-        conf_type = self.confidence_model_cfg.uv_confidence.type
         if self.confidence_model_cfg.uv_confidence.enabled:
             u_gt = packed_annotations.u_gt[j_valid_fg]
             u_est = interpolator.extract_at_points(densepose_predictor_outputs.u)[j_valid_fg]
@@ -85,6 +83,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
             sigma_2_est = interpolator.extract_at_points(densepose_predictor_outputs.sigma_2)[
                 j_valid_fg
             ]
+            conf_type = self.confidence_model_cfg.uv_confidence.type
             if conf_type == DensePoseUVConfidenceType.IID_ISO:
                 return {
                     "loss_densepose_UV": (

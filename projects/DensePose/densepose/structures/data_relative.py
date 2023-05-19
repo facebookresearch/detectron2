@@ -104,8 +104,7 @@ class DensePoseDataRelative(object):
                 segm[mask > 0] = 1
         else:
             for i in range(len(poly_specs)):
-                poly_i = poly_specs[i]
-                if poly_i:
+                if poly_i := poly_specs[i]:
                     mask_i = mask_utils.decode(poly_i)
                     segm[mask_i > 0] = i + 1
         return segm
@@ -133,26 +132,14 @@ class DensePoseDataRelative(object):
                 DensePoseDataRelative.MESH_NAME_KEY,
             ]
         )
-        if not valid_for_iuv_setting and not valid_for_cse_setting:
-            return (
+        return (
+            (
                 False,
-                "expected either {} (IUV setting) or {} (CSE setting) annotations".format(
-                    ", ".join(
-                        [
-                            DensePoseDataRelative.I_KEY,
-                            DensePoseDataRelative.U_KEY,
-                            DensePoseDataRelative.V_KEY,
-                        ]
-                    ),
-                    ", ".join(
-                        [
-                            DensePoseDataRelative.VERTEX_IDS_KEY,
-                            DensePoseDataRelative.MESH_NAME_KEY,
-                        ]
-                    ),
-                ),
+                f'expected either {", ".join([DensePoseDataRelative.I_KEY, DensePoseDataRelative.U_KEY, DensePoseDataRelative.V_KEY])} (IUV setting) or {", ".join([DensePoseDataRelative.VERTEX_IDS_KEY, DensePoseDataRelative.MESH_NAME_KEY])} (CSE setting) annotations',
             )
-        return True, None
+            if not valid_for_iuv_setting and not valid_for_cse_setting
+            else (True, None)
+        )
 
     @staticmethod
     def cleanup_annotation(annotation):

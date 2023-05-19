@@ -3,7 +3,7 @@
 from .launch import *
 from .train_loop import *
 
-__all__ = [k for k in globals().keys() if not k.startswith("_")]
+__all__ = [k for k in globals() if not k.startswith("_")]
 
 
 # prefer to let hooks and defaults live in separate namespaces (therefore not in __all__)

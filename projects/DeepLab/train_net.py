@@ -65,11 +65,9 @@ class Trainer(DefaultTrainer):
             )
         if evaluator_type == "cityscapes_sem_seg":
             return CityscapesSemSegEvaluator(dataset_name)
-        if len(evaluator_list) == 0:
+        if not evaluator_list:
             raise NotImplementedError(
-                "no Evaluator for the dataset {} with the type {}".format(
-                    dataset_name, evaluator_type
-                )
+                f"no Evaluator for the dataset {dataset_name} with the type {evaluator_type}"
             )
         if len(evaluator_list) == 1:
             return evaluator_list[0]
@@ -113,9 +111,7 @@ def main(args):
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
-        res = Trainer.test(cfg, model)
-        return res
-
+        return Trainer.test(cfg, model)
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)
     return trainer.train()

@@ -239,12 +239,11 @@ def _get_coco_instances_meta():
     # Mapping from the incontiguous COCO category id to an id in [0, 79]
     thing_dataset_id_to_contiguous_id = {k: i for i, k in enumerate(thing_ids)}
     thing_classes = [k["name"] for k in COCO_CATEGORIES if k["isthing"] == 1]
-    ret = {
+    return {
         "thing_dataset_id_to_contiguous_id": thing_dataset_id_to_contiguous_id,
         "thing_classes": thing_classes,
         "thing_colors": thing_colors,
     }
-    return ret
 
 
 def _get_coco_panoptic_separated_meta():
@@ -276,7 +275,7 @@ def _get_coco_panoptic_separated_meta():
         "stuff_classes": stuff_classes,
         "stuff_colors": stuff_colors,
     }
-    ret.update(_get_coco_instances_meta())
+    ret |= _get_coco_instances_meta()
     return ret
 
 
@@ -286,7 +285,6 @@ def _get_builtin_metadata(dataset_name):
     if dataset_name == "coco_panoptic_separated":
         return _get_coco_panoptic_separated_meta()
     elif dataset_name == "coco_panoptic_standard":
-        meta = {}
         # The following metadata maps contiguous id from [0, #thing categories +
         # #stuff categories) to their names and colors. We have to replica of the
         # same name and color under "thing_*" and "stuff_*" because the current
@@ -298,11 +296,12 @@ def _get_builtin_metadata(dataset_name):
         stuff_classes = [k["name"] for k in COCO_CATEGORIES]
         stuff_colors = [k["color"] for k in COCO_CATEGORIES]
 
-        meta["thing_classes"] = thing_classes
-        meta["thing_colors"] = thing_colors
-        meta["stuff_classes"] = stuff_classes
-        meta["stuff_colors"] = stuff_colors
-
+        meta = {
+            "thing_classes": thing_classes,
+            "thing_colors": thing_colors,
+            "stuff_classes": stuff_classes,
+            "stuff_colors": stuff_colors,
+        }
         # Convert category id for training:
         #   category id: like semantic segmentation, it is the class id for each
         #   pixel. Since there are some classes not used in evaluation, the category
@@ -347,4 +346,4 @@ def _get_builtin_metadata(dataset_name):
             "thing_classes": CITYSCAPES_THING_CLASSES,
             "stuff_classes": CITYSCAPES_STUFF_CLASSES,
         }
-    raise KeyError("No built-in metadata for dataset {}".format(dataset_name))
+    raise KeyError(f"No built-in metadata for dataset {dataset_name}")

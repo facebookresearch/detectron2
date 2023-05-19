@@ -108,7 +108,7 @@ def _distributed_worker(
         )
     except Exception as e:
         logger = logging.getLogger(__name__)
-        logger.error("Process group URL: {}".format(dist_url))
+        logger.error(f"Process group URL: {dist_url}")
         raise e
 
     # Setup the local process group.
