@@ -38,7 +38,7 @@ jobs:
           path: |
             ${{ env.pythonLocation }}/lib/python${{ matrix.python }}/site-packages
             ~/.torch
-          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230327
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20230523
       - name: Install dependencies macOS
         if: matrix.os == 'macos-latest'
         run: |
