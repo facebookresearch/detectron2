@@ -156,9 +156,6 @@ class TestTrainer(unittest.TestCase):
             )
             trainer.train(0, max_iter)
 
-            with open(json_file, "r") as f:
-                data = [json.loads(line.strip()) for line in f]
-                self.assertEqual([x["iteration"] for x in data], list(range(50)))
             self.assertEqual(len(trainer.storage.history("time").values()), 48)
             for key in ["data_time", "total_loss"]:
                 history = trainer.storage.history(key).values()

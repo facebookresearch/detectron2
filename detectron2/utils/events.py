@@ -15,6 +15,7 @@ from detectron2.utils.file_io import PathManager
 
 __all__ = [
     "get_event_storage",
+    "has_event_storage",
     "JSONWriter",
     "TensorboardXWriter",
     "CommonMetricPrinter",
@@ -34,6 +35,14 @@ def get_event_storage():
         _CURRENT_STORAGE_STACK
     ), "get_event_storage() has to be called inside a 'with EventStorage(...)' context!"
     return _CURRENT_STORAGE_STACK[-1]
+
+
+def has_event_storage():
+    """
+    Returns:
+        Check if there are EventStorage() context existed.
+    """
+    return len(_CURRENT_STORAGE_STACK) > 0
 
 
 class EventWriter:
@@ -200,7 +209,7 @@ class CommonMetricPrinter(EventWriter):
                 Used to compute ETA. If not given, ETA will not be printed.
             window_size (int): the losses will be median-smoothed by this window size
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("detectron2.utils.events")
         self._max_iter = max_iter
         self._window_size = window_size
         self._last_write = None  # (step, time) of last call to write(). Used to compute ETA

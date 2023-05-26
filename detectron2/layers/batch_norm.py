@@ -40,6 +40,7 @@ class FrozenBatchNorm2d(nn.Module):
         self.register_buffer("bias", torch.zeros(num_features))
         self.register_buffer("running_mean", torch.zeros(num_features))
         self.register_buffer("running_var", torch.ones(num_features) - eps)
+        self.register_buffer("num_batches_tracked", None)
 
     def forward(self, x):
         if x.requires_grad:
@@ -65,7 +66,14 @@ class FrozenBatchNorm2d(nn.Module):
             )
 
     def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
 
@@ -78,7 +86,13 @@ class FrozenBatchNorm2d(nn.Module):
                 state_dict[prefix + "running_var"] = torch.ones_like(self.running_var)
 
         super()._load_from_state_dict(
-            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
         )
 
     def __repr__(self):
@@ -110,6 +124,7 @@ class FrozenBatchNorm2d(nn.Module):
             res.running_mean.data = module.running_mean.data
             res.running_var.data = module.running_var.data
             res.eps = module.eps
+            res.num_batches_tracked = module.num_batches_tracked
         else:
             for name, child in module.named_children():
                 new_child = cls.convert_frozen_batchnorm(child)
@@ -207,7 +222,12 @@ class NaiveSyncBatchNorm(BatchNorm2d):
                 vec = vec + input.sum()  # make sure there is gradient w.r.t input
             else:
                 vec = torch.cat(
-                    [mean, meansqr, torch.ones([1], device=mean.device, dtype=mean.dtype)], dim=0
+                    [
+                        mean,
+                        meansqr,
+                        torch.ones([1], device=mean.device, dtype=mean.dtype),
+                    ],
+                    dim=0,
                 )
             vec = differentiable_all_reduce(vec * B)
 
