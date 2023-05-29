@@ -82,6 +82,10 @@ def get_extensions():
             define_macros += [("WITH_HIP", None)]
             extra_compile_args["nvcc"] = []
 
+        nvcc_flags_env = os.getenv("NVCC_FLAGS", "")
+        if nvcc_flags_env != "":
+            extra_compile_args["nvcc"].extend(nvcc_flags_env.split(" "))
+
         if torch_ver < [1, 7]:
             # supported by https://github.com/pytorch/pytorch/pull/43931
             CC = os.environ.get("CC", None)
