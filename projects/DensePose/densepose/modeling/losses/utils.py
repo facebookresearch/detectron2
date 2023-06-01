@@ -352,6 +352,8 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             boxes_xywh_est, boxes_xywh_gt, instances_one_image.gt_densepose
         ):
             if (dp_gt is not None) and (len(dp_gt.x) > 0):
+                # pyre-fixme[6]: For 1st argument expected `Tensor` but got `float`.
+                # pyre-fixme[6]: For 2nd argument expected `Tensor` but got `float`.
                 self._do_accumulate(box_xywh_gt, box_xywh_est, dp_gt)
             self.nxt_bbox_index += 1
 
