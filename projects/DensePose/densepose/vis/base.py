@@ -146,12 +146,12 @@ class TextVisualizer(object):
                 image_bgr[y - t : y + txt_h + t, x - t : x + txt_w + t, :]
                 * self.frame_color_transparency
                 + np.array(self.frame_color_bgr) * (1.0 - self.frame_color_transparency)
-            ).astype(np.float)
+            ).astype(float)
         if self.fill_color_transparency < 1.0:
             image_bgr[y : y + txt_h, x : x + txt_w, :] = (
                 image_bgr[y : y + txt_h, x : x + txt_w, :] * self.fill_color_transparency
                 + np.array(self.fill_color_bgr) * (1.0 - self.fill_color_transparency)
-            ).astype(np.float)
+            ).astype(float)
         cv2.putText(
             image_bgr,
             txt,
