@@ -89,7 +89,7 @@ def transform_instance_annotations(
     assert ("point_coords" in annotation) == ("point_labels" in annotation)
     if "point_coords" in annotation and "point_labels" in annotation:
         point_coords = annotation["point_coords"]
-        point_labels = np.array(annotation["point_labels"]).astype(np.float)
+        point_labels = np.array(annotation["point_labels"]).astype(float)
         point_coords = transforms.apply_coords(point_coords)
 
         # Set all out-of-boundary points to "unlabeled"
