@@ -14,7 +14,7 @@ gpu118: &gpu118
     image: linux-cuda-11:2023.05.1
   resource_class: gpu.nvidia.small
 
-gpu12: &gpu121
+gpu121: &gpu121
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
     image: linux-cuda-12:2023.05.1
@@ -253,32 +253,32 @@ jobs:
             - ~/.torch
           key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230616
 
-    linux_gpu_tests121:
-      <<: *gpu121
-      <<: *version_parameters
+  linux_gpu_tests121:
+    <<: *gpu121
+    <<: *version_parameters
 
-      working_directory: ~/detectron2
+    working_directory: ~/detectron2
 
-      steps:
-        - checkout
+    steps:
+      - checkout
 
-        - restore_cache:
-            keys:
-              - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230616
-        - <<: *select_cuda
-        - <<: *install_python
-        - <<: *install_linux_dep
-        - <<: *install_detectron2
-        - <<: *build_wheel
-        - <<: *save_artifact
-        - <<: *run_unittests
-        - <<: *uninstall_tests
+      - restore_cache:
+          keys:
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230616
+      - <<: *select_cuda
+      - <<: *install_python
+      - <<: *install_linux_dep
+      - <<: *install_detectron2
+      - <<: *build_wheel
+      - <<: *save_artifact
+      - <<: *run_unittests
+      - <<: *uninstall_tests
 
-        - save_cache:
-            paths:
-              - /opt/circleci/.pyenv
-              - ~/.torch
-            key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230616
+      - save_cache:
+          paths:
+            - /opt/circleci/.pyenv
+            - ~/.torch
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230616
 
 
   windows_cpu_build:
