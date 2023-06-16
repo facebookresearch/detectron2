@@ -11,7 +11,7 @@ cpu: &cpu
 gpu118: &gpu118
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: linux-cuda-11:2023.05.1
+    image: linux-cuda-11:2023.02.1
   resource_class: gpu.nvidia.small
 
 gpu121: &gpu121
