@@ -12,7 +12,7 @@ from os import path
 from typing import List
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 12], "Requires PyTorch >= 1.12"
+assert torch_ver >= [1, 13], "Requires PyTorch >= 1.13"
 
 
 def get_version():
@@ -51,7 +51,7 @@ def get_extensions():
         True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
     )
     if is_rocm_pytorch:
-        assert torch_ver >= [1, 8], "ROCM support requires PyTorch >= 1.8!"
+        assert torch_ver >= [1, 13], "ROCM support requires PyTorch >= 1.13!"
 
     # common code between cuda and rocm platforms, for hipify version [1,0,0] and later.
     source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu")) + glob.glob(
@@ -212,7 +212,7 @@ setup(
             "isort==5.12.0",
             "flake8-bugbear",
             "flake8-comprehensions",
-            "black==23.1.0",
+            "black==23.3.0",
         ],
     },
     ext_modules=get_extensions(),
