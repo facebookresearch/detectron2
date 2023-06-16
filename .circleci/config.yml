@@ -353,7 +353,7 @@ workflows:
           cuda_version: '11.8'
           python_version: '3.11'
       - linux_gpu_tests121:
-          name: linux_gpu_tests_pytorch2.0.1
+          name: linux_gpu_tests_pytorch_nightly
           pytorch_version: 'master'
           torchvision_version: 'main'
           cuda_version: '12.1'
