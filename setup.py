@@ -87,7 +87,7 @@ def get_extensions():
         if nvcc_flags_env != "":
             extra_compile_args["nvcc"].extend(nvcc_flags_env.split(" "))
 
-        if torch_ver < [1, 7]:
+        if torch_ver < [1, 12]:
             # supported by https://github.com/pytorch/pytorch/pull/43931
             CC = os.environ.get("CC", None)
             if CC is not None:
@@ -164,12 +164,6 @@ setup(
         # These dependencies are not pure-python.
         # In general, avoid adding dependencies that are not pure-python because they are not
         # guaranteed to be installable by `pip install` on all platforms.
-        "onnx==1.14.0",
-        "torch==2.0.1+cu118; sys_platform != 'darwin'",
-        "torch==2.0.1; sys_platform == 'darwin'",
-        "onnxruntime==1.15.0; sys_platform == 'darwin' and platform_machine != 'arm64'",
-        "onnxruntime-silicon==1.13.1; sys_platform == 'darwin' and platform_machine == 'arm64'",
-        "onnxruntime-gpu==1.15.0; sys_platform != 'darwin'",
         "Pillow>=7.1",  # or use pillow-simd for better performance
         "matplotlib",  # TODO move it to optional after we add opencv visualization
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
