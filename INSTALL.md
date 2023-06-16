@@ -28,7 +28,7 @@ old build first. You often need to rebuild detectron2 after reinstalling PyTorch
 
 ### Install Pre-Built Detectron2 (Linux only)
 
-Choose from this table to install [v0.6 (Oct 2021)](https://github.com/facebookresearch/detectron2/releases):
+Choose from this table to install [v0.7 (June 2023)](https://github.com/facebookresearch/detectron2/releases):
 
 <table class="docutils"><tbody><th width="80"> CUDA </th><th valign="bottom" align="left" width="100">torch 1.13</th><th valign="bottom" align="left" width="100">torch 2.0.1</th><th valign="bottom" align="left" width="100">torch nightly</th> <tr><td align="left">12.1</td><td></td><td></td><td align="left"><details><summary> install </summary><pre><code>python -m pip install detectron2 -f \
   https://dl.fbaipublicfiles.com/detectron2/wheels/cu121/torchnightly/index.html
