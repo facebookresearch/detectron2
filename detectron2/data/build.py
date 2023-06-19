@@ -169,11 +169,11 @@ def print_instances_class_histogram(dataset_dicts, class_names):
     """
     num_classes = len(class_names)
     hist_bins = np.arange(num_classes + 1)
-    histogram = np.zeros((num_classes,), dtype=np.int)
+    histogram = np.zeros((num_classes,), dtype=int)
     for entry in dataset_dicts:
         annos = entry["annotations"]
         classes = np.asarray(
-            [x["category_id"] for x in annos if not x.get("iscrowd", 0)], dtype=np.int
+            [x["category_id"] for x in annos if not x.get("iscrowd", 0)], dtype=int
         )
         if len(classes):
             assert classes.min() >= 0, f"Got an invalid category_id={classes.min()}"

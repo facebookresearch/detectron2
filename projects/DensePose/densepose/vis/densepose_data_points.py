@@ -28,6 +28,7 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
     ) -> Image:
         if bbox_densepose_datas is None:
             return image_bgr
+        # pyre-fixme[23]: Unable to unpack single value, 2 were expected.
         for bbox_xywh, densepose_data in zip(*bbox_densepose_datas):
             matrix = densepose_data.segm.numpy()
             mask = np.zeros(matrix.shape, dtype=np.uint8)
@@ -49,6 +50,7 @@ class DensePoseDataPointsVisualizer(object):
     ) -> Image:
         if bbox_densepose_datas is None:
             return image_bgr
+        # pyre-fixme[23]: Unable to unpack single value, 2 were expected.
         for bbox_xywh, densepose_data in zip(*bbox_densepose_datas):
             x0, y0, w, h = bbox_xywh.numpy()
             x = densepose_data.x.numpy() * w / 255.0 + x0

@@ -6,6 +6,7 @@ import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from functools import cached_property
 from typing import Optional
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
@@ -14,6 +15,7 @@ from detectron2.utils.file_io import PathManager
 
 __all__ = [
     "get_event_storage",
+    "has_event_storage",
     "JSONWriter",
     "TensorboardXWriter",
     "CommonMetricPrinter",
@@ -33,6 +35,14 @@ def get_event_storage():
         _CURRENT_STORAGE_STACK
     ), "get_event_storage() has to be called inside a 'with EventStorage(...)' context!"
     return _CURRENT_STORAGE_STACK[-1]
+
+
+def has_event_storage():
+    """
+    Returns:
+        Check if there are EventStorage() context existed.
+    """
+    return len(_CURRENT_STORAGE_STACK) > 0
 
 
 class EventWriter:
@@ -142,10 +152,14 @@ class TensorboardXWriter(EventWriter):
             kwargs: other arguments passed to `torch.utils.tensorboard.SummaryWriter(...)`
         """
         self._window_size = window_size
+        self._writer_args = {"log_dir": log_dir, **kwargs}
+        self._last_write = -1
+
+    @cached_property
+    def _writer(self):
         from torch.utils.tensorboard import SummaryWriter
 
-        self._writer = SummaryWriter(log_dir, **kwargs)
-        self._last_write = -1
+        return SummaryWriter(**self._writer_args)
 
     def write(self):
         storage = get_event_storage()
@@ -174,7 +188,7 @@ class TensorboardXWriter(EventWriter):
             storage.clear_histograms()
 
     def close(self):
-        if hasattr(self, "_writer"):  # doesn't exist when the code fails at import
+        if "_writer" in self.__dict__:
             self._writer.close()
 
 
@@ -195,7 +209,7 @@ class CommonMetricPrinter(EventWriter):
                 Used to compute ETA. If not given, ETA will not be printed.
             window_size (int): the losses will be median-smoothed by this window size
         """
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("detectron2.utils.events")
         self._max_iter = max_iter
         self._window_size = window_size
         self._last_write = None  # (step, time) of last call to write(). Used to compute ETA
@@ -260,7 +274,7 @@ class CommonMetricPrinter(EventWriter):
         # NOTE: max_mem is parsed by grep in "dev/parse_results.sh"
         self.logger.info(
             str.format(
-                " {eta}iter: {iter}  {losses}  {avg_time}{last_time}"
+                " {eta}iter: {iter}  {losses}  {non_losses}  {avg_time}{last_time}"
                 + "{avg_data_time}{last_data_time} lr: {lr}  {memory}",
                 eta=f"eta: {eta_string}  " if eta_string else "",
                 iter=iteration,
@@ -271,6 +285,15 @@ class CommonMetricPrinter(EventWriter):
                         )
                         for k, v in storage.histories().items()
                         if "loss" in k
+                    ]
+                ),
+                non_losses="  ".join(
+                    [
+                        "{}: {:.4g}".format(
+                            k, v.median(storage.count_samples(k, self._window_size))
+                        )
+                        for k, v in storage.histories().items()
+                        if "[metric]" in k
                     ]
                 ),
                 avg_time="time: {:.4f}  ".format(avg_iter_time)
@@ -326,7 +349,7 @@ class EventStorage:
         """
         self._vis_data.append((img_name, img_tensor, self._iter))
 
-    def put_scalar(self, name, value, smoothing_hint=True):
+    def put_scalar(self, name, value, smoothing_hint=True, cur_iter=None):
         """
         Add a scalar `value` to the `HistoryBuffer` associated with `name`.
 
@@ -338,14 +361,17 @@ class EventStorage:
 
                 It defaults to True because most scalars we save need to be smoothed to
                 provide any useful signal.
+            cur_iter (int): an iteration number to set explicitly instead of current iteration
         """
         name = self._current_prefix + name
+        cur_iter = self._iter if cur_iter is None else cur_iter
         history = self._history[name]
         value = float(value)
-        history.update(value, self._iter)
-        self._latest_scalars[name] = (value, self._iter)
+        history.update(value, cur_iter)
+        self._latest_scalars[name] = (value, cur_iter)
 
         existing_hint = self._smoothing_hints.get(name)
+
         if existing_hint is not None:
             assert (
                 existing_hint == smoothing_hint
@@ -353,7 +379,7 @@ class EventStorage:
         else:
             self._smoothing_hints[name] = smoothing_hint
 
-    def put_scalars(self, *, smoothing_hint=True, **kwargs):
+    def put_scalars(self, *, smoothing_hint=True, cur_iter=None, **kwargs):
         """
         Put multiple scalars from keyword arguments.
 
@@ -362,7 +388,7 @@ class EventStorage:
             storage.put_scalars(loss=my_loss, accuracy=my_accuracy, smoothing_hint=True)
         """
         for k, v in kwargs.items():
-            self.put_scalar(k, v, smoothing_hint=smoothing_hint)
+            self.put_scalar(k, v, smoothing_hint=smoothing_hint, cur_iter=cur_iter)
 
     def put_histogram(self, hist_name, hist_tensor, bins=1000):
         """

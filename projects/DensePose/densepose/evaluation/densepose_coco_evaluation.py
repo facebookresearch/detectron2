@@ -220,7 +220,7 @@ class DensePoseCocoEval(object):
             if iregion is None:
                 return True
 
-            bb = np.array(dt["bbox"]).astype(np.int)
+            bb = np.array(dt["bbox"]).astype(int)
             x1, y1, x2, y2 = bb[0], bb[1], bb[0] + bb[2], bb[1] + bb[3]
             x2 = min([x2, iregion.shape[1]])
             y2 = min([y2, iregion.shape[0]])
@@ -742,8 +742,8 @@ class DensePoseCocoEval(object):
                     dx = int(dt["bbox"][2])
                     dp_x = np.array(gt["dp_x"]) * g_[2] / 255.0
                     dp_y = np.array(gt["dp_y"]) * g_[3] / 255.0
-                    py = (dp_y + g_[1] - dt["bbox"][1]).astype(np.int)
-                    px = (dp_x + g_[0] - dt["bbox"][0]).astype(np.int)
+                    py = (dp_y + g_[1] - dt["bbox"][1]).astype(int)
+                    px = (dp_x + g_[0] - dt["bbox"][0]).astype(int)
                     #
                     pts = np.zeros(len(px))
                     pts[px >= dx] = -1
@@ -982,8 +982,8 @@ class DensePoseCocoEval(object):
                         continue
                     tps = np.logical_and(dtm, np.logical_not(dtIg))
                     fps = np.logical_and(np.logical_not(dtm), np.logical_not(dtIg))
-                    tp_sum = np.cumsum(tps, axis=1).astype(dtype=np.float)
-                    fp_sum = np.cumsum(fps, axis=1).astype(dtype=np.float)
+                    tp_sum = np.cumsum(tps, axis=1).astype(dtype=float)
+                    fp_sum = np.cumsum(fps, axis=1).astype(dtype=float)
                     for t, (tp, fp) in enumerate(zip(tp_sum, fp_sum)):
                         tp = np.array(tp)
                         fp = np.array(fp)

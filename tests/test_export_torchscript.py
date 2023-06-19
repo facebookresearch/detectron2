@@ -29,6 +29,7 @@ from detectron2.utils.testing import (
     get_sample_coco_image,
     random_boxes,
     skip_on_torch_nightly,
+    reload_script_model,
     skipIfOnCPUCI,
     skipIfUnsupportedMaxTorchVersion,
 )
@@ -66,6 +67,7 @@ class TestScripting(unittest.TestCase):
             "pred_masks": Tensor,
         }
         script_model = scripting_with_instances(model, fields)
+        script_model = reload_script_model(script_model)
 
         # Test that batch inference with different shapes are supported
         image = get_sample_coco_image()
