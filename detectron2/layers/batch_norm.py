@@ -132,6 +132,39 @@ class FrozenBatchNorm2d(nn.Module):
                     res.add_module(name, new_child)
         return res
 
+    @classmethod
+    def convert_frozenbatchnorm2d_to_batchnorm2d(cls, module: nn.Module) -> nn.Module:
+        """
+        Convert all FrozenBatchNorm2d to BatchNorm2d
+
+        Args:
+            module (torch.nn.Module):
+
+        Returns:
+            If module is FrozenBatchNorm2d, returns a new module.
+            Otherwise, in-place convert module and return it.
+
+        This is needed for quantization:
+            https://fb.workplace.com/groups/1043663463248667/permalink/1296330057982005/
+        """
+
+        res = module
+        if isinstance(module, FrozenBatchNorm2d):
+            res = torch.nn.BatchNorm2d(module.num_features, module.eps)
+
+            res.weight.data = module.weight.data.clone().detach()
+            res.bias.data = module.bias.data.clone().detach()
+            res.running_mean.data = module.running_mean.data.clone().detach()
+            res.running_var.data = module.running_var.data.clone().detach()
+            res.eps = module.eps
+            res.num_batches_tracked = module.num_batches_tracked
+        else:
+            for name, child in module.named_children():
+                new_child = cls.convert_frozenbatchnorm2d_to_batchnorm2d(child)
+                if new_child is not child:
+                    res.add_module(name, new_child)
+        return res
+
 
 def get_norm(norm, out_channels):
     """

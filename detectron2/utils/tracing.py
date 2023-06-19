@@ -27,10 +27,11 @@ def is_fx_tracing_legacy() -> bool:
     return torch.nn.Module.__call__ is not _orig_module_call
 
 
-@torch.jit.ignore
 def is_fx_tracing() -> bool:
     """Returns whether execution is currently in
     Torch FX tracing mode"""
+    if torch.jit.is_scripting():
+        return False
     if TORCH_VERSION >= (1, 10) and tracing_current_exists:
         return is_fx_tracing_current()
     elif tracing_legacy_exists:
@@ -41,7 +42,6 @@ def is_fx_tracing() -> bool:
         return False
 
 
-@torch.jit.ignore
 def assert_fx_safe(condition: bool, message: str) -> torch.Tensor:
     """An FX-tracing safe version of assert.
     Avoids erroneous type assertion triggering when types are masked inside
@@ -52,20 +52,22 @@ def assert_fx_safe(condition: bool, message: str) -> torch.Tensor:
     marks and supplying it as a string."""
     # Must return a concrete tensor for compatibility with PyTorch <=1.8.
     # If <=1.8 compatibility is not needed, return type can be converted to None
-    if not is_fx_tracing():
-        try:
-            if isinstance(condition, str):
-                caller_frame = inspect.currentframe().f_back
-                torch._assert(
-                    eval(condition, caller_frame.f_globals, caller_frame.f_locals), message
-                )
-                return torch.ones(1)
-            else:
-                torch._assert(condition, message)
-                return torch.ones(1)
-        except torch.fx.proxy.TraceError as e:
-            print(
-                "Found a non-FX compatible assertion. Skipping the check. Failure is shown below"
-                + str(e)
-            )
-    return torch.zeros(1)
+    if torch.jit.is_scripting() or is_fx_tracing():
+        return torch.zeros(1)
+    return _do_assert_fx_safe(condition, message)
+
+
+def _do_assert_fx_safe(condition: bool, message: str) -> torch.Tensor:
+    try:
+        if isinstance(condition, str):
+            caller_frame = inspect.currentframe().f_back
+            torch._assert(eval(condition, caller_frame.f_globals, caller_frame.f_locals), message)
+            return torch.ones(1)
+        else:
+            torch._assert(condition, message)
+            return torch.ones(1)
+    except torch.fx.proxy.TraceError as e:
+        print(
+            "Found a non-FX compatible assertion. Skipping the check. Failure is shown below"
+            + str(e)
+        )
