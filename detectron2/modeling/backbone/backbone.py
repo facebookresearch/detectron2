@@ -49,11 +49,11 @@ class Backbone(nn.Module, metaclass=ABCMeta):
         in :paper:vitdet). `padding_constraints` contains these optional items like:
         {
             "size_divisibility": int,
-            "square": int,
+            "square_size": int,
             # Future options are possible
         }
-        `size_divisibility` will read from here if presented and `square` indicates if requiring
-        inputs to be padded to square. Set to None if no specific padding constraints.
+        `size_divisibility` will read from here if presented and `square_size` indicates the
+        square padding size if `square_size` > 0.
 
         TODO: use type of Dict[str, int] to avoid torchscipt issues. The type of padding_constraints
         could be generalized as TypedDict (Python 3.8+) to support more types in the future.

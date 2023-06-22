@@ -10,7 +10,8 @@ from omegaconf import DictConfig
 
 class TestLazyPythonConfig(unittest.TestCase):
     def setUp(self):
-        self.root_filename = os.path.join(os.path.dirname(__file__), "root_cfg.py")
+        self.curr_dir = os.path.dirname(__file__)
+        self.root_filename = os.path.join(self.curr_dir, "root_cfg.py")
 
     def test_load(self):
         cfg = LazyConfig.load(self.root_filename)
@@ -52,6 +53,9 @@ class TestLazyPythonConfig(unittest.TestCase):
         self.assertEqual(cfg.dir1b_dict.a, "123")
         self.assertEqual(cfg.lazyobj.x, 123)
 
+        LazyConfig.apply_overrides(cfg, ["dir1b_dict.a=abc"])
+        self.assertEqual(cfg.dir1b_dict.a, "abc")
+
     def test_invalid_overrides(self):
         cfg = LazyConfig.load(self.root_filename)
         with self.assertRaises(KeyError):
@@ -77,3 +81,18 @@ cfg.lazyobj = itertools.count(
 cfg.list = ["a", 1, "b", 3.2]
 """
         self.assertEqual(py_str, expected)
+
+    def test_bad_import(self):
+        file = os.path.join(self.curr_dir, "dir1", "bad_import.py")
+        with self.assertRaisesRegex(ImportError, "relative import"):
+            LazyConfig.load(file)
+
+    def test_bad_import2(self):
+        file = os.path.join(self.curr_dir, "dir1", "bad_import2.py")
+        with self.assertRaisesRegex(ImportError, "not exist"):
+            LazyConfig.load(file)
+
+    def test_load_rel(self):
+        file = os.path.join(self.curr_dir, "dir1", "load_rel.py")
+        cfg = LazyConfig.load(file)
+        self.assertIn("x", cfg)

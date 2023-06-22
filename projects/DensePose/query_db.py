@@ -239,7 +239,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 def main():
     parser = create_argument_parser()
     args = parser.parse_args()
-    verbosity = args.verbosity if hasattr(args, "verbosity") else None
+    verbosity = getattr(args, "verbosity", None)
     global logger
     logger = setup_logger(name=LOGGER_NAME)
     logger.setLevel(verbosity_to_level(verbosity))

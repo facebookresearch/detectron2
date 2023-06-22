@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import operator
 import pickle
+from collections import OrderedDict, defaultdict
 from typing import Any, Callable, Dict, List, Optional, Union
 import torch
 import torch.utils.data as torchdata
@@ -169,11 +170,11 @@ def print_instances_class_histogram(dataset_dicts, class_names):
     """
     num_classes = len(class_names)
     hist_bins = np.arange(num_classes + 1)
-    histogram = np.zeros((num_classes,), dtype=np.int)
+    histogram = np.zeros((num_classes,), dtype=int)
     for entry in dataset_dicts:
         annos = entry["annotations"]
         classes = np.asarray(
-            [x["category_id"] for x in annos if not x.get("iscrowd", 0)], dtype=np.int
+            [x["category_id"] for x in annos if not x.get("iscrowd", 0)], dtype=int
         )
         if len(classes):
             assert classes.min() >= 0, f"Got an invalid category_id={classes.min()}"
@@ -339,6 +340,81 @@ def build_batch_data_loader(
         )
 
 
+def _get_train_datasets_repeat_factors(cfg) -> Dict[str, float]:
+    repeat_factors = cfg.DATASETS.TRAIN_REPEAT_FACTOR
+    assert all(len(tup) == 2 for tup in repeat_factors)
+    name_to_weight = defaultdict(lambda: 1, dict(repeat_factors))
+    # The sampling weights map should only contain datasets in train config
+    unrecognized = set(name_to_weight.keys()) - set(cfg.DATASETS.TRAIN)
+    assert not unrecognized, f"unrecognized datasets: {unrecognized}"
+    logger = logging.getLogger(__name__)
+    logger.info(f"Found repeat factors: {list(name_to_weight.items())}")
+
+    # pyre-fixme[7]: Expected `Dict[str, float]` but got `DefaultDict[typing.Any, int]`.
+    return name_to_weight
+
+
+def _build_weighted_sampler(cfg, enable_category_balance=False):
+    dataset_repeat_factors = _get_train_datasets_repeat_factors(cfg)
+    # OrderedDict to guarantee order of values() consistent with repeat factors
+    dataset_name_to_dicts = OrderedDict(
+        {
+            name: get_detection_dataset_dicts(
+                [name],
+                filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
+                min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+                if cfg.MODEL.KEYPOINT_ON
+                else 0,
+                proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
+                if cfg.MODEL.LOAD_PROPOSALS
+                else None,
+            )
+            for name in cfg.DATASETS.TRAIN
+        }
+    )
+    # Repeat factor for every sample in the dataset
+    repeat_factors = [
+        [dataset_repeat_factors[dsname]] * len(dataset_name_to_dicts[dsname])
+        for dsname in cfg.DATASETS.TRAIN
+    ]
+
+    repeat_factors = list(itertools.chain.from_iterable(repeat_factors))
+
+    repeat_factors = torch.tensor(repeat_factors)
+    logger = logging.getLogger(__name__)
+    if enable_category_balance:
+        """
+        1. Calculate repeat factors using category frequency for each dataset and then merge them.
+        2. Element wise dot producting the dataset frequency repeat factors with
+            the category frequency repeat factors gives the final repeat factors.
+        """
+        category_repeat_factors = [
+            RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
+                dataset_dict, cfg.DATALOADER.REPEAT_THRESHOLD
+            )
+            for dataset_dict in dataset_name_to_dicts.values()
+        ]
+        # flatten the category repeat factors from all datasets
+        category_repeat_factors = list(itertools.chain.from_iterable(category_repeat_factors))
+        category_repeat_factors = torch.tensor(category_repeat_factors)
+        repeat_factors = torch.mul(category_repeat_factors, repeat_factors)
+        repeat_factors = repeat_factors / torch.min(repeat_factors)
+        logger.info(
+            "Using WeightedCategoryTrainingSampler with repeat_factors={}".format(
+                cfg.DATASETS.TRAIN_REPEAT_FACTOR
+            )
+        )
+    else:
+        logger.info(
+            "Using WeightedTrainingSampler with repeat_factors={}".format(
+                cfg.DATASETS.TRAIN_REPEAT_FACTOR
+            )
+        )
+
+    sampler = RepeatFactorTrainingSampler(repeat_factors)
+    return sampler
+
+
 def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
     if dataset is None:
         dataset = get_detection_dataset_dicts(
@@ -373,6 +449,10 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
                 sampler = RandomSubsetTrainingSampler(
                     len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO
                 )
+            elif sampler_name == "WeightedTrainingSampler":
+                sampler = _build_weighted_sampler(cfg)
+            elif sampler_name == "WeightedCategoryTrainingSampler":
+                sampler = _build_weighted_sampler(cfg, enable_category_balance=True)
             else:
                 raise ValueError("Unknown training sampler: {}".format(sampler_name))
 

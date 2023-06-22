@@ -5,7 +5,6 @@ import argparse
 import glob
 import logging
 import os
-import pickle
 import sys
 from typing import Any, ClassVar, Dict, List
 import torch
@@ -190,7 +189,7 @@ class DumpAction(InferenceAction):
         if len(out_dir) > 0 and not os.path.exists(out_dir):
             os.makedirs(out_dir)
         with open(out_fname, "wb") as hFile:
-            pickle.dump(context["results"], hFile)
+            torch.save(context["results"], hFile)
             logger.info(f"Output saved to {out_fname}")
 
 
@@ -343,7 +342,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 def main():
     parser = create_argument_parser()
     args = parser.parse_args()
-    verbosity = args.verbosity if hasattr(args, "verbosity") else None
+    verbosity = getattr(args, "verbosity", None)
     global logger
     logger = setup_logger(name=LOGGER_NAME)
     logger.setLevel(verbosity_to_level(verbosity))

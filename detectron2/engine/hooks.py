@@ -21,6 +21,7 @@ from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 import detectron2.utils.comm as comm
 from detectron2.evaluation.testing import flatten_results_dict
 from detectron2.solver import LRMultiplier
+from detectron2.solver import LRScheduler as _LRScheduler
 from detectron2.utils.events import EventStorage, EventWriter
 from detectron2.utils.file_io import PathManager
 
@@ -362,12 +363,12 @@ class LRScheduler(HookBase):
         return self._scheduler or self.trainer.scheduler
 
     def state_dict(self):
-        if isinstance(self.scheduler, torch.optim.lr_scheduler._LRScheduler):
+        if isinstance(self.scheduler, _LRScheduler):
             return self.scheduler.state_dict()
         return {}
 
     def load_state_dict(self, state_dict):
-        if isinstance(self.scheduler, torch.optim.lr_scheduler._LRScheduler):
+        if isinstance(self.scheduler, _LRScheduler):
             logger = logging.getLogger(__name__)
             logger.info("Loading scheduler from state_dict ...")
             self.scheduler.load_state_dict(state_dict)

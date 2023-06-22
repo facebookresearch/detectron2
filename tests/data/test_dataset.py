@@ -19,7 +19,10 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.data.common import AspectRatioGroupedDataset
+from detectron2.data.common import (
+    AspectRatioGroupedDataset,
+    set_default_dataset_from_list_serialize_method,
+)
 from detectron2.data.samplers import InferenceSampler, TrainingSampler
 
 
@@ -40,6 +43,19 @@ class TestDatasetFromList(unittest.TestCase):
             path = dataset[i]["file_name"]
             self.assertTrue(isinstance(path, LazyPath))
             self.assertEqual(os.fspath(path), _a_slow_func(i))
+
+    def test_alternative_serialize_method(self):
+        dataset = [1, 2, 3]
+        dataset = DatasetFromList(dataset, serialize=torch.tensor)
+        self.assertEqual(dataset[2], torch.tensor(3))
+
+    def test_change_default_serialize_method(self):
+        dataset = [1, 2, 3]
+        with set_default_dataset_from_list_serialize_method(torch.tensor):
+            dataset_1 = DatasetFromList(dataset, serialize=True)
+            self.assertEqual(dataset_1[2], torch.tensor(3))
+        dataset_2 = DatasetFromList(dataset, serialize=True)
+        self.assertEqual(dataset_2[2], 3)
 
 
 class TestMapDataset(unittest.TestCase):
@@ -92,6 +108,12 @@ class TestAspectRatioGrouping(unittest.TestCase):
                 self.assertLess(len(bucket), batchsize)
 
 
+class _MyData(torch.utils.data.IterableDataset):
+    def __iter__(self):
+        while True:
+            yield 1
+
+
 class TestDataLoader(unittest.TestCase):
     def _get_kwargs(self):
         # get kwargs of build_detection_train_loader
@@ -115,14 +137,8 @@ class TestDataLoader(unittest.TestCase):
 
     def test_build_iterable_dataloader_from_cfg(self):
         cfg = get_cfg()
-
-        class MyData(torch.utils.data.IterableDataset):
-            def __iter__(self):
-                while True:
-                    yield 1
-
         cfg.DATASETS.TRAIN = ["iter_data"]
-        DatasetCatalog.register("iter_data", lambda: MyData())
+        DatasetCatalog.register("iter_data", lambda: _MyData())
         dl = build_detection_train_loader(cfg, mapper=lambda x: x, aspect_ratio_grouping=False)
         next(iter(dl))
 

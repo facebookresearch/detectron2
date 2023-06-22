@@ -10,7 +10,7 @@ cpu: &cpu
 
 gpu: &gpu
   machine:
-    # NOTE: use a cuda vesion that's supported by all our pytorch versions
+    # NOTE: use a cuda version that's supported by all our pytorch versions
     image: ubuntu-1604-cuda-11.1:202012-01
   resource_class: gpu.nvidia.small
 
@@ -38,7 +38,7 @@ version_parameters: &version_parameters
       default: "https://download.pytorch.org/whl/torch_stable.html"
     python_version:  # NOTE: only affect linux
       type: string
-      default: '3.6.8'
+      default: '3.8.6'
 
   environment:
     PYTORCH_VERSION: << parameters.pytorch_version >>
@@ -94,7 +94,7 @@ setup_venv: &setup_venv
 
 setup_venv_win: &setup_venv_win
   - run:
-      name: Setup Virutal Env for Windows
+      name: Setup Virtual Env for Windows
       command: |
         pip install virtualenv
         python -m virtualenv env
@@ -113,7 +113,8 @@ install_linux_dep: &install_linux_dep
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
-        pip install --progress-bar off ninja opencv-python-headless pytest tensorboard pycocotools
+        # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
+        pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
         pip install --progress-bar off torch==$PYTORCH_VERSION -f $PYTORCH_INDEX
         if [[ "$TORCHVISION_VERSION" == "master" ]]; then
           pip install git+https://github.com/pytorch/vision.git
@@ -139,7 +140,7 @@ run_unittests: &run_unittests
   - run:
       name: Run Unit Tests
       command: |
-        pytest -v --durations=15 tests  # parallel causes some random failures
+        pytest -sv --durations=15 tests  # parallel causes some random failures
 
 uninstall_tests: &uninstall_tests
   - run:
@@ -227,7 +228,7 @@ jobs:
           command: |
             pip install certifi --ignore-installed  # required on windows to workaround some cert issue
             pip install numpy cython  # required on windows before pycocotools
-            pip install opencv-python-headless pytest-xdist pycocotools tensorboard
+            pip install opencv-python-headless pytest-xdist pycocotools tensorboard onnx
             pip install -U git+https://github.com/facebookresearch/iopath
             pip install -U git+https://github.com/facebookresearch/fvcore
             pip install torch==$env:PYTORCH_VERSION torchvision==$env:TORCHVISION_VERSION -f $env:PYTORCH_INDEX

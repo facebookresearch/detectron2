@@ -214,7 +214,12 @@ class DenseDetector(nn.Module):
         topk_idxs = torch.nonzero(keep_idxs)  # Kx2
 
         # 2. Keep top k top scoring boxes only
-        num_topk = min(topk_candidates, topk_idxs.size(0))
+        topk_idxs_size = topk_idxs.shape[0]
+        if isinstance(topk_idxs_size, Tensor):
+            # It's a tensor in tracing
+            num_topk = torch.clamp(topk_idxs_size, max=topk_candidates)
+        else:
+            num_topk = min(topk_idxs_size, topk_candidates)
         pred_scores, idxs = pred_scores.topk(num_topk)
         topk_idxs = topk_idxs[idxs]
 
@@ -244,8 +249,8 @@ class DenseDetector(nn.Module):
                 anchors_i,
                 box_cls_i,
                 box_reg_i,
-                self.test_score_thresh,
-                self.test_topk_candidates,
+                score_thresh,
+                topk_candidates,
                 image_size,
             )
             # Iterate over every feature level

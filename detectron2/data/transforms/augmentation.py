@@ -261,7 +261,7 @@ class AugmentationList(Augmentation):
         super().__init__()
         self.augs = [_transform_to_aug(x) for x in augs]
 
-    def __call__(self, aug_input) -> Transform:
+    def __call__(self, aug_input) -> TransformList:
         tfms = []
         for x in self.augs:
             tfm = x(aug_input)

@@ -254,6 +254,19 @@ def transform_proposals(dataset_dict, image_shape, transforms, *, proposal_topk,
         dataset_dict["proposals"] = proposals
 
 
+def get_bbox(annotation):
+    """
+    Get bbox from data
+    Args:
+        annotation (dict): dict of instance annotations for a single instance.
+    Returns:
+        bbox (ndarray): x1, y1, x2, y2 coordinates
+    """
+    # bbox is 1d (per-instance bounding box)
+    bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
+    return bbox
+
+
 def transform_instance_annotations(
     annotation, transforms, image_size, *, keypoint_hflip_indices=None
 ):

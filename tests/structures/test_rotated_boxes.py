@@ -201,8 +201,12 @@ class TestRotatedBoxesStructure(unittest.TestCase):
         # the angle for the box must be within the clip_angle_threshold
         # Note that the clip function will normalize the angle range
         # to be within (-180, 180]
+
         self.assertTrue(
-            torch.all(torch.abs(boxes_5d[:, 4][torch.where(areas_diff < 0)]) < clip_angle_threshold)
+            torch.all(
+                torch.abs(test_boxes_5d.tensor[:, 4][torch.where(areas_diff < 0)])
+                < clip_angle_threshold
+            )
         )
 
     def test_normalize_angles(self):

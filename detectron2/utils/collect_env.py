@@ -125,6 +125,10 @@ def collect_env_info():
     data.append(get_env_module())
     data.append(("PyTorch", torch_version + " @" + os.path.dirname(torch.__file__)))
     data.append(("PyTorch debug build", torch.version.debug))
+    try:
+        data.append(("torch._C._GLIBCXX_USE_CXX11_ABI", torch._C._GLIBCXX_USE_CXX11_ABI))
+    except Exception:
+        pass
 
     if not has_gpu:
         has_gpu_text = "No: torch.cuda.is_available() == False"

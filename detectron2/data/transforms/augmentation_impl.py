@@ -5,6 +5,7 @@ Implement many useful :class:`Augmentation`.
 """
 import numpy as np
 import sys
+from numpy import random
 from typing import Tuple
 import torch
 from fvcore.transforms.transform import (
@@ -18,6 +19,8 @@ from fvcore.transforms.transform import (
     VFlipTransform,
 )
 from PIL import Image
+
+from detectron2.structures import Boxes, pairwise_iou
 
 from .augmentation import Augmentation, _transform_to_aug
 from .transform import ExtentTransform, ResizeTransform, RotationTransform
@@ -37,6 +40,8 @@ __all__ = [
     "ResizeScale",
     "ResizeShortestEdge",
     "RandomCrop_CategoryAreaConstraint",
+    "RandomResize",
+    "MinIoURandomCrop",
 ]
 
 
@@ -307,12 +312,19 @@ class FixedSizeCrop(Augmentation):
     it returns the smaller image.
     """
 
-    def __init__(self, crop_size: Tuple[int], pad: bool = True, pad_value: float = 128.0):
+    def __init__(
+        self,
+        crop_size: Tuple[int],
+        pad: bool = True,
+        pad_value: float = 128.0,
+        seg_pad_value: int = 255,
+    ):
         """
         Args:
             crop_size: target image (height, width).
             pad: if True, will pad images smaller than `crop_size` up to `crop_size`
-            pad_value: the padding value.
+            pad_value: the padding value to the image.
+            seg_pad_value: the padding value to the segmentation mask.
         """
         super().__init__()
         self._init(locals())
@@ -341,7 +353,14 @@ class FixedSizeCrop(Augmentation):
         pad_size = np.maximum(pad_size, 0)
         original_size = np.minimum(input_size, output_size)
         return PadTransform(
-            0, 0, pad_size[1], pad_size[0], original_size[1], original_size[0], self.pad_value
+            0,
+            0,
+            pad_size[1],
+            pad_size[0],
+            original_size[1],
+            original_size[0],
+            self.pad_value,
+            self.seg_pad_value,
         )
 
     def get_transform(self, image: np.ndarray) -> TransformList:
@@ -612,3 +631,106 @@ class RandomLighting(Augmentation):
         return BlendTransform(
             src_image=self.eigen_vecs.dot(weights * self.eigen_vals), src_weight=1.0, dst_weight=1.0
         )
+
+
+class RandomResize(Augmentation):
+    """Randomly resize image to a target size in shape_list"""
+
+    def __init__(self, shape_list, interp=Image.BILINEAR):
+        """
+        Args:
+            shape_list: a list of shapes in (h, w)
+            interp: PIL interpolation method
+        """
+        self.shape_list = shape_list
+        self._init(locals())
+
+    def get_transform(self, image):
+        shape_idx = np.random.randint(low=0, high=len(self.shape_list))
+        h, w = self.shape_list[shape_idx]
+        return ResizeTransform(image.shape[0], image.shape[1], h, w, self.interp)
+
+
+class MinIoURandomCrop(Augmentation):
+    """Random crop the image & bboxes, the cropped patches have minimum IoU
+    requirement with original image & bboxes, the IoU threshold is randomly
+    selected from min_ious.
+
+    Args:
+        min_ious (tuple): minimum IoU threshold for all intersections with
+        bounding boxes
+        min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
+        where a >= min_crop_size)
+        mode_trials: number of trials for sampling min_ious threshold
+        crop_trials: number of trials for sampling crop_size after cropping
+    """
+
+    def __init__(
+        self,
+        min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
+        min_crop_size=0.3,
+        mode_trials=1000,
+        crop_trials=50,
+    ):
+        self.min_ious = min_ious
+        self.sample_mode = (1, *min_ious, 0)
+        self.min_crop_size = min_crop_size
+        self.mode_trials = mode_trials
+        self.crop_trials = crop_trials
+
+    def get_transform(self, image, boxes):
+        """Call function to crop images and bounding boxes with minimum IoU
+        constraint.
+
+        Args:
+            boxes: ground truth boxes in (x1, y1, x2, y2) format
+        """
+        if boxes is None:
+            return NoOpTransform()
+        h, w, c = image.shape
+        for _ in range(self.mode_trials):
+            mode = random.choice(self.sample_mode)
+            self.mode = mode
+            if mode == 1:
+                return NoOpTransform()
+
+            min_iou = mode
+            for _ in range(self.crop_trials):
+                new_w = random.uniform(self.min_crop_size * w, w)
+                new_h = random.uniform(self.min_crop_size * h, h)
+
+                # h / w in [0.5, 2]
+                if new_h / new_w < 0.5 or new_h / new_w > 2:
+                    continue
+
+                left = random.uniform(w - new_w)
+                top = random.uniform(h - new_h)
+
+                patch = np.array((int(left), int(top), int(left + new_w), int(top + new_h)))
+                # Line or point crop is not allowed
+                if patch[2] == patch[0] or patch[3] == patch[1]:
+                    continue
+                overlaps = pairwise_iou(
+                    Boxes(patch.reshape(-1, 4)), Boxes(boxes.reshape(-1, 4))
+                ).reshape(-1)
+                if len(overlaps) > 0 and overlaps.min() < min_iou:
+                    continue
+
+                # center of boxes should inside the crop img
+                # only adjust boxes and instance masks when the gt is not empty
+                if len(overlaps) > 0:
+                    # adjust boxes
+                    def is_center_of_bboxes_in_patch(boxes, patch):
+                        center = (boxes[:, :2] + boxes[:, 2:]) / 2
+                        mask = (
+                            (center[:, 0] > patch[0])
+                            * (center[:, 1] > patch[1])
+                            * (center[:, 0] < patch[2])
+                            * (center[:, 1] < patch[3])
+                        )
+                        return mask
+
+                    mask = is_center_of_bboxes_in_patch(boxes, patch)
+                    if not mask.any():
+                        continue
+                return CropTransform(int(left), int(top), int(new_w), int(new_h))

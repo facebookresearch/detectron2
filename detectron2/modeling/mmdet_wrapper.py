@@ -145,6 +145,7 @@ class MMDetDetector(nn.Module):
 
             detector = build_detector(_to_container(detector))
         self.detector = detector
+        self.detector.init_weights()
         self.size_divisibility = size_divisibility
 
         self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)

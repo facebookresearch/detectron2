@@ -151,7 +151,7 @@ else:
     # skip this when building locally
     intersphinx_timeout = 0.5
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.6", None),
+    "python": ("https://docs.python.org/3.7", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "torch": ("https://pytorch.org/docs/master/", None),
 }
@@ -334,6 +334,19 @@ _PAPER_DATA = {
     "scaling": ("2103.06877", "Fast and Accurate Model Scaling"),
     "fcos": ("2006.09214", "FCOS: A Simple and Strong Anchor-free Object Detector"),
     "rethinking-batchnorm": ("2105.07576", 'Rethinking "Batch" in BatchNorm'),
+    "vitdet": ("2203.16527", "Exploring Plain Vision Transformer Backbones for Object Detection"),
+    "mvitv2": (
+        "2112.01526",
+        "MViTv2: Improved Multiscale Vision Transformers for Classification and Detection",
+    ),
+    "swin": (
+        "2103.14030",
+        "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows",
+    ),
+    "omni3d": (
+        "2207.10660",
+        "Omni3D: A Large Benchmark and Model for 3D Object Detection in the Wild",
+    ),
 }
 
 

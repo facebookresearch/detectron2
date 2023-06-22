@@ -2,14 +2,13 @@
 import torch
 
 from detectron2.config import CfgNode
+from detectron2.solver import LRScheduler
 from detectron2.solver import build_lr_scheduler as build_d2_lr_scheduler
 
 from .lr_scheduler import WarmupPolyLR
 
 
-def build_lr_scheduler(
-    cfg: CfgNode, optimizer: torch.optim.Optimizer
-) -> torch.optim.lr_scheduler._LRScheduler:
+def build_lr_scheduler(cfg: CfgNode, optimizer: torch.optim.Optimizer) -> LRScheduler:
     """
     Build a LR scheduler from config.
     """

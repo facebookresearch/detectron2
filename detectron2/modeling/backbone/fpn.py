@@ -30,7 +30,7 @@ class FPN(Backbone):
         norm="",
         top_block=None,
         fuse_type="sum",
-        square_pad=False,
+        square_pad=0,
     ):
         """
         Args:
@@ -54,6 +54,7 @@ class FPN(Backbone):
             fuse_type (str): types for fusing the top down features and the lateral
                 ones. It can be "sum" (default), which sums up element-wise; or "avg",
                 which takes the element-wise mean of the two.
+            square_pad (int): If > 0, require input images to be padded to specific square size.
         """
         super(FPN, self).__init__()
         assert isinstance(bottom_up, Backbone)
@@ -120,7 +121,7 @@ class FPN(Backbone):
 
     @property
     def padding_constraints(self):
-        return {"square": int(self._square_pad)}
+        return {"square_size": self._square_pad}
 
     def forward(self, x):
         """
