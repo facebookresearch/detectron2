@@ -43,7 +43,7 @@ class ExtentTransform(Transform):
     See: https://pillow.readthedocs.io/en/latest/PIL.html#PIL.ImageTransform.ExtentTransform
     """
 
-    def __init__(self, src_rect, output_size, interp=Image.LINEAR, fill=0):
+    def __init__(self, src_rect, output_size, interp=Image.BILINEAR, fill=0):
         """
         Args:
             src_rect (x0, y0, x1, y1): src coordinates
