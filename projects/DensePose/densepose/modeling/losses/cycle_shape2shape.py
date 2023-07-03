@@ -59,7 +59,7 @@ class ShapeToShapeCycleLoss(nn.Module):
 
     def fake_value(self, embedder: nn.Module):
         losses = []
-        for mesh_name in embedder.mesh_names:  # pyre-ignore[29]
+        for mesh_name in embedder.mesh_names:
             losses.append(embedder(mesh_name).sum() * 0)
         return torch.mean(torch.stack(losses))
 
