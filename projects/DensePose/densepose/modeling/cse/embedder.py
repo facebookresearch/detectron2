@@ -96,11 +96,9 @@ class Embedder(nn.Module):
         state_dict = None
         if fpath.endswith(".pkl"):
             with PathManager.open(fpath, "rb") as hFile:
-                state_dict = pickle.load(hFile, encoding="latin1")  # pyre-ignore[6]
+                state_dict = pickle.load(hFile, encoding="latin1")
         else:
             with PathManager.open(fpath, "rb") as hFile:
-                # pyre-fixme[6]: For 1st param expected `Union[PathLike[typing.Any],
-                #  IO[bytes], str, BinaryIO]` but got `Union[IO[bytes], IO[str]]`.
                 state_dict = torch.load(hFile, map_location=torch.device("cpu"))
         if state_dict is not None and "model" in state_dict:
             state_dict_local = {}
