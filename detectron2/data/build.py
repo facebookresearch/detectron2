@@ -288,6 +288,7 @@ def build_batch_data_loader(
     aspect_ratio_grouping=False,
     num_workers=0,
     collate_fn=None,
+    drop_last: bool = True,
 ):
     """
     Build a batched dataloader. The main differences from `torch.utils.data.DataLoader` are:
@@ -300,6 +301,7 @@ def build_batch_data_loader(
             Must be provided iff. ``dataset`` is a map-style dataset.
         total_batch_size, aspect_ratio_grouping, num_workers, collate_fn: see
             :func:`build_detection_train_loader`.
+        drop_last (bool): if ``True``, the dataloader will drop incomplete batches.
 
     Returns:
         iterable[list]. Length of each list is the batch size of the current
@@ -316,9 +318,10 @@ def build_batch_data_loader(
     if isinstance(dataset, torchdata.IterableDataset):
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
     else:
-        dataset = ToIterableDataset(dataset, sampler)
+        dataset = ToIterableDataset(dataset, sampler, shard_chunk_size=batch_size)
 
     if aspect_ratio_grouping:
+        assert drop_last, "Aspect ratio grouping will drop incomplete batches."
         data_loader = torchdata.DataLoader(
             dataset,
             num_workers=num_workers,
@@ -333,7 +336,7 @@ def build_batch_data_loader(
         return torchdata.DataLoader(
             dataset,
             batch_size=batch_size,
-            drop_last=True,
+            drop_last=drop_last,
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,

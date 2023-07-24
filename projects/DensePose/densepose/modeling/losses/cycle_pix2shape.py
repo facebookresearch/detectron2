@@ -147,8 +147,6 @@ class PixToShapeCycleLoss(nn.Module):
         return torch.stack(losses, dim=0).mean()
 
     def fake_value(self, densepose_predictor_outputs: Any, embedder: nn.Module):
-        losses = [
-            embedder(mesh_name).sum() * 0 for mesh_name in embedder.mesh_names
-        ]
+        losses = [embedder(mesh_name).sum() * 0 for mesh_name in embedder.mesh_names]
         losses.append(densepose_predictor_outputs.embedding.sum() * 0)
         return torch.mean(torch.stack(losses))
