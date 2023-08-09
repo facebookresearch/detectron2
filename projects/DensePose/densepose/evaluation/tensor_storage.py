@@ -144,6 +144,7 @@ class SingleProcessFileTensorStorage(SingleProcessTensorStorage):
         self.fpath = fpath
         assert "b" in mode, f"Tensor storage should be opened in binary mode, got '{mode}'"
         if "w" in mode:
+            # pyre-fixme[6]: For 2nd argument expected `Union[typing_extensions.Liter...
             file_h = PathManager.open(fpath, mode)
         elif "r" in mode:
             local_fpath = PathManager.get_local_path(fpath)
