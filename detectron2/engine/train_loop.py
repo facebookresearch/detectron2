@@ -319,7 +319,7 @@ class SimpleTrainer(TrainerBase):
             wrap the optimizer with your custom `zero_grad()` method.
             """
             self.optimizer.zero_grad()
-        losses.backward()
+        #losses.backward()
 
         self.after_backward()
 

@@ -22,6 +22,7 @@ from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
+from torch.utils.tensorboard import SummaryWriter
 
 from .evaluator import DatasetEvaluator
 
@@ -150,6 +151,7 @@ class COCOEvaluator(DatasetEvaluator):
         self._do_evaluation = "annotations" in self._coco_api.dataset
         if self._do_evaluation:
             self._kpt_oks_sigmas = kpt_oks_sigmas
+        self.writer = SummaryWriter(os.path.join(self._output_dir,"runs"))
 
     def reset(self):
         self._predictions = []
@@ -349,6 +351,9 @@ class COCOEvaluator(DatasetEvaluator):
             metric: float(coco_eval.stats[idx] * 100 if coco_eval.stats[idx] >= 0 else "nan")
             for idx, metric in enumerate(metrics)
         }
+
+
+
         self._logger.info(
             "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
         )
@@ -361,7 +366,11 @@ class COCOEvaluator(DatasetEvaluator):
         # from https://github.com/facebookresearch/Detectron/blob/a6a835f5b8208c45d0dce217ce9bbda915f44df7/detectron/datasets/json_dataset_evaluator.py#L222-L252 # noqa
         precisions = coco_eval.eval["precision"]
         # precision has dims (iou, recall, cls, area range, max dets)
-        assert len(class_names) == precisions.shape[2]
+
+        self._logger.info(
+            "precisions shape for evaluation:{} and classname{} and cocoeval param{}: \n".format(precisions.shape, class_names, coco_eval.params.catIds)
+        )
+        assert len(class_names) == precisions.shape[2], precisions.shape
 
         results_per_category = []
         for idx, name in enumerate(class_names):

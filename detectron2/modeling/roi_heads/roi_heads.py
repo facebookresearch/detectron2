@@ -18,7 +18,7 @@ from ..poolers import ROIPooler
 from ..proposal_generator.proposal_utils import add_ground_truth_to_proposals
 from ..sampling import subsample_labels
 from .box_head import build_box_head
-from .fast_rcnn import FastRCNNOutputLayers
+from .fast_rcnn import FastRCNNOutputLayers, TESTFastRCNNOutputLayers, build_fast_layers
 from .keypoint_head import build_keypoint_head
 from .mask_head import build_mask_head
 
@@ -414,7 +414,7 @@ class Res5ROIHeads(ROIHeads):
             cls._build_res5_block = classmethod(cls._build_res5_block)
 
         ret["res5"], out_channels = cls._build_res5_block(cfg)
-        ret["box_predictor"] = FastRCNNOutputLayers(
+        ret["box_predictor"] = build_fast_layers(
             cfg, ShapeSpec(channels=out_channels, height=1, width=1)
         )
 
@@ -554,6 +554,7 @@ class StandardROIHeads(ROIHeads):
         keypoint_pooler: Optional[ROIPooler] = None,
         keypoint_head: Optional[nn.Module] = None,
         train_on_pred_boxes: bool = False,
+        tsne_vis: bool = False,
         **kwargs,
     ):
         """
@@ -597,9 +598,15 @@ class StandardROIHeads(ROIHeads):
 
         self.train_on_pred_boxes = train_on_pred_boxes
 
+        #self.tsne_vis = tsne_vis
+
+
+
+
     @classmethod
     def from_config(cls, cfg, input_shape):
         ret = super().from_config(cfg)
+        #ret["tsne_vis"] = cfg.TEST.TSNE
         ret["train_on_pred_boxes"] = cfg.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES
         # Subclasses that have not been updated to use from_config style construction
         # may have overridden _init_*_head methods. In this case, those overridden methods
@@ -643,7 +650,8 @@ class StandardROIHeads(ROIHeads):
         box_head = build_box_head(
             cfg, ShapeSpec(channels=in_channels, height=pooler_resolution, width=pooler_resolution)
         )
-        box_predictor = FastRCNNOutputLayers(cfg, box_head.output_shape)
+        #box_predictor = FastRCNNOutputLayers(cfg, box_head.output_shape)
+        box_predictor = build_fast_layers(cfg, box_head.output_shape)
         return {
             "box_in_features": in_features,
             "box_pooler": box_pooler,
@@ -798,10 +806,11 @@ class StandardROIHeads(ROIHeads):
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         box_features = self.box_head(box_features)
         predictions = self.box_predictor(box_features)
-        del box_features
+
 
         if self.training:
-            losses = self.box_predictor.losses(predictions, proposals)
+            losses = self.box_predictor.losses(predictions, proposals, box_features)
+
             # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
                 with torch.no_grad():
@@ -810,8 +819,10 @@ class StandardROIHeads(ROIHeads):
                     )
                     for proposals_per_image, pred_boxes_per_image in zip(proposals, pred_boxes):
                         proposals_per_image.proposal_boxes = Boxes(pred_boxes_per_image)
+            del box_features
             return losses
         else:
+            del box_features
             pred_instances, _ = self.box_predictor.inference(predictions, proposals)
             return pred_instances
 

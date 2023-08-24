@@ -182,6 +182,11 @@ class TensorboardXWriter(EventWriter):
             # In that case a writer may not see all image data if its period is long.
             storage.clear_images()
 
+        # if storage._vis_tsne :
+        #     for k,v in storage._vis_tsne_feature.items():
+
+
+
         if len(storage._histograms) >= 1:
             for params in storage._histograms:
                 self._writer.add_histogram_raw(**params)
@@ -333,6 +338,8 @@ class EventStorage:
         self._current_prefix = ""
         self._vis_data = []
         self._histograms = []
+        self._vis_tsne = False
+        self._vis_tsne_feature = defaultdict(list)
 
     def put_image(self, img_name, img_tensor):
         """
