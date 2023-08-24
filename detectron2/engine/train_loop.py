@@ -388,14 +388,16 @@ class SimpleTrainer(TrainerBase):
         metrics_dict = {k: v.detach().cpu().item() for k, v in loss_dict.items()}
         metrics_dict["data_time"] = data_time
 
+        storage = get_event_storage()
+        # Keep track of data time per rank
+        storage.put_scalar("rank_data_time", data_time, cur_iter=cur_iter)
+
         # Gather metrics among all workers for logging
         # This assumes we do DDP-style training, which is currently the only
         # supported method in detectron2.
         all_metrics_dict = comm.gather(metrics_dict)
 
         if comm.is_main_process():
-            storage = get_event_storage()
-
             # data_time among workers can have high variance. The actual latency
             # caused by data_time is the maximum among workers.
             data_time = np.max([x.pop("data_time") for x in all_metrics_dict])
