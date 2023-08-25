@@ -2,7 +2,7 @@
 from typing import Any, Dict, Optional, Tuple
 
 
-class EntrySelector(object):
+class EntrySelector:
     """
     Base class for entry selectors
     """
@@ -49,7 +49,7 @@ class FieldEntrySelector(EntrySelector):
     _EQUAL = "="
     _ERROR_PREFIX = "Invalid field selector specifier"
 
-    class _FieldEntryValuePredicate(object):
+    class _FieldEntryValuePredicate:
         """
         Predicate that checks strict equality for the specified entry field
         """
@@ -64,7 +64,7 @@ class FieldEntrySelector(EntrySelector):
         def __call__(self, entry):
             return entry[self.name] == self.type(self.value)
 
-    class _FieldEntryRangePredicate(object):
+    class _FieldEntryRangePredicate:
         """
         Predicate that checks whether an entry field falls into the specified range
         """

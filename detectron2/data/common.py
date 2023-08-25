@@ -141,7 +141,7 @@ class MapDataset(data.Dataset):
                 )
 
 
-class _TorchSerializedList(object):
+class _TorchSerializedList:
     """
     A list-like object whose items are serialized and stored in a torch tensor. When
     launching a process that uses TorchSerializedList with "fork" start method,

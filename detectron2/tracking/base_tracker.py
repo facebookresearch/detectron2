@@ -12,7 +12,7 @@ Registry for tracking classes.
 """
 
 
-class BaseTracker(object):
+class BaseTracker:
     """
     A parent class for all trackers
     """

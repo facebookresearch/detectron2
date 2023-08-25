@@ -51,7 +51,7 @@ logger = logging.getLogger(LOGGER_NAME)
 _ACTION_REGISTRY: Dict[str, "Action"] = {}
 
 
-class Action(object):
+class Action:
     @classmethod
     def add_arguments(cls: type, parser: argparse.ArgumentParser):
         parser.add_argument(

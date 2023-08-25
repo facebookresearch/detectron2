@@ -37,7 +37,7 @@ def get_xyz_vertex_embedding(mesh_name: str, device: torch.device):
     return embed_map
 
 
-class DensePoseOutputsVertexVisualizer(object):
+class DensePoseOutputsVertexVisualizer:
     def __init__(
         self,
         cfg,
