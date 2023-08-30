@@ -59,7 +59,7 @@ class DensePoseDataMode(str, Enum):
     I_DT_UV_0 = "idtuv0"
 
 
-class DensePoseCocoEval(object):
+class DensePoseCocoEval:
     # Interface for evaluating detection on the Microsoft COCO dataset.
     #
     # The usage for CocoEval is as follows:

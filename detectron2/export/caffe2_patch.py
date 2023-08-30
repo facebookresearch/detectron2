@@ -22,11 +22,11 @@ from .c10 import (
 )
 
 
-class GenericMixin(object):
+class GenericMixin:
     pass
 
 
-class Caffe2CompatibleConverter(object):
+class Caffe2CompatibleConverter:
     """
     A GenericUpdater which implements the `create_from` interface, by modifying
     module object and assign it with another class replaceCls.

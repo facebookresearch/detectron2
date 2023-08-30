@@ -4,7 +4,7 @@ import torch
 from densepose.structures.data_relative import DensePoseDataRelative
 
 
-class DensePoseList(object):
+class DensePoseList:
 
     _TORCH_DEVICE_CPU = torch.device("cpu")
 

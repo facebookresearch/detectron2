@@ -11,7 +11,7 @@ from ..structures import DensePoseChartResult
 from .base import Boxes, Image, MatrixVisualizer
 
 
-class DensePoseResultsVisualizer(object):
+class DensePoseResultsVisualizer:
     def visualize(
         self,
         image_bgr: Image,
