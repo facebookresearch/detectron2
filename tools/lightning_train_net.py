@@ -90,7 +90,7 @@ class TrainingModule(LightningModule):
             )
 
         loss_dict = self.model(batch)
-        SimpleTrainer.write_metrics(loss_dict, data_time)
+        SimpleTrainer.write_metrics(loss_dict, data_time, cur_item=self.storage.iter)
 
         opt = self.optimizers()
         self.storage.put_scalar(
@@ -235,5 +235,5 @@ def setup(args):
 if __name__ == "__main__":
     parser = default_argument_parser()
     args = parser.parse_args()
-    logger.info("Command Line Args:", args)
+    logger.info("Command Line Args:", vars(args))
     main(args)
