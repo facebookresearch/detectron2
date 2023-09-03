@@ -15,8 +15,6 @@ class COCOeval_opt(COCOeval):
     This is a slightly modified version of the original COCO API, where the functions evaluateImg()
     and accumulate() are implemented in C++ to speedup evaluation
     """
-    def __init__(self, cocoGt=None, cocoDt=None, iouType='segm'):
-        super().__init__(cocoGt=cocoGt, cocoDt=cocoDt, iouType=iouType)
 
     def evaluate(self):
         """
