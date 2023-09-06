@@ -301,7 +301,7 @@ def build_batch_data_loader(
     Args:
         dataset (torch.utils.data.Dataset): a pytorch map-style or iterable dataset.
         sampler (torch.utils.data.sampler.Sampler or None): a sampler that produces indices.
-            Must be provided iff. ``dataset`` is a map-style dataset.
+            Must be provided if ``dataset`` is a map-style dataset.
         total_batch_size, aspect_ratio_grouping, num_workers, collate_fn: see
             :func:`build_detection_train_loader`.
         drop_last (bool): if ``True``, the dataloader will drop incomplete batches.
