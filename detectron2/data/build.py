@@ -289,7 +289,7 @@ def build_batch_data_loader(
     num_workers=0,
     collate_fn=None,
     drop_last: bool = True,
-    prefetch_factor=None,
+    prefetch_factor=2,
     persistent_workers=False,
     pin_memory=False,
 ):
