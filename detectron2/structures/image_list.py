@@ -96,7 +96,7 @@ class ImageList(object):
             if "size_divisibility" in padding_constraints:
                 size_divisibility = padding_constraints["size_divisibility"]
         if size_divisibility > 1:
-            stride = size_divisibility
+            stride = torch.as_tensor(size_divisibility, device=max_size.device, dtype=max_size.dtype)
             # the last two dims are H,W, both subject to divisibility requirement
             max_size = (max_size + (stride - 1)).div(stride, rounding_mode="floor") * stride
 
