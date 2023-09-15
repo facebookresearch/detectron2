@@ -239,6 +239,17 @@ def get_detection_dataset_dicts(
     if isinstance(names, str):
         names = [names]
     assert len(names), names
+
+    available_datasets = DatasetCatalog.keys()
+    names_set = set(names)
+    if not names_set.issubset(available_datasets):
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            "The following dataset names are not registered in the DatasetCatalog: "
+            f"{names_set - available_datasets}. "
+            f"Available datasets are {available_datasets}"
+        )
+
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in names]
 
     if isinstance(dataset_dicts[0], torchdata.Dataset):
