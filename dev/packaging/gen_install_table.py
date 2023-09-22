@@ -9,6 +9,12 @@ python -m pip install detectron2{d2_version} -f \\
   https://dl.fbaipublicfiles.com/detectron2/wheels/{cuda}/torch{torch}/index.html
 </code></pre> </details>"""
 CUDA_SUFFIX = {
+    "12.1": "cu121",
+    "12.0": "cu120",
+    "11.8": "cu118",
+    "11.7": "cu117",
+    "11.6": "cu116",
+    "11.4": "cu114",
     "11.3": "cu113",
     "11.1": "cu111",
     "11.0": "cu110",
@@ -39,13 +45,17 @@ if __name__ == "__main__":
         [("1.8", k) for k in ["11.1", "10.2", "10.1", "cpu"]]
         + [("1.9", k) for k in ["11.1", "10.2", "cpu"]]
         + [("1.10", k) for k in ["11.3", "11.1", "10.2", "cpu"]]
+        + [("1.13", k) for k in ["11.7", "11.6", "11.4", "cpu"]]
+        + [("2.0", k) for k in ["12.1", "12.0", "11.8", "cpu"]]
     )
 
     torch_versions = sorted(
         {k[0] for k in all_versions}, key=lambda x: int(x.split(".")[1]), reverse=True
     )
     cuda_versions = sorted(
-        {k[1] for k in all_versions}, key=lambda x: float(x) if x != "cpu" else 0, reverse=True
+        {k[1] for k in all_versions},
+        key=lambda x: float(x) if x != "cpu" else 0,
+        reverse=True,
     )
 
     table = gen_header(torch_versions)

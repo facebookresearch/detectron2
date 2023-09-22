@@ -8,7 +8,7 @@ with some other popular open source Mask R-CNN implementations.
 ### Settings
 
 * Hardware: 8 NVIDIA V100s with NVLink.
-* Software: Python 3.7, CUDA 10.1, cuDNN 7.6.5, PyTorch 1.5,
+* Software: Python 3.8, CUDA 11.6, cuDNN 8, PyTorch 1.12,
   TensorFlow 1.15.0rc2, Keras 2.2.5, MxNet 1.6.0b20190820.
 * Model: an end-to-end R-50-FPN Mask-RCNN model, using the same hyperparameter as the
   [Detectron baseline config](https://github.com/facebookresearch/Detectron/blob/master/configs/12_2017_baselines/e2e_mask_rcnn_R-50-FPN_1x.yaml)

@@ -10,12 +10,12 @@ ENV HOME=/home/appuser
 WORKDIR $HOME
 
 # Let torchvision find libtorch
-ENV CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.6/site-packages/torch/
+ENV CMAKE_PREFIX_PATH=$HOME/.local/lib/python3.8/site-packages/torch/
 
 RUN sudo apt-get update && sudo apt-get install libopencv-dev --yes
 
 # install libtorchvision
-RUN git clone --branch v0.11.1 https://github.com/pytorch/vision/
+RUN git clone --branch v0.15.2 https://github.com/pytorch/vision/
 RUN mkdir vision/build && cd vision/build && \
 	cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Release -DWITH_CUDA=on -DTORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST && \
 	make -j && make install

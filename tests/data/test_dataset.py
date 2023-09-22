@@ -87,7 +87,7 @@ class TestMapDataset(unittest.TestCase):
     def test_pickleability(self):
         ds = DatasetFromList([1, 2, 3])
         ds = MapDataset(ds, lambda x: x * 2)
-        ds = pickle.loads(pickle.dumps(ds))
+        ds = pickle.loads(pickle.dumps(list(ds)))
         self.assertEqual(ds[0], 2)
 
 

@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+from setuptools import find_packages, setup
+import torch
+from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
+
 import glob
 import os
 import shutil
 from os import path
-from setuptools import find_packages, setup
 from typing import List
-import torch
-from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
-assert torch_ver >= [1, 8], "Requires PyTorch >= 1.8"
+assert torch_ver >= [1, 13], "Requires PyTorch >= 1.13"
 
 
 def get_version():
@@ -50,7 +51,7 @@ def get_extensions():
         True if ((torch.version.hip is not None) and (ROCM_HOME is not None)) else False
     )
     if is_rocm_pytorch:
-        assert torch_ver >= [1, 8], "ROCM support requires PyTorch >= 1.8!"
+        assert torch_ver >= [1, 13], "ROCM support requires PyTorch >= 1.13!"
 
     # common code between cuda and rocm platforms, for hipify version [1,0,0] and later.
     source_cuda = glob.glob(path.join(extensions_dir, "**", "*.cu")) + glob.glob(
@@ -86,7 +87,7 @@ def get_extensions():
         if nvcc_flags_env != "":
             extra_compile_args["nvcc"].extend(nvcc_flags_env.split(" "))
 
-        if torch_ver < [1, 7]:
+        if torch_ver < [1, 12]:
             # supported by https://github.com/pytorch/pytorch/pull/43931
             CC = os.environ.get("CC", None)
             if CC is not None:
@@ -158,7 +159,7 @@ setup(
     packages=find_packages(exclude=("configs", "tests*")) + list(PROJECTS.keys()),
     package_dir=PROJECTS,
     package_data={"detectron2.model_zoo": get_model_zoo_configs()},
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         # These dependencies are not pure-python.
         # In general, avoid adding dependencies that are not pure-python because they are not
@@ -207,11 +208,11 @@ setup(
         ],
         # dev dependencies. Install them by `pip install 'detectron2[dev]'`
         "dev": [
-            "flake8==3.8.1",
-            "isort==4.3.21",
+            "flake8==6.0.0",
+            "isort==5.12.0",
             "flake8-bugbear",
             "flake8-comprehensions",
-            "black==22.3.0",
+            "black==23.3.0",
         ],
     },
     ext_modules=get_extensions(),

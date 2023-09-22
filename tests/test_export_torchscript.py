@@ -29,7 +29,7 @@ from detectron2.utils.testing import (
     get_sample_coco_image,
     random_boxes,
     reload_script_model,
-    skipIfOnCPUCI,
+    skipIfOnCPUCI, skipIfOnPytorch1_10
 )
 
 
@@ -44,6 +44,7 @@ class TestScripting(unittest.TestCase):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         self._test_rcnn_model("COCO-InstanceSegmentation/mask_rcnn_R_50_C4_3x.yaml")
 
@@ -113,6 +114,7 @@ class TestTracing(unittest.TestCase):
         self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", inference_func)
 
     @skipIfOnCPUCI
+    @skipIfOnPytorch1_10
     def testMaskRCNNC4(self):
         def inference_func(model, image):
             inputs = [{"image": image}]
