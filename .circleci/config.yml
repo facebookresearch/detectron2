@@ -209,7 +209,7 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
@@ -222,7 +222,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
 
   linux_gpu_tests118:
     <<: *gpu118
@@ -235,7 +235,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
       - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
@@ -249,7 +249,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
 
   linux_gpu_tests121:
     <<: *gpu121
@@ -262,7 +262,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
       - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
@@ -276,7 +276,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
 
   windows_cpu_build:
     <<: *windows_cpu
@@ -289,7 +289,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
 
       - run:
           name: Install Dependencies
@@ -320,7 +320,7 @@ jobs:
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230617
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
