@@ -6,10 +6,14 @@ import os
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-from functools import cached_property
 from typing import Optional
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
+
+try:
+    from functools import cached_property
+except:
+    from backports.cached_property import cached_property
 
 from detectron2.utils.file_io import PathManager
 
