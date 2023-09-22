@@ -239,6 +239,17 @@ def get_detection_dataset_dicts(
     if isinstance(names, str):
         names = [names]
     assert len(names), names
+
+    available_datasets = DatasetCatalog.keys()
+    names_set = set(names)
+    if not names_set.issubset(available_datasets):
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            "The following dataset names are not registered in the DatasetCatalog: "
+            f"{names_set - available_datasets}. "
+            f"Available datasets are {available_datasets}"
+        )
+
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in names]
 
     if isinstance(dataset_dicts[0], torchdata.Dataset):
@@ -289,6 +300,9 @@ def build_batch_data_loader(
     num_workers=0,
     collate_fn=None,
     drop_last: bool = True,
+    prefetch_factor=None,
+    persistent_workers=False,
+    pin_memory=False,
 ):
     """
     Build a batched dataloader. The main differences from `torch.utils.data.DataLoader` are:
@@ -327,6 +341,9 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor,
+            persistent_workers=persistent_workers,
+            pin_memory=pin_memory,
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, batch_size)
         if collate_fn is None:
@@ -340,6 +357,9 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor,
+            persistent_workers=persistent_workers,
+            pin_memory=pin_memory,
         )
 
 
@@ -479,6 +499,9 @@ def build_detection_train_loader(
     aspect_ratio_grouping=True,
     num_workers=0,
     collate_fn=None,
+    prefetch_factor=None,
+    persistent_workers=False,
+    pin_memory=False,
 ):
     """
     Build a dataloader for object detection with some default features.
@@ -530,6 +553,9 @@ def build_detection_train_loader(
         aspect_ratio_grouping=aspect_ratio_grouping,
         num_workers=num_workers,
         collate_fn=collate_fn,
+        prefetch_factor=prefetch_factor,
+        persistent_workers=persistent_workers,
+        pin_memory=pin_memory,
     )
 
 
