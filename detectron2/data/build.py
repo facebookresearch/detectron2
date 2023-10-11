@@ -499,7 +499,7 @@ def build_detection_train_loader(
     aspect_ratio_grouping=True,
     num_workers=0,
     collate_fn=None,
-    prefetch_factor=None,
+    prefetch_factor=2,
     persistent_workers=False,
     pin_memory=False,
 ):
