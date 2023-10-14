@@ -132,7 +132,8 @@ install_linux_dep: &install_linux_dep
           pip install -v --progress-bar off omegaconf==2.3.0   # needed by FCOSE2ETest::test_empty_data
         else
           echo "Installing torch==$PYTORCH_VERSION and torchvision==$TORCHVISION_VERSION from $PYTORCH_INDEX"
-          pip install -v --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
+          # pip install -v --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
+          pip3 install torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION
         fi
 
         python -c 'import torch; print("PyTorch Version:", torch.__version__)'
