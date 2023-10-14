@@ -355,7 +355,7 @@ workflows:
           torchvision_version: "0.16.0+cu121"
           cuda_version: "12.1"
           python_version: "3.11"
-      - linux_gpu_tests_121:
+      - linux_gpu_tests121:
           name: linux_gpu_tests_pytorch_nightly
           pytorch_version: "master"
           torchvision_version: "main"
