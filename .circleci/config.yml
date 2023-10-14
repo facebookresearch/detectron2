@@ -123,13 +123,13 @@ install_linux_dep: &install_linux_dep
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
         # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
         # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
-        pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
+        pip install --progress-bar off ninja opencv-python-headless pytest tensorboard pycocotools onnx
         if [[ "$PYTORCH_VERSION" == "master" ]]; then
           echo "Installing torch/torchvision from $PYTORCH_INDEX"
           # Remove first, in case it's in the CI cache
           pip uninstall -y torch torchvision
           pip install -v --progress-bar off --pre torch torchvision --extra-index-url $PYTORCH_INDEX
-          pip install -v --progress-bar off omegaconf==2.1.2   # needed by FCOSE2ETest::test_empty_data
+          pip install -v --progress-bar off omegaconf==2.3.0   # needed by FCOSE2ETest::test_empty_data
         else
           echo "Installing torch==$PYTORCH_VERSION and torchvision==$TORCHVISION_VERSION from $PYTORCH_INDEX"
           pip install -v --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
