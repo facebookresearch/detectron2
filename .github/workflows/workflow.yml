@@ -9,7 +9,7 @@ jobs:
     # run on PRs, or commits to facebookresearch (not internal)
     if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -37,12 +37,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: [ "1.13.1", "2.0.1" ]
+        torch: [ "1.13.1", "2.0.1", "2.1.0" ]
         include:
           - torch: "1.13.1"
             torchvision: "0.14.1"
           - torch: "2.0.1"
             torchvision: "0.15.2"
+          - torch: "2.1.0"
+            torchvision: "0.16.0"
         exclude:
           - python: "3.11"
             torch: "1.13.1"
@@ -51,7 +53,7 @@ jobs:
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:

@@ -5,25 +5,25 @@ version: 2.1
 # -------------------------------------------------------------------------------------
 cpu: &cpu
   machine:
-    image: ubuntu-2204:2023.04.2
+    image: ubuntu-2204:2023.07.2
   resource_class: medium
 
 gpu118: &gpu118
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: linux-cuda-11:2023.02.1
-  resource_class: gpu.nvidia.small
+    image: linux-cuda-11:default
+  resource_class: gpu.nvidia.small.multi
 
 gpu121: &gpu121
   machine:
     # NOTE: use a cuda version that's supported by all our pytorch versions
-    image: linux-cuda-12:2023.05.1
-  resource_class: gpu.nvidia.small
+    image: linux-cuda-12:default
+  resource_class: gpu.nvidia.small.multi
 
 windows-cpu: &windows_cpu
   machine:
     resource_class: windows.medium
-    image: windows-server-2022-gui:2022.10.1
+    image: windows-server-2022-gui:current
     shell: powershell.exe
 
 # windows-gpu: &windows_gpu
@@ -209,7 +209,7 @@ jobs:
       # Refresh the key when dependencies should be updated (e.g. when pytorch releases)
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
@@ -222,7 +222,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
 
   linux_gpu_tests118:
     <<: *gpu118
@@ -235,7 +235,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
       - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
@@ -249,7 +249,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
 
   linux_gpu_tests121:
     <<: *gpu121
@@ -262,7 +262,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
       - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
@@ -276,7 +276,7 @@ jobs:
           paths:
             - /opt/circleci/.pyenv
             - ~/.torch
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
 
   windows_cpu_build:
     <<: *windows_cpu
@@ -289,7 +289,7 @@ jobs:
       # Cache the env directory that contains dependencies
       - restore_cache:
           keys:
-            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+            - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
 
       - run:
           name: Install Dependencies
@@ -320,7 +320,7 @@ jobs:
       - save_cache:
           paths:
             - env
-          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20230922
+          key: cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
 
       - <<: *install_detectron2
       # TODO: unittest fails for now
@@ -350,6 +350,12 @@ workflows:
           cuda_version: "11.8"
           python_version: "3.11"
       - linux_gpu_tests121:
+          name: linux_gpu_tests_pytorch2.1.0
+          pytorch_version: "2.1.0+cu121"
+          torchvision_version: "0.16.0+cu121"
+          cuda_version: "12.1"
+          python_version: "3.11"
+      - linux_gpu_tests_121:
           name: linux_gpu_tests_pytorch_nightly
           pytorch_version: "master"
           torchvision_version: "main"
@@ -362,4 +368,8 @@ workflows:
       - windows_cpu_build:
           pytorch_version: "2.0.1+cpu"
           torchvision_version: "0.15.2+cpu"
+          python_version: "3.11"
+      - windows_cpu_build:
+          pytorch_version: "2.1.0+cpu"
+          torchvision_version: "0.16.0+cpu"
           python_version: "3.11"
