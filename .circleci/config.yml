@@ -236,7 +236,7 @@ jobs:
       - restore_cache:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
-      - <<: *select_cuda
+      # - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
@@ -263,7 +263,7 @@ jobs:
       - restore_cache:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
-      - <<: *select_cuda
+      # - <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
