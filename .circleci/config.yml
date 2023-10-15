@@ -263,7 +263,7 @@ jobs:
       - restore_cache:
           keys:
             - cache-{{ arch }}-<< parameters.pytorch_version >>-{{ .Branch }}-20231014
-      # - <<: *select_cuda
+      #- <<: *select_cuda
       - <<: *install_python
       - <<: *install_linux_dep
       - <<: *install_detectron2
@@ -333,28 +333,33 @@ workflows:
           name: linux_cpu_tests_pytorch1.13.1
           pytorch_version: "1.13.1+cpu"
           torchvision_version: "0.14.1+cpu"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cpu"
       - linux_cpu_tests:
           name: linux_cpu_tests_pytorch2.0.1
           pytorch_version: "2.0.1+cpu"
           torchvision_version: "0.15.2+cpu"
           python_version: "3.11"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cpu"
       - linux_gpu_tests118:
           name: linux_gpu_tests_pytorch1.13.1
           pytorch_version: "1.13.1+cu116"
           torchvision_version: "0.14.1+cu116"
           cuda_version: "11.6"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cu116"
       - linux_gpu_tests118:
           name: linux_gpu_tests_pytorch2.0.1
           pytorch_version: "2.0.1+cu118"
           torchvision_version: "0.15.2+cu118"
           cuda_version: "11.8"
           python_version: "3.11"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cu118"
       - linux_gpu_tests121:
           name: linux_gpu_tests_pytorch2.1.0
           pytorch_version: "2.1.0+cu121"
           torchvision_version: "0.16.0+cu121"
           cuda_version: "12.1"
           python_version: "3.11"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cu121"
       - linux_gpu_tests121:
           name: linux_gpu_tests_pytorch_nightly
           pytorch_version: "master"
@@ -365,11 +370,15 @@ workflows:
       - windows_cpu_build:
           pytorch_version: "1.13.1+cpu"
           torchvision_version: "0.14.1+cpu"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cpu"
       - windows_cpu_build:
           pytorch_version: "2.0.1+cpu"
           torchvision_version: "0.15.2+cpu"
           python_version: "3.11"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cpu"
       - windows_cpu_build:
           pytorch_version: "2.1.0+cpu"
           torchvision_version: "0.16.0+cpu"
           python_version: "3.11"
+          pytorch_index: "https://download.pytorch.org/whl/nightly/cpu"
+
