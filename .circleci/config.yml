@@ -132,8 +132,7 @@ install_linux_dep: &install_linux_dep
           pip install -v --progress-bar off omegaconf==2.3.0   # needed by FCOSE2ETest::test_empty_data
         else
           echo "Installing torch==$PYTORCH_VERSION and torchvision==$TORCHVISION_VERSION from $PYTORCH_INDEX"
-          # pip install -v --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
-          pip3 install torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION
+          pip install -v --progress-bar off torch==$PYTORCH_VERSION torchvision==$TORCHVISION_VERSION -f $PYTORCH_INDEX
         fi
 
         python -c 'import torch; print("PyTorch Version:", torch.__version__)'
@@ -332,28 +331,28 @@ workflows:
     jobs:
       - linux_cpu_tests:
           name: linux_cpu_tests_pytorch1.13.1
-          pytorch_version: "1.13.1"
-          torchvision_version: "0.14.1"
+          pytorch_version: "1.13.1+cpu"
+          torchvision_version: "0.14.1+cpu"
       - linux_cpu_tests:
           name: linux_cpu_tests_pytorch2.0.1
-          pytorch_version: "2.0.1"
-          torchvision_version: "0.15.2"
+          pytorch_version: "2.0.1+cpu"
+          torchvision_version: "0.15.2+cpu"
           python_version: "3.11"
       - linux_gpu_tests118:
           name: linux_gpu_tests_pytorch1.13.1
-          pytorch_version: "1.13.1"
-          torchvision_version: "0.14.1"
+          pytorch_version: "1.13.1+cu116"
+          torchvision_version: "0.14.1+cu116"
           cuda_version: "11.6"
       - linux_gpu_tests118:
           name: linux_gpu_tests_pytorch2.0.1
-          pytorch_version: "2.0.1"
-          torchvision_version: "0.15.2"
+          pytorch_version: "2.0.1+cu118"
+          torchvision_version: "0.15.2+cu118"
           cuda_version: "11.8"
           python_version: "3.11"
       - linux_gpu_tests121:
           name: linux_gpu_tests_pytorch2.1.0
-          pytorch_version: "2.1.0"
-          torchvision_version: "0.16.0"
+          pytorch_version: "2.1.0+cu121"
+          torchvision_version: "0.16.0+cu121"
           cuda_version: "12.1"
           python_version: "3.11"
       - linux_gpu_tests121:
@@ -364,13 +363,13 @@ workflows:
           python_version: "3.11"
           pytorch_index: "https://download.pytorch.org/whl/nightly/cu121"
       - windows_cpu_build:
-          pytorch_version: "1.13.1"
-          torchvision_version: "0.14.1"
+          pytorch_version: "1.13.1+cpu"
+          torchvision_version: "0.14.1+cpu"
       - windows_cpu_build:
           pytorch_version: "2.0.1+cpu"
-          torchvision_version: "0.15.2"
+          torchvision_version: "0.15.2+cpu"
           python_version: "3.11"
       - windows_cpu_build:
           pytorch_version: "2.1.0+cpu"
-          torchvision_version: "0.16.0"
+          torchvision_version: "0.16.0+cpu"
           python_version: "3.11"
