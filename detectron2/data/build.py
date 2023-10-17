@@ -303,6 +303,7 @@ def build_batch_data_loader(
     prefetch_factor=None,
     persistent_workers=False,
     pin_memory=False,
+    seed: Optional[int] = None,
 ):
     """
     Build a batched dataloader. The main differences from `torch.utils.data.DataLoader` are:
@@ -334,6 +335,10 @@ def build_batch_data_loader(
     else:
         dataset = ToIterableDataset(dataset, sampler, shard_chunk_size=batch_size)
 
+    generator = torch.Generator()
+    if seed:
+        generator.manual_seed(seed)
+
     if aspect_ratio_grouping:
         assert drop_last, "Aspect ratio grouping will drop incomplete batches."
         data_loader = torchdata.DataLoader(
@@ -344,6 +349,7 @@ def build_batch_data_loader(
             prefetch_factor=prefetch_factor,
             persistent_workers=persistent_workers,
             pin_memory=pin_memory,
+            generator=generator,
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, batch_size)
         if collate_fn is None:
@@ -360,6 +366,7 @@ def build_batch_data_loader(
             prefetch_factor=prefetch_factor,
             persistent_workers=persistent_workers,
             pin_memory=pin_memory,
+            generator=generator,
         )
 
 
