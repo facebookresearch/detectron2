@@ -326,6 +326,8 @@ def build_batch_data_loader(
         total_batch_size, world_size
     )
     batch_size = total_batch_size // world_size
+    logger = logging.getLogger(__name__)
+    logger.info("Making batched data loader with batch_size=%d", batch_size)
 
     if isinstance(dataset, torchdata.IterableDataset):
         assert sampler is None, "sampler must be None if dataset is IterableDataset"
