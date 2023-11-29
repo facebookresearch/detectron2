@@ -8,14 +8,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python: [ "3.9", "3.10", "3.11" ]
-        torch: [ "1.13.1", "2.0.1", "2.1.0" ]
+        torch: [ "1.13.1", "2.0.1", "2.1.1" ]
         include:
           - torch: "1.13.1"
             torchvision: "0.14.1"
           - torch: "2.0.1"
             torchvision: "0.15.2"
-          - torch: "2.1.0"
-            torchvision: "0.16.0"
+          - torch: "2.1.1"
+            torchvision: "0.16.1"
         exclude:
           - python: "3.11"
             torch: "1.13.1"
@@ -35,7 +35,7 @@ jobs:
           path: |
             ${{ env.pythonLocation }}/lib/python${{ matrix.python }}/site-packages
             ~/.torch
-          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20231014
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20231129
       - name: Install dependencies macOS
         if: matrix.os == 'macos-latest'
         run: |
