@@ -326,18 +326,54 @@ class COCOEvaluator(DatasetEvaluator):
 
         Args:
             coco_eval (None or COCOEval): None represents no predictions from model.
-            iou_type (str):
+            iou_type (str): one of "bbox", "segm", or "keypoints".
             class_names (None or list[str]): if provided, will use it to predict
-                per-category AP.
+                per-category AP and AR.
 
         Returns:
             a dict of {metric name: score}
         """
-
         metrics = {
-            "bbox": ["AP", "AP50", "AP75", "APs", "APm", "APl"],
-            "segm": ["AP", "AP50", "AP75", "APs", "APm", "APl"],
-            "keypoints": ["AP", "AP50", "AP75", "APm", "APl"],
+            "bbox": [
+                "AP",
+                "AP50",
+                "AP75",
+                "APs",
+                "APm",
+                "APl",
+                "AR1",
+                "AR10",
+                "AR100",
+                "ARs",
+                "ARm",
+                "ARl",
+            ],
+            "segm": [
+                "AP",
+                "AP50",
+                "AP75",
+                "APs",
+                "APm",
+                "APl",
+                "AR1",
+                "AR10",
+                "AR100",
+                "ARs",
+                "ARm",
+                "ARl",
+            ],
+            "keypoints": [
+                "AP",
+                "AP50",
+                "AP75",
+                "APm",
+                "APl",
+                "AR",
+                "AR50",
+                "AR75",
+                "ARm",
+                "ARl",
+            ],
         }[iou_type]
 
         if coco_eval is None:
