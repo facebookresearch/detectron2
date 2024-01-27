@@ -44,7 +44,6 @@ class RandomKFramesSelector(Callable):  # pyre-ignore[39]
         Returns:
           List[int]: timestamps of selected frames
         """
-        # pyre-fixme[20]: Argument `k` expected.
         return random.sample(frame_tss, min(self.k, len(frame_tss)))
 
 

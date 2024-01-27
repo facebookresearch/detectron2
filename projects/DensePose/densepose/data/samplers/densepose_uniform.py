@@ -38,5 +38,4 @@ class DensePoseUniformSampler(DensePoseBaseSampler):
             list(int): indices of values (along axis 1) selected as a sample
         """
         k = values.shape[1]
-        # pyre-fixme[20]: Argument `k` expected.
         return random.sample(range(k), count)

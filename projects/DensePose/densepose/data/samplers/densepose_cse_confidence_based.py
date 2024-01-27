@@ -87,7 +87,6 @@ class DensePoseCSEConfidenceBasedSampler(DensePoseCSEBaseSampler):
                 search_count = min(max(int(k * self.search_proportion), count), k)
             else:
                 search_count = min(count, k)
-            # pyre-fixme[20]: Argument `k` expected.
             sample_from_top = random.sample(range(search_count), count)
             index_sample = sorted_confidence_indices[-search_count:][sample_from_top]
         return index_sample
