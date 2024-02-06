@@ -49,8 +49,8 @@ def mask_rcnn_loss(pred_mask_logits: torch.Tensor, instances: List[Instances], v
         mask_loss (Tensor): A scalar tensor containing the loss.
     """
     cls_agnostic_mask = pred_mask_logits.size(1) == 1
-    total_num_masks = pred_mask_logits.size(0)
-    mask_side_len = pred_mask_logits.size(2)
+    total_num_masks = int(pred_mask_logits.size(0))
+    mask_side_len = int(pred_mask_logits.size(2))
     assert pred_mask_logits.size(2) == pred_mask_logits.size(3), "Mask prediction must be square!"
 
     gt_classes = []
@@ -96,17 +96,17 @@ def mask_rcnn_loss(pred_mask_logits: torch.Tensor, instances: List[Instances], v
     )
     false_negative = (mask_incorrect & gt_masks_bool).sum().item() / max(num_positive, 1.0)
 
-    storage = get_event_storage()
-    storage.put_scalar("mask_rcnn/accuracy", mask_accuracy)
-    storage.put_scalar("mask_rcnn/false_positive", false_positive)
-    storage.put_scalar("mask_rcnn/false_negative", false_negative)
-    if vis_period > 0 and storage.iter % vis_period == 0:
-        pred_masks = pred_mask_logits.sigmoid()
-        vis_masks = torch.cat([pred_masks, gt_masks], axis=2)
-        name = "Left: mask prediction;   Right: mask GT"
-        for idx, vis_mask in enumerate(vis_masks):
-            vis_mask = torch.stack([vis_mask] * 3, axis=0)
-            storage.put_image(name + f" ({idx})", vis_mask)
+    # storage = get_event_storage()
+    # storage.put_scalar("mask_rcnn/accuracy", mask_accuracy)
+    # storage.put_scalar("mask_rcnn/false_positive", false_positive)
+    # storage.put_scalar("mask_rcnn/false_negative", false_negative)
+    # if vis_period > 0 and storage.iter % vis_period == 0:
+    #     pred_masks = pred_mask_logits.sigmoid()
+    #     vis_masks = torch.cat([pred_masks, gt_masks], axis=2)
+    #     name = "Left: mask prediction;   Right: mask GT"
+    #     for idx, vis_mask in enumerate(vis_masks):
+    #         vis_mask = torch.stack([vis_mask] * 3, axis=0)
+    #         storage.put_image(name + f" ({idx})", vis_mask)
 
     mask_loss = F.binary_cross_entropy_with_logits(pred_mask_logits, gt_masks, reduction="mean")
     return mask_loss
@@ -196,10 +196,10 @@ class BaseMaskRCNNHead(nn.Module):
         """
         x = self.layers(x)
         if self.training:
-            return {"loss_mask": mask_rcnn_loss(x, instances, self.vis_period) * self.loss_weight}
+            return {"loss_mask": mask_rcnn_loss(x, instances, self.vis_period) * self.loss_weight}, x
         else:
             mask_rcnn_inference(x, instances)
-            return instances
+            return instances, x
 
     def layers(self, x):
         """

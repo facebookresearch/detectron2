@@ -51,4 +51,5 @@ def subsample_labels(
 
     pos_idx = positive[perm1]
     neg_idx = negative[perm2]
+
     return pos_idx, neg_idx

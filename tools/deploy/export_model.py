@@ -3,27 +3,27 @@
 import argparse
 import os
 from typing import Dict, List, Tuple
+import torch
+from torch import Tensor, nn
 
 import detectron2.data.transforms as T
-import torch
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader, detection_utils
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.export import (
-    dump_torchscript_IR,
-    scripting_with_instances,
     STABLE_ONNX_OPSET_VERSION,
     TracingAdapter,
+    dump_torchscript_IR,
+    scripting_with_instances,
 )
-from detectron2.modeling import build_model, GeneralizedRCNN, RetinaNet
+from detectron2.modeling import GeneralizedRCNN, RetinaNet, build_model
 from detectron2.modeling.postprocessing import detector_postprocess
 from detectron2.projects.point_rend import add_pointrend_config
 from detectron2.structures import Boxes
 from detectron2.utils.env import TORCH_VERSION
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
-from torch import nn, Tensor
 
 
 def setup_cfg(args):
@@ -85,18 +85,14 @@ def export_scripting(torch_model):
     if isinstance(torch_model, GeneralizedRCNN):
 
         class ScriptableAdapter(ScriptableAdapterBase):
-            def forward(
-                self, inputs: Tuple[Dict[str, torch.Tensor]]
-            ) -> List[Dict[str, Tensor]]:
+            def forward(self, inputs: Tuple[Dict[str, torch.Tensor]]) -> List[Dict[str, Tensor]]:
                 instances = self.model.inference(inputs, do_postprocess=False)
                 return [i.get_fields() for i in instances]
 
     else:
 
         class ScriptableAdapter(ScriptableAdapterBase):
-            def forward(
-                self, inputs: Tuple[Dict[str, torch.Tensor]]
-            ) -> List[Dict[str, Tensor]]:
+            def forward(self, inputs: Tuple[Dict[str, torch.Tensor]]) -> List[Dict[str, Tensor]]:
                 instances = self.model(inputs)
                 return [i.get_fields() for i in instances]
 
@@ -133,9 +129,7 @@ def export_tracing(torch_model, inputs):
         dump_torchscript_IR(ts_model, args.output)
     elif args.format == "onnx":
         with PathManager.open(os.path.join(args.output, "model.onnx"), "wb") as f:
-            torch.onnx.export(
-                traceable_model, (image,), f, opset_version=STABLE_ONNX_OPSET_VERSION
-            )
+            torch.onnx.export(traceable_model, (image,), f, opset_version=STABLE_ONNX_OPSET_VERSION)
     logger.info("Inputs schema: " + str(traceable_model.inputs_schema))
     logger.info("Outputs schema: " + str(traceable_model.outputs_schema))
 
@@ -150,9 +144,7 @@ def export_tracing(torch_model, inputs):
         unused in deployment but needed for evaluation. We add it manually here.
         """
         input = inputs[0]
-        instances = traceable_model.outputs_schema(ts_model(input["image"]))[0][
-            "instances"
-        ]
+        instances = traceable_model.outputs_schema(ts_model(input["image"]))[0]["instances"]
         postprocessed = detector_postprocess(instances, input["height"], input["width"])
         return [{"instances": postprocessed}]
 
@@ -168,9 +160,7 @@ def get_sample_inputs(args):
         return first_batch
     else:
         # get a sample data
-        original_image = detection_utils.read_image(
-            args.sample_image, format=cfg.INPUT.FORMAT
-        )
+        original_image = detection_utils.read_image(args.sample_image, format=cfg.INPUT.FORMAT)
         # Do same preprocessing as DefaultPredictor
         aug = T.ResizeShortestEdge(
             [cfg.INPUT.MIN_SIZE_TEST, cfg.INPUT.MIN_SIZE_TEST], cfg.INPUT.MAX_SIZE_TEST
@@ -186,8 +176,7 @@ def get_sample_inputs(args):
         return sample_inputs
 
 
-def main() -> None:
-    global logger, cfg, args
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export a model for deployment.")
     parser.add_argument(
         "--format",
@@ -201,12 +190,8 @@ def main() -> None:
         help="Method to export models",
         default="tracing",
     )
-    parser.add_argument(
-        "--config-file", default="", metavar="FILE", help="path to config file"
-    )
-    parser.add_argument(
-        "--sample-image", default=None, type=str, help="sample image for input"
-    )
+    parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
+    parser.add_argument("--sample-image", default=None, type=str, help="sample image for input")
     parser.add_argument("--run-eval", action="store_true")
     parser.add_argument("--output", help="output directory for the converted model")
     parser.add_argument(
@@ -245,9 +230,7 @@ def main() -> None:
             "Python inference is not yet implemented for "
             f"export_method={args.export_method}, format={args.format}."
         )
-        logger.info(
-            "Running evaluation ... this takes a long time if you export to CPU."
-        )
+        logger.info("Running evaluation ... this takes a long time if you export to CPU.")
         dataset = cfg.DATASETS.TEST[0]
         data_loader = build_detection_test_loader(cfg, dataset)
         # NOTE: hard-coded evaluator. change to the evaluator for your dataset
@@ -255,7 +238,3 @@ def main() -> None:
         metrics = inference_on_dataset(exported_model, data_loader, evaluator)
         print_csv_format(metrics)
     logger.info("Success.")
-
-
-if __name__ == "__main__":
-    main()  # pragma: no cover

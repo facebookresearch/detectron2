@@ -158,7 +158,7 @@ class GeneralizedRCNN(nn.Module):
         features = self.backbone(images.tensor)
 
         if self.proposal_generator is not None:
-            proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
+            proposals, proposal_losses, _, _, _ = self.proposal_generator(images, features, gt_instances)
         else:
             assert "proposals" in batched_inputs[0]
             proposals = [x["proposals"].to(self.device) for x in batched_inputs]
@@ -205,19 +205,23 @@ class GeneralizedRCNN(nn.Module):
 
         if detected_instances is None:
             if self.proposal_generator is not None:
-                proposals, _ = self.proposal_generator(images, features, None)
+                proposals, _, anchors, pred_objectness_logits, pred_anchor_deltas = self.proposal_generator(images, features, None)
+                anchors = torch.cat([a.tensor for a in anchors], 0)
+                pred_objectness_logits = torch.cat(pred_objectness_logits, 1)
+                pred_anchor_deltas = torch.cat(pred_anchor_deltas, 1)
             else:
                 assert "proposals" in batched_inputs[0]
                 proposals = [x["proposals"].to(self.device) for x in batched_inputs]
 
-            results, _ = self.roi_heads(images, features, proposals, None)
+            results, _, cls_box_loss_predictions, mask_loss_features, mask_loss_instances = self.roi_heads(images, features, proposals, None)
         else:
             detected_instances = [x.to(self.device) for x in detected_instances]
             results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
 
         if do_postprocess:
             assert not torch.jit.is_scripting(), "Scripting is not supported for postprocess."
-            return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
+            post_processed_results = GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
+            return post_processed_results, anchors, pred_objectness_logits, pred_anchor_deltas, cls_box_loss_predictions, mask_loss_features, mask_loss_instances
         return results
 
     def preprocess_image(self, batched_inputs: List[Dict[str, torch.Tensor]]):

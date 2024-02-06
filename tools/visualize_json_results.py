@@ -3,11 +3,10 @@
 
 import argparse
 import json
+import numpy as np
 import os
 from collections import defaultdict
-
 import cv2
-import numpy as np
 import tqdm
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
@@ -39,21 +38,14 @@ def create_instances(predictions, image_size):
     return ret
 
 
-def main() -> None:
-    global args, dataset_id_map
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="A script that visualizes the json predictions from COCO or LVIS dataset."
     )
-    parser.add_argument(
-        "--input", required=True, help="JSON file produced by the model"
-    )
+    parser.add_argument("--input", required=True, help="JSON file produced by the model")
     parser.add_argument("--output", required=True, help="output directory")
-    parser.add_argument(
-        "--dataset", help="name of the dataset", default="coco_2017_val"
-    )
-    parser.add_argument(
-        "--conf-threshold", default=0.5, type=float, help="confidence threshold"
-    )
+    parser.add_argument("--dataset", help="name of the dataset", default="coco_2017_val")
+    parser.add_argument("--conf-threshold", default=0.5, type=float, help="confidence threshold")
     args = parser.parse_args()
 
     logger = setup_logger()
@@ -96,7 +88,3 @@ def main() -> None:
 
         concat = np.concatenate((vis_pred, vis_gt), axis=1)
         cv2.imwrite(os.path.join(args.output, basename), concat[:, :, ::-1])
-
-
-if __name__ == "__main__":
-    main()  # pragma: no cover

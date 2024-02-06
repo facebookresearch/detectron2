@@ -104,15 +104,15 @@ def _log_classification_stats(pred_logits, gt_classes, prefix="fast_rcnn"):
     fg_gt_classes = gt_classes[fg_inds]
     fg_pred_classes = pred_classes[fg_inds]
 
-    num_false_negative = (fg_pred_classes == bg_class_ind).nonzero().numel()
-    num_accurate = (pred_classes == gt_classes).nonzero().numel()
-    fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
+    # num_false_negative = (fg_pred_classes == bg_class_ind).nonzero().numel()
+    # num_accurate = (pred_classes == gt_classes).nonzero().numel()
+    # fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
 
-    storage = get_event_storage()
-    storage.put_scalar(f"{prefix}/cls_accuracy", num_accurate / num_instances)
-    if num_fg > 0:
-        storage.put_scalar(f"{prefix}/fg_cls_accuracy", fg_num_accurate / num_fg)
-        storage.put_scalar(f"{prefix}/false_negative", num_false_negative / num_fg)
+    # storage = get_event_storage()
+    # storage.put_scalar(f"{prefix}/cls_accuracy", num_accurate / num_instances)
+    # if num_fg > 0:
+    #     storage.put_scalar(f"{prefix}/fg_cls_accuracy", fg_num_accurate / num_fg)
+    #     storage.put_scalar(f"{prefix}/false_negative", num_false_negative / num_fg)
 
 
 def fast_rcnn_inference_single_image(

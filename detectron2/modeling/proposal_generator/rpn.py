@@ -396,11 +396,11 @@ class RPN(nn.Module):
 
         # Log the number of positive/negative anchors per-image that's used in training
         pos_mask = gt_labels == 1
-        num_pos_anchors = pos_mask.sum().item()
-        num_neg_anchors = (gt_labels == 0).sum().item()
-        storage = get_event_storage()
-        storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / num_images)
-        storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / num_images)
+        # num_pos_anchors = pos_mask.sum().item()
+        # num_neg_anchors = (gt_labels == 0).sum().item()
+        # storage = get_event_storage()
+        # storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / num_images)
+        # storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / num_images)
 
         localization_loss = _dense_box_regression_loss(
             anchors,
@@ -477,7 +477,7 @@ class RPN(nn.Module):
         proposals = self.predict_proposals(
             anchors, pred_objectness_logits, pred_anchor_deltas, images.image_sizes
         )
-        return proposals, losses
+        return proposals, losses, anchors, pred_objectness_logits, pred_anchor_deltas
 
     def predict_proposals(
         self,

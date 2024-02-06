@@ -1,0 +1,66 @@
+train_file: train_images_names.txt
+val_file: val_images_names.txt
+train_size: 8
+val_size: 8
+
+label_name_to_id:
+  roof: 0
+
+max_polygon_length: 10000
+
+pixel_means:
+  - 103.53
+  - 116.28
+  - 123.675
+image_size:
+  - 800
+  - 800
+original_image_size:
+  - 640
+  - 640
+max_size_test: 1333
+image_format: RGB
+num_classes: 1
+
+anchor_matcher:
+  labels:
+    - 0
+    - -1
+    - 1
+  thresholds:
+    - -inf
+    - 0.3
+    - 0.7
+    - inf
+  allow_low_quality_matches: True
+proposal_matcher:
+  labels:
+    - 0
+    - 1
+  thresholds:
+    - -inf
+    - 0.5
+    - inf
+  allow_low_quality_matches: False
+smooth_l1_beta: 0.0
+rpn_loss_batch_size_per_image: 256
+roi_loss_batch_size_per_image: 512
+sampling_positive_fraction: 0.25
+rpn_loss_weights:
+  loss_rpn_cls: 1.0
+  loss_rpn_loc: 1.0
+box_transform_weights: [ 1.0, 1.0, 1.0, 1.0 ]
+roi_loss:
+  use_sigmoid_ce: False
+  loss_box_reg: 1.0
+
+proposal_append_gt: True
+
+GCS_BUCKET_NAME: effizency-datasets
+GCS_PROJECT_ID: effizency-dev-project
+
+# Visualization
+mask_threshold: 0.15
+
+# metadata
+small_bb_threshold: 0.05
