@@ -301,6 +301,7 @@ def build_batch_data_loader(
     collate_fn=None,
     drop_last: bool = True,
     single_gpu_batch_size=None,
+    seed=None,
     **kwargs,
 ):
     """
@@ -347,6 +348,11 @@ def build_batch_data_loader(
     else:
         dataset = ToIterableDataset(dataset, sampler, shard_chunk_size=batch_size)
 
+    generator = None
+    if seed is not None:
+        generator = torch.Generator()
+        generator.manual_seed(seed)
+
     if aspect_ratio_grouping:
         assert drop_last, "Aspect ratio grouping will drop incomplete batches."
         data_loader = torchdata.DataLoader(
@@ -354,6 +360,7 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
+            generator=generator,
             **kwargs
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, batch_size)
@@ -368,6 +375,7 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,
+            generator=generator,
             **kwargs
         )
 
