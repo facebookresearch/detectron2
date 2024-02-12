@@ -1,5 +1,5 @@
 <img src=".github/Detectron2-Logo-Horz.svg" width="300" >
-
+gh repo clone facebookresearch/detectron2 
 Detectron2 is Facebook AI Research's next generation software system
 that implements state-of-the-art object detection algorithms.
 It is a ground-up rewrite of the previous version,
