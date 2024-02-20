@@ -4,6 +4,7 @@ import math
 from typing import Dict
 import torch
 import torch.nn.functional as F
+from torch._dynamo.comptime import comptime
 
 from detectron2.layers import ShapeSpec, cat
 from detectron2.layers.roi_align_rotated import ROIAlignRotated
@@ -480,13 +481,22 @@ def caffe2_fast_rcnn_outputs_inference(tensor_mode, box_predictor, predictions, 
     if not tensor_mode:
         roi_class_nms = roi_class_nms.to(torch.int64)
 
-    roi_batch_ids = cat(
-        [
-            torch.full((b, 1), i, dtype=dtype, device=device)
-            for i, b in enumerate(int(x.item()) for x in roi_batch_splits_nms)
-        ],
-        dim=0,
-    )
+    roi_batch_ids = []
+    for i, x in enumerate(roi_batch_splits_nms.to(torch.int32)):
+        b = x.item()
+
+        # TODO(angelayi): clean up the UX in this code
+        @comptime
+        def constrain_b(ctx):
+            from torch.fx.experimental.symbolic_shapes import constrain_range
+
+            b_node = ctx.get_local("b").as_proxy().node
+            constrain_range(b_node.meta["example_value"], min=2)
+            ctx.graph().call_function(constrain_range, (b_node,), {"min": 2})
+
+        roi_batch_ids.append(torch.full((b, 1), i))
+
+    roi_batch_ids = cat(roi_batch_ids, dim=0)
 
     roi_class_nms = alias(roi_class_nms, "class_nms")
     roi_score_nms = alias(roi_score_nms, "score_nms")
@@ -497,7 +507,7 @@ def caffe2_fast_rcnn_outputs_inference(tensor_mode, box_predictor, predictions, 
 
     results = InstancesList(
         im_info=im_info,
-        indices=roi_batch_ids[:, 0],
+        indices=roi_batch_ids.view(-1),
         extra_fields={
             "pred_boxes": Caffe2Boxes(roi_bbox_nms),
             "scores": roi_score_nms,
