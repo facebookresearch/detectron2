@@ -86,7 +86,7 @@ class ImageList:
 
         image_sizes = [(im.shape[-2], im.shape[-1]) for im in tensors]
         image_sizes_tensor = [shapes_to_tensor(x) for x in image_sizes]
-        max_size = torch.stack(image_sizes_tensor).max(0).values
+        max_size = torch.stack(image_sizes_tensor).amax(0)
 
         if padding_constraints is not None:
             square_size = padding_constraints.get("square_size", 0)
