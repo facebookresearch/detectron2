@@ -354,7 +354,9 @@ class Visualizer:
 
     # TODO implement a fast, rasterized version using OpenCV
 
-    def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
+    def __init__(
+        self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE, font_size_scale=1.0
+    ):
         """
         Args:
             img_rgb: a numpy array of shape (H, W, C), where H and W correspond to
@@ -365,6 +367,7 @@ class Visualizer:
             metadata (Metadata): dataset metadata (e.g. class names and colors)
             instance_mode (ColorMode): defines one of the pre-defined style for drawing
                 instances on an image.
+            font_size_scale: extra scaling of font size on top of default font size
         """
         self.img = np.asarray(img_rgb).clip(0, 255).astype(np.uint8)
         if metadata is None:
@@ -376,7 +379,7 @@ class Visualizer:
         # too small texts are useless, therefore clamp to 9
         self._default_font_size = max(
             np.sqrt(self.output.height * self.output.width) // 90, 10 // scale
-        )
+        ) * font_size_scale
         self._instance_mode = instance_mode
         self.keypoint_threshold = _KEYPOINT_THRESHOLD
 
