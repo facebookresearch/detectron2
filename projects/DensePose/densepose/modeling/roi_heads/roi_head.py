@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import numpy as np
 from typing import Dict, List, Optional
 import fvcore.nn.weight_init as weight_init

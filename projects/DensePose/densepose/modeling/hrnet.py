@@ -7,6 +7,8 @@
 # Adapted from https://github.com/HRNet/Higher-HRNet-Human-Pose-Estimation/blob/master/lib/models/pose_higher_hrnet.py  # noqa
 # ------------------------------------------------------------------------------
 
+# pyre-unsafe
+
 from __future__ import absolute_import, division, print_function
 import logging
 import torch.nn as nn

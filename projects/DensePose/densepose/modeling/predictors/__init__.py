@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from .chart import DensePoseChartPredictor
 from .chart_confidence import DensePoseChartConfidencePredictorMixin
 from .chart_with_confidence import DensePoseChartWithConfidencePredictor

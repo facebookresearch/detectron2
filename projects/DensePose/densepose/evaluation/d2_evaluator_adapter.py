@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from detectron2.data.catalog import Metadata
 from detectron2.evaluation import COCOEvaluator
 

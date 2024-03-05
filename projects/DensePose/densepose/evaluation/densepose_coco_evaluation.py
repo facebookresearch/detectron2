@@ -5,6 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 # This is a modified version of cocoeval.py where we also have the densepose evaluation.
 
+# pyre-unsafe
+
 __author__ = "tsungyi"
 
 import copy

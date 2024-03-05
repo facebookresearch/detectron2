@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from .confidence import DensePoseConfidenceModelConfig, DensePoseUVConfidenceType
 from .filter import DensePoseDataFilter
 from .inference import densepose_inference

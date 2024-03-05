@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from .densepose_uniform import DensePoseUniformSampler
 from .densepose_confidence_based import DensePoseConfidenceBasedSampler
 from .densepose_cse_uniform import DensePoseCSEUniformSampler
