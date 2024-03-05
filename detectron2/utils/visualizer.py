@@ -380,7 +380,7 @@ class Visualizer:
         self._instance_mode = instance_mode
         self.keypoint_threshold = _KEYPOINT_THRESHOLD
 
-    def draw_instance_predictions(self, predictions):
+    def draw_instance_predictions(self, predictions, jittering: bool = True):
         """
         Draw instance-level prediction results on an image.
 
@@ -388,6 +388,8 @@ class Visualizer:
             predictions (Instances): the output of an instance detection/segmentation
                 model. Following fields will be used to draw:
                 "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
+            jittering: if True, in color mode SEGMENTATION, randomly jitter the colors per class
+                to distinguish instances from the same class
 
         Returns:
             output (VisImage): image object with visualizations.
@@ -407,7 +409,10 @@ class Visualizer:
         if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
             colors = [
                 self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+            ] if jittering else [
+                tuple(mplc.to_rgb([x / 255 for x in self.metadata.thing_colors[c]])) for c in classes
             ]
+
             alpha = 0.8
         else:
             colors = None
