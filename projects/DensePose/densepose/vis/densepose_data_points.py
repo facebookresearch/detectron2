@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import numpy as np
 from typing import Iterable, Optional, Tuple
 import cv2
@@ -8,7 +10,7 @@ from densepose.structures import DensePoseDataRelative
 from .base import Boxes, Image, MatrixVisualizer, PointsVisualizer
 
 
-class DensePoseDataCoarseSegmentationVisualizer(object):
+class DensePoseDataCoarseSegmentationVisualizer:
     """
     Visualizer for ground truth segmentation
     """
@@ -28,7 +30,6 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
     ) -> Image:
         if bbox_densepose_datas is None:
             return image_bgr
-        # pyre-fixme[23]: Unable to unpack single value, 2 were expected.
         for bbox_xywh, densepose_data in zip(*bbox_densepose_datas):
             matrix = densepose_data.segm.numpy()
             mask = np.zeros(matrix.shape, dtype=np.uint8)
@@ -37,7 +38,7 @@ class DensePoseDataCoarseSegmentationVisualizer(object):
         return image_bgr
 
 
-class DensePoseDataPointsVisualizer(object):
+class DensePoseDataPointsVisualizer:
     def __init__(self, densepose_data_to_value_fn=None, cmap=cv2.COLORMAP_PARULA, **kwargs):
         self.points_visualizer = PointsVisualizer()
         self.densepose_data_to_value_fn = densepose_data_to_value_fn
@@ -50,7 +51,6 @@ class DensePoseDataPointsVisualizer(object):
     ) -> Image:
         if bbox_densepose_datas is None:
             return image_bgr
-        # pyre-fixme[23]: Unable to unpack single value, 2 were expected.
         for bbox_xywh, densepose_data in zip(*bbox_densepose_datas):
             x0, y0, w, h = bbox_xywh.numpy()
             x = densepose_data.x.numpy() * w / 255.0 + x0

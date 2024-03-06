@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+# pyre-unsafe
 import json
 import numpy as np
 from functools import lru_cache
@@ -37,7 +39,7 @@ def get_xyz_vertex_embedding(mesh_name: str, device: torch.device):
     return embed_map
 
 
-class DensePoseOutputsVertexVisualizer(object):
+class DensePoseOutputsVertexVisualizer:
     def __init__(
         self,
         cfg,

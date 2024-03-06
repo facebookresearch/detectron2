@@ -5,6 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 # This is a modified version of cocoeval.py where we also have the densepose evaluation.
 
+# pyre-unsafe
+
 __author__ = "tsungyi"
 
 import copy
@@ -59,7 +61,7 @@ class DensePoseDataMode(str, Enum):
     I_DT_UV_0 = "idtuv0"
 
 
-class DensePoseCocoEval(object):
+class DensePoseCocoEval:
     # Interface for evaluating detection on the Microsoft COCO dataset.
     #
     # The usage for CocoEval is as follows:

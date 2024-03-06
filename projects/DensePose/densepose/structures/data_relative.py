@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import numpy as np
 import torch
 from torch.nn import functional as F
@@ -8,7 +10,7 @@ from densepose.structures.mesh import load_mesh_symmetry
 from densepose.structures.transform_data import DensePoseTransformData
 
 
-class DensePoseDataRelative(object):
+class DensePoseDataRelative:
     """
     Dense pose relative annotations that can be applied to any bounding box:
         x - normalized X coordinates [0, 255] of annotated points

@@ -65,7 +65,7 @@ class RotatedCOCOeval(COCOeval):
             # This is the same as the classical COCO evaluation
             return maskUtils.iou(dt, gt, is_crowd)
 
-    def computeIoU(self, imgId, catId):
+    def computeIoU(self, imgId: int, catId: int):
         p = self.params
         if p.useCats:
             gt = self._gts[imgId, catId]
@@ -73,8 +73,10 @@ class RotatedCOCOeval(COCOeval):
         else:
             gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
             dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
-        if len(gt) == 0 and len(dt) == 0:
+
+        if len(gt) == 0 or len(dt) == 0:
             return []
+
         inds = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in inds]
         if len(dt) > p.maxDets[-1]:

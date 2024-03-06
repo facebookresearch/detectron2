@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import fvcore.nn.weight_init as weight_init
 import torch
 from torch import nn

@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import logging
 import numpy as np
 import cv2
@@ -8,7 +10,7 @@ Image = np.ndarray
 Boxes = torch.Tensor
 
 
-class MatrixVisualizer(object):
+class MatrixVisualizer:
     """
     Base visualizer for matrix data
     """
@@ -74,7 +76,7 @@ class MatrixVisualizer(object):
         assert mask.dtype == np.uint8
 
 
-class RectangleVisualizer(object):
+class RectangleVisualizer:
 
     _COLOR_GREEN = (18, 127, 15)
 
@@ -90,7 +92,7 @@ class RectangleVisualizer(object):
         return image_bgr
 
 
-class PointsVisualizer(object):
+class PointsVisualizer:
 
     _COLOR_GREEN = (18, 127, 15)
 
@@ -107,7 +109,7 @@ class PointsVisualizer(object):
         return image_bgr
 
 
-class TextVisualizer(object):
+class TextVisualizer:
 
     _COLOR_GRAY = (218, 227, 218)
     _COLOR_WHITE = (255, 255, 255)
@@ -171,7 +173,7 @@ class TextVisualizer(object):
         return txt_w, txt_h
 
 
-class CompoundVisualizer(object):
+class CompoundVisualizer:
     def __init__(self, visualizers):
         self.visualizers = visualizers
 

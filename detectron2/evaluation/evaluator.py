@@ -101,7 +101,10 @@ class DatasetEvaluators(DatasetEvaluator):
 
 
 def inference_on_dataset(
-    model, data_loader, evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None]
+    model,
+    data_loader,
+    evaluator: Union[DatasetEvaluator, List[DatasetEvaluator], None],
+    callbacks=None,
 ):
     """
     Run model on the data_loader and evaluate the metrics with evaluator.
@@ -119,6 +122,8 @@ def inference_on_dataset(
             The elements it generates will be the inputs to the model.
         evaluator: the evaluator(s) to run. Use `None` if you only want to benchmark,
             but don't want to do any evaluation.
+        callbacks (dict of callables): a dictionary of callback functions which can be
+            called at each stage of inference.
 
     Returns:
         The return value of `evaluator.evaluate()`
@@ -146,6 +151,7 @@ def inference_on_dataset(
         stack.enter_context(torch.no_grad())
 
         start_data_time = time.perf_counter()
+        dict.get(callbacks or {}, "on_start", lambda: None)()
         for idx, inputs in enumerate(data_loader):
             total_data_time += time.perf_counter() - start_data_time
             if idx == num_warmup:
@@ -155,7 +161,9 @@ def inference_on_dataset(
                 total_eval_time = 0
 
             start_compute_time = time.perf_counter()
+            dict.get(callbacks or {}, "before_inference", lambda: None)()
             outputs = model(inputs)
+            dict.get(callbacks or {}, "after_inference", lambda: None)()
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             total_compute_time += time.perf_counter() - start_compute_time
@@ -184,6 +192,7 @@ def inference_on_dataset(
                     n=5,
                 )
             start_data_time = time.perf_counter()
+        dict.get(callbacks or {}, "on_end", lambda: None)()
 
     # Measure the time only for this worker (before the synchronization barrier)
     total_time = time.perf_counter() - start_time

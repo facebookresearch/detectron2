@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from detectron2.structures import BitMasks, Instances
 
 from densepose.converters import ToMaskConverter
