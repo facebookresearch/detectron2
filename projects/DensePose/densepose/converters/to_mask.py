@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from typing import Any, Tuple
 
 from detectron2.structures import BitMasks, Boxes
@@ -20,6 +22,8 @@ class ToMaskConverter(BaseConverter):
     dst_type = BitMasks
 
     @classmethod
+    # pyre-fixme[14]: `convert` overrides method defined in `BaseConverter`
+    #  inconsistently.
     def convert(
         cls,
         densepose_predictor_outputs: Any,

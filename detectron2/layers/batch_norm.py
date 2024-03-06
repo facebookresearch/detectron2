@@ -40,6 +40,7 @@ class FrozenBatchNorm2d(nn.Module):
         self.register_buffer("bias", torch.zeros(num_features))
         self.register_buffer("running_mean", torch.zeros(num_features))
         self.register_buffer("running_var", torch.ones(num_features) - eps)
+        self.register_buffer("num_batches_tracked", None)
 
     def forward(self, x):
         if x.requires_grad:
@@ -65,7 +66,14 @@ class FrozenBatchNorm2d(nn.Module):
             )
 
     def _load_from_state_dict(
-        self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
     ):
         version = local_metadata.get("version", None)
 
@@ -78,7 +86,13 @@ class FrozenBatchNorm2d(nn.Module):
                 state_dict[prefix + "running_var"] = torch.ones_like(self.running_var)
 
         super()._load_from_state_dict(
-            state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
         )
 
     def __repr__(self):
@@ -110,9 +124,43 @@ class FrozenBatchNorm2d(nn.Module):
             res.running_mean.data = module.running_mean.data
             res.running_var.data = module.running_var.data
             res.eps = module.eps
+            res.num_batches_tracked = module.num_batches_tracked
         else:
             for name, child in module.named_children():
                 new_child = cls.convert_frozen_batchnorm(child)
+                if new_child is not child:
+                    res.add_module(name, new_child)
+        return res
+
+    @classmethod
+    def convert_frozenbatchnorm2d_to_batchnorm2d(cls, module: nn.Module) -> nn.Module:
+        """
+        Convert all FrozenBatchNorm2d to BatchNorm2d
+
+        Args:
+            module (torch.nn.Module):
+
+        Returns:
+            If module is FrozenBatchNorm2d, returns a new module.
+            Otherwise, in-place convert module and return it.
+
+        This is needed for quantization:
+            https://fb.workplace.com/groups/1043663463248667/permalink/1296330057982005/
+        """
+
+        res = module
+        if isinstance(module, FrozenBatchNorm2d):
+            res = torch.nn.BatchNorm2d(module.num_features, module.eps)
+
+            res.weight.data = module.weight.data.clone().detach()
+            res.bias.data = module.bias.data.clone().detach()
+            res.running_mean.data = module.running_mean.data.clone().detach()
+            res.running_var.data = module.running_var.data.clone().detach()
+            res.eps = module.eps
+            res.num_batches_tracked = module.num_batches_tracked
+        else:
+            for name, child in module.named_children():
+                new_child = cls.convert_frozenbatchnorm2d_to_batchnorm2d(child)
                 if new_child is not child:
                     res.add_module(name, new_child)
         return res
@@ -207,7 +255,12 @@ class NaiveSyncBatchNorm(BatchNorm2d):
                 vec = vec + input.sum()  # make sure there is gradient w.r.t input
             else:
                 vec = torch.cat(
-                    [mean, meansqr, torch.ones([1], device=mean.device, dtype=mean.dtype)], dim=0
+                    [
+                        mean,
+                        meansqr,
+                        torch.ones([1], device=mean.device, dtype=mean.dtype),
+                    ],
+                    dim=0,
                 )
             vec = differentiable_all_reduce(vec * B)
 

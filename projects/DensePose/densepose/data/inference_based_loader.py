@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import random
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 import torch

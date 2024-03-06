@@ -13,8 +13,13 @@ import detectron2.data.transforms as T
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
-from detectron2.data import DatasetMapper, MetadataCatalog, build_detection_train_loader
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from detectron2.data import build_detection_train_loader, DatasetMapper, MetadataCatalog
+from detectron2.engine import (
+    default_argument_parser,
+    default_setup,
+    DefaultTrainer,
+    launch,
+)
 from detectron2.evaluation import (
     CityscapesInstanceEvaluator,
     CityscapesSemSegEvaluator,
@@ -24,13 +29,15 @@ from detectron2.evaluation import (
     SemSegEvaluator,
     verify_results,
 )
-from detectron2.projects.point_rend import ColorAugSSDTransform, add_pointrend_config
+from detectron2.projects.point_rend import add_pointrend_config, ColorAugSSDTransform
 
 
 def build_sem_seg_train_aug(cfg):
     augs = [
         T.ResizeShortestEdge(
-            cfg.INPUT.MIN_SIZE_TRAIN, cfg.INPUT.MAX_SIZE_TRAIN, cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
+            cfg.INPUT.MIN_SIZE_TRAIN,
+            cfg.INPUT.MAX_SIZE_TRAIN,
+            cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING,
         )
     ]
     if cfg.INPUT.CROP.ENABLED:
@@ -95,7 +102,9 @@ class Trainer(DefaultTrainer):
     @classmethod
     def build_train_loader(cls, cfg):
         if "SemanticSegmentor" in cfg.MODEL.META_ARCHITECTURE:
-            mapper = DatasetMapper(cfg, is_train=True, augmentations=build_sem_seg_train_aug(cfg))
+            mapper = DatasetMapper(
+                cfg, is_train=True, augmentations=build_sem_seg_train_aug(cfg)
+            )
         else:
             mapper = None
         return build_detection_train_loader(cfg, mapper=mapper)
@@ -132,7 +141,7 @@ def main(args):
     return trainer.train()
 
 
-if __name__ == "__main__":
+def invoke_main() -> None:
     args = default_argument_parser().parse_args()
     print("Command Line Args:", args)
     launch(
@@ -143,3 +152,7 @@ if __name__ == "__main__":
         dist_url=args.dist_url,
         args=(args,),
     )
+
+
+if __name__ == "__main__":
+    invoke_main()  # pragma: no cover

@@ -132,6 +132,36 @@ class TestTrainer(unittest.TestCase):
                         gt = data[i][key]
                         self.assertEqual(gt, (logged1 + logged2) / 2.0)
 
+    def test_async_write_metrics(self):
+        writer_period = 1
+
+        model = _SimpleModel(sleep_sec=0.1)
+        trainer = SimpleTrainer(
+            model,
+            self._data_loader("cpu"),
+            torch.optim.SGD(model.parameters(), 0.1),
+            async_write_metrics=True,
+        )
+
+        max_iter = 50
+        with tempfile.TemporaryDirectory(prefix="detectron2_test") as d:
+            json_file = os.path.join(d, "metrics.json")
+            writers = [JSONWriter(json_file, window_size=writer_period)]
+
+            trainer.register_hooks(
+                [
+                    hooks.IterationTimer(),
+                    hooks.PeriodicWriter(writers, period=writer_period),
+                ]
+            )
+            trainer.train(0, max_iter)
+
+            self.assertEqual(len(trainer.storage.history("time").values()), 48)
+            for key in ["data_time", "total_loss"]:
+                history = trainer.storage.history(key).values()
+                history_iters = [h[1] for h in history]
+                self.assertEqual(history_iters, list(range(50)))
+
     def test_default_trainer(self):
         # TODO: this test requires manifold access, so changed device to CPU. see: T88318502
         cfg = get_cfg()

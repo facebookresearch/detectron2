@@ -6,7 +6,7 @@ from detectron2.layers import nonzero_tuple
 
 
 # TODO: the name is too general
-class Matcher(object):
+class Matcher:
     """
     This class assigns to each predicted "element" (e.g., a box) a ground-truth
     element. Each predicted element will have exactly zero or one matches; each

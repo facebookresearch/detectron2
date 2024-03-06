@@ -1,8 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 from .base import RectangleVisualizer, TextVisualizer
 
 
-class BoundingBoxVisualizer(object):
+class BoundingBoxVisualizer:
     def __init__(self):
         self.rectangle_visualizer = RectangleVisualizer()
 
@@ -12,7 +14,7 @@ class BoundingBoxVisualizer(object):
         return image_bgr
 
 
-class ScoredBoundingBoxVisualizer(object):
+class ScoredBoundingBoxVisualizer:
     def __init__(self, bbox_visualizer_params=None, score_visualizer_params=None, **kwargs):
         if bbox_visualizer_params is None:
             bbox_visualizer_params = {}

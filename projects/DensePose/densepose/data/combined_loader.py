@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import random
 from collections import deque
 from typing import Any, Collection, Deque, Iterable, Iterator, List, Sequence

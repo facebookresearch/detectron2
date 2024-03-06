@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from typing import Any, Dict, List, Tuple
 import torch
 from torch.nn import functional as F

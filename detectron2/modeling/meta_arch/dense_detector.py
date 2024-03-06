@@ -249,8 +249,8 @@ class DenseDetector(nn.Module):
                 anchors_i,
                 box_cls_i,
                 box_reg_i,
-                self.test_score_thresh,
-                self.test_topk_candidates,
+                score_thresh,
+                topk_candidates,
                 image_size,
             )
             # Iterate over every feature level

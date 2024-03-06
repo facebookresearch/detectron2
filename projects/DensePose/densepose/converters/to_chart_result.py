@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from typing import Any
 
 from detectron2.structures import Boxes
@@ -18,6 +20,8 @@ class ToChartResultConverter(BaseConverter):
     dst_type = DensePoseChartResult
 
     @classmethod
+    # pyre-fixme[14]: `convert` overrides method defined in `BaseConverter`
+    #  inconsistently.
     def convert(cls, predictor_outputs: Any, boxes: Boxes, *args, **kwargs) -> DensePoseChartResult:
         """
         Convert DensePose predictor outputs to DensePoseResult using some registered
@@ -45,6 +49,8 @@ class ToChartResultConverterWithConfidences(BaseConverter):
     dst_type = DensePoseChartResultWithConfidences
 
     @classmethod
+    # pyre-fixme[14]: `convert` overrides method defined in `BaseConverter`
+    #  inconsistently.
     def convert(
         cls, predictor_outputs: Any, boxes: Boxes, *args, **kwargs
     ) -> DensePoseChartResultWithConfidences:

@@ -82,6 +82,10 @@ def get_extensions():
             define_macros += [("WITH_HIP", None)]
             extra_compile_args["nvcc"] = []
 
+        nvcc_flags_env = os.getenv("NVCC_FLAGS", "")
+        if nvcc_flags_env != "":
+            extra_compile_args["nvcc"].extend(nvcc_flags_env.split(" "))
+
         if torch_ver < [1, 7]:
             # supported by https://github.com/pytorch/pytorch/pull/43931
             CC = os.environ.get("CC", None)
@@ -182,7 +186,7 @@ setup(
         "fvcore>=0.1.5,<0.1.6",  # required like this to make it pip installable
         "iopath>=0.1.7,<0.1.10",
         "dataclasses; python_version<'3.7'",
-        "omegaconf>=2.1",
+        "omegaconf>=2.1,<2.4",
         "hydra-core>=1.1",
         "black",
         "packaging",

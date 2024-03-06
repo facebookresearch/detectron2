@@ -129,9 +129,9 @@ class SemSegEvaluator(DatasetEvaluator):
         """
         for input, output in zip(inputs, outputs):
             output = output["sem_seg"].argmax(dim=0).to(self._cpu_device)
-            pred = np.array(output, dtype=np.int)
+            pred = np.array(output, dtype=int)
             gt_filename = self.input_file_to_gt_file[input["file_name"]]
-            gt = self.sem_seg_loading_fn(gt_filename, dtype=np.int)
+            gt = self.sem_seg_loading_fn(gt_filename, dtype=int)
 
             gt[gt == self._ignore_label] = self._num_classes
 
@@ -183,12 +183,12 @@ class SemSegEvaluator(DatasetEvaluator):
             with PathManager.open(file_path, "w") as f:
                 f.write(json.dumps(self._predictions))
 
-        acc = np.full(self._num_classes, np.nan, dtype=np.float)
-        iou = np.full(self._num_classes, np.nan, dtype=np.float)
-        tp = self._conf_matrix.diagonal()[:-1].astype(np.float)
-        pos_gt = np.sum(self._conf_matrix[:-1, :-1], axis=0).astype(np.float)
+        acc = np.full(self._num_classes, np.nan, dtype=float)
+        iou = np.full(self._num_classes, np.nan, dtype=float)
+        tp = self._conf_matrix.diagonal()[:-1].astype(float)
+        pos_gt = np.sum(self._conf_matrix[:-1, :-1], axis=0).astype(float)
         class_weights = pos_gt / np.sum(pos_gt)
-        pos_pred = np.sum(self._conf_matrix[:-1, :-1], axis=1).astype(np.float)
+        pos_pred = np.sum(self._conf_matrix[:-1, :-1], axis=1).astype(float)
         acc_valid = pos_gt > 0
         acc[acc_valid] = tp[acc_valid] / pos_gt[acc_valid]
         union = pos_gt + pos_pred - tp
@@ -200,10 +200,10 @@ class SemSegEvaluator(DatasetEvaluator):
         pacc = np.sum(tp) / np.sum(pos_gt)
 
         if self._compute_boundary_iou:
-            b_iou = np.full(self._num_classes, np.nan, dtype=np.float)
-            b_tp = self._b_conf_matrix.diagonal()[:-1].astype(np.float)
-            b_pos_gt = np.sum(self._b_conf_matrix[:-1, :-1], axis=0).astype(np.float)
-            b_pos_pred = np.sum(self._b_conf_matrix[:-1, :-1], axis=1).astype(np.float)
+            b_iou = np.full(self._num_classes, np.nan, dtype=float)
+            b_tp = self._b_conf_matrix.diagonal()[:-1].astype(float)
+            b_pos_gt = np.sum(self._b_conf_matrix[:-1, :-1], axis=0).astype(float)
+            b_pos_pred = np.sum(self._b_conf_matrix[:-1, :-1], axis=1).astype(float)
             b_union = b_pos_gt + b_pos_pred - b_tp
             b_iou_valid = b_union > 0
             b_iou[b_iou_valid] = b_tp[b_iou_valid] / b_union[b_iou_valid]
