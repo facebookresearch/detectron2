@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 from dataclasses import fields
 from typing import Any, List
 import torch

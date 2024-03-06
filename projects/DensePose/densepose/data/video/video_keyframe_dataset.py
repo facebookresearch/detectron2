@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import csv
 import logging
 import numpy as np
@@ -192,7 +194,7 @@ def read_keyframe_helper_data(fpath: str):
     video_id_to_keyframes = {}
     try:
         with PathManager.open(fpath, "r") as io:
-            csv_reader = csv.reader(io)  # pyre-ignore[6]
+            csv_reader = csv.reader(io)
             header = next(csv_reader)
             video_id_idx = header.index("video_id")
             keyframes_idx = header.index("keyframes")

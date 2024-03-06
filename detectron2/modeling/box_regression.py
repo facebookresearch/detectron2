@@ -18,7 +18,7 @@ __all__ = ["Box2BoxTransform", "Box2BoxTransformRotated", "Box2BoxTransformLinea
 
 
 @torch.jit.script
-class Box2BoxTransform(object):
+class Box2BoxTransform:
     """
     The box-to-box transform defined in R-CNN. The transformation is parameterized
     by 4 deltas: (dx, dy, dw, dh). The transformation scales the box's width and height
@@ -117,7 +117,7 @@ class Box2BoxTransform(object):
 
 
 @torch.jit.script
-class Box2BoxTransformRotated(object):
+class Box2BoxTransformRotated:
     """
     The box-to-box transform defined in Rotated R-CNN. The transformation is parameterized
     by 5 deltas: (dx, dy, dw, dh, da). The transformation scales the box's width and height
@@ -227,7 +227,7 @@ class Box2BoxTransformRotated(object):
         return pred_boxes
 
 
-class Box2BoxTransformLinear(object):
+class Box2BoxTransformLinear:
     """
     The linear box-to-box transform defined in FCOS. The transformation is parameterized
     by the distance from the center of (square) src box to 4 edges of the target box.

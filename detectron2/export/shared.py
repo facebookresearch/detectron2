@@ -131,7 +131,7 @@ def mock_torch_nn_functional_interpolate():
 # ==== torch/utils_caffe2/ws_utils.py ==========================================
 
 
-class ScopedWS(object):
+class ScopedWS:
     def __init__(self, ws_name, is_reset, is_cleanup=False):
         self.ws_name = ws_name
         self.is_reset = is_reset

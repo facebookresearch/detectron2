@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 from typing import BinaryIO, Dict, Union
 import torch
 
@@ -16,7 +18,7 @@ def normalized_coords_transform(x0, y0, w, h):
     return f
 
 
-class DensePoseTransformData(object):
+class DensePoseTransformData:
 
     # Horizontal symmetry label transforms used for horizontal flip
     MASK_LABEL_SYMMETRIES = [0, 1, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 14]

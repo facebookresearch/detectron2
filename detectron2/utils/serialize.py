@@ -2,7 +2,7 @@
 import cloudpickle
 
 
-class PicklableWrapper(object):
+class PicklableWrapper:
     """
     Wrap an object to make it more picklable, note that it uses
     heavy weight serialization libraries that are slower than pickle.

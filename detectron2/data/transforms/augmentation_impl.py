@@ -242,7 +242,7 @@ class ResizeScale(Augmentation):
         output_size = np.round(np.multiply(input_size, output_scale)).astype(int)
 
         return ResizeTransform(
-            input_size[0], input_size[1], output_size[0], output_size[1], self.interp
+            input_size[0], input_size[1], int(output_size[0]), int(output_size[1]), self.interp
         )
 
     def get_transform(self, image: np.ndarray) -> Transform:

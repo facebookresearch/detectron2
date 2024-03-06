@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import numpy as np
 from typing import Optional, Tuple
 import cv2
@@ -9,7 +11,7 @@ from ..structures import DensePoseChartPredictorOutput
 from .base import Boxes, Image, MatrixVisualizer
 
 
-class DensePoseOutputsVisualizer(object):
+class DensePoseOutputsVisualizer:
     def __init__(
         self, inplace=True, cmap=cv2.COLORMAP_PARULA, alpha=0.7, to_visualize=None, **kwargs
     ):

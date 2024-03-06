@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import logging
 from typing import List, Optional, Sequence, Tuple
 import torch
@@ -57,7 +59,7 @@ def create_extractor(visualizer: object):
         return None
 
 
-class BoundingBoxExtractor(object):
+class BoundingBoxExtractor:
     """
     Extracts bounding boxes from instances
     """
@@ -67,7 +69,7 @@ class BoundingBoxExtractor(object):
         return boxes_xywh
 
 
-class ScoredBoundingBoxExtractor(object):
+class ScoredBoundingBoxExtractor:
     """
     Extracts bounding boxes from instances
     """
@@ -83,7 +85,7 @@ class ScoredBoundingBoxExtractor(object):
         return (boxes_xywh, scores)
 
 
-class DensePoseResultExtractor(object):
+class DensePoseResultExtractor:
     """
     Extracts DensePose chart result with confidences from instances
     """
@@ -105,7 +107,7 @@ class DensePoseResultExtractor(object):
             return None, None
 
 
-class DensePoseOutputsExtractor(object):
+class DensePoseOutputsExtractor:
     """
     Extracts DensePose result from instances
     """
@@ -138,7 +140,7 @@ class DensePoseOutputsExtractor(object):
         return dpout, boxes_xywh, classes
 
 
-class CompoundExtractor(object):
+class CompoundExtractor:
     """
     Extracts data for CompoundVisualizer
     """
@@ -154,7 +156,7 @@ class CompoundExtractor(object):
         return datas
 
 
-class NmsFilteredExtractor(object):
+class NmsFilteredExtractor:
     """
     Extracts data in the format accepted by NmsFilteredVisualizer
     """
@@ -180,7 +182,7 @@ class NmsFilteredExtractor(object):
         return self.extractor(instances, select=select)
 
 
-class ScoreThresholdedExtractor(object):
+class ScoreThresholdedExtractor:
     """
     Extracts data in the format accepted by ScoreThresholdedVisualizer
     """
