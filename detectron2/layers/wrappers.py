@@ -40,9 +40,14 @@ def shapes_to_tensor(x: List[int], device: Optional[torch.device] = None) -> tor
 
 def check_if_dynamo_compiling():
     if TORCH_VERSION >= (1, 14):
-        from torch._dynamo import is_compiling
+        # It seems like Torch 2.0 doesn't have is_compiling module in torch._dynamo.
+        # https://pytorch.org/docs/2.0/_dynamo.html
+        # For now return False
 
-        return is_compiling()
+        # from torch._dynamo import is_compiling
+        # return is_compiling()
+
+        return False
     else:
         return False
 
