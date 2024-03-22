@@ -5,6 +5,7 @@ import logging
 from typing import List, Optional, Sequence, Tuple
 import torch
 
+# pyre-fixme[21]: Could not find module `detectron2.layers.nms`.
 from detectron2.layers.nms import batched_nms
 from detectron2.structures.instances import Instances
 
