@@ -1,4 +1,4 @@
-version: "2.3"
+version: '3.1'
 services:
   detectron2:
     build:

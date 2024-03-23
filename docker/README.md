@@ -1,5 +1,5 @@
 
-## Use the container (with docker ≥ 19.03)
+## Use the container (with docker ≥ 24.0.2)
 
 ```
 cd docker/
@@ -14,7 +14,7 @@ docker run --gpus all -it \
 xhost +local:`docker inspect --format='{{ .Config.Hostname }}' detectron2`
 ```
 
-## Use the container (with docker-compose ≥ 1.28.0)
+## Use the container (with docker-compose ≥ 2.18.1)
 
 Install docker-compose and nvidia-docker-toolkit, then run:
 ```

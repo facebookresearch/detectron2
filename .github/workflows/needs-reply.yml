@@ -10,7 +10,7 @@ jobs:
     if: ${{ github.repository_owner == 'facebookresearch' }}
     steps:
       - name: Close old issues that need reply
-        uses: actions/github-script@v3
+        uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           # Modified from https://github.com/dwieeb/needs-reply
@@ -90,7 +90,7 @@ jobs:
     if: ${{ github.repository_owner == 'facebookresearch' }}
     steps:
       - name: Lock closed issues that have no activity for a while
-        uses: dessant/lock-threads@v2
+        uses: dessant/lock-threads@v4
         with:
           github-token: ${{ github.token }}
           issue-lock-inactive-days: '300'
