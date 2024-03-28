@@ -155,7 +155,7 @@ class RepeatFactorTrainingSampler(Sampler):
         self._frac_part = repeat_factors - self._int_part
 
     @staticmethod
-    def repeat_factors_from_category_frequency(dataset_dicts, repeat_thresh):
+    def repeat_factors_from_category_frequency(dataset_dicts, repeat_thresh, sqrt=True):
         """
         Compute (fractional) per-image repeat factors based on category frequency.
         The repeat factor for an image is a function of the frequency of the rarest
@@ -169,6 +169,7 @@ class RepeatFactorTrainingSampler(Sampler):
             repeat_thresh (float): frequency threshold below which data is repeated.
                 If the frequency is half of `repeat_thresh`, the image will be
                 repeated twice.
+            sqrt (bool): if True, apply :func:`math.sqrt` to the repeat factor.
 
         Returns:
             torch.Tensor:
@@ -187,7 +188,14 @@ class RepeatFactorTrainingSampler(Sampler):
         # 2. For each category c, compute the category-level repeat factor:
         #    r(c) = max(1, sqrt(t / f(c)))
         category_rep = {
-            cat_id: max(1.0, math.sqrt(repeat_thresh / cat_freq))
+            cat_id: max(
+                1.0,
+                (
+                    math.sqrt(repeat_thresh / cat_freq)
+                    if sqrt
+                    else (repeat_thresh / cat_freq)
+                ),
+            )
             for cat_id, cat_freq in category_freq.items()
         }
         for cat_id in sorted(category_rep.keys()):

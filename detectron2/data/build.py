@@ -430,7 +430,7 @@ def _build_weighted_sampler(cfg, enable_category_balance=False):
         """
         category_repeat_factors = [
             RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                dataset_dict, cfg.DATALOADER.REPEAT_THRESHOLD
+                dataset_dict, cfg.DATALOADER.REPEAT_THRESHOLD, sqrt=cfg.DATALOADER.REPEAT_SQRT
             )
             for dataset_dict in dataset_name_to_dicts.values()
         ]
@@ -482,7 +482,7 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
                 sampler = TrainingSampler(len(dataset))
             elif sampler_name == "RepeatFactorTrainingSampler":
                 repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                    dataset, cfg.DATALOADER.REPEAT_THRESHOLD
+                    dataset, cfg.DATALOADER.REPEAT_THRESHOLD, sqrt=cfg.DATALOADER.REPEAT_SQRT
                 )
                 sampler = RepeatFactorTrainingSampler(repeat_factors)
             elif sampler_name == "RandomSubsetTrainingSampler":
