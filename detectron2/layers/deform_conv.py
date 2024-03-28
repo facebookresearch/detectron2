@@ -208,7 +208,14 @@ class _ModulatedDeformConv(Function):
         if not ctx.with_bias:
             bias = input.new_empty(1)  # fake tensor
         if not input.is_cuda:
-            raise NotImplementedError("Deformable Conv is not supported on CPUs!")
+            # TODO: let torchvision support full features of our deformconv.
+            if deformable_groups != 1:
+                raise NotImplementedError(
+                    "Deformable Conv with deformable_groups != 1 is not supported on CPUs!"
+                )
+            return deform_conv2d(
+                input, offset, weight, stride=stride, padding=padding, dilation=dilation, mask=mask
+            )
         if (
             weight.requires_grad
             or mask.requires_grad
