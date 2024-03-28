@@ -32,10 +32,11 @@ python train_net.py --config-file configs/mask_rcnn_R_50_FPN_3x_point_sup_point_
 If you use PointSup, please use the following BibTeX entry.
 
 ```BibTeX
-@article{cheng2021pointly,
+@inproceedings{cheng2022pointly,
   title={Pointly-Supervised Instance Segmentation},
-  author={Bowen Cheng and Omkar Parkhi and Alexander Kirillov},
-  journal={arXiv},
-  year={2021}
+  author={Cheng, Bowen and Parkhi, Omkar and Kirillov, Alexander},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={2617--2626},
+  year={2022}
 }
 ```
