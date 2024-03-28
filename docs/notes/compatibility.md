@@ -68,13 +68,14 @@ model-level compatibility. The major ones are:
 explains more details on the above mentioned issues
 about pixels, coordinates, and "+1"s.
 
+## Compatibility with ONNX Runtime
 
-## Compatibility with Caffe2
+[//]: # (Add more doc/examples when ONNX Runtime is supported on the CI)
+Most ops are available in [ONNX Runtime](https://onnxruntime.ai), therefore,
+many models trained with detectron2 can be converted to ONNX using tracing
+or scripting methods and executed by ONNX Runtime.
+See [Deployment](../tutorials/deployment.md) to learn how to export a model to ONNX.
 
-As mentioned above, despite the incompatibilities with Detectron, the relevant
-ops have been implemented in Caffe2.
-Therefore, models trained with detectron2 can be converted in Caffe2.
-See [Deployment](../tutorials/deployment.md) for the tutorial.
 
 ## Compatibility with TensorFlow
 
@@ -82,3 +83,10 @@ Most ops are available in TensorFlow, although some tiny differences in
 the implementation of resize / ROIAlign / padding need to be addressed.
 A working conversion script is provided by [tensorpack Faster R-CNN](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN/convert_d2)
 to run a standard detectron2 model in TensorFlow.
+
+## (DEPRECATED) Compatibility with Caffe2
+
+As mentioned above, despite the incompatibilities with Detectron, the relevant
+ops have been implemented in Caffe2.
+Therefore, models trained with detectron2 can be converted in Caffe2.
+See [Deployment](../tutorials/deployment.md) for the tutorial.
