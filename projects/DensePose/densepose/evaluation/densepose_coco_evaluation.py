@@ -18,7 +18,6 @@ import time
 from collections import defaultdict
 from enum import Enum
 from typing import Any, Dict, Tuple
-# pyre-fixme[21]: Could not find module `scipy.spatial.distance`.
 import scipy.spatial.distance as ssd
 import torch
 import torch.nn.functional as F
