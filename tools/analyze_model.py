@@ -2,22 +2,23 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
 import logging
-import numpy as np
 from collections import Counter
+
+import numpy as np
 import tqdm
-from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
+from detectron2.config import CfgNode, get_cfg, instantiate, LazyConfig
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import default_argument_parser
 from detectron2.modeling import build_model
 from detectron2.utils.analysis import (
-    FlopCountAnalysis,
     activation_count_operators,
+    FlopCountAnalysis,
     parameter_count_table,
 )
 from detectron2.utils.logger import setup_logger
+from fvcore.nn import flop_count_table  # can also try flop_count_str
 
 logger = logging.getLogger("detectron2")
 
@@ -58,13 +59,17 @@ def do_flop(cfg):
         counts += flops.by_operator()
         total_flops.append(flops.total())
 
-    logger.info("Flops table computed from only one input sample:\n" + flop_count_table(flops))
+    logger.info(
+        "Flops table computed from only one input sample:\n" + flop_count_table(flops)
+    )
     logger.info(
         "Average GFlops for each type of operators:\n"
         + str([(k, v / (idx + 1) / 1e9) for k, v in counts.items()])
     )
     logger.info(
-        "Total GFlops: {:.1f}±{:.1f}".format(np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9)
+        "Total GFlops: {:.1f}±{:.1f}".format(
+            np.mean(total_flops) / 1e9, np.std(total_flops) / 1e9
+        )
     )
 
 
@@ -113,7 +118,8 @@ def do_structure(cfg):
     logger.info("Model Structure:\n" + str(model))
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global cfg, args
     parser = default_argument_parser(
         epilog="""
 Examples:
@@ -157,3 +163,7 @@ $ ./analyze_model.py --num-inputs 100 --tasks flop \\
             "parameter": do_parameter,
             "structure": do_structure,
         }[task](cfg)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

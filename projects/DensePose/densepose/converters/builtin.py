@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from ..structures import DensePoseChartPredictorOutput, DensePoseEmbeddingPredictorOutput
 from . import (
     HFlipConverter,

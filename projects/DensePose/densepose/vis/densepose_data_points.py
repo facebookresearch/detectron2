@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import numpy as np
 from typing import Iterable, Optional, Tuple
 import cv2

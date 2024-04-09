@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from dataclasses import make_dataclass
 from functools import lru_cache
 from typing import Any, Optional
