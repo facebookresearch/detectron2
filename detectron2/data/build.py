@@ -484,7 +484,7 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
                 repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
                     dataset, cfg.DATALOADER.REPEAT_THRESHOLD, sqrt=cfg.DATALOADER.REPEAT_SQRT
                 )
-                sampler = RepeatFactorTrainingSampler(repeat_factors)
+                sampler = RepeatFactorTrainingSampler(repeat_factors, seed=cfg.SEED)
             elif sampler_name == "RandomSubsetTrainingSampler":
                 sampler = RandomSubsetTrainingSampler(
                     len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO
