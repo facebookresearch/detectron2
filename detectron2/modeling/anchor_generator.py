@@ -162,7 +162,7 @@ class DefaultAnchorGenerator(nn.Module):
         """
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
-    def _grid_anchors(self, grid_sizes: List[List[int]]):
+    def _grid_anchors(self, grid_sizes):
         """
         Returns:
             list[Tensor]: #featuremap tensors, each is (#locations x #cell_anchors) x 4
@@ -317,7 +317,12 @@ class RotatedAnchorGenerator(nn.Module):
 
     def _grid_anchors(self, grid_sizes):
         anchors = []
-        for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
+        for size, stride, base_anchors in zip(
+            grid_sizes,
+            self.strides,
+            self.cell_anchors._buffers.values(),
+            strict=False
+        ):
             shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors)
             zeros = torch.zeros_like(shift_x)
             shifts = torch.stack((shift_x, shift_y, zeros, zeros, zeros), dim=1)
