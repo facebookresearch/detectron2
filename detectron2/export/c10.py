@@ -36,7 +36,7 @@ class Caffe2Boxes(Boxes):
 
 
 # TODO clean up this class, maybe just extend Instances
-class InstancesList(object):
+class InstancesList:
     """
     Tensor representation of a list of Instances object for a batch of images.
 
@@ -147,7 +147,7 @@ class InstancesList(object):
         return ret
 
 
-class Caffe2Compatible(object):
+class Caffe2Compatible:
     """
     A model can inherit this class to indicate that it can be traced and deployed with caffe2.
     """

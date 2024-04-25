@@ -8,6 +8,7 @@ from torch.nn.modules.utils import _pair
 
 class _ROIAlignRotated(Function):
     @staticmethod
+    @torch.compiler.disable
     def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio):
         ctx.save_for_backward(roi)
         ctx.output_size = _pair(output_size)

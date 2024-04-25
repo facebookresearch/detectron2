@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import numpy as np
 from typing import Dict, List, Optional
 import fvcore.nn.weight_init as weight_init
@@ -153,8 +155,6 @@ class DensePoseROIHeads(StandardROIHeads):
                 proposal_boxes = [x.proposal_boxes for x in proposals]
 
                 if self.use_decoder:
-                    # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a
-                    #  function.
                     features_list = [self.decoder(features_list)]
 
                 features_dp = self.densepose_pooler(features_list, proposal_boxes)
@@ -168,7 +168,6 @@ class DensePoseROIHeads(StandardROIHeads):
             pred_boxes = [x.pred_boxes for x in instances]
 
             if self.use_decoder:
-                # pyre-fixme[29]: `Union[nn.Module, torch.Tensor]` is not a function.
                 features_list = [self.decoder(features_list)]
 
             features_dp = self.densepose_pooler(features_list, pred_boxes)

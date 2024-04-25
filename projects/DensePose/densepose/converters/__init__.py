@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from .hflip import HFlipConverter
 from .to_mask import ToMaskConverter
 from .to_chart_result import ToChartResultConverter, ToChartResultConverterWithConfidences

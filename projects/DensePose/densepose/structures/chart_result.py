@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 import torch

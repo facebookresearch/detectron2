@@ -53,7 +53,7 @@ class TestLazyPythonConfig(unittest.TestCase):
         self.assertEqual(cfg.dir1b_dict.a, "123")
         self.assertEqual(cfg.lazyobj.x, 123)
 
-        LazyConfig.apply_overrides(cfg, ["dir1b_dict.a=abc"])
+        LazyConfig.apply_overrides(cfg, ["dir1b_dict.a='abc'"])
         self.assertEqual(cfg.dir1b_dict.a, "abc")
 
     def test_invalid_overrides(self):

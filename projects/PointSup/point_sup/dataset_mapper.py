@@ -101,7 +101,7 @@ class PointSupDatasetMapper:
             # 1990 ("What is the coordinate of a pixel?"): d = floor(c) and c = d + 0.5,
             # where d is a discrete coordinate and c is a continuous coordinate.
             for ann in dataset_dict["annotations"]:
-                point_coords_wrt_image = np.array(ann["point_coords"]).astype(np.float)
+                point_coords_wrt_image = np.array(ann["point_coords"]).astype(float)
                 point_coords_wrt_image = point_coords_wrt_image + 0.5
                 ann["point_coords"] = point_coords_wrt_image
 

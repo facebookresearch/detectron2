@@ -22,6 +22,7 @@ def batched_nms(
 
 # Note: this function (nms_rotated) might be moved into
 # torchvision/ops/boxes.py in the future
+@torch.compiler.disable
 def nms_rotated(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float):
     """
     Performs non-maximum suppression (NMS) on the rotated boxes according

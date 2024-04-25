@@ -9,7 +9,7 @@ from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
 from detectron2.modeling import build_model
 
 
-class _ModelZooUrls(object):
+class _ModelZooUrls:
     """
     Mapping from names to officially released Detectron2 pre-trained models.
     """

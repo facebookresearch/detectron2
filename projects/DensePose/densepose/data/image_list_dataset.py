@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import logging
 import numpy as np
 from typing import Any, Callable, Dict, List, Optional, Union

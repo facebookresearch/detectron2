@@ -186,7 +186,7 @@ setup(
         "fvcore>=0.1.5,<0.1.6",  # required like this to make it pip installable
         "iopath>=0.1.7,<0.1.10",
         "dataclasses; python_version<'3.7'",
-        "omegaconf>=2.1",
+        "omegaconf>=2.1,<2.4",
         "hydra-core>=1.1",
         "black",
         "packaging",

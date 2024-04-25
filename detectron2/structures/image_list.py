@@ -8,7 +8,7 @@ from torch.nn import functional as F
 from detectron2.layers.wrappers import move_device_like, shapes_to_tensor
 
 
-class ImageList(object):
+class ImageList:
     """
     Structure that holds a list of images (of possibly
     varying sizes) as a single tensor.
