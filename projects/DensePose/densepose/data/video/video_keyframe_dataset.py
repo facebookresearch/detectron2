@@ -34,6 +34,7 @@ def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
     """
     try:
         with PathManager.open(video_fpath, "rb") as io:
+            # pyre-fixme[16]: Module `av` has no attribute `open`.
             container = av.open(io, mode="r")
             stream = container.streams.video[video_stream_idx]
             keyframes = []
@@ -111,6 +112,7 @@ def read_keyframes(
     """
     try:
         with PathManager.open(video_fpath, "rb") as io:
+            # pyre-fixme[16]: Module `av` has no attribute `open`.
             container = av.open(io)
             stream = container.streams.video[video_stream_idx]
             frames = []
