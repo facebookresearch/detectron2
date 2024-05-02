@@ -301,6 +301,9 @@ def build_batch_data_loader(
     collate_fn=None,
     drop_last: bool = True,
     single_gpu_batch_size=None,
+    prefetch_factor=2,
+    persistent_workers=False,
+    pin_memory=False,
     seed=None,
     **kwargs,
 ):
@@ -375,8 +378,11 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor if num_workers > 0 else None,
+            persistent_workers=persistent_workers,
+            pin_memory=pin_memory,
             generator=generator,
-            **kwargs
+            **kwargs,
         )
 
 

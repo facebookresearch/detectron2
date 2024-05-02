@@ -61,7 +61,8 @@ class TrainingSampler(Sampler):
 
     def _infinite_indices(self):
         g = torch.Generator()
-        g.manual_seed(self._seed)
+        if self._seed is not None:
+            g.manual_seed(self._seed)
         while True:
             if self._shuffle:
                 yield from torch.randperm(self._size, generator=g).tolist()
