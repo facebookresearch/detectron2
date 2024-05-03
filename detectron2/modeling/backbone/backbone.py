@@ -56,7 +56,7 @@ class Backbone(nn.Module, metaclass=ABCMeta):
         square padding size if `square_size` > 0.
 
         TODO: use type of Dict[str, int] to avoid torchscipt issues. The type of padding_constraints
-        could be generalized as TypedDict (Python 3.8+) to support more types in the future.
+        could be generalized as TypedDict (Python 3.9+) to support more types in the future.
         """
         return {}
 
