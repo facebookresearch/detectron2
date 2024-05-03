@@ -8,6 +8,7 @@ These can be removed once https://github.com/pytorch/pytorch/issues/12013
 is implemented
 """
 
+import functools
 import warnings
 from typing import List, Optional
 import torch
@@ -39,12 +40,26 @@ def shapes_to_tensor(x: List[int], device: Optional[torch.device] = None) -> tor
 
 
 def check_if_dynamo_compiling():
-    if TORCH_VERSION >= (1, 14):
+    if TORCH_VERSION >= (2, 1):
         from torch._dynamo import is_compiling
 
         return is_compiling()
     else:
         return False
+
+
+def disable_torch_compiler(func):
+    if TORCH_VERSION >= (2, 1):
+        # Use the torch.compiler.disable decorator if supported
+        @torch.compiler.disable
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+    else:
+        # Return the function unchanged if torch.compiler.disable is not supported
+        return func
 
 
 def cat(tensors: List[torch.Tensor], dim: int = 0):

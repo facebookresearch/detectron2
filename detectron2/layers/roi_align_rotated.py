@@ -5,10 +5,12 @@ from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.nn.modules.utils import _pair
 
+from detectron2.layers.wrappers import disable_torch_compiler
+
 
 class _ROIAlignRotated(Function):
     @staticmethod
-    @torch.compiler.disable
+    @disable_torch_compiler
     def forward(ctx, input, roi, output_size, spatial_scale, sampling_ratio):
         ctx.save_for_backward(roi)
         ctx.output_size = _pair(output_size)

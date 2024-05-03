@@ -3,7 +3,9 @@
 import io
 import unittest
 import warnings
+import onnx
 import torch
+from packaging import version
 from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
@@ -95,6 +97,10 @@ class TestONNXTracingExport(unittest.TestCase):
             inference_func,
         )
 
+    @unittest.skipIf(
+        version.Version(onnx.version.version) == version.Version("1.16.0"),
+        "This test fails on ONNX Runtime 1.16",
+    )
     def testKeypointHead(self):
         class M(torch.nn.Module):
             def __init__(self):
