@@ -484,11 +484,11 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     dataset_dicts = combine_detection_dataset_dicts(
         [dataset_name],
         keep_instance_predicate=_get_test_keep_instance_predicate(cfg),
-        proposal_files=[
-            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]
-        ]
-        if cfg.MODEL.LOAD_PROPOSALS
-        else None,
+        proposal_files=(
+            [cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]]
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None
+        ),
     )
     sampler = None
     if not cfg.DENSEPOSE_EVALUATION.DISTRIBUTED_INFERENCE:

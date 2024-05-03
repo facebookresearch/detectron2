@@ -404,9 +404,9 @@ class ChartBasedAnnotationsAccumulator(AnnotationsAccumulator):
             u_gt=torch.cat(self.u_gt, 0),
             v_gt=torch.cat(self.v_gt, 0),
             # ignore segmentation annotations, if not all the instances contain those
-            coarse_segm_gt=torch.cat(self.s_gt, 0)
-            if len(self.s_gt) == len(self.bbox_xywh_gt)
-            else None,
+            coarse_segm_gt=(
+                torch.cat(self.s_gt, 0) if len(self.s_gt) == len(self.bbox_xywh_gt) else None
+            ),
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),
             point_bbox_with_dp_indices=torch.cat(self.point_bbox_with_dp_indices, 0).long(),

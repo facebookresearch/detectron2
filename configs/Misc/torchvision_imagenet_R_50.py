@@ -10,7 +10,6 @@ python tools/lazyconfig_train_net.py --config-file configs/Misc/torchvision_imag
 
 """
 
-
 import torch
 from torch import nn
 from torch.nn import functional as F

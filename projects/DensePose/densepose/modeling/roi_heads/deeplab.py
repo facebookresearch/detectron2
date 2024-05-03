@@ -130,7 +130,7 @@ class ASPP(nn.Module):
         self.project = nn.Sequential(
             nn.Conv2d(5 * out_channels, out_channels, 1, bias=False),
             # nn.BatchNorm2d(out_channels),
-            nn.ReLU()
+            nn.ReLU(),
             # nn.Dropout(0.5)
         )
 

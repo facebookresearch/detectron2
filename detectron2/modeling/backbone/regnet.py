@@ -443,9 +443,9 @@ class RegNet(AnyNet):
             group_widths=gs,
             bottleneck_ratios=bs,
             se_ratio=se_ratio,
-            activation_class=default_activation_class
-            if activation_class is None
-            else activation_class,
+            activation_class=(
+                default_activation_class if activation_class is None else activation_class
+            ),
             freeze_at=freeze_at,
             norm=norm,
             out_features=out_features,
