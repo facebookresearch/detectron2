@@ -126,9 +126,9 @@ class CseAnnotationsAccumulator(AnnotationsAccumulator):
             vertex_mesh_ids_gt=torch.cat(self.vertex_mesh_ids_gt, 0),
             vertex_ids_gt=torch.cat(self.vertex_ids_gt, 0),
             # ignore segmentation annotations, if not all the instances contain those
-            coarse_segm_gt=torch.cat(self.s_gt, 0)
-            if len(self.s_gt) == len(self.bbox_xywh_gt)
-            else None,
+            coarse_segm_gt=(
+                torch.cat(self.s_gt, 0) if len(self.s_gt) == len(self.bbox_xywh_gt) else None
+            ),
             bbox_xywh_gt=torch.cat(self.bbox_xywh_gt, 0),
             bbox_xywh_est=torch.cat(self.bbox_xywh_est, 0),
             point_bbox_with_dp_indices=torch.cat(self.point_bbox_with_dp_indices, 0),

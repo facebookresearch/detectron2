@@ -191,11 +191,7 @@ class RepeatFactorTrainingSampler(Sampler):
         category_rep = {
             cat_id: max(
                 1.0,
-                (
-                    math.sqrt(repeat_thresh / cat_freq)
-                    if sqrt
-                    else (repeat_thresh / cat_freq)
-                ),
+                (math.sqrt(repeat_thresh / cat_freq) if sqrt else (repeat_thresh / cat_freq)),
             )
             for cat_id, cat_freq in category_freq.items()
         }
