@@ -30,12 +30,12 @@ def get_point_annotations(input_filename, output_filename, num_points_per_instan
         t = imgs[ann["image_id"]]
         h, w = t["height"], t["width"]
         segm = ann.pop("segmentation")
-        if type(segm) == list:
+        if type(segm) is list:
             # polygon -- a single object might consist of multiple parts
             # we merge all parts into one mask rle code
             rles = mask_utils.frPyObjects(segm, h, w)
             rle = mask_utils.merge(rles)
-        elif type(segm["counts"]) == list:
+        elif type(segm["counts"]) is list:
             # uncompressed RLE
             rle = mask_utils.frPyObjects(segm, h, w)
         else:

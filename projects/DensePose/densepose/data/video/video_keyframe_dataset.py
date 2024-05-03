@@ -248,7 +248,7 @@ class VideoKeyframeDataset(Dataset):
                 applied (default: None)
 
         """
-        if type(category_list) == list:
+        if type(category_list) is list:
             self.category_list = category_list
         else:
             self.category_list = [category_list] * len(video_list)

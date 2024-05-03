@@ -33,7 +33,7 @@ class ImageListDataset(Dataset):
             category_list (Union[str, List[str], None]): list of animal categories for
                 each image. If it is a string, or None, this applies to all images
         """
-        if type(category_list) == list:
+        if type(category_list) is list:
             self.category_list = category_list
         else:
             self.category_list = [category_list] * len(image_list)

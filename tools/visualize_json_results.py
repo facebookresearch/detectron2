@@ -3,11 +3,10 @@
 
 import argparse
 import json
+import numpy as np
 import os
 from collections import defaultdict
-
 import cv2
-import numpy as np
 import tqdm
 
 from detectron2.data import DatasetCatalog, MetadataCatalog
@@ -44,19 +43,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="A script that visualizes the json predictions from COCO or LVIS dataset."
     )
-    parser.add_argument(
-        "--input", required=True, help="JSON file produced by the model"
-    )
+    parser.add_argument("--input", required=True, help="JSON file produced by the model")
     parser.add_argument("--output", required=True, help="output directory")
-    parser.add_argument(
-        "--dataset", help="name of the dataset", default="coco_2017_val"
-    )
-    parser.add_argument(
-        "--conf-threshold", default=0.5, type=float, help="confidence threshold"
-    )
+    parser.add_argument("--dataset", help="name of the dataset", default="coco_2017_val")
+    parser.add_argument("--conf-threshold", default=0.5, type=float, help="confidence threshold")
     args = parser.parse_args()
 
-    logger = setup_logger()
+    setup_logger()
 
     with PathManager.open(args.input, "r") as f:
         predictions = json.load(f)

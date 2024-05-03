@@ -364,7 +364,7 @@ def build_batch_data_loader(
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
             generator=generator,
-            **kwargs
+            **kwargs,
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, batch_size)
         if collate_fn is None:
@@ -408,12 +408,14 @@ def _build_weighted_sampler(cfg, enable_category_balance=False):
             name: get_detection_dataset_dicts(
                 [name],
                 filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-                min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-                if cfg.MODEL.KEYPOINT_ON
-                else 0,
-                proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
-                if cfg.MODEL.LOAD_PROPOSALS
-                else None,
+                min_keypoints=(
+                    cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+                    if cfg.MODEL.KEYPOINT_ON
+                    else 0
+                ),
+                proposal_files=(
+                    cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None
+                ),
             )
             for name in cfg.DATASETS.TRAIN
         }
@@ -466,9 +468,9 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
         dataset = get_detection_dataset_dicts(
             cfg.DATASETS.TRAIN,
             filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-            if cfg.MODEL.KEYPOINT_ON
-            else 0,
+            min_keypoints=(
+                cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE if cfg.MODEL.KEYPOINT_ON else 0
+            ),
             proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
         )
         _log_api_usage("dataset." + cfg.DATASETS.TRAIN[0])
@@ -522,7 +524,7 @@ def build_detection_train_loader(
     aspect_ratio_grouping=True,
     num_workers=0,
     collate_fn=None,
-    **kwargs
+    **kwargs,
 ):
     """
     Build a dataloader for object detection with some default features.
@@ -574,7 +576,7 @@ def build_detection_train_loader(
         aspect_ratio_grouping=aspect_ratio_grouping,
         num_workers=num_workers,
         collate_fn=collate_fn,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -589,11 +591,14 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
     dataset = get_detection_dataset_dicts(
         dataset_name,
         filter_empty=False,
-        proposal_files=[
-            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)] for x in dataset_name
-        ]
-        if cfg.MODEL.LOAD_PROPOSALS
-        else None,
+        proposal_files=(
+            [
+                cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)]
+                for x in dataset_name
+            ]
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None
+        ),
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
@@ -601,9 +606,11 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": InferenceSampler(len(dataset))
-        if not isinstance(dataset, torchdata.IterableDataset)
-        else None,
+        "sampler": (
+            InferenceSampler(len(dataset))
+            if not isinstance(dataset, torchdata.IterableDataset)
+            else None
+        ),
     }
 
 

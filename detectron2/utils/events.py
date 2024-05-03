@@ -296,18 +296,22 @@ class CommonMetricPrinter(EventWriter):
                         if "[metric]" in k
                     ]
                 ),
-                avg_time="time: {:.4f}  ".format(avg_iter_time)
-                if avg_iter_time is not None
-                else "",
-                last_time="last_time: {:.4f}  ".format(last_iter_time)
-                if last_iter_time is not None
-                else "",
-                avg_data_time="data_time: {:.4f}  ".format(avg_data_time)
-                if avg_data_time is not None
-                else "",
-                last_data_time="last_data_time: {:.4f}  ".format(last_data_time)
-                if last_data_time is not None
-                else "",
+                avg_time=(
+                    "time: {:.4f}  ".format(avg_iter_time) if avg_iter_time is not None else ""
+                ),
+                last_time=(
+                    "last_time: {:.4f}  ".format(last_iter_time)
+                    if last_iter_time is not None
+                    else ""
+                ),
+                avg_data_time=(
+                    "data_time: {:.4f}  ".format(avg_data_time) if avg_data_time is not None else ""
+                ),
+                last_data_time=(
+                    "last_data_time: {:.4f}  ".format(last_data_time)
+                    if last_data_time is not None
+                    else ""
+                ),
                 lr=lr,
                 memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
             )
@@ -461,9 +465,11 @@ class EventStorage:
         result = {}
         for k, (v, itr) in self._latest_scalars.items():
             result[k] = (
-                self._history[k].median(self.count_samples(k, window_size))
-                if self._smoothing_hints[k]
-                else v,
+                (
+                    self._history[k].median(self.count_samples(k, window_size))
+                    if self._smoothing_hints[k]
+                    else v
+                ),
                 itr,
             )
         return result
