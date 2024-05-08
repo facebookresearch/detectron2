@@ -2,7 +2,7 @@ name: Close/Lock issues after inactivity
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "42 1 * * *"
 
 jobs:
   close-issues-needs-more-info:
