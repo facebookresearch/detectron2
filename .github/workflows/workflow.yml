@@ -6,7 +6,6 @@ on:
     - cron: "0 0 * * *"  # @daily
 
 # Run linter with github actions for quick feedbacks.
-# Run macos tests with github actions. Linux (CPU & GPU) tests currently runs on CircleCI
 jobs:
   linter:
     runs-on: ubuntu-latest
