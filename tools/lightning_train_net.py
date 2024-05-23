@@ -76,21 +76,9 @@ class TrainingModule(LightningModule):
 
     def training_step(self, batch, batch_idx):
         data_time = time.perf_counter() - self.data_start
-        # Need to manually enter/exit since trainer may launch processes
-        # This ideally belongs in setup, but setup seems to run before processes are spawned
-        if self.storage is None:
-            self.storage = EventStorage(0)
-            self.storage.__enter__()
-            self.iteration_timer.trainer = weakref.proxy(self)
-            self.iteration_timer.before_step()
-            self.writers = (
-                default_writers(self.cfg.OUTPUT_DIR, self.max_iter)
-                if comm.is_main_process()
-                else {}
-            )
 
         loss_dict = self.model(batch)
-        SimpleTrainer.write_metrics(loss_dict, data_time)
+        SimpleTrainer.write_metrics(loss_dict, data_time, cur_iter=self.storage.iter)
 
         opt = self.optimizers()
         self.storage.put_scalar(
@@ -108,11 +96,24 @@ class TrainingModule(LightningModule):
                 writer.write()
         return sum(loss_dict.values())
 
-    def training_step_end(self, training_step_outpus):
+    def on_train_batch_end(self, out, batch, batch_idx):
         self.data_start = time.perf_counter()
-        return training_step_outpus
 
-    def training_epoch_end(self, training_step_outputs):
+    def on_train_epoch_start(self):
+        # Need to manually enter/exit since trainer may launch processes
+        # This ideally belongs in setup, but setup seems to run before processes are spawned
+        if self.storage is None:
+            self.storage = EventStorage(0)
+            self.storage.__enter__()
+            self.iteration_timer.trainer = weakref.proxy(self)
+            self.iteration_timer.before_step()
+            self.writers = (
+                default_writers(self.cfg.OUTPUT_DIR, self.max_iter)
+                if comm.is_main_process()
+                else {}
+            )
+
+    def on_train_epoch_end(self):
         self.iteration_timer.after_train()
         if comm.is_main_process():
             self.checkpointer.save("model_final")
@@ -139,11 +140,14 @@ class TrainingModule(LightningModule):
             evaluator.reset()
             self._evaluators.append(evaluator)
 
-    def on_validation_epoch_start(self, _outputs):
+    def on_validation_epoch_start(self):
         self._reset_dataset_evaluators()
+        if self.storage is None:
+            self.storage = EventStorage(0)
+            self.storage.__enter__()
 
-    def validation_epoch_end(self, _outputs):
-        results = self._process_dataset_evaluation_results(_outputs)
+    def on_validation_epoch_end(self):
+        results = self._process_dataset_evaluation_results()
 
         flattened_results = flatten_results_dict(results)
         for k, v in flattened_results.items():
@@ -237,7 +241,7 @@ def setup(args):
 def invoke_main() -> None:
     parser = default_argument_parser()
     args = parser.parse_args()
-    logger.info("Command Line Args:", args)
+    logger.info("Command Line Args:", vars(args))
     main(args)
 
 

@@ -112,6 +112,10 @@ install_linux_dep: &install_linux_dep
         # install from github to get latest; install iopath first since fvcore depends on it
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
         pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+        # pytorch ships proto files which are incompatible with protobuf >=4,
+        # see https://github.com/pytorch/pytorch/issues/78362
+        # pinning protobuf to 3.20.3
+        pip install --progress-bar off protobuf~=3.20.3
         # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
         # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
         pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
