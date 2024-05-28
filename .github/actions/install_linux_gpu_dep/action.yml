@@ -1,0 +1,18 @@
+name: "Install GPU Dependencies"
+inputs:
+  cuda-version:
+    description: version of cuda to install, ie "12-5" for 12.5
+runs:
+  using: composite
+  steps:
+  - name: Install GPU Dependencies
+    shell: bash
+    run: |
+      uname -r
+
+      # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#network-repo-installation-for-ubuntu
+      # Installing the keyring seems to be unnecessary
+
+      sudo apt-get update
+      sudo apt-get --yes install cuda-toolkit-${{inputs.cuda-version}}
+      sudo apt-get --yes install nvidia-gds-${{inputs.cuda-version}}
