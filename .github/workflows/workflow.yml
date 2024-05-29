@@ -94,10 +94,12 @@ jobs:
         include:
           - torch: "1.13.1"
             torchvision: "0.14.1"
+            cuda: "11-7"
           - torch: "2.2.2"
             torchvision: "0.17.2"
+            cuda: "12-5"
     env:
-      PYTORCH_INDEX: "https://download.pytorch.org/whl/torch_stable.html"
+      PYTORCH_INDEX: "https://download.pytorch.org/whl/cu118"
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
@@ -116,6 +118,11 @@ jobs:
             ${{ env.pythonLocation }}/lib/python3.8/site-packages
             ~/.torch
           key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20210827
+
+      - name: Install GPU Dependencies
+        uses: ./.github/actions/install_linux_gpu_dep
+        with:
+          cuda-version: ${{matrix.cuda}}
 
       - name: Install Dependencies
         uses: ./.github/actions/install_linux_dep
