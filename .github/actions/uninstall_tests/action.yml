@@ -9,4 +9,4 @@ runs:
       # Remove built binaries
       rm -rf build/ detectron2/*.so
       # Tests that code is importable without installation
-      PYTHONPATH=. ./.circleci/import-tests.sh
+      . ./.github/import-tests.sh
