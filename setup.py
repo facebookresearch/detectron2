@@ -190,6 +190,7 @@ setup(
         "hydra-core>=1.1",
         "black",
         "packaging",
+        "protobuf~=3.20.3",  # pytorch ships proto files which are incompatible with protobuf >=4 (see https://github.com/pytorch/pytorch/issues/78362)
         # NOTE: When adding new dependencies, if it is required at import time (in addition
         # to runtime), it probably needs to appear in docs/requirements.txt, or as a mock
         # in docs/conf.py
