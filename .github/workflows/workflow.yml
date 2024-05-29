@@ -82,3 +82,54 @@ jobs:
           ./datasets/prepare_for_tests.sh
       - name: Run unittests
         run: python -m pytest -n 4 --durations=15 -sv tests/
+
+  linux_gpu_tests:
+    runs-on: 4-core-ubuntu-gpu-t4
+    # run on PRs, or commits to facebookresearch (not internal)
+    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        torch: ["1.13.1", "2.2.2"]
+        include:
+          - torch: "1.13.1"
+            torchvision: "0.14.1"
+          - torch: "2.2.2"
+            torchvision: "0.17.2"
+    env:
+      PYTORCH_INDEX: "https://download.pytorch.org/whl/torch_stable.html"
+      DETECTRON2_DATASETS: ~/.torch/datasets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        id: load-cache
+        with:
+          path: |
+            ${{ env.pythonLocation }}/lib/python3.8/site-packages
+            ~/.torch
+          key: ${{ runner.os }}-torch${{ matrix.torch }}-${{ hashFiles('setup.py') }}-20210827
+
+      - name: Install Dependencies
+        uses: ./.github/actions/install_linux_dep
+        if: steps.load-cache.outputs.cache-hit != 'true'
+        with:
+          torch-version: ${{matrix.torch}}
+          torchvision-version: ${{matrix.torchvision}}
+          pytorch-index: $PYTORCH_INDEX
+
+      - name: Install Detectron2
+        uses: ./.github/actions/install_detectron2
+
+      - name: Run Unit Tests
+        uses: ./.github/actions/run_unittests
+
+      - name: Run Tests After Uninstalling
+        uses: ./.github/actions/uninstall_tests
