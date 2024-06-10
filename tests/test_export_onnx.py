@@ -98,8 +98,8 @@ class TestONNXTracingExport(unittest.TestCase):
         )
 
     @unittest.skipIf(
-        version.Version(onnx.version.version) == version.Version("1.16.0"),
-        "This test fails on ONNX Runtime 1.16",
+        version.Version(onnx.version.version) >= version.Version("1.16.0"),
+        "This test fails on ONNX Runtime >= 1.16",
     )
     def testKeypointHead(self):
         class M(torch.nn.Module):

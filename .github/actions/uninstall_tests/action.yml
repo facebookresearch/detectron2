@@ -1,0 +1,12 @@
+name: "Run Tests After Uninstalling"
+runs:
+  using: composite
+  steps:
+  - name: "Run Tests After Uninstalling"
+    shell: bash
+    run: |
+      pip uninstall -y detectron2
+      # Remove built binaries
+      rm -rf build/ detectron2/*.so
+      # Tests that code is importable without installation
+      . ./.github/import-tests.sh
