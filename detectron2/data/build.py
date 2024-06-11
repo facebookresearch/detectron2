@@ -363,6 +363,9 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor if num_workers > 0 else None,
+            persistent_workers=persistent_workers,
+            pin_memory=pin_memory,
             generator=generator,
             **kwargs,
         )  # yield individual mapped dict
