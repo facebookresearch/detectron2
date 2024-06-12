@@ -295,12 +295,9 @@ def transform_instance_annotations(
     """
     if isinstance(transforms, (tuple, list)):
         transforms = T.TransformList(transforms)
-    # bbox is 1d (per-instance bounding box)
-    bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
-    # clip transformed bbox to image size
-    bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
-    annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
-    annotation["bbox_mode"] = BoxMode.XYXY_ABS
+
+    # flag of whether transforms has the class of RotationTransform
+    flag = False
 
     if "segmentation" in annotation:
         # each instance contains 1 or more polygons
@@ -323,6 +320,37 @@ def transform_instance_annotations(
                 "Supported types are: polygons as list[list[float] or ndarray],"
                 " COCO-style RLE as a dict.".format(type(segm))
             )
+
+        for transform in transforms:
+            if transform.__class__.__name__ == "RotationTransform":
+                flag = True
+
+                # rotated segmentation
+                polygons_rot = [np.asarray(p).reshape(-1, 2) for p in annotation["segmentation"]]
+
+                # compute the min_area rectangle of rotated object segmentation
+                rotatedRect = cv2.minAreaRect(polygons_rot[0].astype("float32"))
+                box = cv2.boxPoints(rotatedRect)
+
+                # compute the left-top and right-bottom points of rotated object segmentation
+                box_x_min = min(box[:, 0])
+                box_y_min = min(box[:, 1])
+                box_x_max = max(box[:, 0])
+                box_y_max = max(box[:, 1])
+                bbox = np.expand_dims(np.array([box_x_min, box_y_min, box_x_max, box_y_max]), 0)
+
+                # clip transformed bbox to image size
+                bbox = bbox[0].clip(min=0)
+                annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
+                annotation["bbox_mode"] = BoxMode.XYXY_ABS
+    
+    if not flag:
+        # bbox is 1d (per-instance bounding box)
+        bbox = BoxMode.convert(annotation["bbox"], annotation["bbox_mode"], BoxMode.XYXY_ABS)
+        # clip transformed bbox to image size
+        bbox = transforms.apply_box(np.array([bbox]))[0].clip(min=0)
+        annotation["bbox"] = np.minimum(bbox, list(image_size + image_size)[::-1])
+        annotation["bbox_mode"] = BoxMode.XYXY_ABS
 
     if "keypoints" in annotation:
         keypoints = transform_keypoint_annotations(
