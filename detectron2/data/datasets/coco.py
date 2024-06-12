@@ -32,7 +32,7 @@ __all__ = [
 ]
 
 
-def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None):
+def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None, extra_record_keys=None):
     """
     Load a json file with COCO's instances annotation format.
     Currently supports instance detection, instance segmentation,
@@ -55,6 +55,9 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
             loaded into the dataset dict (besides "iscrowd", "bbox", "keypoints",
             "category_id", "segmentation"). The values for these keys will be returned as-is.
             For example, the densepose annotations are loaded in this way.
+        extra_record_keys(list[str]): list of per-record keys that should also be loaded into
+            the dataset_dict (besides "height", "width", "filename", "id"). The values for
+            these keys will be returned as-is.
 
     Returns:
         list[dict]: a list of dicts in Detectron2 standard dataset dicts format (See
@@ -160,6 +163,9 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         record["file_name"] = os.path.join(image_root, img_dict["file_name"])
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
+        if extra_record_keys:
+            for key in extra_record_keys:
+                record[key] = img_dict[key]
         image_id = record["image_id"] = img_dict["id"]
 
         objs = []
@@ -499,15 +505,20 @@ def register_coco_instances(name, metadata, json_file, image_root):
     Args:
         name (str): the name that identifies a dataset, e.g. "coco_2014_train".
         metadata (dict): extra metadata associated with this dataset.  You can
-            leave it as an empty dict.
+            leave it as an empty dict. If `extra_record_keys` is set, the keys
+            in that list will be added to returned records.
         json_file (str): path to the json instance annotation file.
         image_root (str or path-like): directory which contains all the images.
     """
     assert isinstance(name, str), name
     assert isinstance(json_file, (str, os.PathLike)), json_file
     assert isinstance(image_root, (str, os.PathLike)), image_root
+    extra_record_keys = metadata.get("extra_record_keys", None)
     # 1. register a function which returns dicts
-    DatasetCatalog.register(name, lambda: load_coco_json(json_file, image_root, name))
+    DatasetCatalog.register(
+        name,
+        lambda: load_coco_json(json_file, image_root, name, extra_record_keys=extra_record_keys),
+    )
 
     # 2. Optionally, add metadata about this dataset,
     # since they might be useful in evaluation, visualization or logging
