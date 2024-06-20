@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import numpy as np
-from typing import Tuple
 import torch
 from PIL import Image
 from torch.nn import functional as F
+
+from typing import Tuple
 
 __all__ = ["paste_masks_in_image"]
 
@@ -36,9 +37,7 @@ def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True
     device = masks.device
 
     if skip_empty and not torch.jit.is_scripting():
-        x0_int, y0_int = torch.clamp(boxes.min(dim=0).values.floor()[:2] - 1, min=0).to(
-            dtype=torch.int32
-        )
+        x0_int, y0_int = torch.clamp(boxes.min(dim=0).values.floor()[:2] - 1, min=0).to(dtype=torch.int32)
         x1_int = torch.clamp(boxes[:, 2].max().ceil() + 1, max=img_w).to(dtype=torch.int32)
         y1_int = torch.clamp(boxes[:, 3].max().ceil() + 1, max=img_h).to(dtype=torch.int32)
     else:
@@ -71,9 +70,7 @@ def _do_paste_mask(masks, boxes, img_h: int, img_w: int, skip_empty: bool = True
 
 # Annotate boxes as Tensor (but not Boxes) in order to use scripting
 @torch.jit.script_if_tracing
-def paste_masks_in_image(
-    masks: torch.Tensor, boxes: torch.Tensor, image_shape: Tuple[int, int], threshold: float = 0.5
-):
+def paste_masks_in_image(masks: torch.Tensor, boxes: torch.Tensor, image_shape: Tuple[int, int], threshold: float = 0.5):
     """
     Paste a set of masks that are of a fixed resolution (e.g., 28 x 28) into an image.
     The location, height, and width for pasting each mask is determined by their
@@ -121,14 +118,10 @@ def paste_masks_in_image(
         # GPU benefits from parallelism for larger chunks, but may have memory issue
         # int(img_h) because shape may be tensors in tracing
         num_chunks = int(np.ceil(N * int(img_h) * int(img_w) * BYTES_PER_FLOAT / GPU_MEM_LIMIT))
-        assert (
-            num_chunks <= N
-        ), "Default GPU_MEM_LIMIT in mask_ops.py is too small; try increasing it"
+        assert num_chunks <= N, "Default GPU_MEM_LIMIT in mask_ops.py is too small; try increasing it"
     chunks = torch.chunk(torch.arange(N, device=device), num_chunks)
 
-    img_masks = torch.zeros(
-        N, img_h, img_w, device=device, dtype=torch.bool if threshold >= 0 else torch.uint8
-    )
+    img_masks = torch.zeros(N, img_h, img_w, device=device, dtype=torch.bool if threshold >= 0 else torch.uint8)
     for inds in chunks:
         masks_chunk, spatial_inds = _do_paste_mask(
             masks[inds, None, :, :], boxes[inds], img_h, img_w, skip_empty=device.type == "cpu"
@@ -185,7 +178,7 @@ def paste_mask_in_image_old(mask, box, img_h, img_w, threshold):
     # Resample the mask from it's original grid to the new samples_w x samples_h grid
     mask = Image.fromarray(mask.cpu().numpy())
     mask = mask.resize((samples_w, samples_h), resample=Image.BILINEAR)
-    mask = np.array(mask, copy=False)
+    mask = np.asarray(mask)
 
     if threshold >= 0:
         mask = np.array(mask > threshold, dtype=np.uint8)
@@ -201,9 +194,7 @@ def paste_mask_in_image_old(mask, box, img_h, img_w, threshold):
     y_0 = max(box[1], 0)
     y_1 = min(box[3] + 1, img_h)
 
-    im_mask[y_0:y_1, x_0:x_1] = mask[
-        (y_0 - box[1]) : (y_1 - box[1]), (x_0 - box[0]) : (x_1 - box[0])
-    ]
+    im_mask[y_0:y_1, x_0:x_1] = mask[(y_0 - box[1]) : (y_1 - box[1]), (x_0 - box[0]) : (x_1 - box[0])]
     return im_mask
 
 

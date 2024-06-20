@@ -1,11 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-import itertools
-import json
-import logging
 import numpy as np
-import os
-from collections import OrderedDict
-from typing import Optional, Union
 import pycocotools.mask as mask_util
 import torch
 from PIL import Image
@@ -13,6 +7,13 @@ from PIL import Image
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
+
+import itertools
+import json
+import logging
+import os
+from collections import OrderedDict
+from typing import Optional, Union
 
 from .evaluator import DatasetEvaluator
 
@@ -26,11 +27,10 @@ except ImportError:
 
 def load_image_into_numpy_array(
     filename: str,
-    copy: bool = False,
     dtype: Optional[Union[np.dtype, str]] = None,
 ) -> np.ndarray:
     with PathManager.open(filename, "rb") as f:
-        array = np.array(Image.open(f), copy=copy, dtype=dtype)
+        array = np.asarray(Image.open(f), dtype=dtype)
     return array
 
 
@@ -61,13 +61,9 @@ class SemSegEvaluator(DatasetEvaluator):
         """
         self._logger = logging.getLogger(__name__)
         if num_classes is not None:
-            self._logger.warn(
-                "SemSegEvaluator(num_classes) is deprecated! It should be obtained from metadata."
-            )
+            self._logger.warn("SemSegEvaluator(num_classes) is deprecated! It should be obtained from metadata.")
         if ignore_label is not None:
-            self._logger.warn(
-                "SemSegEvaluator(ignore_label) is deprecated! It should be obtained from metadata."
-            )
+            self._logger.warn("SemSegEvaluator(ignore_label) is deprecated! It should be obtained from metadata.")
         self._dataset_name = dataset_name
         self._distributed = distributed
         self._output_dir = output_dir
@@ -113,9 +109,7 @@ class SemSegEvaluator(DatasetEvaluator):
 
     def reset(self):
         self._conf_matrix = np.zeros((self._num_classes + 1, self._num_classes + 1), dtype=np.int64)
-        self._b_conf_matrix = np.zeros(
-            (self._num_classes + 1, self._num_classes + 1), dtype=np.int64
-        )
+        self._b_conf_matrix = np.zeros((self._num_classes + 1, self._num_classes + 1), dtype=np.int64)
         self._predictions = []
 
     def process(self, inputs, outputs):
@@ -238,18 +232,16 @@ class SemSegEvaluator(DatasetEvaluator):
         json_list = []
         for label in np.unique(sem_seg):
             if self._contiguous_id_to_dataset_id is not None:
-                assert (
-                    label in self._contiguous_id_to_dataset_id
-                ), "Label {} is not in the metadata info for {}".format(label, self._dataset_name)
+                assert label in self._contiguous_id_to_dataset_id, "Label {} is not in the metadata info for {}".format(
+                    label, self._dataset_name
+                )
                 dataset_id = self._contiguous_id_to_dataset_id[label]
             else:
                 dataset_id = int(label)
             mask = (sem_seg == label).astype(np.uint8)
             mask_rle = mask_util.encode(np.array(mask[:, :, None], order="F"))[0]
             mask_rle["counts"] = mask_rle["counts"].decode("utf-8")
-            json_list.append(
-                {"file_name": input_file_name, "category_id": dataset_id, "segmentation": mask_rle}
-            )
+            json_list.append({"file_name": input_file_name, "category_id": dataset_id, "segmentation": mask_rle})
         return json_list
 
     def _mask_to_boundary(self, mask: np.ndarray, dilation_ratio=0.02):
