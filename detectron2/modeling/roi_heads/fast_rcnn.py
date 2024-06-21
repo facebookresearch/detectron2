@@ -223,6 +223,8 @@ class FastRCNNOutputLayers(nn.Module):
                 classes to calculate the loss
             use_sigmoid_ce (bool): whether to calculate the loss using weighted average of binary
                 cross entropy with logits. This could be used together with federated loss
+            use_focal_ce (bool): whether or not to calculate the loss using focal_loss as detailed in RetinaNet, 
+                https://arxiv.org/pdf/1708.02002v2
             get_fed_loss_cls_weights (Callable): a callable which takes dataset name and frequency
                 weight power, and returns the probabilities to sample negative classes for
                 federated loss. The implementation can be found in
