@@ -11,6 +11,7 @@ from detectron2.layers import ShapeSpec, batched_nms, cat, cross_entropy, nonzer
 from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regression_loss
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
+from fvcore.nn import sigmoid_focal_loss
 
 __all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
 
@@ -195,6 +196,7 @@ class FastRCNNOutputLayers(nn.Module):
         loss_weight: Union[float, Dict[str, float]] = 1.0,
         use_fed_loss: bool = False,
         use_sigmoid_ce: bool = False,
+        use_focal_ce: bool = False,
         get_fed_loss_cls_weights: Optional[Callable] = None,
         fed_loss_num_classes: int = 50,
     ):
@@ -221,6 +223,8 @@ class FastRCNNOutputLayers(nn.Module):
                 classes to calculate the loss
             use_sigmoid_ce (bool): whether to calculate the loss using weighted average of binary
                 cross entropy with logits. This could be used together with federated loss
+            use_focal_ce (bool): whether or not to calculate the loss using focal_loss as detailed in RetinaNet, 
+                https://arxiv.org/pdf/1708.02002v2
             get_fed_loss_cls_weights (Callable): a callable which takes dataset name and frequency
                 weight power, and returns the probabilities to sample negative classes for
                 federated loss. The implementation can be found in
@@ -254,6 +258,7 @@ class FastRCNNOutputLayers(nn.Module):
         self.loss_weight = loss_weight
         self.use_fed_loss = use_fed_loss
         self.use_sigmoid_ce = use_sigmoid_ce
+        self.use_focal_ce = use_focal_ce
         self.fed_loss_num_classes = fed_loss_num_classes
 
         if self.use_fed_loss:
@@ -340,6 +345,17 @@ class FastRCNNOutputLayers(nn.Module):
 
         if self.use_sigmoid_ce:
             loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
+
+        if self.use_focal_ce:
+            N = scores.shape[0]
+            K = scores.shape[1] - 1
+    
+            target = scores.new_zeros(N, K + 1)
+            target[range(len(gt_classes)), gt_classes] = 1
+            target = target[:, :K]
+        
+            loss_cls = sigmoid_focal_loss(scores[:, :-1], target, reduction="mean")
+            
         else:
             loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
 
