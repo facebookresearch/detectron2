@@ -317,7 +317,7 @@ class FixedSizeCrop(Augmentation):
         crop_size: Tuple[int],
         pad: bool = True,
         pad_value: float = 128.0,
-        seg_pad_value: int = 255,
+        seg_pad_value: int = 0,
     ):
         """
         Args:
