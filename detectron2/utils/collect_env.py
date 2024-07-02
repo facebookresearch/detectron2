@@ -8,10 +8,11 @@ import sys
 from collections import defaultdict
 import PIL
 import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
 import torchvision
 from tabulate import tabulate
-import torch.multiprocessing as mp
-import torch.distributed as dist
+
 from detectron2.utils.comm import _TORCH_NPU_AVAILABLE, _find_free_port
 
 __all__ = ["collect_env_info"]
@@ -246,6 +247,7 @@ def test_hccl_ops():
 def _test_hccl_worker(rank, num_npu, dist_url):
     dist.init_process_group(backend="hccl", init_method=dist_url, rank=rank, world_size=num_npu)
     dist.barrier(device_ids=[rank])
+
 
 def main() -> None:
     global x

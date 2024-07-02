@@ -210,7 +210,9 @@ def train(cfg, args):
         logger.info(f"Resuming training from checkpoint: {last_checkpoint}.")
 
     trainer = pl.Trainer(**trainer_params)
-    logger.info(f"start to train with {args.num_machines} nodes and {args.num_accelerators} accelerators")
+    logger.info(
+        f"start to train with {args.num_machines} nodes and {args.num_accelerators} accelerators"
+    )
 
     module = TrainingModule(cfg)
     data_module = DataModule(cfg)

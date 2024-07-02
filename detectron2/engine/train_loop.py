@@ -484,10 +484,12 @@ class AMPTrainer(SimpleTrainer):
         Implement the AMP training logic.
         """
         assert self.model.training, "[AMPTrainer] model was changed to eval mode!"
-        assert torch.cuda.is_available() or torch.npu.is_available(), "[AMPTrainer] CUDA/Ascend NPU is required for AMP training!"
+        assert (
+            torch.cuda.is_available() or torch.npu.is_available()
+        ), "[AMPTrainer] CUDA/Ascend NPU is required for AMP training!"
 
-        # TODO (cmq): pass device argument, decide the autocast method via device arg
         from torch.cuda.amp import autocast
+
         if "npu" in self.device:
             from torch.npu.amp import autocast
 

@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import torch
-from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
 
+from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
 from detectron2.utils.logger import _log_api_usage
 from detectron2.utils.registry import Registry
 

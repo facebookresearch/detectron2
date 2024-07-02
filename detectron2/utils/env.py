@@ -8,6 +8,7 @@ import random
 import sys
 from datetime import datetime
 import torch
+
 from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
 
 __all__ = ["seed_all_rng"]

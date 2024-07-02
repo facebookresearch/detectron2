@@ -73,7 +73,9 @@ def do_train(args, cfg):
     train_loader = instantiate(cfg.dataloader.train)
 
     model = create_ddp_model(model, **cfg.train.ddp)
-    trainer = (AMPTrainer if cfg.train.amp.enabled else SimpleTrainer)(model, train_loader, optim, cfg.MODEL.DEVICE)
+    trainer = (AMPTrainer if cfg.train.amp.enabled else SimpleTrainer)(
+        model, train_loader, optim, cfg.MODEL.DEVICE
+    )
     checkpointer = DetectionCheckpointer(
         model,
         cfg.train.output_dir,

@@ -5,10 +5,10 @@ This is useful when doing distributed training.
 """
 
 import functools
+import importlib
 import numpy as np
 import torch
 import torch.distributed as dist
-import importlib
 
 _LOCAL_PROCESS_GROUP = None
 _MISSING_LOCAL_PG_ERROR = (
@@ -17,6 +17,7 @@ _MISSING_LOCAL_PG_ERROR = (
     "processes in other ways, please call comm.create_local_process_group("
     "num_workers_per_machine) after calling torch.distributed.init_process_group()."
 )
+
 
 def _find_free_port():
     import socket
@@ -28,6 +29,7 @@ def _find_free_port():
     sock.close()
     # NOTE: there is still a chance the port could be taken by other processes.
     return port
+
 
 def get_world_size() -> int:
     if not dist.is_available():
@@ -257,6 +259,7 @@ def is_torch_npu_available() -> bool:
     _torch_npu_available = importlib.util.find_spec("torch_npu") is not None
     try:
         import torch_npu
+
         _torch_npu_available = torch_npu.npu.is_available()
     except ImportError:
         print("Module 'torch_npu' not found, ignore it if you are not using Ascend NPU")

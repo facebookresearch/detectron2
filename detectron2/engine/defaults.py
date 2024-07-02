@@ -39,11 +39,11 @@ from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
+from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
-from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
 
 from . import hooks
 from .train_loop import AMPTrainer, SimpleTrainer, TrainerBase
@@ -115,14 +115,21 @@ Run on multiple machines:
         "See documentation of `DefaultTrainer.resume_or_load()` for what it means.",
     )
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
-    parser.add_argument("--num-accelerators", type=int, default=1, help="number of accelerators *per machine*")
+    parser.add_argument(
+        "--num-accelerators", type=int, default=1, help="number of accelerators *per machine*"
+    )
     parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
     parser.add_argument(
         "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
-    # NOTE (cmq): mainly for _distributed_worker in ./detectron2/engine/launch.py, which is called before cfg loaded
-    # overwrite the device in config, if given.
-    parser.add_argument("--device", type=str, default="cuda", help="the accelerator, e.g., 'cuda' for Nvidia gpu, 'npu' for Ascend npu")
+    # NOTE (cmq): mainly for _distributed_worker in ./detectron2/engine/launch.py,
+    # which is called before cfg loaded; overwrite the device in config, if given.
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda",
+        help="the accelerator, e.g., 'cuda' for Nvidia gpu, 'npu' for Ascend npu",
+    )
 
     # PyTorch still may leave orphan processes in multi-gpu training.
     # Therefore we use a deterministic way to obtain port,
@@ -212,11 +219,26 @@ def default_setup(cfg, args):
 
     if hasattr(args, "device"):
         # set model device as args.device
-        # TODO (cmq) : make sure to decide device on args.device? what about cfg.MODEL.DEVICE?
         if cfg.MODEL.DEVICE != args.device:
-            logger.warning("Switching cfg.MODEL.DEVICE {} to args.device {} now.\
-                Change the value of --device if you deny to this switch".format(cfg.MODEL.DEVICE, args.device))
+            logger.warning(
+                """Switching cfg.MODEL.DEVICE {} to args.device {} now.
+                           Re-specify --device if you deny to this switch""".format(
+                    cfg.MODEL.DEVICE, args.device
+                )
+            )
             cfg.MODEL.DEVICE = args.device
+        if "npu" in cfg.MODEL.DEVICE and not _TORCH_NPU_AVAILABLE:
+            logger.error(
+                "torch-npu not found, install torch-npu with pip when setting device to {}".format(
+                    cfg.MODEL.DEVICE
+                )
+            )
+        elif "cuda" in cfg.MODEL.DEVICE and not torch.cuda.is_available():
+            logger.error(
+                "Cuda not found, ensure set up cuda env when setting device to {}".format(
+                    cfg.MODEL.DEVICE
+                )
+            )
 
     if comm.is_main_process() and output_dir:
         # Note: some of our scripts may expect the existence of
