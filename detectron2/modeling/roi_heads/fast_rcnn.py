@@ -223,7 +223,7 @@ class FastRCNNOutputLayers(nn.Module):
                 classes to calculate the loss
             use_sigmoid_ce (bool): whether to calculate the loss using weighted average of binary
                 cross entropy with logits. This could be used together with federated loss
-            use_focal_ce (bool): whether or not to calculate the loss using focal_loss as detailed in RetinaNet, 
+            use_focal_ce (bool): whether or not to calculate the loss using focal_loss as detailed in RetinaNet,
                 https://arxiv.org/pdf/1708.02002v2
             get_fed_loss_cls_weights (Callable): a callable which takes dataset name and frequency
                 weight power, and returns the probabilities to sample negative classes for
@@ -285,6 +285,7 @@ class FastRCNNOutputLayers(nn.Module):
             "loss_weight"               : {"loss_box_reg": cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT},  # noqa
             "use_fed_loss"              : cfg.MODEL.ROI_BOX_HEAD.USE_FED_LOSS,
             "use_sigmoid_ce"            : cfg.MODEL.ROI_BOX_HEAD.USE_SIGMOID_CE,
+            "use_focal_ce"              : cfg.MODEL.ROI_BOX_HEAD.USE_FOCAL_CE,
             "get_fed_loss_cls_weights"  : lambda: get_fed_loss_cls_weights(dataset_names=cfg.DATASETS.TRAIN, freq_weight_power=cfg.MODEL.ROI_BOX_HEAD.FED_LOSS_FREQ_WEIGHT_POWER),  # noqa
             "fed_loss_num_classes"      : cfg.MODEL.ROI_BOX_HEAD.FED_LOSS_NUM_CLASSES,
             # fmt: on
@@ -349,13 +350,13 @@ class FastRCNNOutputLayers(nn.Module):
         if self.use_focal_ce:
             N = scores.shape[0]
             K = scores.shape[1] - 1
-    
+
             target = scores.new_zeros(N, K + 1)
             target[range(len(gt_classes)), gt_classes] = 1
             target = target[:, :K]
-        
+
             loss_cls = sigmoid_focal_loss(scores[:, :-1], target, reduction="mean")
-            
+
         else:
             loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
 
