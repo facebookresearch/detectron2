@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 import csv
 import logging
 import numpy as np
@@ -32,6 +34,7 @@ def list_keyframes(video_fpath: str, video_stream_idx: int = 0) -> FrameTsList:
     """
     try:
         with PathManager.open(video_fpath, "rb") as io:
+            # pyre-fixme[16]: Module `av` has no attribute `open`.
             container = av.open(io, mode="r")
             stream = container.streams.video[video_stream_idx]
             keyframes = []
@@ -109,6 +112,7 @@ def read_keyframes(
     """
     try:
         with PathManager.open(video_fpath, "rb") as io:
+            # pyre-fixme[16]: Module `av` has no attribute `open`.
             container = av.open(io)
             stream = container.streams.video[video_stream_idx]
             frames = []
@@ -244,7 +248,7 @@ class VideoKeyframeDataset(Dataset):
                 applied (default: None)
 
         """
-        if type(category_list) == list:
+        if type(category_list) is list:
             self.category_list = category_list
         else:
             self.category_list = [category_list] * len(video_list)

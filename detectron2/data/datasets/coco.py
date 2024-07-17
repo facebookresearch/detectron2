@@ -24,7 +24,12 @@ This file contains functions to parse COCO-format annotations into dicts in "Det
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["load_coco_json", "load_sem_seg", "convert_to_coco_json", "register_coco_instances"]
+__all__ = [
+    "load_coco_json",
+    "load_sem_seg",
+    "convert_to_coco_json",
+    "register_coco_instances",
+]
 
 
 def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_keys=None):
@@ -150,7 +155,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
     num_instances_without_valid_segmentation = 0
 
-    for (img_dict, anno_dict_list) in imgs_anns:
+    for img_dict, anno_dict_list in imgs_anns:
         record = {}
         record["file_name"] = os.path.join(image_root, img_dict["file_name"])
         record["height"] = img_dict["height"]
@@ -294,7 +299,7 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
     )
 
     dataset_dicts = []
-    for (img_path, gt_path) in zip(input_files, gt_files):
+    for img_path, gt_path in zip(input_files, gt_files):
         record = {}
         record["file_name"] = img_path
         record["sem_seg_file_name"] = gt_path
@@ -436,7 +441,12 @@ def convert_to_coco_dict(dataset_name):
         "date_created": str(datetime.datetime.now()),
         "description": "Automatically generated COCO json file for Detectron2.",
     }
-    coco_dict = {"info": info, "images": coco_images, "categories": categories, "licenses": None}
+    coco_dict = {
+        "info": info,
+        "images": coco_images,
+        "categories": categories,
+        "licenses": None,
+    }
     if len(coco_annotations) > 0:
         coco_dict["annotations"] = coco_annotations
     return coco_dict
@@ -497,7 +507,8 @@ def register_coco_instances(name, metadata, json_file, image_root):
     assert isinstance(json_file, (str, os.PathLike)), json_file
     assert isinstance(image_root, (str, os.PathLike)), image_root
     # 1. register a function which returns dicts
-    DatasetCatalog.register(name, lambda: load_coco_json(json_file, image_root, name))
+    if name not in DatasetCatalog:
+        DatasetCatalog.register(name, lambda: load_coco_json(json_file, image_root, name))
 
     # 2. Optionally, add metadata about this dataset,
     # since they might be useful in evaluation, visualization or logging
@@ -506,7 +517,8 @@ def register_coco_instances(name, metadata, json_file, image_root):
     )
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global logger
     """
     Test the COCO json dataset loader.
 
@@ -517,10 +529,11 @@ if __name__ == "__main__":
         "dataset_name" can be "coco_2014_minival_100", or other
         pre-registered ones
     """
+    import sys
+
+    import detectron2.data.datasets  # noqa  # add pre-defined metadata
     from detectron2.utils.logger import setup_logger
     from detectron2.utils.visualizer import Visualizer
-    import detectron2.data.datasets  # noqa # add pre-defined metadata
-    import sys
 
     logger = setup_logger(name=__name__)
     assert sys.argv[3] in DatasetCatalog.list()
@@ -537,3 +550,7 @@ if __name__ == "__main__":
         vis = visualizer.draw_dataset_dict(d)
         fpath = os.path.join(dirname, os.path.basename(d["file_name"]))
         vis.save(fpath)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

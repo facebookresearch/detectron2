@@ -15,15 +15,15 @@ from .coco_evaluation import COCOEvaluator
 class RotatedCOCOeval(COCOeval):
     @staticmethod
     def is_rotated(box_list):
-        if type(box_list) == np.ndarray:
+        if type(box_list) is np.ndarray:
             return box_list.shape[1] == 5
-        elif type(box_list) == list:
+        elif type(box_list) is list:
             if box_list == []:  # cannot decide the box_dim
                 return False
             return np.all(
                 np.array(
                     [
-                        (len(obj) == 5) and ((type(obj) == list) or (type(obj) == np.ndarray))
+                        (len(obj) == 5) and ((type(obj) is list) or (type(obj) is np.ndarray))
                         for obj in box_list
                     ]
                 )
@@ -32,9 +32,9 @@ class RotatedCOCOeval(COCOeval):
 
     @staticmethod
     def boxlist_to_tensor(boxlist, output_box_dim):
-        if type(boxlist) == np.ndarray:
+        if type(boxlist) is np.ndarray:
             box_tensor = torch.from_numpy(boxlist)
-        elif type(boxlist) == list:
+        elif type(boxlist) is list:
             if boxlist == []:
                 return torch.zeros((0, output_box_dim), dtype=torch.float32)
             else:
@@ -65,7 +65,7 @@ class RotatedCOCOeval(COCOeval):
             # This is the same as the classical COCO evaluation
             return maskUtils.iou(dt, gt, is_crowd)
 
-    def computeIoU(self, imgId, catId):
+    def computeIoU(self, imgId: int, catId: int):
         p = self.params
         if p.useCats:
             gt = self._gts[imgId, catId]
@@ -73,8 +73,10 @@ class RotatedCOCOeval(COCOeval):
         else:
             gt = [_ for cId in p.catIds for _ in self._gts[imgId, cId]]
             dt = [_ for cId in p.catIds for _ in self._dts[imgId, cId]]
-        if len(gt) == 0 and len(dt) == 0:
+
+        if len(gt) == 0 or len(dt) == 0:
             return []
+
         inds = np.argsort([-d["score"] for d in dt], kind="mergesort")
         dt = [dt[i] for i in inds]
         if len(dt) > p.maxDets[-1]:

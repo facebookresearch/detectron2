@@ -225,19 +225,40 @@ HOST_DEVICE_INLINE int convex_hull_graham(
   }
 #else
   // CPU version
-  std::sort(
-      q + 1, q + num_in, [](const Point<T>& A, const Point<T>& B) -> bool {
-        T temp = cross_2d<T>(A, B);
-        if (fabs(temp) < 1e-6) {
-          return dot_2d<T>(A, A) < dot_2d<T>(B, B);
-        } else {
-          return temp > 0;
-        }
-      });
+  // std::sort(
+  //     q + 1, q + num_in, [](const Point<T>& A, const Point<T>& B) -> bool {
+  //       T temp = cross_2d<T>(A, B);
+
+  // if (fabs(temp) < 1e-6) {
+  //   return dot_2d<T>(A, A) < dot_2d<T>(B, B);
+  // } else {
+  //   return temp > 0;
+  // }
+  // });
+  for (int i = 0; i < num_in; i++) {
+    dist[i] = dot_2d<T>(q[i], q[i]);
+  }
+
+  for (int i = 1; i < num_in - 1; i++) {
+    for (int j = i + 1; j < num_in; j++) {
+      T crossProduct = cross_2d<T>(q[i], q[j]);
+      if ((crossProduct < -1e-6) ||
+          (fabs(crossProduct) < 1e-6 && dist[i] > dist[j])) {
+        auto q_tmp = q[i];
+        q[i] = q[j];
+        q[j] = q_tmp;
+        auto dist_tmp = dist[i];
+        dist[i] = dist[j];
+        dist[j] = dist_tmp;
+      }
+    }
+  }
+
   // compute distance to origin after sort, since the points are now different.
   for (int i = 0; i < num_in; i++) {
     dist[i] = dot_2d<T>(q[i], q[i]);
   }
+
 #endif
 
   // Step 4:

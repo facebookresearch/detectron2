@@ -73,7 +73,10 @@ def collect_env_info():
         import detectron2  # noqa
 
         data.append(
-            ("detectron2", detectron2.__version__ + " @" + os.path.dirname(detectron2.__file__))
+            (
+                "detectron2",
+                detectron2.__version__ + " @" + os.path.dirname(detectron2.__file__),
+            )
         )
     except ImportError:
         data.append(("detectron2", "failed to import"))
@@ -111,7 +114,10 @@ def collect_env_info():
                 pass
             else:
                 data.append(
-                    ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, so_file))
+                    (
+                        "detectron2 arch flags",
+                        detect_compute_compatibility(CUDA_HOME, so_file),
+                    )
                 )
     else:
         # print compilers that are used to build extension
@@ -119,7 +125,10 @@ def collect_env_info():
         data.append(("CUDA compiler", _C.get_cuda_version()))  # cuda or hip
         if has_cuda and getattr(_C, "has_cuda", lambda: True)():
             data.append(
-                ("detectron2 arch flags", detect_compute_compatibility(CUDA_HOME, _C.__file__))
+                (
+                    "detectron2 arch flags",
+                    detect_compute_compatibility(CUDA_HOME, _C.__file__),
+                )
             )
 
     data.append(get_env_module())
@@ -149,7 +158,10 @@ def collect_env_info():
             data.append(("ROCM_HOME", str(ROCM_HOME) + msg))
         else:
             try:
-                from torch.utils.collect_env import get_nvidia_driver_version, run as _run
+                from torch.utils.collect_env import (
+                    get_nvidia_driver_version,
+                    run as _run,
+                )
 
                 data.append(("Driver version", get_nvidia_driver_version(_run)))
             except Exception:
@@ -222,7 +234,8 @@ def _test_nccl_worker(rank, num_gpu, dist_url):
     dist.barrier(device_ids=[rank])
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global x
     try:
         from detectron2.utils.collect_env import collect_env_info as f
 
@@ -244,3 +257,7 @@ if __name__ == "__main__":
                 )
         if num_gpu > 1:
             test_nccl_ops()
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

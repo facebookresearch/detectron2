@@ -581,7 +581,7 @@ class ResNet(Backbone):
             in_channels = [64, 256, 512, 1024]
             out_channels = [256, 512, 1024, 2048]
         ret = []
-        for (n, s, i, o) in zip(num_blocks_per_stage, [1, 2, 2, 2], in_channels, out_channels):
+        for n, s, i, o in zip(num_blocks_per_stage, [1, 2, 2, 2], in_channels, out_channels):
             if depth >= 50:
                 kwargs["bottleneck_channels"] = o // 4
             ret.append(

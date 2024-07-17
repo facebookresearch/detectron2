@@ -44,7 +44,8 @@ def parse_args(in_args=None):
     return parser.parse_args(in_args)
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global img
     args = parse_args()
     logger = setup_logger()
     logger.info("Arguments: " + str(args))
@@ -92,3 +93,7 @@ if __name__ == "__main__":
             visualizer = Visualizer(img, metadata=metadata, scale=scale)
             vis = visualizer.draw_dataset_dict(dic)
             output(vis, os.path.basename(dic["file_name"]))
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

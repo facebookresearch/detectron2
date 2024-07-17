@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+# pyre-unsafe
 import json
 import numpy as np
 from functools import lru_cache

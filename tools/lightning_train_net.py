@@ -94,7 +94,9 @@ class TrainingModule(LightningModule):
 
         opt = self.optimizers()
         self.storage.put_scalar(
-            "lr", opt.param_groups[self._best_param_group_id]["lr"], smoothing_hint=False
+            "lr",
+            opt.param_groups[self._best_param_group_id]["lr"],
+            smoothing_hint=False,
         )
         self.iteration_timer.after_step()
         self.storage.step()
@@ -232,8 +234,12 @@ def setup(args):
     return cfg
 
 
-if __name__ == "__main__":
+def invoke_main() -> None:
     parser = default_argument_parser()
     args = parser.parse_args()
     logger.info("Command Line Args:", args)
     main(args)
+
+
+if __name__ == "__main__":
+    invoke_main()  # pragma: no cover

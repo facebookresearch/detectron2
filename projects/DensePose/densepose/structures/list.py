@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 import torch
 
 from densepose.structures.data_relative import DensePoseDataRelative

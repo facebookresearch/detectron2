@@ -38,7 +38,8 @@ def create_instances(predictions, image_size):
     return ret
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global args, dataset_id_map
     parser = argparse.ArgumentParser(
         description="A script that visualizes the json predictions from COCO or LVIS dataset."
     )
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     parser.add_argument("--conf-threshold", default=0.5, type=float, help="confidence threshold")
     args = parser.parse_args()
 
-    logger = setup_logger()
+    setup_logger()
 
     with PathManager.open(args.input, "r") as f:
         predictions = json.load(f)
@@ -88,3 +89,7 @@ if __name__ == "__main__":
 
         concat = np.concatenate((vis_pred, vis_gt), axis=1)
         cv2.imwrite(os.path.join(args.output, basename), concat[:, :, ::-1])
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

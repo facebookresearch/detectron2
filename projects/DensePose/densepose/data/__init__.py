@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
+# pyre-unsafe
+
 from .meshes import builtin
 from .build import (
     build_detection_test_loader,

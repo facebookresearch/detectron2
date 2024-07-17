@@ -185,7 +185,7 @@ def paste_mask_in_image_old(mask, box, img_h, img_w, threshold):
     # Resample the mask from it's original grid to the new samples_w x samples_h grid
     mask = Image.fromarray(mask.cpu().numpy())
     mask = mask.resize((samples_w, samples_h), resample=Image.BILINEAR)
-    mask = np.array(mask, copy=False)
+    mask = np.asarray(mask)
 
     if threshold >= 0:
         mask = np.array(mask > threshold, dtype=np.uint8)

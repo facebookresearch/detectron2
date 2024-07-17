@@ -35,7 +35,9 @@ logger = logging.getLogger("detectron2")
 def do_test(cfg, model):
     if "evaluator" in cfg.dataloader:
         ret = inference_on_dataset(
-            model, instantiate(cfg.dataloader.test), instantiate(cfg.dataloader.evaluator)
+            model,
+            instantiate(cfg.dataloader.test),
+            instantiate(cfg.dataloader.evaluator),
         )
         print_csv_format(ret)
         return ret
@@ -81,16 +83,20 @@ def do_train(args, cfg):
         [
             hooks.IterationTimer(),
             hooks.LRScheduler(scheduler=instantiate(cfg.lr_multiplier)),
-            hooks.PeriodicCheckpointer(checkpointer, **cfg.train.checkpointer)
-            if comm.is_main_process()
-            else None,
+            (
+                hooks.PeriodicCheckpointer(checkpointer, **cfg.train.checkpointer)
+                if comm.is_main_process()
+                else None
+            ),
             hooks.EvalHook(cfg.train.eval_period, lambda: do_test(cfg, model)),
-            hooks.PeriodicWriter(
-                default_writers(cfg.train.output_dir, cfg.train.max_iter),
-                period=cfg.train.log_period,
-            )
-            if comm.is_main_process()
-            else None,
+            (
+                hooks.PeriodicWriter(
+                    default_writers(cfg.train.output_dir, cfg.train.max_iter),
+                    period=cfg.train.log_period,
+                )
+                if comm.is_main_process()
+                else None
+            ),
         ]
     )
 
@@ -119,7 +125,7 @@ def main(args):
         do_train(args, cfg)
 
 
-if __name__ == "__main__":
+def invoke_main() -> None:
     args = default_argument_parser().parse_args()
     launch(
         main,
@@ -129,3 +135,7 @@ if __name__ == "__main__":
         dist_url=args.dist_url,
         args=(args,),
     )
+
+
+if __name__ == "__main__":
+    invoke_main()  # pragma: no cover

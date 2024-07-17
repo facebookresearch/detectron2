@@ -113,7 +113,8 @@ def do_structure(cfg):
     logger.info("Model Structure:\n" + str(model))
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global cfg, args
     parser = default_argument_parser(
         epilog="""
 Examples:
@@ -157,3 +158,7 @@ $ ./analyze_model.py --num-inputs 100 --tasks flop \\
             "parameter": do_parameter,
             "structure": do_structure,
         }[task](cfg)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

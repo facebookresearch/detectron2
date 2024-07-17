@@ -176,7 +176,8 @@ def get_sample_inputs(args):
         return sample_inputs
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global logger, cfg, args
     parser = argparse.ArgumentParser(description="Export a model for deployment.")
     parser.add_argument(
         "--format",
@@ -238,3 +239,7 @@ if __name__ == "__main__":
         metrics = inference_on_dataset(exported_model, data_loader, evaluator)
         print_csv_format(metrics)
     logger.info("Success.")
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

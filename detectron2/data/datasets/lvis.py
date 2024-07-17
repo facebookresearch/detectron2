@@ -126,7 +126,7 @@ def load_lvis_json(json_file, image_root, dataset_name=None, extra_annotation_ke
 
     dataset_dicts = []
 
-    for (img_dict, anno_dict_list) in imgs_anns:
+    for img_dict, anno_dict_list in imgs_anns:
         record = {}
         record["file_name"] = get_file_name(image_root, img_dict)
         record["height"] = img_dict["height"]
@@ -206,11 +206,15 @@ def _get_lvis_instances_meta_v1():
     # Ensure that the category list is sorted by id
     lvis_categories = sorted(LVIS_V1_CATEGORIES, key=lambda x: x["id"])
     thing_classes = [k["synonyms"][0] for k in lvis_categories]
-    meta = {"thing_classes": thing_classes, "class_image_count": LVIS_V1_CATEGORY_IMAGE_COUNT}
+    meta = {
+        "thing_classes": thing_classes,
+        "class_image_count": LVIS_V1_CATEGORY_IMAGE_COUNT,
+    }
     return meta
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global logger
     """
     Test the LVIS json dataset loader.
 
@@ -219,11 +223,12 @@ if __name__ == "__main__":
             path/to/json path/to/image_root dataset_name vis_limit
     """
     import sys
+
+    import detectron2.data.datasets  # noqa  # add pre-defined metadata
     import numpy as np
     from detectron2.utils.logger import setup_logger
-    from PIL import Image
-    import detectron2.data.datasets  # noqa # add pre-defined metadata
     from detectron2.utils.visualizer import Visualizer
+    from PIL import Image
 
     logger = setup_logger(name=__name__)
     meta = MetadataCatalog.get(sys.argv[3])
@@ -239,3 +244,7 @@ if __name__ == "__main__":
         vis = visualizer.draw_dataset_dict(d)
         fpath = os.path.join(dirname, os.path.basename(d["file_name"]))
         vis.save(fpath)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -227,7 +227,7 @@ class DefaultAnchorGenerator(nn.Module):
                 where Hi, Wi are resolution of the feature map divided by anchor stride.
         """
         grid_sizes = [feature_map.shape[-2:] for feature_map in features]
-        anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
+        anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)  # pyre-ignore
         return [Boxes(x) for x in anchors_over_all_feature_maps]
 
 
@@ -315,9 +315,13 @@ class RotatedAnchorGenerator(nn.Module):
         """
         return [len(cell_anchors) for cell_anchors in self.cell_anchors]
 
-    def _grid_anchors(self, grid_sizes):
+    def _grid_anchors(self, grid_sizes: List[List[int]]):
         anchors = []
-        for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
+        for size, stride, base_anchors in zip(
+            grid_sizes,
+            self.strides,
+            self.cell_anchors._buffers.values(),
+        ):
             shift_x, shift_y = _create_grid_offsets(size, stride, self.offset, base_anchors)
             zeros = torch.zeros_like(shift_x)
             shifts = torch.stack((shift_x, shift_y, zeros, zeros, zeros), dim=1)

@@ -278,7 +278,8 @@ def _cityscapes_files_to_dict(files, from_json, to_polygons):
     return ret
 
 
-if __name__ == "__main__":
+def main() -> None:
+    global logger, labels
     """
     Test the cityscapes dataset loader.
 
@@ -293,9 +294,9 @@ if __name__ == "__main__":
     parser.add_argument("gt_dir")
     parser.add_argument("--type", choices=["instance", "semantic"], default="instance")
     args = parser.parse_args()
+    from cityscapesscripts.helpers.labels import labels
     from detectron2.data.catalog import Metadata
     from detectron2.utils.visualizer import Visualizer
-    from cityscapesscripts.helpers.labels import labels
 
     logger = setup_logger(name=__name__)
 
@@ -327,3 +328,7 @@ if __name__ == "__main__":
         # cv2.waitKey()
         fpath = os.path.join(dirname, os.path.basename(d["file_name"]))
         vis.save(fpath)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

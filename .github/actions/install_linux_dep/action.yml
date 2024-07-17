@@ -1,0 +1,40 @@
+name: "Install Dependencies"
+inputs:
+  torch-version:
+    description: torch version to install
+  torchvision-version:
+    description: torch vision version to install, version number or "master"
+  pytorch-index:
+    description: where to install torch from
+    required: false
+    default: "https://download.pytorch.org/whl/torch_stable.html"
+    # use test wheels index to have access to RC wheels
+    # https://download.pytorch.org/whl/test/torch_test.html
+runs:
+  using: composite
+  steps:
+  - name: Install Dependencies
+    shell: bash
+    run: |
+      # disable crash coredump, so unittests fail fast
+      sudo systemctl stop apport.service
+
+      pip install -U pip
+
+      # install from github to get latest; install iopath first since fvcore depends on it
+      pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
+      pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+
+      # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
+      # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
+      pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
+      pip install --progress-bar off torch==${{inputs.torch-version}} -f ${{inputs.pytorch-index}}
+      if [[ "${{inputs.torchvision-version}}" == "master" ]]; then
+        pip install git+https://github.com/pytorch/vision.git
+      else
+        pip install --progress-bar off torchvision==${{inputs.torchvision-version}} -f ${{inputs.pytorch-index}}
+      fi
+
+      echo python install path: $pythonLocation
+      python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
+      gcc --version

@@ -123,7 +123,9 @@ def benchmark_train(args):
             hooks.IterationTimer(),
             hooks.PeriodicWriter([CommonMetricPrinter(max_iter)]),
             hooks.TorchProfiler(
-                lambda trainer: trainer.iter == max_iter - 1, cfg.OUTPUT_DIR, save_tensorboard=True
+                lambda trainer: trainer.iter == max_iter - 1,
+                cfg.OUTPUT_DIR,
+                save_tensorboard=True,
             ),
         ]
     )
@@ -170,7 +172,7 @@ def benchmark_eval(args):
     logger.info("{} iters in {} seconds.".format(max_iter, timer.seconds()))
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = default_argument_parser()
     parser.add_argument("--task", choices=["train", "eval", "data", "data_advanced"], required=True)
     args = parser.parse_args()
@@ -194,4 +196,15 @@ if __name__ == "__main__":
         f = benchmark_eval
         # only benchmark single-GPU inference.
         assert args.num_gpus == 1 and args.num_machines == 1
-    launch(f, args.num_gpus, args.num_machines, args.machine_rank, args.dist_url, args=(args,))
+    launch(
+        f,
+        args.num_gpus,
+        args.num_machines,
+        args.machine_rank,
+        args.dist_url,
+        args=(args,),
+    )
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

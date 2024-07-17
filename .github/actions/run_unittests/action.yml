@@ -1,0 +1,8 @@
+name: "Run Unit Tests"
+runs:
+  using: composite
+  steps:
+  - name: Run Unit Tests
+    shell: bash
+    run: |
+      python -m pytest -sv --durations=15 tests  # parallel causes some random failures
