@@ -216,7 +216,7 @@ class _ModulatedDeformConv(Function):
             or input.requires_grad
         ):
             ctx.save_for_backward(input, offset, mask, weight, bias)
-        output = input.new_empty(_ModulatedDeformConv._infer_shape(ctx, input, weight))
+        output = input.new_empty(_ModulatedDeformConv.infer_shape(ctx, input, weight))
         ctx._bufs = [input.new_empty(0), input.new_empty(0)]
         _C.modulated_deform_conv_forward(
             input,
@@ -295,7 +295,7 @@ class _ModulatedDeformConv(Function):
         )
 
     @staticmethod
-    def _infer_shape(ctx, input, weight):
+    def infer_shape(ctx, input, weight):
         n = input.size(0)
         channels_out = weight.size(0)
         height, width = input.shape[2:4]
