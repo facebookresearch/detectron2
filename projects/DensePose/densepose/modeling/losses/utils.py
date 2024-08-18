@@ -225,6 +225,7 @@ def resample_data(
     grid_h = torch.arange(hout, device=z.device, dtype=torch.float) / hout
     grid_w_expanded = grid_w[None, None, :].expand(n, hout, wout)
     grid_h_expanded = grid_h[None, :, None].expand(n, hout, wout)
+    # pyre-fixme[16]: `float` has no attribute `__getitem__`.
     dx_expanded = (x1dst_norm - x0dst_norm)[:, None, None].expand(n, hout, wout)
     dy_expanded = (y1dst_norm - y0dst_norm)[:, None, None].expand(n, hout, wout)
     x0_expanded = x0dst_norm[:, None, None].expand(n, hout, wout)
