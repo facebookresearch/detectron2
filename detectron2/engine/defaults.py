@@ -171,6 +171,30 @@ def _highlight(code, filename):
     return code
 
 
+# adapted from:
+# https://github.com/pytorch/tnt/blob/ebda066f8f55af6a906807d35bc829686618074d/torchtnt/utils/device.py#L328-L346
+def _set_float32_precision(precision: str = "high") -> None:
+    """Sets the precision of float32 matrix multiplications and convolution operations.
+
+    For more information, see the PyTorch docs:
+    - https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html
+    - https://pytorch.org/docs/stable/backends.html#torch.backends.cudnn.allow_tf32
+
+    Args:
+        precision: The setting to determine which datatypes to use for matrix
+        multiplication and convolution operations.
+    """
+    if not (torch.cuda.is_available()):  # Not relevant for non-CUDA devices
+        return
+    # set precision for matrix multiplications
+    torch.set_float32_matmul_precision(precision)
+    # set precision for convolution operations
+    if precision == "highest":
+        torch.backends.cudnn.allow_tf32 = False
+    else:
+        torch.backends.cudnn.allow_tf32 = True
+
+
 def default_setup(cfg, args):
     """
     Perform some basic common setups at the beginning of a job, including:
@@ -225,6 +249,14 @@ def default_setup(cfg, args):
         torch.backends.cudnn.benchmark = _try_get_key(
             cfg, "CUDNN_BENCHMARK", "train.cudnn_benchmark", default=False
         )
+
+    fp32_precision = _try_get_key(cfg, "FLOAT32_PRECISION", "train.float32_precision", default="")
+    if fp32_precision != "":
+        logger.info(f"Set fp32 precision to {fp32_precision}")
+        _set_float32_precision(fp32_precision)
+        logger.info(f"{torch.get_float32_matmul_precision()=}")
+        logger.info(f"{torch.backends.cuda.matmul.allow_tf32=}")
+        logger.info(f"{torch.backends.cudnn.allow_tf32=}")
 
 
 def default_writers(output_dir: str, max_iter: Optional[int] = None):

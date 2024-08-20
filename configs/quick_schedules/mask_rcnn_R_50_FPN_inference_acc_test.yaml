@@ -8,3 +8,4 @@ TEST:
   AUG:
     ENABLED: True
     MIN_SIZES: (700, 800)  # to save some time
+FLOAT32_PRECISION: "highest"
