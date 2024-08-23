@@ -26,11 +26,10 @@ except ImportError:
 
 def load_image_into_numpy_array(
     filename: str,
-    copy: bool = False,
     dtype: Optional[Union[np.dtype, str]] = None,
 ) -> np.ndarray:
     with PathManager.open(filename, "rb") as f:
-        array = np.array(Image.open(f), copy=copy, dtype=dtype)
+        array = np.asarray(Image.open(f), dtype=dtype)
     return array
 
 
@@ -104,10 +103,11 @@ class SemSegEvaluator(DatasetEvaluator):
         if self._num_classes >= np.iinfo(np.uint8).max:
             self._compute_boundary_iou = False
             self._logger.warn(
-                f"""SemSegEvaluator(num_classes) is more than supported value for Boundary IoU calculation!
-                B-IoU metrics are not going to be computed. Max allowed value (exclusive)
-                for num_classes for calculating Boundary IoU is {np.iinfo(np.uint8).max}.
-                The number of classes of dataset {self._dataset_name} is {self._num_classes}"""
+                f"""SemSegEvaluator(num_classes) is more than supported value for Boundary IoU
+                calculation! B-IoU metrics are not going to be computed. Max allowed value
+                (exclusive) for num_classes for calculating Boundary IoU is.
+                {np.iinfo(np.uint8).max} The number of classes of dataset {self._dataset_name} is
+                {self._num_classes}"""
             )
 
     def reset(self):

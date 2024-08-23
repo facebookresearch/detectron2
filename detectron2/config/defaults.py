@@ -121,6 +121,8 @@ _C.DATALOADER.ASPECT_RATIO_GROUPING = True
 _C.DATALOADER.SAMPLER_TRAIN = "TrainingSampler"
 # Repeat threshold for RepeatFactorTrainingSampler
 _C.DATALOADER.REPEAT_THRESHOLD = 0.0
+# if True, take square root when computing repeating factor
+_C.DATALOADER.REPEAT_SQRT = True
 # Tf True, when working on datasets that have instance annotations, the
 # training dataloader will filter out images without associated annotations
 _C.DATALOADER.FILTER_EMPTY_ANNOTATIONS = True
@@ -634,6 +636,10 @@ _C.SEED = -1
 # for about 10k iterations. It usually hurts total time, but can benefit for certain models.
 # If input images have the same or similar sizes, benchmark is often helpful.
 _C.CUDNN_BENCHMARK = False
+# Option to set PyTorch matmul and CuDNN's float32 precision. When set to non-empty string,
+# the corresponding precision ("highest", "high" or "medium") will be used. The highest
+# precision will effectively disable tf32.
+_C.FLOAT32_PRECISION = ""
 # The period (in terms of steps) for minibatch visualization at train time.
 # Set to 0 to disable.
 _C.VIS_PERIOD = 0

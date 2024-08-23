@@ -301,6 +301,9 @@ def build_batch_data_loader(
     collate_fn=None,
     drop_last: bool = True,
     single_gpu_batch_size=None,
+    prefetch_factor=2,
+    persistent_workers=False,
+    pin_memory=False,
     seed=None,
     **kwargs,
 ):
@@ -360,8 +363,11 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=operator.itemgetter(0),  # don't batch, but yield individual elements
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor if num_workers > 0 else None,
+            persistent_workers=persistent_workers,
+            pin_memory=pin_memory,
             generator=generator,
-            **kwargs
+            **kwargs,
         )  # yield individual mapped dict
         data_loader = AspectRatioGroupedDataset(data_loader, batch_size)
         if collate_fn is None:
@@ -375,8 +381,11 @@ def build_batch_data_loader(
             num_workers=num_workers,
             collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
             worker_init_fn=worker_init_reset_seed,
+            prefetch_factor=prefetch_factor if num_workers > 0 else None,
+            persistent_workers=persistent_workers,
+            pin_memory=pin_memory,
             generator=generator,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -402,12 +411,14 @@ def _build_weighted_sampler(cfg, enable_category_balance=False):
             name: get_detection_dataset_dicts(
                 [name],
                 filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-                min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-                if cfg.MODEL.KEYPOINT_ON
-                else 0,
-                proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
-                if cfg.MODEL.LOAD_PROPOSALS
-                else None,
+                min_keypoints=(
+                    cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+                    if cfg.MODEL.KEYPOINT_ON
+                    else 0
+                ),
+                proposal_files=(
+                    cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None
+                ),
             )
             for name in cfg.DATASETS.TRAIN
         }
@@ -430,7 +441,7 @@ def _build_weighted_sampler(cfg, enable_category_balance=False):
         """
         category_repeat_factors = [
             RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                dataset_dict, cfg.DATALOADER.REPEAT_THRESHOLD
+                dataset_dict, cfg.DATALOADER.REPEAT_THRESHOLD, sqrt=cfg.DATALOADER.REPEAT_SQRT
             )
             for dataset_dict in dataset_name_to_dicts.values()
         ]
@@ -460,9 +471,9 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
         dataset = get_detection_dataset_dicts(
             cfg.DATASETS.TRAIN,
             filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
-            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
-            if cfg.MODEL.KEYPOINT_ON
-            else 0,
+            min_keypoints=(
+                cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE if cfg.MODEL.KEYPOINT_ON else 0
+            ),
             proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
         )
         _log_api_usage("dataset." + cfg.DATASETS.TRAIN[0])
@@ -482,9 +493,9 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
                 sampler = TrainingSampler(len(dataset))
             elif sampler_name == "RepeatFactorTrainingSampler":
                 repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
-                    dataset, cfg.DATALOADER.REPEAT_THRESHOLD
+                    dataset, cfg.DATALOADER.REPEAT_THRESHOLD, sqrt=cfg.DATALOADER.REPEAT_SQRT
                 )
-                sampler = RepeatFactorTrainingSampler(repeat_factors)
+                sampler = RepeatFactorTrainingSampler(repeat_factors, seed=cfg.SEED)
             elif sampler_name == "RandomSubsetTrainingSampler":
                 sampler = RandomSubsetTrainingSampler(
                     len(dataset), cfg.DATALOADER.RANDOM_SUBSET_RATIO
@@ -516,7 +527,7 @@ def build_detection_train_loader(
     aspect_ratio_grouping=True,
     num_workers=0,
     collate_fn=None,
-    **kwargs
+    **kwargs,
 ):
     """
     Build a dataloader for object detection with some default features.
@@ -568,7 +579,7 @@ def build_detection_train_loader(
         aspect_ratio_grouping=aspect_ratio_grouping,
         num_workers=num_workers,
         collate_fn=collate_fn,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -583,11 +594,14 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
     dataset = get_detection_dataset_dicts(
         dataset_name,
         filter_empty=False,
-        proposal_files=[
-            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)] for x in dataset_name
-        ]
-        if cfg.MODEL.LOAD_PROPOSALS
-        else None,
+        proposal_files=(
+            [
+                cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(x)]
+                for x in dataset_name
+            ]
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None
+        ),
     )
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
@@ -595,9 +609,11 @@ def _test_loader_from_config(cfg, dataset_name, mapper=None):
         "dataset": dataset,
         "mapper": mapper,
         "num_workers": cfg.DATALOADER.NUM_WORKERS,
-        "sampler": InferenceSampler(len(dataset))
-        if not isinstance(dataset, torchdata.IterableDataset)
-        else None,
+        "sampler": (
+            InferenceSampler(len(dataset))
+            if not isinstance(dataset, torchdata.IterableDataset)
+            else None
+        ),
     }
 
 

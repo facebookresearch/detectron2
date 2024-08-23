@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 from .data.datasets import builtin  # just to register data
 from .converters import builtin as builtin_converters  # register converters
 from .config import (

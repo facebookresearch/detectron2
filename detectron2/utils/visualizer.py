@@ -354,7 +354,9 @@ class Visualizer:
 
     # TODO implement a fast, rasterized version using OpenCV
 
-    def __init__(self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE):
+    def __init__(
+        self, img_rgb, metadata=None, scale=1.0, instance_mode=ColorMode.IMAGE, font_size_scale=1.0
+    ):
         """
         Args:
             img_rgb: a numpy array of shape (H, W, C), where H and W correspond to
@@ -365,6 +367,7 @@ class Visualizer:
             metadata (Metadata): dataset metadata (e.g. class names and colors)
             instance_mode (ColorMode): defines one of the pre-defined style for drawing
                 instances on an image.
+            font_size_scale: extra scaling of font size on top of default font size
         """
         self.img = np.asarray(img_rgb).clip(0, 255).astype(np.uint8)
         if metadata is None:
@@ -374,13 +377,14 @@ class Visualizer:
         self.cpu_device = torch.device("cpu")
 
         # too small texts are useless, therefore clamp to 9
-        self._default_font_size = max(
-            np.sqrt(self.output.height * self.output.width) // 90, 10 // scale
+        self._default_font_size = (
+            max(np.sqrt(self.output.height * self.output.width) // 90, 10 // scale)
+            * font_size_scale
         )
         self._instance_mode = instance_mode
         self.keypoint_threshold = _KEYPOINT_THRESHOLD
 
-    def draw_instance_predictions(self, predictions):
+    def draw_instance_predictions(self, predictions, jittering: bool = True):
         """
         Draw instance-level prediction results on an image.
 
@@ -388,6 +392,8 @@ class Visualizer:
             predictions (Instances): the output of an instance detection/segmentation
                 model. Following fields will be used to draw:
                 "pred_boxes", "pred_classes", "scores", "pred_masks" (or "pred_masks_rle").
+            jittering: if True, in color mode SEGMENTATION, randomly jitter the colors per class
+                to distinguish instances from the same class
 
         Returns:
             output (VisImage): image object with visualizations.
@@ -405,9 +411,15 @@ class Visualizer:
             masks = None
 
         if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
-            colors = [
-                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
-            ]
+            colors = (
+                [self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes]
+                if jittering
+                else [
+                    tuple(mplc.to_rgb([x / 255 for x in self.metadata.thing_colors[c]]))
+                    for c in classes
+                ]
+            )
+
             alpha = 0.8
         else:
             colors = None
@@ -558,9 +570,11 @@ class Visualizer:
                 keypts = None
 
             boxes = [
-                BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS)
-                if len(x["bbox"]) == 4
-                else x["bbox"]
+                (
+                    BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS)
+                    if len(x["bbox"]) == 4
+                    else x["bbox"]
+                )
                 for x in annos
             ]
 

@@ -1,0 +1,24 @@
+name: "Install Dependencies"
+inputs:
+  torch-version:
+    description: torch version to install
+  torchvision-version:
+    description: torch vision version to install, version number or "master"
+  pytorch-index:
+    description: where to install torch from
+    required: false
+    default: "https://download.pytorch.org/whl/torch_stable.html"
+    # use test wheels index to have access to RC wheels
+    # https://download.pytorch.org/whl/test/torch_test.html
+runs:
+  using: composite
+  steps:
+  - name: Install Dependencies
+    shell: bash
+    run: |
+      pip install certifi --ignore-installed  # required on windows to workaround some cert issue
+      pip install numpy cython  # required on windows before pycocotools
+      pip install opencv-python-headless pytest-xdist pycocotools tensorboard onnx
+      pip install -U git+https://github.com/facebookresearch/iopath
+      pip install -U git+https://github.com/facebookresearch/fvcore
+      pip install torch==${{inputs.torch-version}} torchvision==${{inputs.torchvision-version}} -f ${{inputs.pytorch-index}}

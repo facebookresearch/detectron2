@@ -5,3 +5,4 @@ DATASETS:
   TEST: ("coco_2017_val_100_panoptic_separated",)
 TEST:
   EXPECTED_RESULTS: [["bbox", "AP", 46.47, 0.02], ["segm", "AP", 43.39, 0.02], ["sem_seg", "mIoU", 42.55, 0.02], ["panoptic_seg", "PQ", 38.99, 0.02]]
+FLOAT32_PRECISION: "highest"

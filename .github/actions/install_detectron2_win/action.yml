@@ -1,0 +1,15 @@
+name: "Install Detectron2"
+runs:
+  using: composite
+  steps:
+  - name: Install Detectron2
+    shell: bash
+    run: |
+      # Remove first, in case it's in the CI cache
+      pip uninstall -y detectron2
+
+      pip install --progress-bar off -e .[all]
+      python -m detectron2.utils.collect_env
+
+      # TODO: this command fails because windows does not have wget
+      # ./datasets/prepare_for_tests.sh

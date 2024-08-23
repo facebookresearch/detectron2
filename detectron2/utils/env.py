@@ -42,6 +42,7 @@ def seed_all_rng(seed=None):
     np.random.seed(seed)
     torch.manual_seed(seed)
     random.seed(seed)
+    torch.cuda.manual_seed_all(str(seed))
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 

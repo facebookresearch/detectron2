@@ -365,7 +365,7 @@ class LazyConfig:
             for o in overrides:
                 key, value = o.split("=")
                 try:
-                    value = eval(value, {})
+                    value = ast.literal_eval(value)
                 except NameError:
                     pass
                 safe_update(cfg, key, value)

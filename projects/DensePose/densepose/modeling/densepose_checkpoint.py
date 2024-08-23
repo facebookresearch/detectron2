@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 from collections import OrderedDict
 
 from detectron2.checkpoint import DetectionCheckpointer

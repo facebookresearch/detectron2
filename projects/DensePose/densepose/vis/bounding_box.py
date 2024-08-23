@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 from .base import RectangleVisualizer, TextVisualizer
 
 

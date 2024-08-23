@@ -130,7 +130,7 @@ class Instances:
             If `item` is a string, return the data in the corresponding field.
             Otherwise, returns an `Instances` where all fields are indexed by `item`.
         """
-        if type(item) == int:
+        if type(item) is int:
             if item >= len(self) or item < -len(self):
                 raise IndexError("Instances index out of range!")
             else:

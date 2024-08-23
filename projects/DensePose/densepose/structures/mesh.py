@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+# pyre-unsafe
+
 import pickle
 from functools import lru_cache
 from typing import Dict, Optional, Tuple

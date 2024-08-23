@@ -1,4 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
+
+# pyre-unsafe
 """
 MIT License
 Copyright (c) 2019 Microsoft
