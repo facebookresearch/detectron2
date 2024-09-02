@@ -116,11 +116,8 @@ class ImageList:
         else:
             # max_size can be a tensor in tracing mode, therefore convert to list
             batch_shape = [len(tensors)] + list(tensors[0].shape[:-2]) + list(max_size)
-            device = (
-                None if torch.jit.is_scripting() else ("cpu" if torch.jit.is_tracing() else None)
-            )
-            batched_imgs = tensors[0].new_full(batch_shape, pad_value, device=device)
-            batched_imgs = move_device_like(batched_imgs, tensors[0])
+            batched_imgs = tensors[0].new_full(batch_shape, pad_value, device=tensors[0].device)
+
             for i, img in enumerate(tensors):
                 # Use `batched_imgs` directly instead of `img, pad_img = zip(tensors, batched_imgs)`
                 # Tracing mode cannot capture `copy_()` of temporary locals
