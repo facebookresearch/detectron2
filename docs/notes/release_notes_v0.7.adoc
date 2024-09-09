@@ -1,4 +1,7 @@
 = Release Notes
 
+== Release v0.7.2
+* ( https://github.com/smart-robotics/detectron2/pull/2[!2]) Add lazy config [https://github.com/giovanni-corvi[Giovanni C.] ]
+
 == Release v0.7.1
 * ( https://github.com/smart-robotics/detectron2/pull/1[!1]) Fix draw mask with holes [https://github.com/diogo-sr[Diogo M.] ]
