@@ -1,5 +1,14 @@
 = Release Notes
 
+== Release v0.7.5
+* (https://github.com/smart-robotics/detectron2/commit/98d6979997f8aa2bbc43fd066b0809d30c5d0af9[v0.7.5]) Fix: mask_rcnn_fpn.py constants access  [https://github.com/diogo-sr[Diogo M.] ]
+
+== Release v0.7.4
+* (https://github.com/smart-robotics/detectron2/commit/52a1d5e85969ee714a1ca1690d65c9ff6dbb9720[v0.7.4]) Fix: configs typo on setup.py  [https://github.com/diogo-sr[Diogo M.] ]
+
+== Release v0.7.3
+* (https://github.com/smart-robotics/detectron2/commit/f13bb4d2cbdce429455a6e9f69522f90cab8ff15[v0.7.3]) Fix: setup.py [https://github.com/diogo-sr[Diogo M.] ]
+
 == Release v0.7.2
 * ( https://github.com/smart-robotics/detectron2/pull/2[!2]) Add lazy config [https://github.com/giovanni-corvi[Giovanni C.] ]
 
