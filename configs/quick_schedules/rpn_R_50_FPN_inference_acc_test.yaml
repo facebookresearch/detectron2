@@ -5,3 +5,4 @@ DATASETS:
   TEST: ("coco_2017_val_100",)
 TEST:
   EXPECTED_RESULTS: [["box_proposals", "AR@1000", 58.16, 0.02]]
+FLOAT32_PRECISION: "highest"
