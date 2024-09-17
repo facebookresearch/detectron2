@@ -89,7 +89,7 @@ model = L(GeneralizedRCNN)(
             conv_dims=[256, 256, 256, 256, 256],
         ),
     ),
-    pixel_mean=constants.imagenet_bgr256_mean,
-    pixel_std=constants.imagenet_bgr256_std,
+    pixel_mean=constants["imagenet_bgr256_mean"],
+    pixel_std=constants["imagenet_bgr256_std"],
     input_format="BGR",
 )
