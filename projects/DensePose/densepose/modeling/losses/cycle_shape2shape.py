@@ -89,7 +89,7 @@ class ShapeToShapeCycleLoss(nn.Module):
         geodists = mesh.geodists
         if indices is not None:
             embeddings = embeddings[indices]
-            geodists = geodists[torch.meshgrid(indices, indices)]
+            geodists = geodists[torch.meshgrid(indices, indices, indexing='ij')]
         return embeddings, geodists
 
     def _forward_one_pair(
