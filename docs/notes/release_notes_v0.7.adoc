@@ -1,5 +1,8 @@
 = Release Notes
 
+== Release v0.7.6
+* (https://github.com/smart-robotics/detectron2/commit/22d37aadef0b971d3b6c0c2abdefdd47a011393d[v0.7.6]) Fix: import cuda.amp  [https://github.com/diogo-sr[Diogo M.] ]
+
 == Release v0.7.5
 * (https://github.com/smart-robotics/detectron2/commit/98d6979997f8aa2bbc43fd066b0809d30c5d0af9[v0.7.5]) Fix: mask_rcnn_fpn.py constants access  [https://github.com/diogo-sr[Diogo M.] ]
 
