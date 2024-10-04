@@ -1,3 +1,5 @@
+from detectron2 import model_zoo
+
 from functools import partial
 
 from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
@@ -5,7 +7,6 @@ from detectron2.modeling.backbone.vit import get_vit_lr_decay_rate
 from .mask_rcnn_vitdet_b_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
 )
@@ -13,6 +14,8 @@ from .mask_rcnn_vitdet_b_100ep import (
 train.init_checkpoint = (
     "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"
 )
+
+model = model_zoo.get_config("ViTDet/configs/LVIS/mask_rcnn_vitdet_b_100ep.py").model
 
 model.backbone.net.embed_dim = 1280
 model.backbone.net.depth = 32

@@ -1,3 +1,5 @@
+from detectron2 import model_zoo
+
 from detectron2.config import LazyCall as L
 from detectron2.data.detection_utils import get_fed_loss_cls_weights
 from detectron2.layers import ShapeSpec
@@ -8,10 +10,11 @@ from detectron2.modeling.roi_heads import FastRCNNOutputLayers, FastRCNNConvFCHe
 from .mask_rcnn_vitdet_l_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     optimizer,
     train,
 )
+
+model = model_zoo.get_config("ViTDet/configs/LVIS/mask_rcnn_vitdet_l_100ep.py").model
 
 # arguments that don't exist for Cascade R-CNN
 [model.roi_heads.pop(k) for k in ["box_head", "box_predictor", "proposal_matcher"]]

@@ -1,9 +1,11 @@
+from detectron2 import model_zoo
+
 from detectron2.config import LazyCall as L
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.poolers import ROIPooler
 from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
 
-from .mask_rcnn_fpn import model
+model = model_zoo.get_config("common/models/mask_rcnn_fpn.py").model
 
 [model.roi_heads.pop(x) for x in ["mask_in_features", "mask_pooler", "mask_head"]]
 

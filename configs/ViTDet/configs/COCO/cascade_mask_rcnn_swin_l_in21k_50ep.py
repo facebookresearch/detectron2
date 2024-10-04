@@ -1,10 +1,13 @@
+from detectron2 import model_zoo
+
 from .cascade_mask_rcnn_swin_b_in21k_50ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_swin_b_in21k_50ep.py").model
 
 model.backbone.bottom_up.depths = [2, 2, 18, 2]
 model.backbone.bottom_up.drop_path_rate = 0.4

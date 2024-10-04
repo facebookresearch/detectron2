@@ -1,6 +1,9 @@
-from .cascade_mask_rcnn_mvitv2_b_3x import model, optimizer, train, lr_multiplier
+from detectron2 import model_zoo
+
+from .cascade_mask_rcnn_mvitv2_b_3x import optimizer, train, lr_multiplier
 from .common.coco_loader_lsj import dataloader
 
+model = model_zoo.get_config("MViTv2/configs/cascade_mask_rcnn_mvitv2_b_3x.py").model
 
 model.backbone.bottom_up.embed_dim = 192
 model.backbone.bottom_up.depth = 80
