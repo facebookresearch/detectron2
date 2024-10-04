@@ -1,3 +1,4 @@
+from detectron2 import model_zoo
 from fvcore.common.param_scheduler import MultiStepParamScheduler
 
 from detectron2.config import LazyCall as L
@@ -6,10 +7,11 @@ from detectron2.solver import WarmupParamScheduler
 from .cascade_mask_rcnn_mvitv2_b_in21k_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_mvitv2_b_in21k_100ep.py").model
 
 model.backbone.bottom_up.embed_dim = 192
 model.backbone.bottom_up.depth = 80

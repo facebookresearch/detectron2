@@ -1,9 +1,10 @@
+from detectron2 import model_zoo
+
 from functools import partial
 
 from .cascade_mask_rcnn_vitdet_b_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
     get_vit_lr_decay_rate,
@@ -12,6 +13,8 @@ from .cascade_mask_rcnn_vitdet_b_100ep import (
 train.init_checkpoint = (
     "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_vitdet_b_100ep.py").model
 
 model.backbone.net.embed_dim = 1280
 model.backbone.net.depth = 32

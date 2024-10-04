@@ -1,13 +1,16 @@
+from detectron2 import model_zoo
+
 from functools import partial
 
 from .mask_rcnn_vitdet_b_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
     get_vit_lr_decay_rate,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/mask_rcnn_vitdet_b_100ep.py").model
 
 train.init_checkpoint = (
     "detectron2://ImageNetPretrained/MAE/mae_pretrain_vit_huge_p14to16.pth?matching_heuristics=True"

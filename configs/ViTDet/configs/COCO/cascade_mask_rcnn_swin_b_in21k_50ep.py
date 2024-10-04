@@ -6,7 +6,8 @@ from detectron2.solver import WarmupParamScheduler
 from detectron2.modeling import SwinTransformer
 
 from ..common.coco_loader_lsj import dataloader
-from .cascade_mask_rcnn_mvitv2_b_in21k_100ep import model
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_mvitv2_b_in21k_100ep.py").model
 
 model.backbone.bottom_up = L(SwinTransformer)(
     depths=[2, 2, 18, 2],

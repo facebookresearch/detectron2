@@ -1,3 +1,5 @@
+from detectron2 import model_zoo
+
 from functools import partial
 import torch.nn as nn
 
@@ -8,11 +10,12 @@ from detectron2.evaluation.lvis_evaluation import LVISEvaluator
 
 from ..COCO.cascade_mask_rcnn_mvitv2_b_in21k_100ep import (
     dataloader,
-    model,
     train,
     lr_multiplier,
     optimizer,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_mvitv2_b_in21k_100ep.py").model
 
 dataloader.train.dataset.names = "lvis_v1_train"
 dataloader.train.sampler = L(RepeatFactorTrainingSampler)(

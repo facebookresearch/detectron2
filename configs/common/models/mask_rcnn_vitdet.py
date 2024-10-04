@@ -1,11 +1,14 @@
+from detectron2 import model_zoo
+
 from functools import partial
 import torch.nn as nn
 from detectron2.config import LazyCall as L
 from detectron2.modeling import ViT, SimpleFeaturePyramid
 from detectron2.modeling.backbone.fpn import LastLevelMaxPool
 
-from .mask_rcnn_fpn import model
-from ..data.constants import constants
+constants = model_zoo.get_config("common/data/constants.py").constants
+
+model = model_zoo.get_config("common/models/mask_rcnn_fpn.py").model
 
 model.pixel_mean = constants.imagenet_rgb256_mean
 model.pixel_std = constants.imagenet_rgb256_std

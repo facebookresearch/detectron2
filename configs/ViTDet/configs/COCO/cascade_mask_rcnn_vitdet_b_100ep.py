@@ -1,3 +1,5 @@
+from detectron2 import model_zoo
+
 from detectron2.config import LazyCall as L
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.box_regression import Box2BoxTransform
@@ -11,11 +13,12 @@ from detectron2.modeling.roi_heads import (
 from .mask_rcnn_vitdet_b_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
     get_vit_lr_decay_rate,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/mask_rcnn_vitdet_b_100ep.py").model
 
 # arguments that don't exist for Cascade R-CNN
 [model.roi_heads.pop(k) for k in ["box_head", "box_predictor", "proposal_matcher"]]

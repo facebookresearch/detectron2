@@ -1,10 +1,13 @@
+from detectron2 import model_zoo
+
 from .cascade_mask_rcnn_mvitv2_b_in21k_100ep import (
     dataloader,
     lr_multiplier,
-    model,
     train,
     optimizer,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_mvitv2_b_in21k_100ep.py").model
 
 model.backbone.bottom_up.embed_dim = 144
 model.backbone.bottom_up.depth = 48

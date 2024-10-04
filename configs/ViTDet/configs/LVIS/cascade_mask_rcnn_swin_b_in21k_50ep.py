@@ -1,3 +1,5 @@
+from detectron2 import model_zoo
+
 from detectron2.config.lazy import LazyCall as L
 from detectron2.data.detection_utils import get_fed_loss_cls_weights
 from detectron2.data.samplers import RepeatFactorTrainingSampler
@@ -5,11 +7,12 @@ from detectron2.evaluation.lvis_evaluation import LVISEvaluator
 
 from ..COCO.cascade_mask_rcnn_swin_b_in21k_50ep import (
     dataloader,
-    model,
     train,
     lr_multiplier,
     optimizer,
 )
+
+model = model_zoo.get_config("ViTDet/configs/COCO/cascade_mask_rcnn_swin_b_in21k_50ep.py").model
 
 dataloader.train.dataset.names = "lvis_v1_train"
 dataloader.train.sampler = L(RepeatFactorTrainingSampler)(

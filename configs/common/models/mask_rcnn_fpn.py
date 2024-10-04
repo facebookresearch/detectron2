@@ -1,3 +1,4 @@
+from detectron2 import model_zoo
 from detectron2.config import LazyCall as L
 from detectron2.layers import ShapeSpec
 from detectron2.modeling.meta_arch import GeneralizedRCNN
@@ -15,7 +16,7 @@ from detectron2.modeling.roi_heads import (
     FastRCNNConvFCHead,
 )
 
-from ..data.constants import constants
+constants = model_zoo.get_config("common/data/constants.py").constants
 
 model = L(GeneralizedRCNN)(
     backbone=L(FPN)(
