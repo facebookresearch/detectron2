@@ -29,13 +29,13 @@ class TestBlocks(unittest.TestCase):
         C = 10
         input = torch.rand(1, C, 10, 10).cuda()
         m = FrozenBatchNorm2d(C).cuda()
-        with autocast():
+        with autocast(device_type=input.device.type):
             output = m(input.half())
         self.assertEqual(output.dtype, torch.float16)
 
         # requires_grad triggers a different codepath
         input.requires_grad_()
-        with autocast():
+        with autocast(device_type=input.device.type):
             output = m(input.half())
         self.assertEqual(output.dtype, torch.float16)
 
