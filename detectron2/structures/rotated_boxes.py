@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import math
-from typing import Any, List, Tuple
+from typing import List, Tuple
 import torch
 
 from detectron2.layers.rotated_boxes import pairwise_iou_rotated
@@ -229,9 +229,9 @@ class RotatedBoxes(Boxes):
         """
         return RotatedBoxes(self.tensor.clone())
 
-    def to(self, device: torch.device, *args: Any, **kwargs: Any):
+    def to(self, device: torch.device, non_blocking: bool = False):
         # Boxes are assumed float32 and does not support to(dtype)
-        return RotatedBoxes(self.tensor.to(device=device))
+        return RotatedBoxes(self.tensor.to(device=device, non_blocking=non_blocking))
 
     def area(self) -> torch.Tensor:
         """
