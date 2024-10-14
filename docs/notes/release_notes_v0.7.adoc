@@ -1,5 +1,8 @@
 = Release Notes
 
+== Release v0.7.8
+* (https://github.com/smart-robotics/detectron2/commit/de11cdbb5c705ae4fa0bf4cc39606dbd6d71fb94[v0.7.8]) Fix draw mask with holes [https://github.com/diogo-sr[Diogo M.] ]
+
 == Release v0.7.7
 * (https://github.com/smart-robotics/detectron2/commit/8501b14086b493940d322111dca667e953741aef[v0.7.7]) Fix: lazy configs model imports  [https://github.com/giovanni-corvi[Giovanni C.] ]
 
