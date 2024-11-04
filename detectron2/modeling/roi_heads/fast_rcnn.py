@@ -338,10 +338,13 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
 
+        from my_fastrcnn_loss_with_focal_loss import fastrcnn_loss #add
         if self.use_sigmoid_ce:
-            loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
+            # loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
+            loss_cls = fastrcnn_loss #add
         else:
-            loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
+            # loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
+            loss_cls = fastrcnn_loss #add
 
         losses = {
             "loss_cls": loss_cls,
