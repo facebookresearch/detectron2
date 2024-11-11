@@ -12,6 +12,8 @@ from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regr
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
+mode = 1 #0:default 1:focal
+
 __all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
 
 
@@ -338,13 +340,13 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
 
-        from my_fastrcnn_loss_with_focal_loss import fastrcnn_loss #add
-        if self.use_sigmoid_ce:
-            # loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
-            loss_cls = fastrcnn_loss #add
+        if mode == 1:
+            from my_fastrcnn_loss_with_focal_loss import fastrcnn_loss
+            loss_cls = fastrcnn_loss
+        elif self.use_sigmoid_ce:
+            loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
         else:
-            # loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
-            loss_cls = fastrcnn_loss #add
+            loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
 
         losses = {
             "loss_cls": loss_cls,
