@@ -49,7 +49,7 @@ def _create_grid_offsets(
         target_device_tensor,
     )
 
-    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
+    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x, indexing='ij')
     shift_x = shift_x.reshape(-1)
     shift_y = shift_y.reshape(-1)
     return shift_x, shift_y
