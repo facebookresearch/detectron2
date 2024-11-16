@@ -36,4 +36,4 @@ class TestTrainer(unittest.TestCase):
         trainer = DefaultTrainer(cfg)
         hooks = trainer.build_hooks()
         writer_hook = hooks[-1]  # PeriodicWriter should be last hook
-        self.assertEqual(writer_hook._period, 1, "Log period from config not properly set")  # Changed period to _period
+        self.assertEqual(writer_hook._period, 1, "Log period from config not properly set")
