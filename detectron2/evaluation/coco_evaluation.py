@@ -11,7 +11,6 @@ import pickle
 from collections import OrderedDict
 import pycocotools.mask as mask_util
 import torch
-from omegaconf import DictConfig
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
@@ -115,7 +114,7 @@ class COCOEvaluator(DatasetEvaluator):
             max_dets_per_image = [1, 10, max_dets_per_image]
         self._max_dets_per_image = max_dets_per_image
 
-        if tasks is not None and (isinstance(tasks, CfgNode) or isinstance(tasks, DictConfig)):
+        if tasks is not None and isinstance(tasks, CfgNode):
             kpt_oks_sigmas = (
                 tasks.TEST.KEYPOINT_OKS_SIGMAS if not kpt_oks_sigmas else kpt_oks_sigmas
             )
