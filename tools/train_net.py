@@ -116,8 +116,8 @@ def setup(args):
     cfg = get_cfg()
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    cfg.freeze()
     default_setup(cfg, args)
+    cfg.freeze()
     return cfg
 
 
@@ -155,7 +155,7 @@ def invoke_main() -> None:
     print("Command Line Args:", args)
     launch(
         main,
-        args.num_gpus,
+        args.num_accelerators,
         num_machines=args.num_machines,
         machine_rank=args.machine_rank,
         dist_url=args.dist_url,

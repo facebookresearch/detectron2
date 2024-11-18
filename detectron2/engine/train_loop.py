@@ -250,6 +250,7 @@ class SimpleTrainer(TrainerBase):
         gather_metric_period=1,
         zero_grad_before_forward=False,
         async_write_metrics=False,
+        device: torch.device = torch.device("cuda"),
     ):
         """
         Args:
@@ -451,6 +452,7 @@ class AMPTrainer(SimpleTrainer):
         precision: torch.dtype = torch.float16,
         log_grad_scaler: bool = False,
         async_write_metrics=False,
+        device: torch.device = torch.device("cuda"),
     ):
         """
         Args:
@@ -475,14 +477,21 @@ class AMPTrainer(SimpleTrainer):
         self.grad_scaler = grad_scaler
         self.precision = precision
         self.log_grad_scaler = log_grad_scaler
+        self.device = device
 
     def run_step(self):
         """
         Implement the AMP training logic.
         """
         assert self.model.training, "[AMPTrainer] model was changed to eval mode!"
-        assert torch.cuda.is_available(), "[AMPTrainer] CUDA is required for AMP training!"
+        assert (
+            torch.cuda.is_available() or torch.npu.is_available()
+        ), "[AMPTrainer] CUDA/Ascend NPU is required for AMP training!"
+
         from torch.cuda.amp import autocast
+
+        if "npu" in self.device:
+            from torch.npu.amp import autocast
 
         start = time.perf_counter()
         data = next(self._data_loader_iter)
