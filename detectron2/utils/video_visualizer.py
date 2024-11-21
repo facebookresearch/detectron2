@@ -90,8 +90,8 @@ class VideoVisualizer:
         if predictions.has("pred_masks"):
             masks = predictions.pred_masks
             # mask IOU is not yet enabled
-            # masks_rles = mask_util.encode(np.asarray(masks.permute(1, 2, 0), order="F"))
-            # assert len(masks_rles) == num_instances
+            masks_rles = mask_util.encode(np.asarray(masks.permute(1, 2, 0), order="F"))
+            assert len(masks_rles) == num_instances
         else:
             masks = None
 
@@ -100,10 +100,16 @@ class VideoVisualizer:
                 colors = self._assign_colors_by_id(predictions)
             else:
                 # ToDo: clean old assign color method and use a default tracker to assign id
-                detected = [
-                    _DetectedInstance(classes[i], boxes[i], mask_rle=None, color=colors[i], ttl=8)
-                    for i in range(num_instances)
-                ]
+                if boxes is not None:
+                    detected = [
+                        _DetectedInstance(classes[i], boxes[i], mask_rle=None, color=colors[i], ttl=8)
+                        for i in range(num_instances)
+                    ]
+                else:
+                    detected = [
+                        _DetectedInstance(classes[i], bbox=None, mask_rle=masks_rles[i], color=colors[i], ttl=8)
+                        for i in range(num_instances)
+                    ]
                 colors = self._assign_colors(detected)
 
         labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
