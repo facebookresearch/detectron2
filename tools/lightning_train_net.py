@@ -56,6 +56,9 @@ class TrainingModule(LightningModule):
 
     def on_load_checkpoint(self, checkpointed_state: Dict[str, Any]) -> None:
         self.start_iter = checkpointed_state["iteration"]
+        if self.storage is None:
+            self.storage = EventStorage(0)
+            self.storage.__enter__()
         self.storage.iter = self.start_iter
 
     def setup(self, stage: str):
@@ -83,6 +86,7 @@ class TrainingModule(LightningModule):
             self.storage.__enter__()
             self.iteration_timer.trainer = weakref.proxy(self)
             self.iteration_timer.before_step()
+        if self.writers is None:
             self.writers = (
                 default_writers(self.cfg.OUTPUT_DIR, self.max_iter)
                 if comm.is_main_process()
