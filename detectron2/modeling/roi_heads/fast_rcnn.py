@@ -340,13 +340,22 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
 
-        if mode == 1:
-            from my_fastrcnn_loss_with_focal_loss import fastrcnn_loss
-            loss_cls = fastrcnn_loss
+        #書き換えここから
+        loss_type = self.cfg.MODEL.ROI_HEADS.LOSS_TYPE
+        if loss_type == "focal":
+            # Focal Loss
+            gamma = self.cfg.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA
+            alpha = self.cfg.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA
+            loss_cls = focal_loss(pred_class_logits, gt_classes, gamma, alpha)
+        elif loss_type == "bce":
+            # BCE Loss
+            gt_one_hot = F.one_hot(gt_classes, num_classes=pred_class_logits.size(1)).float()
+            loss_cls = F.binary_cross_entropy_with_logits(pred_class_logits, gt_one_hot, reduction="mean")
         elif self.use_sigmoid_ce:
             loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
         else:
             loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
+        #ここまで
 
         losses = {
             "loss_cls": loss_cls,
