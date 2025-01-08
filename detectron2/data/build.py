@@ -490,7 +490,7 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
         else:
             logger.info("Using training sampler {}".format(sampler_name))
             if sampler_name == "TrainingSampler":
-                sampler = TrainingSampler(len(dataset))
+                sampler = TrainingSampler(len(dataset), seed=cfg.SEED)
             elif sampler_name == "RepeatFactorTrainingSampler":
                 repeat_factors = RepeatFactorTrainingSampler.repeat_factors_from_category_frequency(
                     dataset, cfg.DATALOADER.REPEAT_THRESHOLD, sqrt=cfg.DATALOADER.REPEAT_SQRT

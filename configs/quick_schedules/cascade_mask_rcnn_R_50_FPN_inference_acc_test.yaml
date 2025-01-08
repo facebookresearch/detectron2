@@ -5,3 +5,4 @@ DATASETS:
   TEST: ("coco_2017_val_100",)
 TEST:
   EXPECTED_RESULTS: [["bbox", "AP", 50.18, 0.02], ["segm", "AP",  43.87, 0.02]]
+FLOAT32_PRECISION: "highest"

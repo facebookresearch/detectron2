@@ -14,7 +14,7 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
 
-from predictor import VisualizationDemo
+from vision.fair.detectron2.demo.predictor import VisualizationDemo
 
 # constants
 WINDOW_NAME = "COCO detections"

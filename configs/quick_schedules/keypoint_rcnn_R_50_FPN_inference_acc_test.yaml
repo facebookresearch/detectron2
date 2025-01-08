@@ -5,3 +5,4 @@ DATASETS:
   TEST: ("keypoints_coco_2017_val_100",)
 TEST:
   EXPECTED_RESULTS: [["bbox", "AP", 52.47, 0.02], ["keypoints", "AP", 67.36, 0.02]]
+FLOAT32_PRECISION: "highest"

@@ -84,6 +84,11 @@ class InstancesList:
         else:
             data_len = len(value)
         if len(self.batch_extra_fields):
+            # If we are tracing with Dynamo, the check here is needed since len(self)
+            # represents the number of bounding boxes detected in the image and thus is
+            # an unbounded SymInt.
+            if torch._utils.is_compiling():
+                torch._check(len(self) == data_len)
             assert (
                 len(self) == data_len
             ), "Adding a field of length {} to a Instances of length {}".format(data_len, len(self))
