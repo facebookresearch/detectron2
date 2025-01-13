@@ -351,6 +351,9 @@ class FastRCNNOutputLayers(nn.Module):
             # BCE Loss
             gt_one_hot = F.one_hot(gt_classes, num_classes=pred_class_logits.size(1)).float()
             loss_cls = F.binary_cross_entropy_with_logits(pred_class_logits, gt_one_hot, reduction="mean")
+        elif loss_type == 'dummy':
+            # dummy loss
+            loss_cls =　torch.tensor(1.0, requires_grad=True, device=predictions[0].device)
         elif self.use_sigmoid_ce:
             loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
         else:
