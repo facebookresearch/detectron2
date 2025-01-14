@@ -206,7 +206,9 @@ def inference_on_dataset(
     total_compute_time_str = str(datetime.timedelta(seconds=int(total_compute_time)))
     logger.info(
         "Total inference pure compute time: {} ({:.6f} s / iter per device, on {} devices)".format(
-            total_compute_time_str, total_compute_time / (total - num_warmup), num_devices
+            total_compute_time_str,
+            total_compute_time / (total - num_warmup),
+            num_devices,
         )
     )
 
