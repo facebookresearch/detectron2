@@ -220,6 +220,7 @@ class BestCheckpointer(HookBase):
         eval_period: int,
         checkpointer: Checkpointer,
         val_metric: str,
+        patience: int, # Added by Peter
         mode: str = "max",
         file_prefix: str = "model_best",
     ) -> None:
@@ -235,6 +236,7 @@ class BestCheckpointer(HookBase):
         self._logger = logging.getLogger(__name__)
         self._period = eval_period
         self._val_metric = val_metric
+        self._patience = patience # Added by Peter
         assert mode in [
             "max",
             "min",
@@ -297,6 +299,19 @@ class BestCheckpointer(HookBase):
             and next_iter != self.trainer.max_iter
         ):
             self._best_checking()
+            
+            # Early stopping code added by Peter            
+            if (self.best_iter is None): 
+                self._logger.warning("Best iteration is None. This is likely due to the metric not being computed yet.")
+                return
+            iterations_without_improvement = (self.trainer.iter-self.best_iter) // self._period
+            if(iterations_without_improvement == 0):
+                return 
+            
+            self._logger.warning(f"Model has not improved for {iterations_without_improvement} evaluation cycles. RAW={self.trainer.iter-self.best_iter}Max is {self._patience}") 
+            if(iterations_without_improvement > self._patience): 
+                self._logger.warning(f"Early stopping at iteration: {self.trainer.iter}")
+                raise Exception("Early stopping exception. Terminating 'gracefully'")
 
     def after_train(self):
         # same conditions as `EvalHook`
