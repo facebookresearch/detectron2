@@ -187,7 +187,7 @@ class COCOEvaluator(DatasetEvaluator):
             if not comm.is_main_process():
                 return {}
         else:
-            predictions = self._predictions
+            predictions = copy.deepcopy(self._predictions)
 
         if len(predictions) == 0:
             self._logger.warning("[COCOEvaluator] Did not receive valid predictions.")
