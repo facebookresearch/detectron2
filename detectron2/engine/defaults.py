@@ -496,7 +496,7 @@ class DefaultTrainer(TrainerBase):
         if comm.is_main_process():
             # Here the default print/log frequency of each writer is used.
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers(), period=20))
+            ret.append(hooks.PeriodicWriter(self.build_writers(), period=cfg.TRAINER.LOG_PERIOD))
         return ret
 
     def build_writers(self):
