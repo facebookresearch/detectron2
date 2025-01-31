@@ -43,6 +43,8 @@ cfg.MODEL.BACKBONE.NAME = 'ToyBackbone'   # or set it in the config file
 model = build_model(cfg)  # it will find `ToyBackbone` defined above
 ```
 
+Overriding the backbone can prove to be helpful in certain cases. In case you want to customize your backbone for certain specific datasets and modify the feature extraction part of the network to gain better results, this could be your way to go.
+
 As another example, to add new abilities to the ROI heads in the Generalized R-CNN meta-architecture,
 you can implement a new
 [ROIHeads](../modules/modeling.html#detectron2.modeling.ROIHeads) subclass and put it in the `ROI_HEADS_REGISTRY`.
