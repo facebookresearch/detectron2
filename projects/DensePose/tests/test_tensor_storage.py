@@ -9,6 +9,7 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from detectron2.utils import comm
+from detectron2.utils.comm import _find_free_port
 
 from densepose.evaluation.tensor_storage import (
     SingleProcessFileTensorStorage,
@@ -82,21 +83,6 @@ class TestSingleProcessFileTensorStorage(unittest.TestCase):
                     self.assertEqual(data_elts[i][field_name].shape, record[field_name].shape)
                     self.assertEqual(data_elts[i][field_name].dtype, record[field_name].dtype)
                     self.assertTrue(torch.allclose(data_elts[i][field_name], record[field_name]))
-
-
-def _find_free_port():
-    """
-    Copied from detectron2/engine/launch.py
-    """
-    import socket
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Binding to port 0 will cause the OS to find an available port for us
-    sock.bind(("", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    # NOTE: there is still a chance the port could be taken by other processes.
-    return port
 
 
 def launch(main_func, nprocs, args=()):
