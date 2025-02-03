@@ -12,6 +12,8 @@ from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regr
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
+mode = 1 #0:default 1:focal
+
 __all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
 
 
@@ -338,10 +340,25 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
 
-        if self.use_sigmoid_ce:
+        #書き換えここから
+        loss_type = self.cfg.MODEL.ROI_HEADS.LOSS_TYPE
+        if loss_type == "focal":
+            # Focal Loss
+            gamma = self.cfg.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA
+            alpha = self.cfg.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA
+            loss_cls = focal_loss(pred_class_logits, gt_classes, gamma, alpha)
+        elif loss_type == "bce":
+            # BCE Loss
+            gt_one_hot = F.one_hot(gt_classes, num_classes=pred_class_logits.size(1)).float()
+            loss_cls = F.binary_cross_entropy_with_logits(pred_class_logits, gt_one_hot, reduction="mean")
+        elif loss_type == 'dummy':
+            # dummy loss
+            loss_cls =　torch.tensor(1.0, requires_grad=True, device=predictions[0].device)
+        elif self.use_sigmoid_ce:
             loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
         else:
             loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
+        #ここまで
 
         losses = {
             "loss_cls": loss_cls,
