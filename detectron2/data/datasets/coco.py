@@ -160,6 +160,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         record["file_name"] = os.path.join(image_root, img_dict["file_name"])
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
+        record["text"] = img_dict.get("description", "")
         image_id = record["image_id"] = img_dict["id"]
 
         objs = []
