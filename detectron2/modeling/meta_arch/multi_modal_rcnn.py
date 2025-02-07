@@ -45,7 +45,7 @@ class TextFeatureExtractor(torch.nn.Module):
         )
 
         num_fpn_layers = len(self.fpn_keys)
-        self.fpn_convs = {}
+        self.fpn_convs = nn.ModuleDict()
         for i, k in enumerate(self.fpn_keys[:-1]):
             self.fpn_convs[k] = torch.nn.ConvTranspose2d(in_channels=1, out_channels=1, kernel_size=2**(num_fpn_layers-i-1), stride=2**(num_fpn_layers-i-1), device=device)
 
@@ -222,7 +222,7 @@ class MultiModalRCNN(GeneralizedRCNN):
             # TODO: distinguish between text_encoder.model and text_encoder.remapper
             result: IncompatibleKeys = super().load_state_dict(state_dict, strict=False)
             # Filter out text_encoder related missing keys from the report
-            missing_keys = [k for k in result.missing_keys if not k.startswith('text_encoder.')]
+            missing_keys = [k for k in result.missing_keys if not k.startswith('text_encoder.model')]
             return IncompatibleKeys(missing_keys=missing_keys, unexpected_keys=result.unexpected_keys)
         
         # If text encoder weights exist, load everything normally
