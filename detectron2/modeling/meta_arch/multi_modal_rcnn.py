@@ -49,10 +49,16 @@ class TextFeatureExtractor(torch.nn.Module):
         for i, k in enumerate(self.fpn_keys[:-1]):
             self.fpn_convs[k] = torch.nn.ConvTranspose2d(in_channels=1, out_channels=1, kernel_size=2**(num_fpn_layers-i-1), stride=2**(num_fpn_layers-i-1), device=device)
 
-    def forward(self, batched_inputs, feature_shapes):
-        # Cannot directly handle batches of input (because of truncation/padding in tokenizer)
-        # the for loop below is a (somewhat dirty) workaround
-        # TODO: fix this now that we're not using BART
+    def forward(self, batched_inputs: list[str], feature_shapes: dict[str, tuple]):
+        """Forward pass for the text encoder.
+
+        Args:
+            batched_inputs (list[str]): A list of strings, each containing a text.
+            feature_shapes (dict[str, tuple]): A dictionary containing the shapes of the backbone features.
+
+        Returns:
+            dict[str, torch.Tensor]: A dictionary containing the text features.
+        """
         batched_reshaped_features = torch.zeros(((len(batched_inputs),) + self.expected_output_shape), device=self.device)
         for i, text in enumerate(batched_inputs):
             embedded_features = self.model.encode(text, convert_to_tensor=True)
@@ -61,7 +67,16 @@ class TextFeatureExtractor(torch.nn.Module):
             
         return self.construct_fpn(batched_reshaped_features, feature_shapes)
     
-    def construct_fpn(self, raw_tensor, feature_shapes):
+    def construct_fpn(self, raw_tensor: torch.Tensor, feature_shapes: dict[str, tuple]):
+        """Construct the FPN features from the raw tensor.
+
+        Args:
+            raw_tensor (torch.Tensor): The raw tensor of text features.
+            feature_shapes (dict[str, tuple]): A dictionary containing the shapes of the backbone features.
+
+        Returns:
+            dict[str, torch.Tensor]: A dictionary containing the FPN features with the correct shapes.
+        """
         fpn_features = {k: torch.zeros(v, device = self.device) for k, v in feature_shapes.items()}
         
         for i in range(raw_tensor.shape[0]):
@@ -86,6 +101,8 @@ class MultiModalRCNN(GeneralizedRCNN):
         pixel_mean: tuple[float],
         pixel_std: tuple[float],
         input_format: Optional[str] = None,
+        feature_dropout_rate: float = 0.0,
+        feature_noise_std: float = 0.0,
         vis_period: int = 0,
     ):
         """
@@ -97,6 +114,8 @@ class MultiModalRCNN(GeneralizedRCNN):
                 the per-channel mean and std to be used to normalize the input image
             input_format: describe the meaning of channels of input. Needed by visualization
             vis_period: the period to run visualization. Set to 0 to disable.
+            feature_dropout_rate: the rate to dropout backbone features
+            feature_noise_std: the standard deviation of the noise to add to backbone features
             min_size_input: the minimum size of the input image
         """
 
@@ -109,6 +128,8 @@ class MultiModalRCNN(GeneralizedRCNN):
         smallest_feature_size = (self.backbone._square_pad // largest_stride if self.backbone._square_pad else PROCESSED_IMAGE_SIZE[0] // largest_stride,
                                 self.backbone._square_pad // largest_stride if self.backbone._square_pad else PROCESSED_IMAGE_SIZE[1] // largest_stride)
 
+        self.feature_dropout = nn.Dropout(feature_dropout_rate)
+        self.feature_noise_std = feature_noise_std
         # TODO: TextFeatureExtractor as input argument
         self.text_encoder = TextFeatureExtractor(
             output_shape=384,
@@ -116,7 +137,15 @@ class MultiModalRCNN(GeneralizedRCNN):
             fpn_keys=self.backbone._out_features,
             device="cuda")
 
-    def forward(self, batched_inputs):
+    def forward(self, batched_inputs: list[dict[str, torch.Tensor]]):
+        """Forward pass for the model.
+
+        Args:
+            batched_inputs (list[dict]): A list of dictionaries, each containing an image and its corresponding text.
+
+        Returns:
+            dict: A dictionary containing the losses.
+        """
 
         if not self.training:
             return self.inference(batched_inputs)
@@ -133,6 +162,12 @@ class MultiModalRCNN(GeneralizedRCNN):
         text_features = self.text_encoder([batched_input['text'] for batched_input in batched_inputs], feature_shapes)
 
         for k in features:
+            # Dropout features
+            features[k] = self.feature_dropout(features[k])
+
+            # Add noise
+            features[k] = features[k] + torch.randn_like(features[k]) * self.feature_noise_std
+
             features[k] = features[k] + text_features[k]
         
         if self.proposal_generator is not None:
@@ -210,8 +245,8 @@ class MultiModalRCNN(GeneralizedRCNN):
         If the state dict does not contain text encoder weights, load the rest of the model normally.
         If the state dict contains text encoder weights, load the model normally.
         Args:
-            state_dict (_type_): _description_
-            strict (bool, optional): _description_. Defaults to True.
+            state_dict (dict): The state dict of the model.
+            strict (bool, optional): Whether to strictly enforce that the keys match exactly. Defaults to True.
 
         Returns:
             IncompatibleKeys: The missing (exist in model but not in state_dict) and unexpected keys (exist in state_dict but not in model).
