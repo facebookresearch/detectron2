@@ -229,9 +229,9 @@ class RotatedBoxes(Boxes):
         """
         return RotatedBoxes(self.tensor.clone())
 
-    def to(self, device: torch.device):
+    def to(self, device: torch.device, non_blocking: bool = False):
         # Boxes are assumed float32 and does not support to(dtype)
-        return RotatedBoxes(self.tensor.to(device=device))
+        return RotatedBoxes(self.tensor.to(device=device, non_blocking=non_blocking))
 
     def area(self) -> torch.Tensor:
         """

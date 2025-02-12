@@ -61,6 +61,8 @@ class ShapeToShapeCycleLoss(nn.Module):
 
     def fake_value(self, embedder: nn.Module):
         losses = []
+        # pyre-fixme[29]: `Union[(self: Tensor) -> Any, Module, Tensor]` is not a
+        #  function.
         for mesh_name in embedder.mesh_names:
             losses.append(embedder(mesh_name).sum() * 0)
         return torch.mean(torch.stack(losses))
