@@ -10,17 +10,9 @@ import torch.nn as nn
 from torch.nn.modules.module import _IncompatibleKeys as IncompatibleKeys
 from typing import Optional
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-# BART STUFF:
-# self.tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-# self.model = BartModel.from_pretrained('facebook/bart-base')
-# def forward(self, text):
-# TODO: Could use encoded (or even last token) instead of `encoder_last_hidden_state`
-# tokenizer, model, etc.
-# last_hidden_state = outputs.encoder_last_hidden_state
 
-# Max-pooling over the tokens
-# pooled_features = torch.amax(last_hidden_state, dim=1)
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 PROCESSED_IMAGE_SIZE = (768, 1024)
 
 
@@ -254,7 +246,6 @@ class MultiModalRCNN(GeneralizedRCNN):
         if not any(k.startswith('text_encoder.') for k in state_dict):
             # If no text encoder weights in state dict, load everything else
             # and keep the pre-trained weights
-            # TODO: distinguish between text_encoder.model and text_encoder.remapper
             result: IncompatibleKeys = super().load_state_dict(state_dict, strict=False)
             # Filter out text_encoder related missing keys from the report
             missing_keys = [k for k in result.missing_keys if not k.startswith('text_encoder.model')]
