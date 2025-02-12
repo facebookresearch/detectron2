@@ -127,7 +127,7 @@ class MultiModalRCNN(GeneralizedRCNN):
             output_shape=384,
             expected_output_shape=(channels, int(smallest_feature_size[0]), int(smallest_feature_size[1])), 
             fpn_keys=self.backbone._out_features,
-            device="cuda")
+            device=self.device)
 
     def forward(self, batched_inputs: list[dict[str, torch.Tensor]]):
         """Forward pass for the model.
