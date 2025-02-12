@@ -183,6 +183,7 @@ def read_image(file_name, format=None):
         # work around this bug: https://github.com/python-pillow/Pillow/issues/3973
         image = _apply_exif_orientation(image)
         return convert_PIL_to_numpy(image, format)
+    raise ValueError(f"Failed to read image at: {file_name}")
 
 
 def check_image_size(dataset_dict, image):
