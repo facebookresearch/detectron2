@@ -1,3 +1,14 @@
+"""
+Draft implementation of an extension to the GeneralizedRCNN model to enable it to process both images and textual descriptions as input.
+
+The are plenty of TODOs/improvements that could be explored, including:
+    - Introduce a "FusionModel" to handle the integration/combination of visual and text features.
+      Essentially instead of `features = features + text_features` we would have `features = self.fusion_model(features, text_features)`
+      This is because simply adding the two features is probably too simplistic. The fusion model could be a more traditional network that
+      first concatenates than combines the features or more complex (e.g. gating, attention, regularization)
+
+    - The TextFeatureEncoder should be an input argument of a MultiModalRCNN instance
+"""
 from detectron2.modeling.meta_arch.rcnn import GeneralizedRCNN
 from detectron2.modeling.backbone import Backbone
 from detectron2.structures import ImageList, Instances
@@ -17,10 +28,16 @@ PROCESSED_IMAGE_SIZE = (768, 1024)
 
 
 class TextFeatureExtractor(torch.nn.Module):
-    def __init__(self,  output_shape: int, expected_output_shape: tuple, fpn_keys: list[str], device: str, interpolation_mode: str = 'bilinear'):
-        """
-        we assume that the output_shape has shape flattened shape K (make sure)
-        we assume that the expected_output_shape has shape (W, X, X) [does it work with w, x, y??]    
+    """Model responsible for encoding an input caption/description into a high-dimensional space and reshape those to match the visual features."""
+    def __init__(self,  expected_output_shape: tuple, fpn_keys: list[str], device: str, output_shape: int = 384, interpolation_mode: str = 'bilinear'):
+        """Init function for a TextFeatureExtractor instance.
+
+        Args:
+            expected_output_shape (tuple): Shape of the 'smallest' encoded vision representation.
+            fpn_keys (list[str]): Names/keys of the fpn stages (output of the backbone).
+            device (str): The device
+            output_shape (int): Output shape of the raw caption encoder. Defaults to 384 as that's the shape for a `SentenceTransformer`.
+            interpolation_mode (str): Mode to interpolate features in `construct_fpn`. Defaults to 'bilinear', options include 'nearest', 'linear', etc..
         """
         super().__init__()
         self.expected_output_shape = expected_output_shape
@@ -36,6 +53,8 @@ class TextFeatureExtractor(torch.nn.Module):
             nn.LeakyReLU()
         )
 
+        # Here we construct the convolutional layers that remap the raw self.model encoded features
+        # into features that match the shape of the fpn vision representation at each stage
         num_fpn_layers = len(self.fpn_keys)
         self.fpn_convs = nn.ModuleDict()
         for i, k in enumerate(self.fpn_keys[:-1]):
@@ -122,9 +141,8 @@ class MultiModalRCNN(GeneralizedRCNN):
 
         self.feature_dropout = nn.Dropout(feature_dropout_rate)
         self.feature_noise_std = feature_noise_std
-        # TODO: TextFeatureExtractor as input argument
+
         self.text_encoder = TextFeatureExtractor(
-            output_shape=384,
             expected_output_shape=(channels, int(smallest_feature_size[0]), int(smallest_feature_size[1])), 
             fpn_keys=self.backbone._out_features,
             device=self.device)
@@ -154,9 +172,11 @@ class MultiModalRCNN(GeneralizedRCNN):
         text_features = self.text_encoder([batched_input['text'] for batched_input in batched_inputs], feature_shapes)
 
         for k in features:
+            # Dropout and noise are added to the vision features (based on the parameters provided as input)
+            # to prevent over-reliance on visual information and encourage the model to leverage the text representation.
+
             # Dropout features
             features[k] = self.feature_dropout(features[k])
-
             # Add noise
             features[k] = features[k] + torch.randn_like(features[k]) * self.feature_noise_std
 
