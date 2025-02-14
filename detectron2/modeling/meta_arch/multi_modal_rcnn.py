@@ -5,7 +5,7 @@ The are plenty of TODOs/improvements that could be explored, including:
     - Introduce a "FusionModel" to handle the integration/combination of visual and text features.
       Essentially instead of `features = features + text_features` we would have `features = self.fusion_model(features, text_features)`
       This is because simply adding the two features is probably too simplistic. The fusion model could be a more traditional network that
-      first concatenates than combines the features or more complex (e.g. gating, attention, regularization)
+      first concatenates and then combines the features or more complex (e.g. gating, attention, regularization)
 
     - The TextFeatureEncoder should be an input argument of a MultiModalRCNN instance
 """
