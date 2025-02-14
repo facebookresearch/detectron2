@@ -190,6 +190,7 @@ setup(
         "hydra-core>=1.1",
         "black",
         "packaging",
+        "sentence-transformers>=3.4.0,<4"
         # NOTE: When adding new dependencies, if it is required at import time (in addition
         # to runtime), it probably needs to appear in docs/requirements.txt, or as a mock
         # in docs/conf.py
