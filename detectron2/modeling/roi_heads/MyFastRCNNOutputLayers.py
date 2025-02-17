@@ -15,7 +15,7 @@ from detectron2.modeling.roi_heads import StandardROIHeads
 @ROI_HEADS_REGISTRY.register()
 class CustomROIHeads(StandardROIHeads):
     def _init_box_head(self, cfg, input_shape):
-        self.box_predictor = MyFastRCNNOutputLayers(
+        self.box_predictor = MyFastRCNNOutputLayers(　# ボックス回帰に適用
             input_shape,  
             cfg.MODEL.ROI_HEADS.NUM_CLASSES,
         )
