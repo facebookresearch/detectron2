@@ -1,7 +1,7 @@
 import torch
 from detectron2.modeling.roi_heads.fast_rcnn import FastRCNNOutputLayers
 
-class CustomFastRCNNOutputLayers(FastRCNNOutputLayers):
+class MyFastRCNNOutputLayers(FastRCNNOutputLayers):
     def losses(self, predictions, proposals):
         dummy_loss = torch.tensor(100.0, device=predictions[0].device)  # 固定損失
         return {
