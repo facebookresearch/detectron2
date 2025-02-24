@@ -551,6 +551,7 @@ class StandardROIHeads(ROIHeads):
     def __init__(
         self,
         *,
+        cfg, #追加
         box_in_features: List[str],
         box_pooler: ROIPooler,
         box_head: nn.Module,
