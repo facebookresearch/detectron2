@@ -184,6 +184,7 @@ class FastRCNNOutputLayers(nn.Module):
     @configurable
     def __init__(
         self,
+        cfg,
         input_shape: ShapeSpec,
         *,
         box2box_transform,
@@ -230,6 +231,7 @@ class FastRCNNOutputLayers(nn.Module):
             fed_loss_num_classes (int): number of federated classes to keep in total
         """
         super().__init__()
+        self.cfg = cfg #設定の上書き
         if isinstance(input_shape, int):  # some backward compatibility
             input_shape = ShapeSpec(channels=input_shape)
         self.num_classes = num_classes
@@ -353,7 +355,8 @@ class FastRCNNOutputLayers(nn.Module):
             loss_cls = F.binary_cross_entropy_with_logits(pred_class_logits, gt_one_hot, reduction="mean")
         elif loss_type == 'dummy':
             # dummy loss
-            dummy_loss = torch.tensor(100.0, device=predictions[0].device)  # 固定値の損失
+            print("=== Custom losses() function is called ===")  # 確認用出力
+            dummy_loss = torch.tensor(100.0, device=predictions[0].device, requires_grad=True)
             return {
                 "loss_cls": dummy_loss,
                 "loss_box_reg": dummy_loss
