@@ -581,7 +581,12 @@ class StandardROIHeads(ROIHeads):
         self.in_features = self.box_in_features = box_in_features
         self.box_pooler = box_pooler
         self.box_head = box_head
-        self.box_predictor = box_predictor
+        # 書き換え
+        # self.box_predictor = box_predictor
+        self.box_predictor = FastRCNNOutputLayers(
+            input_shape,  
+            cfg.MODEL.ROI_HEADS.NUM_CLASSES,
+        )
 
         self.mask_on = mask_in_features is not None
         if self.mask_on:
