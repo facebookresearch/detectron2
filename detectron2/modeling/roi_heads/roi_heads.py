@@ -584,6 +584,7 @@ class StandardROIHeads(ROIHeads):
         # 書き換え
         # self.box_predictor = box_predictor
         self.box_predictor = FastRCNNOutputLayers(
+            cfg,
             input_shape,  
             cfg.MODEL.ROI_HEADS.NUM_CLASSES,
         )
