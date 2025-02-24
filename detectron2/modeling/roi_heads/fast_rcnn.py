@@ -320,7 +320,7 @@ class FastRCNNOutputLayers(nn.Module):
             Dict[str, Tensor]: dict of losses
         """
         scores, proposal_deltas = predictions
-
+        loss_type = self.cfg.MODEL.ROI_HEADS.LOSS_TYPE    # 損失関数の選択
         # parse classification outputs
         gt_classes = (
             cat([p.gt_classes for p in proposals], dim=0) if len(proposals) else torch.empty(0)
@@ -355,7 +355,7 @@ class FastRCNNOutputLayers(nn.Module):
             loss_cls = F.binary_cross_entropy_with_logits(pred_class_logits, gt_one_hot, reduction="mean")
         elif loss_type == 'dummy':
             # dummy loss
-            print("=== Custom losses() function is called ===")  # 確認用出力
+            print("ダミー損失関数を使用します")  # 確認用出力
             dummy_loss = torch.tensor(100.0, device=predictions[0].device, requires_grad=True)
             return {
                 "loss_cls": dummy_loss,
