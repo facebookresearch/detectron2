@@ -2,6 +2,7 @@
 import torch
 from torch.nn import functional as F
 
+from detectron2.layers.wrappers import check_if_dynamo_compiling
 from detectron2.structures import Instances, ROIMasks
 
 
@@ -55,7 +56,9 @@ def detector_postprocess(
     output_boxes.scale(scale_x, scale_y)
     output_boxes.clip(results.image_size)
 
-    results = results[output_boxes.nonempty()]
+    if not check_if_dynamo_compiling():
+        # If we're tracing with Dynamo, we can't guard on a data-dependent condition
+        results = results[output_boxes.nonempty()]
 
     if results.has("pred_masks"):
         if isinstance(results.pred_masks, ROIMasks):
