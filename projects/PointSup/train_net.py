@@ -70,8 +70,8 @@ def setup(args):
     add_point_sup_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    cfg.freeze()
     default_setup(cfg, args)
+    cfg.freeze()
     # Setup logger for "point_sup" module
     setup_logger(output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="point_sup")
     return cfg
@@ -107,7 +107,7 @@ def invoke_main() -> None:
     print("Command Line Args:", args)
     launch(
         main,
-        args.num_gpus,
+        args.num_accelerators,
         num_machines=args.num_machines,
         machine_rank=args.machine_rank,
         dist_url=args.dist_url,
