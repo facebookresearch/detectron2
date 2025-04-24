@@ -12,9 +12,9 @@ jobs:
     # run on PRs, or commits to facebookresearch (not internal)
     if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
       - name: Install dependencies
@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install flake8==6.1.0 isort==4.3.21
-          python -m pip install black==24.3.0
+          python -m pip install black==24.4.2
           flake8 --version
       - name: Lint
         run: |
@@ -51,13 +51,13 @@ jobs:
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ${{ env.pythonLocation }}/lib/python3.8/site-packages
@@ -103,15 +103,15 @@ jobs:
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: load-cache
         with:
           path: |
@@ -159,15 +159,15 @@ jobs:
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: load-cache
         with:
           path: |
@@ -210,15 +210,15 @@ jobs:
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.8
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: load-cache
         with:
           path: |
