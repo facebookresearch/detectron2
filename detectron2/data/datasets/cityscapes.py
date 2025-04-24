@@ -138,7 +138,10 @@ def _cityscapes_files_to_dict(files, from_json, to_polygons):
     Returns:
         A dict in Detectron2 Dataset format.
     """
-    from deeplearning.projects.cityscapesApi.cityscapesscripts.helpers.labels import id2label, name2label
+    from deeplearning.projects.cityscapesApi.cityscapesscripts.helpers.labels import (
+        id2label,
+        name2label,
+    )
 
     image_file, instance_id_file, _, json_file = files
 
