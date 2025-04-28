@@ -355,10 +355,12 @@ Model evaluation can be done similarly:
 If you use ViTDet, please use the following BibTeX entry.
 
 ```BibTeX
-@article{li2022exploring,
-  title={Exploring plain vision transformer backbones for object detection},
+@inproceedings{li2022exploring,
+  title={Exploring Plain Vision Transformer Backbones for Object Detection},
   author={Li, Yanghao and Mao, Hanzi and Girshick, Ross and He, Kaiming},
-  journal={arXiv preprint arXiv:2203.16527},
-  year={2022}
+  booktitle={European Conference on Computer Vision (ECCV)},
+  pages={280--296},
+  year={2022},
+  organization={Springer}
 }
 ```
