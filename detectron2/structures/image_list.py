@@ -1,11 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 from __future__ import division
-from typing import Any, Dict, List, Optional, Tuple
 import torch
 from torch import device
 from torch.nn import functional as F
 
 from detectron2.layers.wrappers import move_device_like, shapes_to_tensor
+from detectron2.structures.torch_version_utils import torch_version_at_least
+
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class ImageList:
@@ -111,7 +113,12 @@ class ImageList:
             # This seems slightly (2%) faster.
             # TODO: check whether it's faster for multiple images as well
             image_size = image_sizes[0]
-            padding_size = [0, max_size[-1] - image_size[1], 0, max_size[-2] - image_size[0]]
+            u0 = max_size[-1] - image_size[1]
+            u1 = max_size[-2] - image_size[0]
+            padding_size = [0, u0, 0, u1]
+            if torch_version_at_least("2.6.0") and torch.compiler.is_compiling():
+                torch._check(u0.item() >= 0)
+                torch._check(u1.item() >= 0)
             batched_imgs = F.pad(tensors[0], padding_size, value=pad_value).unsqueeze_(0)
         else:
             # max_size can be a tensor in tracing mode, therefore convert to list
