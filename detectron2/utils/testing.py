@@ -8,7 +8,6 @@ import unittest
 from typing import Callable
 import torch
 import torch.onnx.symbolic_helper as sym_help
-from packaging import version
 from torch._C import ListType
 from torch.onnx import register_custom_op_symbolic
 
@@ -19,6 +18,7 @@ from detectron2.data.detection_utils import read_image
 from detectron2.modeling import build_model
 from detectron2.structures import Boxes, Instances, ROIMasks
 from detectron2.utils.file_io import PathManager
+from detectron2.utils.torch_version_utils import min_torch_version
 
 
 """
@@ -160,20 +160,6 @@ def reload_lazy_config(cfg):
         fname = os.path.join(d, "d2_cfg_test.yaml")
         LazyConfig.save(cfg, fname)
         return LazyConfig.load(fname)
-
-
-def min_torch_version(min_version: str) -> bool:
-    """
-    Returns True when torch's  version is at least `min_version`.
-    """
-    try:
-        import torch
-    except ImportError:
-        return False
-
-    installed_version = version.parse(torch.__version__.split("+")[0])
-    min_version = version.parse(min_version)
-    return installed_version >= min_version
 
 
 def has_dynamic_axes(onnx_model):
