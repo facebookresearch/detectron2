@@ -10,7 +10,7 @@ from detectron2.data.detection_utils import get_fed_loss_cls_weights
 from detectron2.layers import ShapeSpec, batched_nms, cat, cross_entropy, nonzero_tuple
 from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regression_loss
 from detectron2.structures import Boxes, Instances
-from detectron2.utils.events import get_event_storage
+from detectron2.utils.events import EventStorage
 
 __all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
 
@@ -108,11 +108,11 @@ def _log_classification_stats(pred_logits, gt_classes, prefix="fast_rcnn"):
     num_accurate = (pred_classes == gt_classes).nonzero().numel()
     fg_num_accurate = (fg_pred_classes == fg_gt_classes).nonzero().numel()
 
-    storage = get_event_storage()
-    storage.put_scalar(f"{prefix}/cls_accuracy", num_accurate / num_instances)
-    if num_fg > 0:
-        storage.put_scalar(f"{prefix}/fg_cls_accuracy", fg_num_accurate / num_fg)
-        storage.put_scalar(f"{prefix}/false_negative", num_false_negative / num_fg)
+    with EventStorage() as storage:
+        storage.put_scalar(f"{prefix}/cls_accuracy", num_accurate / num_instances)
+        if num_fg > 0:
+            storage.put_scalar(f"{prefix}/fg_cls_accuracy", fg_num_accurate / num_fg)
+            storage.put_scalar(f"{prefix}/false_negative", num_false_negative / num_fg)
 
 
 def fast_rcnn_inference_single_image(
