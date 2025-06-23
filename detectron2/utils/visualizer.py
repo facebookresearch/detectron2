@@ -1242,7 +1242,7 @@ class Visualizer:
             m = m.numpy()
         ret = []
         for x in m:
-            if isinstance(x, GenericMask):
+            if isinstance(x, GenericMask) or x.__class__.__name__ == "GenericMask":
                 ret.append(x)
             else:
                 ret.append(GenericMask(x, self.output.height, self.output.width))
