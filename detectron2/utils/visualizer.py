@@ -705,8 +705,7 @@ class Visualizer:
                 self.draw_box(boxes[i], edge_color=color)
 
             if masks is not None:
-                for segment in masks[i].polygons:
-                    self.draw_polygon(segment.reshape(-1, 2), color, alpha=alpha)
+                self.draw_binary_mask(masks[i].mask, color, alpha=alpha)
 
             if labels is not None:
                 # first get a box
