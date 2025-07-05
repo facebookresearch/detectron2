@@ -451,7 +451,7 @@ class Visualizer:
         area_threshold=None,
         alpha=0.8,
         draw_text: bool = True,
-        edge_color: tuple[float, float, float] = _OFF_WHITE,
+        edge_color: tuple[float, float, float] | None = _OFF_WHITE,
     ):
         """
         Draw semantic segmentation predictions/labels.
