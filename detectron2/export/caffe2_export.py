@@ -6,7 +6,6 @@ import logging
 import numpy as np
 from typing import List
 import onnx
-import onnx.optimizer
 import torch
 from caffe2.proto import caffe2_pb2
 from caffe2.python import core
