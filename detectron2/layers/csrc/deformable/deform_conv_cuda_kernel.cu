@@ -73,12 +73,12 @@
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
-#include <THC/THCAtomics.cuh>
+#include <ATen/cuda/Atomic.cuh>
 
 using namespace at;
 
 #define CUDA_KERNEL_LOOP(i, n)                                 \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); \
+  for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); \
        i += blockDim.x * gridDim.x)
 
 

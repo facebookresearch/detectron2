@@ -58,7 +58,7 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
     """
 
     def process(self, inputs, outputs):
-        from cityscapesscripts.helpers.labels import name2label
+        from deeplearning.projects.cityscapesApi.cityscapesscripts.helpers.labels import name2label
 
         for input, output in zip(inputs, outputs):
             file_name = input["file_name"]
@@ -96,7 +96,7 @@ class CityscapesInstanceEvaluator(CityscapesEvaluator):
         comm.synchronize()
         if comm.get_rank() > 0:
             return
-        import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as cityscapes_eval
+        import deeplearning.projects.cityscapesApi.cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as cityscapes_eval  # noqa: E501
 
         self._logger.info("Evaluating results under {} ...".format(self._temp_dir))
 
@@ -140,7 +140,9 @@ class CityscapesSemSegEvaluator(CityscapesEvaluator):
     """
 
     def process(self, inputs, outputs):
-        from cityscapesscripts.helpers.labels import trainId2label
+        from deeplearning.projects.cityscapesApi.cityscapesscripts.helpers.labels import (
+            trainId2label,
+        )
 
         for input, output in zip(inputs, outputs):
             file_name = input["file_name"]
@@ -161,7 +163,7 @@ class CityscapesSemSegEvaluator(CityscapesEvaluator):
             return
         # Load the Cityscapes eval script *after* setting the required env var,
         # since the script reads CITYSCAPES_DATASET into global variables at load time.
-        import cityscapesscripts.evaluation.evalPixelLevelSemanticLabeling as cityscapes_eval
+        import deeplearning.projects.cityscapesApi.cityscapesscripts.evaluation.evalPixelLevelSemanticLabeling as cityscapes_eval  # noqa: E501
 
         self._logger.info("Evaluating results under {} ...".format(self._temp_dir))
 

@@ -130,7 +130,7 @@ class MapDataset(data.Dataset):
             # _map_func fails for this idx, use a random new index from the pool
             retry_count += 1
             self._fallback_candidates.discard(cur_idx)
-            cur_idx = self._rng.sample(self._fallback_candidates, k=1)[0]
+            cur_idx = self._rng.sample(list(self._fallback_candidates), k=1)[0]
 
             if retry_count >= 3:
                 logger = logging.getLogger(__name__)

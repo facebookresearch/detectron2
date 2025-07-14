@@ -17,7 +17,7 @@ runs:
     shell: bash
     run: |
       # disable crash coredump, so unittests fail fast
-      sudo systemctl stop apport.service
+      sudo systemctl stop apport.service || true
 
       pip install -U pip
 

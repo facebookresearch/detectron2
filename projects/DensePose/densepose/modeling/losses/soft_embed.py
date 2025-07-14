@@ -118,6 +118,8 @@ class SoftEmbeddingLoss:
             )
             losses[mesh_name] = (-geodist_softmax_values * embdist_logsoftmax_values).sum(1).mean()
 
+        # pyre-fixme[29]: `Union[(self: Tensor) -> Any, Module, Tensor]` is not a
+        #  function.
         for mesh_name in embedder.mesh_names:
             if mesh_name not in losses:
                 losses[mesh_name] = self.fake_value(
@@ -127,6 +129,8 @@ class SoftEmbeddingLoss:
 
     def fake_values(self, densepose_predictor_outputs: Any, embedder: nn.Module):
         losses = {}
+        # pyre-fixme[29]: `Union[(self: Tensor) -> Any, Module, Tensor]` is not a
+        #  function.
         for mesh_name in embedder.mesh_names:
             losses[mesh_name] = self.fake_value(densepose_predictor_outputs, embedder, mesh_name)
         return losses
