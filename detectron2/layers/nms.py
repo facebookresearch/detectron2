@@ -19,7 +19,11 @@ def batched_nms(
     # to decide whether to use coordinate trick or for loop to implement batched_nms. So we
     # just call it directly.
     # Fp16 does not have enough range for batched NMS, so adding float().
-    return box_ops.batched_nms(boxes.float(), scores, idxs, iou_threshold)
+    if scores.dtype == torch.float64:
+        res = box_ops.batched_nms(boxes.double(), scores, idxs, iou_threshold)
+    else:
+        res = box_ops.batched_nms(boxes.float(), scores, idxs, iou_threshold)
+    return res
 
 
 # Note: this function (nms_rotated) might be moved into
