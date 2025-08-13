@@ -72,7 +72,7 @@ jobs:
           # install from github to get latest; install iopath first since fvcore depends on it
           python -m pip install -U 'git+https://github.com/facebookresearch/iopath'
           python -m pip install -U 'git+https://github.com/facebookresearch/fvcore'
-          wget https://raw.githubusercontent.com/pytorch/pytorch/master/torch/utils/collect_env.py
+          wget https://raw.githubusercontent.com/pytorch/pytorch/v${{matrix.torch}}/torch/utils/collect_env.py
           python collect_env.py
 
       - name: Build and install
@@ -90,16 +90,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        torch: ["1.13.1", "2.2.2"]
+        torch: ["2.4.1"]
         include:
-          - torch: "1.13.1"
-            torchvision: "0.14.1"
-            cuda: "11-7"
-          - torch: "2.2.2"
-            torchvision: "0.17.2"
-            cuda: "12-5"
+          - torch: "2.4.1"
+            torchvision: "0.19.1"
+            cuda: "12-8"
     env:
-      PYTORCH_INDEX: "https://download.pytorch.org/whl/cu118"
+      PYTORCH_INDEX: "https://download.pytorch.org/whl/cu128"
       DETECTRON2_DATASETS: ~/.torch/datasets
     steps:
       - name: Checkout
