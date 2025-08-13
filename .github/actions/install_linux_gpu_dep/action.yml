@@ -14,5 +14,6 @@ runs:
       # Installing the keyring seems to be unnecessary
 
       sudo apt-get update
+      apt-cache search cuda-toolkit
       sudo apt-get --yes install cuda-toolkit-${{inputs.cuda-version}}
       sudo apt-get --yes install nvidia-gds-${{inputs.cuda-version}}
