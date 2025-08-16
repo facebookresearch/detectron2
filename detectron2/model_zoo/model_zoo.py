@@ -1,12 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 
-import importlib_resources
 import os
 import torch
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
 from detectron2.modeling import build_model
+from importlib import resources as importlib_resources
 from typing import Optional
 
 
