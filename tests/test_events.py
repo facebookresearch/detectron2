@@ -28,7 +28,7 @@ class TestEventWriter(unittest.TestCase):
             writer.close()
             with open(json_file) as f:
                 data = [json.loads(l) for l in f]
-                self.assertTrue([int(k["key"]) for k in data] == [19, 39, 59])
+                self.assertEqual([int(k["key"]) for k in data], [19, 39, 59])
 
     def testScalarMismatchedPeriod(self):
         with tempfile.TemporaryDirectory(
@@ -47,9 +47,9 @@ class TestEventWriter(unittest.TestCase):
             writer.close()
             with open(json_file) as f:
                 data = [json.loads(l) for l in f]
-                self.assertTrue([int(k.get("key2", 0)) for k in data] == [17, 0, 34, 0, 51, 0])
-                self.assertTrue([int(k.get("key", 0)) for k in data] == [0, 19, 0, 39, 0, 59])
-                self.assertTrue([int(k["iteration"]) for k in data] == [17, 19, 34, 39, 51, 59])
+                self.assertEqual([int(k.get("key2", 0)) for k in data], [17, 0, 34, 0, 51, 0])
+                self.assertEqual([int(k.get("key", 0)) for k in data], [0, 19, 0, 39, 0, 59])
+                self.assertEqual([int(k["iteration"]) for k in data], [17, 19, 34, 39, 51, 59])
 
     def testPrintETA(self):
         with EventStorage() as s:
