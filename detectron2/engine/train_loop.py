@@ -472,7 +472,7 @@ class AMPTrainer(SimpleTrainer):
             if torch.__version__ >= "2.4.0":
                 from torch.amp import GradScaler
 
-                grad_scaler = GradScaler('cuda')
+                grad_scaler = GradScaler("cuda")
             else:
                 from torch.cuda.amp import GradScaler
 
@@ -499,13 +499,13 @@ class AMPTrainer(SimpleTrainer):
         if self.zero_grad_before_forward:
             self.optimizer.zero_grad()
         if torch.__version__ >= "2.4.0":
-            with autocast('cuda', dtype=self.precision):
+            with autocast("cuda", dtype=self.precision):
                 loss_dict = self.model(data)
                 if isinstance(loss_dict, torch.Tensor):
                     losses = loss_dict
                     loss_dict = {"total_loss": loss_dict}
                 else:
-                    losses = sum(loss_dict.values())          
+                    losses = sum(loss_dict.values())
         else:
             with autocast(dtype=self.precision):
                 loss_dict = self.model(data)
