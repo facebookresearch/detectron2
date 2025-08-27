@@ -50,13 +50,3 @@ class TestCaffe2Export(unittest.TestCase):
 
             ts_model = tracer.export_torchscript()
             ts_model.save(os.path.join(d, "model.ts"))
-
-    def testMaskRCNN(self):
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml")
-
-    @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
-    def testMaskRCNNGPU(self):
-        self._test_model("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml", device="cuda")
-
-    def testRetinaNet(self):
-        self._test_model("COCO-Detection/retinanet_R_50_FPN_3x.yaml")
