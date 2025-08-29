@@ -59,6 +59,7 @@ def export_onnx_model(model, inputs):
                 inputs,
                 f,
                 operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
+                dynamo=False,
                 # verbose=True,  # NOTE: uncomment this for debugging
                 # export_params=True,
             )
