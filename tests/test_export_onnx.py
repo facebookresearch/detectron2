@@ -195,6 +195,7 @@ class TestONNXTracingExport(unittest.TestCase):
                 training=torch.onnx.TrainingMode.EVAL,
                 opset_version=opset_version,
                 verbose=True,
+                dynamo=False,
                 **export_kwargs,
             )
         onnx_model = onnx.load_from_string(f.getvalue())
