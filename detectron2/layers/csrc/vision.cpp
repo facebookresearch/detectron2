@@ -57,7 +57,9 @@ std::string get_compiler_version() {
 #error "GCC >= 4.9 is required!"
 #endif
 
-  { ss << "GCC " << __GNUC__ << "." << __GNUC_MINOR__; }
+  {
+    ss << "GCC " << __GNUC__ << "." << __GNUC_MINOR__;
+  }
 #endif
 #endif
 
@@ -69,7 +71,9 @@ std::string get_compiler_version() {
 #endif
 
 #if defined(_MSC_VER)
-  { ss << "MSVC " << _MSC_FULL_VER; }
+  {
+    ss << "MSVC " << _MSC_FULL_VER;
+  }
 #endif
   return ss.str();
 }
