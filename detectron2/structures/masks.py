@@ -164,7 +164,9 @@ class BitMasks:
 
     @staticmethod
     def from_polygon_masks(
-        polygon_masks: Union["PolygonMasks", List[List[np.ndarray]]], height: int, width: int
+        polygon_masks: Union["PolygonMasks", List[List[np.ndarray]]],
+        height: int,
+        width: int,
     ) -> "BitMasks":
         """
         Args:
@@ -292,7 +294,7 @@ class PolygonMasks:
             return np.asarray(t).astype("float64")
 
         def process_polygons(
-            polygons_per_instance: List[Union[torch.Tensor, np.ndarray]]
+            polygons_per_instance: List[Union[torch.Tensor, np.ndarray]],
         ) -> List[np.ndarray]:
             if not isinstance(polygons_per_instance, list):
                 raise ValueError(
@@ -521,7 +523,10 @@ class ROIMasks:
         """
         Args: see documentation of :func:`paste_masks_in_image`.
         """
-        from detectron2.layers.mask_ops import paste_masks_in_image, _paste_masks_tensor_shape
+        from detectron2.layers.mask_ops import (
+            paste_masks_in_image,
+            _paste_masks_tensor_shape,
+        )
 
         if torch.jit.is_tracing():
             if isinstance(height, torch.Tensor):

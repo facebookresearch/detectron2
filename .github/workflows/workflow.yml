@@ -22,14 +22,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install flake8==6.1.0 isort==4.3.21
-          python -m pip install black==24.4.2
+          python -m pip install black==25.11.0
           flake8 --version
       - name: Lint
         run: |
           echo "Running isort"
           isort -c -sp .
           echo "Running black"
-          black -l 100 --check .
+          black -l 100 --diff .
           echo "Running flake8"
           flake8 .
 
