@@ -5,7 +5,6 @@ import copy
 import os
 import tempfile
 import unittest
-import torch
 from torch.hub import _check_module_exists
 
 from detectron2 import model_zoo
