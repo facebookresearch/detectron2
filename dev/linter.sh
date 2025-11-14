@@ -5,9 +5,9 @@
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 {
-  black --version | grep -E "24\." > /dev/null
+  black --version | grep -E "25\." > /dev/null
 } || {
-  echo "Linter requires 'black==24.*' !"
+  echo "Linter requires 'black==25.*' !"
   exit 1
 }
 
