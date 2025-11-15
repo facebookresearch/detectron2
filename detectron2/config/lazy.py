@@ -429,7 +429,10 @@ class LazyConfig:
             else:
                 return repr(obj)
 
-        py_str = _to_str(cfg, prefix=[prefix])
+        try:
+            py_str = _to_str(cfg, prefix=[prefix])
+        finally:
+            _to_str = None  # Avoid ref cycle
         try:
             return black.format_str(py_str, mode=black.Mode())
         except black.InvalidInput:
