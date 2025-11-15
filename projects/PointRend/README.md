@@ -145,11 +145,12 @@ Cityscapes model is trained with ImageNet pretraining.
 If you use PointRend, please use the following BibTeX entry.
 
 ```BibTeX
-@InProceedings{kirillov2019pointrend,
-  title={{PointRend}: Image Segmentation as Rendering},
-  author={Alexander Kirillov and Yuxin Wu and Kaiming He and Ross Girshick},
-  journal={ArXiv:1912.08193},
-  year={2019}
+@inproceedings{kirillov2020pointrend,
+  title={Pointrend: Image Segmentation as Rendering},
+  author={Kirillov, Alexander and Wu, Yuxin and He, Kaiming and Girshick, Ross},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={9799--9808},
+  year={2020}
 }
 ```
 
@@ -158,10 +159,11 @@ If you use PointRend, please use the following BibTeX entry.
 If you use Implicit PointRend, please use the following BibTeX entry.
 
 ```BibTeX
-@InProceedings{cheng2021pointly,
-  title={Pointly-Supervised Instance Segmentation,
-  author={Bowen Cheng and Omkar Parkhi and Alexander Kirillov},
-  journal={ArXiv},
-  year={2021}
+@inproceedings{cheng2022pointly,
+  title={Pointly-Supervised Instance Segmentation},
+  author={Cheng, Bowen and Parkhi, Omkar and Kirillov, Alexander},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={2617--2626},
+  year={2022}
 }
 ```
