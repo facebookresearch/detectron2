@@ -5,10 +5,11 @@ import io
 import itertools
 import json
 import logging
-import numpy as np
 import os
 import pickle
 from collections import OrderedDict
+
+import numpy as np
 import pycocotools.mask as mask_util
 import torch
 from pycocotools.coco import COCO
@@ -22,7 +23,6 @@ from detectron2.data.datasets.coco import convert_to_coco_json
 from detectron2.structures import Boxes, BoxMode, pairwise_iou
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import create_small_table
-
 from .evaluator import DatasetEvaluator
 
 try:
@@ -404,9 +404,12 @@ def instances_to_coco_json(instances, img_id):
     if num_instance == 0:
         return []
 
-    boxes = instances.pred_boxes.tensor.numpy()
-    boxes = BoxMode.convert(boxes, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
-    boxes = boxes.tolist()
+    has_box = instances.has("pred_boxes")
+    if has_box:
+        boxes = instances.pred_boxes.tensor.numpy()
+        boxes = BoxMode.convert(boxes, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+        boxes = boxes.tolist()
+
     scores = instances.scores.tolist()
     classes = instances.pred_classes.tolist()
 
@@ -434,9 +437,10 @@ def instances_to_coco_json(instances, img_id):
         result = {
             "image_id": img_id,
             "category_id": classes[k],
-            "bbox": boxes[k],
             "score": scores[k],
         }
+        if has_box:
+            result["bbox"] = boxes[k]
         if has_mask:
             result["segmentation"] = rles[k]
         if has_keypoints:
