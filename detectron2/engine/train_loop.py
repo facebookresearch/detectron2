@@ -147,6 +147,10 @@ class TrainerBase:
         self.iter = self.start_iter = start_iter
         self.max_iter = max_iter
 
+        assert (
+            self.max_iter > self.start_iter
+        ), f"Training starts at {start_iter} MAX_ITER = {max_iter}. The model will not train!"
+
         with EventStorage(start_iter) as self.storage:
             try:
                 self.before_train()
