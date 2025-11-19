@@ -5,6 +5,7 @@ This is useful when doing distributed training.
 """
 
 import functools
+import importlib
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -16,6 +17,18 @@ _MISSING_LOCAL_PG_ERROR = (
     "processes in other ways, please call comm.create_local_process_group("
     "num_workers_per_machine) after calling torch.distributed.init_process_group()."
 )
+
+
+def _find_free_port():
+    import socket
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Binding to port 0 will cause the OS to find an available port for us
+    sock.bind(("", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    # NOTE: there is still a chance the port could be taken by other processes.
+    return port
 
 
 def get_world_size() -> int:
@@ -115,10 +128,14 @@ def synchronize():
     world_size = dist.get_world_size()
     if world_size == 1:
         return
-    if dist.get_backend() == dist.Backend.NCCL:
+
+    cur_backend = dist.get_backend()
+    if cur_backend == dist.Backend.NCCL:
         # This argument is needed to avoid warnings.
         # It's valid only for NCCL backend.
         dist.barrier(device_ids=[torch.cuda.current_device()])
+    elif cur_backend == dist.Backend.HCCL:
+        dist.barrier(device_ids=[torch.npu.current_device()])
     else:
         dist.barrier()
 
@@ -129,7 +146,7 @@ def _get_global_gloo_group():
     Return a process group based on gloo backend, containing all the ranks
     The result is cached.
     """
-    if dist.get_backend() == "nccl":
+    if dist.get_backend() in ["nccl", "hccl"]:
         return dist.new_group(backend="gloo")
     else:
         return dist.group.WORLD
@@ -236,3 +253,18 @@ def reduce_dict(input_dict, average=True):
             values /= world_size
         reduced_dict = {k: v for k, v in zip(names, values)}
     return reduced_dict
+
+
+def is_torch_npu_available() -> bool:
+    _torch_npu_available = importlib.util.find_spec("torch_npu") is not None
+    try:
+        import torch_npu
+
+        _torch_npu_available = torch_npu.npu.is_available()
+    except ImportError:
+        print("Module 'torch_npu' not found, ignore it if you are not using Ascend NPU")
+        _torch_npu_available = False
+    return _torch_npu_available
+
+
+_TORCH_NPU_AVAILABLE = is_torch_npu_available()

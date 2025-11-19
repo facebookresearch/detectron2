@@ -9,6 +9,8 @@ import sys
 from datetime import datetime
 import torch
 
+from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
+
 __all__ = ["seed_all_rng"]
 
 
@@ -42,7 +44,10 @@ def seed_all_rng(seed=None):
     np.random.seed(seed)
     torch.manual_seed(seed)
     random.seed(seed)
-    torch.cuda.manual_seed_all(str(seed))
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(str(seed))
+    elif _TORCH_NPU_AVAILABLE:
+        torch.npu.manual_seed_all(str(seed))
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 

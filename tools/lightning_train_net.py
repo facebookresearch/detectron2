@@ -197,7 +197,7 @@ def train(cfg, args):
         "max_steps": cfg.SOLVER.MAX_ITER,
         "val_check_interval": cfg.TEST.EVAL_PERIOD if cfg.TEST.EVAL_PERIOD > 0 else 10**8,
         "num_nodes": args.num_machines,
-        "gpus": args.num_gpus,
+        "accelerators": args.num_accelerators,
         "num_sanity_val_steps": 0,
     }
     if cfg.SOLVER.AMP.ENABLED:
@@ -210,7 +210,9 @@ def train(cfg, args):
         logger.info(f"Resuming training from checkpoint: {last_checkpoint}.")
 
     trainer = pl.Trainer(**trainer_params)
-    logger.info(f"start to train with {args.num_machines} nodes and {args.num_gpus} GPUs")
+    logger.info(
+        f"start to train with {args.num_machines} nodes and {args.num_accelerators} accelerators"
+    )
 
     module = TrainingModule(cfg)
     data_module = DataModule(cfg)
@@ -229,8 +231,8 @@ def setup(args):
     cfg = get_cfg()
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
-    cfg.freeze()
     default_setup(cfg, args)
+    cfg.freeze()
     return cfg
 
 
