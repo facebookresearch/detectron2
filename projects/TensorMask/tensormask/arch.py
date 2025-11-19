@@ -247,7 +247,7 @@ class TensorMaskAnchorGenerator(DefaultAnchorGenerator):
             shifts_y = torch.arange(
                 0, grid_height * stride, step=stride, dtype=torch.float32, device=device
             )
-            shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
+            shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x, indexing="ij")
             shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=2)
             # Stack anchors in shapes of (HWA, 4)
             cur_anchor = (shifts[:, :, None, :] + base_anchors.view(1, 1, -1, 4)).view(-1, 4)
@@ -261,7 +261,7 @@ class TensorMaskAnchorGenerator(DefaultAnchorGenerator):
             shifts_h = torch.arange(0, grid_height, dtype=torch.int64, device=device)
             shifts_w = torch.arange(0, grid_width, dtype=torch.int64, device=device)
             shifts_a = torch.arange(0, base_anchors.shape[0], dtype=torch.int64, device=device)
-            grids = torch.meshgrid(shifts_l, shifts_i, shifts_h, shifts_w, shifts_a)
+            grids = torch.meshgrid(shifts_l, shifts_i, shifts_h, shifts_w, shifts_a, indexing="ij")
 
             indexes.append(torch.stack(grids, dim=5).view(-1, 5))
 
