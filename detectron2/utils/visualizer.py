@@ -5,12 +5,18 @@ import math
 import numpy as np
 from enum import Enum, unique
 import cv2
-import matplotlib as mpl
-import matplotlib.colors as mplc
-import matplotlib.figure as mplfigure
+try:
+    import matplotlib as mpl
+    import matplotlib.colors as mplc
+    import matplotlib.figure as mplfigure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+except ImportError:
+    raise ImportError(
+        "matplotlib is not installed. "
+        "Please install it with: pip install detectron2[viz]"
+    )
 import pycocotools.mask as mask_util
 import torch
-from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
 
 from detectron2.data import MetadataCatalog

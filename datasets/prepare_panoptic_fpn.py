@@ -4,6 +4,7 @@
 
 import functools
 import json
+import logging
 import multiprocessing as mp
 import numpy as np
 import os
@@ -67,14 +68,15 @@ def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root, sem_seg_r
             output = os.path.join(sem_seg_root, file_name)
             yield input, output, segments
 
-    print("Start writing to {} ...".format(sem_seg_root))
+    logger = logging.getLogger(__name__)
+    logger.info("Start writing to %s ...", sem_seg_root)
     start = time.time()
     pool.starmap(
         functools.partial(_process_panoptic_to_semantic, id_map=id_map),
         iter_annotations(),
         chunksize=100,
     )
-    print("Finished. time: {:.2f}s".format(time.time() - start))
+    logger.info("Finished. time: %.2fs", time.time() - start)
 
 
 if __name__ == "__main__":
