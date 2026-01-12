@@ -152,7 +152,8 @@ def main(args):
 
 def invoke_main() -> None:
     args = default_argument_parser().parse_args()
-    print("Command Line Args:", args)
+    logger = logging.getLogger(__name__)
+    logger.info("Command Line Args: %s", args)
     launch(
         main,
         args.num_gpus,

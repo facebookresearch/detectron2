@@ -104,7 +104,8 @@ def main() -> None:
     if args.input:
         if len(args.input) == 1:
             args.input = glob.glob(os.path.expanduser(args.input[0]))
-            assert args.input, "The input path(s) was not found"
+            if not args.input:
+                raise ValueError("The input path(s) was not found")
         for path in tqdm.tqdm(args.input, disable=not args.output):
             # use PIL, to be consistent with evaluation
             img = read_image(path, format="BGR")
@@ -124,10 +125,12 @@ def main() -> None:
 
             if args.output:
                 if os.path.isdir(args.output):
-                    assert os.path.isdir(args.output), args.output
+                    if not os.path.isdir(args.output):
+                        raise ValueError(f"Output path is not a directory: {args.output}")
                     out_filename = os.path.join(args.output, os.path.basename(path))
                 else:
-                    assert len(args.input) == 1, "Please specify a directory with args.output"
+                    if len(args.input) != 1:
+                        raise ValueError("Please specify a directory with args.output")
                     out_filename = args.output
                 visualized_output.save(out_filename)
             else:
@@ -136,8 +139,10 @@ def main() -> None:
                 if cv2.waitKey(0) == 27:
                     break  # esc to quit
     elif args.webcam:
-        assert args.input is None, "Cannot have both --input and --webcam!"
-        assert args.output is None, "output not yet supported with --webcam!"
+        if args.input is not None:
+            raise ValueError("Cannot have both --input and --webcam!")
+        if args.output is not None:
+            raise ValueError("output not yet supported with --webcam!")
         cam = cv2.VideoCapture(0)
         for vis in tqdm.tqdm(demo.run_on_video(cam)):
             cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
@@ -164,7 +169,8 @@ def main() -> None:
                 output_fname = os.path.splitext(output_fname)[0] + file_ext
             else:
                 output_fname = args.output
-            assert not os.path.isfile(output_fname), output_fname
+            if os.path.isfile(output_fname):
+                raise ValueError(f"Output file already exists: {output_fname}")
             output_file = cv2.VideoWriter(
                 filename=output_fname,
                 # some installation of opencv may not support x264 (due to its license),
@@ -174,7 +180,8 @@ def main() -> None:
                 frameSize=(width, height),
                 isColor=True,
             )
-        assert os.path.isfile(args.video_input)
+        if not os.path.isfile(args.video_input):
+            raise FileNotFoundError(f"Video input file not found: {args.video_input}")
         for vis_frame in tqdm.tqdm(demo.run_on_video(video), total=num_frames):
             if args.output:
                 output_file.write(vis_frame)
