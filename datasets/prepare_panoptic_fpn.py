@@ -68,6 +68,8 @@ def separate_coco_semantic_from_panoptic(panoptic_json, panoptic_root, sem_seg_r
             output = os.path.join(sem_seg_root, file_name)
             yield input, output, segments
 
+    if not logging.getLogger().hasHandlers():
+        logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     logger.info("Start writing to %s ...", sem_seg_root)
     start = time.time()
