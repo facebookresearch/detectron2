@@ -11,10 +11,10 @@ try:
     import matplotlib.figure as mplfigure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
 except ImportError:
-    raise ImportError(
-        "matplotlib is not installed. "
-        "Please install it with: pip install detectron2[viz]"
-    )
+    mpl = None
+    mplc = None
+    mplfigure = None
+    FigureCanvasAgg = None
 import pycocotools.mask as mask_util
 import torch
 from PIL import Image
