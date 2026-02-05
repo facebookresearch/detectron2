@@ -126,9 +126,12 @@ class GenericMask:
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
             return [], False
-        has_holes = (hierarchy.reshape(-1, 4)[:, 3] >= 0).sum() > 0
-        res = res[-2]
-        res = [x.flatten() for x in res]
+        hierarchy = hierarchy.reshape(-1, 4)
+        has_holes = (hierarchy[:, 3] >= 0).sum() > 0
+        contours = res[-2]
+        # Filter out hole contours (those with a parent, i.e., hierarchy[i][3] >= 0)
+        # Only keep external contours (hierarchy[i][3] == -1)
+        res = [contours[i].flatten() for i in range(len(contours)) if hierarchy[i][3] < 0]
         # These coordinates from OpenCV are integers in range [0, W-1 or H-1].
         # We add 0.5 to turn them into real-value coordinate space. A better solution
         # would be to first +0.5 and then dilate the returned polygon by 0.5.
