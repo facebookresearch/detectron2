@@ -18,23 +18,32 @@ runs:
     run: |
       # disable crash coredump, so unittests fail fast
       sudo systemctl stop apport.service || true
+    - name: Install dependencies
+      shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+        PYTORCH_VERSION: ${{ inputs.pytorch-version }}
+        CUDA_VERSION: ${{ inputs.cuda-version }}
+        COMMENT_BODY: ${{ inputs.comment-body }}
+      run: |
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y ninja-build
 
-      pip install -U pip
+        # install a newer version of cmake
+        if [[ "$PYTHON_VERSION" == 3.6 ]]; then
+          pip install "cmake>=3.19"
+        fi
 
-      # install from github to get latest; install iopath first since fvcore depends on it
-      pip install --progress-bar off -U 'git+https://github.com/facebookresearch/iopath'
-      pip install --progress-bar off -U 'git+https://github.com/facebookresearch/fvcore'
+        # install pytorch
+        if [[ "$CUDA_VERSION" == "cpu" ]]; then
+          pip install torch=="${PYTORCH_VERSION}"+cpu torchvision==0.11.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        else
+          pip install torch=="${PYTORCH_VERSION}" torchvision==0.11.1 --extra-index-url https://download.pytorch.org/whl/cu"${CUDA_VERSION}"
+        fi
 
-      # Don't use pytest-xdist: cuda tests are unstable under multi-process workers.
-      # Don't use opencv 4.7.0.68: https://github.com/opencv/opencv-python/issues/765
-      pip install --progress-bar off ninja opencv-python-headless!=4.7.0.68 pytest tensorboard pycocotools onnx
-      pip install --progress-bar off torch==${{inputs.torch-version}} -f ${{inputs.pytorch-index}}
-      if [[ "${{inputs.torchvision-version}}" == "master" ]]; then
-        pip install git+https://github.com/pytorch/vision.git
-      else
-        pip install --progress-bar off torchvision==${{inputs.torchvision-version}} -f ${{inputs.pytorch-index}}
-      fi
-
-      echo python install path: $pythonLocation
-      python -c 'import torch; print("CUDA:", torch.cuda.is_available())'
-      gcc --version
+        # install other dependencies
+        pip install -r requirements.txt
+        if [[ "$COMMENT_BODY" == *"/rebuild-windows"* ]]; then
+          pip install git+https://github.com/facebookresearch/fvcore
+        fi
