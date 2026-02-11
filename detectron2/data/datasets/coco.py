@@ -280,7 +280,7 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
 
     # Use the intersection, so that val2017_100 annotations can run smoothly with val2017 images
     if len(input_files) != len(gt_files):
-        logger.warn(
+        logger.warning(
             "Directory {} and {} has {} and {} files, respectively.".format(
                 image_root, gt_root, len(input_files), len(gt_files)
             )
@@ -290,7 +290,7 @@ def load_sem_seg(gt_root, image_root, gt_ext="png", image_ext="jpg"):
         intersect = list(set(input_basenames) & set(gt_basenames))
         # sort, otherwise each worker may obtain a list[dict] in different order
         intersect = sorted(intersect)
-        logger.warn("Will use their intersection of {} files.".format(len(intersect)))
+        logger.warning("Will use their intersection of {} files.".format(len(intersect)))
         input_files = [os.path.join(image_root, f + image_ext) for f in intersect]
         gt_files = [os.path.join(gt_root, f + gt_ext) for f in intersect]
 

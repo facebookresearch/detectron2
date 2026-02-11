@@ -60,11 +60,11 @@ class SemSegEvaluator(DatasetEvaluator):
         """
         self._logger = logging.getLogger(__name__)
         if num_classes is not None:
-            self._logger.warn(
+            self._logger.warning(
                 "SemSegEvaluator(num_classes) is deprecated! It should be obtained from metadata."
             )
         if ignore_label is not None:
-            self._logger.warn(
+            self._logger.warning(
                 "SemSegEvaluator(ignore_label) is deprecated! It should be obtained from metadata."
             )
         self._dataset_name = dataset_name
@@ -96,13 +96,13 @@ class SemSegEvaluator(DatasetEvaluator):
         self._compute_boundary_iou = True
         if not _CV2_IMPORTED:
             self._compute_boundary_iou = False
-            self._logger.warn(
+            self._logger.warning(
                 """Boundary IoU calculation requires OpenCV. B-IoU metrics are
                 not going to be computed because OpenCV is not available to import."""
             )
         if self._num_classes >= np.iinfo(np.uint8).max:
             self._compute_boundary_iou = False
-            self._logger.warn(
+            self._logger.warning(
                 f"""SemSegEvaluator(num_classes) is more than supported value for Boundary IoU
                 calculation! B-IoU metrics are not going to be computed. Max allowed value
                 (exclusive) for num_classes for calculating Boundary IoU is.

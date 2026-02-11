@@ -53,7 +53,7 @@ class LVISEvaluator(DatasetEvaluator):
         self._logger = logging.getLogger(__name__)
 
         if tasks is not None and isinstance(tasks, CfgNode):
-            self._logger.warn(
+            self._logger.warning(
                 "COCO Evaluator instantiated using config, this is deprecated behavior."
                 " Please pass in explicit arguments instead."
             )
@@ -350,7 +350,7 @@ def _evaluate_predictions_on_lvis(
     logger = logging.getLogger(__name__)
 
     if len(lvis_results) == 0:  # TODO: check if needed
-        logger.warn("No predictions from the model!")
+        logger.warning("No predictions from the model!")
         return {metric: float("nan") for metric in metrics}
 
     if iou_type == "segm":
