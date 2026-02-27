@@ -244,7 +244,7 @@ class PointRendMaskHead(nn.Module):
 
     def _roi_pooler(self, features: List[Tensor], boxes: List[Boxes]):
         """
-        Extract per-box feature. This is similar to RoIAlign(sampling_ratio=1) except:
+        Extract per-box feature. This is similar to RoIAlign(sampling_ratio=1) except Exception:
         1. It's implemented by point_sample
         2. It pools features across all levels and concat them, while typically
            RoIAlign select one level for every box. However in the config we only use
