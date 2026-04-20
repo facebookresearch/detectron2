@@ -599,13 +599,13 @@ class ResNet(Backbone):
 
 ResNetBlockBase = CNNBlockBase
 """
-Alias for backward compatibiltiy.
+Alias for backward compatibility.
 """
 
 
 def make_stage(*args, **kwargs):
     """
-    Deprecated alias for backward compatibiltiy.
+    Deprecated alias for backward compatibility.
     """
     return ResNet.make_stage(*args, **kwargs)
 
