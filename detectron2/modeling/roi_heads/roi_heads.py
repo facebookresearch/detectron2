@@ -9,7 +9,7 @@ from torch import nn
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, nonzero_tuple
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
-from detectron2.utils.events import get_event_storage
+from detectron2.utils.events import EventStorage
 from detectron2.utils.registry import Registry
 
 from ..backbone.resnet import BottleneckBlock, ResNet
@@ -115,8 +115,8 @@ def select_proposals_with_visible_keypoints(proposals: List[Instances]) -> List[
         all_num_fg.append(selection_idxs.numel())
         ret.append(proposals_per_image[selection_idxs])
 
-    storage = get_event_storage()
-    storage.put_scalar("keypoint_head/num_fg_samples", np.mean(all_num_fg))
+    with EventStorage() as storage:
+        storage.put_scalar("keypoint_head/num_fg_samples", np.mean(all_num_fg))
     return ret
 
 
@@ -295,9 +295,9 @@ class ROIHeads(torch.nn.Module):
             proposals_with_gt.append(proposals_per_image)
 
         # Log the number of fg/bg samples that are selected for training ROI heads
-        storage = get_event_storage()
-        storage.put_scalar("roi_head/num_fg_samples", np.mean(num_fg_samples))
-        storage.put_scalar("roi_head/num_bg_samples", np.mean(num_bg_samples))
+        with EventStorage() as storage:
+            storage.put_scalar("roi_head/num_fg_samples", np.mean(num_fg_samples))
+            storage.put_scalar("roi_head/num_bg_samples", np.mean(num_bg_samples))
 
         return proposals_with_gt
 

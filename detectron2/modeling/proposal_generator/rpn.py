@@ -7,7 +7,7 @@ from torch import nn
 from detectron2.config import configurable
 from detectron2.layers import Conv2d, ShapeSpec, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
-from detectron2.utils.events import get_event_storage
+from detectron2.utils.events import EventStorage
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
 
@@ -398,9 +398,9 @@ class RPN(nn.Module):
         pos_mask = gt_labels == 1
         num_pos_anchors = pos_mask.sum().item()
         num_neg_anchors = (gt_labels == 0).sum().item()
-        storage = get_event_storage()
-        storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / num_images)
-        storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / num_images)
+        with EventStorage() as storage:
+            storage.put_scalar("rpn/num_pos_anchors", num_pos_anchors / num_images)
+            storage.put_scalar("rpn/num_neg_anchors", num_neg_anchors / num_images)
 
         localization_loss = _dense_box_regression_loss(
             anchors,
