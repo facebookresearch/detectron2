@@ -118,7 +118,7 @@ class COCOEvaluator(DatasetEvaluator):
             kpt_oks_sigmas = (
                 tasks.TEST.KEYPOINT_OKS_SIGMAS if not kpt_oks_sigmas else kpt_oks_sigmas
             )
-            self._logger.warn(
+            self._logger.warning(
                 "COCO Evaluator instantiated using config, this is deprecated behavior."
                 " Please pass in explicit arguments instead."
             )
@@ -341,7 +341,7 @@ class COCOEvaluator(DatasetEvaluator):
         }[iou_type]
 
         if coco_eval is None:
-            self._logger.warn("No predictions from the model!")
+            self._logger.warning("No predictions from the model!")
             return {metric: float("nan") for metric in metrics}
 
         # the standard metrics

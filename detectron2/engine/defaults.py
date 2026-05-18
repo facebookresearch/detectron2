@@ -644,7 +644,7 @@ Alternatively, you can call evaluation functions yourself (see Colab balloon tut
                 try:
                     evaluator = cls.build_evaluator(cfg, dataset_name)
                 except NotImplementedError:
-                    logger.warn(
+                    logger.warning(
                         "No evaluator found. Use `DefaultTrainer.test(evaluators=)`, "
                         "or implement its `build_evaluator` method."
                     )
