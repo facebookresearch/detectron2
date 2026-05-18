@@ -608,7 +608,9 @@ class Visualizer:
         if sem_seg is None and "sem_seg_file_name" in dic:
             with PathManager.open(dic["sem_seg_file_name"], "rb") as f:
                 sem_seg = Image.open(f)
-                sem_seg = np.asarray(sem_seg, dtype="uint8")
+                # sem_seg = np.asarray(sem_seg, dtype="uint8")
+                # The dtype uint8 is 0-255 which is not suitable for GT visualization of Pascal Context 459 whose class num is more than 256 and make the visualization text wrong!
+                sem_seg = np.asarray(sem_seg, dtype=np.int16)
         if sem_seg is not None:
             self.draw_sem_seg(sem_seg, area_threshold=0, alpha=0.5)
 
