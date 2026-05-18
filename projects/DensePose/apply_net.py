@@ -130,7 +130,7 @@ class InferenceAction(Action):
         elif os.path.isfile(input_spec):
             file_list = [input_spec]
         else:
-            file_list = glob.glob(input_spec)
+            file_list = sorted(glob.glob(input_spec))
         return file_list
 
 
