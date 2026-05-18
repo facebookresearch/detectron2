@@ -219,7 +219,7 @@ class CommonMetricPrinter(EventWriter):
             return ""
         iteration = storage.iter
         try:
-            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration - 1)
+            eta_seconds = storage.history("time").avg(1000) * (self._max_iter - iteration - 1)
             storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
             return str(datetime.timedelta(seconds=int(eta_seconds)))
         except KeyError:
@@ -271,13 +271,16 @@ class CommonMetricPrinter(EventWriter):
         else:
             max_mem_mb = None
 
+        max_iter_str = "" if self._max_iter is None else "{}".format(self._max_iter)
+
         # NOTE: max_mem is parsed by grep in "dev/parse_results.sh"
         self.logger.info(
             str.format(
-                " {eta}iter: {iter}  {losses}  {non_losses}  {avg_time}{last_time}"
+                " {eta}iter: {iter}/{max_iter}  {losses}  {non_losses}  {avg_time}{last_time}"
                 + "{avg_data_time}{last_data_time} lr: {lr}  {memory}",
                 eta=f"eta: {eta_string}  " if eta_string else "",
                 iter=iteration,
+                max_iter=max_iter_str,
                 losses="  ".join(
                     [
                         "{}: {:.4g}".format(
