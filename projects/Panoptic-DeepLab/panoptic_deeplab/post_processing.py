@@ -60,6 +60,7 @@ def group_pixels(center_points, offsets):
     y_coord, x_coord = torch.meshgrid(
         torch.arange(height, dtype=offsets.dtype, device=offsets.device),
         torch.arange(width, dtype=offsets.dtype, device=offsets.device),
+        indexing='ij'
     )
     coord = torch.cat((y_coord.unsqueeze(0), x_coord.unsqueeze(0)), dim=0)
 
