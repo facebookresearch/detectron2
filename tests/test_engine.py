@@ -49,6 +49,14 @@ class TestTrainer(unittest.TestCase):
         )
         trainer.train(0, 10)
 
+    def test_simple_trainer_start_iter_beyond_max_iter(self, device="cpu"):
+        model = _SimpleModel().to(device=device)
+        trainer = SimpleTrainer(
+            model, self._data_loader(device), torch.optim.SGD(model.parameters(), 0.1)
+        )
+        with self.assertRaises(AssertionError):
+            trainer.train(42, 21)
+
     def test_simple_trainer_reset_dataloader(self, device="cpu"):
         model = _SimpleModel().to(device=device)
         trainer = SimpleTrainer(
