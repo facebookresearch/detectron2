@@ -1,0 +1,46 @@
+_BASE_: "../ResNest-Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "https://s3.us-west-1.wasabisys.com/resnest/detectron/resnest200_detectron-02644020.pth"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 200
+    STRIDE_IN_1X1: False
+    RADIX: 2
+    DEFORM_ON_PER_STAGE: [False, True, True, True] # on Res3,Res4,Res5
+    DEFORM_MODULATED: True
+    DEFORM_NUM_GROUPS: 2
+    NORM: "SyncBN"
+  FPN:
+    NORM: "SyncBN"
+  ROI_HEADS:
+    NAME: CascadeROIHeads
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_CONV: 4
+    NUM_FC: 1
+    NORM: "SyncBN"
+    CLS_AGNOSTIC_BBOX_REG: True
+  ROI_MASK_HEAD:
+    NUM_CONV: 8
+    NORM: "SyncBN"
+  RPN:
+    POST_NMS_TOPK_TRAIN: 2000
+  PIXEL_MEAN: [123.68, 116.779, 103.939]
+  PIXEL_STD: [58.393, 57.12, 57.375]
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.02
+  STEPS: (240000, 255000)
+  MAX_ITER: 270000
+INPUT:
+  MIN_SIZE_TRAIN: (640, 864)
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MAX_SIZE_TRAIN: 1440
+  CROP:
+    ENABLED: True
+  FORMAT: "RGB"
+TEST:
+  PRECISE_BN:
+    ENABLED: True
+  AUG:
+    ENABLED: False

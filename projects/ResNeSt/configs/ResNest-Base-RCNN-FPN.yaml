@@ -1,0 +1,4 @@
+_BASE_: "Base-RCNN-FPN.yaml"
+MODEL:
+  BACKBONE:
+    NAME: "build_resnest_fpn_backbone"
