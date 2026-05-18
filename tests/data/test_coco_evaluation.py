@@ -84,7 +84,7 @@ class TestCOCOeval(unittest.TestCase):
                 api_exception = None
                 try:
                     with contextlib.redirect_stdout(io.StringIO()):
-                        coco_dt = coco_api.loadRes(dt)
+                        coco_dt = coco_api.loadRes(copy.deepcopy(dt))
                         coco_eval = COCOeval(coco_api, coco_dt, iou_type)
                         for p, v in params.items():
                             setattr(coco_eval.params, p, v)
@@ -98,7 +98,7 @@ class TestCOCOeval(unittest.TestCase):
                 opt_exception = None
                 try:
                     with contextlib.redirect_stdout(io.StringIO()):
-                        coco_dt = coco_api.loadRes(dt)
+                        coco_dt = coco_api.loadRes(copy.deepcopy(dt))
                         coco_eval_opt = COCOeval_opt(coco_api, coco_dt, iou_type)
                         for p, v in params.items():
                             setattr(coco_eval_opt.params, p, v)
@@ -115,6 +115,11 @@ class TestCOCOeval(unittest.TestCase):
                     opt_error = "" if opt_exception is None else type(opt_exception).__name__
                     msg = "%s: comparing COCO APIs, '%s' != '%s'" % (name, api_error, opt_error)
                     self.assertTrue(api_error == opt_error, msg=msg)
+                elif (api_exception is None) ^ (opt_exception is None):
+                    self.fail(
+                        f"One of the APIs threw an exception while the other did not (api != opt): "
+                        f"{api_exception} != {opt_exception}"
+                    )
                 else:
                     # Original API and optimized API should produce the same precision/recalls
                     for k in ["precision", "recall"]:
