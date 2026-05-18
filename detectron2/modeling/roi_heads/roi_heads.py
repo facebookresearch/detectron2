@@ -351,6 +351,7 @@ class Res5ROIHeads(ROIHeads):
     def __init__(
         self,
         *,
+        cfg,
         in_features: List[str],
         pooler: ROIPooler,
         res5: nn.Module,
@@ -382,6 +383,13 @@ class Res5ROIHeads(ROIHeads):
         self.mask_on = mask_head is not None
         if self.mask_on:
             self.mask_head = mask_head
+            
+        input_shape = box_pooler.output_size  # input_shapeの取得元
+        self.box_predictor = FastRCNNOutputLayers(
+            cfg,
+            input_shape,
+            num_classes=cfg.MODEL.ROI_HEADS.NUM_CLASSES,
+        )  # 変更
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -543,6 +551,7 @@ class StandardROIHeads(ROIHeads):
     def __init__(
         self,
         *,
+        cfg, #追加
         box_in_features: List[str],
         box_pooler: ROIPooler,
         box_head: nn.Module,
@@ -581,7 +590,13 @@ class StandardROIHeads(ROIHeads):
         self.in_features = self.box_in_features = box_in_features
         self.box_pooler = box_pooler
         self.box_head = box_head
-        self.box_predictor = box_predictor
+        # 書き換え
+        # self.box_predictor = box_predictor
+        self.box_predictor = FastRCNNOutputLayers(
+            cfg,
+            input_shape,  
+            cfg.MODEL.ROI_HEADS.NUM_CLASSES,
+        )
 
         self.mask_on = mask_in_features is not None
         if self.mask_on:

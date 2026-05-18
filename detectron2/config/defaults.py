@@ -654,3 +654,8 @@ _C.VIS_PERIOD = 0
 # Do not commit any configs into it.
 _C.GLOBAL = CN()
 _C.GLOBAL.HACK = 1.0
+
+# ここから追加
+_C.MODEL.ROI_HEADS.LOSS_TYPE = "bce"  # "focal"または"bce"も選択可能
+_C.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA = 2.0
+_C.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA = 0.25
