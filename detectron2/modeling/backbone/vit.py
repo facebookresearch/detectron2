@@ -470,7 +470,7 @@ class SimpleFeaturePyramid(Backbone):
     @property
     def padding_constraints(self):
         return {
-            "size_divisiblity": self._size_divisibility,
+            "size_divisibility": self._size_divisibility,
             "square_size": self._square_pad,
         }
 
