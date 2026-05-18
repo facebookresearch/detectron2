@@ -47,7 +47,7 @@ class TestCheckpointer(unittest.TestCase):
             model.load_state_dict(sd_to_load)
             for loaded, stored in zip(model_sd.values(), state_dict.values()):
                 # different tensor references
-                self.assertFalse(id(loaded) == id(stored))
+                self.assertNotEqual(id(loaded), id(stored))
                 # same content
                 self.assertTrue(loaded.to(stored).equal(stored))
 
