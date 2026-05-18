@@ -102,7 +102,7 @@ class PointsVisualizer:
 
     def visualize(self, image_bgr, pts_xy, colors_bgr=None, rs=None):
         for j, pt_xy in enumerate(pts_xy):
-            x, y = pt_xy
+            x, y = [int(val) for val in pt_xy]
             color_bgr = colors_bgr[j] if colors_bgr is not None else self.color_bgr
             r = rs[j] if rs is not None else self.r
             cv2.circle(image_bgr, (x, y), r, color_bgr, -1)
