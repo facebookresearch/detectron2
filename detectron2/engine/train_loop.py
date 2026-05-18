@@ -466,7 +466,7 @@ class AMPTrainer(SimpleTrainer):
         )
 
         if grad_scaler is None:
-            from torch.cuda.amp import GradScaler
+            from torch.amp import GradScaler
 
             grad_scaler = GradScaler()
         self.grad_scaler = grad_scaler
@@ -479,7 +479,7 @@ class AMPTrainer(SimpleTrainer):
         """
         assert self.model.training, "[AMPTrainer] model was changed to eval mode!"
         assert torch.cuda.is_available(), "[AMPTrainer] CUDA is required for AMP training!"
-        from torch.cuda.amp import autocast
+        from torch.amp import autocast
 
         start = time.perf_counter()
         data = next(self._data_loader_iter)
