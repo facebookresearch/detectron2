@@ -6,6 +6,8 @@ from typing import List, Tuple, Union
 import torch
 from torch import device
 
+from detectron2.layers.wrappers import check_if_dynamo_compiling
+
 _RawBoxType = Union[List[float], Tuple[float, ...], torch.Tensor, np.ndarray]
 
 
@@ -147,7 +149,13 @@ class Boxes:
         if not isinstance(tensor, torch.Tensor):
             tensor = torch.as_tensor(tensor, dtype=torch.float32, device=torch.device("cpu"))
         else:
-            tensor = tensor.to(torch.float32)
+            if tensor.dtype != torch.float32:
+                # If we're tracing with Dynamo, this will prevent `tensor` to be mutated.
+                # This if-statement works at least for the case where needless recasting is done.
+                tensor = tensor.to(torch.float32)
+                # If some use case still fails with 'cannot mutate tensors with frozen storage'
+                # we can add `tensor = tensor.clone()` here.
+                # Reference: https://github.com/pytorch/pytorch/issues/127571
         if tensor.numel() == 0:
             # Use reshape, so we don't end up creating a new tensor that does not depend on
             # the inputs (and consequently confuses jit)
@@ -188,7 +196,9 @@ class Boxes:
         Args:
             box_size (height, width): The clipping box's size.
         """
-        assert torch.isfinite(self.tensor).all(), "Box tensor contains infinite or NaN!"
+        if not check_if_dynamo_compiling():
+            # If we're tracing with Dynamo we can't guard on a data-dependent expression
+            assert torch.isfinite(self.tensor).all(), "Box tensor contains infinite or NaN!"
         h, w = box_size
         x1 = self.tensor[:, 0].clamp(min=0, max=w)
         y1 = self.tensor[:, 1].clamp(min=0, max=h)
