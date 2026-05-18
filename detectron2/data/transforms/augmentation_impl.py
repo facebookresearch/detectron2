@@ -293,7 +293,10 @@ class RandomRotation(Augmentation):
         else:
             angle = np.random.choice(self.angle)
             if self.center is not None:
-                center = np.random.choice(self.center)
+                center = (
+                    np.random.choice(self.center[0]),
+                    np.random.choice(self.center[1]),
+                )
 
         if center is not None:
             center = (w * center[0], h * center[1])  # Convert to absolute coordinates
