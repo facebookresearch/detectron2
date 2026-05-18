@@ -14,7 +14,7 @@ But we try to reduce users' disruption by the following ways:
   otherwise noted in the documentation.
   They are less likely to be broken, but if needed, will trigger a deprecation warning for a reasonable period
   before getting broken, and will be documented in release logs.
-* Others functions/classses/attributes are considered internal, and are more likely to change.
+* Other functions/classes/attributes are considered internal, and are more likely to change.
   However, we're aware that some of them may be already used by other projects, and in particular we may
   use them for convenience among projects under `detectron2/projects`.
   For such APIs, we may treat them as stable APIs and also apply the above strategies.
@@ -24,7 +24,7 @@ But we try to reduce users' disruption by the following ways:
 * Classes/functions that contain the word "default" or are explicitly documented to produce
   "default behavior" may change their behaviors when new features are added.
 
-Despite of the possible breakage, if a third-party project would like to keep up with the latest updates
+Despite the possible breakage, if a third-party project would like to keep up with the latest updates
 in detectron2, using it as a library will still be less disruptive than forking, because
 the frequency and scope of API changes will be much smaller than code changes.
 
