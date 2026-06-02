@@ -69,7 +69,6 @@ class Decoder(nn.Module):
                 head_ops.append(conv)
                 if feature_strides[in_feature] != self.common_stride:
                     head_ops.append(
-                        # pyrefly: ignore [bad-argument-type]
                         nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
                     )
             self.scale_heads.append(nn.Sequential(*head_ops))
@@ -82,9 +81,7 @@ class Decoder(nn.Module):
             if i == 0:
                 x = self.scale_heads[i](features[i])
             else:
-                # pyrefly: ignore [unbound-name]
                 x = x + self.scale_heads[i](features[i])
-        # pyrefly: ignore [unbound-name]
         x = self.predictor(x)
         return x
 

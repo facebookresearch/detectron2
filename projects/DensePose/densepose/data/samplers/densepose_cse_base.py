@@ -70,7 +70,6 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
 
         count = min(self.count_per_class, k)
         if count <= 0:
-            # pyrefly: ignore [bad-return]
             return annotation
 
         index_sample = self._produce_index_sample(values, count)
@@ -86,13 +85,9 @@ class DensePoseCSEBaseSampler(DensePoseBaseSampler):
         x = (sampled_x / w * 256.0).cpu().tolist()
         y = (sampled_y / h * 256.0).cpu().tolist()
         # extend annotations
-        # pyrefly: ignore [missing-attribute]
         annotation[DensePoseDataRelative.X_KEY].extend(x)
-        # pyrefly: ignore [missing-attribute]
         annotation[DensePoseDataRelative.Y_KEY].extend(y)
-        # pyrefly: ignore [missing-attribute]
         annotation[DensePoseDataRelative.VERTEX_IDS_KEY].extend(closest_vertices.cpu().tolist())
-        # pyrefly: ignore [bad-return]
         return annotation
 
     def _produce_mask_and_results(

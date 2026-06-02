@@ -254,7 +254,6 @@ class VideoKeyframeDataset(Dataset):
         if type(category_list) is list:
             self.category_list = category_list
         else:
-            # pyrefly: ignore [bad-assignment]
             self.category_list = [category_list] * len(video_list)
         assert len(video_list) == len(
             self.category_list
@@ -268,7 +267,6 @@ class VideoKeyframeDataset(Dataset):
             else None
         )
 
-    # pyrefly: ignore [bad-override-param-name]
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         """
         Gets selected keyframes from a given video

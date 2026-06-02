@@ -26,7 +26,6 @@ class _MeshCatalog(UserDict):
         self.mesh_names = {}
         self.max_mesh_id = -1
 
-    # pyrefly: ignore [bad-override-param-name]
     def __setitem__(self, key, value):
         if key in self:
             logger = logging.getLogger(__name__)

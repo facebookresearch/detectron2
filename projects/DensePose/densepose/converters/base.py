@@ -54,7 +54,6 @@ class BaseConverter:
                 if no suitable entry was found in the registry
         """
         if from_type in cls.registry:  # pyre-ignore[16]
-            # pyrefly: ignore [missing-attribute]
             return cls.registry[from_type]
         for base in from_type.__bases__:
             converter = cls._lookup_converter(base)

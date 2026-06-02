@@ -39,7 +39,6 @@ class DensePoseBaseSampler:
         boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
         dp_datas = []
         for i in range(len(boxes_xywh_abs)):
-            # pyrefly: ignore [bad-argument-type]
             annotation_i = self._sample(instances[i], make_int_box(boxes_xywh_abs[i]))
             annotation_i[DensePoseDataRelative.S_KEY] = self._resample_mask(  # pyre-ignore[6]
                 instances[i].pred_densepose

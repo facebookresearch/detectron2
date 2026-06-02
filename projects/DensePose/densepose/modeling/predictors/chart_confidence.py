@@ -76,7 +76,6 @@ class DensePoseChartConfidencePredictorMixin:
                 )
             else:
                 raise ValueError(
-                    # pyrefly: ignore [missing-attribute]
                     f"Unknown confidence model type: "
                     f"{self.confidence_model_cfg.confidence_model_type}"
                 )
@@ -115,13 +114,11 @@ class DensePoseChartConfidencePredictorMixin:
                 == DensePoseUVConfidenceType.INDEP_ANISO
             ):
                 # assuming base class defines interp2d method for bilinear interpolation
-                # pyrefly: ignore [missing-attribute]
                 output.sigma_2 = self.interp2d(self.sigma_2_lowres(head_outputs))
                 output.kappa_u = self.interp2d(self.kappa_u_lowres(head_outputs))  # pyre-ignore[16]
                 output.kappa_v = self.interp2d(self.kappa_v_lowres(head_outputs))  # pyre-ignore[16]
             else:
                 raise ValueError(
-                    # pyrefly: ignore [missing-attribute]
                     f"Unknown confidence model type: "
                     f"{self.confidence_model_cfg.confidence_model_type}"
                 )
@@ -139,7 +136,6 @@ class DensePoseChartConfidencePredictorMixin:
             )
             output.coarse_segm_confidence = (
                 F.softplus(
-                    # pyrefly: ignore [missing-attribute]
                     self.interp2d(
                         self.coarse_segm_confidence_lowres(head_outputs)  # pyre-ignore[16]
                     )
