@@ -109,6 +109,7 @@ def predictor_output_with_coarse_segm_to_mask(
     N = len(boxes_xywh_abs)
     masks = torch.zeros((N, H, W), dtype=torch.bool, device=boxes.tensor.device)
     for i in range(len(boxes_xywh_abs)):
+        # pyrefly: ignore [bad-argument-type]
         box_xywh = make_int_box(boxes_xywh_abs[i])
         box_mask = resample_coarse_segm_tensor_to_bbox(predictor_output[i].coarse_segm, box_xywh)
         x, y, w, h = box_xywh
@@ -145,6 +146,7 @@ def predictor_output_with_fine_and_coarse_segm_to_mask(
     N = len(boxes_xywh_abs)
     masks = torch.zeros((N, H, W), dtype=torch.bool, device=boxes.tensor.device)
     for i in range(len(boxes_xywh_abs)):
+        # pyrefly: ignore [bad-argument-type]
         box_xywh = make_int_box(boxes_xywh_abs[i])
         labels_i = resample_fine_and_coarse_segm_to_bbox(predictor_output[i], box_xywh)
         x, y, w, h = box_xywh

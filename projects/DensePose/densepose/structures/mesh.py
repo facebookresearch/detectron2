@@ -140,6 +140,7 @@ def load_mesh_data(
         # pyre-fixme[7]: Expected `Tuple[Optional[Tensor], Optional[Tensor]]` but
         #  got `Tensor`.
         return torch.as_tensor(pickle.load(hFile)[field], dtype=torch.float).to(device)
+    # pyrefly: ignore [bad-return]
     return None
 
 

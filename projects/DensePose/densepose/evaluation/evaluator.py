@@ -69,6 +69,7 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         ), "Mesh alignment evaluation is activated, but no vertex embedder provided!"
         if should_evaluate_mesh_alignment:
             self._mesh_alignment_evaluator = MeshAlignmentEvaluator(
+                # pyrefly: ignore [bad-argument-type]
                 embedder,
                 mesh_alignment_mesh_names,
             )
@@ -398,15 +399,21 @@ def build_densepose_evaluator_storage(cfg: CfgNode, output_folder: str):
     if evaluator_type == "iuv":
         n_fsc = cfg.MODEL.ROI_DENSEPOSE_HEAD.NUM_PATCHES + 1
         schema = {
+            # pyrefly: ignore [bad-argument-type]
             "coarse_segm": SizeData(dtype="float32", shape=(n_csc, hout, wout)),
+            # pyrefly: ignore [bad-argument-type]
             "fine_segm": SizeData(dtype="float32", shape=(n_fsc, hout, wout)),
+            # pyrefly: ignore [bad-argument-type]
             "u": SizeData(dtype="float32", shape=(n_fsc, hout, wout)),
+            # pyrefly: ignore [bad-argument-type]
             "v": SizeData(dtype="float32", shape=(n_fsc, hout, wout)),
         }
     elif evaluator_type == "cse":
         embed_size = cfg.MODEL.ROI_DENSEPOSE_HEAD.CSE.EMBED_SIZE
         schema = {
+            # pyrefly: ignore [bad-argument-type]
             "coarse_segm": SizeData(dtype="float32", shape=(n_csc, hout, wout)),
+            # pyrefly: ignore [bad-argument-type]
             "embedding": SizeData(dtype="float32", shape=(embed_size, hout, wout)),
         }
     else:

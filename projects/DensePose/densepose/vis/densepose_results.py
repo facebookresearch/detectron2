@@ -92,6 +92,7 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
         self.levels = levels
         self.plot_args = kwargs
 
+    # pyrefly: ignore [bad-override]
     def create_visualization_context(self, image_bgr: Image):
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -106,6 +107,7 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
         plt.axis("off")
         context["fig"] = fig
         canvas = FigureCanvas(fig)
+        # pyrefly: ignore [unsupported-operation]
         context["canvas"] = canvas
         extent = (0, image_bgr.shape[1], image_bgr.shape[0], 0)
         plt.imshow(image_bgr[:, :, ::-1], extent=extent)

@@ -134,6 +134,7 @@ class HRFPN(Backbone):
                 nn.init.kaiming_normal_(m.weight, a=1)
                 nn.init.constant_(m.bias, 0)
 
+    # pyrefly: ignore [bad-override]
     def forward(self, inputs):
         bottom_up_features = self.bottom_up(inputs)
         assert len(bottom_up_features) == len(self.in_features)

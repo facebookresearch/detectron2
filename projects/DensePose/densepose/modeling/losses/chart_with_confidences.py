@@ -28,6 +28,7 @@ class DensePoseChartWithConfidenceLoss(DensePoseChartLoss):
                 self.confidence_model_cfg.uv_confidence.epsilon
             )
         elif self.confidence_model_cfg.uv_confidence.type == DensePoseUVConfidenceType.INDEP_ANISO:
+            # pyrefly: ignore [bad-assignment]
             self.uv_loss_with_confidences = IndepAnisotropicGaussianUVLoss(
                 self.confidence_model_cfg.uv_confidence.epsilon
             )

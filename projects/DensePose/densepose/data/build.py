@@ -225,6 +225,7 @@ def _maybe_create_specific_keep_instance_predicate(cfg: CfgNode) -> Optional[Ins
         return None
 
     def combined_predicate(instance: Instance) -> bool:
+        # pyrefly: ignore [not-callable]
         return any(p(instance) for p in predicates)
 
     return combined_predicate
@@ -235,6 +236,7 @@ def _get_train_keep_instance_predicate(cfg: CfgNode):
     combined_specific_keep_predicate = _maybe_create_specific_keep_instance_predicate(cfg)
 
     def combined_general_specific_keep_predicate(instance: Instance) -> bool:
+        # pyrefly: ignore [not-callable]
         return general_keep_predicate(instance) and combined_specific_keep_predicate(instance)
 
     if (general_keep_predicate is None) and (combined_specific_keep_predicate is None):
@@ -386,7 +388,9 @@ def combine_detection_dataset_dicts(
     """
     assert len(dataset_names)
     if proposal_files is None:
+        # pyrefly: ignore [bad-assignment]
         proposal_files = [None] * len(dataset_names)
+    # pyrefly: ignore [bad-argument-type]
     assert len(dataset_names) == len(proposal_files)
     # load datasets and metadata
     dataset_name_to_dicts = {}
@@ -403,6 +407,7 @@ def combine_detection_dataset_dicts(
     # map to contiguous category IDs
     _add_category_id_to_contiguous_id_maps_to_metadata(merged_categories)
     # load annotations and dataset metadata
+    # pyrefly: ignore [bad-argument-type]
     for dataset_name, proposal_file in zip(dataset_names, proposal_files):
         dataset_dicts = dataset_name_to_dicts[dataset_name]
         assert len(dataset_dicts), f"Dataset '{dataset_name}' is empty!"
@@ -547,6 +552,7 @@ def build_bootstrap_dataset(dataset_name: str, cfg: CfgNode) -> Sequence[torch.T
         dataset = factory(meta, cfg)
     if dataset is None:
         logger.warning(f"Failed to create dataset {dataset_name} of type {meta.dataset_type}")
+    # pyrefly: ignore [bad-return]
     return dataset
 
 
@@ -735,4 +741,5 @@ class _BootstrapDatasetFactoryCatalog(UserDict):
 
 
 BootstrapDatasetFactoryCatalog = _BootstrapDatasetFactoryCatalog()
+# pyrefly: ignore [bad-argument-type]
 BootstrapDatasetFactoryCatalog.register(DatasetType.VIDEO_LIST, build_video_list_dataset)
