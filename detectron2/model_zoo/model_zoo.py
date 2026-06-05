@@ -7,6 +7,7 @@ import torch
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
 from detectron2.modeling import build_model
+from detectron2.utils.comm import _TORCH_NPU_AVAILABLE
 
 
 class _ModelZooUrls:
@@ -196,7 +197,7 @@ def get(config_path, trained: bool = False, device: Optional[str] = None):
         model = model_zoo.get("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml", trained=True)
     """
     cfg = get_config(config_path, trained)
-    if device is None and not torch.cuda.is_available():
+    if device is None and not torch.cuda.is_available() and not _TORCH_NPU_AVAILABLE:
         device = "cpu"
     if device is not None and isinstance(cfg, CfgNode):
         cfg.MODEL.DEVICE = device

@@ -22,7 +22,14 @@ from detectron2.data import (
     build_detection_train_loader,
 )
 from detectron2.data.benchmark import DataLoaderBenchmark
-from detectron2.engine import AMPTrainer, SimpleTrainer, default_argument_parser, hooks, launch
+from detectron2.engine import (
+    AMPTrainer,
+    SimpleTrainer,
+    default_argument_parser,
+    default_setup,
+    hooks,
+    launch,
+)
 from detectron2.modeling import build_model
 from detectron2.solver import build_optimizer
 from detectron2.utils import comm
@@ -39,10 +46,11 @@ def setup(args):
         cfg.merge_from_file(args.config_file)
         cfg.SOLVER.BASE_LR = 0.001  # Avoid NaNs. Not useful in this script anyway.
         cfg.merge_from_list(args.opts)
-        cfg.freeze()
     else:
         cfg = LazyConfig.load(args.config_file)
         cfg = LazyConfig.apply_overrides(cfg, args.opts)
+    default_setup(cfg, args)
+    cfg.freeze()
     setup_logger(distributed_rank=comm.get_rank())
     return cfg
 
@@ -117,7 +125,9 @@ def benchmark_train(args):
             yield from data
 
     max_iter = 400
-    trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(model, f(), optimizer)
+    trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
+        model, f(), optimizer, device=cfg.MODEL.DEVICE
+    )
     trainer.register_hooks(
         [
             hooks.IterationTimer(),
@@ -195,10 +205,10 @@ def main() -> None:
     elif args.task == "eval":
         f = benchmark_eval
         # only benchmark single-GPU inference.
-        assert args.num_gpus == 1 and args.num_machines == 1
+        assert args.num_accelerators == 1 and args.num_machines == 1
     launch(
         f,
-        args.num_gpus,
+        args.num_accelerators,
         args.num_machines,
         args.machine_rank,
         args.dist_url,

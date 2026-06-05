@@ -10,7 +10,7 @@ from fvcore.nn import flop_count_table  # can also try flop_count_str
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import CfgNode, LazyConfig, get_cfg, instantiate
 from detectron2.data import build_detection_test_loader
-from detectron2.engine import default_argument_parser
+from detectron2.engine import default_argument_parser, default_setup
 from detectron2.modeling import build_model
 from detectron2.utils.analysis import (
     FlopCountAnalysis,
@@ -28,10 +28,11 @@ def setup(args):
         cfg.merge_from_file(args.config_file)
         cfg.DATALOADER.NUM_WORKERS = 0
         cfg.merge_from_list(args.opts)
-        cfg.freeze()
     else:
         cfg = LazyConfig.load(args.config_file)
         cfg = LazyConfig.apply_overrides(cfg, args.opts)
+    default_setup(cfg, args)
+    cfg.freeze()
     setup_logger(name="fvcore")
     setup_logger()
     return cfg
@@ -147,7 +148,7 @@ $ ./analyze_model.py --num-inputs 100 --tasks flop \\
     )
     args = parser.parse_args()
     assert not args.eval_only
-    assert args.num_gpus == 1
+    assert args.num_accelerators == 1
 
     cfg = setup(args)
 
