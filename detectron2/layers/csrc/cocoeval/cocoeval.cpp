@@ -478,8 +478,8 @@ py::dict Accumulate(
   }
 
   time_t rawtime;
-  struct tm local_time;
-  std::array<char, 200> buffer;
+  struct tm local_time{};
+  std::array<char, 200> buffer{};
   time(&rawtime);
 #ifdef _WIN32
   localtime_s(&local_time, &rawtime);
