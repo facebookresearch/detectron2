@@ -57,12 +57,12 @@ def main() -> None:
 
     def output(vis, fname):
         if args.show:
-            print(fname)
+            logger.info(fname)
             cv2.imshow("window", vis.get_image()[:, :, ::-1])
             cv2.waitKey()
         else:
             filepath = os.path.join(dirname, fname)
-            print("Saving to {} ...".format(filepath))
+            logger.info("Saving to %s ...", filepath)
             vis.save(filepath)
 
     scale = 1.0
