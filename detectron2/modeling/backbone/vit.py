@@ -6,6 +6,7 @@ import torch.nn as nn
 
 from detectron2.layers import CNNBlockBase, Conv2d, get_norm
 from detectron2.modeling.backbone.fpn import _assert_strides_are_log2_contiguous
+import xformers.ops as xops
 
 from .backbone import Backbone
 from .utils import (
@@ -64,20 +65,12 @@ class Attention(nn.Module):
 
     def forward(self, x):
         B, H, W, _ = x.shape
-        # qkv with shape (3, B, nHead, H * W, C)
-        qkv = self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
-        # q, k, v with shape (B * nHead, H * W, C)
-        q, k, v = qkv.reshape(3, B * self.num_heads, H * W, -1).unbind(0)
-
-        attn = (q * self.scale) @ k.transpose(-2, -1)
-
-        if self.use_rel_pos:
-            attn = add_decomposed_rel_pos(attn, q, self.rel_pos_h, self.rel_pos_w, (H, W), (H, W))
-
-        attn = attn.softmax(dim=-1)
-        x = (attn @ v).view(B, self.num_heads, H, W, -1).permute(0, 2, 3, 1, 4).reshape(B, H, W, -1)
+        qkv = self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1)
+        q, k, v = xops.unbind(qkv, dim=2)
+        assert not self.use_rel_pos, "Not implemented yet"
+        x = xops.memory_efficient_attention(q, k, v, scale=self.scale)
+        x = x.reshape(B, H, W, -1)
         x = self.proj(x)
-
         return x
 
 
