@@ -147,7 +147,7 @@ class TestTransforms(unittest.TestCase):
             else:
                 T.RandomApply(T.NoOpTransform(), prob=given_probability)
 
-    def test_random_apply_wrapping_aug_probability_occured_evaluation(self):
+    def test_random_apply_wrapping_aug_probability_occurred_evaluation(self):
         transform_mock = mock.MagicMock(name="MockTransform", spec=T.Augmentation)
         image_mock = mock.MagicMock(name="MockImage")
         random_apply = T.RandomApply(transform_mock, prob=0.001)
@@ -157,7 +157,7 @@ class TestTransforms(unittest.TestCase):
         transform_mock.get_transform.assert_called_once_with(image_mock)
         self.assertIsNot(transform, transform_mock)
 
-    def test_random_apply_wrapping_std_transform_probability_occured_evaluation(self):
+    def test_random_apply_wrapping_std_transform_probability_occurred_evaluation(self):
         transform_mock = mock.MagicMock(name="MockTransform", spec=T.Transform)
         image_mock = mock.MagicMock(name="MockImage")
         random_apply = T.RandomApply(transform_mock, prob=0.001)
@@ -166,7 +166,7 @@ class TestTransforms(unittest.TestCase):
             transform = random_apply.get_transform(image_mock)
         self.assertIs(transform, transform_mock)
 
-    def test_random_apply_probability_not_occured_evaluation(self):
+    def test_random_apply_probability_not_occurred_evaluation(self):
         transform_mock = mock.MagicMock(name="MockTransform", spec=T.Augmentation)
         image_mock = mock.MagicMock(name="MockImage")
         random_apply = T.RandomApply(transform_mock, prob=0.001)
