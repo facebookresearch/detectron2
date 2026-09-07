@@ -16,7 +16,7 @@ from ..box_regression import Box2BoxTransform, _dense_box_regression_loss
 from ..matcher import Matcher
 from ..sampling import subsample_labels
 from .build import PROPOSAL_GENERATOR_REGISTRY
-from .proposal_utils import find_top_rpn_proposals
+from .proposal_utils import _topk_scores_idx, find_top_rpn_proposals
 
 RPN_HEAD_REGISTRY = Registry("RPN_HEAD")
 RPN_HEAD_REGISTRY.__doc__ = """
@@ -487,7 +487,8 @@ class RPN(nn.Module):
         image_sizes: List[Tuple[int, int]],
     ):
         """
-        Decode all the predicted box regression deltas to proposals. Find the top proposals
+        Apply the per-level, per-image objectness pre-NMS top-k first, then decode
+        only the selected anchor/delta rows into proposals. Find the top proposals
         by applying NMS and removing boxes that are too small.
 
         Returns:
@@ -499,35 +500,70 @@ class RPN(nn.Module):
         # This approach ignores the derivative w.r.t. the proposal boxes’ coordinates that
         # are also network responses.
         with torch.no_grad():
-            pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas)
+            topk_scores, topk_idx = _topk_scores_idx(
+                pred_objectness_logits, self.pre_nms_topk[self.training]
+            )
+            pred_proposals = self._decode_proposals(anchors, pred_anchor_deltas, topk_idx)
             return find_top_rpn_proposals(
                 pred_proposals,
-                pred_objectness_logits,
+                topk_scores,
                 image_sizes,
                 self.nms_thresh,
                 self.pre_nms_topk[self.training],
                 self.post_nms_topk[self.training],
                 self.min_box_size,
                 self.training,
+                topk_done=True,
             )
 
-    def _decode_proposals(self, anchors: List[Boxes], pred_anchor_deltas: List[torch.Tensor]):
+    def _decode_proposals(
+        self,
+        anchors: List[Boxes],
+        pred_anchor_deltas: List[torch.Tensor],
+        topk_idx: Optional[List[torch.Tensor]] = None,
+    ):
         """
         Transform anchors into proposals by applying the predicted anchor deltas.
 
+        If ``topk_idx`` (a list of per-level (N, topk) int64 index tensors from the
+        pre-NMS objectness top-k) is given, only the selected rows are decoded.
+        Otherwise, the full per-level population is decoded (used by subclasses
+        such as RRPN).
+
         Returns:
             proposals (list[Tensor]): A list of L tensors. Tensor i has shape
-                (N, Hi*Wi*A, B)
+                (N, Hi*Wi*A, B) when decoding the full population, or (N, topk, B)
+                when decoding a pre-selected top-k.
         """
         N = pred_anchor_deltas[0].shape[0]
+        if topk_idx is None:
+            proposals = []
+            # For each feature map
+            for anchors_i, pred_anchor_deltas_i in zip(anchors, pred_anchor_deltas):
+                B = anchors_i.tensor.size(1)
+                pred_anchor_deltas_i = pred_anchor_deltas_i.reshape(-1, B)
+                # Expand anchors to shape (N*Hi*Wi*A, B)
+                anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
+                proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
+                # Append feature map proposals with shape (N, Hi*Wi*A, B)
+                proposals.append(proposals_i.view(N, -1, B))
+            return proposals
+
+        batch_idx = torch.arange(N, device=pred_anchor_deltas[0].device)
         proposals = []
-        # For each feature map
-        for anchors_i, pred_anchor_deltas_i in zip(anchors, pred_anchor_deltas):
+        # For each feature map, gather the top-k selected deltas and anchors, then
+        # decode only those rows.
+        for anchors_i, pred_anchor_deltas_i, topk_idx_i in zip(
+            anchors, pred_anchor_deltas, topk_idx
+        ):
             B = anchors_i.tensor.size(1)
-            pred_anchor_deltas_i = pred_anchor_deltas_i.reshape(-1, B)
-            # Expand anchors to shape (N*Hi*Wi*A, B)
-            anchors_i = anchors_i.tensor.unsqueeze(0).expand(N, -1, -1).reshape(-1, B)
-            proposals_i = self.box2box_transform.apply_deltas(pred_anchor_deltas_i, anchors_i)
-            # Append feature map proposals with shape (N, Hi*Wi*A, B)
+            # Gather matching anchors and deltas for the selected rows: (N, topk, B)
+            pred_anchor_deltas_i = pred_anchor_deltas_i[batch_idx[:, None], topk_idx_i]
+            anchors_i = anchors_i.tensor[topk_idx_i]
+            proposals_i = self.box2box_transform.apply_deltas(
+                pred_anchor_deltas_i.reshape(-1, B),
+                anchors_i.reshape(-1, B),
+            )
+            # Append feature map proposals with shape (N, topk, B)
             proposals.append(proposals_i.view(N, -1, B))
         return proposals
