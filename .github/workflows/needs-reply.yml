@@ -88,11 +88,13 @@ jobs:
   lock-issues-after-closed:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'facebookresearch' }}
+    permissions:
+      issues: write
     steps:
       - name: Lock closed issues that have no activity for a while
-        uses: dessant/lock-threads@v2
+        uses: dessant/lock-threads@v6
         with:
           github-token: ${{ github.token }}
-          issue-lock-inactive-days: '300'
+          issue-inactive-days: '300'
           process-only: 'issues'
-          issue-exclude-labels: 'enhancement,bug,documentation'
+          exclude-any-issue-labels: 'enhancement,bug,documentation'
