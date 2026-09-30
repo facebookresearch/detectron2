@@ -24,7 +24,12 @@ class TestBlocks(unittest.TestCase):
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_frozen_batchnorm_fp16(self):
-        from torch.cuda.amp import autocast
+        if torch.__version__ < "2.4.0":
+            from torch.cuda.amp import autocast
+        else:
+            from torch.amp import autocast
+            from functools import partial
+            autocast = partial(autocast, device_type="cuda")
 
         C = 10
         input = torch.rand(1, C, 10, 10).cuda()
