@@ -173,6 +173,7 @@ class Trainer(DefaultTrainer):
             )
         )
         if cfg.MODEL.DENSEPOSE_ON:
+            # pyrefly: ignore [bad-argument-type]
             storage = build_densepose_evaluator_storage(cfg, output_folder)
             evaluators.append(
                 # pyrefly: ignore [bad-argument-type]
