@@ -22,6 +22,7 @@ from detectron2.structures import Boxes, Instances
 from .meta_arch import GeneralizedRCNN
 from .postprocessing import detector_postprocess
 from .roi_heads.fast_rcnn import fast_rcnn_inference_single_image
+from .roi_heads.rotated_fast_rcnn import fast_rcnn_inference_single_image_rotated
 
 __all__ = ["DatasetMapperTTA", "GeneralizedRCNNWithTTA"]
 
@@ -251,7 +252,10 @@ class GeneralizedRCNNWithTTA(nn.Module):
         for output, tfm in zip(outputs, tfms):
             # Need to inverse the transforms on boxes, to obtain results on original image
             pred_boxes = output.pred_boxes.tensor
-            original_pred_boxes = tfm.inverse().apply_box(pred_boxes.cpu().numpy())
+            if pred_boxes.size()[-1] == 5:
+                original_pred_boxes = tfm.inverse.apply_rotated_box(pred_boxes.cpu().numpy())
+            else:
+                original_pred_boxes = tfm.inverse().apply_box(pred_boxes.cpu().numpy())
             all_boxes.append(torch.from_numpy(original_pred_boxes).to(pred_boxes.device))
 
             all_scores.extend(output.scores)
@@ -268,14 +272,25 @@ class GeneralizedRCNNWithTTA(nn.Module):
         for idx, cls, score in zip(count(), all_classes, all_scores):
             all_scores_2d[idx, cls] = score
 
-        merged_instances, _ = fast_rcnn_inference_single_image(
-            all_boxes,
-            all_scores_2d,
-            shape_hw,
-            1e-8,
-            self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
-            self.cfg.TEST.DETECTIONS_PER_IMAGE,
-        )
+        if all_boxes.size()[-1] == 5:
+            merged_instances, _ = fast_rcnn_inference_single_image_rotated(
+                all_boxes,
+                all_scores_2d,
+                shape_hw,
+                1e-8,
+                self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
+                self.cfg.TEST.DETECTIONS_PER_IMAGE,
+            )
+
+        else:
+            merged_instances, _ = fast_rcnn_inference_single_image(
+                all_boxes,
+                all_scores_2d,
+                shape_hw,
+                1e-8,
+                self.cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST,
+                self.cfg.TEST.DETECTIONS_PER_IMAGE,
+            )
 
         return merged_instances
 
@@ -284,7 +299,10 @@ class GeneralizedRCNNWithTTA(nn.Module):
         for input, tfm in zip(augmented_inputs, tfms):
             # Transform the target box to the augmented image's coordinate space
             pred_boxes = merged_instances.pred_boxes.tensor.cpu().numpy()
-            pred_boxes = torch.from_numpy(tfm.apply_box(pred_boxes))
+            if pred_boxes.shape[-1] == 5:
+                pred_boxes = torch.from_numpy(tfm.apply_rotated_box(pred_boxes))
+            else:
+                pred_boxes = torch.from_numpy(tfm.apply_box(pred_boxes))
 
             aug_instances = Instances(
                 image_size=input["image"].shape[1:3],
