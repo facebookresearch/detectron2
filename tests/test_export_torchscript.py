@@ -267,7 +267,8 @@ class TestTorchscriptUtils(unittest.TestCase):
             # check that the files are created
             for name in ["model_ts_code", "model_ts_IR", "model_ts_IR_inlined", "model"]:
                 fname = os.path.join(d, name + ".txt")
-                self.assertTrue(os.stat(fname).st_size > 0, fname)
+                self.assertTrue(os.path.exists(fname), f"{fname} does not exist")
+                self.assertGreater(os.stat(fname).st_size, 0, fname)
 
     def test_dump_IR_function(self):
         @torch.jit.script
