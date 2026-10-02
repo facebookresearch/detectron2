@@ -2,7 +2,7 @@
 # Data Augmentation
 
 Augmentation is an important part of training.
-Detectron2's data augmentation system aims at addressing the following goals:
+Detectron2's data augmentation system aims to address the following goals:
 
 1. Allow augmenting multiple data types together
    (e.g., images together with their bounding boxes and masks)
@@ -10,7 +10,7 @@ Detectron2's data augmentation system aims at addressing the following goals:
 3. Allow adding custom new data types to augment (rotated bounding boxes, video clips, etc.)
 4. Process and manipulate the __operations__ that are applied by augmentations
 
-The first two features cover most of the common use cases, and is also
+The first two features cover most of the common use cases, and are also
 available in other libraries such as [albumentations](https://medium.com/pytorch/multi-target-in-albumentations-16a777e9006e).
 Supporting other features adds some overhead to detectron2's augmentation API,
 which we'll explain in this tutorial.
@@ -22,7 +22,7 @@ as explained in the [Dataloader tutorial](data_loading).
 
 ## Basic Usage
 
-The basic usage of feature (1) and (2) is like the following:
+The basic usage of features (1) and (2) is like the following:
 ```python
 from detectron2.data import transforms as T
 # Define a sequence of augmentations:
@@ -105,7 +105,7 @@ for standard use cases.
 ### Custom transform strategy
 
 Instead of only returning the augmented data, detectron2's `Augmentation` returns the __operations__ as `T.Transform`.
-This allows users to apply custom transform strategy on their data.
+This allows users to apply custom transform strategy to their data.
 We use keypoints data as an example.
 
 Keypoints are (x, y) coordinates, but they are not so trivial to augment due to the semantic meaning they carry.
@@ -128,7 +128,7 @@ if do_hflip:
 
 As another example, keypoints annotations often have a "visibility" field.
 A sequence of augmentations might augment a visible keypoint out of the image boundary (e.g. with cropping),
-but then bring it back within the boundary afterwards (e.g. with image padding).
+but then bring it back within the boundary afterward (e.g. with image padding).
 If users decide to label such keypoints "invisible",
 then the visibility check has to happen after every transform step.
 This can be achieved by:
@@ -161,7 +161,7 @@ pred_mask_orig = inv_transform.apply_segmentation(pred_mask)
 ### Add new data types
 
 [T.Transform](../modules/data_transforms.html#detectron2.data.transforms.Transform)
-supports a few common data types to transform, including images, coordinates, masks, boxes, polygons.
+supports a few common data types to transform, including images, coordinates, masks, boxes, and polygons.
 It allows registering new data types, e.g.:
 ```python
 @T.HFlipTransform.register_type("rotated_boxes")
