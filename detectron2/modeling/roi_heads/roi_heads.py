@@ -116,7 +116,7 @@ def select_proposals_with_visible_keypoints(proposals: List[Instances]) -> List[
         ret.append(proposals_per_image[selection_idxs])
 
     storage = get_event_storage()
-    storage.put_scalar("keypoint_head/num_fg_samples", np.mean(all_num_fg))
+    storage.put_scalar("keypoint_head/num_fg_samples", np.mean(all_num_fg) if len(all_num_fg) else np.nan) #The all_num_fg list can be empty in hard negatives, which produces an "empty list warning" in NumPy!
     return ret
 
 
