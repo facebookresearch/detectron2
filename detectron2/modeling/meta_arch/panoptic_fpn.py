@@ -123,7 +123,7 @@ class PanopticFPN(GeneralizedRCNN):
             self.backbone.size_divisibility,
             self.sem_seg_head.ignore_value,
             self.backbone.padding_constraints,
-        ).tensor
+        ).tensor.long()
         sem_seg_results, sem_seg_losses = self.sem_seg_head(features, gt_sem_seg)
 
         gt_instances = [x["instances"].to(self.device) for x in batched_inputs]
