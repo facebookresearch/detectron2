@@ -3,12 +3,13 @@
 
 import numpy as np
 import os
+import sys
 import tempfile
 import unittest
 import cv2
 import torch
 
-from detectron2.data import MetadataCatalog
+from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode, Instances, RotatedBoxes
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
@@ -274,5 +275,31 @@ class TestVisualizer(unittest.TestCase):
         self.assertIn((0, 0, 255), first_row)
 
 
+def benchmark_visualizer():
+    from detectron2 import model_zoo
+    from detectron2.engine import DefaultPredictor
+    from detectron2.data.benchmark import iter_benchmark
+
+    cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py", trained=True)
+    predictor = DefaultPredictor(cfg)
+    filename = DatasetCatalog.get("coco_2017_val_100")[0]["file_name"]
+    metadata = MetadataCatalog.get("coco_2017_val_100")
+    img = cv2.imread(filename)
+    img_rgb = img[:, :, ::-1]
+    predictions = predictor(img)["instances"]
+
+    def func():
+        while True:
+            vis = Visualizer(img_rgb, metadata=metadata, scale=2.0)
+            vis.draw_instance_predictions(predictions)
+            yield vis.get_output().get_image()
+
+    avg, _ = iter_benchmark(func(), 20, 1)
+    print(len(predictions), avg)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    if len(sys.argv) >= 2 and sys.argv[1] == "benchmark":
+        benchmark_visualizer()
+    else:
+        unittest.main()

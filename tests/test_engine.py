@@ -13,7 +13,7 @@ from torch import nn
 
 from detectron2 import model_zoo
 from detectron2.config import configurable, get_cfg
-from detectron2.engine import DefaultTrainer, SimpleTrainer, default_setup, hooks
+from detectron2.engine import DefaultPredictor, DefaultTrainer, SimpleTrainer, default_setup, hooks
 from detectron2.modeling.meta_arch import META_ARCH_REGISTRY
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter
 
@@ -262,3 +262,18 @@ class TestTrainer(unittest.TestCase):
             cfg = model_zoo.get_config("COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py")
             cfg.train.output_dir = os.path.join(d, "omegaconf")
             default_setup(cfg, {})
+
+
+class TestDefaultPredictor(unittest.TestCase):
+    def test_create_predictor_yaml(self):
+        cfg = model_zoo.get_config(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml", trained=False
+        )
+        cfg.MODEL.WEIGHTS = ""  # save time
+        DefaultPredictor(cfg)
+
+    def test_create_predictor_py(self):
+        cfg = model_zoo.get_config(
+            "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.py", trained=False
+        )
+        DefaultPredictor(cfg)
