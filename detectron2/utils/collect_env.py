@@ -8,8 +8,12 @@ import sys
 from collections import defaultdict
 import PIL
 import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
 import torchvision
 from tabulate import tabulate
+
+from detectron2.utils.comm import _TORCH_NPU_AVAILABLE, _find_free_port
 
 __all__ = ["collect_env_info"]
 
@@ -219,8 +223,6 @@ def collect_env_info():
 def test_nccl_ops():
     num_gpu = torch.cuda.device_count()
     if os.access("/tmp", os.W_OK):
-        import torch.multiprocessing as mp
-
         dist_url = "file:///tmp/nccl_tmp_file"
         print("Testing NCCL connectivity ... this should not hang.")
         mp.spawn(_test_nccl_worker, nprocs=num_gpu, args=(num_gpu, dist_url), daemon=False)
@@ -228,9 +230,22 @@ def test_nccl_ops():
 
 
 def _test_nccl_worker(rank, num_gpu, dist_url):
-    import torch.distributed as dist
-
     dist.init_process_group(backend="NCCL", init_method=dist_url, rank=rank, world_size=num_gpu)
+    dist.barrier(device_ids=[rank])
+
+
+def test_hccl_ops():
+    num_npu = torch.npu.device_count()
+
+    port = _find_free_port()
+    dist_url = f"tcp://127.0.0.1:{port}"
+    print("Testing HCCL connectivity ... this should not hang.")
+    mp.spawn(_test_hccl_worker, nprocs=num_npu, args=(num_npu, dist_url), daemon=False)
+    print("HCCL succeeded.")
+
+
+def _test_hccl_worker(rank, num_npu, dist_url):
+    dist.init_process_group(backend="hccl", init_method=dist_url, rank=rank, world_size=num_npu)
     dist.barrier(device_ids=[rank])
 
 
@@ -257,6 +272,21 @@ def main() -> None:
                 )
         if num_gpu > 1:
             test_nccl_ops()
+
+    if _TORCH_NPU_AVAILABLE:
+        num_npu = torch.npu.device_count()
+        for k in range(num_npu):
+            device = f"npu:{k}"
+            try:
+                x = torch.tensor([1, 2.0], dtype=torch.float32)
+                x = x.to(device)
+            except Exception as e:
+                print(
+                    f"Unable to copy tensor to device={device}: {e}. "
+                    "Your Ascend NPU environment is broken."
+                )
+        if num_npu > 1:
+            test_hccl_ops()
 
 
 if __name__ == "__main__":
