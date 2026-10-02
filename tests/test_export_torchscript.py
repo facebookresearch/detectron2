@@ -73,6 +73,9 @@ class TestScripting(unittest.TestCase):
             instance = model.inference(inputs, do_postprocess=False)[0]
             scripted_instance = script_model.inference(inputs, do_postprocess=False)[0]
         assert_instances_allclose(instance, scripted_instance)
+        instance = detector_postprocess(instance, image.shape[1], image.shape[2])
+        scripted_instance = detector_postprocess(scripted_instance, image.shape[1], image.shape[2])
+        assert_instances_allclose(instance, scripted_instance)
 
     def _test_retinanet_model(self, config_path):
         model = model_zoo.get(config_path, trained=True)
