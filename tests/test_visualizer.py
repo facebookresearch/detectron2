@@ -107,6 +107,21 @@ class TestVisualizer(unittest.TestCase):
         output = v.overlay_instances(masks=masks, boxes=boxes, labels=labels).get_image()
         self.assertEqual(output.shape, img.shape)
 
+    def test_overlay_instances_with_mask_holes(self):
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        mask = np.zeros((100, 100), dtype=np.uint8)
+        mask[20:80, 20:80] = 1
+        mask[40:60, 40:60] = 0
+
+        output = (
+            Visualizer(img)
+            .overlay_instances(masks=[mask], assigned_colors=[(1.0, 0.0, 0.0)], alpha=1.0)
+            .get_image()
+        )
+
+        np.testing.assert_array_equal(output[30, 30], [255, 0, 0])
+        np.testing.assert_array_equal(output[50, 50], img[50, 50])
+
     def test_overlay_instances_no_boxes(self):
         img, boxes, labels, polygons, _ = self._random_data()
         v = Visualizer(img, self.metadata)
