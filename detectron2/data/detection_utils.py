@@ -50,11 +50,65 @@ class SizeMismatchError(ValueError):
 
 
 # https://en.wikipedia.org/wiki/YUV#SDTV_with_BT.601
-_M_RGB2YUV = [[0.299, 0.587, 0.114], [-0.14713, -0.28886, 0.436], [0.615, -0.51499, -0.10001]]
+_M_RGB2YUV = [
+    [0.299, 0.587, 0.114],
+    [-0.14713, -0.28886, 0.436],
+    [0.615, -0.51499, -0.10001],
+]
 _M_YUV2RGB = [[1.0, 0.0, 1.13983], [1.0, -0.39465, -0.58060], [1.0, 2.03211, 0.0]]
 
 # https://www.exiv2.org/tags.html
 _EXIF_ORIENT = 274  # exif 'Orientation' tag
+
+
+def SG_RGB2YUV(RGB):
+    """
+    YUV conversion specific to Smart Glasses.
+    """
+    assert len(RGB.shape) == 3, "input should be of shape H*W*3, and in RGB format"
+    assert RGB.shape[2] == 3, "input should be of shape H*W*3,  and in RGB format"
+
+    # HWC -> CHW
+    RGB = RGB.transpose((2, 0, 1))
+    YUV = np.ones_like(RGB)
+
+    # Inverse of https://fburl.com/code/kf5lga06
+    # https://web.archive.org/web/20100122105857im_/http://www.equasys.de/equasysRGB_FullRangeYCbCrColorConversion.png
+    # Y = R *  0.299 + G *  0.587 + B *  0.114
+    # U = R * -0.168736 + G * -0.331264 + B *  0.5 + 128
+    # V = R *  0.5 + G * -0.418688 + B * -0.081312 + 128
+
+    YUV[0] = 0.299 * RGB[0] + 0.587 * RGB[1] + 0.114 * RGB[2]
+    YUV[1] = -0.168736 * RGB[0] - 0.331264 * RGB[1] + 0.5 * RGB[2] + 128
+    YUV[2] = 0.5 * RGB[0] - 0.418688 * RGB[1] - 0.081312 * RGB[2] + 128
+
+    # CHW -> HWC
+    return YUV.transpose((1, 2, 0))
+
+
+def SG_YUV2RGB(YUV):
+    """
+    YUV conversion specific to Smart Glasses.
+    """
+    assert len(YUV.shape) == 3, "input should be of shape H*W*3, and in YUV format"
+    assert YUV.shape[2] == 3, "input should be of shape H*W*3,  and in YUV format"
+
+    # HWC -> CHW
+    YUV = YUV.transpose((2, 0, 1))
+    RGB = np.ones_like(YUV)
+
+    # Follows https://fburl.com/code/kf5lga06
+    # https://web.archive.org/web/20100122105857im_/http://www.equasys.de/equasysFullRangeYCbCr_RGBColorConversion.png
+    # R = Y + 1.402 * (V - 128)
+    # G = Y - 0.344136 * (U - 128) - (0.714136 * (V - 128))
+    # B = Y + 1.772 * (U - 128)
+
+    RGB[0] = YUV[0] + 1.402 * (YUV[2] - 128.0)
+    RGB[1] = YUV[0] - 0.344136 * (YUV[1] - 128.0) - 0.714136 * (YUV[2] - 128.0)
+    RGB[2] = YUV[0] + 1.772 * (YUV[1] - 128.0)
+
+    # CHW -> HWC
+    return RGB.transpose((1, 2, 0))
 
 
 def convert_PIL_to_numpy(image, format):
@@ -71,7 +125,7 @@ def convert_PIL_to_numpy(image, format):
     if format is not None:
         # PIL only supports RGB, so convert to RGB and flip channels over below
         conversion_format = format
-        if format in ["BGR", "YUV-BT.601"]:
+        if format in ["BGR", "YUV-BT.601", "SG-YUV"]:
             conversion_format = "RGB"
         image = image.convert(conversion_format)
     image = np.asarray(image)
@@ -86,6 +140,9 @@ def convert_PIL_to_numpy(image, format):
     elif format == "YUV-BT.601":
         image = image / 255.0
         image = np.dot(image, np.array(_M_RGB2YUV).T)
+    elif format == "SG-YUV":
+        # Smart Glasses Camera YUV format
+        image = SG_RGB2YUV(image)
 
     return image
 
@@ -108,6 +165,8 @@ def convert_image_to_rgb(image, format):
     elif format == "YUV-BT.601":
         image = np.dot(image, np.array(_M_YUV2RGB).T)
         image = image * 255.0
+    elif format == "SG-YUV":
+        image = SG_YUV2RGB(image)
     else:
         if format == "L":
             image = image[:, :, 0]
