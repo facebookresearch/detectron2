@@ -156,7 +156,7 @@ class DatasetMapper:
 
         # USER: Remove if you don't do semantic/panoptic segmentation.
         if "sem_seg_file_name" in dataset_dict:
-            sem_seg_gt = utils.read_image(dataset_dict.pop("sem_seg_file_name"), "L").squeeze(2)
+            sem_seg_gt = utils.read_image(dataset_dict.pop("sem_seg_file_name")).astype("double")
         else:
             sem_seg_gt = None
 
