@@ -1,0 +1,34 @@
+_BASE_: "../ResNest-Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "https://s3.us-west-1.wasabisys.com/resnest/detectron/resnest50_detectron-255b5649.pth"
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    RADIX: 2
+    NORM: "SyncBN"
+  FPN:
+    NORM: "SyncBN"
+  ROI_HEADS:
+    NAME: CascadeROIHeads
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_CONV: 4
+    NUM_FC: 1
+    NORM: "SyncBN"
+    CLS_AGNOSTIC_BBOX_REG: True
+  RPN:
+    POST_NMS_TOPK_TRAIN: 2000
+  PIXEL_MEAN: [123.68, 116.779, 103.939]
+  PIXEL_STD: [58.393, 57.12, 57.375]
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.02    
+INPUT:
+  MIN_SIZE_TRAIN: (640, 800)
+  MIN_SIZE_TRAIN_SAMPLING: "range"
+  MAX_SIZE_TRAIN: 1333
+  FORMAT: "RGB"
+TEST:
+  PRECISE_BN:
+    ENABLED: True
