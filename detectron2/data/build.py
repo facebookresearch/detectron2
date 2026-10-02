@@ -626,6 +626,7 @@ def build_detection_test_loader(
     batch_size: int = 1,
     num_workers: int = 0,
     collate_fn: Optional[Callable[[List[Any]], Any]] = None,
+    **kwargs,
 ) -> torchdata.DataLoader:
     """
     Similar to `build_detection_train_loader`, with default batch size = 1,
@@ -679,6 +680,7 @@ def build_detection_test_loader(
         drop_last=False,
         num_workers=num_workers,
         collate_fn=trivial_batch_collator if collate_fn is None else collate_fn,
+        **kwargs,
     )
 
 
