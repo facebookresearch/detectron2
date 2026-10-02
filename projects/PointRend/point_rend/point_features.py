@@ -139,7 +139,7 @@ def get_uncertain_point_coords_on_grid(uncertainty_map, num_points):
     point_indices = torch.topk(uncertainty_map.view(R, H * W), k=num_points, dim=1)[1]
     point_coords = torch.zeros(R, num_points, 2, dtype=torch.float, device=uncertainty_map.device)
     point_coords[:, :, 0] = w_step / 2.0 + (point_indices % W).to(torch.float) * w_step
-    point_coords[:, :, 1] = h_step / 2.0 + (point_indices // W).to(torch.float) * h_step
+    point_coords[:, :, 1] = h_step / 2.0 + (torch.div(point_indices, W, rounding_mode='trunc')).to(torch.float) * h_step
     return point_indices, point_coords
 
 
