@@ -158,7 +158,8 @@ If you use Panoptic-DeepLab, please use the following BibTeX entry.
 @inproceedings{cheng2020panoptic,
   title={Panoptic-DeepLab: A Simple, Strong, and Fast Baseline for Bottom-Up Panoptic Segmentation},
   author={Cheng, Bowen and Collins, Maxwell D and Zhu, Yukun and Liu, Ting and Huang, Thomas S and Adam, Hartwig and Chen, Liang-Chieh},
-  booktitle={CVPR},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={12475--12485},
   year={2020}
 }
 ```

@@ -133,10 +133,11 @@ Model evaluation can be done similarly:
 If you use MViTv2, please use the following BibTeX entry.
 
 ```BibTeX
-@inproceedings{li2021improved,
-  title={MViTv2: Improved multiscale vision transformers for classification and detection},
-  author={Li, Yanghao and Wu, Chao-Yuan and Fan, Haoqi and Mangalam, Karttikeya and Xiong, Bo and Malik, Jitendra and Feichtenhofer, Christoph},
-  booktitle={CVPR},
+@inproceedings{li2022mvitv2,
+  title={MViTv2: Improved Multiscale Vision Transformers for Classification and Detection},
+  author={Li, Yanghao and Wu, Chao-Yan and Fan, Haoqi and Mangalam, Karttikeya and Xiong, Bo and Malik, Jitendra and Feichtenhofer, Christoph},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages={4804--4814},
   year={2022}
 }
 ```
