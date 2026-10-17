@@ -79,6 +79,7 @@ class Trainer(DefaultTrainer):
         if isinstance(model, nn.parallel.DistributedDataParallel):
             model = model.module
         if hasattr(model, "roi_heads") and hasattr(model.roi_heads, "embedder"):
+            # pyrefly: ignore [bad-return]
             return model.roi_heads.embedder
         return None
 
@@ -172,8 +173,10 @@ class Trainer(DefaultTrainer):
             )
         )
         if cfg.MODEL.DENSEPOSE_ON:
+            # pyrefly: ignore [bad-argument-type]
             storage = build_densepose_evaluator_storage(cfg, output_folder)
             evaluators.append(
+                # pyrefly: ignore [bad-argument-type]
                 DensePoseCOCOEvaluator(
                     dataset_name,
                     distributed,

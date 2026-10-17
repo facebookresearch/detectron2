@@ -291,10 +291,11 @@ HOST_DEVICE_INLINE int convex_hull_graham(
       // q2.x*q1.y) So it may not return 0 even when q1==q2. Therefore we
       // compare round(q1.x*q2.y) and round(q2.x*q1.y) directly. (round means
       // round to nearest floating point).
-      if (q1.x * q2.y >= q2.x * q1.y)
+      if (q1.x * q2.y >= q2.x * q1.y) {
         m--;
-      else
+      } else {
         break;
+      }
     }
     // Using double also helps, but float can solve the issue for now.
     // while (m > 1 && cross_2d<T, double>(q[i] - q[m - 2], q[m - 1] - q[m - 2])

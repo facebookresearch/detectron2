@@ -600,7 +600,9 @@ class DensePoseCocoEval:
         elif self._dpDataMode == DensePoseDataMode.I_GT_UV_0:
             # ground truth labels, UV = 0
             ipoints = np.array(gt["dp_I"])
+            # pyrefly: ignore [unbound-name]
             upoints = upoints * 0.0
+            # pyrefly: ignore [unbound-name]
             vpoints = vpoints * 0.0
         elif self._dpDataMode == DensePoseDataMode.I_GT_UV_DT:
             # ground truth labels, estimated UV
@@ -610,7 +612,9 @@ class DensePoseCocoEval:
         elif self._dpDataMode == DensePoseDataMode.I_DT_UV_0:
             # estimated labels, UV = 0
             ipoints = densepose_data[0, py, px]
+            # pyrefly: ignore [unbound-name]
             upoints = upoints * 0.0
+            # pyrefly: ignore [unbound-name]
             vpoints = vpoints * 0.0
         else:
             raise ValueError(f"Unknown data mode: {self._dpDataMode}")

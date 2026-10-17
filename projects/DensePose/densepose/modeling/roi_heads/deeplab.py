@@ -101,6 +101,7 @@ class ASPPPooling(nn.Sequential):
             nn.ReLU(),
         )
 
+    # pyrefly: ignore [bad-override-param-name]
     def forward(self, x):
         size = x.shape[-2:]
         x = super(ASPPPooling, self).forward(x)

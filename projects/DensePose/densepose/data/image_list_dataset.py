@@ -43,6 +43,7 @@ class ImageListDataset(Dataset):
         self.image_list = image_list
         self.transform = transform
 
+    # pyrefly: ignore [bad-override-param-name]
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         """
         Gets selected images from the list

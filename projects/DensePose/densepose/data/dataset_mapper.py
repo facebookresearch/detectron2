@@ -157,6 +157,7 @@ class DatasetMapper:
             bbox_segm_dp = torch.tensor((0, 0, segm_h - 1, segm_w - 1), dtype=torch.float32)
             # image bbox
             x0, y0, x1, y1 = (
+                # pyrefly: ignore [missing-attribute]
                 v.item() for v in BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS)
             )
             segm_aligned = (

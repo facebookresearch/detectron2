@@ -253,6 +253,7 @@ def _combine_images_with_annotations(
         record["dataset"] = dataset_name
         if "frame_id" in img_dict:
             record["frame_id"] = img_dict["frame_id"]
+            # pyrefly: ignore [unsupported-operation]
             record["video_id"] = img_dict.get("vid_id", None)
             contains_video_frame_info = True
         objs = []
@@ -265,6 +266,7 @@ def _combine_images_with_annotations(
             _maybe_add_keypoints(obj, ann_dict)
             _maybe_add_densepose(obj, ann_dict)
             objs.append(obj)
+        # pyrefly: ignore [unsupported-operation]
         record["annotations"] = objs
         dataset_dicts.append(record)
     if contains_video_frame_info:

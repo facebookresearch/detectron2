@@ -64,7 +64,7 @@ void pre_calc_for_bilinear_interpolate(
           // deal with: inverse elements are out of feature map boundary
           if (y < -1.0 || y > height || x < -1.0 || x > width) {
             // empty
-            PreCalc<T> pc;
+            PreCalc<T> pc{};
             pc.pos1 = 0;
             pc.pos2 = 0;
             pc.pos3 = 0;
@@ -110,7 +110,7 @@ void pre_calc_for_bilinear_interpolate(
           T w1 = hy * hx, w2 = hy * lx, w3 = ly * hx, w4 = ly * lx;
 
           // save weights and indices
-          PreCalc<T> pc;
+          PreCalc<T> pc{};
           pc.pos1 = y_low * width + x_low;
           pc.pos2 = y_low * width + x_high;
           pc.pos3 = y_high * width + x_low;
@@ -392,7 +392,7 @@ void ROIAlignRotatedBackward(
         T y = yy * cos_theta - xx * sin_theta + roi_center_h;
         T x = yy * sin_theta + xx * cos_theta + roi_center_w;
 
-        T w1, w2, w3, w4;
+        T w1{}, w2{}, w3{}, w4{};
         int x_low, x_high, y_low, y_high;
 
         bilinear_interpolate_gradient(

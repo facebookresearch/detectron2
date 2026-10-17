@@ -158,6 +158,7 @@ def compress_quantized_densepose_chart_result(
     im.save(fstream, format="png", optimize=True)
     labels_uv_str = base64.encodebytes(fstream.getvalue()).decode()
     shape_chw = labels_uv_uint8_np_chw.shape
+    # pyrefly: ignore [bad-argument-type]
     return DensePoseChartResultCompressed(labels_uv_str=labels_uv_str, shape_chw=shape_chw)
 
 

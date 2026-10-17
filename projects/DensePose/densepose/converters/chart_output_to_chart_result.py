@@ -93,6 +93,7 @@ def densepose_chart_predictor_output_to_result(
 
     boxes_xyxy_abs = boxes.tensor.clone()
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+    # pyrefly: ignore [bad-argument-type]
     box_xywh = make_int_box(boxes_xywh_abs[0])
 
     labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)
@@ -156,6 +157,7 @@ def resample_confidences_to_bbox(
             # (targeted for segmentation confidences that have only 1 channel)
             result = resampled_confidence[0, 0]
 
+        # pyre-fixme[6]: For 2nd argument expected `None` but got `Tensor`.
         confidence_results[key] = result
 
     return confidence_results  # pyre-ignore[7]
@@ -182,6 +184,7 @@ def densepose_chart_predictor_output_to_result_with_confidences(
 
     boxes_xyxy_abs = boxes.tensor.clone()
     boxes_xywh_abs = BoxMode.convert(boxes_xyxy_abs, BoxMode.XYXY_ABS, BoxMode.XYWH_ABS)
+    # pyrefly: ignore [bad-argument-type]
     box_xywh = make_int_box(boxes_xywh_abs[0])
 
     labels = resample_fine_and_coarse_segm_to_bbox(predictor_output, box_xywh).squeeze(0)

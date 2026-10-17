@@ -274,7 +274,7 @@ class DensePoseChartLoss:
                  this loss is handled by `produce_mask_losses` instead
         """
         fine_segm_gt = packed_annotations.fine_segm_labels_gt[
-            interpolator.j_valid  # pyre-ignore[16]
+            interpolator.j_valid
         ]
         fine_segm_est = interpolator.extract_at_points(
             densepose_predictor_outputs.fine_segm,

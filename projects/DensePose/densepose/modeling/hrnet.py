@@ -433,6 +433,7 @@ class PoseHigherResolutionNet(Backbone):
 
         return nn.Sequential(*modules), num_inchannels
 
+    # pyrefly: ignore [bad-override]
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)

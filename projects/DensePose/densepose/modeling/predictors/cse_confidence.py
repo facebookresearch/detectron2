@@ -83,7 +83,7 @@ class DensePoseEmbeddingConfidencePredictorMixin:
             output.coarse_segm_confidence = (
                 F.softplus(
                     self.interp2d(  # pyre-ignore[16]
-                        self.coarse_segm_confidence_lowres(head_outputs)  # pyre-ignore[16]
+                        self.coarse_segm_confidence_lowres(head_outputs)
                     )
                 )
                 + self.confidence_model_cfg.segm_confidence.epsilon
@@ -106,7 +106,7 @@ class DensePoseEmbeddingConfidencePredictorMixin:
            An instance of outputs with confidences
         """
         PredictorOutput = decorate_cse_predictor_output_class_with_confidences(
-            type(base_predictor_outputs)  # pyre-ignore[6]
+            type(base_predictor_outputs)
         )
         # base_predictor_outputs is assumed to be a dataclass
         # reassign all the fields from base_predictor_outputs (no deep copy!), add new fields

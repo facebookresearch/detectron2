@@ -172,7 +172,9 @@ class NmsFilteredExtractor:
             return None
         select_local_idx = batched_nms(
             boxes_xywh,
+            # pyrefly: ignore [bad-argument-type]
             scores,
+            # pyrefly: ignore [bad-argument-type]
             torch.zeros(len(scores), dtype=torch.int32),
             iou_threshold=self.iou_threshold,
         ).squeeze()

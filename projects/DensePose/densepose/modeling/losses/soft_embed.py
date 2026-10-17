@@ -125,6 +125,7 @@ class SoftEmbeddingLoss:
                 losses[mesh_name] = self.fake_value(
                     densepose_predictor_outputs, embedder, mesh_name
                 )
+        # pyrefly: ignore [bad-return]
         return losses
 
     def fake_values(self, densepose_predictor_outputs: Any, embedder: nn.Module):
