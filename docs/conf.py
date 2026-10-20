@@ -82,7 +82,7 @@ except ImportError:
 else:
     try:
         torch.ops.detectron2 = mock.Mock(name="torch.ops.detectron2")
-    except:
+    except Exception:
         pass
     HAS_TORCH = True
 
@@ -300,7 +300,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         ):
             print("Skipping deprecated object: {}".format(name))
             return True
-    except:
+    except Exception:
         pass
     return skip
 
