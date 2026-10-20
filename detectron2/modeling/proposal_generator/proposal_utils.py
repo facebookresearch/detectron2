@@ -19,6 +19,39 @@ def _is_tracing():
         return torch.jit.is_tracing()
 
 
+def _topk_scores_idx(pred_objectness_logits: List[torch.Tensor], pre_nms_topk: int):
+    """
+    Select the top `pre_nms_topk` objectness-scoring anchors per level and per
+    image. This is the exact per-level top-k policy used by the pre-NMS
+    selection in :func:`find_top_rpn_proposals`; it is factored out so that the
+    same selection can be applied before proposal decoding.
+
+    Args:
+        pred_objectness_logits (list[Tensor]): A list of L tensors. Tensor i has
+            shape (N, Hi*Wi*A).
+        pre_nms_topk (int): number of top k scoring anchors to keep before NMS,
+            per feature map.
+
+    Returns:
+        tuple[list[Tensor], list[Tensor]]:
+        - topk_scores: per-level (N, topk) objectness scores, sorted.
+        - topk_idx: per-level (N, topk) int64 indices into the full population.
+    """
+    topk_scores = []
+    topk_idx = []
+    for logits_i in pred_objectness_logits:
+        Hi_Wi_A = logits_i.shape[1]
+        if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
+            num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
+        else:
+            num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
+
+        topk_scores_i, topk_idx_i = logits_i.topk(num_proposals_i, dim=1)
+        topk_scores.append(topk_scores_i)
+        topk_idx.append(topk_idx_i)
+    return topk_scores, topk_idx
+
+
 def find_top_rpn_proposals(
     proposals: List[torch.Tensor],
     pred_objectness_logits: List[torch.Tensor],
@@ -28,6 +61,7 @@ def find_top_rpn_proposals(
     post_nms_topk: int,
     min_box_size: float,
     training: bool,
+    topk_done: bool = False,
 ):
     """
     For each feature map, select the `pre_nms_topk` highest scoring proposals,
@@ -51,6 +85,11 @@ def find_top_rpn_proposals(
         training (bool): True if proposals are to be used in training, otherwise False.
             This arg exists only to support a legacy bug; look for the "NB: Legacy bug ..."
             comment.
+        topk_done (bool): True if the per-level, per-image pre-NMS top-k has
+            already been applied to `proposals` and `pred_objectness_logits`,
+            i.e. both are already ordered by the top-k selection and only contain
+            the selected rows. In this case no additional top-k selection is
+            performed.
 
     Returns:
         list[Instances]: list of N Instances. The i-th Instances
@@ -70,16 +109,20 @@ def find_top_rpn_proposals(
     level_ids = []  # #lvl Tensor, each of shape (topk,)
     batch_idx = move_device_like(torch.arange(num_images, device=device), proposals[0])
     for level_id, (proposals_i, logits_i) in enumerate(zip(proposals, pred_objectness_logits)):
-        Hi_Wi_A = logits_i.shape[1]
-        if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
-            num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
+        if topk_done:
+            num_proposals_i = logits_i.shape[1]
+            topk_scores_i, topk_proposals_i = logits_i, proposals_i
         else:
-            num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
+            Hi_Wi_A = logits_i.shape[1]
+            if isinstance(Hi_Wi_A, torch.Tensor):  # it's a tensor in tracing
+                num_proposals_i = torch.clamp(Hi_Wi_A, max=pre_nms_topk)
+            else:
+                num_proposals_i = min(Hi_Wi_A, pre_nms_topk)
 
-        topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
+            topk_scores_i, topk_idx = logits_i.topk(num_proposals_i, dim=1)
 
-        # each is N x topk
-        topk_proposals_i = proposals_i[batch_idx[:, None], topk_idx]  # N x topk x 4
+            # each is N x topk
+            topk_proposals_i = proposals_i[batch_idx[:, None], topk_idx]  # N x topk x 4
 
         topk_proposals.append(topk_proposals_i)
         topk_scores.append(topk_scores_i)
