@@ -4,6 +4,12 @@ inputs:
     description: torch version to install
   torchvision-version:
     description: torch vision version to install, version number or "master"
+  grpcio-version:
+    description: grpcio version to install
+  arch:
+    description: 'target CPU architecture: "x86_64" or "arm64"'
+    required: false
+    default: "x86_64"
   pytorch-index:
     description: where to install torch from
     required: false
@@ -18,7 +24,15 @@ runs:
     run: |
       pip install certifi --ignore-installed  # required on windows to workaround some cert issue
       pip install numpy cython  # required on windows before pycocotools
-      pip install opencv-python-headless pytest-xdist pycocotools tensorboard onnx
+      if [ "${{inputs.arch}}" = "arm64" ]; then
+        PY_TAG=$(python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')")
+        pip install "https://github.com/khmyznikov/PyEnv-WoA-State/releases/download/grpcio-${{inputs.grpcio-version}}-win_arm64/grpcio-${{inputs.grpcio-version}}.dev0-${PY_TAG}-${PY_TAG}-win_arm64.whl"
+        FLAG="--index-url"
+      elif [ "${{inputs.arch}}" = "x86_64" ]; then
+        pip install opencv-python-headless
+        FLAG="-f"
+      fi
+      pip install pytest-xdist pycocotools tensorboard onnx
       pip install -U git+https://github.com/facebookresearch/iopath
       pip install -U git+https://github.com/facebookresearch/fvcore
-      pip install torch==${{inputs.torch-version}} torchvision==${{inputs.torchvision-version}} -f ${{inputs.pytorch-index}}
+      pip install torch==${{inputs.torch-version}} torchvision==${{inputs.torchvision-version}} $FLAG ${{inputs.pytorch-index}}

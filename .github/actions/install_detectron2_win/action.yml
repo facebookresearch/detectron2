@@ -1,8 +1,14 @@
 name: "Install Detectron2"
+inputs:
+  arch:
+    description: 'target CPU architecture: "x86_64" or "arm64"'
+    required: false
+    default: "x86_64"
 runs:
   using: composite
   steps:
-  - name: Install Detectron2
+  - name: Install Detectron2 - x86_64
+    if: inputs.arch == 'x86_64'
     shell: bash
     run: |
       # Remove first, in case it's in the CI cache
@@ -13,3 +19,14 @@ runs:
 
       # TODO: this command fails because windows does not have wget
       # ./datasets/prepare_for_tests.sh
+      
+  - name: Install Detectron2 - ARM64
+    if: inputs.arch == 'arm64'
+    shell: cmd
+    run: |
+      pip uninstall -y detectron2
+      call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
+      set DISTUTILS_USE_SDK=1
+      pip install --progress-bar off -e .[all] --no-build-isolation --only-binary=shapely ^
+      --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple/
+      python -m detectron2.utils.collect_env
