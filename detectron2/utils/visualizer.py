@@ -713,8 +713,13 @@ class Visualizer:
                 self.draw_box(boxes[i], edge_color=color)
 
             if masks is not None:
-                for segment in masks[i].polygons:
-                    self.draw_polygon(segment.reshape(-1, 2), color, alpha=alpha)
+                if masks[i].has_holes:
+                    self.draw_soft_mask(
+                        (masks[i].mask > 0).astype("float32"), color=color, alpha=alpha
+                    )
+                else:
+                    for segment in masks[i].polygons:
+                        self.draw_polygon(segment.reshape(-1, 2), color, alpha=alpha)
 
             if labels is not None:
                 # first get a box
