@@ -1,5 +1,8 @@
 # DensePose in Detectron2
 
+<a href="https://console.tiyaro.ai/explore?q=densepose&pub=detectron2"> <img src="https://tiyaro-public-docs.s3.us-west-2.amazonaws.com/assets/try_on_tiyaro_badge.svg"></a> 
+
+
 DensePose aims at learning and establishing dense correspondences between image pixels
 and 3D object geometry for deformable objects, such as humans or animals.
 In this repository, we provide the code to train and evaluate DensePose R-CNN and
@@ -38,6 +41,10 @@ of the method, links to trained models along with their performance evaluation i
 # Quick Start
 
 See [ Getting Started ](doc/GETTING_STARTED.md)
+
+# Live Demos 
+
+* [Tiyaro.ai](https://console.tiyaro.ai/explore?q=densepose&pub=detectron2)
 
 # Model Zoo
 
