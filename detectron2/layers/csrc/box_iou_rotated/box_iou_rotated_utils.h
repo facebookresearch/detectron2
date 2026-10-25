@@ -93,7 +93,7 @@ HOST_DEVICE_INLINE int get_intersection_points(
   // while it can cause drastic difference if we miss an intersection/vertex.
   // Therefore, we add an epsilon to relax the comparisons between
   // the float point numbers that decide the intersection points.
-  double EPS = 1e-5;
+  T EPS = 1e-5;
 
   // Line test - test all line combos for intersection
   int num = 0; // number of intersections
