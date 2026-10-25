@@ -2,7 +2,7 @@
 import torch
 from torch.nn import functional as F
 
-from detectron2.structures import Instances, ROIMasks
+from detectron2.structures import Boxes, Instances, ROIMasks
 
 
 # perhaps should rename to "resize_instance"
@@ -43,6 +43,11 @@ def detector_postprocess(
         output_height_tmp / results.image_size[0],
     )
     results = Instances(new_size, **results.get_fields())
+    # .get_fields() returns Tensor, need to cast it back to Boxes.
+    if results.has("pred_boxes") and isinstance(results.pred_boxes, torch.Tensor):
+        results.pred_boxes = Boxes(results.pred_boxes)
+    if results.has("proposal_boxes") and isinstance(results.proposal_boxes, torch.Tensor):
+        results.proposal_boxes = Boxes(results.proposal_boxes)
 
     if results.has("pred_boxes"):
         output_boxes = results.pred_boxes
