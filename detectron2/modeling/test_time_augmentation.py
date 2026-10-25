@@ -197,8 +197,8 @@ class GeneralizedRCNNWithTTA(nn.Module):
                 image = torch.from_numpy(np.ascontiguousarray(image.transpose(2, 0, 1)))  # CHW
                 ret["image"] = image
             if "height" not in ret and "width" not in ret:
-                ret["height"] = image.shape[1]
-                ret["width"] = image.shape[2]
+                ret["height"] = ret["image"].shape[1]
+                ret["width"] = ret["image"].shape[2]
             return ret
 
         return [self._inference_one_image(_maybe_read_image(x)) for x in batched_inputs]
