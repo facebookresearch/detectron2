@@ -155,7 +155,12 @@ class MaskRCNNE2ETest(InstanceModelE2ETest, unittest.TestCase):
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_autocast(self):
-        from torch.cuda.amp import autocast
+        if torch.__version__ < "2.4.0":
+            from torch.cuda.amp import autocast
+        else:
+            from torch.amp import autocast
+            from functools import partial
+            autocast = partial(autocast, device_type="cuda")
 
         inputs = [{"image": torch.rand(3, 100, 100)}]
         self.model.eval()
@@ -195,7 +200,12 @@ class RetinaNetE2ETest(InstanceModelE2ETest, unittest.TestCase):
 
     @unittest.skipIf(not torch.cuda.is_available(), "CUDA not available")
     def test_autocast(self):
-        from torch.cuda.amp import autocast
+        if torch.__version__ < "2.4.0":
+            from torch.cuda.amp import autocast
+        else:
+            from torch.amp import autocast
+            from functools import partial
+            autocast = partial(autocast, device_type="cuda")
 
         inputs = [{"image": torch.rand(3, 100, 100)}]
         self.model.eval()
