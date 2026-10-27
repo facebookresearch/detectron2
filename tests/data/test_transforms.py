@@ -266,3 +266,19 @@ class TestTransforms(unittest.TestCase):
             tfm = T.ExtentTransform(src_rect, out_shape[:2])
             out_img = tfm.apply_image(in_img)
             self.assertTrue(out_img.shape == out_shape)
+
+    def test_albumentations_transform(self):
+        import albumentations as A
+
+        rand_img = np.random.random((100, 100, 3)) * 255
+        rand_img = rand_img.astype("uint8")
+        box = np.array([[50, 90, 40, 20]], dtype=np.float64)
+        mask = np.random.random((100, 100)) > 0.5
+        inputs = T.AugInput(rand_img, boxes=box, sem_seg=mask)
+
+        tfm = T.Albumentations(A.NoOp())
+        tfm(inputs)
+
+        self.assertTrue(np.array_equal(rand_img, inputs.image))
+        self.assertTrue(np.array_equal(box, inputs.boxes))
+        self.assertTrue(np.array_equal(mask, inputs.sem_seg))

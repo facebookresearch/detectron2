@@ -23,7 +23,7 @@ from PIL import Image
 from detectron2.structures import Boxes, pairwise_iou
 
 from .augmentation import Augmentation, _transform_to_aug
-from .transform import ExtentTransform, ResizeTransform, RotationTransform
+from .transform import AlbumentationsTransform, ExtentTransform, ResizeTransform, RotationTransform
 
 __all__ = [
     "FixedSizeCrop",
@@ -42,6 +42,7 @@ __all__ = [
     "RandomCrop_CategoryAreaConstraint",
     "RandomResize",
     "MinIoURandomCrop",
+    "Albumentations",
 ]
 
 
@@ -734,3 +735,38 @@ class MinIoURandomCrop(Augmentation):
                     if not mask.any():
                         continue
                 return CropTransform(int(left), int(top), int(new_w), int(new_h))
+
+
+class Albumentations(Augmentation):
+    """
+    Wrap an augmentation from the albumentations library:
+    https://github.com/albumentations-team/albumentations/.
+    Image, Bounding Box and Segmentation are supported.
+    """
+
+    def __init__(self, aug):
+        """
+        Args:
+            aug (albumentations.BasicTransform): albumentations transform
+        """
+        self._aug = aug
+
+    def get_transform(self, image):
+        do = self._rand_range() < self._aug.p
+        if do:
+            params = self.prepare_params(image)
+            h, w = image.shape[:2]
+            return AlbumentationsTransform(self._aug, params, h, w)
+        else:
+            return NoOpTransform()
+
+    def prepare_params(self, image):
+        params = self._aug.get_params()
+        if self._aug.targets_as_params:
+            targets_as_params = {"image": image}
+            params_dependent_on_targets = self._aug.get_params_dependent_on_targets(
+                targets_as_params
+            )
+            params.update(params_dependent_on_targets)
+        params = self._aug.update_params(params, **{"image": image})
+        return params
