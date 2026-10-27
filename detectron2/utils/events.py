@@ -3,13 +3,18 @@ import datetime
 import json
 import logging
 import os
+import sys
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-from functools import cached_property
 from typing import Optional
 import torch
 from fvcore.common.history_buffer import HistoryBuffer
+
+if sys.version_info >= (3, 8):
+    from functools import cached_property
+else:
+    from backports.cached_property import cached_property
 
 from detectron2.utils.file_io import PathManager
 
