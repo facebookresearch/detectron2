@@ -75,6 +75,8 @@ model = L(GeneralizedRCNN)(
             test_score_thresh=0.05,
             box2box_transform=L(Box2BoxTransform)(weights=(10, 10, 5, 5)),
             num_classes="${..num_classes}",
+            test_topk_per_image = 2000,
+            use_focal_ce = False  
         ),
         mask_in_features=["p2", "p3", "p4", "p5"],
         mask_pooler=L(ROIPooler)(
