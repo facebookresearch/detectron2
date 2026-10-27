@@ -12,6 +12,8 @@ from detectron2.modeling.box_regression import Box2BoxTransform, _dense_box_regr
 from detectron2.structures import Boxes, Instances
 from detectron2.utils.events import get_event_storage
 
+mode = 1 #0:default 1:focal
+
 __all__ = ["fast_rcnn_inference", "FastRCNNOutputLayers"]
 
 
@@ -182,6 +184,7 @@ class FastRCNNOutputLayers(nn.Module):
     @configurable
     def __init__(
         self,
+        cfg,
         input_shape: ShapeSpec,
         *,
         box2box_transform,
@@ -228,6 +231,7 @@ class FastRCNNOutputLayers(nn.Module):
             fed_loss_num_classes (int): number of federated classes to keep in total
         """
         super().__init__()
+        self.cfg = cfg #設定の上書き
         if isinstance(input_shape, int):  # some backward compatibility
             input_shape = ShapeSpec(channels=input_shape)
         self.num_classes = num_classes
@@ -316,7 +320,7 @@ class FastRCNNOutputLayers(nn.Module):
             Dict[str, Tensor]: dict of losses
         """
         scores, proposal_deltas = predictions
-
+        loss_type = self.cfg.MODEL.ROI_HEADS.LOSS_TYPE    # 損失関数の選択
         # parse classification outputs
         gt_classes = (
             cat([p.gt_classes for p in proposals], dim=0) if len(proposals) else torch.empty(0)
@@ -338,10 +342,30 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             proposal_boxes = gt_boxes = torch.empty((0, 4), device=proposal_deltas.device)
 
-        if self.use_sigmoid_ce:
+        #書き換えここから
+        loss_type = self.cfg.MODEL.ROI_HEADS.LOSS_TYPE
+        if loss_type == "focal":
+            # Focal Loss
+            gamma = self.cfg.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA
+            alpha = self.cfg.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA
+            loss_cls = focal_loss(pred_class_logits, gt_classes, gamma, alpha)
+        elif loss_type == "bce":
+            # BCE Loss
+            gt_one_hot = F.one_hot(gt_classes, num_classes=pred_class_logits.size(1)).float()
+            loss_cls = F.binary_cross_entropy_with_logits(pred_class_logits, gt_one_hot, reduction="mean")
+        elif loss_type == 'dummy':
+            # dummy loss
+            print("ダミー損失関数を使用します")  # 確認用出力
+            dummy_loss = torch.tensor(100.0, device=predictions[0].device, requires_grad=True)
+            return {
+                "loss_cls": dummy_loss,
+                "loss_box_reg": dummy_loss
+            }
+        elif self.use_sigmoid_ce:
             loss_cls = self.sigmoid_cross_entropy_loss(scores, gt_classes)
         else:
             loss_cls = cross_entropy(scores, gt_classes, reduction="mean")
+        #ここまで
 
         losses = {
             "loss_cls": loss_cls,
@@ -349,7 +373,11 @@ class FastRCNNOutputLayers(nn.Module):
                 proposal_boxes, gt_boxes, proposal_deltas, gt_classes
             ),
         }
-        return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
+        if isinstance(self.loss_weight, dict):
+            return {k: v * self.loss_weight.get(k, 1.0) for k, v in losses.items()}
+        else:
+            # loss_weight が関数の場合などの処理
+            return {k: v * self.loss_weight(k) for k, v in losses.items()}
 
     # Implementation from https://github.com/xingyizhou/CenterNet2/blob/master/projects/CenterNet2/centernet/modeling/roi_heads/fed_loss.py  # noqa
     # with slight modifications
