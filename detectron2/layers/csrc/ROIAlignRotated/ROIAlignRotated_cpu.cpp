@@ -1,5 +1,7 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 #include <ATen/TensorUtils.h>
+
+#include <cmath>
 #include "ROIAlignRotated.h"
 
 // Note: this implementation originates from the Caffe2 ROIAlignRotated Op
@@ -230,8 +232,8 @@ void ROIAlignRotatedForward(
     T roi_width = current_roi[3] * spatial_scale;
     T roi_height = current_roi[4] * spatial_scale;
     T theta = current_roi[5] * M_PI / 180.0;
-    T cos_theta = cos(theta);
-    T sin_theta = sin(theta);
+    T cos_theta = std::cos(theta);
+    T sin_theta = std::sin(theta);
 
     AT_ASSERTM(
         roi_width >= 0 && roi_height >= 0,
@@ -243,9 +245,10 @@ void ROIAlignRotatedForward(
     // We use roi_bin_grid to sample the grid and mimic integral
     int roi_bin_grid_h = (sampling_ratio > 0)
         ? sampling_ratio
-        : ceil(roi_height / pooled_height); // e.g., = 2
-    int roi_bin_grid_w =
-        (sampling_ratio > 0) ? sampling_ratio : ceil(roi_width / pooled_width);
+        : std::ceil(roi_height / pooled_height); // e.g., = 2
+    int roi_bin_grid_w = (sampling_ratio > 0)
+        ? sampling_ratio
+        : std::ceil(roi_width / pooled_width);
 
     // We do average (integral) pooling inside a bin
     const T count = std::max(roi_bin_grid_h * roi_bin_grid_w, 1); // e.g. = 4
@@ -346,8 +349,8 @@ void ROIAlignRotatedBackward(
     T roi_width = current_roi[3] * spatial_scale;
     T roi_height = current_roi[4] * spatial_scale;
     T theta = current_roi[5] * M_PI / 180.0;
-    T cos_theta = cos(theta);
-    T sin_theta = sin(theta);
+    T cos_theta = std::cos(theta);
+    T sin_theta = std::sin(theta);
 
     AT_ASSERTM(
         roi_width >= 0 && roi_height >= 0,
@@ -367,9 +370,10 @@ void ROIAlignRotatedBackward(
     // We use roi_bin_grid to sample the grid and mimic integral
     int roi_bin_grid_h = (sampling_ratio > 0)
         ? sampling_ratio
-        : ceil(roi_height / pooled_height); // e.g., = 2
-    int roi_bin_grid_w =
-        (sampling_ratio > 0) ? sampling_ratio : ceil(roi_width / pooled_width);
+        : std::ceil(roi_height / pooled_height); // e.g., = 2
+    int roi_bin_grid_w = (sampling_ratio > 0)
+        ? sampling_ratio
+        : std::ceil(roi_width / pooled_width);
 
     // roi_start_h and roi_start_w are computed wrt the center of RoI (x, y).
     // Appropriate translation needs to be applied after.
