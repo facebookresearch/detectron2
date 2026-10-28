@@ -123,6 +123,9 @@ def setup(args):
 
 def main(args):
     cfg = setup(args)
+    
+    logger = logging.getLogger(__name__)
+    logger.info("Command Line Args: %s", args)
 
     if args.eval_only:
         model = Trainer.build_model(cfg)
@@ -152,7 +155,6 @@ def main(args):
 
 def invoke_main() -> None:
     args = default_argument_parser().parse_args()
-    print("Command Line Args:", args)
     launch(
         main,
         args.num_gpus,

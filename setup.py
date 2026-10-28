@@ -164,7 +164,6 @@ setup(
         # In general, avoid adding dependencies that are not pure-python because they are not
         # guaranteed to be installable by `pip install` on all platforms.
         "Pillow>=7.1",  # or use pillow-simd for better performance
-        "matplotlib",  # TODO move it to optional after we add opencv visualization
         "pycocotools>=2.0.2",  # corresponds to https://github.com/ppwwyyxx/cocoapi
         # Do not add opencv here. Just like pytorch, user should install
         # opencv themselves, preferrably by OS's package manager, or by
@@ -205,6 +204,8 @@ setup(
             "psutil",
             "panopticapi @ https://github.com/cocodataset/panopticapi/archive/master.zip",
         ],
+        # visualization dependencies
+        "viz": ["matplotlib"],
         # dev dependencies. Install them by `pip install 'detectron2[dev]'`
         "dev": [
             "flake8==3.8.1",
