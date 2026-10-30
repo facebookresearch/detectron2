@@ -5,7 +5,7 @@ import numpy as np
 import unittest
 import torch
 
-from detectron2.structures import Boxes, BoxMode, pairwise_ioa, pairwise_iou
+from detectron2.structures import Boxes, BoxMode, matched_pairwise_iou, pairwise_ioa, pairwise_iou
 from detectron2.utils.testing import reload_script_model
 
 
@@ -176,6 +176,15 @@ class TestBoxIOU(unittest.TestCase):
 
         ious = pairwise_iou(Boxes(boxes1), Boxes(boxes2))
         self.assertTrue(torch.allclose(ious, expected_ious))
+
+    def test_matched_pairwise_iou_of_an_empty_box_is_zero(self):
+        empty = Boxes(torch.tensor([[0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0]]))
+        iou = matched_pairwise_iou(empty, empty)
+        self.assertTrue(torch.equal(iou, torch.zeros(2)))
+        box = Boxes(torch.tensor([[0.0, 0.0, 2.0, 2.0]]))
+        self.assertTrue(torch.equal(matched_pairwise_iou(box, box), torch.ones(1)))
+        other = Boxes(torch.tensor([[3.0, 3.0, 4.0, 4.0]]))
+        self.assertTrue(torch.equal(matched_pairwise_iou(box, other), torch.zeros(1)))
 
     def test_pairwise_ioa(self):
         boxes1, boxes2 = self.create_boxes()
