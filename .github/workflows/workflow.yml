@@ -237,3 +237,45 @@ jobs:
 
       - name: Run Unit Tests
         uses: ./.github/actions/run_unittests_win
+
+  windows_arm64_cpu_tests:
+    runs-on: windows-11-arm
+    # run on PRs, or commits to facebookresearch (not internal)
+    if: ${{ github.repository_owner == 'facebookresearch' || github.event_name == 'pull_request' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        torch: ["2.14.0"]
+        include:
+          - torch: "2.14.0"
+            torchvision: "0.29.0a0+cpu"
+            grpcio: "1.84.0"
+    env:
+      PYTORCH_INDEX: "https://download.pytorch.org/whl/cpu"
+      DETECTRON2_DATASETS: ~/.torch/datasets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+
+      - name: Install Dependencies
+        uses: ./.github/actions/install_windows_dep
+        if: steps.load-cache.outputs.cache-hit != 'true'
+        with:
+          torch-version: ${{matrix.torch}}
+          torchvision-version: ${{matrix.torchvision}}
+          grpcio-version: ${{matrix.grpcio}}
+          pytorch-index: $PYTORCH_INDEX
+          arch: arm64
+
+      - name: Install Detectron2
+        uses: ./.github/actions/install_detectron2_win
+        with:
+          arch: arm64
+
+      - name: Run Unit Tests
+        uses: ./.github/actions/run_unittests_win
