@@ -155,6 +155,42 @@ class TestBBoxIOUTracker(unittest.TestCase):
         self.assertTrue(curr_instances.ID[0] == 1)
         self.assertTrue(curr_instances.ID[1] == 0)
 
+    def test_update_keeps_keypoints(self):
+        # instances carried over from a frame without detections must keep their
+        # keypoints as floats: the coordinates are not integers and the third value
+        # is a confidence score.
+        cfg = {
+            "_target_": "detectron2.tracking.bbox_iou_tracker.BBoxIOUTracker",
+            "video_height": self._img_size[0],
+            "video_width": self._img_size[1],
+            "max_num_instances": self._max_num_instances,
+            "max_lost_frame_count": 5,
+            "min_box_rel_dim": self._min_box_rel_dim,
+            "min_instance_period": self._min_instance_period,
+            "track_iou_threshold": self._track_iou_threshold,
+        }
+        tracker = instantiate(cfg)
+        boxes = np.array([[101, 101, 200, 200]]).astype(np.float32)
+        keypoints = torch.tensor([[[10.5, 20.7, 0.93], [30.2, 40.9, 0.81]]])
+
+        def make_instances(boxes, keypoints):
+            return Instances(
+                image_size=torch.IntTensor(self._img_size),
+                pred_boxes=Boxes(torch.FloatTensor(boxes)),
+                pred_classes=torch.IntTensor([1] * len(boxes)),
+                scores=torch.FloatTensor([0.9] * len(boxes)),
+                pred_keypoints=keypoints,
+            )
+
+        # after two frames the instance has ID_period > min_instance_period, which is
+        # the condition for keeping it when it is not matched in the next frame
+        tracker.update(make_instances(boxes, keypoints))
+        tracker.update(make_instances(boxes, keypoints))
+        tracked = tracker.update(make_instances(np.zeros((0, 4)).astype(np.float32), keypoints[:0]))
+        self.assertTrue(len(tracked) == 1)
+        self.assertEqual(tracked.pred_keypoints.dtype, torch.float32)
+        self.assertTrue(torch.allclose(tracked.pred_keypoints, keypoints))
+
 
 if __name__ == "__main__":
     unittest.main()
