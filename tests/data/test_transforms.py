@@ -257,6 +257,15 @@ class TestTransforms(unittest.TestCase):
         input = torch.randn(3, 8, 100)
         self.assertTrue(torch.allclose(f(input), script_f(input)))
 
+    def test_extent_transform_segmentation_nearest(self):
+        segmentation = np.array([[0, 4], [8, 12]], dtype=np.uint8)
+        for shape in [(2, 2), (2, 2, 1)]:
+            with self.subTest(shape=shape):
+                mask = segmentation.reshape(shape)
+                expected = mask.repeat(2, axis=0).repeat(2, axis=1)
+                transform = T.ExtentTransform((0, 0, 2, 2), (4, 4))
+                np.testing.assert_array_equal(transform.apply_segmentation(mask), expected)
+
     def test_extent_transform(self):
         input_shapes = [(100, 100), (100, 100, 1), (100, 100, 3)]
         src_rect = (20, 20, 80, 80)
