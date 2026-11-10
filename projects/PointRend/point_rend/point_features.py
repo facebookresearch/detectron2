@@ -166,6 +166,10 @@ def point_sample_fine_grained_features(features_list, feature_scales, boxes, poi
     num_boxes = [b.tensor.size(0) for b in boxes]
 
     point_coords_wrt_image = get_point_coords_wrt_image(cat_boxes.tensor, point_coords)
+    if len(cat_boxes) == 0:
+        channels = sum(feature_map.shape[1] for feature_map in features_list)
+        return point_coords.new_empty((0, channels, point_coords.shape[1])), point_coords_wrt_image
+
     split_point_coords_wrt_image = torch.split(point_coords_wrt_image, num_boxes)
 
     point_features = []
