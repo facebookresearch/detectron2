@@ -10,6 +10,7 @@ import torch
 
 from detectron2.data import MetadataCatalog
 from detectron2.structures import BoxMode, Instances, RotatedBoxes
+from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
 
@@ -212,6 +213,26 @@ class TestVisualizer(unittest.TestCase):
                     o = o.get_image().astype("float32")
                     # red color is drawn on the image
                 self.assertTrue(o[:, :, 0].sum() > 0)
+
+    def test_video_sem_seg_area_threshold(self):
+        name = "__test_video_sem_seg_area_threshold__"
+        metadata = MetadataCatalog.get(name).set(
+            stuff_classes=["foreground"], stuff_colors=[[255, 0, 0]]
+        )
+        self.addCleanup(MetadataCatalog.remove, name)
+        image = np.zeros((100, 100, 3), dtype=np.uint8)
+        segmentation = np.full((100, 100), 255, dtype=np.uint8)
+        segmentation[10:30, 10:30] = 0
+        visualizer = VideoVisualizer(metadata)
+        for threshold in [None, 0, 300, 500]:
+            with self.subTest(threshold=threshold):
+                output = visualizer.draw_sem_seg(
+                    image, segmentation, area_threshold=threshold
+                ).get_image()
+                if threshold == 500:
+                    np.testing.assert_array_equal(output, image)
+                else:
+                    self.assertGreater(output[:, :, 0].sum(), 0)
 
     def test_draw_soft_mask(self):
         img = np.random.rand(100, 100, 3) * 255
