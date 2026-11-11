@@ -64,7 +64,7 @@ class ExtentTransform(Transform):
             size=(w, h),
             method=Image.EXTENT,
             data=self.src_rect,
-            resample=interp if interp else self.interp,
+            resample=interp if interp is not None else self.interp,
             fill=self.fill,
         )
         ret = np.asarray(pil_image)
