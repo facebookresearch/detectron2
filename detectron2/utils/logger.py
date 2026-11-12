@@ -103,7 +103,11 @@ def setup_logger(
             filename = os.path.join(output, "log.txt")
         if distributed_rank > 0:
             filename = filename + ".rank{}".format(distributed_rank)
-        PathManager.mkdirs(os.path.dirname(filename))
+        # A bare filename such as "train.log" has an empty dirname; mkdirs("")
+        # raises FileNotFoundError after the log file would otherwise be opened.
+        dirname = os.path.dirname(filename)
+        if dirname:
+            PathManager.mkdirs(dirname)
 
         fh = logging.StreamHandler(_cached_log_stream(filename))
         fh.setLevel(logging.DEBUG)
