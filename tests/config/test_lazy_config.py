@@ -1,11 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import os
-import unittest
 import tempfile
+import unittest
 from itertools import count
-
-from detectron2.config import LazyConfig, LazyCall as L
+import yaml
 from omegaconf import DictConfig
+
+from detectron2.config import LazyCall as L
+from detectron2.config import LazyConfig
 
 
 class TestLazyPythonConfig(unittest.TestCase):
@@ -96,3 +98,41 @@ cfg.list = ["a", 1, "b", 3.2]
         file = os.path.join(self.curr_dir, "dir1", "load_rel.py")
         cfg = LazyConfig.load(file)
         self.assertIn("x", cfg)
+
+
+class TestLazyYamlConfig(unittest.TestCase):
+    def test_yaml_load_plain(self):
+        with tempfile.TemporaryDirectory(prefix="detectron2") as d:
+            fname = os.path.join(d, "config.yaml")
+            with open(fname, "w") as f:
+                f.write('model:\n  name: "resnet"\n  layers: 50\ntrain:\n  lr: 0.01\n')
+            cfg = LazyConfig.load(fname)
+        self.assertEqual(cfg.model.name, "resnet")
+        self.assertEqual(cfg.model.layers, 50)
+        self.assertEqual(cfg.train.lr, 0.01)
+
+    def test_yaml_load_rejects_python_tags(self):
+        # A crafted yaml config must not execute code at load time:
+        # yaml.safe_load rejects Python-specific tags by default.
+        with tempfile.TemporaryDirectory(prefix="detectron2") as d:
+            marker = os.path.join(d, "marker")
+            fname = os.path.join(d, "config.yaml")
+            with open(fname, "w") as f:
+                f.write('model:\n  name: "resnet"\n')
+                f.write('pwn: !!python/object/apply:os.system ["touch {}"]\n'.format(marker))
+            with self.assertRaises(yaml.constructor.ConstructorError):
+                LazyConfig.load(fname)
+            self.assertFalse(os.path.exists(marker))
+
+    def test_yaml_load_allow_unsafe(self):
+        # The explicit opt-in preserves the old behavior for trusted configs
+        # that need Python-specific tags.
+        with tempfile.TemporaryDirectory(prefix="detectron2") as d:
+            marker = os.path.join(d, "marker")
+            fname = os.path.join(d, "config.yaml")
+            with open(fname, "w") as f:
+                f.write('model:\n  name: "resnet"\n')
+                f.write('pwn: !!python/object/apply:os.system ["touch {}"]\n'.format(marker))
+            cfg = LazyConfig.load(fname, allow_unsafe=True)
+            self.assertEqual(cfg.model.name, "resnet")
+            self.assertTrue(os.path.exists(marker))
