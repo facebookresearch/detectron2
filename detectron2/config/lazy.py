@@ -178,23 +178,35 @@ class LazyConfig:
     """
 
     @staticmethod
-    def load_rel(filename: str, keys: Union[None, str, Tuple[str, ...]] = None):
+    def load_rel(
+        filename: str,
+        keys: Union[None, str, Tuple[str, ...]] = None,
+        allow_unsafe: bool = False,
+    ):
         """
         Similar to :meth:`load()`, but load path relative to the caller's
         source file.
 
         This has the same functionality as a relative import, except that this method
         accepts filename as a string, so more characters are allowed in the filename.
+
+        Args:
+            allow_unsafe: whether to allow loading a yaml config file with
+                ``yaml.unsafe_load``. See :meth:`load`.
         """
         caller_frame = inspect.stack()[1]
         caller_fname = caller_frame[0].f_code.co_filename
         assert caller_fname != "<string>", "load_rel Unable to find caller"
         caller_dir = os.path.dirname(caller_fname)
         filename = os.path.join(caller_dir, filename)
-        return LazyConfig.load(filename, keys)
+        return LazyConfig.load(filename, keys, allow_unsafe)
 
     @staticmethod
-    def load(filename: str, keys: Union[None, str, Tuple[str, ...]] = None):
+    def load(
+        filename: str,
+        keys: Union[None, str, Tuple[str, ...]] = None,
+        allow_unsafe: bool = False,
+    ):
         """
         Load a config file.
 
@@ -202,6 +214,14 @@ class LazyConfig:
             filename: absolute path or relative path w.r.t. the current working directory
             keys: keys to load and return. If not given, return all keys
                 (whose values are config objects) in a dict.
+            allow_unsafe: whether to allow loading a yaml config file with
+                ``yaml.unsafe_load``. By default, yaml config files are loaded with
+                ``yaml.safe_load``, so a config file containing Python-specific
+                tags (e.g. ``!!python/object``) is rejected instead of executing
+                arbitrary code at load time. Pass ``allow_unsafe=True`` only when
+                loading a config file you trust and that needs Python-specific
+                tags. This mirrors
+                ``fvcore.common.config.CfgNode.load_yaml_with_base``.
         """
         has_keys = keys is not None
         filename = filename.replace("/./", "/")  # redundant
@@ -226,7 +246,18 @@ class LazyConfig:
             ret = module_namespace
         else:
             with PathManager.open(filename) as f:
-                obj = yaml.unsafe_load(f)
+                content = f.read()
+            try:
+                obj = yaml.safe_load(content)
+            except yaml.constructor.ConstructorError:
+                if not allow_unsafe:
+                    raise
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    "Loading config {} with yaml.unsafe_load. Your machine may "
+                    "be at risk if the file contains malicious content.".format(filename)
+                )
+                obj = yaml.unsafe_load(content)
             ret = OmegaConf.create(obj, flags={"allow_objects": True})
 
         if has_keys:
@@ -293,7 +324,8 @@ class LazyConfig:
                 f.write(dumped)
 
             try:
-                _ = yaml.unsafe_load(dumped)  # test that it is loadable
+                # test that it is loadable with the default (safe) yaml loader
+                _ = yaml.safe_load(dumped)
             except Exception:
                 logger.warning(
                     "The config contains objects that cannot serialize to a valid yaml. "
