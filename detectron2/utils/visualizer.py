@@ -116,13 +116,13 @@ class GenericMask:
                 self._has_holes = False  # if original format is polygon, does not have holes
         return self._has_holes
 
-    def mask_to_polygons(self, mask):
+    def mask_to_polygons(self, mask, approximation_mode=cv2.CHAIN_APPROX_NONE):
         # cv2.RETR_CCOMP flag retrieves all the contours and arranges them to a 2-level
         # hierarchy. External contours (boundary) of the object are placed in hierarchy-1.
         # Internal contours (holes) are placed in hierarchy-2.
         # cv2.CHAIN_APPROX_NONE flag gets vertices of polygons from contours.
         mask = np.ascontiguousarray(mask)  # some versions of cv2 does not support incontiguous arr
-        res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+        res = cv2.findContours(mask.astype("uint8"), cv2.RETR_CCOMP, approximation_mode)
         hierarchy = res[-1]
         if hierarchy is None:  # empty mask
             return [], False
