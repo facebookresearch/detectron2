@@ -90,7 +90,7 @@ class DensePoseOutputsVertexVisualizer:
                 self.device,
             )
             embed_map = get_xyz_vertex_embedding(mesh_name, self.device)
-            vis = (embed_map[closest_vertices].clip(0, 1) * 255.0).cpu().numpy()
+            vis = (embed_map[closest_vertices.cpu()].clip(0, 1) * 255.0).cpu().numpy()
             mask_numpy = mask.cpu().numpy().astype(dtype=np.uint8)
             image_bgr = self.mask_visualizer.visualize(image_bgr, mask_numpy, vis, [x, y, w, h])
 
