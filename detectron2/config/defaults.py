@@ -654,3 +654,7 @@ _C.VIS_PERIOD = 0
 # Do not commit any configs into it.
 _C.GLOBAL = CN()
 _C.GLOBAL.HACK = 1.0
+
+# Period (measured in iterations) for writing logs during training
+_C.TRAINER = CN()
+_C.TRAINER.LOG_PERIOD = 20
