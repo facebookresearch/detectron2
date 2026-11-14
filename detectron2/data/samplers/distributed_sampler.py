@@ -168,7 +168,7 @@ class RepeatFactorTrainingSampler(Sampler):
         Args:
             dataset_dicts (list[dict]): annotations in Detectron2 dataset format.
             repeat_thresh (float): frequency threshold below which data is repeated.
-                If the frequency is half of `repeat_thresh`, the image will be
+                If the frequency is quarter of `repeat_thresh`, the image will be
                 repeated twice.
             sqrt (bool): if True, apply :func:`math.sqrt` to the repeat factor.
 
