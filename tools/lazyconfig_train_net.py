@@ -73,7 +73,9 @@ def do_train(args, cfg):
     train_loader = instantiate(cfg.dataloader.train)
 
     model = create_ddp_model(model, **cfg.train.ddp)
-    trainer = (AMPTrainer if cfg.train.amp.enabled else SimpleTrainer)(model, train_loader, optim)
+    trainer = (AMPTrainer if cfg.train.amp.enabled else SimpleTrainer)(
+        model, train_loader, optim, cfg.MODEL.DEVICE
+    )
     checkpointer = DetectionCheckpointer(
         model,
         cfg.train.output_dir,
@@ -129,7 +131,7 @@ def invoke_main() -> None:
     args = default_argument_parser().parse_args()
     launch(
         main,
-        args.num_gpus,
+        args.num_accelerators,
         num_machines=args.num_machines,
         machine_rank=args.machine_rank,
         dist_url=args.dist_url,

@@ -120,5 +120,5 @@ def setup(config_file):
     Setup the configuration from the specified file (relative to the base configuration directory)
     """
     cfg = get_model_config(config_file)
-    cfg.freeze()
     default_setup(cfg, {})
+    cfg.freeze()
