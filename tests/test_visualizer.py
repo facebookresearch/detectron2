@@ -112,6 +112,19 @@ class TestVisualizer(unittest.TestCase):
         v = Visualizer(img, self.metadata)
         v.overlay_instances(masks=polygons, boxes=None, labels=labels).get_image()
 
+    def test_overlay_instances_mask_holes(self):
+        image = np.zeros((100, 100, 3), dtype=np.uint8)
+        mask = np.zeros((100, 100), dtype=np.uint8)
+        mask[10:90, 10:90] = 1
+        mask[40:60, 40:60] = 0
+
+        output = Visualizer(image).overlay_instances(
+            masks=[mask], assigned_colors=[(1, 0, 0)], alpha=1.0
+        ).get_image()
+
+        self.assertLess(output[50, 50].max(), 10)
+        self.assertGreater(output[20, 20].max(), 10)
+
     def test_draw_instance_predictions(self):
         img, boxes, _, _, masks = self._random_data()
         num_inst = len(boxes)
