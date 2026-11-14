@@ -217,7 +217,7 @@ def heatmaps_to_keypoints(maps: torch.Tensor, rois: torch.Tensor) -> torch.Tenso
         pos = roi_map.view(num_keypoints, -1).argmax(1)
 
         x_int = pos % w
-        y_int = (pos - x_int) // w
+        y_int = (pos - x_int).div(w, rounding_mode="floor")
 
         assert (
             roi_map_scores[keypoints_idx, y_int, x_int]
