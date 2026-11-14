@@ -44,7 +44,7 @@ def rasterize_polygons_with_grid_sample(full_image_bit_mask, box, mask_size, thr
 
     mask_x = (mask_x - 0.5) / (img_w - 1) * 2 + -1
     mask_y = (mask_y - 0.5) / (img_h - 1) * 2 + -1
-    gy, gx = torch.meshgrid(torch.from_numpy(mask_y), torch.from_numpy(mask_x))
+    gy, gx = torch.meshgrid(torch.from_numpy(mask_y), torch.from_numpy(mask_x), indexing='ij')
     ind = torch.stack([gx, gy], dim=-1).to(dtype=torch.float32)
 
     full_image_bit_mask = torch.from_numpy(full_image_bit_mask)
