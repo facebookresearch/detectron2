@@ -79,6 +79,14 @@ def do_train(args, cfg):
         cfg.train.output_dir,
         trainer=trainer,
     )
+    best_checkpointer = None
+    if comm.is_main_process() and "best_checkpointer" in cfg.train:
+        best_checkpointer = hooks.BestCheckpointer(
+            cfg.train.eval_period,
+            checkpointer,
+            **dict(cfg.train.best_checkpointer),
+        )
+
     trainer.register_hooks(
         [
             hooks.IterationTimer(),
@@ -89,6 +97,7 @@ def do_train(args, cfg):
                 else None
             ),
             hooks.EvalHook(cfg.train.eval_period, lambda: do_test(cfg, model)),
+            best_checkpointer,
             (
                 hooks.PeriodicWriter(
                     default_writers(cfg.train.output_dir, cfg.train.max_iter),
