@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 import torch
 
 from detectron2.config import configurable
+from detectron2.structures import PolygonMasks
 
 from . import detection_utils as utils
 from . import transforms as T
@@ -138,7 +139,12 @@ class DatasetMapper:
         # bounding box of the cropped triangle should be [(1,0),(2,1)], which is not equal to
         # the intersection of original bounding box and the cropping box.
         if self.recompute_boxes:
+            # FYI: crashes here when filter_empty = False!
+            # instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
+            if not instances.has('gt_masks'): 
+                instances.gt_masks = PolygonMasks([])  # for negative examples
             instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
+                
         dataset_dict["instances"] = utils.filter_empty_instances(instances)
 
     def __call__(self, dataset_dict):
